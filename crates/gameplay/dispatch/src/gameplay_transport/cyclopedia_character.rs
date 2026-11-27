@@ -7,6 +7,57 @@ use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::{Admission
 use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
 use oteryn_protocol_oteryn::cyclopedia_character as wire;
 
+pub(super) fn holder_refusal(error: DurabilityError) -> AdmissionRefusal {
+    match error {
+        DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded => {
+            AdmissionRefusal::Unavailable
+        }
+        _ => AdmissionRefusal::Rejected,
+    }
+}
+
+pub(super) fn authority_read_refusal(error: CharacterAuthorityError) -> AdmissionRefusal {
+    match error {
+        CharacterAuthorityError::Unavailable(error) => holder_refusal(error),
+        _ => AdmissionRefusal::Rejected,
+    }
+}
+
+/// One admission-holder deadline across the snapshot refresh and tab read.
+pub(super) struct CyclopediaRead<'a> {
+    pub(super) budget: AdmissionRetryBudget<'a>,
+    pub(super) command_id: Option<u64>,
+}
+
+impl CyclopediaRead<'_> {
+    pub(super) async fn retry<T>(
+        &self,
+        stage: &'static str,
+        mut read: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> Result<T, ()> {
+        let mut attempt = 0_u32;
+        self.budget
+            .retry_unavailable(async || {
+                if let Some(command_id) = self.command_id {
+                    attempt = attempt.saturating_add(1);
+                    let holder = if self.budget.root.is_some_and(|root| root.is_ready()) {
+                        "ready"
+                    } else {
+                        "busy"
+                    };
+                    super::operator_event(&format!(
+                        "event=cyclopedia_read_attempt command_id={command_id} stage={stage} attempt={attempt} holder={holder}"
+                    ));
+                }
+                tokio::time::timeout_at(self.budget.deadline, read())
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)?
+            })
+            .await
+            .map_err(|_| ())
+    }
+}
+
 macro_rules! authority_methods {
     () => {
         fn cyclopedia_character_command(
@@ -286,6 +337,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(bytes) => crate::domain::CharacterId::from_bytes(bytes).map_err(|_| ())?,
                     None => fence.character_id,
                 };
+                let read = CyclopediaRead {
+                    budget: AdmissionRetryBudget::for_session_read(self.root).map_err(|_| ())?,
+                    command_id: Some(command_id),
+                };
                 if matches!(
                     request.tab,
                     wire::CharacterTab::Offence
@@ -293,12 +348,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         | wire::CharacterTab::Misc
                 ) && target == fence.character_id
                 {
-                    self.refresh_cyclopedia_combat(
-                        admitted.runtime_actor.ok_or(())?,
-                        admitted.game_session_id,
-                        Some(fence),
+                    tokio::time::timeout_at(
+                        read.budget.deadline,
+                        self.refresh_cyclopedia_combat_within(
+                            admitted.runtime_actor.ok_or(())?,
+                            admitted.game_session_id,
+                            Some(fence),
+                            &read,
+                        ),
                     )
-                    .await?;
+                    .await
+                    .map_err(|_| ())??;
                 }
                 let read_tab = || {
                     self.root.read_cyclopedia_character_tab_extended(
@@ -321,17 +381,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ));
                     })?
                 } else {
-                    AdmissionRetryBudget::for_command(self.root)
-                        .retry_unavailable(async || {
-                            read_tab().await.map_err(|error| match error {
-                                CharacterAuthorityError::Unavailable(
-                                    DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded,
-                                ) => AdmissionRefusal::Unavailable,
-                                _ => AdmissionRefusal::Rejected,
-                            })
-                        })
-                        .await
-                        .map_err(|_| ())?
+                    read.retry("tab", async || read_tab().await.map_err(authority_read_refusal)).await?
                 };
                 // Each extension field reaches only a session that selected its capability.
                 if !admitted

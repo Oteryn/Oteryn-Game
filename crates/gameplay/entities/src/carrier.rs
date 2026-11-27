@@ -77,6 +77,7 @@ pub use native_null_health::NativeNullHealthSample;
 pub use native_retained_caster::NativeRetainedCallbackCaster;
 pub use native_retained_teleport::NativeRetainedCallbackTeleport;
 
+mod creature_lifecycle;
 mod creature_relocation;
 
 #[cfg(test)]
@@ -2175,6 +2176,19 @@ impl ChannelActorCarrier {
             | Slot::VacantReusable { .. }
             | Slot::Exhausted { .. } => return Err(CarrierError::StaleActorGeneration),
         };
+        let despawn = match &self.slots[index] {
+            Slot::CreatureOccupied { health: 0, .. } => Some("dead_slot_retired"),
+            Slot::CreatureOccupied { .. }
+                if self
+                    .native_summons
+                    .child(ExactActorRef(actor_ref))
+                    .is_some() =>
+            {
+                Some("summon_removed")
+            }
+            Slot::CreatureOccupied { .. } => Some("live_slot_removed"),
+            _ => None,
+        };
         // Parent despawn removes children, without death/corpse/rewards. The relation never
         // admits child masters, so this bounded cleanup cannot recurse into another family.
         let mut children = [None; 16];
@@ -2213,6 +2227,9 @@ impl ChannelActorCarrier {
             next_free: self.free_head,
         };
         self.free_head = Some(free_index);
+        if let Some(reason) = despawn {
+            creature_lifecycle::record(ExactActorRef(actor_ref), "despawned", reason, None);
+        }
         // A retained corpse projection / reward occurrence deliberately outlives this slot
         // (existing Combat D1/D2 behavior: a lost-response retry must still reconcile after
         // administrative removal, `projection_failures_preserve_retry_and_lost_response_idempotency`).

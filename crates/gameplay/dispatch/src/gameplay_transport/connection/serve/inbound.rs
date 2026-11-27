@@ -148,8 +148,8 @@ where
             }
         }
         Next::Frame(Ok(frame)) => (frame, false, tokio::time::Instant::now()),
-        Next::Frame(Err(_)) => {
-            return Err(ServeEnd::Disconnected);
+        Next::Frame(Err(error)) => {
+            return Err(ServeEnd::Transport(TransportEnd::Read(error.kind())));
         }
         Next::Probe => {
             // Idle work (including the durable logout) stays within the existing database
@@ -163,7 +163,7 @@ where
             .await
             {
                 Ok(result) => result?,
-                Err(_) => return Err(ServeEnd::Disconnected),
+                Err(_) => return Err(ServeEnd::Transport(TransportEnd::IdleWorkDeadline)),
             }
             write_liveness_probe(stream, session).await?;
             // Existing periodic display work shares the liveness cadence. No independent

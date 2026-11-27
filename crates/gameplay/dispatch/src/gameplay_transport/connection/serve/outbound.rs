@@ -162,7 +162,7 @@ where
     }
     write_frame(stream, &result)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|error| ServeEnd::Transport(TransportEnd::Write(error.kind())))?;
     if let Some(relocation_seq) = relocation_seq {
         operator_event(&format!(
             "event=use_relocation_published command_id={} relocation_seq={relocation_seq} use_result_seq={result_sequence}",

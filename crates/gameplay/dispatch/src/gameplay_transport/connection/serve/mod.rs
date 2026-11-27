@@ -187,9 +187,37 @@ impl Drop for ServeState {
 enum ServeEnd {
     Transferred(Box<AdmittedSession>),
     Disconnected,
+    Transport(TransportEnd),
     ControlLost(&'static str),
     LoggedOut,
     Closed(FoundationProtocolError),
+}
+
+enum TransportEnd {
+    Read(std::io::ErrorKind),
+    Write(std::io::ErrorKind),
+    IdleWorkDeadline,
+}
+
+impl TransportEnd {
+    fn fields(&self) -> (&'static str, &'static str) {
+        let (path, error) = match self {
+            Self::Read(error) => ("read", error),
+            Self::Write(error) => ("write", error),
+            Self::IdleWorkDeadline => return ("idle_work", "deadline"),
+        };
+        use std::io::ErrorKind;
+        let reason = match error {
+            ErrorKind::UnexpectedEof => "peer_eof",
+            ErrorKind::ConnectionReset => "connection_reset",
+            ErrorKind::ConnectionAborted => "connection_aborted",
+            ErrorKind::BrokenPipe => "broken_pipe",
+            ErrorKind::TimedOut => "io_deadline",
+            ErrorKind::InvalidData => "invalid_transport_data",
+            _ => "io_failed",
+        };
+        (path, reason)
+    }
 }
 
 impl ServeEnd {
@@ -207,28 +235,49 @@ impl ServeEnd {
         let reason = match &self {
             Self::Transferred(_) => "transferred",
             Self::Disconnected => "disconnected",
+            Self::Transport(transport) => transport.fields().1,
             Self::ControlLost(_) => "control_lost",
             Self::LoggedOut => "logged_out",
             Self::Closed(_) => "protocol_error",
         };
         let path = match &self {
             Self::ControlLost(path) => format!(" path={path}"),
+            Self::Transport(transport) => format!(" path={}", transport.fields().0),
             _ => String::new(),
         };
         let phase = phase.map_or_else(String::new, |phase| format!(" phase={phase}"));
+        let code = match &self {
+            Self::Closed(error) => format!(" reason_code={}", error.code()),
+            _ => String::new(),
+        };
         operator_event(&format!(
-            "event=serve_end reason={reason}{path}{phase} source={} next_command_id={} server_sequence={}",
+            "event=serve_end reason={reason}{path}{phase}{code} source={} next_command_id={} server_sequence={}",
             std::panic::Location::caller(),
             admitted.continuity.next_command_id,
             admitted.continuity.server_sequence,
         ));
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
-            Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Self::Disconnected | Self::Transport(_) => {
+                ConnectionEnd::AdmittedThenDisconnected(admitted)
+            }
             Self::ControlLost(_) => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
             Self::Closed(error) => ConnectionEnd::AdmittedThenClosed(admitted, error),
         }
+    }
+}
+
+#[track_caller]
+fn finish_held(end: ConnectionEnd, phase: &'static str) -> ConnectionEnd {
+    match end {
+        ConnectionEnd::AdmittedThenClosed(admitted, error) => {
+            ServeEnd::Closed(error).finish_with_phase(admitted, Some(phase))
+        }
+        ConnectionEnd::AdmittedThenDisconnected(admitted) => {
+            ServeEnd::Disconnected.finish_with_phase(admitted, Some(phase))
+        }
+        end => end,
     }
 }
 
@@ -324,12 +373,18 @@ where
         );
         let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
             record_join_progress("held_unplayable", admitted.first_entry);
-            return hold_refused(stream, admitted, policy).await;
+            return finish_held(
+                hold_refused(stream, admitted, policy).await,
+                "held_unplayable",
+            );
         };
         record_join_progress("baseline", admitted.first_entry);
         let Some(baseline) = authority.observe(actor).await else {
             record_join_progress("held_no_baseline", admitted.first_entry);
-            return hold_refused(stream, admitted, policy).await;
+            return finish_held(
+                hold_refused(stream, admitted, policy).await,
+                "held_no_baseline",
+            );
         };
         // Keep the join snapshot and its temporary session state out of the
         // connection coroutine, which also carries the live command path.

@@ -1548,6 +1548,17 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// A foreground session read can wait for one liveness interval across all its passes.
+    fn for_session_read(
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        let budget = Self::for_foreground_command(root)?;
+        Ok(Self {
+            deadline: tokio::time::Instant::now() + connection::IDLE_LIVENESS.interval,
+            ..budget
+        })
+    }
+
     /// [`Self::new`] whose retries wait for `root`'s holder instead of sleeping blind
     /// (NODEBOOT-1).
     fn for_root(game_session_id: &GameSessionId, root: &'r DurabilityRoot) -> Self {

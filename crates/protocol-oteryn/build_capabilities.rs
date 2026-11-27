@@ -263,6 +263,16 @@ pub(super) fn render(entries: &[Value], registry: &Value) -> Result<(String, Str
         ));
     }
     registered.push_str("];\n");
+    let mut command_ids = registry["command_types"]
+        .as_array()
+        .ok_or("command types")?
+        .iter()
+        .map(|entry| number(&entry["id"]))
+        .collect::<Result<Vec<_>, _>>()?;
+    command_ids.sort_unstable();
+    registered.push_str(&format!(
+        "pub(super) const REGISTERED_COMMAND_IDS_V1: &[u32] = &{command_ids:?};\n"
+    ));
     let mut tables = String::from("pub const GATED: &[(u32, &[u32], &[u32])] = &[\n");
     for entry in entries.iter().filter(|entry| !entry["domains"].is_null()) {
         tables.push_str(&format!(

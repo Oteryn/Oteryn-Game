@@ -23,7 +23,7 @@ pub(super) fn encode(
     let sequence = next_sequence(session)?;
     session.integrity.observe(dispatch);
     inventory_capacity::reread_after_command(session, command.command_type, dispatch);
-    let (status, result_payload) = match dispatch {
+    let (status, mut result_payload) = match dispatch {
         Dispatch::ServerModal(
             crate::gameplay_transport::server_modal::ServerModalOutcome::Reply(payload)
             | crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(payload),
@@ -352,7 +352,57 @@ pub(super) fn encode(
         | Dispatch::Highscores(HighscoresReply::Terminal(_) | HighscoresReply::Rejected)
         | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
     };
-    let result = if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error))
+    let generic_refusal = status == CommandStatus::Rejected
+        && result_payload.is_empty()
+        && oteryn_protocol_oteryn::is_registered_command(command.command_type)
+        && session.selected_capabilities.command_selected(command.command_type)
+        // LOGOUT-WIRE-1 explicitly defines an empty receipt for malformed input.
+        && (command.command_type != COMMAND_TYPE_LOGOUT_INTENT || command.payload.is_empty());
+    if generic_refusal {
+        // Port the native cast receipt from afdef4d1. Cast clients decode the disposition
+        // even when the envelope is rejected; both cast commands have the same base result.
+        use oteryn_protocol_oteryn::{
+            actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+            actor_spell_v2::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2,
+        };
+        match command.command_type {
+            oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT => {
+                result_payload = encode_use_result(UseDisposition::Rejected)
+                    .map_err(|_| ServeEnd::Disconnected)?;
+            }
+            oteryn_protocol_oteryn::attack::COMMAND_TYPE_ATTACK_TARGET_INTENT
+            | oteryn_protocol_oteryn::attack::COMMAND_TYPE_FIGHT_MODES_INTENT => {
+                result_payload = encode_attack_intent_result(AttackIntentDisposition::Rejected);
+            }
+            oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT => {
+                result_payload = encode_item_move_result_for(
+                    ItemMoveOutcome::Rejected,
+                    ItemMoveSelection::default(),
+                )
+                .map_err(|_| ServeEnd::Disconnected)?;
+            }
+            oteryn_protocol_oteryn::npc_service::COMMAND_TYPE_NPC_TALK_INTENT
+            | oteryn_protocol_oteryn::npc_service::COMMAND_TYPE_NPC_TRADE_INTENT => {
+                result_payload = encode_npc_intent_result(NpcIntentDisposition::Rejected);
+            }
+            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
+                result_payload = encode_spell_cast_result(SpellCastDisposition::Rejected);
+            }
+            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2 => {
+                use oteryn_protocol_oteryn::actor_spell_v2::{
+                    ParameterSpellCastResult, encode_parameter_spell_cast_result,
+                };
+                result_payload = encode_parameter_spell_cast_result(&ParameterSpellCastResult {
+                    disposition: SpellCastDisposition::Rejected,
+                    feedback: None,
+                    editor: None,
+                })
+                .map_err(|_| ServeEnd::Disconnected)?;
+            }
+            _ => {}
+        }
+    }
+    let terminal_error = if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error))
     | Dispatch::Highscores(HighscoresReply::Terminal(error))
     | Dispatch::CharacterInfo(
         crate::gameplay_transport::character_info::CharacterInfoReply::Terminal(error),
@@ -360,7 +410,20 @@ pub(super) fn encode(
     {
         // Display contract §3.3, §4.3 and HIGHSCORES0 §6: fail closed with the registered
         // operation-terminal error and nothing else.
-        encode_command_error_result(session.generation, sequence, command.command_id, *error)
+        Some(*error)
+    } else if generic_refusal && result_payload.is_empty() {
+        // Success-only payload codecs (including Cyclopedia tabs) share this terminal body.
+        Some(FoundationProtocolError::CommandRefused)
+    } else {
+        None
+    };
+    let result = if let Some(error) = terminal_error {
+        encode_command_error_result(
+            session.generation,
+            sequence,
+            command.command_id,
+            error,
+        )
     } else {
         encode_command_result(
             session.generation,
