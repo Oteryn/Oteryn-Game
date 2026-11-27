@@ -12,7 +12,7 @@ use std::sync::Mutex;
 
 // Crystal 201189f8 data-global/scripts/actions/adventurers_guild/adventurers_stone.lua:5-22,96.
 // Tibia Fandom, Adventurer's Stone: use from a city temple. Depot use is disabled.
-pub(super) const ARRIVAL: MovementLocalPosition = MovementLocalPosition {
+const ARRIVAL: MovementLocalPosition = MovementLocalPosition {
     x: 32210,
     y: 32300,
     floor: 6,
@@ -37,7 +37,7 @@ pub(super) const TEMPLES: [(u32, i16, [i32; 4]); 17] = [
     (22, 5, [33916, 31474, 33926, 31480]),
 ];
 // Pinned donor doNotTeleport, lines 48-58, with only temple admission enabled.
-pub(super) const REFUSAL: &str =
+const REFUSAL: &str =
     "Try to move more to the center of a temple to use the spiritual energy for a teleport.";
 
 fn tile(at: MovementLocalPosition) -> Option<TilePos> {
@@ -195,6 +195,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let session = command.game_session_id();
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let _hold = self.states.guild_stone_moves.start(session)?;
+        // Travel advances the quest and Character root together. It follows the
+        // same spell lane then Character revision order as other quest callbacks.
+        let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
         let (proof, placed) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
@@ -240,6 +243,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
         };
         let result = budget.retry_command_guard(attempt).await;
+        revision.observe_endgame_progression();
         if matches!(
             result,
             Err(crate::durability::DurabilityError::CommitOutcomeUnknown)

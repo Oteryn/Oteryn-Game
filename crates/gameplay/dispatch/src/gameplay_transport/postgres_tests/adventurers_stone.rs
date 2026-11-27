@@ -6,7 +6,6 @@ use crate::durability::quest_state::adventurers_stone::STONE_KEY;
 use crate::foundation::{
     ChannelContentPin, CharacterId, CharacterLease, MovementLocalPosition, WorldId,
 };
-use crate::gameplay_transport::adventurers_stone::{ARRIVAL, REFUSAL};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::character_home_town::ADVENTURERS_GUILD_RETURN_ACTION;
 use crate::gameplay_transport::connection::{
@@ -25,6 +24,13 @@ use tokio::io::AsyncWriteExt;
 
 const BAG: u8 = 170;
 const STONE: u8 = 171;
+const ARRIVAL: MovementLocalPosition = MovementLocalPosition {
+    x: 32210,
+    y: 32300,
+    floor: 6,
+};
+const REFUSAL: &str =
+    "Try to move more to the center of a temple to use the spiritual energy for a teleport.";
 // City temple tiles from content/world/areas/cities/areas-00000-00021.json.
 const CARLIN: TilePos = TilePos {
     x: 32360,
@@ -360,10 +366,26 @@ async fn use_on_wire(
         client.write_all(&frame).await?;
         let (mut position_seen, mut map_seen, mut result_seen, mut text_seen) =
             (false, false, false, false);
+        let mut guild_map_pending = false;
         loop {
             let frame = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&frame).map_err(debug)?;
-            if envelope.message_type() == MessageType::StateDelta {
+            if envelope.message_type() == MessageType::SnapshotChunk {
+                for domain in wire::decode_snapshot_chunk(envelope.payload())
+                    .map_err(debug)?
+                    .1
+                {
+                    if domain.domain_id == world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
+                        let map =
+                            world_map::decode_world_map_snapshot(domain.payload).map_err(debug)?;
+                        guild_map_pending = map.header.origin == wire_position(ARRIVAL);
+                        header = Some(map.header);
+                    }
+                }
+            } else if envelope.message_type() == MessageType::SnapshotCommit {
+                map_seen |= guild_map_pending;
+                guild_map_pending = false;
+            } else if envelope.message_type() == MessageType::StateDelta {
                 let delta = wire::decode_state_delta(envelope.payload()).map_err(debug)?;
                 if delta.domain_id == wire::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
                     let position = match decode_world_spatial_delta_view(
