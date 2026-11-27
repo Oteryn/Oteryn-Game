@@ -308,7 +308,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         .await
                         .ok_or(crate::durability::DurabilityError::Unavailable)?;
                     {
-                        let mut runtime = admission.runtime.lock().await;
+                        let mut runtime = admission
+                            .runtime
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                         let mut states = admission
                             .states
                             .spell_states

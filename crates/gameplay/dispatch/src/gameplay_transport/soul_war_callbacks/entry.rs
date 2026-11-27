@@ -63,7 +63,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         drop(runtime);
         let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
         let mut context = (self, &observed, permit);
-        pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
+        let clock = pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             use crate::durability::spell_item_transaction::{assert_spell_item_scope_in_transaction, begin_spell_owner_transaction, check_scope_transaction};
             let (owner, observed, permit) = context;
             let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
@@ -76,9 +76,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             check_scope_transaction(&mut tx,&authority).await
                 .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             tx.rollback().await?;
-            let runtime=owner.runtime.lock().await;
-            if !observed.matches(&runtime) {return Err(crate::durability::DurabilityError::Unavailable);}
             Ok(clock.map(|clock|(clock,observed_owner_us)))
-        })).await.map_err(|_|())
+        })).await.map_err(|_|())?;
+        let runtime = self.runtime.lock().await;
+        if !observed.matches(&runtime) {
+            return Err(());
+        }
+        Ok(clock)
     }
 }

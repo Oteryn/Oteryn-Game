@@ -137,7 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // pending_source. The same stable raid identity resumes it next poll.
                 commit_creature_item_owner_transaction(tx, deadline).await?;
                 drop(objects);
-                let mut states = owner.states.spell_states.lock().await;
+                let mut states = owner.states.spell_states.try_lock().map_err(|_| DurabilityError::Unavailable)?;
                 let mut extracted = Vec::new();
                 extracted
                     .try_reserve_exact(pending.len())

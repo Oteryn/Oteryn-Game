@@ -164,7 +164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Effect::Reset|Effect::KickCurrentPlayers=>{
                     let record=spec(cue.event.raid());
                     let census=runtime.positioned_actor_census().map_err(|_|DurabilityError::Unavailable)?;
-                    let mut states=owner.states.spell_states.lock().await;
+                    let mut states=owner.states.spell_states.try_lock().map_err(|_| DurabilityError::Unavailable)?;
                     let exit=physical(record.exit).ok_or(DurabilityError::Unavailable)?;
                     if cue.event.effect==Effect::KickCurrentPlayers{map.read(runtime,exit).await;}
                     if !map.validate_transaction(runtime).await{return Err(DurabilityError::Unavailable)}

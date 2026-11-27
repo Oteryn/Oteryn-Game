@@ -1207,8 +1207,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
-                    let mut runtime=owner.runtime.lock().await;
-                    let states=owner.states.spell_states.lock().await;
+                    let mut runtime=owner.runtime.try_lock().map_err(|_| DurabilityError::Unavailable)?;
+                    let states=owner.states.spell_states.try_lock().map_err(|_| DurabilityError::Unavailable)?;
                     if installation.physical.will_apply(){
                         runtime.release_definitely_uncommitted_spell_batch(&installation.physical)
                             .map_err(|_|DurabilityError::Unavailable)?;
@@ -1269,8 +1269,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // From here every early return parks the attempt through the window's Drop.
             let training=training.map(|p|p.after_commit(&proof)).transpose().map_err(|_|DurabilityError::InvalidStoredState)?;
             let receipt=training.as_ref().map(|r|match r{BuildCommitOutcome::Committed(r)|BuildCommitOutcome::AlreadyCommitted(r)=>r});
-            let mut runtime=owner.runtime.lock().await;
-            let mut states=owner.states.spell_states.lock().await;
+            let mut runtime=owner.runtime.try_lock().map_err(|_| DurabilityError::Unavailable)?;
+            let mut states=owner.states.spell_states.try_lock().map_err(|_| DurabilityError::Unavailable)?;
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let attempt=window.attempt();
