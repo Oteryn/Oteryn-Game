@@ -60,7 +60,15 @@ fn scenarios(cases: &[Case], combat_room_only: bool) -> TestResult {
             )),
         )?;
         for &case in cases {
-            scenario(admin.clone(), world, &controller, &pin, case, combat_room_only).await?;
+            scenario(
+                admin.clone(),
+                world,
+                &controller,
+                &pin,
+                case,
+                combat_room_only,
+            )
+            .await?;
         }
         Ok(())
     })
@@ -123,16 +131,12 @@ async fn scenario(
     }
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
-    owner.rooms = SeamRooms::new(Some(room.clone()), Some(room.clone()));
+    owner.rooms = SeamRooms::new(Some(room), Some(room));
     let formula = native.training_formula().ok_or("training formula")?;
     let build = convert_vocation(
         formula,
         &DurableBuildState::default(),
-        if druid {
-            "druid"
-        } else {
-            "paladin"
-        },
+        if druid { "druid" } else { "paladin" },
     )
     .map_err(debug)?;
     h.root
@@ -211,7 +215,13 @@ async fn scenario(
         })
     };
     // Without a bag, use a reagent-free spell so the failure reaches the destination writer.
-    let intent = find(if wire { 3174 } else if full || missing_reagent { 3198 } else { 3447 })?;
+    let intent = find(if wire {
+        3174
+    } else if full || missing_reagent {
+        3198
+    } else {
+        3447
+    })?;
     assert!(
         AdmissionRetryBudget::for_root(&session, &h.root)
             .retry_until(async || owner.ensure_source_map_initialized().await)
@@ -219,7 +229,7 @@ async fn scenario(
         "source-map initialization before conjure"
     );
     if combat_room_only {
-        owner.rooms = SeamRooms::new(None, Some(room.clone()));
+        owner.rooms = SeamRooms::new(None, Some(room));
     }
     if wire {
         let result = check_conjure_wire(&h, &deps, &owner, intent).await;
@@ -246,7 +256,10 @@ async fn scenario(
     if full {
         let holder = h.root.try_acquire_ready().map_err(debug)?;
         assert!(
-            owner.cast_spell_completion(actor, session, 1, intent).await.is_none(),
+            owner
+                .cast_spell_completion(actor, session, 1, intent)
+                .await
+                .is_none(),
             "a busy holder leaves the full-bag cast pending"
         );
         drop(holder);
