@@ -300,14 +300,14 @@ async fn move_listener(
     receipts: &mut Vec<CommandReceipt>,
 ) -> TestResult {
     let from = tile(listener.world_spatial().actor_position)?;
-    // Quentin occupies this authored temple cell. Plan around it before sending any step.
+    // Keep the route clear of Quentin’s spawn and the adjacent northern cell.
     const QUENTIN: TilePos = TilePos {
         x: 32368,
         y: 32240,
         floor: -7,
     };
     let path = route_avoiding(world, from, &|at| at == target, |at| {
-        at != speaker && at != QUENTIN
+        at != speaker && at != QUENTIN && at != TilePos { y: QUENTIN.y - 1, ..QUENTIN }
     })
     .ok_or("S18 listener geometry has no authored route")?;
     for direction in path {
@@ -342,6 +342,20 @@ async fn observe_delivery(
         client.take_events();
     }
     check_log(client, expected, phase)
+}
+
+fn check_saved_position(
+    role: &str,
+    expected: ActorPosition,
+    actual: ActorPosition,
+) -> TestResult {
+    if actual != expected {
+        return Err(format!(
+            "S18 {role} persisted position differs: expected={expected:?} actual={actual:?}"
+        )
+        .into());
+    }
+    Ok(())
 }
 
 async fn journey(
@@ -387,6 +401,7 @@ async fn journey(
 
     for (dx, dy, dz, label, audible) in [
         (1, -1, 0, "near", true),
+        (1, 0, 0, "near-cardinal", true),
         (2, -1, 0, "boundary-whisper-two", true),
         (3, 0, 0, "boundary-whisper-two-x", true),
         (-1, -2, 0, "boundary-whisper-two-y", true),
@@ -400,6 +415,8 @@ async fn journey(
         (8, 3, 0, "boundary-east", true),
         (9, 3, 0, "outside-east", false),
         (8, 5, 0, "boundary-diagonal", true),
+        (8, 5, 0, "outside-corner-x", false),
+        (8, 5, 0, "outside-corner-y", false),
         // The balcony landing is inside the horizontal window, one native floor above.
         (7, 4, 1, "other-floor", false),
         (7, 4, 1, "adjacent-other-floor", false),
@@ -433,6 +450,8 @@ async fn journey(
             "boundary-west" => (0, 1),
             "boundary-east" => (0, 2),
             "boundary-diagonal" => (0, -1),
+            "outside-corner-x" => (-1, -1),
+            "outside-corner-y" => (0, -2),
             _ => (0, 0),
         };
         let probe_origin = TilePos {
@@ -615,17 +634,10 @@ async fn journey(
             ));
         }
     }
-    service_while(
-        &mut listener,
-        move_listener(
-            &mut speaker,
-            world,
-            tile(listener_landing)?,
-            origin,
-            &mut speaker_receipts,
-        ),
-    )
-    .await?;
+    let speaker_landing = speaker.world_spatial().actor_position;
+    if position == speaker_landing || tile(speaker_landing)? != below_target {
+        return Err("S18 speaker did not change position to the final probe tile".into());
+    }
 
     let speaker_session = speaker.join_snapshot().game_session_id;
     let listener_session = listener.join_snapshot().game_session_id;
@@ -677,20 +689,14 @@ async fn journey(
         &listener_receipts,
     )?;
     for (index, previous, expected_position, role) in [
-        (1, speaker_session, position, "speaker-relog"),
+        (1, speaker_session, speaker_landing, "speaker-relog"),
         (0, listener_session, listener_landing, "listener-relog"),
     ] {
         let (mut fresh, wire, transport) = recorded_character(clients, index).await?;
         if fresh.join_snapshot().game_session_id == previous {
             return Err("S18 relog reused the old gameplay session".into());
         }
-        if fresh.world_spatial().actor_position != expected_position {
-            return Err(format!(
-                "S18 {role} persisted position differs: expected={expected_position:?} actual={:?}",
-                fresh.world_spatial().actor_position
-            )
-            .into());
-        }
+        check_saved_position(role, expected_position, fresh.world_spatial().actor_position)?;
         observe_delivery(
             &mut fresh,
             &[],
@@ -737,7 +743,7 @@ async fn journey(
     }
     let capture_digest = hex(&digest.finalize());
     Ok(format!(
-        "head={head};run={run};speaker=Packet_Two;near=verified;four_boundaries=verified;four_outside_tiles=verified;other_floor=verified;relog=verified;capture_sha256={capture_digest}"
+        "head={head};run={run};speaker=Packet_Two;near=verified;four_boundaries=verified;outside_sides_and_corners=verified;other_floor=verified;relog=verified;capture_sha256={capture_digest}"
     ))
 }
 
@@ -824,6 +830,20 @@ mod audit_tests {
             assert!(check_lines([&invalid].into_iter(), &expected, "mutation").is_err());
         }
         assert!(check_lines(std::iter::empty(), &expected, "missing listener echo").is_err());
-        assert!(check_lines(expected.iter(), &[], "outside or relog leakage").is_err());
+        for corner in ["outside-corner-x", "outside-corner-y"] {
+            assert!(check_lines(expected.iter(), &[], corner).is_err());
+        }
+        let clear = [line(1, 2, "Packet Two", "cardinal text")];
+        assert!(check_lines(clear.iter(), &clear, "clear cardinal whisper").is_ok());
+        assert!(check_lines(expected.iter(), &clear, "redacted cardinal whisper").is_err());
+        assert!(check_lines(expected.iter(), &[], "relog leakage").is_err());
+    }
+
+    #[test]
+    fn rejects_speaker_relog_reset_to_admission_position() {
+        let admission = ActorPosition { x: 32369, y: 32238, floor: 7 };
+        let landing = ActorPosition { x: 32376, y: 32241, ..admission };
+        assert!(check_saved_position("speaker-relog", landing, landing).is_ok());
+        assert!(check_saved_position("speaker-relog", landing, admission).is_err());
     }
 }

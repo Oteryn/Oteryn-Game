@@ -329,6 +329,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     let mut listener_lines = Vec::new();
     for label in [
         "near",
+        "near-cardinal",
         "boundary-whisper-two",
         "boundary-whisper-two-x",
         "boundary-whisper-two-y",
@@ -341,6 +342,8 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         "boundary-east",
         "outside-east",
         "boundary-diagonal",
+        "outside-corner-x",
+        "outside-corner-y",
         "other-floor",
         "adjacent-other-floor",
     ] {
@@ -353,6 +356,8 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
             "boundary-west" => (0, 1),
             "boundary-east" => (0, 2),
             "boundary-diagonal" => (0, -1),
+            "outside-corner-x" => (-1, -1),
+            "outside-corner-y" => (0, -2),
             _ => (0, 0),
         };
         let at = ActorPosition {
@@ -366,7 +371,7 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         ] {
             let text = format!("s18-{label}-{suffix}-{run}");
             speaker_lines.push(line(mode, text.clone(), at));
-            if label == "near" {
+            if matches!(label, "near" | "near-cardinal") {
                 listener_lines.push(line(mode, text, at));
             } else if label.starts_with("boundary-") {
                 let heard = if mode == ChatSpeechMode::Whisper {
@@ -413,19 +418,26 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
             });
         }
     }
+    let speaker_landing = ActorPosition {
+        x: position.x + 7,
+        y: position.y + 3,
+        ..position
+    };
     block_on(async {
-        for (role, envelope_file, relog_file, expected) in [
+        for (role, envelope_file, relog_file, expected, landing) in [
             (
                 "speaker",
                 "s18-speaker.json",
                 "s18-speaker-relog.json",
                 speaker_lines.as_slice(),
+                speaker_landing,
             ),
             (
                 "listener",
                 "s18-listener.json",
                 "s18-listener-relog.json",
                 listener_lines.as_slice(),
+                balcony_position,
             ),
         ] {
             let envelopes: Vec<serde_json::Value> =
@@ -437,10 +449,15 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
             let relog = read_bound(root, &format!("s18-{role}-relog.wire"), &binding)?;
             let (fresh, _) = replay(&relog, &[], &relog_envelopes).await?;
             assert_ne!(initial.game_session_id, fresh.game_session_id);
-            assert_eq!(after, fresh.world_spatial.actor_position);
-            if role == "listener" {
-                assert_ne!(initial.world_spatial.actor_position, after);
-            }
+            assert_eq!(after, landing, "{role} position at logout");
+            assert_eq!(
+                fresh.world_spatial.actor_position, landing,
+                "{role} saved position"
+            );
+            assert_ne!(
+                initial.world_spatial.actor_position, after,
+                "{role} final position"
+            );
         }
         Ok(())
     })?
