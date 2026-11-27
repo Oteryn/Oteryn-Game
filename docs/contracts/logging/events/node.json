@@ -368,6 +368,16 @@
       "note": "Qualification fixture spawn cleanup failed; cause is bounded to 200 characters."
     },
     {
+      "event": "qualification_spawn_holder_wait",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "owner"
+      ],
+      "codes": [],
+      "note": "Qualification spawn entered its bounded durability holder wait."
+    },
+    {
       "event": "qualification_spawn_refused",
       "level": "warn",
       "span": false,
