@@ -8,7 +8,7 @@ use super::super::{
     decode_use_intent_target,
 };
 use super::Dispatch;
-use oteryn_protocol_oteryn::ClientCommandView;
+use oteryn_protocol_oteryn::{ClientCommandView, world_object::MapUseTarget};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -369,7 +369,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 {
                     return Some(Dispatch::Use(outcome));
                 }
-                if let Some(outcome) = authority
+                // Imbuement receipts bind two item handles. Check them even when
+                // a handle retired, but only for item-handle targets.
+                if matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
+                    && let Some(outcome) = authority
                     .use_imbuement_item(
                         actor,
                         UseCommand {

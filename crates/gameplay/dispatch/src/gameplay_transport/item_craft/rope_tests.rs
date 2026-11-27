@@ -303,6 +303,18 @@ impl FreshAdmissionAuthority for Owner {
             |d| index().definition_ref(&d.family, &d.production_key, &d.revision_ref),
         )
     }
+    async fn use_imbuement_item(
+        &self,
+        _: ExactActorRef,
+        _: UseCommand,
+        _: UseIntent,
+        _: Option<ItemKey>,
+        _: Option<ItemKey>,
+    ) -> Option<UseOutcome> {
+        // Model an unavailable imbuement receipt read. A placement-targeted
+        // rope command must reach its owner even if this read would fail.
+        Some(UseOutcome::rejected())
+    }
     async fn use_craft(
         &self,
         _: ExactActorRef,
