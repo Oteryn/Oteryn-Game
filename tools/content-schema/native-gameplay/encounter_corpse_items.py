@@ -109,9 +109,11 @@ def apply_admissions(definitions, root=ROOT):
 # C16d supplies the initial edge. The TibiaWiki Dead Rat Fandom archive
 # supplies visible stage durations, weights and first-stage volume. The pinned
 # Canary Item identities only map those stages to the existing appearance IDs.
-RAT_STAGES = ((3994, 5, 300_000, 3995, 6300),
-              (3995, None, 300_000, 3996, 4400),
-              (3996, None, 60_000, None, 3000))
+RAT_STAGES = {
+    3994: (5, 300_000, 3995, 6300),
+    3995: (None, 300_000, 3996, 4400),
+    3996: (None, 60_000, None, 3000),
+}
 
 
 def apply_rat_admissions(definitions, root=ROOT):
@@ -129,7 +131,7 @@ def apply_rat_admissions(definitions, root=ROOT):
     objects = json.loads((root / 'content/world/objects/objects-00500-00999.json').read_bytes())
     pointers = {row['provenance']['item_pointer']['key']: row for row in objects['records']
                 if row['provenance'].get('item_pointer')}
-    for item, capacity, duration, target, weight in RAT_STAGES:
+    for item, (capacity, duration, target, weight) in RAT_STAGES.items():
         key = f'oteryn:item.tibia.i{item}'
         definition, world_object = indexed[key], pointers[key]
         if (world_object['provenance']['item_pointer'] != definition['identity']
@@ -149,7 +151,7 @@ def outputs(root=ROOT):
     apply_admissions(definitions, root)
     apply_rat_admissions(definitions, root)
     owned.add('oteryn:item.tibia.i5964')
-    owned.update(f'oteryn:item.tibia.i{stage[0]}' for stage in RAT_STAGES)
+    owned.update(f'oteryn:item.tibia.i{stage}' for stage in RAT_STAGES)
     return {path: (json.dumps(shard, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
             for path, shard in shards.items()
             if any(row['definition']['identity']['key'] in owned for row in shard['records'])}
