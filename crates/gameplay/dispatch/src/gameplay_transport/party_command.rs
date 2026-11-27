@@ -158,7 +158,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         view: &mut SessionPartyView,
     ) -> Option<Vec<u8>> {
         let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let mut attempt = 0;
         loop {
+            attempt += 1;
             let mut busy = false;
             let reply = Box::pin(self.party_wire_attempt(
                 admitted,
@@ -174,6 +176,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !busy {
                 return reply;
             }
+            super::operator_event(&format!(
+                "event=party_command_holder_busy command_id={command_id} attempt={attempt}"
+            ));
             if !retry
                 .retries_unavailable(super::AdmissionRefusal::Unavailable)
                 .await

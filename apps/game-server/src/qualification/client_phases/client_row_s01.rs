@@ -260,6 +260,18 @@ async fn expect_notices(
     }
 }
 
+fn reject_extra_notices(client: &mut DevClientSession) -> TestResult {
+    for event in client.take_events() {
+        if let oteryn_dev_client::SessionEvent::PartyMembershipNotice(delta) = event {
+            return Err(format!(
+                "S01 unexpected late notice: change={:?} handle={} sequence={}",
+                delta.value.change, delta.value.member_handle, delta.server_sequence
+            ).into());
+        }
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_protocol_oteryn::logout::LogoutResult;
     use runtime::party::PartyMembershipChange::{Disbanded, Invited, Joined, Left};
@@ -339,13 +351,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     expect_notices(&mut leader, "leader", leader_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
     expect_notices(&mut peer, "peer", peer_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
     check_state(&send(&mut peer, None).await?, &[], None)?;
+    check_peer_shield(&mut leader, own(&peer)?, 0).await?;
+    check_peer_shield(&mut peer, own(&leader)?, 0).await?;
     for client in [&mut leader, &mut peer] {
+        reject_extra_notices(client)?;
         let logout = client.session_mut().logout().await?;
         if logout.status != runtime::CommandStatus::Accepted
             || logout.result != Some(LogoutResult::Accepted)
         {
             return Err(format!("S01 first logout refused: {logout:?}").into());
         }
+        reject_extra_notices(client)?;
     }
     drop((leader, peer));
     for (index, tag) in [(0, 0x49), (1, 0x4a)] {

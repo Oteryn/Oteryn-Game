@@ -178,6 +178,25 @@ fn has_line(text: &str, prefix: &str) -> bool {
     text.lines().any(|line| line.starts_with(prefix))
 }
 
+fn exact_toggle_receipt(
+    payload: &[u8],
+) -> Result<oteryn_protocol_oteryn::chat::ChatIntentResult, Error> {
+    if payload != [8, 1] {
+        return Err(
+            format!("S01 expected canonical toggle receipt [8, 1], got {payload:?}").into(),
+        );
+    }
+    oteryn_protocol_oteryn::chat::decode_chat_intent_result(payload)
+        .map_err(|error| format!("S01 toggle receipt: {error:?}").into())
+}
+
+#[test]
+fn s01_rejects_a_noncanonical_toggle_receipt() {
+    assert!(oteryn_protocol_oteryn::chat::decode_chat_intent_result(&[8, 1, 16, 0]).is_ok());
+    assert!(exact_toggle_receipt(&[8, 1, 16, 0]).is_err());
+    assert!(exact_toggle_receipt(&[8, 1]).is_ok());
+}
+
 #[test]
 fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
     let replay = load()?;
@@ -302,8 +321,7 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
             PartyCommand::shared_experience(true)
                 .map_err(|error| format!("S01 shared XP wire: {error:?}"))?
         );
-        let receipt = oteryn_protocol_oteryn::chat::decode_chat_intent_result(&toggle_receipt)
-            .map_err(|error| format!("S01 toggle receipt: {error:?}"))?;
+        let receipt = exact_toggle_receipt(&toggle_receipt)?;
         assert_eq!(receipt.disposition, oteryn_session::ChatDisposition::Ok);
         assert_eq!(receipt.wait_seconds, 0);
         let (command_id, result_server_sequence) =

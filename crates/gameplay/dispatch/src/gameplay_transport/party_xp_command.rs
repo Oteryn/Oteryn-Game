@@ -36,10 +36,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // A busy checkout is returned before the party transaction runs. Drop the
         // attempt's spell and runtime guards before waiting for the holder.
+        let mut attempt = 0;
         let reply = super::AdmissionRetryBudget::for_command(self.root)
             .retry_command_guard(async || {
-                self.party_shared_xp_attempt(actor, session, command_id, enabled)
-                    .await
+                attempt += 1;
+                let result = self.party_shared_xp_attempt(actor, session, command_id, enabled).await;
+                if result.as_ref().is_err_and(super::root_holder_busy) {
+                    super::operator_event(&format!("event=party_shared_xp_holder_busy command_id={command_id} attempt={attempt}"));
+                }
+                result
             })
             .await
             .unwrap_or(ChatIntentResult {
