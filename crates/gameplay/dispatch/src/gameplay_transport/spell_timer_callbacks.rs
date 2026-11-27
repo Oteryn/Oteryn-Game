@@ -620,7 +620,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok_or(Error::StaleOwner)?
                 .2
                 .clone();
-            let report = self
+            return self
                 .resolve_strike_due(
                     permit,
                     &mut runtime,
@@ -632,14 +632,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     access.as_ref(),
                     &native_health_observations,
                 )
-                .await?;
-            self.record_spell_combat(
-                &mut runtime,
-                &mut states,
-                report.receipts.iter().map(|r| &r.batch),
-            )
-            .await;
-            return Ok(report);
+                .await;
         }
         // Resolve only the first ordinary phase in this turn. Later phases read
         // numerical owners after earlier real combat receipts have been applied.
@@ -696,7 +689,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut accepted,
                 &native_health_observations,
             );
-            pass.run_with_context(&mut context, move |holder, deadline, ctx| {
+            let result = pass.run_with_context(&mut context, move |holder, deadline, ctx| {
                 Box::pin(async move {
                     use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
                     use sha2::{Digest, Sha256};
@@ -1006,36 +999,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     // Apply physical HP and publish its actual receipt before releasing
                     // the SQL authority locks. No awaited gap can rebase the source proof.
-                    **accepted = Some(
-                        apply_due_under_current_owners(
-                            runtime,
-                            states,
-                            owner.spells,
-                            casters,
-                            owner.owner_now(),
-                            content,
-                            owner.imported_charms,
-                        )
-                        .map_err(|_| DurabilityError::Unavailable)?,
+                    let attack = owner.states.attack.lock().await;
+                    let report = apply_due_under_current_owners(
+                        runtime,
+                        states,
+                        owner.spells,
+                        casters,
+                        owner.owner_now(),
+                        content,
+                        owner.imported_charms,
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    owner.record_spell_combat_locked(
+                        &attack,
+                        states,
+                        runtime,
+                        report.receipts.iter().map(|receipt| &receipt.batch),
                     );
+                    **accepted = Some(report);
+                    drop(attack);
                     tx.rollback()
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
                     Ok(())
                 })
             })
-            .await
-            .map_err(|_| Error::StaleOwner)?;
+            .await;
+            // The report owns effects already committed by the timer. A
+            // read-transaction cleanup error cannot undo that Channel turn.
             if let Some(report) = accepted {
-                self.record_spell_combat(
-                    &mut runtime,
-                    &mut states,
-                    report.receipts.iter().map(|r| &r.batch),
-                )
-                .await;
                 return Ok(report);
             }
+            result.map_err(|_| Error::StaleOwner)?;
         }
+        let attack = self.states.attack.lock().await;
         let report = apply_due_under_current_owners(
             &mut runtime,
             &mut states,
@@ -1047,12 +1044,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok_or(Error::StaleOwner)?,
             self.imported_charms,
         )?;
-        self.record_spell_combat(
-            &mut runtime,
+        self.record_spell_combat_locked(
+            &attack,
             &mut states,
-            report.receipts.iter().map(|r| &r.batch),
-        )
-        .await;
+            &mut runtime,
+            report.receipts.iter().map(|receipt| &receipt.batch),
+        );
         Ok(report)
     }
 }

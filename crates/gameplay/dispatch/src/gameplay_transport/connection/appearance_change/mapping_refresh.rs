@@ -327,7 +327,7 @@ fn death_frame(
                 attacker: before.shows(hit.attacker).then_some(hit.attacker),
                 primary: wire::PresentationValue {
                     value: hit.value.get(),
-                    color: wire::PresentationColor::Red,
+                    color: hit.color,
                 },
                 secondary: None,
             })

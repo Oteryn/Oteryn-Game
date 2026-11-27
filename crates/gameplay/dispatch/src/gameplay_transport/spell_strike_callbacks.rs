@@ -139,7 +139,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| Error::StaleOwner)?;
         let mut accepted = None;
         let mut context = (runtime, states, &mut accepted);
-        pass.run_with_context(&mut context, |holder, deadline, ctx| Box::pin(async move {
+        // A physical commit has already happened once the report is set. A
+        // failed read-transaction rollback or holder return must not lose it.
+        let _ = pass.run_with_context(&mut context, |holder, deadline, ctx| Box::pin(async move {
             use crate::durability::DurabilityError;
             let (runtime, states, accepted) = ctx;
             let active = self.active_generation.ok_or(DurabilityError::Unavailable)?;
@@ -160,12 +162,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.root, self.character, self.holder, fence, saved.binding.command, runtime, saved.binding.caster,
                 state, active, access, self.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
             owned.set_native_health_observations(native_health_observations.to_vec());
-            if let Some(resolved) = &saved.resolved {
+            let element = if let Some(resolved) = &saved.resolved {
                 if resolved.owned.binding() != owned.binding() || resolved.owned.durable_build() != owned.durable_build()
                     || resolved.owned.equipment() != owned.equipment() || resolved.owned.magnitude() != owned.magnitude() {
                     return Err(DurabilityError::Unavailable);
                 }
                 validate_numeric(runtime, states, saved).map_err(|_|DurabilityError::Unavailable)?;
+                resolved.magnitude.analyser_element()
             } else {
                 use sha2::{Digest, Sha256};
                 let hash = Sha256::new().chain_update(b"oteryn:delayed-strike-due:v1")
@@ -190,14 +193,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
                     return Ok(());
                 };
+                let element = resolved.magnitude.analyser_element();
                 states.spell_timers.as_mut().ok_or(DurabilityError::Unavailable)?
                     .retain_strike(runtime, saved, resolved, crate::foundation::owner_timer::SemanticTimeMicros::from_micros(self.owner_now().get()))
                     .map_err(|_|DurabilityError::Unavailable)?;
+                element
+            };
+            let attack = self.states.attack.lock().await;
+            let report = apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now(), content, self.imported_charms).map_err(|_|DurabilityError::Unavailable)?;
+            self.record_spell_combat_locked(&attack, states, runtime, report.receipts.iter().map(|receipt| &receipt.batch));
+            for receipt in &report.receipts {
+                attack.kills().color_lethal_spell_hits(&receipt.batch, element);
             }
-            **accepted = Some(apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now(), content, self.imported_charms).map_err(|_|DurabilityError::Unavailable)?);
+            **accepted = Some(report);
+            drop(attack);
             tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
             Ok(())
-        })).await.map_err(|_|Error::StaleOwner)?;
+        })).await;
         accepted.ok_or(Error::StaleOwner)
     }
 }

@@ -82,6 +82,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         forecasts: bool,
     ) -> Option<world_spatial::ChannelEntities> {
+        self.observe_channel_entity_frame(actor, forecasts, false)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn observe_channel_entity_frame(
+        &self,
+        actor: ExactActorRef,
+        forecasts: bool,
+        creature_names: bool,
+    ) -> Option<world_spatial::ChannelEntities> {
         use world_spatial::VisibleKind;
         let own_session = if forecasts {
             self.runtime
@@ -197,7 +207,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .filter(|(_, entry)| in_view(entry.position))
         .filter(|(_, entry)| !states.player_hidden_from(&runtime, actor, entry.actor, now))
-        .map(|(kind, entry)| world_spatial::ChannelEntity {
+        .map(|(kind, entry)| (kind, entry, runtime.companion_snapshot(entry.actor).ok()))
+        .map(|(kind, entry, creature)| world_spatial::ChannelEntity {
             source_icons: source_icons(
                 &runtime,
                 kind,
@@ -220,16 +231,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 },
             ),
-            display_name: None,
-            health_percent: runtime
-                .companion_snapshot(entry.actor)
-                .ok()
-                .map_or(100, |s| {
-                    u8::try_from(
-                        (i128::from(s.health) * 100 / i128::from(s.maximum_health)).clamp(1, 100),
+            display_name: creature
+                .as_ref()
+                .filter(|_| creature_names)
+                .and_then(|creature| {
+                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(
+                        &creature.state.policy.display_name,
                     )
-                    .unwrap_or(100)
+                    .ok()
                 }),
+            health_percent: creature.map_or(100, |s| {
+                u8::try_from(
+                    (i128::from(s.health) * 100 / i128::from(s.maximum_health)).clamp(1, 100),
+                )
+                .unwrap_or(100)
+            }),
             direction: match runtime
                 .read_actor_position(entry.actor)
                 .ok()

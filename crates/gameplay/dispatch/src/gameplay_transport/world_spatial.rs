@@ -122,6 +122,7 @@ pub struct LethalHit {
     pub target: EntityRef,
     pub attacker: EntityRef,
     pub value: std::num::NonZeroU64,
+    pub color: oteryn_protocol_oteryn::presentation::PresentationColor,
 }
 
 /// VIS-3: the kind of one Channel entity, as the Channel owner reads it.
