@@ -114,42 +114,56 @@ impl SessionAppearance {
             .filter(|e| !player_refs.contains(e))
             .copied()
             .collect();
-        let mut delta = match update {
-            VisibilityUpdate::Delta(delta) => delta,
-            VisibilityUpdate::Unchanged => WorldSpatialEntitiesDelta {
-                content_generation: channel.content_generation,
-                actor_position: channel
-                    .entities
-                    .iter()
-                    .find(|e| e.identity == channel.observer)
-                    .ok_or(Unavailable)?
-                    .position,
-                enter: Vec::new(),
-                update: Vec::new(),
-                leave: Vec::new(),
-            },
-            VisibilityUpdate::Snapshot(_) => return Err(Unavailable),
-        };
-        for binding in &upserts {
-            if !delta
-                .enter
-                .iter()
-                .chain(&delta.update)
-                .any(|e| e.entity == binding.entity)
-            {
-                delta.update.push(
-                    *visible
+        let update = if let VisibilityUpdate::StackSnapshot(mut snapshot) = update {
+            candidate
+                .attach(&mut snapshot.entities)
+                .ok_or(Unavailable)?;
+            VisibilityUpdate::StackSnapshot(snapshot)
+        } else {
+            let mut delta = match update {
+                VisibilityUpdate::Delta(delta) => delta,
+                VisibilityUpdate::Unchanged => WorldSpatialEntitiesDelta {
+                    content_generation: channel.content_generation,
+                    actor_position: channel
+                        .entities
                         .iter()
-                        .find(|e| e.entity == binding.entity)
-                        .ok_or(Unavailable)?,
-                );
+                        .find(|e| e.identity == channel.observer)
+                        .ok_or(Unavailable)?
+                        .position,
+                    enter: Vec::new(),
+                    update: Vec::new(),
+                    leave: Vec::new(),
+                },
+                VisibilityUpdate::Snapshot(_) | VisibilityUpdate::StackSnapshot(_) => {
+                    return Err(Unavailable);
+                }
+            };
+            for binding in &upserts {
+                if !delta
+                    .enter
+                    .iter()
+                    .chain(&delta.update)
+                    .any(|e| e.entity == binding.entity)
+                {
+                    delta.update.push(
+                        *visible
+                            .iter()
+                            .find(|e| e.entity == binding.entity)
+                            .ok_or(Unavailable)?,
+                    );
+                }
             }
-        }
-        if delta.enter.len() + delta.update.len() + delta.leave.len() > 256 {
-            return Err(Unavailable);
-        }
-        candidate.attach(&mut delta.enter).ok_or(Unavailable)?;
-        candidate.attach(&mut delta.update).ok_or(Unavailable)?;
+            if delta.enter.len() + delta.update.len() + delta.leave.len() > 256 {
+                return Err(Unavailable);
+            }
+            candidate.attach(&mut delta.enter).ok_or(Unavailable)?;
+            candidate.attach(&mut delta.update).ok_or(Unavailable)?;
+            if delta.enter.is_empty() && delta.update.is_empty() && delta.leave.is_empty() {
+                VisibilityUpdate::Unchanged
+            } else {
+                VisibilityUpdate::Delta(delta)
+            }
+        };
         let mut frames = Vec::new();
         let mut to_sequence = sequence;
         if old_catalogue != candidate.catalogue.as_ref().ok_or(Unavailable)? {
@@ -188,12 +202,6 @@ impl SessionAppearance {
                     .ok_or(Unavailable)?,
             );
         }
-        let update = if delta.enter.is_empty() && delta.update.is_empty() && delta.leave.is_empty()
-        {
-            VisibilityUpdate::Unchanged
-        } else {
-            VisibilityUpdate::Delta(delta)
-        };
         let (spatial, next_sequence, to_revision) = visibility_frames(
             generation,
             to_sequence,

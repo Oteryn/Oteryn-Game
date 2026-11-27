@@ -444,8 +444,16 @@ pub enum InterestDiff {
 /// Diff between the previous and current result of one observer. An entity present in both
 /// results is an update when its position or revision changed.
 pub fn diff_interest(previous: &VisibilityQuery, current: &VisibilityQuery) -> InterestDiff {
-    let previous: BTreeMap<_, _> = previous.entities.iter().map(|e| (e.identity, *e)).collect();
-    let current_map: BTreeMap<_, _> = current.entities.iter().map(|e| (e.identity, *e)).collect();
+    diff_selected_interest(previous.entities(), current.entities())
+}
+
+/// Diff two bounded sets after the publisher has applied its object stack selection.
+pub fn diff_selected_interest(
+    previous: &[InterestEntity],
+    current: &[InterestEntity],
+) -> InterestDiff {
+    let previous: BTreeMap<_, _> = previous.iter().map(|e| (e.identity, *e)).collect();
+    let current_map: BTreeMap<_, _> = current.iter().map(|e| (e.identity, *e)).collect();
     let mut changes = Vec::new();
     let identities: BTreeSet<_> = previous.keys().chain(current_map.keys()).copied().collect();
     for identity in identities {
@@ -456,7 +464,7 @@ pub fn diff_interest(previous: &VisibilityQuery, current: &VisibilityQuery) -> I
             _ => continue,
         };
         if changes.len() == INTEREST_DELTA_ENTRIES_MAX {
-            return InterestDiff::Resync(current.entities.clone());
+            return InterestDiff::Resync(current.to_vec());
         }
         changes.push(change);
     }
