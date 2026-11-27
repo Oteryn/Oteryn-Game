@@ -4225,14 +4225,14 @@ async fn c16c_rat_corpse(
     Err(format!("C16c Rat kill lacks exact death evidence: pending_strike={strike_before:?} health={health} damage={damage:?} removed={removed} corpse={}", corpse.is_some()).into())
 }
 
-async fn animate_corpse(
+async fn observe_animate_corpse(
     client: &mut DevClientSession,
     spell: &crate::spell::SpellDefinition,
     reference: std::num::NonZeroU32,
     corpse: oteryn_dev_client::WorldSpatialEntity,
-) -> TestResult<(oteryn_dev_client::EntityRef, u64)> {
+) -> TestResult<(TestResult<oteryn_dev_client::EntityRef>, u64, TestResult<()>)> {
     spell_ready(client, spell).await?;
-    creature(client, corpse.entity)?;
+    let corpse_before = creature(client, corpse.entity)?;
     let before = census(client)?;
     let vitals = client
         .actor_vitals()
@@ -4244,16 +4244,52 @@ async fn animate_corpse(
     // delta and exact corpse removal/creature spawn are still mandatory.
     let sequence = inventory_quantity(client, reference, remaining).await?;
     level(client).await?;
-    if client
-        .actor_vitals()
-        .is_none_or(|after| after.mana != vitals.mana || after.soul != vitals.soul)
-        || creature(client, corpse.entity).is_ok()
-    {
-        return Err("Animate Dead did not remove the exact corpse with zero resource cost".into());
+    let after = client.actor_vitals();
+    let mana = after.map(|value| value.mana);
+    let soul = after.map(|value| value.soul);
+    let corpse_after = creature(client, corpse.entity).ok().map(|entry| entry.position);
+    let spawn = companion_spawn(client, &before, "Skeleton", corpse.position)
+        .await
+        .map(|(entity, _)| entity);
+    let corpse_check = format!(
+        "ANIMATE_CORPSE entity={:?} before_visible=true before_position={:?} after_visible={} after_position={corpse_after:?}",
+        corpse.entity, corpse_before.position, corpse_after.is_some()
+    );
+    let spawn_check = format!("ANIMATE_SKELETON before_new=0 after={spawn:?}");
+    // Global Animate Dead rune cost: https://tibia.fandom.com/wiki/Animate_Dead
+    let mana_check = format!("ANIMATE_MANA before={} after={mana:?}", vitals.mana);
+    let soul_check = format!("ANIMATE_SOUL before={} after={soul:?}", vitals.soul);
+    let mut failures = Vec::new();
+    for (passed, observation) in [
+        (corpse_after.is_none(), corpse_check),
+        (spawn.is_ok(), spawn_check),
+        (mana == Some(vitals.mana), mana_check),
+        (soul == Some(vitals.soul), soul_check),
+    ] {
+        evidence(&format!("{observation} passed={passed}"));
+        if !passed {
+            failures.push(observation);
+        }
     }
-    let (skeleton, _) = companion_spawn(client, &before, "Skeleton", corpse.position).await?;
-    Ok((skeleton, sequence))
+    let checks = if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(failures.join(" | ").into())
+    };
+    Ok((spawn, sequence, checks))
 }
+
+async fn animate_corpse(
+    client: &mut DevClientSession,
+    spell: &crate::spell::SpellDefinition,
+    reference: std::num::NonZeroU32,
+    corpse: oteryn_dev_client::WorldSpatialEntity,
+) -> TestResult<(oteryn_dev_client::EntityRef, u64)> {
+    let (spawn, sequence, checks) = observe_animate_corpse(client, spell, reference, corpse).await?;
+    checks?;
+    Ok((spawn?, sequence))
+}
+
 pub(super) async fn capture_animate_dead(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -4362,7 +4398,18 @@ pub(super) async fn capture_animate_dead(
         }
         evidence(&format!("C16C_ANIMATE_ELIGIBILITY magic_level={magic_level} required_magic_level={required}"));
     }
-    let (summon, _) = with_observer_liveness(&mut observer, animate_corpse(&mut caster, spell, reference, corpse)).await?;
+    let (spawn, _, checks) = with_observer_liveness(
+        &mut observer,
+        observe_animate_corpse(&mut caster, spell, reference, corpse),
+    )
+    .await?;
+    let summon = match spawn {
+        Ok(summon) => summon,
+        Err(error) => {
+            checks?;
+            return Err(error);
+        }
+    };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let files = loop {
         let session = observer.session_mut();
@@ -4379,6 +4426,7 @@ pub(super) async fn capture_animate_dead(
         observer.service_liveness(Duration::from_millis(50)).await?;
     };
     write_capture(files)?;
+    checks?;
     let observer_logout = with_observer_liveness(&mut caster, async { Ok(observer.session_mut().logout().await?) }).await?;
     if observer_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C16c observer first logout refused: {observer_logout:?}").into());
