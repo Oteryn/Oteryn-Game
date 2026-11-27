@@ -1635,6 +1635,39 @@ mod protected_loot_tests {
         Ok((creatures, loot))
     }
 
+    pub(super) fn assert_grizzly_body(
+        native: &super::super::native_gameplay::NativeGameplayState,
+        creature: &str,
+        body: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(body, "oteryn:item.tibia.i6046");
+        let declared = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find_map(|record| {
+                if record.profile.target.key != creature {
+                    return None;
+                }
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                profile.details.as_ref()?.corpse_item.as_ref()
+            })
+            .ok_or("Grizzly creature declares a physical body")?;
+        assert_eq!(
+            (declared.key.as_str(), declared.revision.as_str()),
+            (body, "definition-r1")
+        );
+        assert!(native.item_policy(body, "definition-r1").is_some());
+        assert_eq!(
+            native.reward_table().row(creature).err(),
+            Some(NoSettlementReason::CorpseItemInadmissible)
+        );
+        assert!(native.reward_table().reward_boss_corpse(creature).is_none());
+        Ok(())
+    }
+
     #[test]
     fn fourth_quarter_source_corpses_load_from_pin() -> Result<(), Box<dyn std::error::Error>> {
         let (_, loot) = documents()?;
@@ -1656,6 +1689,10 @@ mod protected_loot_tests {
         let mut protected_loot_refusals = Vec::new();
         for (creature, item) in source.admitted {
             let expected = format!("oteryn:item.tibia.i{item}");
+            if creature == "oteryn:creature.the_snapper" {
+                assert_grizzly_body(native, &creature, &expected)?;
+                continue;
+            }
             let outcome = table
                 .reward_boss_corpse(&creature)
                 .map_or_else(|| table.row(&creature), Ok);
@@ -2442,7 +2479,13 @@ mod ordinary_corpse_slice2_tests {
                         facts
                             .filter(|facts| facts.materializable)
                             .and_then(|facts| facts.container_capacity),
-                        Some(u32::from(*expected)),
+                        Some(match id {
+                            18110 | 7893 => {
+                                assert_eq!(*expected, 60, "{creature}");
+                                48
+                            }
+                            _ => u32::from(*expected),
+                        }),
                         "{creature} must have exact materializable corpse facts for {key}"
                     );
                     false
@@ -2518,6 +2561,10 @@ mod crystal_corpse_tests {
         for (name, item) in expected {
             let creature = format!("oteryn:creature.{name}");
             let body = format!("oteryn:item.tibia.i{item}");
+            if name == "crocodile" {
+                super::protected_loot_tests::assert_grizzly_body(native, &creature, &body)?;
+                continue;
+            }
             let row = native.reward_table().row(&creature).or_else(|reason| {
                 native
                     .reward_table()

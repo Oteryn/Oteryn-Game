@@ -1,5 +1,5 @@
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::*;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, MovementLocalPosition};
 
@@ -73,9 +73,8 @@ pub(super) async fn exercise(
                 source.creatures[0].key.as_str(),
                 u32::try_from(source.required)?,
                 command,
-                None,
-                HunterRefresh::OncePerHunt,
                 Some(h),
+                HunterRefresh::OncePerHunt,
             )
             .await?;
             assert_eq!(
@@ -168,7 +167,7 @@ pub(super) async fn exercise(
     assert_eq!(after, before);
     assert_eq!(experience(h).await?, before_xp);
     let achievements: Vec<String> = sqlx::query_scalar(
-        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 5",
+        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 6",
     )
     .fetch_all(&h.pool)
     .await?;
@@ -182,12 +181,13 @@ pub(super) async fn exercise(
     .ok_or("crocodile Bestiary entry")?;
     let mut expected = vec![
         "oteryn:achievement/blood_red_snapper",
+        "oteryn:achievement/huntsman",
         "oteryn:achievement/one_less",
         "oteryn:achievement/rootless_behaviour",
     ];
-    expected.extend(oteryn_gameplay_progression::bestiary_achievement::completion_keys([
-        difficulty.as_str(),
-    ]));
+    expected.extend(
+        oteryn_gameplay_progression::bestiary_achievement::completion_keys([difficulty.as_str()]),
+    );
     expected.sort_unstable();
     assert_eq!(achievements, expected);
     let before_campaign_xp = experience(h).await?;
@@ -407,7 +407,9 @@ async fn hunt_with_decay(
             runtime.remove_encounter_actor(target).map_err(debug)?;
             corpse
         };
-        if let Some(h) = decay_fixture {
+        if creature == "oteryn:creature.crocodile" {
+            assert!(corpse.is_none(), "quest-only Crocodile kill minted a body");
+        } else if let Some(h) = decay_fixture {
             let corpse = corpse.ok_or("hunted native corpse")?;
             // COMBAT01 admits 64 live corpses per scope. Drive the real stage
             // and retirement owners between these accelerated fixture kills.
@@ -499,7 +501,10 @@ async fn record_lethal(
     {
         let mut runtime = owner.runtime.lock().await;
         assert!(
-            runtime.cached_world_party(actor, admitted.game_session_id).map_err(debug)?.is_some(),
+            runtime
+                .cached_world_party(actor, admitted.game_session_id)
+                .map_err(debug)?
+                .is_some(),
             "the lethal turn must have the hunter's live party projection"
         );
         let lease = runtime

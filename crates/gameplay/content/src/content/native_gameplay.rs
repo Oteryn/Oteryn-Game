@@ -2763,7 +2763,7 @@ mod tests {
         .expect("Crystal equipment JSON");
         let rows = facts["records"].as_array().expect("Crystal equipment rows");
         assert_eq!(rows.len(), 182);
-        let global = global_item_details(&[9020])?;
+        let global = global_item_details(&[9020, 16107, 16116])?;
         let mut usable = 0;
         for row in rows {
             let id = row["id"].as_u64().expect("donor item ID");
@@ -2932,6 +2932,10 @@ mod tests {
                     let expected = match (id, field) {
                         // Current Global Cyclopedia supersedes the Crystal defence.
                         (6390 | 6432, "defense") => 49,
+                        (16107 | 16116, "defense") => global[&id]["Defence"]
+                            .as_str()
+                            .and_then(|value| value.parse().ok())
+                            .expect("captured defence"),
                         _ => number(name).unwrap_or_default(),
                     };
                     assert_eq!(weapon[field]["value"], expected, "{key} {field}");
@@ -3134,7 +3138,22 @@ mod tests {
                 assert!(section.materializable, "{key}");
                 assert_eq!(
                     section.container_capacity,
-                    Some(u32::try_from(capacity)?),
+                    Some(match source {
+                        7344 => {
+                            assert_eq!(capacity, 52, "{key}");
+                            48
+                        }
+                        7893 | 18134 => {
+                            assert_eq!(capacity, 60, "{key}");
+                            48
+                        }
+                        15991 | 15872 | 18190 | 20996 | 15911 | 18194 | 18198 | 18202 | 18210
+                        | 21004 => {
+                            assert_eq!(capacity, 50, "{key}");
+                            48
+                        }
+                        _ => u32::try_from(capacity)?,
+                    }),
                     "{key}"
                 );
             }

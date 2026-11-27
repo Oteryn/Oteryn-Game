@@ -145,14 +145,23 @@ class ConvertSpawnsTest(unittest.TestCase):
             self.assertNotIn("respawn_ms", point)
 
     def test_frontier_mine_leader_is_a_public_respawn(self):
-        points = [point for record in self.records for point in record["declaration"]["points"]
-                  if point["creature"] == cs.FRONTIER_MINE_LEADER]
-        self.assertEqual(points, [{
-            "cell": {"floor": 15, "x": 33072, "y": 31434},
-            "creature": cs.FRONTIER_MINE_LEADER,
-            "direction": "north",
-            "boss_policy": {"respawn": {"min_s": 90, "max_s": 90}},
-        }])
+        points = [
+            point
+            for record in self.records
+            for point in record["declaration"]["points"]
+            if point["creature"] == cs.FRONTIER_MINE_LEADER
+        ]
+        self.assertEqual(
+            points,
+            [
+                {
+                    "cell": {"floor": 15, "x": 33072, "y": 31434},
+                    "creature": cs.FRONTIER_MINE_LEADER,
+                    "direction": "north",
+                    "boss_policy": {"respawn": {"min_s": 90, "max_s": 90}},
+                }
+            ],
+        )
 
     def test_other_hash_fails_closed(self):
         with self.assertRaises(SystemExit):
