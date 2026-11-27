@@ -445,6 +445,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             format!("C18a unexplained mana or soul before conjure: {regeneration:?}").into(),
         );
     }
+    let blank_before = item_count(&client, blank)?;
+    let missile_before = item_count(&client, missile)?;
+    let blank_after = blank_before
+        .checked_sub(1)
+        .ok_or("C18a prepared blank rune absent")?;
+    let missile_after = missile_before
+        .checked_add(10)
+        .ok_or("C18a missile count overflow")?;
     let paid = client
         .cast_spell(conjure, actor_spell::SpellTarget::None, false)
         .await?;
@@ -458,13 +466,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("C18a conjure did not charge 120 mana and one soul: {paid_disposition:?}: {conjure_debit:?}", paid_disposition=paid.disposition).into());
     }
-    if blank_before.checked_sub(1) != Some(item_count(&client, blank)?)
-        || missile_before.checked_add(10) != Some(item_count(&client, missile)?)
+    let inventory_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    while item_count(&client, blank)? != blank_after
+        || item_count(&client, missile)? != missile_after
     {
-        return Err(
-            "C18a soul preparation did not consume one blank rune and produce ten missile charges"
-                .into(),
-        );
+        if tokio::time::Instant::now() >= inventory_deadline {
+            return Err("C18a soul preparation did not consume one blank rune and produce ten missile charges".into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
     }
     let (result, detail, _, _) = logout_once(&mut client).await?;
     if result != Some(LogoutResult::Accepted) {
