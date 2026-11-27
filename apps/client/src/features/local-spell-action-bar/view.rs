@@ -26,6 +26,7 @@ pub(crate) use assignments::BarActionsState;
 pub(in crate::play) use assignments::ItemCooldownRead;
 #[cfg(test)]
 pub(in crate::play) use assignments::activate_shared as activate_extra_shared;
+pub(in crate::play) use assignments::bar_cast_current;
 pub(in crate::play) use assignments::label as action_label;
 #[cfg(test)]
 pub(in crate::play) use assignments::set_action as set_extra;

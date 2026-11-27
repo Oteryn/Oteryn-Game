@@ -8,30 +8,28 @@ pub(in crate::play) fn vitals_events(mailbox: &mut Mailbox, events: &[SessionEve
     for event in events {
         match event {
             SessionEvent::ActorCooldowns(delta) => {
-                mailbox
-                    .spell_bar
-                    .replace_cooldowns(Some(delta.value.clone()));
+                mailbox.spell_bar.apply_cooldowns(&delta.value);
             }
-            SessionEvent::GatedSnapshotReplaced(delta) if delta.value.domain_id == 20 => {
-                mailbox.spell_bar.replace_cooldowns(
-                    oteryn_session::decode_actor_cooldowns(&delta.value.payload).ok(),
-                );
+            SessionEvent::ActorVitals(delta) => mailbox.apply_death_vitals(delta.value),
+            SessionEvent::GiftOfLife { cooldowns, vitals } => {
+                mailbox.spell_bar.apply_cooldowns(&cooldowns.value);
+                mailbox.apply_death_vitals(vitals.value);
             }
             _ => {}
-        }
-        if let SessionEvent::ActorVitals(delta) = event {
-            mailbox.apply_death_vitals(delta.value);
         }
     }
 }
 
 impl Outbox {
-    pub(in crate::play) fn spell_bar_initialize(&self, cooldowns: Option<Vec<u8>>) {
+    pub(in crate::play) fn spell_bar_initialize(
+        &self,
+        cooldowns: Option<oteryn_session::ActorCooldownUpdate>,
+    ) {
         let mut mailbox = lock(&self.0);
         mailbox.spell_bar = Default::default();
-        mailbox.spell_bar.replace_cooldowns(
-            cooldowns.and_then(|bytes| oteryn_session::decode_actor_cooldowns(&bytes).ok()),
-        );
+        if let Some(cooldowns) = cooldowns {
+            mailbox.spell_bar.apply_cooldowns(&cooldowns);
+        }
     }
     pub(in crate::play) fn vitals(&self, vitals: Option<ActorVitals>) {
         if let Some(vitals) = vitals {

@@ -376,8 +376,12 @@ impl PlayerBatchPreflight {
     }
 
     // Only the compositor below calls this, after the unchanged exclusive owner borrow
-    // has validated every index. No allocation, lookup, callback or fallible step follows.
-    fn install(self, states: &mut ChannelSpellStates) -> OwnerCombatBatch {
+    // has validated every index. Publish the advisory receipts after all successors are installed.
+    fn install(
+        mut self,
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+    ) -> OwnerCombatBatch {
         states.deaths.extend(self.deaths);
         states.pvp_locks.retain(|(actor, session, _)| {
             states
@@ -394,8 +398,20 @@ impl PlayerBatchPreflight {
                 }
             }
         }
+        for replacement in &mut self.replacements {
+            std::mem::swap(
+                &mut states.actors[replacement.index].2,
+                &mut replacement.next,
+            );
+        }
         for replacement in self.replacements {
-            states.actors[replacement.index].2 = replacement.next;
+            states.committed_cooldowns(
+                runtime,
+                replacement.actor,
+                replacement.session,
+                &replacement.before,
+                &states.actors[replacement.index].2,
+            );
         }
         self.batch
     }
@@ -1113,7 +1129,7 @@ pub fn install_owner_batch(
         let element = preflight.analyser_element;
         let leech = preflight.analyser_leech;
         let split = std::mem::take(&mut preflight.analyser_parts);
-        let batch = preflight.install(states);
+        let batch = preflight.install(runtime, states);
         states.owner_wake.notify_one();
         // Advisory allocation follows both owner installations.
         states.analyser_batch(runtime, &batch, &receipt, element, &split);

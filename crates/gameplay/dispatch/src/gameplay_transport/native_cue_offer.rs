@@ -27,6 +27,7 @@ pub(super) fn offered(
     source_available: bool,
 ) -> Vec<OfferedCapability> {
     use oteryn_protocol_oteryn::presentation::{
+        CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1, CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1_REQUIRES,
         CAPABILITY_PRESENTATION_V1, CAPABILITY_PRESENTATION_V1_REQUIRES,
     };
     let mut result = base.to_vec();
@@ -59,6 +60,20 @@ pub(super) fn offered(
             OfferedCapability {
                 id: CAPABILITY_NATIVE_MAP_CUES_V1,
                 requires: &CAPABILITY_NATIVE_MAP_CUES_V1_REQUIRES,
+            },
+        );
+    }
+    if source_available
+        && !result
+            .iter()
+            .any(|offer| offer.id == CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1)
+    {
+        let at = result.partition_point(|offer| offer.id < CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1);
+        result.insert(
+            at,
+            OfferedCapability {
+                id: CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+                requires: &CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1_REQUIRES,
             },
         );
     }

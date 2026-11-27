@@ -325,7 +325,9 @@ impl ChannelSpellStates {
         }
         let (next, publish) = prepared.into_successor();
         let state = self.get_mut(runtime, actor, session)?;
-        *state = next;
+        let before = std::mem::replace(state, next);
+        let state = self.get(runtime, actor, session)?;
+        self.committed_cooldowns(runtime, actor, session, &before, state);
         publish.then(|| (state.revision(), state.vitals()))
     }
 }

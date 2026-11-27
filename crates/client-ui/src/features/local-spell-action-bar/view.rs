@@ -1,44 +1,12 @@
 use oteryn_client_runtime::spell::ActorVitals;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance};
 
-/// oteryn-choice: show the server's reported remaining cooldown, without claiming local cast authority.
 #[must_use]
 pub fn panel_text(
     panel: &super::ActionBarPanel,
     catalog: &oteryn_client_runtime::spell_catalog::CatalogState,
 ) -> String {
-    use std::fmt::Write;
-    let mut text = String::from(tr!(
-        "Assign server cast indices (empty clears a slot). Ctrl+Shift+U: catalogue\r\n"
-    ));
-    for (slot, field) in panel.bar.fields().iter().enumerate() {
-        let entry = field.parse::<u32>().ok().and_then(|id| {
-            catalog
-                .entries()
-                .iter()
-                .find(|entry| entry.cast_index == id)
-        });
-        let remaining = field.parse().ok().map_or(0, |spell| {
-            panel.bar.remaining_ms(
-                spell,
-                entry.map_or(&[], |entry| entry.cooldown_groups.as_slice()),
-            )
-        });
-        let _ = lwrite!(
-            text,
-            "{}: {} {} | Server cooldown: {} ms\r\n",
-            slot + 1,
-            field,
-            entry.map_or("", |entry| entry.name.as_str()),
-            if panel.bar.cooldowns.is_some() {
-                remaining.to_string()
-            } else {
-                tr!("unknown").into()
-            }
-        );
-    }
-    text.push_str(&panel.feedback);
-    text
+    crate::actor_cooldown_deltas::view::panel_text(panel, catalog)
 }
 
 pub const BAR_WIDTH_PX: f32 = 120.0;
@@ -136,15 +104,12 @@ pub fn slot_labels(
     panel: &super::ActionBarPanel,
     catalog: &oteryn_client_runtime::spell_catalog::CatalogState,
 ) -> Vec<String> {
-    let elapsed = panel.cooldown_received_at.map_or(0, |received| {
-        u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX)
-    });
-    slot_labels_after(panel, catalog, elapsed)
+    slot_labels_at(panel, catalog, std::time::Instant::now())
 }
-fn slot_labels_after(
+fn slot_labels_at(
     panel: &super::ActionBarPanel,
     catalog: &oteryn_client_runtime::spell_catalog::CatalogState,
-    elapsed: u64,
+    now: std::time::Instant,
 ) -> Vec<String> {
     panel
         .bar
@@ -158,15 +123,13 @@ fn slot_labels_after(
                 .iter()
                 .find(|entry| Some(entry.cast_index) == spell);
             let cooldown = spell.and_then(std::num::NonZeroU32::new).map(|spell| {
-                panel
-                    .bar
-                    .remaining_ms(
-                        spell,
-                        entry.map_or(&[], |entry| entry.cooldown_groups.as_slice()),
-                    )
-                    .saturating_sub(elapsed)
+                panel.remaining_ms_at(
+                    spell,
+                    entry.map_or(&[], |entry| entry.cooldown_groups.as_slice()),
+                    now,
+                )
             });
-            let state = match (panel.bar.cooldowns.as_ref(), cooldown) {
+            let state = match (panel.bar.last_cooldown_observation(), cooldown) {
                 (_, None) => "Empty".into(),
                 (None, _) => "Cooldown ?".into(),
                 (Some(_), Some(0)) => "Ready".into(),
@@ -183,4 +146,4 @@ fn slot_labels_after(
 
 #[path = "view/cooldown.rs"]
 mod cooldown;
-pub use cooldown::{CooldownIcon, cooldown_icons};
+pub use cooldown::{CooldownIcon, cooldown_icons, cooldown_icons_at};

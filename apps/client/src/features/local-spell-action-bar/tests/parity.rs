@@ -39,21 +39,25 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
             server_sequence: 1,
             base_revision: 0,
             new_revision: 1,
-            value: ActorCooldowns {
-                server_now_ms: 100,
-                rtt_ms: None,
-                entries: blocked
-                    .into_iter()
-                    .map(|id| ActorCooldown {
-                        kind: if id == 1 {
-                            ActorCooldownKind::Spell
-                        } else {
-                            ActorCooldownKind::Group
-                        },
-                        id,
-                        expires_at_ms: 60100,
-                    })
-                    .collect(),
+            value: oteryn_session::ActorCooldownUpdate {
+                value: ActorCooldowns {
+                    server_now_ms: 100,
+                    rtt_ms: None,
+                    entries: blocked
+                        .into_iter()
+                        .map(|id| ActorCooldown {
+                            kind: if id == 1 {
+                                ActorCooldownKind::Spell
+                            } else {
+                                ActorCooldownKind::Group
+                            },
+                            id,
+                            expires_at_ms: 60100,
+                        })
+                        .collect(),
+                },
+                received_at: std::time::Instant::now(),
+                snapshot: true,
             },
         })]);
         if let Some(index) = expected {
@@ -61,11 +65,11 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
         }
         view.cast(std::num::NonZeroU32::MIN);
         view.tick(&link).map_err(|_| "tick")?;
-        if let Some(index) = expected {
-            assert!(
-                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == index)
-            );
-        }
+        use oteryn_session::SpellCastDisposition::{Cast, CoolingDown};
+        let attempts = (1..=expected.unwrap_or(3))
+            .map(|index| (index, if Some(index) == expected { Cast } else { CoolingDown }))
+            .collect::<Vec<_>>();
+        parity_multiaction::run_spell_multiaction(&outbox, commands.try_recv()?, &attempts)?;
         assert!(commands.try_recv().is_err());
     }
     let fixture = tempfile::tempdir()?;
@@ -123,21 +127,25 @@ fn cooldown_bar_consumes_real_server_events_independently_of_action_slots()
         server_sequence: 1,
         base_revision: 0,
         new_revision: 1,
-        value: ActorCooldowns {
-            server_now_ms: 100,
-            rtt_ms: None,
-            entries: vec![
-                ActorCooldown {
-                    kind: ActorCooldownKind::Group,
-                    id: 2,
-                    expires_at_ms: 1100,
-                },
-                ActorCooldown {
-                    kind: ActorCooldownKind::Spell,
-                    id: 71,
-                    expires_at_ms: 600,
-                },
-            ],
+        value: oteryn_session::ActorCooldownUpdate {
+            value: ActorCooldowns {
+                server_now_ms: 100,
+                rtt_ms: None,
+                entries: vec![
+                    ActorCooldown {
+                        kind: ActorCooldownKind::Group,
+                        id: 2,
+                        expires_at_ms: 1100,
+                    },
+                    ActorCooldown {
+                        kind: ActorCooldownKind::Spell,
+                        id: 71,
+                        expires_at_ms: 600,
+                    },
+                ],
+            },
+            received_at: std::time::Instant::now(),
+            snapshot: true,
         },
     })]);
     view.tick(&link).map_err(|_| "tick")?;
@@ -161,22 +169,28 @@ fn cooldown_bar_consumes_real_server_events_independently_of_action_slots()
             .iter()
             .any(|icon| !icon.group && icon.id == 71 && icon.remaining_ms > 0)
     );
-    {
-        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
-        mailbox.spell_bar.cooldown_received_at =
-            std::time::Instant::now().checked_sub(std::time::Duration::from_secs(2));
-    }
-    let icons = link.cooldown_bar_icons();
+    let icons = {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        oteryn_client_ui::spell_action_bar::cooldown_icons_at(
+            &mailbox.spell_bar,
+            &mailbox.spell_catalog.catalog,
+            std::time::Instant::now() + std::time::Duration::from_secs(2),
+        )
+    };
     assert_eq!(icons.len(), 1);
     assert!(icons[0].group && icons[0].remaining_ms == 0 && icons[0].overlay_per_mille == 0);
     outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
         server_sequence: 2,
         base_revision: 1,
         new_revision: 2,
-        value: ActorCooldowns {
-            server_now_ms: 1200,
-            rtt_ms: None,
-            entries: vec![],
+        value: oteryn_session::ActorCooldownUpdate {
+            value: ActorCooldowns {
+                server_now_ms: 1200,
+                rtt_ms: None,
+                entries: vec![],
+            },
+            received_at: std::time::Instant::now(),
+            snapshot: true,
         },
     })]);
     view.tick(&link).map_err(|_| "tick")?;
@@ -628,9 +642,12 @@ fn multiaction_skips_unaffordable_mana_and_soul_in_labels_and_activation()
         assert!(link.spell_slot_labels()[0].contains("Next 1/2: Expensive"));
         view.cast(std::num::NonZeroU32::MIN);
         view.tick(&link).map_err(|_| "tick")?;
-        assert!(
-            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 1)
-        );
+        parity_multiaction::run_spell_multiaction(
+            &outbox,
+            commands.try_recv()?,
+            &[(1, oteryn_session::SpellCastDisposition::Cast)],
+        )?;
+        assert!(commands.try_recv().is_err());
     }
     Ok(())
 }
