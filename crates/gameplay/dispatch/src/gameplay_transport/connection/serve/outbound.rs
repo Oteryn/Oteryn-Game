@@ -76,8 +76,9 @@ where
     if session
         .commands
         .terminalize_with(command.command_id, &result, || {
-            authority
-                .player_trade_terminalized(session.admitted.game_session_id, command.command_id)
+            if !matches!(dispatch, Dispatch::Unavailable) {
+                authority.player_trade_terminalized(session.admitted.game_session_id, command.command_id);
+            }
         })
         .is_none()
     {
@@ -169,6 +170,9 @@ where
             "event=use_relocation_published command_id={} relocation_seq={relocation_seq} use_result_seq={result_sequence}",
             command.command_id,
         ));
+    }
+    if matches!(dispatch, Dispatch::Unavailable) {
+        return Ok(());
     }
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing

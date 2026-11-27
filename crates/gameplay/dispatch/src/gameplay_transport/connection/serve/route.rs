@@ -146,7 +146,10 @@ where
             match reply {
                 LogoutReply::NoLogout => Dispatch::NoLogout,
                 LogoutReply::Result(result) => Dispatch::Logout(result),
-                LogoutReply::Unknown => command_unavailable(command, "logout_outcome_unavailable"),
+                // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
+                LogoutReply::Unknown => {
+                    return Err(ServeEnd::server("command_outcome_unavailable"));
+                }
             }
         },
     )
@@ -169,11 +172,9 @@ async fn training(
         command.payload,
         session.item_view.as_ref(),
     )
-    .await;
-    Ok(result.map_or_else(
-        || command_unavailable(command, "loop_training_outcome_unavailable"),
-        Dispatch::Training,
-    ))
+    .await
+    .ok_or(ServeEnd::ControlLost("loop_training"))?;
+    Ok(Dispatch::Training(result))
 }
 
 pub(super) fn command_unavailable(

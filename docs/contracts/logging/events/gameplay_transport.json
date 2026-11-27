@@ -355,7 +355,7 @@
     },
     {
       "event": "mechanic_outcome_unavailable",
-      "level": "info",
+      "level": "warn",
       "span": false,
       "fields": [
         "command_type",

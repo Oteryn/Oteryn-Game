@@ -11,5 +11,5 @@ match routing::bed::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => command_unavailable(command, "bed_outcome_unavailable"),
+    None => return Err(ServeEnd::ControlLost("bed")),
 }

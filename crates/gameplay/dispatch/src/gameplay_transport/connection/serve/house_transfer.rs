@@ -480,7 +480,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?
                 };
                 integrity.observe(&dispatch);
-                let (status, payload) = house_hireling::result(selected, &dispatch)?;
+                let (status, payload) = if matches!(dispatch, Dispatch::Unavailable) {
+                    (CommandStatus::Rejected, Vec::new())
+                } else {
+                    house_hireling::result(selected, &dispatch)?
+                };
                 effects = Some(dispatch);
                 (None, payload, status)
             } else if deferred_guard.is_some() {
@@ -500,9 +504,17 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 .server_sequence
                 .checked_add(1)
                 .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
-            let result =
+            let result = if matches!(effects, Some(Dispatch::Unavailable)) {
+                encode_command_error_result(
+                    generation,
+                    sequence,
+                    command.command_id,
+                    FoundationProtocolError::CommandRefused,
+                )
+            } else {
                 encode_command_result(generation, sequence, command.command_id, status, &payload)
-                    .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
+            }
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
             commands
                 .terminalize_with(command.command_id, &result, || {})
                 .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;

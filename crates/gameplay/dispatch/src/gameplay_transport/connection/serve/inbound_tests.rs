@@ -50,6 +50,7 @@ struct SlowOwner {
     vitals_delay: Cell<std::time::Duration>,
     browse_reads: Cell<usize>,
     sound_reads: Cell<usize>,
+    trade_terminalized: Cell<u64>,
     step_calls: Cell<usize>,
     last_step: Cell<Option<StepDirection>>,
     pending_successor: Cell<Option<AdmittedSession>>,
@@ -102,6 +103,10 @@ impl FreshAdmissionAuthority for SlowOwner {
         _: Option<ItemKey>,
     ) -> Option<bool> {
         None
+    }
+
+    fn player_trade_terminalized(&self, _: GameSessionId, command: u64) {
+        self.trade_terminalized.set(command);
     }
 
     async fn pending_activity_switch(
@@ -1127,6 +1132,7 @@ fn unavailable_use_returns_command_refused_and_keeps_connection_open() -> TestRe
                                     FoundationProtocolError::CommandRefused.code()
                                 );
                                 assert!(result.payload.is_empty());
+                                assert_eq!(authority.trade_terminalized.get(), 0);
                             } else {
                                 assert_eq!(result.error_code, 0);
                             }
@@ -1134,6 +1140,7 @@ fn unavailable_use_returns_command_refused_and_keeps_connection_open() -> TestRe
                         }
                     }
                     assert_eq!(session.admitted.continuity.next_command_id, 3);
+                    assert_eq!(authority.trade_terminalized.get(), 2);
                     Ok(())
                 })
         })?
