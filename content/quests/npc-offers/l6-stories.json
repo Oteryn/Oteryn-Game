@@ -118,7 +118,7 @@
         }
       ],
       "reply": [
-        "Can you solve my riddle? Give me the correct answer and I will give you something."
+        "Great riddle, isn't it? If you can tell me the correct answer, I will give you something. Hehehe!"
       ],
       "requires": [
         {
@@ -126,7 +126,8 @@
           "minimum": 0,
           "maximum": 0
         }
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.a_prisoner",
@@ -158,6 +159,18 @@
     {
       "npc": "oteryn:npc.a_prisoner",
       "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Sure I have the key! Hehehe! Perhaps I will give it to you. IF you can solve my {riddle}."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
         "pd-d-ks-p-pd"
       ],
       "topic": 1,
@@ -171,7 +184,7 @@
         }
       ],
       "reply": [
-        "Correct! Would you trade me some apples for my key?"
+        "Hurray! For that I will give you my key for - hmm - let's say ... some apples. Interested?"
       ]
     },
     {
@@ -190,7 +203,7 @@
         }
       ],
       "reply": [
-        "Are you quite certain?"
+        "Really, really?"
       ]
     },
     {
@@ -209,7 +222,7 @@
         }
       ],
       "reply": [
-        "Have you really thought this through?"
+        "Really, really, really, really?"
       ]
     },
     {

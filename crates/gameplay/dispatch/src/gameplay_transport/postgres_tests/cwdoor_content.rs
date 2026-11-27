@@ -469,20 +469,26 @@ fn cwdoor_npc_key_sources_load_exact_cost_and_key_numbers() -> TestResult {
         sale.give.as_ref().and_then(|give| give.key_number),
         Some(3033)
     );
-    let apples = callbacks
+    let prisoner: Vec<_> = callbacks
         .iter()
-        .find(|c| c.key == "oteryn:quest-reward/prisoner-apples")
-        .ok_or("A Prisoner's apple hand-in")?;
+        .filter(|c| {
+            c.npc == "oteryn:npc.a_prisoner" && c.quest == "oteryn:quest.mad_mage_room_quest"
+        })
+        .collect();
+    let [apples, grant] = prisoner.as_slice() else {
+        return Err("expected one apple hand-in and one key grant for A Prisoner".into());
+    };
+    assert_eq!(
+        apples.key,
+        "oteryn:quest-reward/l6-mad-mage-prisoner-apples"
+    );
     assert_eq!(apples.take.len(), 1);
     assert_eq!(
         (apples.take[0].item.as_str(), apples.take[0].count),
         ("oteryn:item.tibia.i3585", 7)
     );
     assert_eq!((apples.topic, apples.next_topic), (2, 3));
-    let grant = callbacks
-        .iter()
-        .find(|c| c.key == "oteryn:quest-reward/prisoner-key-3666")
-        .ok_or("A Prisoner's key")?;
+    assert_eq!(grant.key, "oteryn:quest-reward/l6-mad-mage-prisoner-key");
     assert_eq!(
         grant.give.as_ref().and_then(|give| give.key_number),
         Some(3666)
@@ -575,13 +581,14 @@ fn cwdoor_refused_numbered_key_exchanges_clear_confirmation_postgres() -> TestRe
 
                 let offers: serde_json::Value = serde_json::from_str(include_str!(concat!(
                     env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/quests/shared-reward-offers.json"
+                    "/../../../content/quests/npc-offers/l6-stories.json"
                 )))?;
                 let riddle_answer = offers["offers"]
                     .as_array()
-                    .and_then(|rows| rows.iter().find(|row| {
-                        row["npc"] == "oteryn:npc.a_prisoner" && row["topic"] == 1
-                    }))
+                    .and_then(|rows| {
+                        rows.iter()
+                            .find(|row| row["npc"] == "oteryn:npc.a_prisoner" && row["topic"] == 1)
+                    })
                     .and_then(|offer| offer["keywords"][0].as_str())
                     .ok_or("published riddle answer")?;
                 sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
@@ -602,7 +609,7 @@ fn cwdoor_refused_numbered_key_exchanges_clear_confirmation_postgres() -> TestRe
                     (skjaar, "skjaar-quiz-donation", &["hi", "key", "yes"][..]),
                     (
                         prisoner,
-                        "prisoner-apples",
+                        "l6-mad-mage-prisoner-apples",
                         &["hi", "riddle", riddle_answer][..],
                     ),
                 ] {

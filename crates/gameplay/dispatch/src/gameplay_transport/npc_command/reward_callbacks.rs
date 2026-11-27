@@ -583,9 +583,7 @@ fn sterling_marker_offer_and_refusal_follow_the_source_topics() -> Result<(), se
 #[test]
 fn cwdoor_key_dialogue_follows_native_offer_topics()
 -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let offers: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/shared-reward-offers.json"
-    ))?;
+    let offers = offers::embedded().ok_or("embedded quest reward offers")?;
     let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(|error| format!("{error:?}"))?;
     let tracks = std::collections::BTreeMap::new();
@@ -593,6 +591,7 @@ fn cwdoor_key_dialogue_follows_native_offer_topics()
         (
             "oteryn:npc.a_prisoner",
             &[
+                (0, "key", 0),
                 (4, "riddle", 1),
                 (1, "pd-d-ks-p-pd", 2),
                 (3, "yes", 4),
@@ -622,6 +621,24 @@ fn cwdoor_key_dialogue_follows_native_offer_topics()
                 "{npc} {text}"
             );
         }
+    }
+    let npc = "oteryn:npc.a_prisoner";
+    let mut tracks = std::collections::BTreeMap::from([(
+        "oteryn:quest-progress/l6/mad-mage/prisoner/payments".to_owned(),
+        1,
+    )]);
+    for text in ["key", "riddle"] {
+        let offer = offers
+            .offers
+            .iter()
+            .find(|offer| offer.admits(npc, 0, text, state.catalogue(), &tracks));
+        assert_eq!(offer.map(|offer| offer.next_topic), Some(3), "{text}");
+    }
+    tracks.insert("oteryn:quest-progress/l6/mad-mage/prisoner".to_owned(), 1);
+    for text in ["key", "riddle"] {
+        assert!(offers.offers.iter().all(|offer| {
+            offer.next_topic == 0 || !offer.admits(npc, 0, text, state.catalogue(), &tracks)
+        }));
     }
     Ok(())
 }

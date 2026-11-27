@@ -308,15 +308,16 @@
       ],
       "give": null,
       "reply": [
-        "Fine apples. Are you sure you want the key?"
+        "Mnjam - excellent apples. Now - about that key. You are sure want it?"
       ],
       "failure_reply": [
-        "Bring more apples first."
+        "Get some more apples first!"
       ],
       "counter": {
         "track": "oteryn:quest-progress/l6/mad-mage/prisoner/payments",
         "maximum": 2147483647
-      }
+      },
+      "failure_topic": 0
     },
     {
       "quest": "oteryn:quest.mad_mage_room_quest",
@@ -348,7 +349,7 @@
         "key_number": 3666
       },
       "reply": [
-        "Take it, then. Good luck surviving what is behind that door."
+        "Then take it and get happy - or die, hehe."
       ]
     }
   ]

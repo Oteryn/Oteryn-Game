@@ -1,6 +1,10 @@
-use super::fixture::Harness;
+use super::fixture::{Harness, debug};
+use super::quest_world_callbacks_fixtures::wire;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+use oteryn_protocol_oteryn::npc_service::{
+    COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result,
+    encode_npc_talk_intent,
+};
 
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -10,24 +14,54 @@ pub(super) async fn exercise(
     let [npc] =
         super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.a_prisoner"]).await?;
     let mut mint_command = 900;
-    super::qengine_voucher_stories_fixtures::mint(owner, admitted, 3585, 7, &mut mint_command)
+    super::qengine_voucher_stories_fixtures::mint(owner, admitted, 3585, 14, &mut mint_command)
         .await?;
     for (word, topic, apples, key) in [
+        ("hi", 0, 14, None),
+        ("key", 0, 14, None),
+        ("riddle", 1, 14, None),
+        ("PD-D-KS-P-PD", 2, 14, None),
+        ("yes", 3, 7, None),
+        ("bye", 0, 7, None),
         ("hi", 0, 7, None),
-        ("riddle", 1, 7, None),
-        ("PD-D-KS-P-PD", 2, 7, None),
-        ("yes", 3, 0, None),
-        ("bye", 0, 0, None),
-        ("hi", 0, 0, None),
-        ("key", 3, 0, None),
-        ("yes", 4, 0, None),
-        ("yes", 5, 0, None),
-        ("yes", 0, 0, Some(3666)),
+        ("key", 3, 7, None),
+        ("yes", 4, 7, None),
+        ("yes", 5, 7, None),
+        ("yes", 0, 7, Some(3666)),
     ] {
         let command = admitted.continuity.next_command_id;
-        admitted.continuity.next_command_id += 1;
+        let disposition = if key.is_some() {
+            let intent = encode_npc_talk_intent(&NpcTalkIntent {
+                npc_actor: npc,
+                text: word.into(),
+            })
+            .map_err(debug)?;
+            let response = wire(
+                owner,
+                admitted,
+                command,
+                COMMAND_TYPE_NPC_TALK_INTENT,
+                intent.clone(),
+            )
+            .await?;
+            assert_eq!(
+                wire(
+                    owner,
+                    admitted,
+                    command,
+                    COMMAND_TYPE_NPC_TALK_INTENT,
+                    intent
+                )
+                .await?,
+                response
+            );
+            decode_npc_intent_result(&response).map_err(debug)?
+        } else {
+            admitted.continuity.next_command_id += 1;
+            super::qengine_rewards_fixtures::talk(owner, admitted, npc, command, word).await?
+        };
         assert_eq!(
-            super::qengine_rewards_fixtures::talk(owner, admitted, npc, command, word).await?,
+            disposition,
             NpcIntentDisposition::Ok,
             "{word}, expected topic {topic}",
         );
@@ -46,13 +80,50 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(actual, apples);
-        let number: Option<i32> = sqlx::query_scalar(
+        let numbers: Vec<i32> = sqlx::query_scalar(
             "SELECT k.key_number FROM game_item_keys k JOIN game_item_instances i USING(item_instance_id)
              WHERE i.definition_production_key='oteryn:item.tibia.i2969'",
         )
-        .fetch_optional(&h.pool)
+        .fetch_all(&h.pool)
         .await?;
-        assert_eq!(number, key);
+        assert_eq!(numbers, key.into_iter().collect::<Vec<_>>());
     }
+
+    for word in [
+        "bye",
+        "hi",
+        "riddle",
+        "PD-D-KS-P-PD",
+        "yes",
+        "yes",
+        "yes",
+        "yes",
+    ] {
+        let command = admitted.continuity.next_command_id;
+        admitted.continuity.next_command_id += 1;
+        super::qengine_rewards_fixtures::talk(owner, admitted, npc, command, word).await?;
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            0,
+            "a prior key claim closes the riddle route ({word})",
+        );
+    }
+    let receipts: Vec<String> = sqlx::query_scalar(
+        "SELECT transition_key FROM game_quest_reward_sources
+         WHERE plan->>'quest' = 'oteryn:quest.mad_mage_room_quest' ORDER BY transition_key",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        receipts,
+        [
+            "oteryn:quest-reward/l6-mad-mage-prisoner-apples",
+            "oteryn:quest-reward/l6-mad-mage-prisoner-key"
+        ],
+        "resume, replay and the later approach leave one payment and one key claim",
+    );
     Ok(())
 }

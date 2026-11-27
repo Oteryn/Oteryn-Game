@@ -217,7 +217,7 @@ async fn use_numbered_key(
 ) -> TestResult {
     let reward = oteryn_gameplay_quests::quest::reward_callbacks::load()?
         .into_iter()
-        .find(|callback| callback.key == "oteryn:quest-reward/prisoner-key-3666")
+        .find(|callback| callback.key == "oteryn:quest-reward/l6-mad-mage-prisoner-key")
         .and_then(|callback| callback.give)
         .ok_or("Prisoner's key reward")?;
     // Seed the published reward into the starter backpack. The door journey
