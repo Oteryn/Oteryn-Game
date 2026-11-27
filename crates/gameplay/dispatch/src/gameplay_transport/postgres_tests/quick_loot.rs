@@ -110,6 +110,38 @@ fn loot_all_without_source_uses_actor_neighborhood_postgres() -> TestResult {
     run_routed_case(admin, Case::ActorLootAll)
 }
 
+#[test]
+fn loot_all_with_source_loots_only_its_tile_stack_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::TileLootAll)
+}
+
+#[test]
+fn loot_all_with_source_leaves_the_thirty_first_corpse_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::TileLootAllCap)
+}
+
+#[test]
+fn loot_all_with_unreachable_source_returns_stale_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::TileLootAllUnreachable)
+}
+
+#[test]
+fn loot_all_with_source_moved_during_lock_returns_stale_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::TileLootAllSourceMoved)
+}
+
 fn run_routed_case(admin: String, case: Case) -> TestResult {
     scenario_thread::run("quick-loot", move || {
         tokio::runtime::Builder::new_current_thread()
@@ -130,6 +162,10 @@ enum Case {
     ManagedPouchFulfilment,
     CorpseReadFailure,
     ActorLootAll,
+    TileLootAll,
+    TileLootAllCap,
+    TileLootAllUnreachable,
+    TileLootAllSourceMoved,
     PouchLogout,
 }
 
@@ -141,6 +177,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 | Case::PouchFulfilment
                 | Case::ManagedPouchFulfilment
                 | Case::PouchLogout
+                | Case::TileLootAll
         );
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -310,13 +347,18 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
         };
         let mut corpses = Vec::new();
         let permit = owner.spell_lane_permit().await.ok_or("permit")?;
-        let entries: &[(u8, u16)] = if case == Case::ActorLootAll {
+        let entries: Vec<(u8, u16, i8)> = match case {
             // The actor at x=7 can loot from x=6 and x=8 in the same batch.
-            &[(99, 8), (100, 6), (101, 9)]
-        } else {
-            &[(99, 7)]
+            Case::ActorLootAll => vec![(99, 8, 7), (100, 6, 7), (101, 9, 7)],
+            Case::TileLootAll => vec![(99, 8, 7), (100, 8, 7), (101, 7, 7), (102, 8, 6)],
+            // The oldest corpse is the source, but the top 30 take precedence.
+            Case::TileLootAllCap => (99..130).map(|kill| (kill, 8, 7)).collect(),
+            Case::TileLootAllUnreachable => vec![(99, 9, 7), (100, 8, 7)],
+            Case::TileLootAllSourceMoved => vec![(99, 8, 7), (100, 8, 7)],
+            _ => vec![(99, 7, 7)],
         };
-        for &(kill, x) in entries {
+        let cap_case = case == Case::TileLootAllCap;
+        for (kill, x, floor) in entries {
             let mut corpse = harness
                 .root
                 .freeze_item_mint(
@@ -353,7 +395,14 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 other => return Err(debug(other)),
             };
             let mut items = Vec::new();
-            for ordinal in 1..=if pouch { 3 } else { 2 } {
+            let entry_count = if cap_case {
+                1
+            } else if pouch {
+                3
+            } else {
+                2
+            };
+            for ordinal in 1..=entry_count {
                 let mut entry = harness
                     .root
                     .freeze_corpse_loot_mint(
@@ -366,7 +415,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                             } else {
                                 "oteryn:item.tibia.i3031"
                             }),
-                            quantity: if ordinal == 3 { 1 } else { 60 },
+                            quantity: if cap_case || ordinal == 3 { 1 } else { 60 },
                             placement: CorpseContainerPlacement {
                                 corpse_item_instance_id: corpse_id,
                                 placement_ordinal: ordinal,
@@ -389,9 +438,9 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                     other => return Err(debug(other)),
                 }
             }
-            if x != 7 {
+            if (x, floor) != (7, 7) {
                 let cell =
-                    crate::durability::map_item_mint_audit::map_item_spatial_position(x, 0, 7)
+                    crate::durability::map_item_mint_audit::map_item_spatial_position(x, 0, floor)
                         .try_into()
                         .map_err(|_| "corpse fixture cell")?;
                 fixture_corpse(&harness.pool, corpse_id, cell, id(41), 0).await?;
@@ -544,6 +593,38 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                     assert!(corpse_items(&harness.pool, corpse_id).await?.is_empty());
                     assert!(corpse_items(&harness.pool, *nearby).await?.is_empty());
                     assert_eq!(corpse_items(&harness.pool, *outside).await?, *outside_items);
+                }
+                Case::TileLootAll
+                | Case::TileLootAllCap
+                | Case::TileLootAllUnreachable
+                | Case::TileLootAllSourceMoved => {
+                    if case == Case::TileLootAll {
+                        owner.premium_coordinator = Some(&premium);
+                        owner.admit_premium(id(40), admitted.game_session_id);
+                        let command_id = admitted.continuity.next_command_id;
+                        let gold_route = QuickLootRequest {
+                            category: Some(QuickLootCategory::Gold),
+                            ..assign
+                        };
+                        let replies =
+                            wire_requests(&owner, &mut admitted, &[(command_id, gold_route)])
+                                .await?;
+                        assert_eq!(replies[0].0, CommandStatus::Accepted);
+                    }
+                    corpses.insert(0, (corpse_id, items));
+                    tile_loot_all(&owner, &mut admitted, &harness.pool, &corpses, case).await?;
+                    if case == Case::TileLootAll {
+                        let pouch_coins: i64 = sqlx::query_scalar(
+                            "SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_nested_entries e
+                             JOIN game_item_instances i USING (item_instance_id)
+                             WHERE e.parent_item_instance_id=encode($1,'hex')::uuid
+                               AND i.definition_production_key='oteryn:item.tibia.i3031'",
+                        )
+                        .bind(id(71).as_slice())
+                        .fetch_one(&harness.pool)
+                        .await?;
+                        assert_eq!(pouch_coins, 21 * 100 + 2 * 2 * 60);
+                    }
                 }
                 Case::Bulk | Case::GoldPouch | Case::PouchLogout => {
                     return Err("unexpected dedicated case".into());
@@ -1197,6 +1278,110 @@ async fn corpse_items(pool: &sqlx::PgPool, corpse: [u8; 16]) -> TestResult<Vec<[
         .collect()
 }
 
+type CorpseFixture = ([u8; 16], Vec<[u8; 16]>);
+
+async fn tile_loot_all(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    pool: &sqlx::PgPool,
+    corpses: &[CorpseFixture],
+    case: Case,
+) -> TestResult {
+    let (source, _) = corpses.first().ok_or("missing source corpse")?;
+    let request = QuickLootRequest {
+        corpse: Some(*source),
+        ..request(QuickLootAction::LootAll)
+    };
+    let command_id = admitted.continuity.next_command_id;
+    let requests = [(command_id, request)];
+    let read = wire_request_replies(owner, admitted, &requests);
+    let replies = if case == Case::TileLootAllSourceMoved {
+        read_while_corpse_moves(pool, *source, read).await?
+    } else {
+        read.await?
+    };
+    let [(status, payload)] = replies.as_slice() else {
+        return Err(debug(replies));
+    };
+    let (looted, untouched) = match case {
+        Case::TileLootAllUnreachable | Case::TileLootAllSourceMoved => {
+            assert_eq!(*status, CommandStatus::Rejected);
+            assert_eq!(
+                decode_quick_loot_refusal(payload).map_err(debug)?,
+                QuickLootRefusal::Stale
+            );
+            (&[][..], corpses)
+        }
+        Case::TileLootAll => (&corpses[..2], &corpses[2..]),
+        Case::TileLootAllCap => (&corpses[1..], &corpses[..1]),
+        _ => return Err("expected a sourced Loot All case".into()),
+    };
+    if !looted.is_empty() {
+        assert_eq!(*status, CommandStatus::Accepted);
+        let result = decode_quick_loot_result(payload).map_err(debug)?;
+        let expected: Vec<_> = looted
+            .iter()
+            .rev()
+            .flat_map(|(_, items)| items.iter().copied())
+            .map(|item| QuickLootItemResult {
+                item,
+                accepted: true,
+            })
+            .collect();
+        assert_eq!(result.items, expected);
+    }
+    for (corpse, _) in looted {
+        assert!(corpse_items(pool, *corpse).await?.is_empty());
+    }
+    for (corpse, items) in untouched {
+        assert_eq!(corpse_items(pool, *corpse).await?, *items);
+    }
+    Ok(())
+}
+
+async fn read_while_corpse_moves<T>(
+    pool: &sqlx::PgPool,
+    corpse: [u8; 16],
+    read: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    let mut writer = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *writer)
+        .await?;
+    let writer_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *writer)
+        .await?;
+    // Fixture the address and revision of a completed move, hidden from the reader
+    // until its snapshot has found the old tile and tried to lock the source item.
+    sqlx::query("UPDATE game_item_instances SET state_revision=state_revision+1 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice()).execute(&mut *writer).await?;
+    sqlx::query("UPDATE game_item_ground_locations SET spatial_position=$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice())
+        .bind(crate::durability::map_item_mint_audit::map_item_spatial_position(9, 0, 7))
+        .execute(&mut *writer).await?;
+    let release_when_blocked = async {
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            loop {
+                let blocked: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM pg_stat_activity
+                      WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))",
+                )
+                .bind(writer_pid)
+                .fetch_one(pool)
+                .await?;
+                if blocked {
+                    return Ok::<_, sqlx::Error>(());
+                }
+            }
+        })
+        .await??;
+        writer.commit().await?;
+        Ok(())
+    };
+    let (replies, ()) = tokio::try_join!(read, release_when_blocked)?;
+    Ok(replies)
+}
+
 async fn filter_review_cases(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -1502,6 +1687,26 @@ async fn wire_requests(
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     requests: &[(u64, QuickLootRequest)],
 ) -> TestResult<Vec<(CommandStatus, QuickLootResult)>> {
+    wire_request_replies(owner, admitted, requests)
+        .await?
+        .into_iter()
+        .map(|(status, payload)| {
+            let result = if status == CommandStatus::Rejected && !payload.is_empty() {
+                decode_quick_loot_refusal(&payload).map_err(debug)?;
+                QuickLootResult { items: Vec::new() }
+            } else {
+                decode_quick_loot_result(&payload).map_err(debug)?
+            };
+            Ok((status, result))
+        })
+        .collect()
+}
+
+async fn wire_request_replies(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    requests: &[(u64, QuickLootRequest)],
+) -> TestResult<Vec<(CommandStatus, Vec<u8>)>> {
     let mut input = Vec::new();
     for &(command_id, req) in requests {
         let payload = encode_quick_loot_request(&req).map_err(debug)?;
@@ -1528,13 +1733,11 @@ async fn wire_requests(
         if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
             let reply =
                 oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
-            let result = if reply.status == CommandStatus::Rejected && !reply.payload.is_empty() {
-                decode_quick_loot_refusal(reply.payload).map_err(debug)?;
-                QuickLootResult { items: Vec::new() }
-            } else {
-                decode_quick_loot_result(reply.payload).map_err(debug)?
-            };
-            replies.push((reply.status, result));
+            let (expected_id, _) = requests
+                .get(replies.len())
+                .ok_or("unexpected command result")?;
+            assert_eq!(reply.command_id, *expected_id);
+            replies.push((reply.status, reply.payload.to_vec()));
         }
     }
     Ok(replies)

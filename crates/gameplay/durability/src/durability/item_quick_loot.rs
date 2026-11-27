@@ -382,8 +382,7 @@ impl DurabilityRoot {
                         _ => return refuse(LoopMoveRefusal::Rejected),
                     }
                 }
-                // Command 114 LootAll carries no source. Search the actor's cells, keeping
-                // the exact corpse restriction for Click. Order before LIMIT.
+                // Click and sourced LootAll both require the source to be in these cells.
                 let x=i32::from_be_bytes(cell[0..4].try_into().map_err(|_| DurabilityError::InvalidStoredState)?);
                 let y=i32::from_be_bytes(cell[4..8].try_into().map_err(|_| DurabilityError::InvalidStoredState)?);
                 let mut cells=Vec::new();
@@ -392,9 +391,25 @@ impl DurabilityRoot {
                         cells.push([x.to_be_bytes().as_slice(),y.to_be_bytes().as_slice(),&cell[8..10]].concat());
                     }
                 }}
-                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
-                    .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
-                    .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+                let corpses = if let (QuickLootAction::LootAll, Some(source)) = (request.action, selected_corpse) {
+                    let corpses = sqlx::query(LOOT_ALL_ON_TILE)
+                        .bind(world.as_slice())
+                        .bind(channel.as_bytes().as_slice())
+                        .bind(cells)
+                        .bind(fence.scope_ownership_generation.get().to_string())
+                        .bind(source.as_slice())
+                        .bind(MAX_NEARBY_CORPSES as i64)
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_all(&mut *tx).await?;
+                    if corpses.is_empty() {
+                        return refuse(LoopMoveRefusal::Stale);
+                    }
+                    corpses
+                } else {
+                    sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
+                        .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
+                        .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?
+                };
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
@@ -445,6 +460,44 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+// Pick and process in tile stack order, but lock by instance ID alongside Click
+// and source-less LootAll. The source still has to be live if below the batch cap.
+// A move can keep a corpse live while changing its address, so check the locked revision.
+const LOOT_ALL_ON_TILE: &str = "
+    WITH reachable AS NOT MATERIALIZED (
+        SELECT i.item_instance_id, i.state_revision, g.spatial_position, g.stack_ordinal,
+               r.materialized_at, r.corpse_top_damage_character_id
+        FROM game_item_ground_locations g
+        JOIN game_item_instances i USING (item_instance_id)
+        JOIN game_item_mint_receipts r USING (item_instance_id)
+        WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid
+          AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric
+          AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
+    ), source AS MATERIALIZED (
+        SELECT item_instance_id, state_revision, spatial_position FROM reachable
+        WHERE item_instance_id=encode($5,'hex')::uuid
+    ), picked AS MATERIALIZED (
+        SELECT c.* FROM reachable c JOIN source s USING (spatial_position)
+        ORDER BY c.stack_ordinal DESC NULLS FIRST, c.item_instance_id LIMIT $6
+    ), locked AS MATERIALIZED (
+        SELECT i.item_instance_id, i.state_revision FROM game_item_instances i
+        WHERE i.lifecycle=1 AND i.item_instance_id IN (
+            SELECT item_instance_id FROM picked UNION ALL SELECT item_instance_id FROM source
+        )
+        ORDER BY i.item_instance_id FOR UPDATE OF i
+    )
+    SELECT p.item_instance_id::text, p.spatial_position,
+           (floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= p.materialized_at + 10000
+             OR p.corpse_top_damage_character_id=encode($7,'hex')::uuid
+             OR EXISTS (
+                 SELECT 1 FROM game_party_members a JOIN game_party_members b USING (party_id)
+                 WHERE a.character_id=p.corpse_top_damage_character_id
+                   AND b.character_id=encode($7,'hex')::uuid
+             )) AS loot_allowed
+    FROM picked p JOIN locked l USING (item_instance_id, state_revision)
+    WHERE EXISTS (SELECT 1 FROM source JOIN locked USING (item_instance_id, state_revision))
+    ORDER BY p.stack_ordinal DESC NULLS FIRST, p.item_instance_id";
 
 fn filter_references<C: ItemLoopContent>(
     content: &C,
