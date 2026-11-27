@@ -103,32 +103,29 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
 /// Apply a server answer. Returns whether it confirmed a loot run (loot all or one corpse),
 /// whose result line belongs in the Loot tab.
 pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> bool {
+    use CommandStatus::{Accepted, DuplicateReplay};
+
     let Some(action) = panel.pending.take() else {
         return false;
     };
+    let can_confirm = matches!(response.status, Accepted | DuplicateReplay);
     if let Action::CorpseItem { corpse, .. } = action {
-        use CommandStatus::{Accepted, DuplicateReplay};
-        use QuickLootClickOutcome::{Moved, Rejected, Stale};
-        let message = match (
-            response.status,
-            QuickLootClickOutcome::decode(&response.payload),
-        ) {
-            (Accepted | DuplicateReplay, Ok(Moved)) => tr!("Item moved"),
-            (CommandStatus::Rejected | DuplicateReplay, Ok(Stale)) => {
-                tr!("Item is no longer available")
+        let message = if can_confirm
+            && QuickLootClickOutcome::decode(&response.payload) == Ok(QuickLootClickOutcome::Moved)
+        {
+            tr!("Item moved")
+        } else {
+            match refusal(response) {
+                Some(QuickLootRefusal::Stale) => tr!("Item is no longer available"),
+                Some(_) => tr!("Item move refused"),
+                None => tr!("Loot request refused or invalid reply; try again"),
             }
-            (CommandStatus::Rejected | DuplicateReplay, Ok(Rejected)) => tr!("Item move refused"),
-            _ => tr!("Loot request refused or invalid reply; try again"),
         };
         panel.feedback = message.into();
         panel.item_feedback = Some((corpse, message));
         return false;
     }
-    if matches!(
-        response.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) && let Ok(result) = decode_quick_loot_result(&response.payload)
-    {
+    if can_confirm && let Ok(result) = decode_quick_loot_result(&response.payload) {
         let looted = matches!(action, Action::LootAll | Action::Corpse(_));
         if !matches!(action, Action::LootAll | Action::Corpse(_)) {
             if panel.confirmed.len() == 100 {
@@ -180,6 +177,21 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         panel.feedback = tr!("Confirmed by the server").into();
         return looted;
     }
-    panel.feedback = tr!("Loot request refused or invalid reply; try again").into();
+    panel.feedback = if refusal(response).is_some() {
+        tr!("The server refused the request")
+    } else {
+        tr!("Loot request refused or invalid reply; try again")
+    }
+    .into();
     false
+}
+
+fn refusal(response: &ServerMechanicResponse) -> Option<QuickLootRefusal> {
+    // A replay carries the original terminal payload, including typed refusals.
+    match response.status {
+        CommandStatus::Rejected | CommandStatus::DuplicateReplay => {
+            decode_quick_loot_refusal(&response.payload).ok()
+        }
+        CommandStatus::Accepted | CommandStatus::DuplicateOutcomeExpired => None,
+    }
 }

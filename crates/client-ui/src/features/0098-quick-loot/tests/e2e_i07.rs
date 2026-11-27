@@ -425,3 +425,121 @@ fn i07_refused_pouch_assignment_keeps_destinations() -> Result<(), Error> {
     );
     Ok(())
 }
+
+#[test]
+fn stale_selected_item_refusal_decodes_to_player_message() -> Result<(), Error> {
+    let corpse = [7; 16];
+    let original = Panel {
+        selected: true,
+        open: true,
+        result: Some(QuickLootResult {
+            items: vec![QuickLootItemResult {
+                item: [8; 16],
+                accepted: false,
+            }],
+        }),
+        ..Panel::default()
+    };
+    for status in [CommandStatus::Rejected, CommandStatus::DuplicateReplay] {
+        let mut panel = original.clone();
+        request(
+            &mut panel,
+            Action::CorpseItem {
+                corpse,
+                item: 41_u64.try_into()?,
+            },
+        )
+        .ok_or("selected-item click request")?;
+        assert!(!apply_result(
+            &mut panel,
+            &ServerMechanicResponse {
+                command_id: 1,
+                status,
+                server_sequence: 1,
+                payload: vec![0x08, 0x01],
+            },
+        ));
+        assert_eq!(
+            panel,
+            Panel {
+                feedback: "Item is no longer available".into(),
+                item_feedback: Some((corpse, "Item is no longer available")),
+                ..original.clone()
+            }
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn typed_refusals_preserve_quick_loot_panel_state() -> Result<(), Error> {
+    let skip = QuickLootFilterMode::Skip;
+    let accept = QuickLootFilterMode::Accept;
+    let destination = Action::Destination {
+        category: Some(QuickLootCategory::Gold),
+        recipient: QuickLootRecipient::MainContainer,
+        id: None,
+        fallback: true,
+    };
+    let original = Panel {
+        selected: true,
+        open: true,
+        confirmed: vec![destination.clone()],
+        destinations: vec![destination],
+        filter_mode: Some(accept),
+        skipped: [4097].into(),
+        accepted: [4098].into(),
+        result: Some(QuickLootResult {
+            items: vec![QuickLootItemResult {
+                item: [8; 16],
+                accepted: true,
+            }],
+        }),
+        ..Panel::default()
+    };
+    let actions = [
+        Action::Corpse([7; 16]),
+        Action::LootAll,
+        Action::Add {
+            mode: skip,
+            definition: 4098,
+        },
+        Action::Remove {
+            mode: skip,
+            definition: 4097,
+        },
+        Action::Select(skip),
+        Action::Clear(skip),
+        Action::Destination {
+            category: Some(QuickLootCategory::Gold),
+            recipient: QuickLootRecipient::GoldPouch,
+            id: Some(FIXTURE_POUCH),
+            fallback: false,
+        },
+    ];
+    for action in actions {
+        let mut panel = original.clone();
+        request(&mut panel, action.clone()).ok_or("quick-loot request")?;
+        assert!(
+            !apply_result(
+                &mut panel,
+                &ServerMechanicResponse {
+                    command_id: 1,
+                    status: CommandStatus::Rejected,
+                    server_sequence: 1,
+                    payload: encode_quick_loot_refusal(QuickLootRefusal::Rejected),
+                },
+            ),
+            "{action:?}"
+        );
+        assert_eq!(
+            panel,
+            Panel {
+                feedback: "The server refused the request".into(),
+                ..original.clone()
+            },
+            "{action:?}"
+        );
+    }
+    Ok(())
+}
