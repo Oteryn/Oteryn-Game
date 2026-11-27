@@ -19,7 +19,7 @@ def portal_binary(work):
 
 def main():
     work = Path(sys.argv[1])
-    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:10]
+    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id, platform_revision = sys.argv[2:11]
     binary = portal_binary(work)
     callback_port = int(os.environ.get("GAME_PLATFORM_CALLBACK_PORT", "18099"))
     if not 1024 <= callback_port <= 65535:
@@ -34,7 +34,7 @@ def main():
         {"accountId": account_a, "email": f"gpe2e-a-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
         {"accountId": account_b, "email": f"gpe2e-b-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
     ]
-    extra_accounts = sys.argv[10:]
+    extra_accounts = sys.argv[11:]
     if len(extra_accounts) not in (0, 2):
         raise ValueError("reference_accounts_missing")
     for label, account in zip(("c", "d"), extra_accounts):
@@ -66,6 +66,7 @@ def main():
                         'export OTERYN_NATIVE_TLS_KEY_FILE="$OTERYN_INTERNAL_TLS_KEY_FILE"\n'
                         f"export PORTAL_OAUTH_CONFIG=\"$(cat {shlex.quote(str(work / 'oauth.json'))})\"\n"
                         'if [[ "${1:-}" == serve ]]; then\n'
+                        f"  export PLATFORM_BUILD_REVISION={shlex.quote(platform_revision)}\n"
                         '  export OTERYN_ACCOUNT_LOGIN=true\n'
                         f"  {shlex.quote(str(binary))} seed signing-custody {custody_args} > {shlex.quote(str(work / 'custody-result.json'))}\n"
                         f"  export PORTAL_NATIVE_ADMISSION_KEY_CUSTODY_FILE={shlex.quote(str(custody / 'admission-custody.bin'))}\n"

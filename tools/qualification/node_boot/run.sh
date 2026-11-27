@@ -594,6 +594,32 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 game_platform_start
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
+  # The packet accounts are disposable. Their Premium comes from the same
+  # Platform ledger on every admission, including after a terminal logout.
+  platform_db="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
+  [[ "$platform_db" =~ ^portal_e2e_[0-9a-f]{12}$ ]] || fail "invalid Premium fixture database"
+  docker exec -i "$GP_PG_CONTAINER" psql -Xq -v ON_ERROR_STOP=1 \
+    -U game_platform_admin -d "$platform_db" \
+    -v first="$PACKET_ACCOUNT_ID" -v second="$SECOND_PACKET_ACCOUNT_ID" <<'SQL_PREMIUM_FIXTURE'
+WITH accounts AS (
+    INSERT INTO premium_authority (account_id)
+    VALUES (:'first'::uuid), (:'second'::uuid)
+    RETURNING account_id
+), grants AS (
+    INSERT INTO premium_ledger (
+        request_id, account_id, actor_id, event_type, duration_days, reason_sha256,
+        entitlement_id, lifecycle_revision, delta_seconds, effective_from, effective_until
+    )
+    SELECT uuidv7(), account_id, account_id, 'GRANT', 1,
+           sha256(convert_to('Disposable node-boot packet Premium fixture', 'UTF8')),
+           uuidv7(), 1, 86400, date_trunc('second', statement_timestamp()),
+           date_trunc('second', statement_timestamp()) + interval '86400 seconds'
+    FROM accounts
+    RETURNING request_id, account_id, actor_id
+)
+INSERT INTO premium_audit (request_id, account_id, actor_id, event_name)
+SELECT request_id, account_id, actor_id, 'products.premium_granted' FROM grants;
+SQL_PREMIUM_FIXTURE
 fi
 
 # Shipped binaries and the SEAM client harness.
@@ -817,6 +843,21 @@ PY_WORLD
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
+  fi
+  if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+    cat "$PORTAL_E2E_OUT/certs/clients/premium.pem" "$PORTAL_E2E_OUT/certs/clients/premium.key" \
+      | install_owned "$SERVICE_UID" -m 0600 /dev/stdin "$BASE/node/secrets/premium.pem"
+    NODE_GAMEPLAY_ENV+=(
+      "OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:$PORTAL_E2E_INTERNAL_PORT"
+      "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
+      "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
+    )
+    cat >> "$WORK/node.toml" <<'TOML_PREMIUM_FIXTURE'
+
+[premium_activation]
+activation_id = "node-boot-packet-premium"
+switch_over_us = 0
+TOML_PREMIUM_FIXTURE
   fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
