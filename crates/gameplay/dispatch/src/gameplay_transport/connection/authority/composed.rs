@@ -2139,8 +2139,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         target: item_view::ItemKey,
-    ) -> Option<item_view::ItemTargetObservation> {
-        item_ref_admission::observe_item_target(self, actor, target).await
+        command_id: Option<u64>,
+    ) -> Result<
+        Option<item_view::ItemTargetObservation>,
+        crate::durability::item_transfer::ItemTransferError,
+    > {
+        item_ref_admission::observe_item_target(self, actor, target, command_id).await
     }
 
     /// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack.

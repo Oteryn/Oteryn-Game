@@ -547,19 +547,23 @@ async fn take_from_corpse<A: FreshAdmissionAuthority>(
     let Some(corpse) = view.open_corpse_of(&entry) else {
         return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
     };
-    match authority.observe_item_target(actor, corpse).await {
-        Some(ItemTargetObservation {
+    match authority
+        .observe_item_target(actor, corpse, Some(command.command_id))
+        .await
+    {
+        Ok(Some(ItemTargetObservation {
             actor: position,
             target:
                 UseItemTarget::Corpse {
                     position: at,
                     contents,
                 },
-        }) if contents.iter().any(|item| item.key == entry) => {
+        })) if contents.iter().any(|item| item.key == entry) => {
             if !within_reach(position, at) {
                 return ItemMoveStep::Result(ItemMoveOutcome::TooFar, Vec::new());
             }
         }
+        Err(_) => return ItemMoveStep::Disconnect,
         _ => return ItemMoveStep::Result(ItemMoveOutcome::Stale, Vec::new()),
     }
     let result = authority
@@ -597,7 +601,12 @@ pub(super) async fn moved<A: FreshAdmissionAuthority>(
     };
     let mut deltas = Vec::new();
     if let Some(corpse) = view.continuity().open_corpse {
-        let observation = authority.observe_item_target(actor, corpse).await;
+        let Ok(observation) = authority
+            .observe_item_target(actor, corpse, Some(command.command_id))
+            .await
+        else {
+            return ItemMoveStep::Disconnect;
+        };
         match view.open_corpse_committed(observation) {
             Ok(delta) => deltas.extend(delta),
             Err(_) => return ItemMoveStep::Disconnect,

@@ -714,25 +714,32 @@ impl LoopGroundCache {
 /// A view may overlap the same connection's inventory refresh on the bounded
 /// durability holder. Retry only that temporary resource refusal, within one
 /// deadline; stored-state and authority errors still close the view.
-pub(super) async fn projection_read<T, E>(
+pub(super) async fn projection_read<T, E: From<crate::durability::DurabilityError>>(
     root: &super::DurabilityRoot,
     read: impl AsyncFnMut() -> Result<T, E>,
     busy: impl Fn(&E) -> bool,
 ) -> Option<T> {
+    projection_read_result(root, read, busy).await.ok()
+}
+
+async fn projection_read_result<T, E: From<crate::durability::DurabilityError>>(
+    root: &super::DurabilityRoot,
+    read: impl AsyncFnMut() -> Result<T, E>,
+    busy: impl Fn(&E) -> bool,
+) -> Result<T, E> {
     let budget =
         super::AdmissionRetryBudget::for_holder_window(root, std::time::Duration::from_secs(10));
     projection_read_with_budget(&budget, read, busy).await
 }
 
-async fn projection_read_with_budget<T, E>(
+async fn projection_read_with_budget<T, E: From<crate::durability::DurabilityError>>(
     budget: &super::AdmissionRetryBudget<'_>,
     read: impl AsyncFnMut() -> Result<T, E>,
     busy: impl Fn(&E) -> bool,
-) -> Option<T> {
+) -> Result<T, E> {
     tokio::time::timeout_at(budget.deadline, budget.retry_holder(read, busy))
         .await
-        .ok()?
-        .ok()
+        .map_err(|_| crate::durability::DurabilityError::RootPassDeadlineExceeded)?
 }
 
 /// Movement shares the runtime's static collision index with Ground USE-WITH.
@@ -820,6 +827,22 @@ pub async fn loop_ground(
     base: &Arc<WorldBase>,
     index: Option<&ItemDefinitionIndex>,
 ) -> Option<Arc<LoopGroundOverlay>> {
+    match loop_ground_result(admission, base, index).await {
+        Ok(overlay) => overlay,
+        Err(error) => {
+            let kind = super::item_ref_admission::durable_view_read_reason(&error);
+            super::operator_event(&format!("event=ground_projection_read_failed kind={kind}"));
+            None
+        }
+    }
+}
+
+pub(super) async fn loop_ground_result(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    base: &Arc<WorldBase>,
+    index: Option<&ItemDefinitionIndex>,
+) -> Result<Option<Arc<LoopGroundOverlay>>, crate::durability::DurabilityError> {
+    use crate::durability::{DurabilityError, map_item_mint::MapItemMintError};
     let (scope, field_pin) = {
         let runtime = admission.runtime.lock().await;
         (
@@ -837,10 +860,12 @@ pub async fn loop_ground(
             && cached.overlay.runtime_scope() == scope
             && cached.overlay.base().digest() == base.digest()
     }) {
-        return Some(cached);
+        return Ok(Some(cached));
     }
-    let index = index?;
-    let items = projection_read(
+    let Some(index) = index else {
+        return Ok(None);
+    };
+    let items = projection_read_result(
         admission.root,
         async || admission.root.read_item_loop_ground_for_scope(scope).await,
         super::root_holder_busy,
@@ -851,7 +876,7 @@ pub async fn loop_ground(
         channel_id,
     } = scope
     {
-        projection_read(
+        projection_read_result(
             admission.root,
             async || {
                 admission
@@ -874,7 +899,12 @@ pub async fn loop_ground(
                 )
             },
         )
-        .await?
+        .await
+        .map_err(|error| match error {
+            MapItemMintError::Unavailable(error) => error,
+            MapItemMintError::AuthorityRejected => DurabilityError::CommitRejected,
+            _ => DurabilityError::InvalidStoredState,
+        })?
     } else {
         Vec::new()
     };
@@ -895,7 +925,7 @@ pub async fn loop_ground(
                 .is_some_and(|map| map.facts.captured_map_item(key).is_some())
     };
     if taken.iter().any(|(key, _)| !valid_source(*key)) {
-        return None;
+        return Ok(None);
     }
     if taken.iter().any(|(_, retired_cask)| *retired_cask) {
         let runtime = admission.runtime.lock().await;
@@ -903,15 +933,17 @@ pub async fn loop_ground(
             || runtime.binding().runtime_scope() != scope
             || runtime.binding().scope_generation().get() != field_pin.2
         {
-            return None;
+            return Ok(None);
         }
-        let map = admission.bundle_map()?;
+        let Some(map) = admission.bundle_map() else {
+            return Ok(None);
+        };
         if map.overlay.base().digest() != base.digest() {
-            return None;
+            return Ok(None);
         }
         for &(key, retired_cask) in &taken {
-            if retired_cask {
-                map_sources::hide_retired_cask(map, key)?;
+            if retired_cask && map_sources::hide_retired_cask(map, key).is_none() {
+                return Ok(None);
             }
         }
     }
@@ -923,26 +955,28 @@ pub async fn loop_ground(
         .map(|(key, _)| key)
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     let pending: Vec<_> = admission
         .states
         .loop_ground
         .state
         .lock()
-        .ok()?
+        .map_err(|_| DurabilityError::InvalidStoredState)?
         .pending_origins
         .keys()
         .copied()
         .collect();
     if pending.iter().any(|key| !valid_source(*key)) {
-        return None;
+        return Ok(None);
     }
     built.taken_sources.extend(pending.iter().copied());
     let roots: Vec<_> = pending
         .into_iter()
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     {
         let runtime = admission.runtime.lock().await;
         super::echo_warden::append_portals(
@@ -954,7 +988,7 @@ pub async fn loop_ground(
     }
     let built = Arc::new(built);
     admission.states.loop_ground.store(epoch, &built);
-    Some(built)
+    Ok(Some(built))
 }
 /// The loop item receipt of command 9's CommandRef. A session without an item fence has none.
 pub(super) async fn committed_loop_move(
@@ -1662,15 +1696,13 @@ async fn observe_container_with_house_capacity_inner(
         false
     };
     if named_house {
-        return Ok(
-            house_container::observe(admission, actor, fence, target, house_capacity_v2).await,
-        );
+        return house_container::observe(admission, actor, fence, target, house_capacity_v2).await;
     }
     if matches!(target, ItemKey::BrowseField { .. }) {
-        return Ok(super::browse_field::observe(admission, actor, fence, target).await);
+        return super::browse_field::observe(admission, actor, fence, target).await;
     }
     if matches!(target, ItemKey::MapBase { .. }) {
-        return Ok(map_sources::observe(admission, actor, fence, target, house_capacity_v2).await);
+        return map_sources::observe(admission, actor, fence, target, house_capacity_v2).await;
     }
     let (ItemKey::Instance(container), Some(fence)) = (target, fence) else {
         return Ok(None);
@@ -1753,7 +1785,7 @@ async fn observe_container_with_house_capacity_inner(
             .read_item_loop_container(admission.character, fence.character_id, container)
             .await?
     };
-    Ok(project_container_view(admission, actor, fence, container, index, native, carried).await)
+    project_container_view(admission, actor, fence, container, index, native, carried).await
 }
 
 async fn project_container_view(
@@ -1764,7 +1796,7 @@ async fn project_container_view(
     index: &ItemDefinitionIndex,
     native: &crate::content::native_gameplay::NativeGameplayState,
     carried: Option<crate::durability::item_loop_move::LoopContainer>,
-) -> Option<ContainerObservation> {
+) -> Result<Option<ContainerObservation>, crate::durability::DurabilityError> {
     let is_carried = carried.is_some();
     let mut browse_parent = None;
     let (read, reachable) = if let Some(read) = carried {
@@ -1773,20 +1805,23 @@ async fn project_container_view(
         // External Ground reach needs a fresh-session proof before resolving the map.
         let current = super::FreshAdmissionStore::from_root(admission.root.clone())
             .current_session_at(fence.game_session_id)
-            .await
-            .ok()?
+            .await?
             .0;
         if current.session_state() != super::GameSessionState::Active
             || super::item_fence_of(current) != Some(fence)
         {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         }
         let (base, at, content_revision, placement_context) = {
             let mut runtime = admission.runtime.lock().await;
             let pin = runtime.content_pin();
             let content_revision = sha256_revision(pin.server_artifact_digest());
             let placement_context = pin.frame_binding_digest().to_vec();
-            let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
+            let Some(at) =
+                super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
+            else {
+                return Ok(None);
+            };
             (
                 at.map.overlay.base().clone(),
                 (at.at.x, at.at.y, at.at.floor),
@@ -1794,17 +1829,18 @@ async fn project_container_view(
                 placement_context,
             )
         };
-        let overlay = loop_ground(admission, &base, Some(index)).await?;
+        let Some(overlay) = loop_ground_result(admission, &base, Some(index)).await? else {
+            return Ok(None);
+        };
         let Some(root) = admission
             .root
             .read_item_loop_ground_container_root(admission.character, fence, container)
-            .await
-            .ok()?
+            .await?
         else {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         };
         let Some((cell, _)) = overlay.ground_entry(&root) else {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         };
         browse_parent = Some(ItemKey::BrowseField {
             x: i32::from(cell.x),
@@ -1833,10 +1869,9 @@ async fn project_container_view(
                     placement_context,
                 },
             )
-            .await
-            .ok()?
+            .await?
         else {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         };
         (read, reachable)
     };
@@ -1845,13 +1880,12 @@ async fn project_container_view(
     if !is_carried {
         let current = super::FreshAdmissionStore::from_root(admission.root.clone())
             .current_session_at(fence.game_session_id)
-            .await
-            .ok()?
+            .await?
             .0;
         if current.session_state() != super::GameSessionState::Active
             || super::item_fence_of(current) != Some(fence)
         {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         }
     }
     if admission
@@ -1861,7 +1895,7 @@ async fn project_container_view(
         .player_control_facts(actor, fence.game_session_id)
         .is_err()
     {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
     let capacity = generation_item_facts(native, &read.container.definition)
         .ok()
@@ -1870,16 +1904,16 @@ async fn project_container_view(
         .filter(|capacity| (1..=MAX_CONTAINER_VIEW_ENTRIES).contains(&usize::from(*capacity)));
     let Some(capacity) = capacity else {
         // USE uses NotAContainer as evidence of carried custody for consumption.
-        return Some(if is_carried {
+        return Ok(Some(if is_carried {
             ContainerObservation::NotAContainer
         } else {
             ContainerObservation::Gone
-        });
+        }));
     };
     if !reachable {
-        return Some(ContainerObservation::TooFar);
+        return Ok(Some(ContainerObservation::TooFar));
     }
-    let entries = read
+    let Some(entries) = read
         .entries
         .iter()
         .take(usize::from(capacity))
@@ -1896,12 +1930,15 @@ async fn project_container_view(
                     .map_or(0, u32::from),
             })
         })
-        .collect::<Option<Vec<_>>>()?;
-    Some(ContainerObservation::Container {
+        .collect::<Option<Vec<_>>>()
+    else {
+        return Ok(None);
+    };
+    Ok(Some(ContainerObservation::Container {
         parent: read.parent.map(ItemKey::Instance).or(browse_parent),
         capacity,
         entries,
-    })
+    }))
 }
 
 #[cfg(test)]
@@ -2106,7 +2143,7 @@ mod tests {
                     super::super::root_holder_busy,
                 )
                 .await;
-                assert_eq!(result, Some(42));
+                assert!(matches!(result, Ok(42)));
                 assert_eq!(attempts.get(), 3);
 
                 let budget = super::super::AdmissionRetryBudget::new(&session);
@@ -2120,7 +2157,7 @@ mod tests {
                     super::super::root_holder_busy,
                 )
                 .await;
-                assert_eq!(result, None);
+                assert!(matches!(result, Err(DurabilityError::CommitRejected)));
                 assert_eq!(attempts.get(), 1);
             });
         Ok(())

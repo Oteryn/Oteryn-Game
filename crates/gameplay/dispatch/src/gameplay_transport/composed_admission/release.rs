@@ -23,11 +23,20 @@ impl HolderCheckoutProbe {
         &self,
         root: &DurabilityRoot,
     ) -> Result<(), crate::durability::DurabilityError> {
+        self.contend_until(root, async {}).await
+    }
+
+    pub(in crate::gameplay_transport) async fn contend_until(
+        &self,
+        root: &DurabilityRoot,
+        after_refusal: impl Future<Output = ()>,
+    ) -> Result<(), crate::durability::DurabilityError> {
         self.before_read.notified().await;
         // Another foreground pass briefly wins the real holder at the selected checkout.
         let holder = root.try_issue_semantic_pass()?;
         self.proceed.notify_one();
         self.read_failed.notified().await;
+        after_refusal.await;
         holder.run(|_, _| Box::pin(async { Ok(()) })).await
     }
 }
@@ -35,6 +44,7 @@ impl HolderCheckoutProbe {
 #[cfg(test)]
 tokio::task_local! {
     pub(in crate::gameplay_transport) static CONDITION_RELEASE_PROBE: std::cell::Cell<Option<std::sync::Arc<HolderCheckoutProbe>>>;
+    pub(in crate::gameplay_transport) static OFFLINE_TRAINING_RELEASE_PROBE: std::cell::Cell<Option<std::sync::Arc<HolderCheckoutProbe>>>;
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

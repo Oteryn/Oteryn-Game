@@ -254,7 +254,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if selected.is_some_and(|(bound, _)| bound != item) {
             return None;
         }
-        let fence = self.training_fence(item).await?;
+        #[cfg(test)]
+        let probe = super::composed_admission::OFFLINE_TRAINING_RELEASE_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
+        let fence = self.training_fence_durable(item).await;
+        #[cfg(test)]
+        if matches!(
+            &fence,
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        ) && let Some(probe) = &probe
+        {
+            probe.blocked();
+        }
+        let Ok(Some(fence)) = fence else {
+            return None;
+        };
         let selected = selected.map(|(_, skill)| skill);
         let house = if let Some(actor) = admitted.runtime_actor {
             let runtime = self.runtime.lock().await;

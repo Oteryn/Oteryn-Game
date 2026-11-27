@@ -329,11 +329,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 Err(crate::durability::DurabilityError::SessionUseAuthorization(_)) => {
                     return Err("bag_session_fence");
                 }
-                Err(crate::durability::DurabilityError::RootUnavailable
-                    | crate::durability::DurabilityError::RootPassDeadlineExceeded) => {
-                    return Ok(super::refuse_use(command, "bag_read_budget"));
-                }
-                Err(_) => return Ok(super::refuse_use(command, "bag_read_failed")),
+                Err(error) => return Ok(super::refuse_use(
+                    command, transport::item_ref_admission::durable_view_read_reason(&error),
+                )),
             },
             None => None,
         },
@@ -546,7 +544,12 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             || (carried_entry && !view.is_main_backpack(&key)
                                 && view.equipped_slot(&key).is_none()));
                 let observation = match key.filter(|_| container.is_none() && !consumable) {
-                    Some(key) => authority.observe_item_target(actor, key).await,
+                    Some(key) => match authority.observe_item_target(actor, key, Some(command.command_id)).await {
+                        Ok(observation) => observation,
+                        Err(error) => return Ok(super::refuse_use(
+                            command, transport::item_ref_admission::item_transfer_read_reason(&error),
+                        )),
+                    },
                     None => None,
                 };
                 match (item_view.as_mut(), key, observation) {

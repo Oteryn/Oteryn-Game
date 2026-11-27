@@ -358,73 +358,180 @@ pub(super) fn visible_corpses(
         .collect()
 }
 
-/// MAP-ITEM-REF-1 Part B: `USE` on a domain-1 object (ITEM-MOVE-WIRE-0 §4.3). Only a bound corpse
-/// is an item target; an unbound or vanished one is `Gone`, so no corpse Item id is ever made up.
-/// Its contents are the durable corpse entries, each named by the pinned index; any it does not
-/// name, or a failed read, is `None` (`STALE`).
+/// Only a corpse bound by the Channel can name a durable container. Preserve a
+/// failed read separately from an absent, retired or unresolvable target.
 pub(super) async fn observe_item_target(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     target: ItemKey,
-) -> Option<ItemTargetObservation> {
+    command_id: Option<u64>,
+) -> Result<Option<ItemTargetObservation>, ItemTransferError> {
     let ItemKey::Entity(identity) = target else {
-        return None;
+        return Ok(None);
     };
-    let (position, corpse, index) = {
+    let corpse_id = {
         let mut runtime = admission.runtime.lock().await;
-        let index = pinned_index(&runtime, admission.active_generation)?;
-        let position = runtime
-            .borrow_movement_position()
-            .read(actor)
-            .ok()?
-            .position();
-        (position, runtime.bound_corpse(identity), index)
+        if pinned_index(&runtime, admission.active_generation).is_none()
+            || runtime.borrow_movement_position().read(actor).is_err()
+        {
+            return Ok(None);
+        }
+        runtime
+            .bound_corpse(identity)
+            .map(|corpse| corpse.item.item_instance_id)
     };
-    let actor_position = ActorPosition {
+    let entries = match corpse_id {
+        Some(corpse) => read_corpse_for_view(admission, corpse, command_id).await?,
+        None => None,
+    };
+    // A wait for the holder can overlap movement or corpse retirement. Publish
+    // reach and the binding from the same current runtime observation.
+    let mut runtime = admission.runtime.lock().await;
+    let Some(index) = pinned_index(&runtime, admission.active_generation) else {
+        return Ok(None);
+    };
+    let Ok(position) = runtime.borrow_movement_position().read(actor) else {
+        return Ok(None);
+    };
+    let position = position.position();
+    let actor = ActorPosition {
         x: position.x,
         y: position.y,
         floor: position.floor,
     };
-    let Some(corpse) = corpse else {
-        return Some(ItemTargetObservation {
-            actor: actor_position,
-            target: UseItemTarget::Gone,
-        });
+    let target = match (runtime.bound_corpse(identity), entries) {
+        (Some(corpse), Some(entries)) if Some(corpse.item.item_instance_id) == corpse_id => {
+            let contents = entries
+                .iter()
+                .map(|entry| {
+                    Some(ViewItem {
+                        appearance_id: super::item_view::appearance_of(&entry.item.definition),
+                        key: ItemKey::Instance(entry.item.item_instance_id),
+                        item_definition_ref: definition_ref(index, &entry.item.definition)?,
+                        count: NonZeroU32::new(entry.item.quantity)?,
+                        sub_type: 0,
+                    })
+                })
+                .collect::<Option<Vec<_>>>();
+            let Some(contents) = contents else {
+                return Err(crate::durability::DurabilityError::InvalidStoredState.into());
+            };
+            UseItemTarget::Corpse {
+                position: ActorPosition {
+                    x: corpse.position.x,
+                    y: corpse.position.y,
+                    floor: corpse.position.floor,
+                },
+                contents,
+            }
+        }
+        _ => UseItemTarget::Gone,
     };
-    let Some(entries) = admission
-        .root
-        .read_corpse_contents(admission.character, corpse.item.item_instance_id)
-        .await
-        .ok()?
-    else {
-        return Some(ItemTargetObservation {
-            actor: actor_position,
-            target: UseItemTarget::Gone,
-        });
-    };
-    let contents = entries
-        .iter()
-        .map(|entry| {
-            Some(ViewItem {
-                appearance_id: super::item_view::appearance_of(&entry.item.definition),
-                key: ItemKey::Instance(entry.item.item_instance_id),
-                item_definition_ref: definition_ref(index, &entry.item.definition)?,
-                count: NonZeroU32::new(entry.item.quantity)?,
-                sub_type: 0,
-            })
-        })
-        .collect::<Option<Vec<_>>>()?;
-    Some(ItemTargetObservation {
-        actor: actor_position,
-        target: UseItemTarget::Corpse {
-            position: ActorPosition {
-                x: corpse.position.x,
-                y: corpse.position.y,
-                floor: corpse.position.floor,
-            },
-            contents,
-        },
-    })
+    Ok(Some(ItemTargetObservation { actor, target }))
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static CORPSE_USE_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
+async fn read_corpse_for_view(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    corpse: [u8; 16],
+    command_id: Option<u64>,
+) -> Result<Option<Vec<crate::durability::item_transfer::BackpackEntry>>, ItemTransferError> {
+    use crate::durability::DurabilityError;
+    #[cfg(test)]
+    let probe = CORPSE_USE_CHECKOUT_PROBE
+        .try_with(std::cell::Cell::take)
+        .ok()
+        .flatten();
+    #[cfg(test)]
+    if let Some(probe) = &probe {
+        probe.pause().await;
+    }
+    let mut budget = super::AdmissionRetryBudget::for_command(admission.root);
+    let mut limit = Some(super::AdmissionRetryBudget::holder_wait_limit());
+    let mut attempt = 0;
+    loop {
+        attempt += 1;
+        let result = admission
+            .root
+            .read_corpse_contents(admission.character, corpse)
+            .await;
+        let busy = matches!(
+            &result,
+            Err(ItemTransferError::Unavailable(
+                DurabilityError::RootUnavailable
+            ))
+        );
+        let holder = if busy {
+            admission.root.checked_out_pass()
+        } else {
+            None
+        };
+        let kind = match &result {
+            Ok(Some(_)) => "Read",
+            Ok(None) => "Gone",
+            Err(error) => item_transfer_read_reason(error),
+        };
+        let owner = holder.map_or_else(|| "none".to_owned(), |(site, _)| site.to_string());
+        super::operator_event(&format!(
+            "event=corpse_read_attempt command_id={} attempt={attempt} holder={owner} kind={kind}",
+            command_id.unwrap_or_default(),
+        ));
+        if !busy {
+            return result;
+        }
+        if let Some((_, deadline)) = holder {
+            budget.wait_for_checked_out_pass(&mut limit, deadline);
+        }
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.blocked();
+        }
+        if !budget
+            .retries_unavailable(super::AdmissionRefusal::Unavailable)
+            .await
+        {
+            return result;
+        }
+    }
+}
+
+pub(super) fn item_transfer_read_reason(error: &ItemTransferError) -> &'static str {
+    match error {
+        ItemTransferError::Unavailable(error) => durable_view_read_reason(error),
+        ItemTransferError::AuthorityRejected => "AuthorityRejected",
+        ItemTransferError::InvalidInput => "InvalidInput",
+        ItemTransferError::CapacityExceeded => "CapacityExceeded",
+        ItemTransferError::Refused(_) => "Refused",
+        ItemTransferError::ConflictingCause => "ConflictingCause",
+        ItemTransferError::ConflictingCandidate => "ConflictingCandidate",
+    }
+}
+
+pub(super) fn durable_view_read_reason(error: &crate::durability::DurabilityError) -> &'static str {
+    use crate::durability::DurabilityError;
+    match error {
+        DurabilityError::RootUnavailable => "RootUnavailable",
+        DurabilityError::RootPassDeadlineExceeded => "RootPassDeadlineExceeded",
+        DurabilityError::SessionUseAuthorization(_) => "SessionUseAuthorization",
+        DurabilityError::CommitRejected => "CommitRejected",
+        DurabilityError::InvalidStoredState => "InvalidStoredState",
+        DurabilityError::Database(_) => "Database",
+        DurabilityError::CommitOutcomeUnknown => "CommitOutcomeUnknown",
+        DurabilityError::CommitTransactionTimeout => "CommitTransactionTimeout",
+        DurabilityError::Unavailable => "Unavailable",
+        DurabilityError::RootTaskFailed => "RootTaskFailed",
+        DurabilityError::InvalidConfiguration => "InvalidConfiguration",
+        DurabilityError::SchemaIncompatible(_) => "SchemaIncompatible",
+        DurabilityError::Migration(_) => "Migration",
+        DurabilityError::AdmissionGameSessionLedgerExhausted => {
+            "AdmissionGameSessionLedgerExhausted"
+        }
+    }
 }
 
 /// D1211: resolve every locked carried definition from this exact admitted native generation.
@@ -600,66 +707,63 @@ pub(super) async fn observe_character_inventory(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
 ) -> Option<InventoryItems> {
-    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
-    use crate::durability::{DurabilityError, item_use::ItemUseError};
-    // These reads share the root's single holder with the node cadence. A busy
-    // holder must not turn a valid join/resume into a missing inventory snapshot.
-    let backpack = super::AdmissionRetryBudget::for_command(admission.root)
-        .retry_unavailable(async || {
-            let current = FreshAdmissionStore::from_root(admission.root.clone())
-                .current_session_at(game_session_id)
+    use crate::durability::item_use::ItemUseError;
+    // A committed command can defer view publication, and join can fail closed.
+    // Keep the original read error for diagnostics in either case.
+    let budget = super::AdmissionRetryBudget::for_command(admission.root);
+    let backpack = retry_use_read(&budget, async || {
+        let current = FreshAdmissionStore::from_root(admission.root.clone())
+            .current_session_at(game_session_id)
+            .await?
+            .0;
+        if current.session_state() != GameSessionState::Active
+            || current.current_game_session_id() != game_session_id
+        {
+            return Err(ItemUseError::AuthorityRejected);
+        }
+        let fence = super::item_fence_of(current).ok_or(ItemUseError::AuthorityRejected)?;
+        let in_house = admission
+            .runtime
+            .lock()
+            .await
+            .house_player_for_session(game_session_id)
+            .map_err(|_| ItemUseError::AuthorityRejected)?
+            .is_some();
+        let inventory = if in_house {
+            admission
+                .root
+                .read_house_carried_inventory(
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    *admission.channel_id.as_bytes(),
+                )
                 .await
-                .map_err(|error| match error {
-                    DurabilityError::RootUnavailable => Unavailable,
-                    _ => Rejected,
-                })?
-                .0;
-            if current.session_state() != GameSessionState::Active
-                || current.current_game_session_id() != game_session_id
-            {
-                return Err(Rejected);
-            }
-            let fence = super::item_fence_of(current).ok_or(Rejected)?;
-            let in_house = admission
-                .runtime
-                .lock()
+                .map_err(ItemUseError::from)
+        } else {
+            admission
+                .root
+                .read_item_use_inventory(admission.character, admission.holder, fence)
                 .await
-                .house_player_for_session(game_session_id)
-                .map_err(|_| Rejected)?
-                .is_some();
-            if in_house {
-                // Character-carried custody uses the existing current House
-                // custody fence without adding a service ACL requirement.
-                admission
-                    .root
-                    .read_house_carried_inventory(
-                        admission.character,
-                        admission.holder,
-                        fence,
-                        *admission.channel_id.as_bytes(),
-                    )
-                    .await
-                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
-                    .map_err(|error| match error {
-                        DurabilityError::RootUnavailable => Unavailable,
-                        _ => Rejected,
-                    })
-            } else {
-                // Ordinary Channel and activity snapshots cross the current actor
-                // fence before publishing inventory, including closed death bags.
-                admission
-                    .root
-                    .read_item_use_inventory(admission.character, admission.holder, fence)
-                    .await
-                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
-                    .map_err(|error| match error {
-                        ItemUseError::Unavailable(DurabilityError::RootUnavailable) => Unavailable,
-                        _ => Rejected,
-                    })
-            }
-        })
-        .await
-        .ok()?;
+        }?;
+        Ok(inventory.into_backpack())
+    })
+    .await;
+    let backpack = match backpack {
+        Ok(backpack) => backpack,
+        Err(error) => {
+            let kind = match &error {
+                ItemUseError::Unavailable(error) => durable_view_read_reason(error),
+                ItemUseError::AuthorityRejected => "AuthorityRejected",
+                ItemUseError::StaleState => "StaleState",
+                ItemUseError::InvalidInput => "InvalidInput",
+                ItemUseError::ConflictingCommand => "ConflictingCommand",
+                ItemUseError::Cooldown => "Cooldown",
+            };
+            super::operator_event(&format!("event=item_inventory_read_failed kind={kind}"));
+            return None;
+        }
+    };
     let index = pinned_index(
         &*admission.runtime.lock().await,
         admission.active_generation,

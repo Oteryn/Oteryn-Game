@@ -114,10 +114,12 @@ fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<
                     Instant::now() - Duration::from_millis(600),
                 );
             }
-            let owner = PassOwner::checked_out(&slot, waiter, Instant::now());
+            let owner = PassOwner::checked_out(
+                &slot, waiter, Instant::now(), Instant::now() + DB_PASS_DEADLINE,
+            );
             assert!(
                 slot.lock()
-                    .is_ok_and(|held| held.is_some_and(|(_, _, trace)| trace == Some(TRACE)))
+                    .is_ok_and(|held| held.is_some_and(|(.., trace)| trace == Some(TRACE)))
             );
             drop(owner);
         }));

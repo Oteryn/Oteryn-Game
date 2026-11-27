@@ -823,9 +823,13 @@ mod connection {
             &self,
             _actor: ExactActorRef,
             target: ItemKey,
-        ) -> Option<ItemTargetObservation> {
+            _command_id: Option<u64>,
+        ) -> Result<
+            Option<ItemTargetObservation>,
+            crate::durability::item_transfer::ItemTransferError,
+        > {
             self.target_reads.borrow_mut().push(target);
-            self.targets.borrow_mut().pop_front().flatten()
+            Ok(self.targets.borrow_mut().pop_front().flatten())
         }
     }
 
