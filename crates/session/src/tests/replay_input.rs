@@ -1,22 +1,49 @@
-use super::*;
+use super::{
+    Admission, AppearanceItemDictionary, CLIENT_SUPPORTED_CAPABILITIES, CharacterId, Direction,
+    GameSessionId, GatedSnapshot, Session, SessionEvent, decode_wire_envelope, read_frame,
+    world_spatial, write_frame,
+};
+use oteryn_protocol_oteryn::{
+    ChannelId, DomainSnapshot, MessageType, ServerAcceptedValue, WorldId, encode_server_accepted,
+    world_object::{
+        SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+        encode_world_object_overlay_snapshot,
+    },
+    world_spatial_entities,
+};
+use tokio::io::DuplexStream;
+type BoxError = Box<dyn std::error::Error + Send + Sync>;
+
+fn uuid_v7(marker: u8) -> [u8; 16] {
+    [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, marker]
+}
+
+#[cfg(feature = "test-support")]
+pub async fn p19_session(path: &Path) -> Result<(Session<DuplexStream>, EntityRef), BoxError> {
+    let input = ReplayInput::read(path, super::replay_capture::P19_FILES, APPEARANCE)?;
+    let mut session = input.admit().await?;
+    input.apply(&mut session)?;
+    Ok((session, input.entity))
+}
 use std::path::Path;
 use world_spatial_entities::EntityRef;
 
-pub(super) const WORLD: u32 = world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
-pub(super) const APPEARANCE: u32 = oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE;
+pub(crate) const WORLD: u32 = world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
+pub(crate) const APPEARANCE: u32 = oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE;
 
-pub(super) struct ReplayInput {
-    pub(super) sequence: u64,
-    pub(super) selected: Vec<u32>,
-    pub(super) refs: Vec<u32>,
-    pub(super) snapshots: Vec<GatedSnapshot>,
-    pub(super) deltas: Vec<Vec<u8>>,
-    pub(super) entity: EntityRef,
-    pub(super) expected: u8,
+pub(crate) struct ReplayInput {
+    pub(crate) sequence: u64,
+    pub(crate) selected: Vec<u32>,
+    pub(crate) refs: Vec<u32>,
+    pub(crate) snapshots: Vec<GatedSnapshot>,
+    pub(crate) deltas: Vec<Vec<u8>>,
+    pub(crate) entity: EntityRef,
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) expected: u8,
 }
 
 impl ReplayInput {
-    pub(super) fn read(directory: &Path, names: [&str; 3], primary: u32) -> Result<Self, BoxError> {
+    pub(crate) fn read(directory: &Path, names: [&str; 3], primary: u32) -> Result<Self, BoxError> {
         let [snapshot, transcript, expected] =
             names.map(|name| std::fs::read(directory.join(name)));
         Self::decode(&snapshot?, &transcript?, &expected?, primary)
@@ -96,7 +123,7 @@ impl ReplayInput {
         })
     }
 
-    pub(super) async fn admit(&self) -> Result<Session<DuplexStream>, BoxError> {
+    pub(crate) async fn admit(&self) -> Result<Session<DuplexStream>, BoxError> {
         let world = self
             .snapshots
             .iter()
@@ -125,7 +152,12 @@ impl ReplayInput {
                     content_generation: generation,
                     definition_refs: &self.refs,
                 }),
-                ..entity_admission()?
+                schema_revision: 1,
+                character_id: CharacterId::decode(&uuid_v7(4))?,
+                admission_material: b"grant",
+                client_build_id: "oteryn-session-replay",
+                supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+                deadline: std::time::Duration::from_secs(5),
             },
         )
         .await;
@@ -134,7 +166,7 @@ impl ReplayInput {
         Ok(session)
     }
 
-    pub(super) fn apply(
+    pub(crate) fn apply(
         &self,
         session: &mut Session<DuplexStream>,
     ) -> Result<Vec<SessionEvent>, BoxError> {
@@ -220,16 +252,18 @@ fn read_list(input: &mut &[u8]) -> Result<Vec<u32>, BoxError> {
         .collect()
 }
 
-pub(super) fn apply_frame(
+#[cfg(test)]
+pub(crate) fn apply_frame(
     session: &mut Session<DuplexStream>,
     frame: &[u8],
-) -> Result<SessionEvent, SessionError> {
+) -> Result<SessionEvent, super::SessionError> {
     let envelope = decode_wire_envelope(frame)?;
     session.apply_state_delta(envelope.server_sequence(), envelope.payload())
 }
 
 /// Feed the three named file buffers into the same decoder as capture mode.
-pub(super) fn round_trip(
+#[cfg(test)]
+pub(crate) fn round_trip(
     files: [(&str, Vec<u8>); 3],
     names: [&str; 3],
     primary: u32,

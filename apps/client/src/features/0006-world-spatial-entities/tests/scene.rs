@@ -123,34 +123,6 @@ fn forge_rat_presentation(name: &str, stacks: Option<u8>) -> Result<VisibleAppea
 }
 
 #[test]
-fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::error::Error>> {
-    let tile = TileCoord::new(100, 200);
-    let mut scene =
-        Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
-    let capture = std::env::var_os("E2E_ALL_CAPTURE_DIR").map(std::path::PathBuf::from);
-    for (folder, stacks, expected) in [
-        ("", 3, "[Influenced 3] Rat"),
-        ("fiendish", 15, "[Fiendish] Rat"),
-    ] {
-        let (name, marker): (String, Option<u8>) = if let Some(path) = &capture {
-            let bytes = std::fs::read(path.join(folder).join("p19-nameplate.json"))?;
-            serde_json::from_slice(&bytes)?
-        } else {
-            ("Rat".into(), Some(stacks))
-        };
-        let entry = forge_rat_presentation(&name, marker)?;
-        scene.set_presentations_from(&[entry], 0, None)?;
-        let glyphs = scene.cache.name(expected, 100);
-        assert_eq!(
-            scene.names,
-            vec![(TileCoord::new(101, 200), glyphs)],
-            "{expected}"
-        );
-    }
-    Ok(())
-}
-
-#[test]
 fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Result<(), BatchError> {
     let tile = TileCoord::new(100, 200);
     let mut scene =

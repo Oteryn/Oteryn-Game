@@ -91,6 +91,39 @@ impl ChannelRuntimeV1 {
     }
 
     pub(super) fn drive_forge_population(&mut self, now: u64) -> Result<(), CarrierError> {
+        self.select_forge_population(now, None)
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) fn select_qualification_forge_spawn(
+        &mut self,
+        source: SpawnSourceId,
+        kind: ForgeCreature,
+    ) -> Result<(), CarrierError> {
+        // Qualification supplies the spawn census and the draw while the
+        // ordinary owner still checks eligibility and selects the class.
+        let next = std::mem::take(&mut self.forge_next_tick_micros);
+        let fiends = std::mem::take(&mut self.forge_fiends);
+        let result = self.select_forge_population(0, Some((source, kind)));
+        self.forge_fiends = fiends;
+        self.forge_next_tick_micros = next;
+        result?;
+        let actor = self
+            .carrier
+            .spawn_cell_state(source, 0)?
+            .live
+            .ok_or(CarrierError::InvalidCreatureTarget)?;
+        if self.companion_snapshot(actor)?.forge != Some(kind) {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        Ok(())
+    }
+
+    fn select_forge_population(
+        &mut self,
+        now: u64,
+        fixture: Option<(SpawnSourceId, ForgeCreature)>,
+    ) -> Result<(), CarrierError> {
         // Observe only the three retained incarnations on ordinary owner turns. A dead
         // fiend holds its population slot until its own replacement deadline.
         for index in 0..self.forge_fiends.len() {
@@ -106,14 +139,20 @@ impl ChannelRuntimeV1 {
         }
         self.forge_fiends
             .retain(|(_, due)| due.is_none_or(|due| now < due));
-        let available =
-            usize::from(FIENDISH_SIMULTANEOUS_MAX).saturating_sub(self.forge_fiends.len());
+        let available = if matches!(fixture, Some((_, ForgeCreature::Influenced(_)))) {
+            0
+        } else {
+            usize::from(FIENDISH_SIMULTANEOUS_MAX).saturating_sub(self.forge_fiends.len())
+        };
         let mut candidates = Vec::new();
         let mut actors = Vec::new();
         let mut existing = Vec::new();
         // Only native spawn points participate: summons, raid callbacks and encounter children
         // have no ordinary spawn point and cannot become Forge creatures.
         for source in &self.carrier.spawns {
+            if fixture.is_some_and(|(fixture_source, _)| source.source != fixture_source) {
+                continue;
+            }
             for (ordinal, cell) in source.cells.iter().enumerate() {
                 let Some(actor) = cell.live else { continue };
                 let Ok(snapshot) = self.companion_snapshot(actor) else {
@@ -169,7 +208,13 @@ impl ChannelRuntimeV1 {
                         && s.forge.is_none()
                 })
             })
-            .map(|(_, actor)| (self.forge_roll(*actor), *actor))
+            .map(|(_, actor)| {
+                let roll = match fixture {
+                    Some((_, ForgeCreature::Influenced(stacks))) => u64::from(stacks - 1),
+                    _ => self.forge_roll(*actor),
+                };
+                (roll, *actor)
+            })
             .collect();
         influenced.sort_unstable_by_key(|(roll, _)| *roll);
         for (roll, actor) in influenced.into_iter().take(

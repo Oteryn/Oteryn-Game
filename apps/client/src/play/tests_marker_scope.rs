@@ -644,3 +644,38 @@ fn review_scope_preserves_admission_identity() -> Result<(), Box<dyn std::error:
     assert_eq!(query.world[15], 1);
     Ok(())
 }
+
+#[test]
+#[ignore = "requires a fresh P19 node-boot capture"]
+fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::path::PathBuf::from(
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing P19 capture directory")?,
+    );
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            for (folder, label) in [("", "[Influenced 3] Rat"), ("fiendish", "[Fiendish] Rat")] {
+                let (mut session, target) =
+                    oteryn_session::test_support::p19_session(&root.join(folder))
+                        .await
+                        .map_err(|error| error.to_string())?;
+                let (link, _, outbox) = play_channel();
+                let position = session.world_spatial().actor_position;
+                let mut view = super::PlayView::new(
+                    oteryn_renderer::TileCoord::new(position.x, position.y),
+                    position.floor,
+                    &[],
+                )?;
+                view.tick(&link).map_err(|error| format!("{error:?}"))?;
+                assert!(!view.scene.has_nameplate(target, label));
+                super::super::session_stepper::publish(&mut session, &outbox, &mut Vec::new());
+                view.tick(&link).map_err(|error| format!("{error:?}"))?;
+                assert!(
+                    view.scene.has_nameplate(target, label),
+                    "missing exact nameplate {label}"
+                );
+            }
+            Ok(())
+        })
+}

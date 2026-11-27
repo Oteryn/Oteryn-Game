@@ -128,7 +128,7 @@ def replay_targets():
     return targets
 
 
-def replay_cause(row, package, test, names, captures, server, log, suffix=""):
+def replay_cause(row, package, test, names, captures, server, log, suffix="", capture_only=False):
     # Some replays construct filenames from a prefix. Those replays check the
     # individual reads themselves, but still need at least one row-owned file.
     files = {path.name for path in captures.glob(f"{row.lower()}[-_.]*")
@@ -141,7 +141,8 @@ def replay_cause(row, package, test, names, captures, server, log, suffix=""):
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
+             "--lib", test, "--", "--nocapture",
+             *(["--ignored"] if capture_only else [])],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:
@@ -195,8 +196,8 @@ def main(log, batch, validate=False):
         if row == "P19" and cause is None:
             test = "cl6_p19_live_capture_reaches_native_nameplates"
             cause = replay_cause(
-                row, "oteryn-client", test, {"p19-nameplate.json"}, captures,
-                server_rows.get(scenario), log, suffix="-nameplate",
+                row, "oteryn-client", test, names, captures,
+                server_rows.get(scenario), log, suffix="-nameplate", capture_only=True,
             )
             verdict = f"FAIL cause={cause}" if cause else "PASS"
             print(f"SEAM_EVIDENCE e2e_all scenario={scenario} nameplate={test} status={verdict}")

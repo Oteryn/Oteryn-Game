@@ -114,7 +114,7 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         let policy = self.companion_policy(definition_key)?;
-        if policy.is_familiar
+        if (policy.is_familiar && forge.is_none())
             || matches!(forge, Some(ForgeCreature::Influenced(stacks))
                 if ForgeCreature::new_influenced(stacks).is_none())
         {
@@ -173,7 +173,7 @@ impl ChannelRuntimeV1 {
                 .ok_or(CarrierError::PlanConflict)?;
             self.install_creature_policy(actor, definition_key)?;
             if let Some(kind) = forge {
-                self.apply_forge_classification(actor, kind)?;
+                self.select_qualification_forge_spawn(source, kind)?;
             }
             self.companion_snapshot(actor)
         })();

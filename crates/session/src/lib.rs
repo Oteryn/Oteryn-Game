@@ -19,6 +19,7 @@
 /// Real wire codecs for downstream transport fixtures; no session mutation helpers.
 #[cfg(feature = "test-support")]
 pub mod test_support {
+    pub use super::replay_input::p19_session;
     pub use oteryn_protocol_oteryn as wire;
 }
 
@@ -464,3 +465,7 @@ pub use oteryn_protocol_oteryn::gem_presentation;
 pub use oteryn_protocol_oteryn::wheel_presentation;
 
 pub use oteryn_protocol_oteryn::personal_map_marks;
+
+#[cfg(any(test, feature = "test-support"))]
+#[path = "tests/replay_input.rs"]
+mod replay_input;

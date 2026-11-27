@@ -356,8 +356,7 @@ mod c16c_summon_replay;
 #[cfg(test)]
 #[path = "e2e_c16d.rs"]
 mod e2e_c16d;
-#[path = "tests/replay_input.rs"]
-mod replay_input;
+use crate::replay_input;
 
 #[test]
 fn preadm_admission_debug_redacts_grant() -> Result<(), BoxError> {

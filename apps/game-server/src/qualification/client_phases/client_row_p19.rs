@@ -209,12 +209,6 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         if matching.next().is_some() || selected != exact {
             return Err(format!("P19 ambiguous or wrong client Forge selection: {selected:?}, expected {exact:?}").into());
         }
-        let name = entry.entity.display_name.ok_or("P19 marker entity lacks a display name")?;
-        let name = name.as_str().map_err(|error| format!("P19 marker display name: {error:?}"))?;
-        std::fs::write(
-            directory.join("p19-nameplate.json"),
-            serde_json::to_vec(&(name, entry.forge_stacks))?,
-        )?;
         encounters.push((classification, stacks, selected));
     }
         let combat_tile = tile(client.world_spatial().actor_position)?;
@@ -250,7 +244,6 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         if pre_attack != before {
             return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
         }
-        let prior_kills = bestiary_occurrences(clients).await?;
         let corpse = kill_and_observe_clear(&mut client, exact).await?;
         let killed = rewards(&mut client).await?;
         dead.push(exact);
@@ -266,12 +259,9 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let mut destination = backpack_quantities(&client)?;
         add_quantities(&mut destination, &source);
         let durable_corpse = full_e2ef3::e2ei_c::native_corpse_id(clients, &corpse_entity).await?;
-        let current_kills = bestiary_occurrences(clients).await?;
-        let mut new_kills = current_kills.difference(&prior_kills);
-        let occurrence = new_kills.next().ok_or("P19 exact kill lacks a new Bestiary receipt")?;
-        if new_kills.next().is_some() || !prior_kills.is_subset(&current_kills) {
-            return Err("P19 cannot isolate the observed kill's Bestiary receipt".into());
-        }
+        let occurrence = rat_kill_occurrence(clients, durable_corpse).await?;
+        let stacks_u64 = u64::from(stacks);
+        let expected_dust = stacks_u64 + u64::from(occurrence[15]) % (2 * stacks_u64 + 1);
         let expected_slivers = slivers_for_kill(stacks, occurrence[14]);
         if corpse_slivers != expected_slivers {
             return Err(format!("P19 {classification} corpse slivers={corpse_slivers}, expected={expected_slivers}, occurrence={occurrence:?}").into());
@@ -291,7 +281,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             .slivers
             .checked_sub(killed.slivers)
             .ok_or("P19 backpack slivers decreased after loot")?;
-        if !valid_reward_transition(&before, &killed, &after, stacks, expected_slivers)
+        if !valid_reward_transition(&before, &killed, &after, expected_dust, expected_slivers)
             || looted != expected_slivers
             || sliver_count(&client, sliver)? != after.slivers
         {
@@ -440,19 +430,18 @@ fn valid_reward_transition(
     before: &Rewards,
     killed: &Rewards,
     after: &Rewards,
-    stacks: u8,
+    expected_dust: u64,
     expected_slivers: u64,
 ) -> bool {
     // TibiaWiki, Dust and Slivers: Premium kills grant 1–3 dust per stack
     // (15–45 for Fiendish); only Fiendish corpses yield slivers when looted.
     // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
-    let stacks = u64::from(stacks);
     let dust_gain = killed.dust.checked_sub(before.dust);
     let remaining_dust = before.limit.checked_sub(before.dust);
     killed.limit == before.limit
         && after.limit == killed.limit
         && dust_gain.zip(remaining_dust).is_some_and(|(gain, remaining)| {
-            (stacks..=3 * stacks).contains(&gain) && gain <= remaining
+            gain == expected_dust && gain <= remaining
         })
         && after.dust == killed.dust
         && killed.slivers == before.slivers
@@ -466,22 +455,76 @@ fn slivers_for_kill(stacks: u8, roll: u8) -> u64 {
     if stacks == 15 { 3 + u64::from(roll % 5) } else { 0 }
 }
 
-async fn bestiary_occurrences(
-    clients: &SeamClients<'_>,
-) -> TestResult<std::collections::BTreeSet<[u8; 16]>> {
+async fn rat_kill_occurrence(clients: &SeamClients<'_>, corpse: [u8; 16]) -> TestResult<[u8; 16]> {
     tokio::time::timeout(Duration::from_secs(5), async {
         let mut db = sqlx::PgConnection::connect(clients.url).await?;
-        sqlx::query_scalar::<_, Vec<u8>>(
-            "SELECT uuid_send(bestiary_occurrence_id) FROM game_character_bestiary_kill_receipts
-             WHERE character_id=encode($1,'hex')::uuid",
+        let (actor, generation, receipts): (i64, String, Vec<Vec<u8>>) = sqlx::query_as(
+            "SELECT m.death_actor_local_id, m.death_actor_local_generation::text,
+                    ARRAY(SELECT uuid_send(b.bestiary_occurrence_id)
+                          FROM game_character_bestiary_kill_receipts b
+                          WHERE b.character_id=m.corpse_top_damage_character_id
+                            AND b.race_key IN ('rat', 'oteryn:creature.rat')
+                          LIMIT 3)
+             FROM game_item_mint_receipts m
+             WHERE m.item_instance_id=encode($1,'hex')::uuid
+               AND m.corpse_top_damage_character_id=encode($2,'hex')::uuid
+               AND m.loot_purpose_key='CORPSE_MATERIALIZATION'",
         )
+        .bind(corpse.as_slice())
         .bind(clients.characters[1].as_slice())
-        .fetch_all(&mut db)
-        .await?
-        .into_iter()
-        .map(|id| id.try_into().map_err(|_| "P19 malformed Bestiary occurrence".into()))
-        .collect()
+        .fetch_one(&mut db)
+        .await?;
+        let actor = u32::try_from(actor)?;
+        let generation = generation.parse::<u64>()?;
+        let matches: Vec<_> = receipts.into_iter()
+            .filter_map(|receipt| <[u8; 16]>::try_from(receipt).ok())
+            .filter(|receipt| receipt_matches_death(
+                [clients.world, clients.channel, clients.characters[1]],
+                clients.scope_generation, actor, generation, *receipt,
+            ))
+            .collect();
+        let [receipt] = matches.as_slice() else {
+            return Err(format!("P19 exact Rat corpse {corpse:?} has {} matching Bestiary receipts", matches.len()).into());
+        };
+        Ok(*receipt)
     }).await?
+}
+
+fn receipt_matches_death(
+    [world, channel, principal]: [[u8; 16]; 3],
+    scope_generation: u64,
+    actor: u32,
+    generation: u64,
+    receipt: [u8; 16],
+) -> bool {
+    use sha2::{Digest, Sha256};
+    // The reward occurrence is UUIDv7-shaped. Its timestamp is public and the
+    // digest binds it to the mint receipt's exact death actor and principal.
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:combat-death-xp-occurrence:v1")
+        .chain_update(world)
+        .chain_update(channel)
+        .chain_update(scope_generation.to_be_bytes())
+        .chain_update(actor.to_be_bytes())
+        .chain_update(generation.to_be_bytes())
+        .chain_update(principal)
+        .chain_update([0, 0])
+        .chain_update(&receipt[..6])
+        .finalize();
+    receipt[6] == (0x70 | (digest[0] & 0x0f))
+        && receipt[7] == digest[1]
+        && receipt[8] == (0x80 | (digest[2] & 0x3f))
+        && receipt[9..] == digest[3..10]
+}
+
+#[test]
+fn forge_occurrence_rejects_another_same_race_death() {
+    let scope = [[1; 16], [2; 16], [3; 16]];
+    let receipt = [1, 149, 103, 120, 137, 154, 113, 95, 190, 59, 57, 105, 50, 163, 159, 58];
+    assert!(receipt_matches_death(scope, 4, 42, 7, receipt));
+    assert!(!receipt_matches_death(scope, 4, 43, 7, receipt));
+    assert!(!receipt_matches_death(scope, 4, 42, 8, receipt));
+    assert!(!receipt_matches_death(scope, 5, 42, 7, receipt));
 }
 
 #[test]
@@ -516,12 +559,12 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
         15,
         3,
     ));
-    for dust in [14, 15, 45, 46, 101] {
+    for dust in [14, 15, 24, 45, 46, 101] {
         let killed = Rewards { dust, ..before };
         let after = Rewards { slivers: 3, ..killed };
         assert_eq!(
-            valid_reward_transition(&before, &killed, &after, 15, 3),
-            (15..=45).contains(&dust)
+            valid_reward_transition(&before, &killed, &after, 24, 3),
+            dust == 24
         );
     }
     let near_cap = Rewards { dust: 90, ..before };

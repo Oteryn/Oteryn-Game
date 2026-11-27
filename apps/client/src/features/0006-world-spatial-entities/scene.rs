@@ -75,6 +75,15 @@ impl Scene {
             .filter(|d| d.iter().all(|cell| cell.cell != MARKER_CELL))
             .unwrap_or_default()
     }
+    #[cfg(test)]
+    pub(crate) fn has_nameplate(&mut self, entity: oteryn_session::EntityRef, label: &str) -> bool {
+        let expected = self.cache.name(label, 100);
+        self.name_entities
+            .iter()
+            .zip(&self.names)
+            .any(|(key, (_, actual))| *key == entity && *actual == expected)
+    }
+
     pub fn name_count(&self) -> usize {
         self.names.len()
     }
