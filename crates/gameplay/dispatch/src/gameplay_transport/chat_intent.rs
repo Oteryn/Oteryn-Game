@@ -1030,7 +1030,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
-        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
+        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
+            .ok()?
+            .with_join_deadline("chat_speaker");
         Box::pin(self.chat_speaker_name_with_budget(session, &retry))
             .await
             .ok()
@@ -1051,7 +1053,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Entity visibility also uses this name. Resolve its session from an
         // observation snapshot so a reconnect writer cannot stall that tick.
         let fence = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root
                     .observe_current_gameplay_fence(self.character, session, true)
                     .await
@@ -1067,7 +1069,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let character_id = fence.character_id;
         let character = *character_id.as_bytes();
         let name = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root
                     .read_character_chat_name(self.character, character_id)
                     .await
@@ -1081,7 +1083,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await?
             .ok_or(AdmissionRefusal::Rejected)?;
         let level = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root
                     .read_character_progression(self.character, character_id)
                     .await

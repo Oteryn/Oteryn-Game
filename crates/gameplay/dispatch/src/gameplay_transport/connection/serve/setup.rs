@@ -14,14 +14,17 @@ struct LiveSetup {
 /// Why the join did not complete: before its snapshot reached the transport, while writing it,
 /// or after the client already holds it.
 enum JoinFailure {
-    Unprepared(ServeEnd),
+    Unprepared(JoinRefusal),
     Transport,
     Delivered(ServeEnd),
 }
 
 impl From<ServeEnd> for JoinFailure {
     fn from(end: ServeEnd) -> Self {
-        Self::Unprepared(end)
+        Self::Unprepared(match end {
+            ServeEnd::JoinRefused { refusal, .. } => refusal,
+            _ => join_refusal("join_snapshot"),
+        })
     }
 }
 
@@ -79,15 +82,12 @@ where
     let generation = admitted.continuity.connection_generation;
     match join(stream, admitted, authority, policy, projection, integrity).await {
         Ok(state) => Ok(state),
-        Err(JoinFailure::Unprepared(_)) if pending => {
-            send_join_unavailable(stream, 0).await;
-            Err(ServeEnd::Closed(
-                FoundationProtocolError::SessionJoinUnavailable,
-            ))
-        }
-        Err(JoinFailure::Unprepared(end)) => {
-            send_join_unavailable(stream, generation).await;
-            Err(end)
+        Err(JoinFailure::Unprepared(refusal)) => {
+            send_join_unavailable(stream, if pending { 0 } else { generation }).await;
+            Err(ServeEnd::JoinRefused {
+                refusal,
+                unpublished: pending,
+            })
         }
         Err(JoinFailure::Transport) => Err(ServeEnd::Disconnected),
         Err(JoinFailure::Delivered(end)) => Err(end),
@@ -113,17 +113,28 @@ where
     } = projection;
     let generation = admitted.continuity.connection_generation;
     let revision = admitted.continuity.spatial_revision;
-    let deadline = acceptance.as_ref().map(|pending| pending.deadline);
+    let deadline = acceptance.as_ref().map_or_else(
+        || tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW,
+        |pending| pending.deadline,
+    );
+    #[cfg(test)]
+    if let Ok(barrier) = BEFORE_JOIN_SNAPSHOT.try_with(std::sync::Arc::clone) {
+        barrier.0.notify_one();
+        barrier.1.notified().await;
+    }
     let (snapshot, trade_revision, setup) = admission_stage(
-        deadline,
+        Some(deadline),
         "join_snapshot",
         "runtime_lock_durability_holder",
         prepare_snapshot(admitted, authority, actor, baseline, integrity),
     )
     .await
-    .map_err(|_| ServeEnd::Disconnected)??;
-    if deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
-        return Err(ServeEnd::Disconnected.into());
+    .map_err(JoinFailure::Unprepared)??;
+    if tokio::time::Instant::now() >= deadline {
+        return Err(JoinFailure::Unprepared(JoinRefusal {
+            phase: "join_snapshot",
+            cause: JoinCause::Deadline,
+        }));
     }
     record_join_progress("snapshot_write", admitted.first_entry);
     if let Some(pending) = acceptance.take()
@@ -193,12 +204,7 @@ async fn prepare_snapshot<A: FreshAdmissionAuthority>(
     if let Some(payload) = authority
         .activity_scope_snapshot(admitted)
         .await
-        .map_err(|_| {
-            failed(
-                "event=join_prepare_failed phase=activity_scope",
-                ServeEnd::Disconnected,
-            )
-        })?
+        .map_err(|_| failed("activity_scope", ServeEnd::Disconnected))?
     {
         // Initial/recovery projection is in the already admitted destination
         // stream. Its receipt binding precedes spatial and item state atomically.
@@ -214,7 +220,7 @@ async fn prepare_snapshot<A: FreshAdmissionAuthority>(
     record_join_progress("initial", admitted.first_entry);
     let mut initial = snapshot::initial(authority, actor, admitted, &mut payloads)
         .await
-        .map_err(|end| failed("event=join_prepare_failed phase=initial", end))?;
+        .map_err(|end| failed("initial", end))?;
     record_join_progress("items", admitted.first_entry);
     let mut items = snapshot::items(
         authority,
@@ -225,7 +231,7 @@ async fn prepare_snapshot<A: FreshAdmissionAuthority>(
         revision,
     )
     .await
-    .map_err(|end| failed("event=join_prepare_failed phase=items", end))?;
+    .map_err(|end| failed("items", end))?;
     if let Some((notice_revision, payload)) = initial.notices.take() {
         payloads.push(
             crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
@@ -245,7 +251,7 @@ async fn prepare_snapshot<A: FreshAdmissionAuthority>(
         &mut items.item_view,
     )
     .await
-    .map_err(|end| failed("event=join_prepare_failed phase=sessions", end))?;
+    .map_err(|end| failed("sessions", end))?;
     record_join_progress("world", admitted.first_entry);
     let world = snapshot::world(
         authority,
@@ -257,7 +263,7 @@ async fn prepare_snapshot<A: FreshAdmissionAuthority>(
         baseline,
     )
     .await
-    .map_err(|end| failed("event=join_prepare_failed phase=world", end))?;
+    .map_err(|end| failed("world", end))?;
     if admitted
         .continuity
         .selected_capabilities
@@ -267,22 +273,12 @@ async fn prepare_snapshot<A: FreshAdmissionAuthority>(
         authority
             .player_trade_open(*admitted)
             .await
-            .ok_or_else(|| {
-                failed(
-                    "event=join_prepare_failed phase=trade_open",
-                    ServeEnd::Disconnected,
-                )
-            })?;
+            .ok_or_else(|| failed("trade_open", ServeEnd::Disconnected))?;
         record_join_progress("trade_observation", admitted.first_entry);
         let (revision, state, _) = authority
             .player_trade_observation(admitted.game_session_id)
             .await
-            .ok_or_else(|| {
-                failed(
-                    "event=join_prepare_failed phase=trade_observation",
-                    ServeEnd::Disconnected,
-                )
-            })?;
+            .ok_or_else(|| failed("trade_observation", ServeEnd::Disconnected))?;
         payloads.push(
             crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
                 domain_id: oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE,
@@ -351,12 +347,18 @@ async fn prepare_snapshot<A: FreshAdmissionAuthority>(
 }
 
 /// Logs the failed join phase with the code the client is sent.
-pub(super) fn failed(event: &'static str, end: ServeEnd) -> ServeEnd {
+pub(super) fn failed(phase: &'static str, end: ServeEnd) -> ServeEnd {
     crate::gameplay_transport::operator_event(&format!(
-        "{event} code={}",
+        "event=join_prepare_failed phase={phase} code={}",
         FoundationProtocolError::SessionJoinUnavailable.code()
     ));
-    end
+    match end {
+        ServeEnd::JoinRefused { .. } => end,
+        _ => ServeEnd::JoinRefused {
+            refusal: join_refusal(phase),
+            unpublished: false,
+        },
+    }
 }
 
 async fn live<A: FreshAdmissionAuthority>(

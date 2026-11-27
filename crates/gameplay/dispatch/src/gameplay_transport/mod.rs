@@ -1499,6 +1499,7 @@ struct AdmissionRetryBudget<'r> {
     deadline: tokio::time::Instant,
     backoff: Duration,
     stale_rounds: u32,
+    admission_phase: Option<&'static str>,
     /// The root whose holder a retry waits for (NODEBOOT-1); without one a retry sleeps the
     /// whole backoff.
     root: Option<&'r DurabilityRoot>,
@@ -1540,6 +1541,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             deadline: tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW,
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
+            admission_phase: None,
             root: None,
             _foreground: None,
             waiter: std::sync::OnceLock::new(),
@@ -1553,11 +1555,19 @@ impl<'r> AdmissionRetryBudget<'r> {
         Self::for_holder_window(root, COMMAND_HOLDER_WINDOW)
     }
 
+    /// The same read can run during play or during preparation. Only preparation
+    /// borrows the wire deadline. Each retry releases the read's runtime guards first.
+    fn for_join_read(root: &'r DurabilityRoot, phase: &'static str) -> Self {
+        let budget = Self::for_command(root);
+        budget.with_join_deadline(phase)
+    }
+
     fn for_holder_window(root: &'r DurabilityRoot, window: Duration) -> Self {
         Self {
             deadline: tokio::time::Instant::now() + window,
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
+            admission_phase: None,
             root: Some(root),
             _foreground: root.foreground_demand().ok(),
             waiter: std::sync::OnceLock::new(),
@@ -1608,11 +1618,29 @@ impl<'r> AdmissionRetryBudget<'r> {
         })
     }
 
+    fn for_join_root(
+        session: &GameSessionId,
+        root: &'r DurabilityRoot,
+        phase: &'static str,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        Ok(Self::for_foreground_root(session, root)?.with_join_deadline(phase))
+    }
+
+    fn with_join_deadline(mut self, phase: &'static str) -> Self {
+        if let Some(deadline) = connection::admission_wait_deadline() {
+            self.deadline = deadline;
+            self.admission_phase = Some(phase);
+        }
+        self
+    }
+
     /// The post-placement owners have their own recovery window after first entry,
     /// which may itself have waited for a Familiar restore.
     fn for_post_entry(mut self) -> Self {
         drop(self.waiter.take());
-        self.deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+        if self.admission_phase.is_none() {
+            self.deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+        }
         self
     }
 
@@ -1633,7 +1661,20 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// (NODEBOOT-1). Any other retry after a return starts no earlier than
     /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
+        self.retries_unavailable_with_cause(refusal, false).await
+    }
+
+    async fn retries_unavailable_with_cause(
+        &self,
+        refusal: AdmissionRefusal,
+        holder_busy: bool,
+    ) -> bool {
         let now = tokio::time::Instant::now();
+        if let Some(phase) = self.admission_phase
+            && refusal == AdmissionRefusal::Unavailable
+        {
+            connection::record_admission_retry(phase, holder_busy);
+        }
         if refusal != AdmissionRefusal::Unavailable
             || now >= self.deadline
             || (self.root.is_none() && now + self.backoff >= self.deadline)
@@ -1665,6 +1706,9 @@ impl<'r> AdmissionRetryBudget<'r> {
             None => tokio::time::sleep(self.backoff).await,
         }
         if tokio::time::Instant::now() < self.deadline {
+            if self.admission_phase.is_some() {
+                connection::clear_admission_retry();
+            }
             return true;
         }
         if let Some(Some(waiter)) = self.waiter.get() {
@@ -1691,6 +1735,14 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    async fn retry_admission_checkout<T>(
+        &self,
+        step: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> Result<T, AdmissionRefusal> {
+        self.retry_holder(step, |refusal| *refusal == AdmissionRefusal::Unavailable)
+            .await
+    }
+
     /// Retries errors that prove the operation could not acquire a holder.
     async fn retry_holder<T, E>(
         &self,
@@ -1701,7 +1753,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             match step().await {
                 Err(error) if busy(&error) => {
                     if !self
-                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .retries_unavailable_with_cause(AdmissionRefusal::Unavailable, true)
                         .await
                     {
                         return Err(error);

@@ -561,7 +561,7 @@ impl AdmissionRetryBudget<'_> {
                 Err(error) => {
                     if matches!(error, DurabilityError::RootUnavailable)
                         && self
-                            .retries_unavailable(AdmissionRefusal::Unavailable)
+                            .retries_unavailable_with_cause(AdmissionRefusal::Unavailable, true)
                             .await
                     {
                         continue;

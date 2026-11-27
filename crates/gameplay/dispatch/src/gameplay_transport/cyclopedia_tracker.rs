@@ -15,6 +15,7 @@ use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::content::creature_reward::CreatureRewardTable;
 use crate::domain::CharacterId;
 use crate::domain::bosstiary::{kill_thresholds, progress};
+use crate::durability::DurabilityError;
 use crate::durability::cyclopedia_tracker::{TrackedCreature, TrackerKind};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use oteryn_protocol_oteryn::cyclopedia_tracker::{
@@ -73,13 +74,7 @@ macro_rules! composed_methods {
             &self,
             admitted: $crate::gameplay_transport::connection::AdmittedSession,
         ) -> Option<Vec<u8>> {
-            $crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
-                .retry_unavailable(async || {
-                    self.cyclopedia_tracker_domain_snapshot(admitted).await
-                        .ok_or($crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)
-                })
-                .await
-                .ok()
+            self.cyclopedia_tracker_domain_snapshot(admitted).await
         }
 
         async fn cyclopedia_tracker_refresh(
@@ -208,14 +203,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         fence: CurrentCharacterItemFence,
         kind: TrackerKind,
-    ) -> Option<TrackerSnapshot> {
-        let _permit = self.spell_lane_permit().await?;
+    ) -> Result<TrackerSnapshot, DurabilityError> {
+        let _permit = self.spell_lane_permit().await.ok_or(DurabilityError::Unavailable)?;
         let tracked = self
             .root
             .cyclopedia_tracker(self.character, self.holder, fence, kind, None)
-            .await
-            .ok()??;
-        Some(snapshot(self.reward_table(), kind, tracked))
+            .await?
+            .ok_or(DurabilityError::CommitRejected)?;
+        Ok(snapshot(self.reward_table(), kind, tracked))
     }
 
     pub(in crate::gameplay_transport) async fn cyclopedia_tracker_domain_snapshot(
@@ -223,12 +218,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> Option<Vec<u8>> {
         let fence = current_fence(&admitted)?;
-        let bestiary = self
-            .read_cyclopedia_tracker(fence, TrackerKind::Bestiary)
-            .await?;
-        let bosstiary = self
-            .read_cyclopedia_tracker(fence, TrackerKind::Bosstiary)
-            .await?;
+        let budget = super::AdmissionRetryBudget::for_join_read(self.root, "cyclopedia_tracker");
+        let bestiary = budget
+            .retry_holder(|| self.read_cyclopedia_tracker(fence, TrackerKind::Bestiary), super::root_holder_busy)
+            .await.ok()?;
+        let bosstiary = budget
+            .retry_holder(|| self.read_cyclopedia_tracker(fence, TrackerKind::Bosstiary), super::root_holder_busy)
+            .await.ok()?;
         oteryn_protocol_oteryn::cyclopedia_tracker::encode_domain_snapshot(&bestiary, &bosstiary)
     }
 
@@ -255,7 +251,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if keys.is_empty() {
                 continue;
             }
-            let Some(tracker) = self.read_cyclopedia_tracker(fence, kind).await else {
+            let Ok(tracker) = self.read_cyclopedia_tracker(fence, kind).await else {
                 for key in &keys {
                     marks.mark(fence.character_id, kind, key);
                 }

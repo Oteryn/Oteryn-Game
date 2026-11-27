@@ -32,8 +32,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Keep the attempt's holder preference across every read and wait,
         // including the existing post-commit budget handoff below. A retry
         // never creates a new preference window; cancellation drops this guard.
-        let _foreground = self.root.foreground_demand().map_err(|_| Unavailable)?;
-        let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root)
+            .with_join_deadline("fresh_admission");
         let record = loop {
             match self
                 .root
@@ -41,8 +41,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(record) => break record,
-                Err(CharacterAuthorityError::Unavailable(_)) => {
-                    if !budget.retries_unavailable(Unavailable).await {
+                Err(CharacterAuthorityError::Unavailable(error)) => {
+                    if !budget
+                        .retries_unavailable_with_cause(Unavailable, root_holder_busy(&error))
+                        .await
+                    {
                         return Err(Unavailable);
                     }
                 }

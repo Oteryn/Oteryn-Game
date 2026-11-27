@@ -82,7 +82,9 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
                 authority
                     .observe_achievement_notice_facts(*admitted)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?,
+                    .ok_or_else(|| {
+                        super::setup::failed("achievement_notices", ServeEnd::Disconnected)
+                    })?,
             )
         } else {
             None
@@ -159,7 +161,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         let payload = authority
             .cyclopedia_tracker_snapshot(*admitted)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| super::setup::failed("cyclopedia_tracker", ServeEnd::Disconnected))?;
         domains.push(OwnedDomain {
             domain_id: oteryn_protocol_oteryn::cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
             revision: 1,
@@ -169,7 +171,9 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         });
     }
     let spell_catalog =
-        super::spell_catalog::SessionCatalog::initial(authority, actor, admitted, domains).await?;
+        super::spell_catalog::SessionCatalog::initial(authority, actor, admitted, domains)
+            .await
+            .map_err(|end| super::setup::failed("spell_catalog", end))?;
     Ok(InitialSnapshot {
         spell_catalog,
         overlay_served,
@@ -260,10 +264,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         let Some(inventory) =
             item_move::observe_inventory(authority, actor, admitted.game_session_id, &view).await
         else {
-            return Err(super::setup::failed(
-                "event=join_prepare_failed phase=inventory",
-                ServeEnd::Disconnected,
-            ));
+            return Err(super::setup::failed("inventory", ServeEnd::Disconnected));
         };
         let reopen = match view.carried_open_corpse() {
             Some(key) => authority.observe_item_target(actor, key).await,
@@ -298,10 +299,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         )
         .await
         else {
-            return Err(super::setup::failed(
-                "event=join_prepare_failed phase=visibility",
-                ServeEnd::Disconnected,
-            ));
+            return Err(super::setup::failed("visibility", ServeEnd::Disconnected));
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
             .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1))
@@ -320,10 +318,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             )
             .await
         else {
-            return Err(super::setup::failed(
-                "event=join_prepare_failed phase=appearances",
-                ServeEnd::Disconnected,
-            ));
+            return Err(super::setup::failed("appearances", ServeEnd::Disconnected));
         };
         if let Some(item_view) = &item_view {
             admitted.continuity.item_view = item_view.continuity();
@@ -528,7 +523,7 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
         let state = authority
             .observe_expert_modes(actor, admitted.game_session_id)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| super::setup::failed("expert_fight_modes", ServeEnd::Disconnected))?;
         let combat = &mut admitted.continuity.combat;
         combat.expert_revision = combat
             .expert_revision

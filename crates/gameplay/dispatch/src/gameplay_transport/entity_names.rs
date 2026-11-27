@@ -41,7 +41,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Durable reads run after dropping the runtime guard. Exhausting this shared budget is
         // contention during periodic observation, even when the cached name is still absent.
         let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
-            .map_err(|_| AdmissionRefusal::Rejected)?;
+            .map_err(|_| AdmissionRefusal::Rejected)?
+            .with_join_deadline("visibility_names");
         for (entity, source) in sources {
             let name = match source {
                 Source::Name(name) => name,

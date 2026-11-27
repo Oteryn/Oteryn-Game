@@ -73,11 +73,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let handoffs = ActivityHandoffOwner::new(self.root.clone());
-        let retry =
-            super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
-                .map_err(|_| ())?;
+        let retry = super::AdmissionRetryBudget::for_join_root(
+            &admitted.game_session_id,
+            self.root,
+            "activity_scope",
+        )
+        .map_err(|_| ())?;
         let Some(candidate) = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root.await_ready().await.map_err(projection_refusal)?;
                 handoffs
                     .transfer_recovery(admitted.game_session_id)
@@ -110,7 +113,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let (current, _) = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root.await_ready().await.map_err(projection_refusal)?;
                 store
                     .current_session_at(admitted.game_session_id)

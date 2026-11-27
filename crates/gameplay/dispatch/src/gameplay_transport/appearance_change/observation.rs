@@ -72,7 +72,7 @@ pub(in crate::gameplay_transport) async fn observe_result(
         let _runtime = admission.runtime.lock().await;
         let _states = admission.states.spell_states.lock().await;
     }
-    let retry = AdmissionRetryBudget::for_command(admission.root);
+    let retry = AdmissionRetryBudget::for_join_read(admission.root, "appearances");
     retry
         .retry_durability("appearance_observation", async || {
             let mut failure = None;

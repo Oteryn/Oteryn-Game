@@ -1602,7 +1602,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         record_entry_decision("playable", 1, started.elapsed(), "callback_dawnport");
         let mut phase = "grizzly_resume";
         let mut started = tokio::time::Instant::now();
-        if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        let deadline = connection::admission_wait_deadline()
+            .unwrap_or_else(|| started + std::time::Duration::from_secs(10));
+        if !tokio::time::timeout_at(deadline, async {
             if !self.prepare_grizzly_npc_resume(admitted).await {
                 return false;
             }
@@ -1837,12 +1839,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Option<AchievementNoticeObservation> {
-        AdmissionRetryBudget::for_command(self.root)
-            .retry_unavailable(async || {
-                self.observe_current_achievement_facts(admitted)
-                    .await
-                    .ok_or(AdmissionRefusal::Unavailable)
-            })
+        AdmissionRetryBudget::for_join_read(self.root, "achievement_notices")
+            .retry_holder(
+                || self.observe_current_achievement_facts(admitted),
+                root_holder_busy,
+            )
             .await
             .ok()
     }
@@ -1953,12 +1954,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
-        AdmissionRetryBudget::for_command(self.root)
-            .retry_unavailable(async || {
-                self.observe_expert_fight_modes(actor, session)
-                    .await
-                    .ok_or(AdmissionRefusal::Unavailable)
-            })
+        AdmissionRetryBudget::for_join_read(self.root, "expert_fight_modes")
+            .retry_holder(
+                || self.observe_expert_fight_modes(actor, session),
+                root_holder_busy,
+            )
             .await
             .ok()
     }

@@ -4,20 +4,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn observe_current_achievement_facts(
         &self,
         admitted: AdmittedSession,
-    ) -> Option<connection::AchievementNoticeObservation> {
-        let controller = admitted.controller?;
-        if !self.achievement_notice_session_current(admitted).await {
-            return None;
-        }
+    ) -> Result<connection::AchievementNoticeObservation, crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError::{CommitRejected, InvalidStoredState};
+        use crate::durability::account_achievement::AccountAchievementReadError;
+
+        let controller = admitted.controller.ok_or(CommitRejected)?;
+        self.check_achievement_notice_session(admitted).await?;
         let character = self
             .root
-            .read_current_character(self.character, admitted.item_fence?.character_id)
+            .read_current_character(
+                self.character,
+                admitted.item_fence.ok_or(CommitRejected)?.character_id,
+            )
             .await
-            .ok()?;
+            .map_err(|error| match error {
+                CharacterAuthorityError::Unavailable(error) => error,
+                _ => CommitRejected,
+            })?;
         if character.account_id.as_bytes() != &controller.account_id
             || character.world_id.as_bytes() != admitted.world_id.as_bytes()
         {
-            return None;
+            return Err(CommitRejected);
         }
         let facts = self
             .root
@@ -27,45 +34,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.achievements.len().saturating_add(1),
             )
             .await
-            .ok()?;
-        let observation = notice_facts(self.achievements, &facts)?;
-        // An account read is intentionally read-only. Recheck the exact controller after
-        // that await so a replaced connection never publishes its successor's observations.
-        self.achievement_notice_session_current(admitted)
-            .await
-            .then_some(observation)
+            .map_err(|error| match error {
+                AccountAchievementReadError::Unavailable(error) => error,
+                AccountAchievementReadError::AuthorityRejected => CommitRejected,
+            })?;
+        let observation = notice_facts(self.achievements, &facts).ok_or(InvalidStoredState)?;
+        // Recheck the exact controller after the read before publishing account facts.
+        self.check_achievement_notice_session(admitted).await?;
+        Ok(observation)
     }
 
-    async fn achievement_notice_session_current(&self, admitted: AdmittedSession) -> bool {
+    async fn check_achievement_notice_session(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError::CommitRejected;
+
         let (Some(controller), Some(actor), Some(expected)) = (
             admitted.controller,
             admitted.runtime_actor,
             admitted.item_fence,
         ) else {
-            return false;
+            return Err(CommitRejected);
         };
         if expected.game_session_id != admitted.game_session_id
             || expected.connection_generation.get() != admitted.continuity.connection_generation
         {
-            return false;
+            return Err(CommitRejected);
         }
-        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
+        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(admitted.game_session_id)
-            .await
-        else {
-            return false;
-        };
+            .await?;
         if current.session_state() != GameSessionState::Active
             || current.current_transport() != Some(controller.transport)
             || item_fence_of(current) != Some(expected)
         {
-            return false;
+            return Err(CommitRejected);
         }
         self.runtime
             .lock()
             .await
             .player_control_facts(actor, admitted.game_session_id)
             .is_ok_and(|facts| facts.control_loss.is_none())
+            .then_some(())
+            .ok_or(CommitRejected)
     }
 
     pub(in crate::gameplay_transport) async fn observe_account_achievement_notices(
