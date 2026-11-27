@@ -125,26 +125,40 @@ pub fn qualification_runner_identity() -> io::Result<String> {
     runner.ok_or_else(|| io::Error::other("C18a replay requires the current node-boot runner"))
 }
 
-/// Verify ordered authoritative publications for the unfed level-one Sorcerer.
+/// Verify ordered authoritative publications for the fed Sorcerer.
 /// Each completed outdoor mana interval can credit two points, capped at max.
 pub fn qualification_mana_history(
     charged: (u64, u32, u32),
-    history: &[(u64, u32, u32)],
+    history: &[(u64, u32, u32, u64)],
     max_mana: u32,
     logout: (u64, u32, u32),
 ) -> bool {
     let mut last = charged;
-    for &(sequence, mana, soul) in history {
+    let mut last_observation_ms = 0;
+    let mut last_credit_ms = None;
+    let mut observed_full_interval = false;
+    // The caster may already have a partial interval when Scorch is cast.
+    const FED_MANA_INTERVAL_MS: u64 = 3_000;
+    for &(sequence, mana, soul, elapsed_ms) in history {
         if sequence <= last.0
             || sequence >= logout.0
+            || elapsed_ms < last_observation_ms
             || soul != last.2
             || (mana != last.1 && mana != last.1.saturating_add(2).min(max_mana))
         {
             return false;
         }
+        if mana != last.1 {
+            if last_credit_ms.is_some_and(|previous| elapsed_ms - previous < FED_MANA_INTERVAL_MS) {
+                return false;
+            }
+            observed_full_interval |= last_credit_ms.is_some();
+            last_credit_ms = Some(elapsed_ms);
+        }
+        last_observation_ms = elapsed_ms;
         last = (sequence, mana, soul);
     }
-    (last.1, last.2) == (logout.1, logout.2)
+    (last_credit_ms.is_none() || observed_full_interval) && (last.1, last.2) == (logout.1, logout.2)
 }
 
 /// Match the east-facing Scorch footprint and fire damage in one cast decision.

@@ -13,6 +13,8 @@ use oteryn_protocol_oteryn::{
 };
 
 const SCORCH_MANA: u32 = 8;
+const MEAT: u32 = 3577;
+const MEAT_SATIETY: Duration = Duration::from_secs(180);
 const RAT_MAX_HP: u64 = 20;
 const RETREAT_STEPS: usize = 64;
 // Keep the Rat outside melee reach while its attack target is selected.
@@ -120,6 +122,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("C18a expected level-15 Sorcerer stats: {settled:?}").into());
     }
     character_prep::grant_item(&client, 3147, 1).await?;
+    character_prep::grant_item(&client, MEAT, 1).await?;
     let item_index = provisioning::item_index()?;
     // A held attack target would otherwise let the starter wand fire at the Rat
     // from two tiles away. Stow it before selecting any target.
@@ -216,19 +219,39 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         clock_before.as_mut(),
     )
     .await?;
+    if !world
+        .base()
+        .tile(CAST_TILE.x, CAST_TILE.y, CAST_TILE.floor)
+        .is_some_and(|tile| !tile.protection_zone())
+    {
+        return Err("C18a fixed cast tile is not outdoors".into());
+    }
     let here = client.world_spatial().actor_position;
-    let occupants = client
-        .world_entities()
-        .ok_or("C18a missing cast-tile projection")?
-        .iter()
-        .filter(|entity| {
-            tile(entity.position).ok() == Some(RAT_TILE) && actor_state(entity.detail).is_some()
+    let meat = provisioning::item_reference(&item_index, MEAT)?;
+    if item_count(&client, meat)? != 1 {
+        return Err("C18a expected one meat before the combat setup".into());
+    }
+    let meat_handle = client
+        .inventory()
+        .and_then(|view| {
+            view.entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == meat)
         })
-        .count();
-    if occupants != 1 {
-        return Err(
-            format!("C18a expected one actor on the Rat tile, observed {occupants}").into(),
-        );
+        .ok_or("C18a missing meat handle")?
+        .handle;
+    let fed_since = tokio::time::Instant::now();
+    let eaten = client.use_item(meat_handle).await?;
+    if eaten.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(format!("C18a first meat use refused: {eaten:?}").into());
+    }
+    let food_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    while item_count(&client, meat)? != 0 {
+        if tokio::time::Instant::now() >= food_deadline {
+            return Err("C18a first meat use did not consume exactly one".into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+        collect_events(&mut client, None, clock_before.as_mut())?;
     }
     let rat = *client
         .world_entities()
@@ -280,6 +303,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             return Err("C18a caster or selected Rat moved during the turn".into());
         }
         if matches!(actor_state(own.detail), Some((direction, _)) if direction == facing) {
+            require_unique_rat_tile(
+                entities
+                    .iter()
+                    .map(|entity| (tile(entity.position).ok(), entity.detail)),
+            )?;
             let Some((_, health_percent)) = actor_state(selected.detail) else {
                 return Err("C18a selected Rat has no creature health".into());
             };
@@ -308,6 +336,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
     let mut feedback = SpellFeedback::default();
     let command_id = client.next_command_id();
+    let cast_started = tokio::time::Instant::now();
     let (report, mut exchange) = oteryn_dev_client::capture_qualification_exchange(run_combat(
         client.session_mut(),
         &mut feedback,
@@ -335,17 +364,20 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if before.mana.checked_sub(SCORCH_MANA) != Some(after.mana) || before.soul != after.soul {
         return Err("C18a Scorch did not apply its exact mana and soul costs".into());
     }
-    let mut regeneration = Vec::new();
+    let mut observation = CastObservation {
+        started: cast_started,
+        reply_sequence: result_server_sequence,
+        charge_sequence: vitals_sequence,
+        regeneration: Vec::new(),
+        first_unlock: None,
+    };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     let mut health = None;
     let mut damage = None;
     let (health_sequence, health_after, damage_sequence, damage_value) = loop {
         for event in client.take_events() {
+            observation.record(&event);
             match event {
-                SessionEvent::ActorVitals(delta) if delta.server_sequence > vitals_sequence => {
-                    regeneration.push((delta.server_sequence, delta.value.mana, delta.value.soul));
-                }
-
                 SessionEvent::WorldSpatialEntities(delta)
                     if delta.server_sequence > result_server_sequence =>
                 {
@@ -451,7 +483,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             return Err("C18a target clear did not remove the selected Rat".into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
-        collect_events(&mut client, Some(&mut regeneration), None)?;
+        collect_events(&mut client, Some(&mut observation), None)?;
     }
 
     let cleared_combat = *client
@@ -481,7 +513,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let rest = retreat
         .iter()
         .try_fold(CAST_TILE, |from, &direction| {
-            destination(world, from, direction).filter(|&at| !is_logout_rest_tile(world, at))
+            destination(world, from, direction).filter(|at| {
+                world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+            })
         })
         .ok_or("C18a fixed retreat crosses a protection tile")?;
     walk_path(
@@ -489,7 +526,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         world,
         retreat,
         rest,
-        Some(&mut regeneration),
+        Some(&mut observation),
         None,
     )
     .await?;
@@ -509,9 +546,18 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
         client.service_liveness(Duration::from_millis(200)).await?;
-        collect_events(&mut client, Some(&mut regeneration), None)?;
+        collect_events(&mut client, Some(&mut observation), None)?;
         verdict::Harness::global().progress("wait-for-combat-lock");
     }
+    require_combat_lock_duration(observation.first_unlock)?;
+    evidence(&format!(
+        "SEAM_EVIDENCE c18a_combat_lock first_unlock={:?}",
+        observation.first_unlock
+    ));
+    if fed_since.elapsed() >= MEAT_SATIETY {
+        return Err("C18a food regeneration window expired before conjure".into());
+    }
+    let regeneration = observation.regeneration;
     let before_conjure = *client
         .actor_vitals()
         .ok_or("C18a pre-conjure vitals absent")?;
@@ -842,7 +888,7 @@ async fn walk_path(
     world: &BundleWorld,
     path: &[StepDirection],
     goal: TilePos,
-    mut vitals: Option<&mut Vec<(u64, u32, u32)>>,
+    mut vitals: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     for &direction in path {
@@ -991,16 +1037,14 @@ async fn first_cast_vitals(mut inbound: &[u8]) -> TestResult<(u64, Vec<u8>)> {
 
 fn collect_events(
     client: &mut oteryn_dev_client::DevClientSession,
-    mut history: Option<&mut Vec<(u64, u32, u32)>>,
+    mut history: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     for event in client.take_events() {
+        if let Some(history) = history.as_deref_mut() {
+            history.record(&event);
+        }
         match event {
-            SessionEvent::ActorVitals(delta) => {
-                if let Some(history) = history.as_deref_mut() {
-                    history.push((delta.server_sequence, delta.value.mana, delta.value.soul));
-                }
-            }
             SessionEvent::WorldClock(delta) => {
                 if let Some(clock) = clock.as_deref_mut() {
                     *clock = (
@@ -1018,7 +1062,7 @@ fn collect_events(
 
 async fn wait_for_cast_tile(
     client: &mut oteryn_dev_client::DevClientSession,
-    mut vitals: Option<&mut Vec<(u64, u32, u32)>>,
+    mut vitals: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
@@ -1061,6 +1105,62 @@ fn item_count(
         .sum())
 }
 
+fn require_unique_rat_tile(
+    entities: impl IntoIterator<Item = (Option<TilePos>, EntityDetail)>,
+) -> TestResult {
+    let occupants = entities
+        .into_iter()
+        .filter(|&(position, detail)| position == Some(RAT_TILE) && actor_state(detail).is_some())
+        .count();
+    if occupants != 1 {
+        return Err(
+            format!("C18a expected one actor on the Rat tile, observed {occupants}").into(),
+        );
+    }
+    Ok(())
+}
+
+struct CastObservation {
+    started: tokio::time::Instant,
+    reply_sequence: u64,
+    charge_sequence: u64,
+    regeneration: Vec<(u64, u32, u32, u64)>,
+    first_unlock: Option<Duration>,
+}
+
+impl CastObservation {
+    fn record(&mut self, event: &SessionEvent) {
+        match event {
+            SessionEvent::ActorVitals(delta) if delta.server_sequence > self.charge_sequence => {
+                let elapsed_ms = self.started.elapsed().as_millis() as u64;
+                self.regeneration.push((
+                    delta.server_sequence,
+                    delta.value.mana,
+                    delta.value.soul,
+                    elapsed_ms,
+                ));
+            }
+            SessionEvent::ActorCombatState(delta)
+                if delta.server_sequence > self.reply_sequence && !delta.value.in_fight =>
+            {
+                self.first_unlock
+                    .get_or_insert_with(|| self.started.elapsed());
+            }
+            _ => {}
+        }
+    }
+}
+
+// Global outdoor monster combat applies a 60-second logout block.
+fn require_combat_lock_duration(first_unlock: Option<Duration>) -> TestResult {
+    if !first_unlock.is_some_and(|elapsed| elapsed >= Duration::from_secs(60)) {
+        return Err(
+            format!("C18a missing or early outdoor combat unlock: {first_unlock:?}").into(),
+        );
+    }
+    Ok(())
+}
+
 fn actor_state(detail: EntityDetail) -> Option<(StepDirection, u8)> {
     match detail {
         EntityDetail::Actor {
@@ -1080,6 +1180,31 @@ fn actor_state(detail: EntityDetail) -> Option<(StepDirection, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn c18a_rejects_multiple_actors_on_the_rat_tile() {
+        let rat = EntityDetail::Actor {
+            direction: StepDirection::West,
+            appearance_ref: 1,
+            health_percent: 100,
+        };
+        let object = EntityDetail::Object {
+            item_definition_ref: 1,
+            quantity: 1,
+            item_handle: None,
+        };
+        assert!(require_unique_rat_tile([(Some(RAT_TILE), rat), (Some(RAT_TILE), object)]).is_ok());
+        assert!(require_unique_rat_tile([(Some(RAT_TILE), rat), (Some(RAT_TILE), rat)]).is_err());
+        assert!(require_unique_rat_tile([(Some(RAT_TILE), object)]).is_err());
+    }
+
+    #[test]
+    fn c18a_rejects_missing_or_short_combat_lock() {
+        assert!(require_combat_lock_duration(None).is_err());
+        assert!(require_combat_lock_duration(Some(Duration::ZERO)).is_err());
+        assert!(require_combat_lock_duration(Some(Duration::from_millis(59_999))).is_err());
+        assert!(require_combat_lock_duration(Some(Duration::from_secs(60))).is_ok());
+    }
 
     #[test]
     fn c18a_actor_state_reads_direction_and_health_with_or_without_icons() {

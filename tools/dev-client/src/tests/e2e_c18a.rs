@@ -257,7 +257,7 @@ struct Envelope {
 #[serde(deny_unknown_fields)]
 struct Proof {
     wrapper: String,
-    regeneration: Vec<(u64, u32, u32)>,
+    regeneration: Vec<(u64, u32, u32, u64)>,
     capture_device: u64,
     capture_inode: u64,
     spell: u32,
@@ -640,6 +640,9 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         crate::qualification_scorch_impact(events, origin, caster, rat_tile, target, spell)
     };
     assert_eq!(verify(&events)?, Some(7));
+    events.push(damage(PresentationColor::Orange));
+    assert!(verify(&events).is_err());
+    events.pop();
     events.push(event(Kind::MagicEffect {
         position: rat_tile,
         effect_id: 17,
@@ -703,14 +706,33 @@ fn rejects_unbound_or_retried_wrapper_log() {
 fn rejects_an_unexplained_cast_refund() {
     let charged = (10, 22, 100);
     let logout = (20, 30, 100);
-    let verified = [(12, 24, 100), (14, 26, 100), (16, 28, 100), (18, 30, 100)];
+    let verified = [
+        (12, 24, 100, 100),
+        (14, 26, 100, 3_100),
+        (16, 28, 100, 6_100),
+        (18, 30, 100, 9_100),
+    ];
+    let mut early_credit = verified;
+    early_credit[1].3 -= 1;
+    assert!(!crate::qualification_mana_history(
+        charged,
+        &early_credit,
+        30,
+        logout
+    ));
     assert!(crate::qualification_mana_history(
         charged, &verified, 30, logout
     ));
     assert!(!crate::qualification_mana_history(charged, &[], 30, logout));
     assert!(!crate::qualification_mana_history(
         charged,
-        &[(12, 30, 100)],
+        &verified[..1],
+        30,
+        (20, 24, 100),
+    ));
+    assert!(!crate::qualification_mana_history(
+        charged,
+        &[(12, 30, 100, 6_000)],
         30,
         logout
     ));
