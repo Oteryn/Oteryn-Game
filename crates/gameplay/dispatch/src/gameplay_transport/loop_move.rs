@@ -820,10 +820,8 @@ pub(super) async fn reconcile_cask_collision(
                 )
             )
         },
-        true,
     )
-    .await
-    .ok()?;
+    .await?;
     let runtime = admission.runtime.lock().await;
     if runtime.owner_fence().is_err()
         || runtime.binding().runtime_scope() != scope
