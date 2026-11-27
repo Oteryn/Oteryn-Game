@@ -918,6 +918,34 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("P01_CHECK assigned-race-kill PASS analyser-credit-and-active-assignment");
 
+    row.at("leave-authored-hunt");
+    let from = tile(client.world_spatial().actor_position)?;
+    let occupied = client_row_p01::occupied_rat_route_tiles(&client);
+    let retreat = route_avoiding(
+        world,
+        from,
+        |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.protection_zone())
+        },
+        |at| !occupied.contains(&at),
+    )
+    .ok_or("no first-attempt route to protected logout ground")?;
+    client_row_p01::walk_rat_route(&mut client, world, &retreat).await?;
+    let position = tile(client.world_spatial().actor_position)?;
+    if !world
+        .base()
+        .tile(position.x, position.y, position.floor)
+        .is_some_and(|tile| tile.protection_zone())
+    {
+        return Err(format!("logout ground is not protected: {position:?}").into());
+    }
+    evidence(&format!(
+        "P01_CHECK protected-logout-ground PASS position={position:?}"
+    ));
+
     row.at("logout-fresh-admission");
     let old_session = client.join_snapshot().game_session_id;
     logout_when_ready(&mut client).await?;
