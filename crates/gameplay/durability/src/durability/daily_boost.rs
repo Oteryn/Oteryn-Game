@@ -42,7 +42,7 @@ impl DurabilityRoot {
         deadline: Option<tokio::time::Instant>,
     ) -> Result<DailyBoostSelection, DurabilityError> {
         let pass = match deadline {
-            Some(deadline) => self.try_issue_semantic_pass_by(deadline.into_std())?,
+            Some(deadline) => self.try_issue_semantic_pass_by(deadline)?,
             None => self.try_issue_semantic_pass()?,
         };
         let mut context = (authority, node, permit);
