@@ -593,7 +593,10 @@ enum JournalCue {
         secondary: u16,
     },
     ItemEffect(u16),
-    Damage { target: ExactActorRef, amount: std::num::NonZeroU64 },
+    Damage {
+        target: ExactActorRef,
+        amount: std::num::NonZeroU64,
+    },
     Cast {
         cue: Cue,
         target: ExactActorRef,
@@ -655,7 +658,9 @@ impl SoundPublisher {
         {
             let revision = self.revision;
             self.record(runtime, actor, at.position(), 1, 0);
-            if self.revision != revision && let Some(entry) = self.sounds.back_mut() {
+            if self.revision != revision
+                && let Some(entry) = self.sounds.back_mut()
+            {
                 entry.kind = JournalCue::Damage { target, amount };
             }
         }
@@ -911,7 +916,10 @@ impl SoundPublisher {
                         position,
                         target: super::analyser::entity_ref(target),
                         attacker: Some(super::analyser::entity_ref(sound.actor)),
-                        primary: PresentationValue { value: amount.get(), color: PresentationColor::Red },
+                        primary: PresentationValue {
+                            value: amount.get(),
+                            color: PresentationColor::Red,
+                        },
                         secondary: None,
                     },
                 ),

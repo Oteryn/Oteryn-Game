@@ -604,7 +604,7 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         })
     };
     let mut events = vec![words, damage(PresentationColor::Orange)];
-    for (dx, min, max) in [(1, 0, 0), (2, -1, 1), (3, -1, 1), (4, -2, 2)] {
+    for (dx, min, max) in [(1, 0, 0), (2, -1, 1), (3, -1, 1)] {
         for dy in min..=max {
             events.push(event(Kind::MagicEffect {
                 position: ActorPosition {
@@ -622,6 +622,16 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
     };
     assert_eq!(verify(&events)?, Some(7));
     assert!(verify(&events[..3]).is_err());
+    events.push(event(Kind::MagicEffect {
+        position: ActorPosition {
+            x: origin.x + 4,
+            ..origin
+        },
+        effect_id: 16,
+        source: PresentationSource::Own,
+    }));
+    assert!(verify(&events).is_err());
+    events.pop();
     events[1] = damage(PresentationColor::Red);
     assert!(verify(&events).is_err());
     events[1] = damage(PresentationColor::Orange);
