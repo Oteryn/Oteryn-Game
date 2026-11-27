@@ -159,9 +159,22 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
         false,
         (None, None, None),
         false,
-        Some(creature),
+        Some(ObservedCreature::Letter(creature)),
         false,
     )
+}
+
+pub(super) fn goblin_corpse_scenario() -> TestResult {
+    scenario_with_creature_observed(
+        None, false, None, false, false, false, (None, None, None), false,
+        Some(ObservedCreature::GoblinCorpse), false,
+    )
+}
+
+#[derive(Clone, Copy)]
+enum ObservedCreature<'a> {
+    Letter(&'a str),
+    GoblinCorpse,
 }
 
 pub(super) fn scenario_with_blocked_bounty_read() -> TestResult {
@@ -183,10 +196,15 @@ fn scenario_with_creature_observed(
     elemental_area: bool,
     settings: KillScenarioSettings<'_>,
     analyser: bool,
-    letter_creature: Option<&str>,
+    observed_creature: Option<ObservedCreature<'_>>,
     blocked_bounty_read: bool,
 ) -> TestResult {
     let (charm, boss_policy, daily_target) = settings;
+    let letter_creature = match observed_creature {
+        Some(ObservedCreature::Letter(creature)) => Some(creature),
+        _ => None,
+    };
+    let observe_goblin = matches!(observed_creature, Some(ObservedCreature::GoblinCorpse));
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
@@ -258,7 +276,7 @@ fn scenario_with_creature_observed(
             1,
             1,
             "runtime-scope-assignment:1",
-            if ranged_spell { 66 } else { 2 },
+            if ranged_spell { 66 } else { 2 + usize::from(observe_goblin) },
             channel_pin.clone(),
         )
         .map_err(debug)?;
@@ -295,10 +313,14 @@ fn scenario_with_creature_observed(
             },
             |name| format!("oteryn:creature.radiant_{name}"),
         );
-        let creature_key = letter_creature.map_or(creature_key, str::to_owned);
+        let creature_key = if observe_goblin {
+            "oteryn:creature.goblin".to_owned()
+        } else {
+            letter_creature.map_or(creature_key, str::to_owned)
+        };
         let expected_xp = if daily_target == Some("creature") {
             10
-        } else if settle_radiant {
+        } else if settle_radiant || observe_goblin {
             native
                 .reward_table()
                 .row(&creature_key)
@@ -469,6 +491,15 @@ fn scenario_with_creature_observed(
                 .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
                 .map_err(debug)?;
         }
+        let observer = if observe_goblin {
+            let session = GameSessionId::decode(&id(100)).map_err(debug)?;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let observer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime.initialize_first_entry_position(observer).map_err(debug)?;
+            Some(observer)
+        } else {
+            None
+        };
         if ranged_spell {
             // Unrelated committed sessions must not turn the single target cast into
             // an oversized area roster. They have no spell state or attack eligibility.
@@ -1313,6 +1344,11 @@ fn scenario_with_creature_observed(
             return harness.cleanup().await;
         }
         super::w22a_loot_fixtures::before_kill(&owner, &harness, actor, session).await?;
+        let mut corpse_observer = if let Some(observer) = observer {
+            Some(corpse_delta::Observer::new(&owner, observer).await?)
+        } else {
+            None
+        };
         let mut swings = 0;
         loop {
             // ATTACK-2: the swing weapon (here fists) is read from the equipment owner first.
@@ -1340,6 +1376,9 @@ fn scenario_with_creature_observed(
                 .clock_origin
                 .checked_sub(PASS)
                 .expect("a monotonic clock older than the passes");
+        }
+        if let Some(observer) = &mut corpse_observer {
+            observer.assert_pending(&owner).await?;
         }
         let mut daily_expected_loot = None;
         if let Some(target) = daily_target {
@@ -1537,6 +1576,15 @@ fn scenario_with_creature_observed(
         // Corpse: one materialized corpse minted for this Character's kill, and its loot rows
         // are children of that very corpse.
         assert_eq!(corpse_receipts(&harness).await?, 1);
+        if let Some(observer) = &mut corpse_observer {
+            let expected_body = native.reward_table().row(&creature_key).map_err(debug)?
+                .corpse_item.as_ref().ok_or("native Goblin corpse definition")?;
+            observer.assert_committed(&owner, &harness, expected_body).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let children: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_item_corpse_container_entries e \
              JOIN game_item_mint_receipts r ON r.item_instance_id = e.parent_item_instance_id",
@@ -1759,3 +1807,6 @@ async fn corpse_receipts(harness: &Harness) -> TestResult<i64> {
 
 #[path = "kill_reward_e2e/summer_settlement.rs"]
 pub(super) mod summer_settlement;
+
+#[path = "kill_reward_e2e_fixtures/corpse_delta.rs"]
+mod corpse_delta;
