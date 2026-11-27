@@ -2,6 +2,9 @@
 use super::*;
 use crate::durability::DurabilityError;
 use crate::gameplay_transport::world_spatial::decode_step_result;
+use oteryn_protocol_oteryn::actor_spell::{
+    COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, decode_spell_cast_result,
+};
 use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, ChatDisposition, ChatSpeechMode,
     decode_chat_intent_result, encode_chat_intent,
@@ -136,6 +139,13 @@ fn guard_case(
                             payload: &payload,
                         },
                     )?
+                } else if command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
+                    cast_command(
+                        1,
+                        &oteryn_protocol_oteryn::actor_spell::encode_spell_cast_intent(
+                            &crate::gameplay_transport::actor_spell::tests::exura(),
+                        ),
+                    )
                 } else if command_type == COMMAND_TYPE_USE_INTENT {
                     use_command(1, 1, u64::from(command_type), b"oteryn:cell/entry-door", 0)
                 } else {
@@ -199,7 +209,15 @@ fn guard_case(
                         .into_iter()
                         .filter(|envelope| envelope.message_type() == MessageType::CommandResult)
                         .map(|envelope| {
-                            oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                            let result =
+                                oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                            if command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT
+                                && result.command_id == 1
+                                && result.status == CommandStatus::Rejected
+                            {
+                                assert_eq!(envelope.server_sequence(), if house { 2 } else { 1 });
+                            }
+                            Ok::<_, FoundationProtocolError>(result)
                         })
                         .collect::<Result<Vec<_>, _>>()?;
                     if transient {
@@ -231,6 +249,12 @@ fn guard_case(
                                         disposition: ChatDisposition::Rejected,
                                         wait_seconds: 0,
                                     })
+                                );
+                            }
+                            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
+                                assert_eq!(
+                                    decode_spell_cast_result(results[0].payload),
+                                    Ok(SpellCastDisposition::Rejected)
                                 );
                             }
                             COMMAND_TYPE_USE_INTENT => assert_eq!(
@@ -455,4 +479,19 @@ fn ordinary_commands_ignore_busy_house_input_holder() -> Result<(), Box<dyn Erro
         .join()
         .map_err(|_| "guard test thread panicked")?
         .map_err(Into::into)
+}
+
+#[test]
+fn first_cast_guard_deferral_and_replay_have_decodable_spell_results() -> Result<(), Box<dyn Error>>
+{
+    for house in [false, true] {
+        guard_case(
+            || DurabilityError::RootUnavailable,
+            true,
+            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+            &[],
+            house,
+        )?;
+    }
+    Ok(())
 }

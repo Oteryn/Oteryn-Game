@@ -95,7 +95,16 @@ where
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
-        if write_frame(stream, &delta).await.is_err() {
+        if outbound::write_actor_frame(
+            stream,
+            &delta,
+            outbound::ActorFrame::VitalsDelta,
+            session.generation,
+            delta_sequence,
+        )
+        .await
+        .is_err()
+        {
             return Err(ServeEnd::Disconnected);
         }
         session.admitted.continuity.vitals_revision = to;

@@ -306,6 +306,13 @@ pub(super) fn encode(
         Dispatch::Guild(payload) | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
             (CommandStatus::Accepted, std::mem::take(payload))
         }
+        // An unavailable input permit can refuse a core cast before it reaches the spell owner.
+        Dispatch::Unregistered
+            if command.command_type
+                == oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT =>
+        {
+            (CommandStatus::Rejected, encode_spell_cast_result(SpellCastDisposition::Rejected))
+        }
         // An unavailable input permit can refuse a core STEP before it reaches movement.
         Dispatch::Unregistered if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => (
             CommandStatus::Rejected,

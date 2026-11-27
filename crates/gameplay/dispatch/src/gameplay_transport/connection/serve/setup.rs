@@ -235,11 +235,9 @@ where
         return Err(ServeEnd::Disconnected.into());
     };
     record_join_progress("snapshot_write", admitted.first_entry);
-    for frame in &snapshot {
-        if write_frame(stream, frame).await.is_err() {
-            return Err(JoinFailure::Transport);
-        }
-    }
+    outbound::write_snapshot_frames(stream, &snapshot, &domains, generation)
+        .await
+        .map_err(|_| JoinFailure::Transport)?;
     record_join_progress("snapshot_flushed", admitted.first_entry);
     zones_nologout_transport::delivered(admitted);
     if let Some(trade) = payloads
