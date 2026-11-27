@@ -300,6 +300,10 @@ async fn fusion_case(
             Ok((reference, worth))
         })
         .collect::<TestResult<Vec<_>>>()?;
+    let mut bank = sqlx::PgConnection::connect(dedicated.url).await?;
+    if bank_balance(&mut bank, dedicated).await? != 0 {
+        return Err("standard Fusion requires an empty bank".into());
+    }
     let gold_before = carried_gold(&client, &coins);
     if gold_before < 30_000 || dagger_tiers(&mut client, pair_ref.get()).await? != [0, 0] {
         return Err(
@@ -378,6 +382,7 @@ async fn fusion_case(
             expected_tiers.sort_unstable();
             if super::client_row_p18::dust(&mut client).await? != (100 - dust_paid, 100)
                 || carried_gold(&client, &coins) != gold_before - gold_paid
+                || bank_balance(&mut bank, dedicated).await? != 0
                 || dagger_tiers(&mut client, pair_ref.get()).await? != expected_tiers
                 || client.inventory().cloned().map(|inventory| unrelated_inventory(inventory, &affected)) .as_ref() != Some(&before)
             {
@@ -407,7 +412,9 @@ async fn fusion_case(
     }
     let (expected_tiers, succeeded, dust_paid, gold_paid) =
         fusion_outcome.ok_or("funded valid-pair Fusion was never exercised")?;
-    if dagger_tiers(&mut fresh, pair_ref.get()).await? != expected_tiers
+    if bank_balance(&mut bank, dedicated).await? != 0
+        || carried_gold(&fresh, &coins) != gold_before - gold_paid
+        || dagger_tiers(&mut fresh, pair_ref.get()).await? != expected_tiers
         || super::client_row_p18::dust(&mut fresh).await? != retained_balance
     {
         return Err("Fusion dagger tiers or Forge balance did not persist across relog".into());
@@ -639,6 +646,11 @@ async fn raise_cap_for_funding(
     }
     let mut client = connect_character(clients, tag, 0).await?;
     let session = client.join_snapshot().game_session_id;
+    let baseline = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+    let mut expected_history = baseline.body.as_array().cloned().ok_or("invalid cap history baseline")?;
+    if baseline.status != CommandStatus::Accepted || !valid_history_ordinals(&expected_history) {
+        return Err("invalid cap history baseline".into());
+    }
     for limit in u64::try_from(current)?..required {
         let cost = limit - 75;
         let mut tx = sqlx::Connection::begin(&mut *db).await?;
@@ -661,6 +673,10 @@ async fn raise_cap_for_funding(
         {
             return Err(format!("live Forge cap upgrade {limit} → {} failed: {}", limit+1, result.body).into());
         }
+        let next = expected_history.first().and_then(|entry| entry["ordinal"].as_u64())
+            .unwrap_or(0).checked_add(1).ok_or("cap history ordinal overflow")?;
+        expected_history.insert(0, serde_json::json!({"ordinal":next,"receipt":result.body}));
+        expected_history.truncate(50);
     }
     logout(&mut client).await?;
     let mut fresh = connect_character(clients, tag.wrapping_add(1), 0).await?;
@@ -669,6 +685,13 @@ async fn raise_cap_for_funding(
     {
         return Err("live Forge cap progression did not persist".into());
     }
+    let history = command(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
+    if history.status != CommandStatus::Accepted
+        || history.body != serde_json::Value::Array(expected_history)
+    {
+        return Err("live Forge cap upgrade history did not persist".into());
+    }
+    evidence("P18_CAP_HISTORY_CHECK status=PASS relog=true");
     logout(&mut fresh).await?;
     Ok(())
 }
@@ -815,8 +838,15 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         let preview::Payload::Quote(quote) = preview(&mut client, selection).await? else {
             return Err("exact fixture pair did not receive a quote".into());
         };
-        if quote.selection != selection {
-            return Err("quote selection mismatch".into());
+        if quote.selection != selection
+            || (quote.target_tier, quote.success_percent, quote.protection_percent) != (1, 100, 0)
+            || (u64::from(quote.resources.dust), u64::from(quote.resources.dust_limit)) != funded
+            || quote.resources.carried_gold != u64::try_from(carried_before)?
+            || quote.resources.bank_gold != u64::try_from(gold)?
+            || !quote.resources.bank_spendable
+            || (quote.resources.slivers, quote.resources.cores) != (slivers, cores)
+        {
+            return Err(format!("incorrect Forge quote selection, tiers, odds or resources: {quote:?}").into());
         }
         if (
             u64::from(quote.cost.dust),
