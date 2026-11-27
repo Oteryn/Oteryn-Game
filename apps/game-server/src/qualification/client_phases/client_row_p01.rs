@@ -2,12 +2,13 @@
 //! ASSIGN of a locked charm, and the QUERY after a credited hunt kill. The consumer is `apply` in
 //! `apps/client/src/features/0067-bestiary-charm-progression/protocol.rs`.
 use super::*;
-use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::{DevClientSession, EntityKind, WorldSpatialEntity};
 use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmKind};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
 use std::fmt::Write as _;
+use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 
 const DEADLINE: Duration = Duration::from_secs(1_800);
@@ -88,83 +89,133 @@ pub(super) async fn send(
         .map_err(|error| format!("decode {action:?}: {error:?}").into())
 }
 
-pub(super) fn occupied_rat_route_tiles(
+pub(super) fn route_occupants(
     client: &DevClientSession,
-) -> std::collections::BTreeSet<TilePos> {
-    use oteryn_dev_client::EntityKind;
+) -> impl Iterator<Item = (TilePos, WorldSpatialEntity)> + '_ {
     client
         .world_entities()
         .into_iter()
-        .flat_map(|entities| entities.iter())
+        .flat_map(|entities| entities.others())
         .filter(|entity| {
             matches!(
                 entity.kind,
                 EntityKind::Player | EntityKind::Creature | EntityKind::Npc
             )
         })
-        .filter_map(|entity| tile(entity.position).ok())
-        .collect()
+        .filter_map(|entity| tile(entity.position).ok().map(|at| (at, *entity)))
 }
+
+pub(super) fn occupied_rat_route_tiles(client: &DevClientSession) -> BTreeSet<TilePos> {
+    route_occupants(client).map(|(at, _)| at).collect()
+}
+
+pub(super) const VISIBILITY_TICK: Duration = Duration::from_millis(250);
 
 pub(super) async fn walk_rat_route(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
-    wait_for_clear_landing: bool,
+    reserved: &BTreeSet<TilePos>,
 ) -> TestResult {
-    for &direction in path {
+    let mut remaining = VecDeque::from(path.to_vec());
+    let center = tile(client.world_spatial().actor_position)?;
+    let mut repairs = 0;
+    while let Some(direction) = remaining.pop_front() {
         let before = tile(client.world_spatial().actor_position)?;
-        let expected =
-            destination(world, before, direction).ok_or("Rat route step has no landing")?;
+        let landing =
+            destination(world, before, direction).ok_or("P01 route step has no landing")?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-        while wait_for_clear_landing
-            && client.world_entities().is_some_and(|entities| {
-                entities.iter().any(|entity| {
-                    matches!(
-                        entity.kind,
-                        oteryn_dev_client::EntityKind::Player
-                            | oteryn_dev_client::EntityKind::Creature
-                            | oteryn_dev_client::EntityKind::Npc
-                    ) && tile(entity.position).is_ok_and(|at| at == expected)
-                })
-            })
-        {
-            if tokio::time::Instant::now() >= deadline {
-                let occupants: Vec<_> = client
-                    .world_entities()
-                    .into_iter()
-                    .flat_map(|entities| entities.iter())
-                    .filter(|entity| tile(entity.position).is_ok_and(|at| at == expected))
-                    .collect();
-                return Err(format!(
-                    "Rat route landing {expected:?} remained occupied by {occupants:?}"
-                )
-                .into());
-            }
-            client.service_liveness(Duration::from_millis(50)).await?;
-            client.take_events();
-        }
-        let step = client.step(direction).await?;
-        if step.status != CommandStatus::Accepted
-            || step.disposition != StepDisposition::Moved
-            || tile(client.world_spatial().actor_position)? != expected
-        {
-            let occupants: Vec<_> = client
-                .world_entities()
-                .into_iter()
-                .flat_map(|entities| entities.iter())
-                .filter(|entity| tile(entity.position).is_ok_and(|at| at == expected))
+        let mut empty_block = None;
+        loop {
+            let occupants: Vec<_> = route_occupants(client)
+                .filter(|(at, _)| *at == landing)
+                .map(|(_, entity)| (entity.entity, entity.display_name))
                 .collect();
-            return Err(format!(
-                "Rat route step {direction:?} from {before:?} expected {expected:?}: {step:?}; occupants={occupants:?}"
-            )
-            .into());
+            if !occupants.is_empty() {
+                let occupied = occupied_rat_route_tiles(client);
+                if let Some(path) = route_around_occupant(
+                    before,
+                    center,
+                    landing,
+                    &remaining,
+                    |at| !occupied.contains(&at) && !reserved.contains(&at),
+                    |at, step| destination(world, at, step),
+                ) {
+                    repairs += 1;
+                    if repairs > 8 {
+                        return Err("P01 exhausted eight occupied-tile route repairs".into());
+                    }
+                    evidence(&format!(
+                        "P01_ROUTE detour from={before:?} landing={landing:?} occupants={occupants:?} steps={}",
+                        path.len()
+                    ));
+                    remaining = path.into();
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!(
+                        "P01 landing {landing:?} remained occupied by {occupants:?}"
+                    )
+                    .into());
+                }
+                evidence(&format!(
+                    "P01_ROUTE wait landing={landing:?} occupants={occupants:?}"
+                ));
+                client.service_liveness(VISIBILITY_TICK).await?;
+                client.take_events();
+                continue;
+            }
+
+            let step = client.step(direction).await?;
+            let observed = tile(client.world_spatial().actor_position)?;
+            if step.status != CommandStatus::Accepted {
+                return Err(format!("P01 STEP {before:?} to {landing:?}: {step:?}").into());
+            }
+            match step.disposition {
+                StepDisposition::Moved if observed == landing => {
+                    verdict::Harness::global().progress("p01-walk");
+                    client.take_events();
+                    client
+                        .service_liveness(Duration::from_millis(u64::from(step.step_wait_ms)))
+                        .await?;
+                    break;
+                }
+                StepDisposition::Blocked if observed == before => {
+                    client.service_liveness(VISIBILITY_TICK).await?;
+                    let occupants: Vec<_> = route_occupants(client)
+                        .filter(|(at, _)| *at == landing)
+                        .map(|(_, entity)| (entity.entity, entity.display_name))
+                        .collect();
+                    let map = client.session_mut().world_map_snapshot()
+                        .and_then(|map| map.tiles.into_iter().find(|entry| {
+                            tile(entry.position).is_ok_and(|at| at == landing)
+                        }));
+                    evidence(&format!(
+                        "P01_ROUTE blocked from={before:?} landing={landing:?} command_id={} sequence={} occupants={occupants:?} map={map:?}",
+                        step.command_id, step.result_server_sequence
+                    ));
+                    if tile(client.world_spatial().actor_position)? != before {
+                        return Err("P01 position changed after a blocked STEP".into());
+                    }
+                    if occupants.is_empty() {
+                        if let Some(first) = empty_block {
+                            return Err(format!(
+                                "BLOCKER-SERVER repeated empty-tile STEP from={before:?} to={landing:?} first_sequence={first} second_sequence={}",
+                                step.result_server_sequence
+                            ).into());
+                        }
+                        empty_block = Some(step.result_server_sequence);
+                    }
+                    if tokio::time::Instant::now() >= deadline {
+                        return Err(format!("P01 STEP recovery deadline at {landing:?}").into());
+                    }
+                    client.take_events();
+                }
+                _ => return Err(format!(
+                    "P01 STEP from={before:?} expected={landing:?} observed={observed:?}: {step:?}"
+                ).into()),
+            }
         }
-        verdict::Harness::global().progress("rat-walk");
-        client.take_events();
-        client
-            .service_liveness(Duration::from_millis(u64::from(step.step_wait_ms)))
-            .await?;
     }
     Ok(())
 }
@@ -197,14 +248,14 @@ async fn logout_from_protected_ground(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
-    let mut occupied = occupied_rat_route_tiles(client);
-    occupied.insert(TilePos {
+    let mut reserved = BTreeSet::new();
+    reserved.insert(TilePos {
         x: 32444,
         y: 32178,
         floor: -7,
     });
     // Occupants outside the current view can still be on their authored spawn cells.
-    occupied.extend(spawns.sources.iter().flat_map(|source| {
+    reserved.extend(spawns.sources.iter().flat_map(|source| {
         source.points.iter().map(|point| TilePos {
             x: point.x,
             y: point.y,
@@ -219,23 +270,21 @@ async fn logout_from_protected_ground(
                 .is_some_and(|tile| tile.protection_zone())
     };
     // The prior live run identified this Wolf landing outside its authored cell.
-    occupied.insert(TilePos {
+    reserved.insert(TilePos {
         x: 32495,
         y: 32174,
         floor: -7,
     });
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route_avoiding(world, from, protected, |at| !occupied.contains(&at))
+    let occupied = occupied_rat_route_tiles(client);
+    let path = route_avoiding(world, from, protected, |at| !occupied.contains(&at) && !reserved.contains(&at))
         .ok_or_else(|| format!("no walkable route from {from:?} to {PROTECTED_LOGOUT:?}"))?;
-    walk_rat_route(client, world, &path, false).await?;
+    walk_rat_route(client, world, &path, &reserved).await?;
     let reached = tile(client.world_spatial().actor_position)?;
     if !protected(reached) {
         return Err(format!("client logout ground is not protected: {reached:?}").into());
     }
-    let (outcome, detail, _, _) = logout_once(client).await?;
-    if outcome != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("P01.client first logout refused at {reached:?}: {detail}").into());
-    }
+    full_row_p01::logout_when_ready(client).await?;
     evidence(&format!(
         "P01_CHECK client-protected-logout PASS position={reached:?} first-attempt"
     ));

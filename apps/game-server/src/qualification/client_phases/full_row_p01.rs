@@ -23,6 +23,7 @@ use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmUnlockDispositi
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
+use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 
 #[path = "full_row_p01_charm_fixture.rs"]
@@ -97,17 +98,66 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 pub(super) async fn logout_when_ready(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    use oteryn_dev_client::SessionEvent;
+    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+
+    // Global monster combat lasts 60 seconds. Allow one domain 10 publication tick.
+    let started = tokio::time::Instant::now();
+    let deadline = started + Duration::from_secs(60) + client_row_p01::VISIBILITY_TICK;
+    let initial = client.session_mut().combat_state().copied();
+    evidence(&format!("P01_LOGOUT wait_ms=60250 initial={initial:?}"));
     verdict::Harness::global().bounded_wait(deadline, "logout-combat-lock");
-    while client
-        .session_mut()
-        .combat_state()
-        .is_none_or(|state| state.in_fight)
-    {
-        if tokio::time::Instant::now() >= deadline {
-            return Err("combat state did not clear before logout".into());
+    let mut last_frame = None;
+    let mut last_damage = None;
+    loop {
+        for event in client.take_events() {
+            match event {
+                SessionEvent::ActorCombatState(frame) => {
+                    evidence(&format!(
+                        "P01_LOGOUT combat sequence={} state={:?}",
+                        frame.server_sequence, frame.value
+                    ));
+                    last_frame = Some((frame.server_sequence, frame.value));
+                }
+                SessionEvent::Presentation(frame) => {
+                    for event in frame.value {
+                        if let PresentationEventKind::ValueText {
+                            kind: PresentationValueKind::DamageReceived,
+                            attacker,
+                            target,
+                            primary,
+                            ..
+                        } = event.kind
+                        {
+                            let damage = (frame.server_sequence, attacker, target, primary);
+                            evidence(&format!("P01_LOGOUT incoming_damage={damage:?}"));
+                            last_damage = Some(damage);
+                        }
+                    }
+                }
+                _ => {}
+            }
         }
-        client.service_liveness(Duration::from_millis(100)).await?;
+        if client
+            .session_mut()
+            .combat_state()
+            .is_some_and(|state| !state.in_fight && state.target.is_none())
+        {
+            evidence(&format!(
+                "P01_LOGOUT clear elapsed_ms={} last_frame={last_frame:?}",
+                started.elapsed().as_millis()
+            ));
+            break;
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(format!(
+                "combat state did not clear before logout: initial={initial:?} last_frame={last_frame:?} last_damage={last_damage:?}"
+            ).into());
+        }
+        client
+            .service_liveness(remaining.min(client_row_p01::VISIBILITY_TICK))
+            .await?;
     }
     let (result, detail, _, _) = logout_once(client).await?;
     if result != Some(LogoutResult::Accepted) {
@@ -157,17 +207,41 @@ pub(super) async fn retreat_from_spawn(
     world: &BundleWorld,
     spawn: TilePos,
 ) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
-    let occupied = client_row_p01::occupied_rat_route_tiles(client);
-    // Leave native eleven-tile creature sight before respawn.
-    let retreat = route_avoiding(
-        world,
-        from,
-        |at| at.floor != spawn.floor || at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) > 11,
-        |at| !occupied.contains(&at),
-    )
-    .ok_or_else(|| format!("no walkable retreat from hunt at {from:?}"))?;
-    client_row_p01::walk_rat_route(client, world, &retreat, true).await
+    use oteryn_dev_client::EntityKind;
+
+    let mut tracked = BTreeMap::new();
+    let clear_of = |at: TilePos, origin: TilePos| {
+        at.floor != origin.floor || at.x.abs_diff(origin.x).max(at.y.abs_diff(origin.y)) > 11
+    };
+    for _ in 0..3 {
+        let from = tile(client.world_spatial().actor_position)?;
+        tracked.extend(
+            client_row_p01::route_occupants(client)
+                .filter(|(_, entity)| entity.kind == EntityKind::Creature)
+                .map(|(at, entity)| (entity.entity, at)),
+        );
+        let occupied = client_row_p01::occupied_rat_route_tiles(client);
+        let retreat = route_avoiding(
+            world,
+            from,
+            |at| clear_of(at, spawn) && tracked.values().all(|&point| clear_of(at, point)),
+            |at| !occupied.contains(&at),
+        )
+        .ok_or_else(|| format!("no walkable retreat from hunt at {from:?} contacts={tracked:?}"))?;
+        client_row_p01::walk_rat_route(client, world, &retreat, &BTreeSet::new()).await?;
+        client.service_liveness(client_row_p01::VISIBILITY_TICK).await?;
+        let reached = tile(client.world_spatial().actor_position)?;
+        let present: Vec<_> = client_row_p01::route_occupants(client)
+            .filter(|(at, entity)| entity.kind == EntityKind::Creature && at.floor == reached.floor)
+            .collect();
+        evidence(&format!(
+            "P01_LOGOUT retreat from={from:?} tracked={tracked:?} present={present:?}"
+        ));
+        if present.is_empty() {
+            return Ok(());
+        }
+    }
+    Err("P01 retreat still has visible creature contacts after three routes".into())
 }
 
 pub(super) async fn authored_target(
@@ -180,9 +254,9 @@ pub(super) async fn authored_target(
 ) -> TestResult<(TilePos, oteryn_dev_client::WorldSpatialEntity)> {
     use oteryn_dev_client::EntityKind;
     let from = tile(client.world_spatial().actor_position)?;
-    let mut occupied = client_row_p01::occupied_rat_route_tiles(client);
+    let mut reserved = BTreeSet::new();
     // This landing was reported occupied by the previous live approach.
-    occupied.insert(TilePos {
+    reserved.insert(TilePos {
         x: 32444,
         y: 32178,
         floor: -7,
@@ -195,7 +269,7 @@ pub(super) async fn authored_target(
                 y: point.y,
                 floor: source.floor,
             };
-            occupied.insert(at);
+            reserved.insert(at);
             if spawns
                 .creatures
                 .get(point.creature as usize)
@@ -205,6 +279,7 @@ pub(super) async fn authored_target(
             }
         }
     }
+    let occupied = client_row_p01::occupied_rat_route_tiles(client);
     let adjacent = |a: TilePos, b: TilePos| {
         a.floor == b.floor && a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) == 1
     };
@@ -219,7 +294,7 @@ pub(super) async fn authored_target(
                 .tile(at.x, at.y, at.floor)
                 .is_some_and(|tile| !tile.protection_zone())
         },
-        |at| !occupied.contains(&at),
+        |at| !occupied.contains(&at) && !reserved.contains(&at),
     )
     .ok_or_else(|| format!("no first-attempt route to an authored {key} spawn"))?;
     let goal = path
@@ -233,7 +308,7 @@ pub(super) async fn authored_target(
         })
         .copied()
         .ok_or("route does not end adjacent to its authored spawn")?;
-    client_row_p01::walk_rat_route(client, world, &path, required_spawn.is_none()).await?;
+    client_row_p01::walk_rat_route(client, world, &path, &reserved).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     verdict::Harness::global().bounded_wait(deadline, "authored-creature-visibility");
     loop {
