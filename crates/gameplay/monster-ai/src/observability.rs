@@ -65,6 +65,35 @@ fn monster_identity(actor: ExactActorRef) -> String {
     format!("{identity:032x}/{}", actor.actor_local_generation())
 }
 
+/// Scheduled/observed semantic times for a creature or a Channel-wide deferred turn.
+pub fn record_think_timing(
+    actor: Option<ExactActorRef>,
+    scheduled: u64,
+    actual: u64,
+    reason: &str,
+) {
+    if !melee_diagnostics_enabled() {
+        return;
+    }
+    emit(
+        "oteryn-game-server",
+        &Line::new(decision_level(), "monster_ai", "think_timing")
+            .field(
+                "monster",
+                actor.map_or(FieldValue::Token("all"), |actor| {
+                    FieldValue::Owned(monster_identity(actor))
+                }),
+            )
+            .field("scheduled_us", FieldValue::U64(scheduled))
+            .field("actual_us", FieldValue::U64(actual))
+            .field(
+                "delay_ms",
+                FieldValue::U64(actual.saturating_sub(scheduled) / 1_000),
+            )
+            .field("reason", FieldValue::Token(reason)),
+    );
+}
+
 pub fn record_melee_outcome(monster: ExactActorRef, outcome: &str, reason: &str) {
     if !melee_diagnostics_enabled() {
         return;

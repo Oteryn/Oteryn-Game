@@ -668,6 +668,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
                 let waves = &mut states.rotten_waves;
+                reader.set_diagnostic_clock(self.owner_now().get());
                 if !pending.ai_known() { table
                     .run_reserved_current_thinks_borrowed(
                         runtime,

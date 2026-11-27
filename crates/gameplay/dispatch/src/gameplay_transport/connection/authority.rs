@@ -1612,6 +1612,14 @@ pub trait FreshAdmissionAuthority {
         self.observe_vitals(actor, admitted.game_session_id)
     }
 
+    fn observe_actor_cooldowns(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::presentation::ActorCooldowns>> {
+        async { None }
+    }
+
     fn tick_house_vitals(
         &self,
         actor: ExactActorRef,

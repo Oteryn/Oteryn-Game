@@ -26,20 +26,29 @@ use oteryn_protocol_oteryn::zones_nologout::{PlayerPresence, PlayerStatus};
 
 #[test]
 fn a4_invisible_postgres_real_dispatch() -> TestResult {
-    invisibility_case::<false, false>()
+    invisibility_case::<false, false, false>()
+}
+
+#[test]
+fn invisible_cast_projects_spell_and_support_cooldowns() -> TestResult {
+    invisibility_case::<false, false, true>()
 }
 
 #[test]
 fn invisible_caster_stays_visible_to_players_hidden_from_monsters() -> TestResult {
-    invisibility_case::<true, false>()
+    invisibility_case::<true, false, false>()
 }
 
 #[test]
 fn invisible_player_swing_publishes_exact_rat_damage() -> TestResult {
-    invisibility_case::<false, true>()
+    invisibility_case::<false, true, false>()
 }
 
-fn invisibility_case<const WITH_OBSERVER: bool, const WITH_ATTACK: bool>() -> TestResult {
+fn invisibility_case<
+    const WITH_OBSERVER: bool,
+    const WITH_ATTACK: bool,
+    const WITH_COOLDOWNS: bool,
+>() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -280,6 +289,7 @@ fn invisibility_case<const WITH_OBSERVER: bool, const WITH_ATTACK: bool>() -> Te
             } else {
                 None
             };
+            let cooldown_clock = WITH_COOLDOWNS.then(|| owner.freeze_owner_clock_for_test());
             let outcome = owner
                 .cast_spell_completion(
                     actor,
@@ -312,6 +322,10 @@ fn invisibility_case<const WITH_OBSERVER: bool, const WITH_ATTACK: bool>() -> Te
             assert!(!conditions.invisible_at(start + 200_000_000));
             drop(states);
             drop(runtime);
+            if WITH_COOLDOWNS {
+                assert_invisible_cooldowns(&owner, deps.admitted, spell, start).await?;
+            }
+            drop(cooldown_clock);
             if let Some((observer, reader, target, mut view, look, attack)) = observation {
                 let channel = owner
                     .observe_visible_entities(observer)
@@ -474,4 +488,59 @@ fn invisibility_case<const WITH_OBSERVER: bool, const WITH_ATTACK: bool>() -> Te
             h.cleanup().await
         })
     })
+}
+
+async fn assert_invisible_cooldowns(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    spell: std::num::NonZeroU32,
+    start: u64,
+) -> TestResult {
+    use crate::gameplay_transport::connection::CooldownProjection;
+    use oteryn_protocol_oteryn::presentation as wire;
+    let actor = admitted.runtime_actor.ok_or("caster")?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[6, wire::CAPABILITY_PRESENTATION_V1],
+    )
+    .ok_or("presentation selection")?;
+    let (mut server, mut client) = tokio::io::duplex(4096);
+    let mut projection = CooldownProjection::default();
+    let mut sequence = admitted.continuity.server_sequence;
+    projection
+        .emit_for_test(&mut server, owner, actor, &mut admitted, &mut sequence)
+        .await?;
+    drop(server);
+    let frame = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+    let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+    assert_eq!(
+        (delta.domain_id, delta.base_revision, delta.new_revision),
+        (wire::STATE_DOMAIN_ACTOR_COOLDOWNS, 0, 1)
+    );
+    let value = wire::decode_actor_cooldowns(delta.payload).map_err(debug)?;
+    let definition = owner.spells.indexed(spell).ok_or("authored Invisible")?;
+    let support = definition
+        .groups
+        .iter()
+        .find(|group| group.key == "support")
+        .ok_or("authored Support group")?;
+    let group = crate::gameplay_transport::spell_catalog::cooldown_group_ordinal(&support.key)
+        .ok_or("Support ordinal")?;
+    assert_eq!(
+        value.entries,
+        [
+            wire::ActorCooldown {
+                kind: wire::ActorCooldownKind::Spell,
+                id: spell.get(),
+                expires_at_ms: (start + definition.cooldown_micros).div_ceil(1000)
+            },
+            wire::ActorCooldown {
+                kind: wire::ActorCooldownKind::Group,
+                id: group,
+                expires_at_ms: (start + support.cooldown_micros).div_ceil(1000)
+            },
+        ]
+    );
+    Ok(())
 }

@@ -1655,6 +1655,61 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
+    async fn observe_actor_cooldowns(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::presentation::ActorCooldowns> {
+        use oteryn_protocol_oteryn::presentation::{
+            ActorCooldown, ActorCooldownKind, ActorCooldowns,
+        };
+        let deadlines = {
+            let runtime = self.runtime.lock().await;
+            runtime.owner_fence().ok()?;
+            let states = self.states.spell_states.lock().await;
+            states
+                .get(&runtime, actor, session)?
+                .source_cooldown_deadlines()
+        };
+        let now = self.owner_now().get();
+        let mut entries = Vec::new();
+        for (key, deadline) in deadlines
+            .into_iter()
+            .filter(|(_, deadline)| *deadline > now)
+        {
+            let (kind, id) = if let Some(key) = key.strip_prefix("spell:") {
+                let index = self
+                    .spells
+                    .spells
+                    .iter()
+                    .enumerate()
+                    .position(|(index, spell)| {
+                        spell.key == key && !self.spells.inactive_aliases.contains(&index)
+                    })?;
+                (ActorCooldownKind::Spell, u32::try_from(index + 1).ok()?)
+            } else {
+                let key = key.strip_prefix("group:")?;
+                if key == oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY {
+                    continue;
+                }
+                (
+                    ActorCooldownKind::Group,
+                    crate::gameplay_transport::spell_catalog::cooldown_group_ordinal(key)?,
+                )
+            };
+            entries.push(ActorCooldown {
+                kind,
+                id,
+                expires_at_ms: deadline.div_ceil(1_000),
+            });
+        }
+        Some(ActorCooldowns {
+            server_now_ms: now / 1_000,
+            rtt_ms: None,
+            entries,
+        })
+    }
+
     async fn observe_house_vitals(
         &self,
         actor: ExactActorRef,

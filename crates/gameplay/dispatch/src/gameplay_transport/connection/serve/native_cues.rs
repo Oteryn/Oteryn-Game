@@ -51,11 +51,31 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
     admitted: &AdmittedSession,
     domains: &mut Vec<crate::gameplay_transport::item_view::ItemViewSnapshotDomain>,
 ) -> Result<(), ServeEnd> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let project_cooldowns = admitted
+        .continuity
+        .selected_capabilities
+        .contains(wire::CAPABILITY_PRESENTATION_V1)
+        && !domains
+            .iter()
+            .any(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS);
     observation_snapshots(
         &admitted.continuity.selected_capabilities,
         admitted.continuity.presentation_revision,
         domains,
     )?;
+    if project_cooldowns
+        && let Some(cooldowns) = authority
+            .observe_actor_cooldowns(actor, admitted.game_session_id)
+            .await
+    {
+        let row = domains
+            .iter_mut()
+            .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
+            .ok_or(ServeEnd::Disconnected)?;
+        row.payload =
+            wire::encode_actor_cooldowns(&cooldowns).map_err(|_| ServeEnd::Disconnected)?;
+    }
     if admitted
         .continuity
         .selected_capabilities
@@ -82,6 +102,120 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
         };
     }
     Ok(())
+}
+
+#[derive(Default)]
+pub(in crate::gameplay_transport) struct CooldownProjection {
+    revision: u64,
+    entries: Vec<oteryn_protocol_oteryn::presentation::ActorCooldown>,
+}
+
+impl CooldownProjection {
+    pub(super) fn from_snapshot(
+        domains: &[crate::gameplay_transport::item_view::ItemViewSnapshotDomain],
+    ) -> Result<Self, ServeEnd> {
+        use oteryn_protocol_oteryn::presentation as wire;
+        let Some(row) = domains
+            .iter()
+            .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
+        else {
+            return Ok(Self::default());
+        };
+        let snapshot =
+            wire::decode_actor_cooldowns(&row.payload).map_err(|_| ServeEnd::Disconnected)?;
+        Ok(Self {
+            revision: row.revision,
+            entries: snapshot.entries,
+        })
+    }
+
+    pub(super) async fn emit<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+        &mut self,
+        stream: &mut S,
+        authority: &A,
+        actor: ExactActorRef,
+        admitted: &mut AdmittedSession,
+        sequence: &mut u64,
+    ) -> Result<(), ServeEnd> {
+        use oteryn_protocol_oteryn::presentation as wire;
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_PRESENTATION_V1)
+        {
+            return Ok(());
+        }
+        let Some(mut current) = authority
+            .observe_actor_cooldowns(actor, admitted.game_session_id)
+            .await
+        else {
+            return Ok(());
+        };
+        let mut changes = current
+            .entries
+            .iter()
+            .copied()
+            .filter(|entry| !self.entries.contains(entry))
+            .collect::<Vec<_>>();
+        changes.extend(
+            self.entries
+                .iter()
+                .filter(|old| {
+                    old.expires_at_ms > current.server_now_ms
+                        && !current
+                            .entries
+                            .iter()
+                            .any(|entry| entry.kind == old.kind && entry.id == old.id)
+                })
+                .map(|old| wire::ActorCooldown {
+                    expires_at_ms: 0,
+                    ..*old
+                }),
+        );
+        if changes.is_empty() {
+            self.entries = current.entries;
+            return Ok(());
+        }
+        let next = sequence.checked_add(1).ok_or(ServeEnd::Disconnected)?;
+        let revision = self.revision.checked_add(1).ok_or(ServeEnd::Disconnected)?;
+        let entries = std::mem::replace(&mut current.entries, changes);
+        let payload = wire::encode_actor_cooldowns(&current).map_err(|_| ServeEnd::Disconnected)?;
+        let frame = encode_state_delta(
+            admitted.continuity.connection_generation,
+            next,
+            wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
+            self.revision,
+            revision,
+            wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
+            &payload,
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        self.entries = entries;
+        self.revision = revision;
+        *sequence = next;
+        admitted.continuity.server_sequence = next;
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn emit_for_test<
+        S: AsyncWrite + Unpin,
+        A: FreshAdmissionAuthority,
+    >(
+        &mut self,
+        stream: &mut S,
+        authority: &A,
+        actor: ExactActorRef,
+        admitted: &mut AdmittedSession,
+        sequence: &mut u64,
+    ) -> Result<(), &'static str> {
+        self.emit(stream, authority, actor, admitted, sequence)
+            .await
+            .map_err(|_| "write native cooldown delta")
+    }
 }
 
 /// House commands retain their own live loop, but consume the same scoped

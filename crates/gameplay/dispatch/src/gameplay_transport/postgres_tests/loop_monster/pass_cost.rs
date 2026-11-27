@@ -5,6 +5,81 @@ use oteryn_gameplay_durability::durability::native_world_read::qualified_combat_
 use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
 
 #[test]
+fn source_owner_thinks_on_deadline_while_maintenance_is_pending() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(async |harness| {
+        use crate::gameplay_transport::source_item_cycle::SOURCE_OWNER_MAINTENANCE_WAIT;
+        use std::sync::{Arc, atomic::Ordering};
+        use std::time::Duration;
+
+        prepare_current_session(harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) =
+            crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
+        let active = controller.active().ok_or("active generation")?;
+        let (deps, rat) = dependencies(active, &pin)?;
+        let mut owner = deps.owner(harness, &authority);
+        owner.active_generation = Some(active);
+        owner.movement_cells = deps.room.movement_cells().into();
+        let stop = oteryn_foundation::CancellationToken::new();
+        let blocked = Arc::new(tokio::sync::Notify::new());
+        let wake = owner.states.spell_states.lock().await.owner_wake.clone();
+        let mut cycle = Box::pin(
+            SOURCE_OWNER_MAINTENANCE_WAIT.scope(blocked, owner.run_source_owner_cycles(&stop)),
+        );
+        let interval_ms = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS;
+        let interval_us = interval_ms * 1_000;
+        let mut now = 10_000_000;
+        let mut previous_due = None;
+        wake.notify_one();
+        for sequence in 1..=4 {
+            // Keep database I/O on the real clock. Step both the timer and the
+            // semantic owner time before polling this turn's source work.
+            owner
+                .states
+                .test_owner_time
+                .store(now + 1, Ordering::Relaxed);
+            tokio::time::pause();
+            tokio::time::advance(Duration::from_millis(interval_ms)).await;
+            tokio::time::resume();
+            let due = tokio::time::timeout(Duration::from_secs(5), async {
+                tokio::select! {
+                    () = &mut cycle => Err("source owner stopped before the due think"),
+                    due = async {
+                        loop {
+                            let states = owner.states.spell_states.lock().await;
+                            let ai = &states.monster_melee.creature_ai;
+                            if ai.last_report_for_test(rat).is_some_and(|report| report.sequence >= sequence) {
+                                break ai.due(rat).ok_or("adjacent Rat has a next think");
+                            }
+                            drop(states);
+                            tokio::task::yield_now().await;
+                        }
+                    } => due,
+                }
+            }).await??;
+            if let Some(previous) = previous_due {
+                assert!((1..=2 * interval_us).contains(&due.saturating_sub(previous)));
+            }
+            assert_eq!(due, now + interval_us, "due think ran at owner time {now}");
+            previous_due = Some(due);
+            now = due;
+        }
+        stop.cancel();
+        cycle.await;
+        Ok(())
+    })
+}
+
+#[test]
 fn source_owner_cycle_drives_monsters_without_connection_vitals() -> TestResult {
     run_case(async |harness| {
         prepare_current_session(harness).await?;
