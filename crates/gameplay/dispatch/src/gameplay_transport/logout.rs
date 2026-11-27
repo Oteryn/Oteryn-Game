@@ -332,6 +332,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut settled_death = None;
         let mut kills = None;
         let budget = AdmissionRetryBudget::for_command(self.root);
+        // Reserve one normal durability pass within the production idle probe cadence.
+        let holder_wait_deadline = tokio::time::Instant::now()
+            + super::connection::IDLE_LIVENESS
+                .interval
+                .saturating_sub(crate::durability::DB_PASS_DEADLINE);
         let mut blocking_pass = None;
         let mut waited_for_pass = false;
         let step = loop {
@@ -353,6 +358,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 blocking_pass = self
                     .root
                     .checked_out_pass_deadline()
+                    .map(|deadline| deadline.min(holder_wait_deadline))
                     .filter(|deadline| *deadline > budget.deadline)
                     .or(blocking_pass);
             }
