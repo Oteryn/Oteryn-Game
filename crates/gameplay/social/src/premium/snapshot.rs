@@ -57,14 +57,37 @@ pub enum SnapshotRejection {
 /// and audit rows record.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SnapshotFailure {
-    Malformed,
+    Malformed {
+        revision: Option<u64>,
+        reason: MalformedReason,
+    },
     Unsupported(Box<PremiumSemanticFailure>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MalformedReason {
+    Oversize,
+    Json,
+    NonceMismatch,
+    AccountMismatch,
+    Envelope,
+    MissingMember,
+    UnknownEntitlementState,
+    EntitlementFields,
+    Timestamp,
+    Interval,
+    UnknownMember,
+    ProducerRevision,
+    EntitlementId,
+    RevisionBounds,
+    AuthorityTiming,
+    StateAtIssue,
 }
 
 impl SnapshotFailure {
     pub fn rejection(&self) -> SnapshotRejection {
         match self {
-            Self::Malformed => SnapshotRejection::Malformed,
+            Self::Malformed { .. } => SnapshotRejection::Malformed,
             Self::Unsupported(_) => SnapshotRejection::Unsupported,
         }
     }
@@ -101,26 +124,34 @@ pub fn validate(
     account_id: [u8; 16],
     nonce: &str,
 ) -> Result<PremiumEvidence, SnapshotFailure> {
-    use SnapshotFailure::Malformed;
+    use MalformedReason::*;
+    let without_revision = |reason| SnapshotFailure::Malformed {
+        revision: None,
+        reason,
+    };
     if body.len() > MAX_SNAPSHOT_BYTES {
-        return Err(Malformed);
+        return Err(without_revision(Oversize));
     }
     let members: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_slice(body).map_err(|_| Malformed)?;
+        serde_json::from_slice(body).map_err(|_| without_revision(Json))?;
+    let revision = members
+        .get("authority_revision")
+        .and_then(serde_json::Value::as_u64);
+    let malformed = |reason| SnapshotFailure::Malformed { revision, reason };
     let text = |key: &str| members.get(key).and_then(serde_json::Value::as_str);
-    if nonce.is_empty()
-        || text("nonce") != Some(nonce)
-        || text("account_id") != Some(canonical_uuid(account_id).as_str())
-    {
-        return Err(Malformed);
+    if nonce.is_empty() || text("nonce") != Some(nonce) {
+        return Err(malformed(NonceMismatch));
     }
-    let wire: Wire = serde_json::from_slice(body).map_err(|_| Malformed)?;
+    if text("account_id") != Some(canonical_uuid(account_id).as_str()) {
+        return Err(malformed(AccountMismatch));
+    }
+    let wire: Wire = serde_json::from_slice(body).map_err(|_| malformed(Envelope))?;
     // The nullable members must be present, not defaulted.
     if ["entitlement_id", "effective_from", "effective_until"]
         .iter()
         .any(|key| !members.contains_key(*key))
     {
-        return Err(Malformed);
+        return Err(malformed(MissingMember));
     }
     let state = match wire.entitlement_state.as_str() {
         "ACTIVE" => EntitlementState::Active,
@@ -128,9 +159,9 @@ pub fn validate(
         "EXPIRED" => EntitlementState::Expired,
         "REVOKED" => EntitlementState::Revoked,
         "NONE" => EntitlementState::None,
-        _ => return Err(Malformed),
+        _ => return Err(malformed(UnknownEntitlementState)),
     };
-    let time = |value: &str| rfc3339_utc_micros(value).ok_or(Malformed);
+    let time = |value: &str| rfc3339_utc_micros(value).ok_or_else(|| malformed(Timestamp));
     // The closed `NONE` variant (§4): no entitlement, lifecycle revision 0, no interval. Every
     // other state names an entitlement, a lifecycle revision above 0 and its interval. `NONE`
     // stores a zero interval.
@@ -141,11 +172,11 @@ pub fn validate(
         &wire.effective_until,
     ) {
         (EntitlementState::None, None, None, None) if wire.lifecycle_revision == 0 => (0, 0),
-        (EntitlementState::None, ..) => return Err(Malformed),
+        (EntitlementState::None, ..) => return Err(malformed(EntitlementFields)),
         (_, Some(_), Some(from), Some(until)) if wire.lifecycle_revision > 0 => {
             (time(from)?, time(until)?)
         }
-        _ => return Err(Malformed),
+        _ => return Err(malformed(EntitlementFields)),
     };
     let evidence = PremiumEvidence {
         account_id,
@@ -178,7 +209,7 @@ pub fn validate(
         || !(evidence.authority_issued_at_us..=evidence.authority_valid_until_us)
             .contains(&evidence.refresh_after_us)
     {
-        return Err(Malformed);
+        return Err(malformed(Interval));
     }
     // The envelope is complete and well-formed: only now is it compared with the compatibility
     // record and the bound product policy (§3.1 item 2).
@@ -201,7 +232,7 @@ pub fn validate(
         return Err(unsupported());
     }
     if members.keys().any(|key| !MEMBERS.contains(&key.as_str())) {
-        return Err(Malformed);
+        return Err(malformed(UnknownMember));
     }
     if lease > MAX_AUTHORITY_LEASE_US {
         return Err(unsupported());
@@ -217,10 +248,10 @@ pub fn validate(
         .into_iter()
         .flatten()
         .all(|t| t.len() == WHOLE_SECOND_LEN)
-        || !product_v1_rules(&evidence)
     {
-        return Err(Malformed);
+        return Err(malformed(Timestamp));
     }
+    product_v1_rules(&evidence).map_err(malformed)?;
     Ok(evidence)
 }
 
@@ -231,7 +262,7 @@ const WHOLE_SECOND_LEN: usize = 20;
 /// §12): the identifier forms, the revision bounds, and the cutoff, refresh and state arithmetic.
 /// They are product-version rules, so they run after the compatibility comparison; a body that
 /// breaks one is malformed (a failed pull), never a durable semantic failure.
-fn product_v1_rules(e: &PremiumEvidence) -> bool {
+fn product_v1_rules(e: &PremiumEvidence) -> Result<(), MalformedReason> {
     let issued = e.authority_issued_at_us;
     let valid = e.authority_valid_until_us;
     let state_at_issue = match e.state {
@@ -245,25 +276,35 @@ fn product_v1_rules(e: &PremiumEvidence) -> bool {
             issued >= e.effective_until_us && e.effective_from_us < e.effective_until_us
         }
     };
-    lower_hex(&e.producer_revision, 40)
-        && e.entitlement_id.as_deref().is_none_or(uuid_v7)
-        && (1..=MAX_WIRE_REVISION).contains(&e.authority_revision)
-        && e.lifecycle_revision <= MAX_WIRE_REVISION
-        && authority_timing_valid(
-            issued,
-            valid,
-            e.refresh_after_us,
-            match e.state {
-                EntitlementState::Active | EntitlementState::NotYetEffective => {
-                    Some(e.effective_until_us)
-                }
-                EntitlementState::Expired | EntitlementState::Revoked | EntitlementState::None => {
-                    None
-                }
-            },
-            MAX_AUTHORITY_LEASE_US,
-        )
-        && state_at_issue
+    if !lower_hex(&e.producer_revision, 40) {
+        return Err(MalformedReason::ProducerRevision);
+    }
+    if e.entitlement_id.as_deref().is_some_and(|id| !uuid_v7(id)) {
+        return Err(MalformedReason::EntitlementId);
+    }
+    if !(1..=MAX_WIRE_REVISION).contains(&e.authority_revision)
+        || e.lifecycle_revision > MAX_WIRE_REVISION
+    {
+        return Err(MalformedReason::RevisionBounds);
+    }
+    if !authority_timing_valid(
+        issued,
+        valid,
+        e.refresh_after_us,
+        match e.state {
+            EntitlementState::Active | EntitlementState::NotYetEffective => {
+                Some(e.effective_until_us)
+            }
+            EntitlementState::Expired | EntitlementState::Revoked | EntitlementState::None => None,
+        },
+        MAX_AUTHORITY_LEASE_US,
+    ) {
+        return Err(MalformedReason::AuthorityTiming);
+    }
+    if !state_at_issue {
+        return Err(MalformedReason::StateAtIssue);
+    }
+    Ok(())
 }
 
 /// An opaque producer token: the 0029 CHECK grammar.

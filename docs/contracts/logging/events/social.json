@@ -46,6 +46,38 @@
       "note": "Platform stream page applied."
     },
     {
+      "event": "premium_overview_wait",
+      "level": "info",
+      "span": false,
+      "fields": ["reason", "attempt"],
+      "codes": [],
+      "note": "Bounded retry for the admitted actor's first durable Premium snapshot."
+    },
+    {
+      "event": "premium_snapshot_result",
+      "level": "info",
+      "span": false,
+      "fields": ["account_ref", "authority_revision", "reason", "elapsed_ms", "error"],
+      "codes": [],
+      "note": "Final snapshot outcome and receipt-to-durable-result latency. The account reference is local to this process. The error class is redacted."
+    },
+    {
+      "event": "premium_snapshot_retry",
+      "level": "info",
+      "span": false,
+      "fields": ["account_ref", "authority_revision", "reason", "elapsed_ms", "attempt"],
+      "codes": [],
+      "note": "A refused holder checkout before any Premium transaction began."
+    },
+    {
+      "event": "premium_snapshot_validation",
+      "level": "info",
+      "span": false,
+      "fields": ["account_ref", "authority_revision", "reason", "elapsed_ms"],
+      "codes": [],
+      "note": "Validation result for a received Premium snapshot. Invalid or missing revisions may be unknown."
+    },
+    {
       "event": "profile_b_alarm",
       "level": "warn",
       "span": false,
