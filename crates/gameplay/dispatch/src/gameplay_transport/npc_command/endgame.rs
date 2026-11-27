@@ -533,7 +533,7 @@ pub(super) async fn apply(
     };
     let reference = CommandRef::new(command.game_session_id, id);
     let payment = if mutation == Mutation::RottenPurchase {
-        match payment::prepare(admission, command, fence).await {
+        match payment::prepare(admission, command, fence, &intent).await {
             Ok(payment) => Some(Box::new(payment)),
             Err(outcome) => return *outcome,
         }

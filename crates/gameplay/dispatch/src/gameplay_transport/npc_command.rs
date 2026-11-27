@@ -100,7 +100,9 @@ async fn npc_gameplay_fence(
     read_npc_quest_fence(admission, command, budget)
         .await
         .map_err(|refusal| match refusal {
-            NpcReadRefusal::Busy => busy_disposition(command, stage),
+            NpcReadRefusal::Durability(ref error) if npc_holder_busy(error) => {
+                busy_disposition(command, stage)
+            }
             _ => NpcIntentDisposition::Rejected,
         })
 }
@@ -132,40 +134,36 @@ pub(super) fn progression_read_error(
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub(super) enum NpcReadRefusal {
-    Busy,
     Stale,
     Unavailable,
+    Durability(crate::durability::DurabilityError),
 }
 
 impl NpcReadRefusal {
-    pub(super) fn from_durability(error: &crate::durability::DurabilityError) -> Self {
-        if npc_holder_busy(error) {
-            Self::Busy
-        } else if matches!(error, crate::durability::DurabilityError::CommitRejected) {
-            Self::Stale
-        } else {
-            Self::Unavailable
-        }
-    }
-
     pub(super) fn reply(
         self,
         intent: &NpcTalkIntent,
         command: super::connection::UseCommand,
         stage: &'static str,
     ) -> NpcTalkOutcome {
+        use crate::durability::DurabilityError;
+        if let Self::Durability(ref error) = self {
+            super::operator_event(&format!(
+                "event=session_durability_failed stage={stage} kind={error:?}"
+            ));
+        }
         let (disposition, line) = match self {
-            Self::Busy => (
+            Self::Durability(ref error) if npc_holder_busy(error) => (
                 busy_disposition(command, stage),
                 "I cannot check your request right now. Please try again.",
             ),
-            Self::Stale => (
+            Self::Stale | Self::Durability(DurabilityError::CommitRejected) => (
                 NpcIntentDisposition::Stale,
                 "Your request is no longer current. Please ask again.",
             ),
-            Self::Unavailable => (
+            Self::Unavailable | Self::Durability(_) => (
                 NpcIntentDisposition::Rejected,
                 "I could not verify your request.",
             ),
@@ -195,7 +193,7 @@ pub(super) async fn read_npc_quest_fence(
             result
         })
         .await
-        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map_err(NpcReadRefusal::Durability)?
         .ok_or(NpcReadRefusal::Stale)
 }
 
@@ -223,11 +221,29 @@ pub(super) async fn read_npc_backpack(
             })
         })
         .await
-        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map_err(NpcReadRefusal::Durability)?
         .map_err(|error| match error {
             ItemTransferError::AuthorityRejected => NpcReadRefusal::Stale,
+            ItemTransferError::Unavailable(error) => NpcReadRefusal::Durability(error),
             _ => NpcReadRefusal::Unavailable,
         })
+}
+
+pub(super) async fn read_npc_progression(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    character: crate::domain::CharacterId,
+    budget: &super::AdmissionRetryBudget<'_>,
+) -> Result<crate::durability::character_progression::CharacterProgressionState, NpcReadRefusal> {
+    budget.retry_command_guard(async || {
+        npc_read_attempt(admission.root.read_character_progression(admission.character, character).await,
+            progression_read_error)
+    }).await.map_err(NpcReadRefusal::Durability)?
+        .map_err(|error| match error {
+            crate::durability::character_progression::CharacterProgressionError::AuthorityRejected => NpcReadRefusal::Stale,
+            crate::durability::character_progression::CharacterProgressionError::Unavailable(error) => NpcReadRefusal::Durability(error),
+            _ => NpcReadRefusal::Unavailable,
+        })?
+        .ok_or(NpcReadRefusal::Unavailable)
 }
 
 async fn retry_npc_checkout<T>(
@@ -1077,14 +1093,8 @@ pub(super) async fn npc_bank_talk(
         }
         Err(_) => return rejected(),
     };
-    let source_appearance = match catalogue::appearance(admission, actor, command, &intent).await {
-        Ok(appearance) => appearance,
-        Err(error) => return error.reply(&intent, command, "npc_appearance"),
-    };
-    let source_inventory = match catalogue::inventory(admission, actor, command, &intent).await {
-        Ok(inventory) => inventory,
-        Err(error) => return error.reply(&intent, command, "npc_inventory"),
-    };
+    let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
+    let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
     let blank_scroll_available =
         quest_shop::blank_scroll_available(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
@@ -1354,6 +1364,14 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
+    let source_appearance = match source_appearance {
+        Ok(appearance) => appearance,
+        Err(error) => return error.reply(&intent, command, "npc_appearance"),
+    };
+    let source_inventory = match source_inventory {
+        Ok(inventory) => inventory,
+        Err(error) => return error.reply(&intent, command, "npc_inventory"),
+    };
     if let Some(step) = catalogue::prepare(
         admission,
         actor,

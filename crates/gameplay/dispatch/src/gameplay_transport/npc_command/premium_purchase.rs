@@ -107,19 +107,9 @@ pub(super) async fn apply(
         .await;
     let holder_budget =
         crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
-    let fence = match super::npc_gameplay_fence(
-        admission,
-        command,
-        "premium_purchase_fence",
-        &holder_budget,
-    )
-    .await
-    {
+    let fence = match super::read_npc_quest_fence(admission, command, &holder_budget).await {
         Ok(fence) => fence,
-        Err(NpcIntentDisposition::RateLimited) => {
-            return NpcTalkOutcome::only(NpcIntentDisposition::RateLimited);
-        }
-        Err(_) => return unknown(),
+        Err(error) => return error.reply(&intent, command, "premium_purchase_fence"),
     };
     if fence.item_fence() != pending.fence {
         return rejected();
@@ -152,14 +142,11 @@ pub(super) async fn apply(
         revision_ref: default_backpack_revision.into(),
     };
     drop(runtime);
-    let current = match admission
-        .root
-        .read_character_backpack(admission.character, fence.character_id)
-        .await
-    {
-        Ok(current) => current,
-        Err(_) => return unknown(),
-    };
+    let current =
+        match super::read_npc_backpack(admission, fence.character_id, &holder_budget).await {
+            Ok(current) => current,
+            Err(error) => return error.reply(&intent, command, "premium_purchase_backpack"),
+        };
     let Some(native) = admission
         .active_generation
         .and_then(crate::content::ActiveGeneration::native_gameplay)

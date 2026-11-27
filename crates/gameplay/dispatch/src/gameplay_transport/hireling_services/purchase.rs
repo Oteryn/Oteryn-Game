@@ -85,9 +85,12 @@ async fn facts(
 async fn change(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
-) -> Option<HirelingFeeChange> {
-    let fence = command.item_fence?;
-    let native = admission.active_generation?.native_gameplay()?;
+) -> Result<HirelingFeeChange, NpcReadRefusal> {
+    let fence = command.item_fence.ok_or(NpcReadRefusal::Stale)?;
+    let native = admission
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or(NpcReadRefusal::Unavailable)?;
     let ids = [
         derived(
             b"hireling-food-change-platinum",
@@ -100,27 +103,29 @@ async fn change(
             command.command_id,
         ),
     ];
-    let bag = admission
-        .root
-        .read_character_backpack(admission.character, fence.character_id)
-        .await
-        .ok()?;
+    let budget = super::super::super::AdmissionRetryBudget::for_command(admission.root);
+    let bag = read_npc_backpack(admission, fence.character_id, &budget).await?;
     let Some(bag) = bag else {
-        return Some(HirelingFeeChange::BankOnly {
+        return Ok(HirelingFeeChange::BankOnly {
             item_instance_ids: ids,
         });
     };
-    let backpack = generation_item_facts(native, &bag.backpack.definition).ok()?;
+    let backpack = generation_item_facts(native, &bag.backpack.definition)
+        .map_err(|_| NpcReadRefusal::Unavailable)?;
     let runtime = admission.runtime.lock().await;
-    let index = pinned_index(&runtime, admission.active_generation)?;
-    let coin = |coin: Coin| {
-        Some(TypedDefinitionRef {
+    let index =
+        pinned_index(&runtime, admission.active_generation).ok_or(NpcReadRefusal::Unavailable)?;
+    let coin = |coin: Coin| -> Result<_, NpcReadRefusal> {
+        Ok(TypedDefinitionRef {
             family: COIN_DEFINITION_FAMILY.into(),
             production_key: coin.production_key().into(),
-            revision_ref: index.revision(coin.production_key())?.into(),
+            revision_ref: index
+                .revision(coin.production_key())
+                .ok_or(NpcReadRefusal::Unavailable)?
+                .into(),
         })
     };
-    Some(HirelingFeeChange::Carried(Box::new(FeeChangeFacts {
+    Ok(HirelingFeeChange::Carried(Box::new(FeeChangeFacts {
         item_instance_ids: ids,
         platinum: coin(Coin::Platinum)?,
         gold: coin(Coin::Gold)?,
@@ -163,11 +168,12 @@ pub(super) async fn cook(
     else {
         return rejected();
     };
-    let (Some(item), Some(change)) = (
-        facts(admission, food.item_id).await,
-        change(admission, command).await,
-    ) else {
+    let Some(item) = facts(admission, food.item_id).await else {
         return rejected();
+    };
+    let change = match change(admission, command).await {
+        Ok(change) => change,
+        Err(error) => return error.reply(intent, command, "hireling_purchase_backpack"),
     };
     let Ok(command_id) = CommandId::new(command.command_id) else {
         return rejected();
@@ -176,8 +182,10 @@ pub(super) async fn cook(
         .revision_sequencer
         .acquire(item_fence.character_id)
         .await;
-    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
-        return unknown();
+    let budget = super::super::super::AdmissionRetryBudget::for_command(admission.root);
+    let fence = match read_npc_quest_fence(admission, command, &budget).await {
+        Ok(fence) => fence,
+        Err(error) => return error.reply(intent, command, "hireling_cook_fence"),
     };
     if fence.item_fence() != item_fence {
         return rejected();
@@ -275,11 +283,12 @@ pub(super) async fn package(
     else {
         return rejected();
     };
-    let (Some(present), Some(change)) = (
-        facts(admission, catalogue::PRESENT_ITEM_ID).await,
-        change(admission, command).await,
-    ) else {
+    let Some(present) = facts(admission, catalogue::PRESENT_ITEM_ID).await else {
         return rejected();
+    };
+    let change = match change(admission, command).await {
+        Ok(change) => change,
+        Err(error) => return error.reply(intent, command, "hireling_purchase_backpack"),
     };
     let HirelingFeeChange::Carried(change) = change else {
         return NpcConversations::bank_reply(intent, "You need a backpack for the present.".into());

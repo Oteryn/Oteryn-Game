@@ -222,11 +222,36 @@ async fn read_arrival(
         crate::durability::character_progression::CharacterProgressionError,
     >,
 > {
-    let pending = admission
-        .root
-        .read_npc_pending_arrival(admission.character, admission.holder, fence)
+    use crate::durability::npc_travel::TravelStoreError;
+
+    let budget = super::super::super::AdmissionRetryBudget::for_command(admission.root);
+    let result = budget
+        .retry_command_guard(async || {
+            super::npc_read_attempt(
+                admission
+                    .root
+                    .read_npc_pending_arrival(admission.character, admission.holder, fence)
+                    .await,
+                |error| match error {
+                    TravelStoreError::Storage(error) => Some(error),
+                    TravelStoreError::Fence(error) => super::progression_read_error(error),
+                    _ => None,
+                },
+            )
+        })
         .await
-        .ok()?;
+        .map_err(TravelStoreError::from)
+        .and_then(|result| result);
+    let pending = match result {
+        Ok(pending) => pending,
+        Err(error) => {
+            // The quest transaction already ran. Keep its arrival parked.
+            super::super::super::operator_event(&format!(
+                "event=session_durability_failed stage=quest_travel_arrival kind={error:?}"
+            ));
+            return None;
+        }
+    };
     if pending.is_some_and(|p| p != arrival) {
         return Some(Err(crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence));
     }

@@ -167,8 +167,10 @@ pub(super) async fn apply(
         .revision_sequencer
         .acquire(pending.fence.character_id)
         .await;
-    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
-        return rejected();
+    let budget = super::super::AdmissionRetryBudget::for_command(admission.root);
+    let fence = match super::read_npc_quest_fence(admission, command, &budget).await {
+        Ok(fence) => fence,
+        Err(error) => return error.reply(&intent, command, "benevola_fence"),
     };
     if fence.item_fence() != pending.fence {
         return rejected();

@@ -1,6 +1,6 @@
 //! Advisory source selection reuses the existing fenced, complete carried tree.
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
-use super::{NpcReadRefusal, npc_read_attempt, progression_read_error};
+use super::{NpcReadRefusal, npc_read_attempt, read_npc_progression};
 use crate::durability::item_use::ItemUseError;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -30,9 +30,10 @@ pub(super) async fn read(
             )
         })
         .await
-        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map_err(NpcReadRefusal::Durability)?
         .map_err(|error| match error {
             ItemUseError::AuthorityRejected => NpcReadRefusal::Stale,
+            ItemUseError::Unavailable(error) => NpcReadRefusal::Durability(error),
             _ => NpcReadRefusal::Unavailable,
         })?;
     let mut seen = BTreeSet::new();
@@ -60,20 +61,7 @@ pub(super) async fn read(
     }
     // Level eligibility belongs to progression and does not require a vocation
     // or any spell-specific vitals. The quest writer rechecks it under Root.
-    let progression = budget
-        .retry_command_guard(async || {
-            npc_read_attempt(
-                admission
-                    .root
-                    .read_character_progression(admission.character, fence.character_id)
-                    .await,
-                progression_read_error,
-            )
-        })
-        .await
-        .map_err(|error| NpcReadRefusal::from_durability(&error))?
-        .map_err(|_| NpcReadRefusal::Unavailable)?
-        .ok_or(NpcReadRefusal::Unavailable)?;
+    let progression = read_npc_progression(admission, fence.character_id, &budget).await?;
     Ok(RewardFacts {
         quantities,
         level: progression.level,

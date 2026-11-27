@@ -31,7 +31,7 @@ fn confirmation_fence(fault: super::npc_paid_travel_fixtures::FenceFault) -> Tes
         return Ok(());
     };
     std::thread::Builder::new()
-        .stack_size(64 << 20)
+        .stack_size(256 << 20)
         .spawn(move || super::npc_paid_travel_fixtures::scenario_with_fence_fault(fault)
             .map_err(|error| error.to_string()))?
         .join()

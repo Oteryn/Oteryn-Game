@@ -217,15 +217,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             text == "yes" || text == "sure"
         };
         if anna && (passage || yes) {
-            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-                return ordinary;
+            use npc_command::{NpcReadRefusal, read_npc_progression, read_npc_quest_fence};
+            let budget = AdmissionRetryBudget::for_command(self.root);
+            let fence = match read_npc_quest_fence(self, command, &budget).await {
+                Ok(fence) if fence.item_fence() == capture.session => fence,
+                Ok(_) => return NpcReadRefusal::Stale.reply(&intent, command, "anna_travel_fence"),
+                Err(error) => return error.reply(&intent, command, "anna_travel_fence"),
             };
-            let Ok(Some(progress)) = self
-                .root
-                .read_character_progression(self.character, fence.character_id)
-                .await
-            else {
-                return ordinary;
+            let progress = match read_npc_progression(self, fence.character_id, &budget).await {
+                Ok(progress) => progress,
+                Err(error) => return error.reply(&intent, command, "anna_travel_level"),
             };
             if progress.level < route.min_level() {
                 if yes
