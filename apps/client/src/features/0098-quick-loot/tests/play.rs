@@ -836,7 +836,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             continue;
         }
         let mode = |mode| (mode as u8).to_string();
-        let dispatched = if matches!(key, 4 | 5 | 7 | 14) || matches!(&action, Action::LootAll) {
+        let dispatched = if matches!(key, 4 | 5 | 7)
+            || matches!(&action, Action::LootAll | Action::Select(_))
+        {
             ui::click_action(&mut app, action)?;
             true
         } else {
@@ -846,9 +848,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     mode: filter,
                     definition,
                 } => link.discovery_action(98, 2, &[definition.to_string(), mode(filter)], 0),
-                Action::Select(filter) => {
-                    link.discovery_action(98, 5, &[String::new(), mode(filter)], 0)
-                }
                 Action::Destination {
                     category,
                     recipient,
