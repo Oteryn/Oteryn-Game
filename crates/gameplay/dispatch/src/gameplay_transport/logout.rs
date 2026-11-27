@@ -296,9 +296,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             in_protection_zone,
         )
     }
-    /// Give pre-commit prerequisites the ordinary command retry window while retaining
-    /// this logout's transition token. Settle the durable row and fence before replying Busy
-    /// if a prerequisite still cannot complete.
+    /// Keep this logout's transition token through pre-commit retries and any wait for a
+    /// checked-out pass. Settle the durable row and fence before replying Busy if a
+    /// prerequisite still cannot complete.
     async fn release_logout(
         &self,
         admitted: AdmittedSession,
@@ -332,6 +332,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut settled_death = None;
         let mut kills = None;
         let budget = AdmissionRetryBudget::for_command(self.root);
+        let mut blocking_pass = None;
+        let mut waited_for_pass = false;
         let step = loop {
             let step = self
                 .release_attempt(
@@ -347,6 +349,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break step;
             };
             operator_event(&format!("event=logout_release_retry stage={stage}"));
+            if !waited_for_pass {
+                blocking_pass = self
+                    .root
+                    .checked_out_pass_deadline()
+                    .filter(|deadline| *deadline > budget.deadline)
+                    .or(blocking_pass);
+            }
+            let now = tokio::time::Instant::now();
+            if now + budget.backoff >= budget.deadline
+                && let Some(deadline) = blocking_pass.take()
+            {
+                // The normal window can end before a pass already in flight has returned
+                // the shared holder. Keep our turn and retry once when it returns or expires.
+                waited_for_pass = true;
+                if !self.root.is_ready()
+                    && now < deadline
+                    && !self.root.wait_holder_turn(now, deadline).await
+                {
+                    let _ = tokio::time::timeout_at(deadline, self.root.await_ready()).await;
+                }
+                continue;
+            }
             if !budget
                 .retries_unavailable(AdmissionRefusal::Unavailable)
                 .await

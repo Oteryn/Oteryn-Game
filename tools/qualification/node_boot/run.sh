@@ -925,16 +925,17 @@ def stop(_signal, _frame):
     stopping = True
 signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
-events = {'serve_end', 'serve_command_end', 'command_guard_failed',
-          'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
-          'pass_dropped', 'step_rejected_dawnport', 'step_rejected_source_map',
-          'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
-          'step_rejected_stale_position', 'step_rejected_pending_spell',
-          'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy',
-          'session_durability_failed', 'logout_unknown', 'logout_busy',
-          'control_loss_reconcile_pending', 'control_loss_result',
-          'control_loss_publication', 'control_loss_grace', 'character_authority_check_failed',
-          'appearance_initial_failed', 'appearance_observation_failed'}
+events = {'appearance_initial_failed', 'appearance_observation_failed',
+          'character_authority_check_failed', 'command_guard_failed',
+          'control_loss_grace', 'control_loss_publication',
+          'control_loss_reconcile_pending', 'control_loss_result', 'join_prepare_failed',
+          'listener_connection_poll_slow', 'listener_poll_slow', 'logout_busy',
+          'logout_release_retry', 'logout_unknown', 'pass_dropped', 'serve_command_end',
+          'serve_end', 'session_durability_failed', 'step_rejected_dawnport',
+          'step_rejected_dead', 'step_rejected_drome', 'step_rejected_holder_busy',
+          'step_rejected_lane', 'step_rejected_movement', 'step_rejected_pending_spell',
+          'step_rejected_pvp_locks', 'step_rejected_source_map',
+          'step_rejected_stale_position'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
@@ -950,6 +951,8 @@ labels = {
                       'activity_successor', 'activity_view', 'actor_unreserved',
                       'admitted_binding', 'appearance_observation', 'familiar_cast',
                       'combat_hold', 'condition_save', 'death_save', 'entry', 'familiar_save',
+                      'conditions', 'death', 'drome', 'familiar', 'gourmet', 'pending_items',
+                      'spell_training', 'timed_items', 'wheel_or_monk', 'write_fence',
                       'foreground_demand', 'gourmet_checkpoint', 'hunting_stamina_readback',
                       'item_effects', 'kill_rewards', 'logout_settle', 'loss_activity_origin',
                       'loss_readback', 'monk_save', 'native_publication',

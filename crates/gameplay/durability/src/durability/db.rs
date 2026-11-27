@@ -50,11 +50,12 @@ const HOLDER_RETURN_POLL: Duration = Duration::from_millis(10);
 /// (NBDIAG-3): every other owner's non-blocking checkout fails meanwhile.
 const SLOW_PASS_REPORT: Duration = Duration::from_millis(1_000);
 
-/// The call site that has the single holder checked out through a semantic pass, and since
-/// when (NBDIAG-4), with the connection trace of the task that issued it (LOGDBG-C).
+/// The semantic pass holding the single checkout, with its issue time, deadline, and
+/// connection trace.
 type HolderOwner = Option<(
     &'static std::panic::Location<'static>,
     Instant,
+    TokioInstant,
     Option<[u8; 16]>,
 )>;
 
@@ -405,10 +406,11 @@ impl PassOwner {
         slot: &Arc<StdMutex<HolderOwner>>,
         caller: &'static std::panic::Location<'static>,
         issued: Instant,
+        deadline: TokioInstant,
     ) -> Self {
         let trace = holder_trace();
         if let Ok(mut owner) = slot.lock() {
-            *owner = Some((caller, issued, trace));
+            *owner = Some((caller, issued, deadline, trace));
         }
         record_checkout(caller, issued, trace);
         Self {
@@ -449,7 +451,7 @@ impl Drop for PassOwner {
             );
         }
         if let Ok(mut owner) = self.slot.lock()
-            && owner.is_some_and(|(caller, issued, _)| {
+            && owner.is_some_and(|(caller, issued, ..)| {
                 std::ptr::eq(caller, self.caller) && issued == self.issued
             })
         {
@@ -1645,6 +1647,16 @@ impl DurabilityRoot {
         Err(DurabilityError::RootUnavailable)
     }
 
+    /// The checked-out semantic pass's own deadline, including its observed return.
+    /// An idle holder or a raw checkout has no semantic-pass deadline to wait for.
+    pub fn checked_out_pass_deadline(&self) -> Option<TokioInstant> {
+        let owner = self.holder_owner.lock().ok()?;
+        if self.is_ready() {
+            return None;
+        }
+        owner.map(|(_, _, deadline, _)| deadline)
+    }
+
     /// Takes the current owner's place in the holder queue after a refused checkout that it
     /// retries. `None` when the queue is full, or an outer retry of the same owner already
     /// holds the place.
@@ -1811,14 +1823,14 @@ impl DurabilityRoot {
         let owner = self.holder_owner.lock().ok().and_then(|owner| *owner);
         // The text lines stay until node boot's run.sh selects the event instead (LOGDBG-C).
         match owner {
-            Some((caller, since, _)) => eprintln!(
+            Some((caller, since, ..)) => eprintln!(
                 "DURABILITY_HOLDER_STUCK caller={caller} held_ms={}",
                 since.elapsed().as_millis()
             ),
             None => eprintln!("DURABILITY_HOLDER_STUCK caller=none"),
         }
         let trace = owner.and_then(|(.., trace)| trace).map(format_trace);
-        let mut line = holder_stuck_line(owner.map(|(caller, since, _)| (caller, since.elapsed())));
+        let mut line = holder_stuck_line(owner.map(|(caller, since, ..)| (caller, since.elapsed())));
         if let Some(trace) = trace.as_deref() {
             line = line.trace(trace);
         }
@@ -1924,11 +1936,12 @@ impl DurabilityRoot {
             record_holder_usage(Some(caller), None);
         })?;
         let issued = Instant::now();
+        let deadline = TokioInstant::now() + self.pass_deadline();
         Ok(IssuedSemanticPass {
             root: self.clone(),
             holder,
-            deadline: TokioInstant::now() + self.pass_deadline(),
-            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
+            deadline,
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
         })
     }
 
@@ -1953,11 +1966,12 @@ impl DurabilityRoot {
             record_refused_checkout(&self.holder_owner, caller);
         })?;
         let issued = Instant::now();
+        let deadline = TokioInstant::now() + self.pass_deadline();
         Ok(IssuedSemanticPass {
             root: self.clone(),
             holder,
-            deadline: TokioInstant::now() + self.pass_deadline(),
-            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
+            deadline,
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
         })
     }
 
@@ -1978,11 +1992,12 @@ impl DurabilityRoot {
         let holder = self.try_acquire_ready().inspect_err(|_| {
             record_refused_checkout(&self.holder_owner, caller);
         })?;
+        let deadline = bounded_pass_deadline(now, self.pass_deadline(), deadline);
         Ok(IssuedSemanticPass {
             root: self.clone(),
             holder,
-            deadline: bounded_pass_deadline(now, self.pass_deadline(), deadline),
-            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
+            deadline,
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
         })
     }
 }
