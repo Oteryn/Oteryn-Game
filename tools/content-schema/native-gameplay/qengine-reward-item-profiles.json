@@ -34351,7 +34351,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "KNOWN",
@@ -34363,7 +34364,8 @@
                     "value": "EXTRA"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -35135,7 +35137,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "KNOWN",
@@ -35147,7 +35150,8 @@
                     "value": "EXTRA"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -35758,7 +35762,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "KNOWN",
@@ -35770,7 +35775,8 @@
                     "value": "EXTRA"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -49248,7 +49254,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "KNOWN",
@@ -49260,7 +49267,8 @@
                     "value": "AMULET"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -49445,7 +49453,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "UNKNOWN"
@@ -49456,7 +49465,8 @@
                     "value": "SHIELD"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -50003,7 +50013,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "UNKNOWN"
@@ -50014,7 +50025,8 @@
                     "value": "SHIELD"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
