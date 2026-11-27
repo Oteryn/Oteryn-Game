@@ -27,6 +27,7 @@ struct Fixture {
 
 struct LiveExchange {
     inbound: Vec<u8>,
+    cast_send_offset: usize,
     intent: Vec<u8>,
     session: oteryn_protocol_oteryn::GameSessionId,
     command_id: u64,
@@ -78,6 +79,37 @@ fn e2e_c18a_replays_captured_damage_or_unit_refusal() -> Result<(), Error> {
 #[test]
 fn synthetic_refusal_keeps_combat_state() -> Result<(), Error> {
     replay_through_session(fixture()?)
+}
+
+async fn replay_wire_frames(
+    peer: &mut tokio::io::DuplexStream,
+    mut inbound: &[u8],
+    generation: u64,
+    last_sequence: &mut u64,
+) -> Result<(), Error> {
+    use oteryn_protocol_oteryn::{MessageType, decode_liveness_probe, decode_wire_envelope};
+    use tokio::io::AsyncWriteExt;
+
+    while !inbound.is_empty() {
+        let framed = inbound;
+        let frame = read_frame(&mut inbound).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        peer.write_all(&framed[..framed.len() - inbound.len()])
+            .await?;
+        if envelope.message_type() == MessageType::LivenessProbe {
+            let probe = decode_liveness_probe(envelope.payload())?;
+            let reply = tokio::time::timeout(Duration::from_secs(5), read_frame(peer)).await??;
+            let acknowledgement = decode_wire_envelope(&reply)?.liveness_ack(generation)?;
+            assert_eq!(acknowledgement.probe_id, probe);
+            assert_eq!(
+                acknowledgement.last_applied_server_sequence,
+                Some(*last_sequence)
+            );
+        } else {
+            *last_sequence = envelope.server_sequence();
+        }
+    }
+    Ok(())
 }
 
 fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
@@ -175,16 +207,23 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                         for frame in encode_single_chunk_snapshot(generation, 1, sequence, &domains)? {
                             write_frame(&mut peer, &frame).await?;
                         }
+                        if let Some(live) = &live {
+                            let (before_cast, after_cast) = live.inbound
+                                .split_at_checked(live.cast_send_offset)
+                                .ok_or("C18a replay cast boundary is outside the raw exchange")?;
+                            let mut last_sequence = sequence;
+                            replay_wire_frames(&mut peer, before_cast, generation, &mut last_sequence).await?;
+                            let frame = read_frame(&mut peer).await?;
+                            let command = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?
+                                .client_command(generation)?;
+                            assert_eq!(command.command_id, live.command_id);
+                            assert_eq!(command.payload, live.intent);
+                            replay_wire_frames(&mut peer, after_cast, generation, &mut last_sequence).await?;
+                            return Ok::<_, Error>(());
+                        }
                         let frame = read_frame(&mut peer).await?;
                         let command = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?
                             .client_command(generation)?;
-                        if let Some(live) = &live {
-                            use tokio::io::AsyncWriteExt;
-                            assert_eq!(command.command_id, live.command_id);
-                            assert_eq!(command.payload, live.intent);
-                            peer.write_all(&live.inbound).await?;
-                            return Ok::<_, Error>(());
-                        }
                         let intent = actor_spell::decode_spell_cast_intent(command.payload)
                             .map_err(|e| format!("{e:?}"))?;
                         assert_eq!(
@@ -443,6 +482,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         feedback: "Spell cast",
         live: Some(LiveExchange {
             inbound,
+            cast_send_offset: proof.cast_send_offset,
             intent,
             session,
             command_id: cast.command_id,
@@ -929,7 +969,9 @@ fn cast_exchange_revision(
 fn successful_aimed_exchange_runs_the_admitted_client() -> Result<(), Error> {
     for with_clock in [false, true] {
         for charge_before_receipt in [false, true] {
-            replay_successful_aimed_exchange(with_clock, charge_before_receipt)?;
+            for with_probes in [false, true] {
+                replay_successful_aimed_exchange(with_clock, charge_before_receipt, with_probes)?;
+            }
         }
     }
     Ok(())
@@ -938,6 +980,7 @@ fn successful_aimed_exchange_runs_the_admitted_client() -> Result<(), Error> {
 fn replay_successful_aimed_exchange(
     with_clock: bool,
     charge_before_receipt: bool,
+    with_probes: bool,
 ) -> Result<(), Error> {
     use oteryn_protocol_oteryn::encode_state_delta;
     let mut fixture = fixture()?;
@@ -1035,12 +1078,21 @@ fn replay_successful_aimed_exchange(
         before,
         actor_spell::ActorVitals { mana: 48, ..before }
     ));
+    if with_probes {
+        use oteryn_protocol_oteryn::encode_liveness_probe;
+        frames.insert(0, encode_liveness_probe(1, 1)?);
+        frames.insert(frames.len() - 1, encode_liveness_probe(1, 2)?);
+    }
     let mut inbound = Vec::new();
     let mut charge_end = 0;
-    for frame in frames {
+    let mut cast_send_offset = 0;
+    for (index, frame) in frames.into_iter().enumerate() {
         inbound.extend(u32::try_from(frame.len())?.to_be_bytes());
         let sequence = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.server_sequence();
         inbound.extend(frame);
+        if with_probes && index == 0 {
+            cast_send_offset = inbound.len();
+        }
         if sequence == charge_sequence {
             charge_end = inbound.len();
         }
@@ -1064,7 +1116,7 @@ fn replay_successful_aimed_exchange(
             &cast_envelope,
             &charge_envelope,
             preceding_sequence,
-            0,
+            cast_send_offset,
             before
         )?,
         (3, None),
@@ -1101,6 +1153,7 @@ fn replay_successful_aimed_exchange(
     };
     fixture.live = Some(LiveExchange {
         inbound,
+        cast_send_offset,
         intent: actor_spell::encode_spell_cast_intent(&SpellCastIntent {
             spell: fixture.spell,
             target: SpellTarget::AttackTarget,
