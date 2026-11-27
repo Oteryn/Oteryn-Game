@@ -24,6 +24,101 @@ pub enum LogoutReply {
     Unknown,
 }
 
+/// A release checkpoint that could not settle before the lease transaction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ReleaseRetryStage {
+    Drome,
+    Death,
+    TimedItems,
+    ItemEffects,
+    Fence,
+    WheelGift,
+    Monk,
+    SpellTraining,
+    Gourmet,
+    Conditions,
+    KillRewards,
+    Familiar,
+    OfflineTraining,
+}
+
+impl ReleaseRetryStage {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Drome => "drome_sync",
+            Self::Death => "death_save",
+            Self::TimedItems => "timed_items",
+            Self::ItemEffects => "item_effects",
+            Self::Fence => "fence_wait",
+            Self::WheelGift => "wheel_gift",
+            Self::Monk => "monk_save",
+            Self::SpellTraining => "training_save",
+            Self::Gourmet => "gourmet_checkpoint",
+            Self::Conditions => "condition_save",
+            Self::KillRewards => "kill_rewards",
+            Self::Familiar => "familiar_save",
+            Self::OfflineTraining => "offline_training",
+        }
+    }
+}
+
+/// Retained across release attempts so a checkpoint retry uses the same fence and budget.
+#[derive(Default)]
+pub(super) struct ReleaseProgress<'r> {
+    pub(super) settled_death: Option<super::actor_spell::PlayerDeath>,
+    pub(super) kills: Option<super::KillReleaseMark>,
+    logout_root: Option<&'r crate::durability::DurabilityRoot>,
+    retry: Option<AdmissionRetryBudget<'r>>,
+}
+
+impl ReleaseProgress<'_> {
+    pub(super) async fn retry(&mut self, stage: ReleaseRetryStage) -> bool {
+        #[cfg(test)]
+        let _ = LOGOUT_RELEASE_PROBE.try_with(|probe| {
+            probe
+                .retry_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            if probe.first_retry.set(stage).is_ok() {
+                probe.retry_observed.notify_one();
+            }
+        });
+        #[cfg(not(test))]
+        let _ = stage;
+
+        let Some(root) = self.logout_root else {
+            return false;
+        };
+        // Start on the first deferral. A checkpoint already in flight settles its
+        // outcome normally, and a retry may only start inside the command window.
+        let retry = self.retry.get_or_insert_with(|| {
+            AdmissionRetryBudget::for_holder_window(
+                root,
+                AdmissionRetryBudget::holder_wait_window(),
+            )
+        });
+        retry
+            .retries_unavailable(AdmissionRefusal::Unavailable)
+            .await
+            && retry.check_deadline().is_ok()
+    }
+}
+
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct LogoutReleaseProbe {
+    pub(super) before_conditions: tokio::sync::Notify,
+    pub(super) resume_conditions: tokio::sync::Notify,
+    pub(super) retry_observed: tokio::sync::Notify,
+    pub(super) logout_finished: tokio::sync::Notify,
+    pub(super) first_retry: std::sync::OnceLock<ReleaseRetryStage>,
+    pub(super) retry_count: std::sync::atomic::AtomicUsize,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static LOGOUT_RELEASE_PROBE: std::sync::Arc<LogoutReleaseProbe>;
+}
+
 pub(super) struct LogoutZones {
     pub(super) no_logout: bool,
     pub(super) protection_zone: Option<bool>,

@@ -17,12 +17,13 @@
       "level": "warn",
       "span": false,
       "fields": [
-        "attempt",
         "command_id",
-        "holder"
+        "attempt",
+        "holder",
+        "owner"
       ],
       "codes": [],
-      "note": "Activity command input guard durability attempt."
+      "note": "Activity input checkout failure or retry and the holder's source location when available. A successful first attempt is omitted. No player identifiers or command payloads."
     },
     {
       "event": "admission_entry_decision",

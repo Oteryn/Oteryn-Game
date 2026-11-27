@@ -4,7 +4,7 @@ use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session, track};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::AuthenticatedTransportRefV1;
-use crate::gameplay_transport::AdmissionRetryBudget;
+use crate::gameplay_transport::{AdmissionRetryBudget, COMMAND_HOLDER_WINDOW, RECONCILE_BACKOFF};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use std::time::Duration;
@@ -145,6 +145,7 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
             assert!(
                 holder_return_in_final_retry_interval(
                     &h.root,
+                    COMMAND_HOLDER_WINDOW,
                     owner.refresh_pvp_locks(dependencies.actor, session),
                 )
                 .await?,
@@ -235,16 +236,18 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
                     &[oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1],
                 )
                 .ok_or("activity capability")?;
-            assert!(owner.activity_transfer_input(admitted, 7).await.is_ok());
+            assert!(owner.activity_transfer_input(admitted, 1).await.is_ok());
             assert!(
-                holder_return_in_final_retry_interval(&h.root, async {
-                    owner.activity_transfer_input(admitted, 7).await.is_ok()
-                })
+                holder_return_in_final_retry_interval(
+                    &h.root,
+                    AdmissionRetryBudget::holder_wait_window(),
+                    async { owner.activity_transfer_input(admitted, 2).await.is_ok() },
+                )
                 .await?,
                 "the activity input refused before the holder deadline"
             );
             let accepted = priority_handoff(&h.root, async {
-                owner.activity_transfer_input(admitted, 7).await.is_ok()
+                owner.activity_transfer_input(admitted, 3).await.is_ok()
             })
             .await?;
             assert!(
@@ -254,7 +257,7 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
             // A persistently unavailable root still authorizes no input.
             let held = h.root.try_issue_semantic_pass()?;
             assert!(matches!(
-                owner.activity_transfer_input(admitted, 7).await,
+                owner.activity_transfer_input(admitted, 4).await,
                 Err(crate::durability::DurabilityError::RootUnavailable)
             ));
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
@@ -284,21 +287,26 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
 // PostgreSQL's only holder is still checked out. Resume time before doing SQL.
 async fn holder_return_in_final_retry_interval(
     root: &crate::durability::DurabilityRoot,
+    window: Duration,
     operation: impl Future<Output = bool>,
 ) -> TestResult<bool> {
     use std::task::Poll;
-    let held = root.issue_ready_semantic_pass().await?;
+    let held = {
+        // Only the fixture holder must survive advancing past its normal pass deadline.
+        let _fixture_deadline = root.boot_pass_deadline(window + crate::durability::DB_PASS_DEADLINE);
+        root.issue_ready_semantic_pass().await?
+    };
     let mut operation = std::pin::pin!(
         crate::durability::DurabilityRoot::with_holder_owner(operation)
     );
     tokio::time::pause();
     let mut result = std::future::poll_fn(|cx| Poll::Ready(operation.as_mut().poll(cx))).await;
-    for _ in 0..4 {
-        if result.is_ready() {
-            break;
-        }
-        // Advance slightly past the timer's millisecond resolution.
-        tokio::time::advance(Duration::from_millis(201)).await;
+    // Advance slightly past the timer's millisecond resolution.
+    let tick = RECONCILE_BACKOFF + Duration::from_millis(1);
+    let mut remaining = window;
+    while remaining > tick && result.is_pending() {
+        tokio::time::advance(tick).await;
+        remaining -= tick;
         result = std::future::poll_fn(|cx| Poll::Ready(operation.as_mut().poll(cx))).await;
     }
     tokio::time::resume();
