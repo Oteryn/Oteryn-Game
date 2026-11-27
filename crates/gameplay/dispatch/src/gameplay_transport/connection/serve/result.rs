@@ -20,6 +20,7 @@ pub(super) fn encode(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: &mut Dispatch,
 ) -> Result<Vec<u8>, ServeEnd> {
+    let sequence = next_sequence(session, command)?;
     session.integrity.observe(dispatch);
     inventory_capacity::reread_after_command(session, command.command_type, dispatch);
     let (status, result_payload) = match dispatch {
@@ -370,20 +371,25 @@ pub(super) fn encode(
     {
         // Display contract §3.3, §4.3 and HIGHSCORES0 §6: fail closed with the registered
         // operation-terminal error and nothing else.
-        encode_command_error_result(
-            session.generation,
-            session.sequence,
-            command.command_id,
-            *error,
-        )
+        encode_command_error_result(session.generation, sequence, command.command_id, *error)
     } else {
         encode_command_result(
             session.generation,
-            session.sequence,
+            sequence,
             command.command_id,
             status,
             &result_payload,
         )
     };
     result.map_err(|error| command::disconnect(command, "result_envelope", error))
+}
+
+pub(super) fn next_sequence(
+    session: &ServeState,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<u64, ServeEnd> {
+    session
+        .sequence
+        .checked_add(1)
+        .ok_or_else(|| command::disconnect(command, "result_sequence", "sequence_overflow"))
 }

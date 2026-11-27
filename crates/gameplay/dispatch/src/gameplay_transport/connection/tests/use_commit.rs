@@ -255,3 +255,142 @@ fn admitted_use_non_committing_disposition_emits_no_delta_and_unregistered_type_
         Ok(())
     })
 }
+
+#[derive(Default)]
+struct LadderUseAuthority {
+    moved: std::cell::Cell<bool>,
+    commands: crate::gameplay_transport::session_ingress::SessionCommands,
+}
+
+impl FreshAdmissionAuthority for LadderUseAuthority {
+    async fn admit(
+        &self,
+        _attempt: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    fn session_commands(
+        &self,
+    ) -> Option<&crate::gameplay_transport::session_ingress::SessionCommands> {
+        Some(&self.commands)
+    }
+
+    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+        let mut observation = at(10);
+        observation.actor_position.floor = if self.moved.get() { 6 } else { 7 };
+        Some(observation)
+    }
+
+    async fn use_object(
+        &self,
+        _: ExactActorRef,
+        _: UseCommand,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> UseOutcome {
+        assert_eq!(target.placement, b"oteryn:fixture/ladder");
+        self.moved.set(true);
+        UseOutcome {
+            disposition: UseDisposition::Committed,
+            ..UseOutcome::rejected()
+        }
+    }
+}
+
+fn ladder_use_frame() -> Vec<u8> {
+    use_command(
+        1,
+        1,
+        u64::from(COMMAND_TYPE_USE_INTENT),
+        b"oteryn:fixture/ladder",
+        0,
+    )
+}
+
+#[test]
+fn ladder_use_publishes_landing_before_command_result() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let authority = LadderUseAuthority::default();
+        let (end, frames) = drive_session(&authority, positioned()?, &[ladder_use_frame()]).await?;
+        let mut landing = None;
+        let mut saw_result = false;
+        for bytes in frames {
+            let frame = decode_wire_envelope(&bytes)?;
+            match frame.message_type() {
+                MessageType::StateDelta => {
+                    let delta = oteryn_protocol_oteryn::decode_state_delta(frame.payload())?;
+                    if delta.domain_id == STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+                        let actor = oteryn_protocol_oteryn::world_spatial::decode_world_spatial(
+                            delta.payload,
+                        )
+                        .map_err(|error| format!("{error:?}"))?;
+                        assert_eq!(actor.actor_position.floor, 6);
+                        landing = Some(frame.server_sequence());
+                    }
+                }
+                MessageType::CommandResult => {
+                    let result = oteryn_protocol_oteryn::decode_command_result(frame.payload())?;
+                    assert_eq!(result.command_id, 1);
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    assert_eq!(
+                        oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                            .map_err(|error| format!("{error:?}"))?,
+                        UseDisposition::Committed
+                    );
+                    assert_eq!(
+                        landing.and_then(|sequence| sequence.checked_add(1)),
+                        Some(frame.server_sequence()),
+                        "the landing must already be visible when USE completes"
+                    );
+                    saw_result = true;
+                }
+                _ => {}
+            }
+        }
+        assert!(saw_result);
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+        Ok(())
+    })
+}
+
+#[test]
+fn failed_ladder_relocation_write_keeps_committed_use_resumable() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let authority = LadderUseAuthority::default();
+        let (server, mut client) = tokio::io::duplex(1 << 20);
+        client.write_all(&framed(&ladder_use_frame())).await?;
+        let mut server = FailNthWrite {
+            inner: server,
+            // The three join frames pass. Fail the first relocation write.
+            ok_writes: 6,
+        };
+        let end = serve_admitted(&mut server, positioned()?, &authority, IDLE_LIVENESS).await;
+        let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+            return Err(format!("unexpected end {end:?}").into());
+        };
+        assert!(authority.moved.get());
+        assert_eq!(ended.continuity.next_command_id, 2);
+        assert!(authority.commands.resumable(&ended));
+        let mut resumed = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
+            Some(&authority.commands),
+            &ended,
+        )
+        .ok_or("resume stream")?;
+        let replay = resumed
+            .begin(1, 2, ended.continuity.server_sequence, false)
+            .map_err(|error| format!("{error:?}"))?;
+        let crate::gameplay_transport::session_ingress::CommandAction::Replay(frame) = replay
+        else {
+            return Err("committed ladder USE must replay without running again".into());
+        };
+        let envelope = decode_wire_envelope(&frame)?;
+        let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+        assert_eq!(result.status, CommandStatus::DuplicateReplay);
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                .map_err(|error| format!("{error:?}"))?,
+            UseDisposition::Committed,
+        );
+        Ok(())
+    })
+}
