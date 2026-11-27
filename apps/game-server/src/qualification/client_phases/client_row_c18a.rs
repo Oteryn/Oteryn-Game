@@ -99,7 +99,44 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             })
         })
         .collect();
-    let mut client = connect_character(clients, 0xca, 1).await?;
+    let dedicated =
+        character_prep::dedicated_character(clients, "NODE_BOOT_Q_C18A_ACCOUNT").await?;
+    let scoped = dedicated.clients(clients);
+    let clients = &scoped;
+    character_prep::declare_seeded(
+        "C18a.client",
+        "level 15 Sorcerer and one blank rune",
+        "A real soul debit makes the fresh-admission check discriminate a reset",
+    );
+    let mut client = character_prep::Seeded {
+        profile: "q_c18a",
+        reason: "Level 15 unlocks a soul-spending conjure without a combat lock",
+    }
+    .connect(clients, 0xca, 0)
+    .await?;
+    let settled = client.actor_vitals().ok_or("C18a seeded vitals absent")?;
+    if (settled.max_health, settled.max_mana, settled.soul) != (220, 475, 100) {
+        return Err(format!("C18a expected level-15 Sorcerer stats: {settled:?}").into());
+    }
+    character_prep::grant_item(&client, 3147, 1).await?;
+    let item_index = provisioning::item_index()?;
+    let blank = provisioning::item_reference(&item_index, 3147)?;
+    let missile = provisioning::item_reference(&item_index, 3174)?;
+
+    let conjure = client_spell_journey::spell_index(book, "adori min vis")?;
+    let conjure_definition = book
+        .indexed(conjure)
+        .ok_or("C18a conjure definition absent")?;
+    if conjure_definition.mana != crate::spell::ManaCost::Fixed(120)
+        || conjure_definition.soul != 1
+        || conjure_definition.aggressive
+    {
+        return Err(
+            "C18a soul preparation spell must cost 120 mana and one soul without a combat lock"
+                .into(),
+        );
+    }
+
     if tile(client.world_spatial().actor_position)? != TOWN {
         return Err("C18a expected the initial town tile".into());
     }
@@ -263,35 +300,16 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                 SessionEvent::Presentation(batch)
                     if batch.server_sequence > result_server_sequence =>
                 {
-                    let has_cast_cue =
-                        oteryn_dev_client::qualification_scorch_cue(&batch.value, here);
-                    for effect in batch.value {
-                        if let presentation::PresentationEventKind::ValueText {
-                            kind: presentation::PresentationValueKind::DamageDealt,
-                            position,
-                            target: victim,
-                            attacker: Some(source),
-                            primary,
-                            secondary,
-                            ..
-                        } = effect.kind
-                            && source == caster
-                            && victim == target
-                        {
-                            if !has_cast_cue
-                                || position != rat.position
-                                || primary.color != presentation::PresentationColor::Red
-                                || secondary.is_some()
-                                || damage
-                                    .replace((batch.server_sequence, primary.value))
-                                    .is_some()
-                            {
-                                return Err(
-                                    format!("C18a damage attribution failed: sequence={} scorch_cue={has_cast_cue} position={position:?} amount={} color={:?} secondary={secondary:?}",
-                                        batch.server_sequence, primary.value, primary.color).into(),
-                                );
-                            }
-                        }
+                    if let Some(value) = oteryn_dev_client::qualification_scorch_impact(
+                        &batch.value,
+                        here,
+                        caster,
+                        rat.position,
+                        target,
+                        spell.get(),
+                    )? && damage.replace((batch.server_sequence, value)).is_some()
+                    {
+                        return Err("C18a observed multiple Scorch decisions for one cast".into());
                     }
                 }
                 _ => {}
@@ -359,6 +377,18 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         collect_vitals(&mut client, Some(&mut regeneration));
     }
 
+    let cleared_combat = *client
+        .session_mut()
+        .combat_state()
+        .ok_or("C18a cleared combat absent")?;
+    if cleared_combat.modes != combat_before.modes {
+        return Err("C18a clearing the Rat changed fight modes".into());
+    }
+    evidence(&format!(
+        "SEAM_EVIDENCE c18a_target_cleared command={} reply_sequence={}",
+        clear.command_id, clear.result_server_sequence
+    ));
+
     // Use a fixed prefix of the return route. The caster stays outdoors until
     // the ordinary combat lock clears.
     let retreat = route_avoiding(
@@ -397,6 +427,45 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         collect_vitals(&mut client, Some(&mut regeneration));
         verdict::Harness::global().progress("wait-for-combat-lock");
     }
+    let before_conjure = *client
+        .actor_vitals()
+        .ok_or("C18a pre-conjure vitals absent")?;
+    let conjure_sequence = client.last_server_sequence();
+    if !oteryn_dev_client::qualification_mana_history(
+        (vitals_sequence, after.mana, after.soul),
+        &regeneration,
+        after.max_mana,
+        (
+            conjure_sequence.saturating_add(1),
+            before_conjure.mana,
+            before_conjure.soul,
+        ),
+    ) {
+        return Err(
+            format!("C18a unexplained mana or soul before conjure: {regeneration:?}").into(),
+        );
+    }
+    let paid = client
+        .cast_spell(conjure, actor_spell::SpellTarget::None, false)
+        .await?;
+    require_mechanic_acceptance(paid.status, "C18a first soul-spending conjure")?;
+    let conjure_debit = paid
+        .actor_vitals_delta
+        .ok_or("C18a conjure has no authoritative debit")?;
+    if paid.disposition != SpellCastDisposition::Cast
+        || before_conjure.mana.checked_sub(120) != Some(conjure_debit.value.mana)
+        || before_conjure.soul.checked_sub(1) != Some(conjure_debit.value.soul)
+    {
+        return Err(format!("C18a conjure did not charge 120 mana and one soul: {paid_disposition:?}: {conjure_debit:?}", paid_disposition=paid.disposition).into());
+    }
+    if blank_before.checked_sub(1) != Some(item_count(&client, blank)?)
+        || missile_before.checked_add(10) != Some(item_count(&client, missile)?)
+    {
+        return Err(
+            "C18a soul preparation did not consume one blank rune and produce ten missile charges"
+                .into(),
+        );
+    }
     let (result, detail, _, _) = logout_once(&mut client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!("C18a first logout refused: {detail}").into());
@@ -405,21 +474,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .actor_vitals()
         .ok_or("C18a missing final logout vitals")?;
     let logout_sequence = client.last_server_sequence();
-    collect_vitals(&mut client, Some(&mut regeneration));
-    if !oteryn_dev_client::qualification_mana_history(
-        (vitals_sequence, after.mana, after.soul),
-        &regeneration,
-        after.max_mana,
-        (logout_sequence, logout_vitals.mana, logout_vitals.soul),
-    ) {
-        return Err(format!(
-            "C18a unexplained mana or soul transition after Scorch: {regeneration:?}"
-        )
-        .into());
+    if (logout_vitals.mana, logout_vitals.soul)
+        != (conjure_debit.value.mana, conjure_debit.value.soul)
+    {
+        return Err("C18a logout state differs from the authoritative conjure debit".into());
     }
 
     drop(client);
-    let mut fresh = connect_character(clients, 0xcb, 1).await?;
+    let mut fresh = connect_character(clients, 0xcb, 0).await?;
     if fresh.join_snapshot().game_session_id == session {
         return Err("C18a relog reused the cast session".into());
     }
@@ -514,12 +576,17 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "logout_sequence": logout_sequence,
             "wrapper": wrapper,
             "regeneration": regeneration,
+            "conjure_sequence": conjure_sequence,
+            "mana_before_conjure": before_conjure.mana,
+            "soul_before_conjure": before_conjure.soul,
             "mana_logout": logout_vitals.mana,
             "soul_logout": logout_vitals.soul,
             "mana_relog": fresh_vitals.mana,
             "soul_before": before.soul,
             "soul_after": after.soul,
             "soul_relog": fresh_vitals.soul,
+            "clear_sequence": clear.result_server_sequence,
+            "cleared_combat": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&cleared_combat).map_err(|error| format!("{error:?}"))?,
             "combat_before": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&combat_before).map_err(|error| format!("{error:?}"))?,
             "combat_after": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&combat_after).map_err(|error| format!("{error:?}"))?,
             "relog_session_id": uuid_text(fresh.join_snapshot().game_session_id.as_bytes()),
@@ -724,4 +791,18 @@ async fn wait_for_cast_tile(
         client.service_liveness(Duration::from_millis(50)).await?;
         collect_vitals(client, vitals.as_deref_mut());
     }
+}
+
+fn item_count(
+    client: &oteryn_dev_client::DevClientSession,
+    reference: std::num::NonZeroU32,
+) -> TestResult<u64> {
+    Ok(client
+        .inventory()
+        .ok_or("C18a inventory absent")?
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == reference)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum())
 }

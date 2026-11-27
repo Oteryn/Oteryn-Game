@@ -147,16 +147,85 @@ pub fn qualification_mana_history(
     (last.1, last.2) == (logout.1, logout.2)
 }
 
-/// Match Scorch's registered own sound at the cast tile in this presentation batch.
-pub fn qualification_scorch_cue(
+/// Match the east-facing Scorch footprint and fire damage in one cast decision.
+pub fn qualification_scorch_impact(
     events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
-    cast_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
-) -> bool {
-    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationSource};
-    // content/presentations/bindings/spell-cues.json: canary.sound:spell_scorch.
-    const SCORCH_CUE: u32 = 1178;
-    events.iter().filter(|event| matches!(event.kind,
-        PresentationEventKind::Sound { position, cue_id: SCORCH_CUE, source: PresentationSource::Own, .. }
-            if position == cast_position
-    )).count() == 1
+    origin: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    caster: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    rat_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    rat: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    spell: u32,
+) -> Result<Option<u64>, String> {
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationColor, PresentationEventKind as Kind, PresentationSource, PresentationValueKind,
+    };
+    let mut matching = events.iter().filter(|event| {
+        matches!(event.kind,
+            Kind::SpellWords { caster: actor, position, spell: index }
+            if actor == caster && position == origin && index == spell
+        )
+    });
+    let Some(words) = matching.next() else {
+        return Ok(None);
+    };
+    if matching.next().is_some() {
+        return Err("C18a multiple matching spell decisions".into());
+    }
+    let mut cells = Vec::new();
+    let mut damage = None;
+    for event in events
+        .iter()
+        .filter(|event| event.decision_ordinal == words.decision_ordinal)
+    {
+        match event.kind {
+            Kind::MagicEffect {
+                position,
+                effect_id: 16,
+                source: PresentationSource::Own,
+            } => {
+                cells.push((position.x - origin.x, position.y - origin.y, position.floor));
+            }
+            Kind::ValueText {
+                kind: PresentationValueKind::DamageDealt,
+                position,
+                target,
+                attacker: Some(actor),
+                primary,
+                secondary: None,
+            } if actor == caster && target == rat && position == rat_position => {
+                if primary.color != PresentationColor::Orange
+                    || damage.replace(primary.value).is_some()
+                {
+                    return Err(format!(
+                        "C18a expected one fire hit in Scorch's decision: {events:?}"
+                    ));
+                }
+            }
+            _ => {}
+        }
+    }
+    cells.sort_unstable();
+    let expected = [
+        (1, 0),
+        (2, -1),
+        (2, 0),
+        (2, 1),
+        (3, -1),
+        (3, 0),
+        (3, 1),
+        (4, -2),
+        (4, -1),
+        (4, 0),
+        (4, 1),
+        (4, 2),
+    ]
+    .map(|(x, y)| (x, y, origin.floor));
+    if cells != expected {
+        return Err(format!(
+            "C18a Scorch cone cells {cells:?}; expected {expected:?}; batch={events:?}"
+        ));
+    }
+    damage
+        .map(Some)
+        .ok_or_else(|| "C18a Scorch cone lacks exact Rat fire damage".into())
 }

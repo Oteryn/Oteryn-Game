@@ -255,6 +255,9 @@ struct Proof {
     vitals_before: Vec<u8>,
     mana_after: u32,
     mana_relog: u32,
+    conjure_sequence: u64,
+    mana_before_conjure: u32,
+    soul_before_conjure: u32,
     mana_logout: u32,
     soul_logout: u32,
     pre_cast_sequence: u64,
@@ -264,6 +267,8 @@ struct Proof {
     soul_after: u32,
     soul_relog: u32,
     combat_before: Vec<u8>,
+    clear_sequence: u64,
+    cleared_combat: Vec<u8>,
     combat_after: Vec<u8>,
     game_session_id: String,
     relog_session_id: String,
@@ -305,7 +310,8 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         || vitals.server_sequence != proof.vitals_sequence
         || !(proof.pre_cast_sequence < cast.server_sequence
             && cast.server_sequence < vitals.server_sequence
-            && vitals.server_sequence < proof.logout_sequence)
+            && vitals.server_sequence < proof.conjure_sequence
+            && proof.conjure_sequence < proof.logout_sequence)
         || damage.command_id != proof.command_id
         || damage.status != cast.status
         || damage.server_sequence != proof.damage_sequence
@@ -320,6 +326,8 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         || health.server_sequence <= cast.server_sequence
         || cast.status != CommandStatus::Accepted as u32
         || health.status != cast.status
+        || !(vitals.server_sequence < proof.clear_sequence
+            && proof.clear_sequence < proof.conjure_sequence)
         || proof.generation == 0
         || proof.before > 100
         || proof.after == 0
@@ -348,14 +356,22 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         (charged.mana, charged.soul),
         (proof.mana_after, proof.soul_after)
     );
-    if proof.mana_logout >= charged.max_mana || proof.soul_logout >= 100 {
+    if proof.mana_before_conjure.checked_sub(120) != Some(proof.mana_logout)
+        || proof.soul_before_conjure.checked_sub(1) != Some(proof.soul_logout)
+        || proof.mana_logout >= charged.max_mana
+        || proof.soul_logout >= 100
+    {
         return Err("C18a full logout vitals cannot catch a reset".into());
     }
     if !crate::qualification_mana_history(
         (vitals.server_sequence, charged.mana, charged.soul),
         &proof.regeneration,
         charged.max_mana,
-        (proof.logout_sequence, proof.mana_logout, proof.soul_logout),
+        (
+            proof.conjure_sequence.saturating_add(1),
+            proof.mana_before_conjure,
+            proof.soul_before_conjure,
+        ),
     ) {
         return Err("C18a replay found unexplained mana or soul before logout".into());
     }
@@ -372,6 +388,10 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     assert_eq!(before.target, Some(rat));
     assert_eq!(after.target, Some(rat));
     assert_eq!(before.modes, after.modes);
+    let cleared = attack::decode_actor_combat_state(&proof.cleared_combat)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(cleared.target, None);
+    assert_eq!(cleared.modes, before.modes);
     let inbound = std::fs::read(root.join("c18a-exchange.bin"))?;
     let vitals_revision = cast_exchange_revision(&inbound, &cast, &vitals)?;
     replay_through_session(Fixture {
@@ -404,7 +424,23 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         identity: proof.caster_identity,
         generation: proof.caster_generation,
     };
-    verify_damage(&damage.payload, caster, target, proof.damage)?;
+    let events = oteryn_protocol_oteryn::presentation::decode_presentation_batch(&damage.payload)
+        .map_err(|error| format!("{error:?}"))?;
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+    let origin = ActorPosition {
+        x: 32489,
+        y: 32169,
+        floor: 7,
+    };
+    let rat_tile = ActorPosition {
+        x: 32491,
+        y: 32169,
+        floor: 7,
+    };
+    assert_eq!(
+        crate::qualification_scorch_impact(&events, origin, caster, rat_tile, target, proof.spell)?,
+        Some(proof.damage)
+    );
     let entry = delta
         .update
         .iter()
@@ -502,56 +538,6 @@ fn exact_vitals(mana: [u32; 4], soul: [u32; 4]) -> bool {
         && soul[2] == soul[3]
 }
 
-fn verify_damage(
-    payload: &[u8],
-    caster: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
-    target: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
-    expected: u64,
-) -> Result<(), Error> {
-    use oteryn_protocol_oteryn::presentation;
-    let presentation =
-        presentation::decode_presentation_batch(payload).map_err(|error| format!("{error:?}"))?;
-    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
-    let cast_tile = ActorPosition {
-        x: 32489,
-        y: 32169,
-        floor: 7,
-    };
-    let rat_tile = ActorPosition {
-        x: 32491,
-        y: 32169,
-        floor: 7,
-    };
-    if !crate::qualification_scorch_cue(&presentation, cast_tile) {
-        return Err("C18a damage batch lacks the caster's Scorch cue".into());
-    }
-    let attributed: Vec<_> = presentation
-        .iter()
-        .filter_map(|event| match event.kind {
-            presentation::PresentationEventKind::ValueText {
-                kind: presentation::PresentationValueKind::DamageDealt,
-                position,
-                target: victim,
-                attacker: Some(source),
-                primary,
-                secondary: None,
-                ..
-            } if position == rat_tile
-                && victim == target
-                && source == caster
-                && primary.color == presentation::PresentationColor::Red =>
-            {
-                Some(primary.value)
-            }
-            _ => None,
-        })
-        .collect();
-    if attributed != [expected] {
-        return Err("C18a damage presentation lacks one exact caster-to-Rat hit".into());
-    }
-    Ok(())
-}
-
 #[test]
 fn rejects_false_c18a_damage_cost_and_aim() {
     let spell = std::num::NonZeroU32::new(1).unwrap();
@@ -575,13 +561,19 @@ fn rejects_false_c18a_damage_cost_and_aim() {
 }
 
 #[test]
-fn rejects_health_loss_without_the_exact_damage_source() -> Result<(), Error> {
+fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> {
     use oteryn_protocol_oteryn::presentation::{
-        PresentationColor, PresentationEvent, PresentationEventKind, PresentationValue,
-        PresentationValueKind, encode_presentation_batch,
+        PresentationColor, PresentationEvent, PresentationEventKind as Kind, PresentationSource,
+        PresentationValue, PresentationValueKind,
     };
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    let origin = ActorPosition {
+        x: 32489,
+        y: 32169,
+        floor: 7,
+    };
+    let rat_tile = ActorPosition { x: 32491, ..origin };
     let caster = EntityRef {
         identity: [1; 16],
         generation: 1,
@@ -590,71 +582,51 @@ fn rejects_health_loss_without_the_exact_damage_source() -> Result<(), Error> {
         identity: [2; 16],
         generation: 1,
     };
-    let event = |attacker, victim| PresentationEvent {
+    let spell = 13;
+    let event = |kind| PresentationEvent {
         decision_ordinal: 1,
         emission_ordinal: 1,
-        kind: PresentationEventKind::ValueText {
+        kind,
+    };
+    let words = event(Kind::SpellWords {
+        caster,
+        position: origin,
+        spell,
+    });
+    let damage = |color| {
+        event(Kind::ValueText {
             kind: PresentationValueKind::DamageDealt,
-            position: ActorPosition {
-                x: 32491,
-                y: 32169,
-                floor: 7,
-            },
-            target: victim,
-            attacker: Some(attacker),
-            primary: PresentationValue {
-                value: 8,
-                color: PresentationColor::Red,
-            },
-            secondary: None,
-        },
-    };
-    let cue = PresentationEvent {
-        decision_ordinal: 2,
-        emission_ordinal: 1,
-        kind: PresentationEventKind::Sound {
-            position: ActorPosition {
-                x: 32489,
-                y: 32169,
-                floor: 7,
-            },
-            cue_id: 1178,
-            source: oteryn_protocol_oteryn::presentation::PresentationSource::Own,
-            secondary_cue_id: 0,
-        },
-    };
-    let unrelated = encode_presentation_batch(&[event(caster, target)])
-        .map_err(|error| format!("{error:?}"))?;
-    assert!(verify_damage(&unrelated, caster, target, 8).is_err());
-    let payload = encode_presentation_batch(&[event(caster, target), cue])
-        .map_err(|error| format!("{error:?}"))?;
-    verify_damage(&payload, caster, target, 8)?;
-    assert!(verify_damage(&payload, caster, target, 7).is_err());
-    assert!(
-        verify_damage(
-            &payload,
-            EntityRef {
-                generation: 2,
-                ..caster
-            },
+            position: rat_tile,
             target,
-            8
-        )
-        .is_err()
-    );
-    assert!(
-        verify_damage(
-            &payload,
-            caster,
-            EntityRef {
-                generation: 2,
-                ..target
-            },
-            8
-        )
-        .is_err()
-    );
-    assert!(verify_damage(&[], caster, target, 8).is_err());
+            attacker: Some(caster),
+            primary: PresentationValue { value: 7, color },
+            secondary: None,
+        })
+    };
+    let mut events = vec![words, damage(PresentationColor::Orange)];
+    for (dx, min, max) in [(1, 0, 0), (2, -1, 1), (3, -1, 1), (4, -2, 2)] {
+        for dy in min..=max {
+            events.push(event(Kind::MagicEffect {
+                position: ActorPosition {
+                    x: origin.x + dx,
+                    y: origin.y + dy,
+                    ..origin
+                },
+                effect_id: 16,
+                source: PresentationSource::Own,
+            }));
+        }
+    }
+    let verify = |events: &[_]| {
+        crate::qualification_scorch_impact(events, origin, caster, rat_tile, target, spell)
+    };
+    assert_eq!(verify(&events)?, Some(7));
+    assert!(verify(&events[..3]).is_err());
+    events[1] = damage(PresentationColor::Red);
+    assert!(verify(&events).is_err());
+    events[1] = damage(PresentationColor::Orange);
+    events[1].decision_ordinal = 2;
+    assert!(verify(&events).is_err());
     Ok(())
 }
 
