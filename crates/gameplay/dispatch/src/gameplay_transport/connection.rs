@@ -1216,14 +1216,9 @@ fn attach_spatial_handles(
     }
 }
 
-/// VIS-3: the frame of one visibility refresh after `sequence` and domain 1 `revision`, with the
-/// sequence and revision it leaves: a sequenced delta to the next revision, or nothing.
-///
-/// A change above the delta ceiling (MOVE-RL-11 §4.3 resync) returns `None`, and the caller ends
-/// the connection with its continuity at the last delivered sequence and revision. An admitted
-/// client accepts no `SnapshotBegin` after its join (`oteryn-session` reads only `StateDelta`,
-/// `CommandResult` and `LivenessProbe` there), so the resync snapshot is the one the resume of
-/// that continuity sends from the interest set. `None` also fails closed on an encoding error.
+/// Sequence a visibility delta or a corpse-stack replacement of domain 1.
+/// Replacement frames share one boundary, as for an existing map replacement.
+/// The over-budget resync still resumes from a fresh connection snapshot.
 fn visibility_frames(
     generation: u64,
     sequence: u64,
@@ -1252,6 +1247,25 @@ fn visibility_frames(
             Some((vec![frame], delta_sequence, new_revision))
         }
         VisibilityUpdate::Snapshot(_) => None,
+        VisibilityUpdate::StackSnapshot(snapshot) => {
+            let target = sequence.checked_add(1)?.max(2);
+            let new_revision = revision.checked_add(1)?;
+            let (snapshot_type, payload) =
+                encode_visibility_snapshot_lit(selected, snapshot, lights).ok()?;
+            let frames = encode_snapshot(
+                generation,
+                target,
+                target,
+                &[DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: new_revision,
+                    snapshot_type,
+                    payload: &payload,
+                }],
+            )
+            .ok()?;
+            Some((frames, target, new_revision))
+        }
     }
 }
 

@@ -6,7 +6,7 @@ use crate::gameplay_transport::world_spatial::{
     WorldSpatialEntitiesSnapshot, encode_step_intent, encode_step_result, encode_visibility_delta,
     encode_visibility_snapshot,
 };
-use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
+use oteryn_protocol_oteryn::{ClientCommandValue, decode_snapshot_chunk, encode_client_command};
 use std::cell::{Cell, RefCell};
 use std::error::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
@@ -70,6 +70,64 @@ fn wire(kind: EntityKind, identity: [u8; 16], position: ActorPosition) -> WorldS
 
 fn own(position: ActorPosition) -> WorldSpatialEntity {
     wire(EntityKind::Player, actor().placement_identity(), position)
+}
+
+#[test]
+fn corpse_stack_resync_publishes_a_domain_one_replacement() -> TestResult {
+    let mut snapshot = WorldSpatialEntitiesSnapshot {
+        content_generation: CONTENT,
+        actor_position: at(0, 0),
+        own_identity: actor().placement_identity(),
+        entities: vec![own(at(0, 0))],
+    };
+    for marker in [9, 3] {
+        snapshot.entities.push(WorldSpatialEntity {
+            kind: EntityKind::Corpse,
+            entity: EntityRef {
+                identity: [marker; 16],
+                generation: 0,
+            },
+            detail: EntityDetail::Object {
+                item_definition_ref: 42,
+                quantity: 1,
+                item_handle: None,
+            },
+            ..own(at(1, 0))
+        });
+    }
+    let (frames, sequence, revision) = visibility_frames(
+        1,
+        41,
+        5,
+        &[6],
+        &EntityLights::new(),
+        &VisibilityUpdate::StackSnapshot(snapshot.clone()),
+    )
+    .ok_or("missing replacement frames")?;
+    assert_eq!((sequence, revision), (42, 6));
+    let mut frames = frames.iter();
+    let first = decode_wire_envelope(frames.next().ok_or("missing SnapshotBegin")?)?;
+    assert_eq!(first.message_type(), MessageType::SnapshotBegin);
+    let begin = oteryn_protocol_oteryn::decode_snapshot_begin(first.payload())?;
+    assert_eq!(begin.target_server_sequence, 42);
+    let second = decode_wire_envelope(frames.next().ok_or("missing SnapshotChunk")?)?;
+    assert_eq!(second.message_type(), MessageType::SnapshotChunk);
+    let (snapshot_id, domains) = decode_snapshot_chunk(second.payload())?;
+    assert_eq!(snapshot_id, begin.snapshot_id);
+    let [domain] = domains.as_slice() else {
+        return Err("expected one replacement domain".into());
+    };
+    assert_eq!(
+        (domain.domain_id, domain.revision, domain.snapshot_type),
+        (1, 6, 2)
+    );
+    let replacement =
+        oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(
+            domain.payload,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(replacement, snapshot);
+    Ok(())
 }
 
 /// The Channel owner as domain 1 sees it: the own actor, which steps east, and the others.

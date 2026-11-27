@@ -319,6 +319,55 @@ fn a_type_2_snapshot_of_0_1_and_256_entities_is_stored_by_entity_ref() -> Result
 }
 
 #[test]
+fn corpse_stack_arrival_survives_delta_replacement_and_fresh_join() -> Result<(), BoxError> {
+    block_on(async {
+        let position = at(1, 0);
+        let bottom = corpse(9, position);
+        let top = corpse(3, position);
+        let delta = entities_delta(at(0, 0), vec![top], vec![], vec![]);
+        let mut updated_bottom = bottom;
+        updated_bottom.detail = EntityDetail::Object {
+            item_definition_ref: 10,
+            quantity: 1,
+            item_handle: None,
+        };
+        let update = entities_delta(at(0, 0), vec![], vec![updated_bottom], vec![]);
+        let (client, peer) = entity_peer(
+            entity_snapshot(vec![bottom]),
+            &[6],
+            vec![entities_push(41, 5, 6, &delta)?, entities_push(42, 6, 7, &update)?],
+        );
+        let mut session = Session::admit(client, entity_admission()?).await?;
+        session.service_liveness(Duration::from_millis(300)).await?;
+        let stored = session.world_entities().ok_or("missing spatial delta")?;
+        assert_eq!(stored.others().copied().collect::<Vec<_>>(), [updated_bottom, top]);
+        drop(session);
+        peer.await??;
+
+        let middle = corpse(6, position);
+        let (snapshot_type, payload) = entity_snapshot(vec![updated_bottom, middle, top]);
+        let replacement = encode_single_chunk_snapshot(
+            1, 41, 41, &[DomainSnapshot {
+                domain_id: 1,
+                revision: 6,
+                snapshot_type,
+                payload: &payload,
+            }],
+        )?.into_iter().map(Step::Send).collect();
+        let (client, peer) = entity_peer(entity_snapshot(vec![updated_bottom, top]), &[6], replacement);
+        let mut session = Session::admit(client, entity_admission()?).await?;
+        let stored = session.world_entities().ok_or("missing fresh snapshot")?;
+        assert_eq!(stored.others().copied().collect::<Vec<_>>(), [updated_bottom, top]);
+        session.wait_for_events(DEADLINE).await?;
+        let stored = session.world_entities().ok_or("missing replacement snapshot")?;
+        assert_eq!(stored.others().copied().collect::<Vec<_>>(), [updated_bottom, middle, top]);
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
 fn a_type_2_snapshot_is_refused_without_capability_6_and_type_1_with_it() -> Result<(), BoxError> {
     block_on(async {
         let (client, peer) = entity_peer(entity_snapshot(vec![]), &[13], vec![]);

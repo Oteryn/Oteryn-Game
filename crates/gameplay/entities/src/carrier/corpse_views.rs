@@ -89,19 +89,17 @@ impl ChannelActorCarrier {
         &self,
         context: Option<PreProductionPositionContext>,
     ) -> Vec<VisibleRuntimeCorpse> {
-        self.corpse_projections
+        // Bindings are appended when the committed corpse Item becomes visible.
+        // Death projections can precede settlement, so their order can differ.
+        self.corpse_item_bindings
             .iter()
-            .filter(|projection| {
-                context.is_none_or(|context| projection.position.context == context)
-            })
-            .filter_map(|projection| {
-                let actor = projection.occurrence.actor;
-                let binding = self
-                    .corpse_item_bindings
-                    .iter()
-                    .find(|binding| binding.actor == actor)?;
+            .filter_map(|binding| {
+                let projection = self.corpse_projections.iter().find(|projection| {
+                    projection.occurrence.actor == binding.actor
+                        && context.is_none_or(|context| projection.position.context == context)
+                })?;
                 Some(VisibleRuntimeCorpse {
-                    identity: actor.corpse_identity(),
+                    identity: binding.actor.corpse_identity(),
                     position: projection.position(),
                     revision: projection.position_revision(),
                     item: binding.item.clone(),
@@ -264,7 +262,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// MAP-ITEM-REF-1 Part B: every bound corpse of this generation under the pinned Movement
-    /// context, in projection order. A corpse without a binding, or whose projection is gone, is
+    /// context, in Item publication order. A corpse without a binding, or whose projection is gone, is
     /// left out. Read-only.
     pub fn visible_corpses(&self) -> Vec<VisibleRuntimeCorpse> {
         self.carrier

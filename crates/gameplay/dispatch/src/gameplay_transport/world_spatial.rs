@@ -6,11 +6,11 @@
 //! unchanged, so nothing else in this crate needed to change.
 
 mod appearance_visibility;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::movement::interest::{
     InterestChange, InterestDiff, InterestEntity, InterestIndex, VisibilityPosition,
-    VisibilityQuery, VisibilitySettings, diff_interest,
+    VisibilitySettings, diff_selected_interest,
 };
 pub use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 pub use oteryn_protocol_oteryn::world_spatial::*;
@@ -164,6 +164,7 @@ pub struct ChannelEntity {
 pub struct ChannelEntities {
     pub content_generation: [u8; 32],
     pub observer: [u8; ENTITY_IDENTITY_BYTES],
+    /// The corpse subsequence is in the Channel owner's Item publication order.
     pub entities: Vec<ChannelEntity>,
     /// CLOCK-1 (§11.4): the light of each lit player and creature, by identity, in the same read.
     pub lights: EntityLights,
@@ -250,6 +251,8 @@ pub enum VisibilityUpdate {
     Delta(WorldSpatialEntitiesDelta),
     /// A larger change: the full current view (the resync disposition, MOVE-RL-11 §4.3).
     Snapshot(WorldSpatialEntitiesSnapshot),
+    /// Rebase domain 1 in place when a delta cannot preserve a visible corpse stack.
+    StackSnapshot(WorldSpatialEntitiesSnapshot),
 }
 
 /// VIS-3 (MOVE-RL-11 §4): the domain 1 view of one session with capability 6, composed from the
@@ -268,7 +271,8 @@ pub enum VisibilityUpdate {
 /// for a move.
 #[derive(Debug, Clone, Default)]
 pub struct SessionVisibility {
-    shown: Option<VisibilityQuery>,
+    shown: Option<Vec<InterestEntity>>,
+    corpse_stacks: CorpseStacks,
     entities: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], WorldSpatialEntity>,
     objects: bool,
     motion: bool,
@@ -280,6 +284,63 @@ pub struct SessionVisibility {
     /// The content generation and own position of the last view sent: the header a
     /// header-only sidecar delta must repeat, or the client refuses it.
     published: Option<([u8; 32], ActorPosition)>,
+}
+
+type TileKey = (i16, i32, i32);
+type CorpseStacks = BTreeMap<TileKey, Vec<EntityRef>>;
+
+fn tile_key(position: ActorPosition) -> TileKey {
+    (position.floor, position.y, position.x)
+}
+
+fn corpse_stacks(entities: &[WorldSpatialEntity]) -> CorpseStacks {
+    let mut stacks = CorpseStacks::new();
+    for entity in entities
+        .iter()
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+    {
+        stacks
+            .entry(tile_key(entity.position))
+            .or_default()
+            .push(entity.entity);
+    }
+    stacks
+}
+
+/// A nonempty tile can append new tops and drop old tops. Existing corpses below
+/// the top keep their relative positions. Other edits need a VIS-2 §4.3 resync.
+fn corpse_stacks_need_snapshot(previous: &CorpseStacks, current: &CorpseStacks) -> bool {
+    previous.iter().any(|(tile, before)| {
+        let Some(after) = current.get(tile) else {
+            return false;
+        };
+        let retained = before
+            .iter()
+            .filter(|entity| after.contains(entity))
+            .count();
+        before[..retained] != after[..retained]
+            || before[retained..]
+                .iter()
+                .any(|entity| after.contains(entity))
+    })
+}
+
+fn order_corpse_changes(changes: &mut [WorldSpatialEntity], selected: &[WorldSpatialEntity]) {
+    let corpses: BTreeSet<_> = changes
+        .iter()
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
+    let ordered = selected
+        .iter()
+        .filter(|entity| corpses.contains(&entity.entity));
+    for (slot, corpse) in changes
+        .iter_mut()
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .zip(ordered)
+    {
+        *slot = *corpse;
+    }
 }
 
 impl SessionVisibility {
@@ -408,15 +469,17 @@ impl SessionVisibility {
     }
 
     /// The query of `channel` from the observer, and each selected entity in its wire form, in
-    /// the query's order (own actor first). `attach` gives each object its item handle under
+    /// proximity order (own actor first), with selected corpses emitted bottom first on each tile.
+    /// `attach` gives each object its item handle under
     /// capability 4. An observer that is not in `channel`, or not on a valid floor, fails.
     fn select(
         &self,
         channel: &ChannelEntities,
         attach: &mut dyn FnMut(&mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError>,
-    ) -> Result<(VisibilityQuery, Vec<WorldSpatialEntity>), WorldSpatialError> {
+    ) -> Result<(Vec<InterestEntity>, Vec<WorldSpatialEntity>), WorldSpatialError> {
         let mut index = InterestIndex::new();
         let mut by_identity = BTreeMap::new();
+        let mut corpses = BTreeMap::<TileKey, Vec<InterestEntity>>::new();
         for entity in &channel.entities {
             if !self.objects
                 && matches!(
@@ -434,18 +497,45 @@ impl SessionVisibility {
             ) else {
                 continue;
             };
-            index.upsert(InterestEntity {
+            let interest = InterestEntity {
                 identity: entity.identity,
                 position,
                 revision: entity.revision,
-            });
+            };
+            index.upsert(interest);
             by_identity.insert(entity.identity, entity);
+            if matches!(entity.kind, VisibleKind::Corpse { .. }) {
+                corpses
+                    .entry(tile_key(entity.position))
+                    .or_default()
+                    .push(interest);
+            }
         }
         let query = index
             .query(&channel.observer, VisibilitySettings::REFERENCE)
             .map_err(|_| WorldSpatialError::Malformed)?;
-        let mut selected = query
-            .entities()
+        let mut shown = query.entities().to_vec();
+        let mut corpse_slots = BTreeMap::<TileKey, Vec<usize>>::new();
+        for (slot, entity) in shown.iter().enumerate() {
+            let source = by_identity
+                .get(&entity.identity)
+                .ok_or(WorldSpatialError::Malformed)?;
+            if matches!(source.kind, VisibleKind::Corpse { .. }) {
+                corpse_slots
+                    .entry(tile_key(source.position))
+                    .or_default()
+                    .push(slot);
+            }
+        }
+        for (tile, slots) in corpse_slots {
+            let stack = corpses.get(&tile).ok_or(WorldSpatialError::Malformed)?;
+            // Keep the highest corpses when the interest budget cuts through
+            // a tile. Fill its slots in bottom-to-top wire order.
+            for (slot, entity) in slots.iter().zip(&stack[stack.len() - slots.len()..]) {
+                shown[*slot] = *entity;
+            }
+        }
+        let mut selected = shown
             .iter()
             .map(|entity| {
                 by_identity
@@ -466,7 +556,7 @@ impl SessionVisibility {
             }
         }
         attach(&mut selected)?;
-        Ok((query, selected))
+        Ok((shown, selected))
     }
 
     fn snapshot_of(
@@ -485,13 +575,14 @@ impl SessionVisibility {
     fn show(
         &mut self,
         channel: &ChannelEntities,
-        query: VisibilityQuery,
+        query: Vec<InterestEntity>,
         selected: Vec<WorldSpatialEntity>,
     ) {
         self.published = selected
             .first()
             .map(|own| (channel.content_generation, own.position));
         self.shown = Some(query);
+        self.corpse_stacks = corpse_stacks(&selected);
         self.entities = selected
             .into_iter()
             .map(|entity| (entity.entity.identity, entity))
@@ -519,20 +610,31 @@ impl SessionVisibility {
         attach: &mut dyn FnMut(&mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError>,
     ) -> Result<VisibilityUpdate, WorldSpatialError> {
         let (query, selected) = self.select(channel, attach)?;
-        let Some(shown) = &self.shown else {
+        let stack_changed = self.shown.is_some()
+            && (corpse_stacks_need_snapshot(&self.corpse_stacks, &corpse_stacks(&selected))
+                || selected.iter().any(|entity| {
+                    entity.kind == EntityKind::Corpse
+                        && self
+                            .entities
+                            .get(&entity.entity.identity)
+                            .is_some_and(|prior| {
+                                prior.position != entity.position || prior.kind != entity.kind
+                            })
+                }));
+        let changes = self
+            .shown
+            .as_ref()
+            .filter(|_| !stack_changed)
+            .map(|shown| diff_selected_interest(shown, &query));
+        let Some(InterestDiff::Delta(changes)) = changes else {
             let snapshot = Self::snapshot_of(channel, &selected)?;
             self.show_lights(channel, &selected);
             self.show(channel, query, selected);
-            return Ok(VisibilityUpdate::Snapshot(snapshot));
-        };
-        let changes = match diff_interest(shown, &query) {
-            InterestDiff::Resync(_) => {
-                let snapshot = Self::snapshot_of(channel, &selected)?;
-                self.show_lights(channel, &selected);
-                self.show(channel, query, selected);
-                return Ok(VisibilityUpdate::Snapshot(snapshot));
-            }
-            InterestDiff::Delta(changes) => changes,
+            return Ok(if stack_changed {
+                VisibilityUpdate::StackSnapshot(snapshot)
+            } else {
+                VisibilityUpdate::Snapshot(snapshot)
+            });
         };
         let current: BTreeMap<_, _> = selected
             .iter()
@@ -638,6 +740,10 @@ impl SessionVisibility {
             self.send_light(identity, light, now);
             room -= 1;
         }
+        // The interest diff enumerates identities. Restore the same per-tile
+        // corpse order as the snapshot while keeping the other entries' slots.
+        order_corpse_changes(&mut delta.enter, &selected);
+        order_corpse_changes(&mut delta.update, &selected);
         self.forget_lights(&selected);
         self.show(channel, query, selected);
         if delta.enter.is_empty() && delta.update.is_empty() && delta.leave.is_empty() {
@@ -1540,6 +1646,72 @@ mod tests {
         assert_eq!(delta.actor_position, stepped.entities[0].position);
         assert_eq!(identities(&delta.update), [id(0), id(1)]);
         assert!(delta.enter.is_empty() && delta.leave.is_empty());
+    }
+
+    fn stacked_corpse(identity: u32) -> ChannelEntity {
+        let mut corpse = at(
+            identity,
+            VisibleKind::Corpse {
+                native_appearance_id: None,
+                item_definition_ref: std::num::NonZeroU32::MIN,
+            },
+            101,
+            100,
+            7,
+        );
+        corpse.generation = 0;
+        corpse
+    }
+
+    #[test]
+    fn corpse_snapshot_and_delta_emit_bottom_first() {
+        let mut view = SessionVisibility::with_objects(true);
+        let [bottom, middle, top] = [9, 7, 3].map(stacked_corpse);
+        view.snapshot(&channel([bottom]), &mut no_handles)
+            .expect("join");
+        let stacked = channel([bottom, middle, top]);
+        let VisibilityUpdate::Delta(delta) =
+            view.refresh(&stacked, &mut no_handles).expect("append")
+        else {
+            panic!("two new top corpses fit in a delta");
+        };
+        assert_eq!(identities(&delta.enter), [id(7), id(3)]);
+        let fresh = SessionVisibility::with_objects(true)
+            .snapshot(&stacked, &mut no_handles)
+            .expect("fresh join");
+        assert_eq!(identities(&fresh.entities), [id(0), id(9), id(7), id(3)]);
+
+        let VisibilityUpdate::StackSnapshot(snapshot) = view
+            .refresh(&channel([bottom, top]), &mut no_handles)
+            .expect("remove middle")
+        else {
+            panic!("middle removal requires a fresh snapshot");
+        };
+        assert_eq!(identities(&snapshot.entities), [id(0), id(9), id(3)]);
+        let VisibilityUpdate::StackSnapshot(snapshot) = view
+            .refresh(&stacked, &mut no_handles)
+            .expect("insert below top")
+        else {
+            panic!("inserting below the visible top requires a fresh snapshot");
+        };
+        assert_eq!(snapshot, fresh);
+    }
+
+    #[test]
+    fn corpse_visibility_cutoff_keeps_top_of_its_tile() {
+        let mut view = SessionVisibility::with_objects(true);
+        let mut others = (1..MAX_SNAPSHOT_ENTITIES as u32 - 1)
+            .map(|n| at(n, VisibleKind::Creature, 100, 100, 7))
+            .collect::<Vec<_>>();
+        others.extend([1_000, 1_001].map(stacked_corpse));
+        let snapshot = view
+            .snapshot(&channel(others), &mut no_handles)
+            .expect("join");
+        assert_eq!(snapshot.entities.len(), MAX_SNAPSHOT_ENTITIES);
+        assert_eq!(
+            snapshot.entities.last().map(|e| e.entity.identity),
+            Some(id(1_001))
+        );
     }
 
     /// MAP-ITEM-REF-1 (CP D885): a session without capability 4 is sent no object; with it, the

@@ -8,6 +8,8 @@ use super::*;
 pub struct WorldEntities {
     pub(super) own_identity: [u8; world_spatial_entities::ENTITY_IDENTITY_BYTES],
     pub(super) entities: BTreeMap<EntityRef, WorldSpatialEntity>,
+    // Same-tile corpse slots retain the publisher's bottom-first order.
+    ordered_others: Vec<EntityRef>,
     pub(super) lights: world_spatial_entities::EntityLights,
 }
 
@@ -28,11 +30,11 @@ impl WorldEntities {
         self.entities.values()
     }
 
-    /// Every stored entity but the own actor, ordered by `EntityRef`.
+    /// Every entity but the own actor, with same-tile corpses in wire stack order.
     pub fn others(&self) -> impl Iterator<Item = &WorldSpatialEntity> {
-        self.entities
-            .values()
-            .filter(|entity| entity.entity.identity != self.own_identity)
+        self.ordered_others
+            .iter()
+            .filter_map(|reference| self.get(reference))
     }
 
     #[must_use]
@@ -49,7 +51,7 @@ impl WorldEntities {
         snapshot: &world_spatial_entities::WorldSpatialEntitiesSnapshot,
         lights: world_spatial_entities::EntityLights,
     ) -> Self {
-        Self {
+        let mut view = Self {
             own_identity: snapshot.own_identity,
             lights,
             entities: snapshot
@@ -57,7 +59,39 @@ impl WorldEntities {
                 .iter()
                 .map(|entity| (entity.entity, *entity))
                 .collect(),
+            ordered_others: Vec::new(),
+        };
+        view.order_others(snapshot.entities.iter());
+        view
+    }
+
+    fn order_others<'a>(&mut self, arrival: impl Iterator<Item = &'a WorldSpatialEntity>) {
+        let tile = |entity: &WorldSpatialEntity| {
+            let position = entity.position;
+            (position.floor, position.x, position.y)
+        };
+        let mut stacks = BTreeMap::<_, std::collections::VecDeque<_>>::new();
+        for corpse in arrival.filter(|entity| entity.kind == EntityKind::Corpse) {
+            stacks
+                .entry(tile(corpse))
+                .or_default()
+                .push_back(corpse.entity);
         }
+        self.ordered_others = self
+            .entities
+            .values()
+            .filter(|entity| entity.entity.identity != self.own_identity)
+            .map(|entity| {
+                if entity.kind == EntityKind::Corpse {
+                    stacks
+                        .get_mut(&tile(entity))
+                        .and_then(|stack| stack.pop_front())
+                        .unwrap_or(entity.entity)
+                } else {
+                    entity.entity
+                }
+            })
+            .collect();
     }
 
     pub(super) fn has_identity(
@@ -115,6 +149,22 @@ impl WorldEntities {
                 "own actor is gone or not at the header position",
             ));
         }
+        let moved_or_new_corpse = |entity: &WorldSpatialEntity| {
+            self.get(&entity.entity).is_none_or(|previous| {
+                previous.position != entity.position || previous.kind != entity.kind
+            })
+        };
+        let stayed = self
+            .others()
+            .filter_map(|previous| next.get(&previous.entity))
+            .filter(|entity| !moved_or_new_corpse(entity));
+        let arrived = delta
+            .update
+            .iter()
+            .chain(&delta.enter)
+            .filter(|entity| moved_or_new_corpse(entity));
+        let order = stayed.chain(arrived).copied().collect::<Vec<_>>();
+        next.order_others(order.iter());
         Ok(next)
     }
 }
