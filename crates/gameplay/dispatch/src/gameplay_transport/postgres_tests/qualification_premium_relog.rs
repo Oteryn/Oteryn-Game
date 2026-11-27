@@ -146,6 +146,8 @@ fn scenario() -> TestResult {
                 ..admitted
             };
             let assignment = QuickLootRequest {
+                selected_item: None,
+                review_filters: false,
                 action: QuickLootAction::Assign,
                 category: Some(QuickLootCategory::Gold),
                 recipient: Some(QuickLootRecipient::MainContainer),
