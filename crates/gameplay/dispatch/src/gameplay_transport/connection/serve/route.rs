@@ -190,10 +190,7 @@ where
             match reply {
                 LogoutReply::NoLogout => Dispatch::NoLogout,
                 LogoutReply::Result(result) => Dispatch::Logout(result),
-                // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
-                LogoutReply::Unknown => {
-                    return Err(ServeEnd::server("command_outcome_unavailable"));
-                }
+                LogoutReply::Unknown => command_unavailable(command, "logout_outcome_unavailable"),
             }
         },
     )
@@ -216,9 +213,22 @@ async fn training(
         command.payload,
         session.item_view.as_ref(),
     )
-    .await
-    .ok_or(ServeEnd::ControlLost("loop_training"))?;
-    Ok(Dispatch::Training(result))
+    .await;
+    Ok(result.map_or_else(
+        || command_unavailable(command, "loop_training_outcome_unavailable"),
+        Dispatch::Training,
+    ))
+}
+
+pub(super) fn command_unavailable(
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    cause: &'static str,
+) -> Dispatch {
+    operator_event(&format!(
+        "event=mechanic_outcome_unavailable command_type={} command_id={} cause={cause}",
+        command.command_type, command.command_id,
+    ));
+    Dispatch::Unavailable
 }
 
 include!(concat!(env!("OUT_DIR"), "/mechanic_routes.rs"));

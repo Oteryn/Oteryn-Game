@@ -12,25 +12,36 @@ use tokio::io::AsyncWriteExt;
 #[test]
 fn direct_use_opens_fresh_map_rack() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("use-map-rack", || {
-        scenario("oteryn:item.tibia.i10210", Some(25))
+        scenario("oteryn:item.tibia.i10210", Some(25), false)
     })
 }
 
 #[test]
 fn direct_use_opens_carried_backpack() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("use-carried-bag", || {
-        scenario("oteryn:item.tibia.i10326", Some(20))
+        scenario("oteryn:item.tibia.i10326", Some(20), false)
     })
 }
 
 #[test]
 fn direct_use_consumes_admitted_crocodile_steak() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("use-crocodile-steak-mode=seeded", || {
-        scenario("oteryn:item.tibia.i10219", None)
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("use-crocodile-steak-mode=seeded", move || {
+        drop(admin);
+        scenario("oteryn:item.tibia.i10219", None, false)
     })
 }
 
-fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
+#[test]
+fn food_use_when_full_returns_full_and_keeps_the_item() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("use-food-full", move || {
+        drop(admin);
+        scenario("oteryn:item.tibia.i3577", None, true)
+    })
+}
+
+fn scenario(key: &'static str, expected_capacity: Option<u8>, full: bool) -> TestResult {
     let map = expected_capacity == Some(25);
     run(async move |admin| {
         let h =
@@ -165,9 +176,20 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
             admitted.first_entry = FirstEntryOutcome::Positioned;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-                &[4, 6, 12, 14, 15, 18, 22, 49, 445, 446],
+                &[4, 6, 7, 12, 14, 15, 18, 22, 49, 445, 446, 617],
             ).ok_or("capabilities")?;
             let target = reference(key)?;
+            let food = expected_capacity.is_none();
+            if food {
+                owner.states.chat.admit(session, "Aela", owner.owner_now());
+            }
+            if full {
+                let runtime = deps.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let state = states.get_mut(&runtime, deps.actor, session).ok_or("actor spell state")?;
+                // One more meat would reach the Crystal/Canary cap.
+                *state = state.after_food(1_100, owner.owner_ms()).ok_or("prefeed to cap limit")?;
+            }
             // mode=seeded gives the actor one steak and leaves its food condition empty.
             let steak_quantity_and_custody = || async {
                 sqlx::query_as::<_, (i64, bool)>(
@@ -201,7 +223,7 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
             };
             if expected_capacity.is_none() {
                 assert_eq!(steak_quantity_and_custody().await?, (1, true), "seeded steak missing");
-                assert_eq!(food_regeneration().await?, None, "actor must start unfed");
+                assert_eq!(food_regeneration().await?, full.then_some(1_100_000), "initial food time");
             }
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let serve = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
@@ -243,7 +265,8 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                 client.write_all(&frame).await?;
                 let mut accepted = false;
                 let mut capacity = None;
-                while !accepted || (expected_capacity.is_some() && capacity.is_none()) {
+                let mut food_text = false;
+                while !accepted || (expected_capacity.is_some() && capacity.is_none()) || (food && !food_text) {
                     let frame = item_look_fixtures::read_frame(&mut client).await?;
                     let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
                     match envelope.message_type() {
@@ -251,11 +274,23 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                             let reply = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
                             assert_eq!(reply.command_id, 1);
                             let disposition = protocol::world_object::decode_use_result(reply.payload).map_err(debug)?;
-                            assert_eq!((reply.status, disposition), (protocol::CommandStatus::Accepted, UseDisposition::Committed));
+                            let expected = if full { UseDisposition::Full } else { UseDisposition::Committed };
+                            assert_eq!((reply.status, disposition), (protocol::CommandStatus::Accepted, expected));
                             accepted = true;
                         }
                         protocol::MessageType::StateDelta => {
                             let delta = protocol::decode_state_delta(envelope.payload()).map_err(debug)?;
+                            if food && delta.domain_id == protocol::chat::STATE_DOMAIN_CHAT {
+                                use protocol::chat::{ChatLine, ChatSpeechMode};
+                                match protocol::chat::decode_chat_line(delta.payload).map_err(debug)? {
+                                    ChatLine::Local { mode: ChatSpeechMode::MonsterSay, text, .. }
+                                        if !full && text == "Mmmm." => food_text = true,
+                                    ChatLine::System { text } if full && text == "You are full." => {
+                                        food_text = true;
+                                    }
+                                    _ => {}
+                                }
+                            }
                             if delta.domain_id == 14 {
                                 let views = protocol::container_tree::decode_container_views_with_house_capacity(delta.payload, false, true).map_err(debug)?;
                                 capacity = views.views.iter().find(|view| view.container_handle == handle).map(|view| view.capacity);
@@ -266,9 +301,14 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                 }
                 assert_eq!(capacity, expected_capacity);
                 if expected_capacity.is_none() {
-                    assert_eq!(steak_quantity_and_custody().await?, (0, false), "steak must be consumed in PostgreSQL");
-                    // Crystal 201189f8 foods.lua:88,150–154 adds 10 × 12 seconds and removes one steak.
-                    assert_eq!(food_regeneration().await?, Some(120_000));
+                    if full {
+                        assert_eq!(steak_quantity_and_custody().await?, (1, true), "full keeps the food");
+                        assert_eq!(food_regeneration().await?, Some(1_100_000), "full keeps the existing condition");
+                    } else {
+                        assert_eq!(steak_quantity_and_custody().await?, (0, false), "steak must be consumed in PostgreSQL");
+                        // Crystal 201189f8 foods.lua:88,150–154 adds 10 × 12 seconds and removes one steak.
+                        assert_eq!(food_regeneration().await?, Some(120_000));
+                    }
                 }
                 client.shutdown().await?;
                 Ok::<_, Box<dyn std::error::Error>>(())

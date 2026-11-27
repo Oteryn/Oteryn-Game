@@ -12,5 +12,5 @@ match routing::container_view::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("container_pages_outcome_unavailable")),
+    None => command_unavailable(command, "container_pages_outcome_unavailable"),
 }

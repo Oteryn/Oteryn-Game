@@ -398,16 +398,21 @@ where
             .quest_callback_unresolved(session.admitted.game_session_id)
             .await
     {
-        return Err(ServeEnd::server("command_outcome_unavailable"));
+        dispatch = route::command_unavailable(command, "use_item_callback_unavailable");
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
-    if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
-        return Err(ServeEnd::server("command_outcome_unavailable"));
-    }
-    if matches!(dispatch, Dispatch::Vip(None)) {
-        return Err(ServeEnd::server("command_outcome_unavailable"));
-    }
+    dispatch = match dispatch {
+        Dispatch::Appearance(None) => {
+            route::command_unavailable(command, "appearance_outcome_unavailable")
+        }
+        Dispatch::House(None) => route::command_unavailable(command, "house_outcome_unavailable"),
+        Dispatch::Vip(None) => route::command_unavailable(command, "vip_outcome_unavailable"),
+        Dispatch::ServerModal(
+            crate::gameplay_transport::server_modal::ServerModalOutcome::Unavailable,
+        ) => route::command_unavailable(command, "server_modal_outcome_unavailable"),
+        other => other,
+    };
     let Some(result_sequence) = session.sequence.checked_add(1) else {
         return Err(ServeEnd::server("sequence_exhausted"));
     };

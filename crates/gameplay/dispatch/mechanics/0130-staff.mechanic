@@ -5,5 +5,5 @@ composed=staff
 [route]
 match routing::staff::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("staff_outcome_unavailable")),
+    None => command_unavailable(command, "staff_outcome_unavailable"),
 }

@@ -4,4 +4,4 @@ transport=container_sort
 composed=container_sort
 authority=container_sort
 [route]
-match routing::container_sort::route(authority, &mut session.admitted, command, &mut session.item_view, &mut session.container_views).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::server("container_sort_outcome_unavailable")) }
+match routing::container_sort::route(authority, &mut session.admitted, command, &mut session.item_view, &mut session.container_views).await { Some(dispatch) => dispatch, None => command_unavailable(command, "container_sort_outcome_unavailable") }

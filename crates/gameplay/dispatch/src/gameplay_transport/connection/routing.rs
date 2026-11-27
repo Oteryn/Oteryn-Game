@@ -71,5 +71,7 @@ pub(super) enum Dispatch {
     Logout(LogoutResult),
     NoLogout,
     House(Option<Vec<u8>>),
+    /// A registered owner could not supply an outcome for this command.
+    Unavailable,
     Unregistered,
 }

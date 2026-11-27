@@ -11,7 +11,8 @@ The format is deliberately small: `key=value` header lines, then `[route]` and a
 expression. Keep the expression small; put the command body in the mechanic's Rust file.
 The expression runs after the existing ingress, input and capability gates. It has the
 same `authority`, `session`, `command`, `stream`, and `outcome` bindings as the old router.
-Return the same `ServeEnd` on an unknown outcome as the owning contract requires.
+Use `command_unavailable(command, cause)` when an owner cannot supply a result.
+It logs the cause and returns a `COMMAND_REFUSED` receipt for the original command.
 
 ```text
 name=example

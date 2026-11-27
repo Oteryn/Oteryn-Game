@@ -7,5 +7,5 @@ offer=35,subarea::offered,subarea_available
 [route]
 match routing::subarea::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("subarea_outcome_unavailable")),
+    None => command_unavailable(command, "subarea_outcome_unavailable"),
 }

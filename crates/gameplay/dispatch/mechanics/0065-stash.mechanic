@@ -6,7 +6,7 @@ if command.command_type == oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW
         authority, session.actor, &session.admitted, command, session.stash_rows.as_deref(),
     ).await {
         Some(dispatch) => dispatch,
-        None => return Err(ServeEnd::server("stash_outcome_unavailable")),
+        None => command_unavailable(command, "stash_outcome_unavailable"),
     }
 } else {
     match routing::stash::route(
@@ -20,6 +20,6 @@ if command.command_type == oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW
     .await
     {
         Some(dispatch) => dispatch,
-        None => return Err(ServeEnd::server("stash_outcome_unavailable")),
+        None => command_unavailable(command, "stash_outcome_unavailable"),
     }
 }

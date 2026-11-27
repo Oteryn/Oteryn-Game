@@ -7,5 +7,5 @@ offer=30,cyclopedia::offered,cyclopedia_available
 [route]
 match routing::cyclopedia::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("cyclopedia_outcome_unavailable")),
+    None => command_unavailable(command, "cyclopedia_outcome_unavailable"),
 }

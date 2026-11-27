@@ -11,5 +11,5 @@ match routing::quest_log::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("quest_log_outcome_unavailable")),
+    None => command_unavailable(command, "quest_log_outcome_unavailable"),
 }

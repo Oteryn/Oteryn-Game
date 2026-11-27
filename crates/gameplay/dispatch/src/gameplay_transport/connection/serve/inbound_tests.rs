@@ -95,6 +95,15 @@ impl FreshAdmissionAuthority for SlowOwner {
         StepOutcome::rejected()
     }
 
+    async fn player_trade_item_available(
+        &self,
+        _: ExactActorRef,
+        _: UseCommand,
+        _: Option<ItemKey>,
+    ) -> Option<bool> {
+        None
+    }
+
     async fn pending_activity_switch(
         &self,
         admitted: AdmittedSession,
@@ -1050,3 +1059,85 @@ fn activity_noninitiator_serve_barrier_fences_two_already_queued_frames() -> Tes
 
 #[path = "inbound/native_idle_cues_tests.rs"]
 mod native_idle_cues_tests;
+
+#[test]
+fn unavailable_use_returns_command_refused_and_keeps_connection_open() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()?
+                .block_on(async {
+                    use oteryn_protocol_oteryn::world_object::{
+                        COMMAND_TYPE_USE_INTENT, UseIntent, UseTarget, encode_item_use_intent,
+                    };
+                    let authority = SlowOwner::default();
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(true)?;
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                        &[4, 6, 12, 14, 15, 18, 230],
+                    )
+                    .ok_or("USE capability")?;
+                    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+                    let mut session = setup::prepare(
+                        &mut server,
+                        &mut admitted,
+                        &authority,
+                        IDLE_LIVENESS,
+                        actor,
+                        observation(),
+                        integrity::Integrity::default(),
+                    )
+                    .await
+                    .map_err(|_| "prepare connection")?;
+                    let payload = encode_item_use_intent(&UseIntent {
+                        target: UseTarget::ItemByDefinition(std::num::NonZeroU32::MIN),
+                        use_with: None,
+                        use_with_map_item: None,
+                        use_with_position: None,
+                    })
+                    .map_err(|error| format!("{error:?}"))?;
+                    for (id, body) in [(1, payload.as_slice()), (2, &[0xff][..])] {
+                        write_frame(
+                            &mut client,
+                            &command_frame(id, COMMAND_TYPE_USE_INTENT, body)?,
+                        )
+                        .await?;
+                        execute_ready_frame(&mut server, &authority, &mut session).await?;
+                        loop {
+                            use tokio::io::AsyncReadExt;
+                            let length = client.read_u32().await?;
+                            let mut frame = vec![0; usize::try_from(length)?];
+                            client.read_exact(&mut frame).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            if envelope.message_type() != MessageType::CommandResult {
+                                continue;
+                            }
+                            let result =
+                                oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                            assert_eq!(
+                                (result.command_id, result.status),
+                                (id, CommandStatus::Rejected)
+                            );
+                            if id == 1 {
+                                assert_eq!(
+                                    result.error_code,
+                                    FoundationProtocolError::CommandRefused.code()
+                                );
+                                assert!(result.payload.is_empty());
+                            } else {
+                                assert_eq!(result.error_code, 0);
+                            }
+                            break;
+                        }
+                    }
+                    assert_eq!(session.admitted.continuity.next_command_id, 3);
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "unavailable USE fixture thread panicked")?
+}

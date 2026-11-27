@@ -13,5 +13,5 @@ match routing::item_move::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("item_move_outcome_unavailable")),
+    None => command_unavailable(command, "item_move_outcome_unavailable"),
 }

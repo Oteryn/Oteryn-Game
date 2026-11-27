@@ -6,5 +6,5 @@ authority=arena_match
 [route]
 match routing::arena_match::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("arena_match_outcome_unavailable")),
+    None => command_unavailable(command, "arena_match_outcome_unavailable"),
 }
