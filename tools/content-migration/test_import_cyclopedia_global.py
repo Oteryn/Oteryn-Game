@@ -184,12 +184,10 @@ class SharedDetailsGeneration(unittest.TestCase):
             )
 
     def test_no_unqualified_fluid_quotes_in_trade_projection(self):
-        trade = json.loads(
-            (ROOT / "content/services/trade/trade-00000-00323.json").read_bytes()
-        )
         ahmet = next(
             row["declaration"]
-            for row in trade["records"]
+            for shard in sorted((ROOT / "content/services/trade").glob("trade-*.json"))
+            for row in json.loads(shard.read_bytes())["records"]
             if row["declaration"]["identity"]["key"] == "oteryn:service.trade.ahmet"
         )
         self.assertFalse(
@@ -201,12 +199,10 @@ class SharedDetailsGeneration(unittest.TestCase):
         )
 
     def test_baltim_wrap_quote_has_exact_full_charge_evidence(self):
-        trade = json.loads(
-            (ROOT / "content/services/trade/trade-00000-00323.json").read_bytes()
-        )
         baltim = next(
             row["declaration"]
-            for row in trade["records"]
+            for shard in sorted((ROOT / "content/services/trade").glob("trade-*.json"))
+            for row in json.loads(shard.read_bytes())["records"]
             if row["declaration"]["identity"]["key"] == "oteryn:service.trade.baltim"
         )
         wraps = [

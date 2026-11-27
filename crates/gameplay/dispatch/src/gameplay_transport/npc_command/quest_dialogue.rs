@@ -295,8 +295,8 @@ fn finish(
     {
         let next_topic = match completion {
             Completion::Committed => pending.next_topic,
-            Completion::Refused => return,
-            Completion::ClearTopic => Some(Topic::default()),
+            Completion::Refused if !pending.clear_topic_on_refusal => return,
+            Completion::ClearTopic | Completion::Refused => Some(Topic::default()),
         };
         state.publish_quest_topic(pending.context, next_topic);
     }

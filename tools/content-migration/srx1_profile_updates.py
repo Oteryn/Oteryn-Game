@@ -111,6 +111,8 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         json.loads((root / house_decoration_actions.PROFILES).read_bytes()),
     )
     original_document = json.loads(base)
+    # The common source attributes belong in the base for late Item admissions too.
+    house_decoration_actions.apply_top_order(original_document["records"], house_overlay)
     # Qualify both provider versions after the source owners' exact comparisons
     # so updated records cannot restore unknown eligibility.
     eligibility = equipment_eligibility.load_facts(root)

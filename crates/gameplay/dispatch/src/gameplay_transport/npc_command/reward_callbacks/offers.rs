@@ -4,7 +4,8 @@ use super::*;
 use std::borrow::Cow;
 use std::sync::OnceLock;
 
-const MAX_OFFERS: usize = 640;
+// Train 7a registers 643 offers including the token exchange and Wrath shards.
+const MAX_OFFERS: usize = 656;
 const SHARED_OFFERS: &str =
     include_str!("../../../../../../../content/quests/shared-reward-offers.json");
 const SOURCES: &[&str] = &[

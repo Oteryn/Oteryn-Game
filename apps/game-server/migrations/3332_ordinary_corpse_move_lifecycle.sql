@@ -158,8 +158,13 @@ BEGIN
     -- Each recovery predicate retains its current assignment and stack checks.
     f := 'game_corpse_stage_ground_current(uuid,uuid,uuid,numeric,bigint)';
     body := pg_get_functiondef(f::regprocedure);
-    original := 'm.death_channel_id=g.channel_id
+    IF to_regprocedure('game_dragged_rat_ground_current(uuid,uuid,uuid,numeric,bigint)') IS NULL THEN
+        original := 'm.death_channel_id=g.channel_id
    AND m.death_scope_ownership_generation=g.runtime_scope_ownership_generation';
+    ELSE
+        original := 'm.death_channel_id=g.channel_id
+   AND (m.death_scope_ownership_generation=g.runtime_scope_ownership_generation OR game_dragged_rat_ground_current(p_item,p_world,p_channel,p_generation,p_stack))';
+    END IF;
     IF (length(body)-length(replace(body,original,'')))/length(original) <> 1 THEN
         RAISE EXCEPTION 'Corpse timer scope predecessor changed in %', f;
     END IF;

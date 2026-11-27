@@ -107,7 +107,7 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
     let offering_scene = matches!(
         (callback.offerings.as_slice(), scene.open.as_slice(), &callback.effects.magic),
         ([offering], [edit], Some(magic)) if offering.position == edit.position
-            && offering.position == magic.position
+            && Some(offering.position) == magic.position
             && edit.remove.is_none() && edit.passable == Some(true)
     ) && callback.requires_world_admission
         && !callback.reversible

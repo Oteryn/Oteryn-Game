@@ -509,9 +509,9 @@ def test_package_tree_contract():
         "Encounter.Raid": json.loads(
             (ROOT / "content/encounters/raids/index.json").read_text()
         )["record_count"],
-        "NPC": 1282,
-        "Dialogue": 852,
-        "Service.Trade": 325,
+        "NPC": 1292,
+        "Dialogue": 855,
+        "Service.Trade": 326,
         "Service.Travel": 57,
         "Service.Bank": 2,
         "Service.Promotion": 7,

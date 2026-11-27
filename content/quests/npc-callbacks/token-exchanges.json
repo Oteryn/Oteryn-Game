@@ -416,6 +416,531 @@
       "clear_topic_on_refusal": true
     },
     {
+      "key": "oteryn:quest-reward/gnomally-exchange-16094",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 108,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16128",
+          "count": 15
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16094",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough minor crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16099",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 109,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16128",
+          "count": 15
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16099",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough minor crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16101",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 106,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16128",
+          "count": 8
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16101",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough minor crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16104",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 110,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16104",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16105",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 111,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16105",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16106",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 112,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16106",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16107",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 113,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16107",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16109",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 114,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16109",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16110",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 115,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16110",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16111",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 116,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16111",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16112",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 117,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16112",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16116",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 118,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16116",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16153",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 119,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16153",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16154",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 120,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16154",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough major crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/gnomally-exchange-16242",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 107,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16128",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16242",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ],
+      "failure_reply": [
+        "You don't have enough minor crystal tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
       "key": "oteryn:quest-reward/jorge-exchange-19151",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",

@@ -279,7 +279,7 @@ class ItemBootstrapTests(unittest.TestCase):
                 ranged_call.assert_called_once_with(root)
             index = json.loads((root / "content/items/index.json").read_bytes())
             expected_identities = [row["identity"] for row in reference["records"]] + [
-                identity(number) for number in (8748, 35136, 35686, 48109, 49120, 48340, 48401, 48396)
+                identity(number) for number in (35136, 35686, 48109, 49120, 8748, 48340, 48401, 48396)
             ]
             count = len(expected_identities)
             expected_shards = [
@@ -311,9 +311,12 @@ class ItemBootstrapTests(unittest.TestCase):
                 [row["definition"]["identity"] for row in rows], expected_identities
             )
             self.assertTrue(rows[0]["definition"]["materializable"])
-            self.assertTrue(
-                all(row["definition"]["materializable"] for row in rows[3:])
-            )
+            materializable = [
+                row["definition"]["identity"]
+                for row in rows[3:]
+                if row["definition"]["materializable"]
+            ]
+            self.assertEqual(materializable, expected_identities[3:-8] + [identity(8748)])
             self.assertEqual(rows[0]["editor"], editor["entries"][0])
             self.assertEqual(
                 rows[0]["source_bindings"],

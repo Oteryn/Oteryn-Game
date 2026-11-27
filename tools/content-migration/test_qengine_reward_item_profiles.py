@@ -134,11 +134,7 @@ class SharedPhysicalAdmission(unittest.TestCase):
         existing=copy.deepcopy(target);existing['semantics']['physical']['value']['weight']['value']=249
         with self.assertRaisesRegex(ValueError,'ACTIVE_WEIGHT_DRIFT'):self.run_admission(target,existing)
 
-import copy
-import json
-import unittest
-
-import qengine_reward_item_profiles as q
+q = profiles
 
 
 class NativeFactJoin(unittest.TestCase):

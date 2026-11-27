@@ -165,8 +165,8 @@ const NPC_RECORDS: usize = 2_584;
 // Includes BANK-3's Henricus blessing Service.
 // S10 adds one bank, three promotion and six blessing Service declarations.
 // N3 adds Buddel’s travel Service.
-const NPC_DECLARATIONS: usize = 2535;
-const NPC_DIALOGUES: usize = 852;
+const NPC_DECLARATIONS: usize = 2549;
+const NPC_DIALOGUES: usize = 855;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 108;

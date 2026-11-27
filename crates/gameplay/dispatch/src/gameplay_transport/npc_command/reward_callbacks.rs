@@ -673,7 +673,10 @@ fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &st
                 .iter()
                 .any(|word| message_contains(text, word));
     }
-    matches_menu_or_exact_keyword(&callback.npc, &callback.keywords, text)
+    callback.matches_keyword(text)
+        || (callback.npc == JORGE
+            && callback.exclude_keywords.is_empty()
+            && matches_menu_or_exact_keyword(&callback.npc, &callback.keywords, text))
 }
 
 #[cfg(test)]

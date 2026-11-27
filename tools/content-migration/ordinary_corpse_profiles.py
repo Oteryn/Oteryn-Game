@@ -344,20 +344,16 @@ def stage_portability_sql(root, path):
     return result
 
 
-MIGRATION = "apps/game-server/migrations/3250_crystal_ordinary_corpse_registry.sql"
+MIGRATION = "apps/game-server/migrations/3328_crystal_ordinary_corpse_registry.sql"
 
 
 def migration(root):
     chains = read(root, "decay")
-    chain_cases = "\n".join(
-        f" WHEN 'oteryn:item.tibia.i{chain[0]}' THEN ARRAY[{','.join(map(str, chain))}]"
-        for chain, _ in chains
-    )
-    duration_cases = "\n".join(
-        f" WHEN p_key='oteryn:item.tibia.i{chain[0]}' THEN ARRAY[{','.join(map(str, times))}]::BIGINT[]"
+    values = ",\n".join(
+        f"        ({chain[0]}, ARRAY[{','.join(map(str, chain))}], "
+        f"ARRAY[{','.join(map(str, times))}]::BIGINT[])"
         for chain, times in chains
     )
-    roots = ",".join(str(chain[0]) for chain, _ in chains)
     plain = ",".join(
         f"'oteryn:item.tibia.i{item}'"
         for item in sorted({item for _, item in read(root, "plain")})
@@ -412,30 +408,44 @@ DO $ordinary_crystal_corpses$
 DECLARE
     body TEXT;
     anchor TEXT;
-    root INTEGER;
+    source RECORD;
+    item_key TEXT;
+    installed_chain INTEGER[];
+    installed_lifetimes BIGINT[];
+    chain_cases TEXT := '';
+    lifetime_cases TEXT := '';
 BEGIN
-    FOREACH root IN ARRAY ARRAY[{roots}] LOOP
-        IF game_summer_corpse_chain('oteryn:item.tibia.i'||root) IS NOT NULL THEN
-            RAISE EXCEPTION 'Crystal corpse already has a lifecycle owner: %', root;
+    -- An installed source binding is reused if every stage and lifetime agrees.
+    FOR source IN SELECT * FROM (VALUES
+{values}
+    ) AS policy(item, stages, lifetimes) LOOP
+        item_key := 'oteryn:item.tibia.i' || source.item::text;
+        installed_chain := game_summer_corpse_chain(item_key);
+        installed_lifetimes := game_source_corpse_durations_v1(item_key);
+        IF installed_chain = source.stages AND installed_lifetimes = source.lifetimes THEN
+            CONTINUE;
         END IF;
+        IF installed_chain IS NOT NULL OR installed_lifetimes IS NOT NULL THEN
+            RAISE EXCEPTION 'Conflicting corpse lifecycle policy for %', item_key;
+        END IF;
+        chain_cases := chain_cases || format(E'\\n WHEN %L THEN %L::INTEGER[]',
+                                             item_key, source.stages);
+        lifetime_cases := lifetime_cases || format(E'\\n WHEN p_key=%L THEN %L::BIGINT[]',
+                                                   item_key, source.lifetimes);
     END LOOP;
     body := pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
     anchor := 'WHEN ''oteryn:item.tibia.i54678'' THEN';
     IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
         RAISE EXCEPTION 'Crystal corpse chain dispatcher changed';
     END IF;
-    EXECUTE replace(body, anchor, $cases$
-{chain_cases}
- $cases$ || anchor);
+    EXECUTE replace(body, anchor, chain_cases || E'\\n ' || anchor);
 
     body := pg_get_functiondef('game_source_corpse_durations_v1(text)'::regprocedure);
     anchor := 'WHEN game_summer_corpse_chain(p_key) IS NOT NULL THEN';
     IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
         RAISE EXCEPTION 'Crystal corpse duration dispatcher changed';
     END IF;
-    EXECUTE replace(body, anchor, $cases$
-{duration_cases}
- $cases$ || anchor);
+    EXECUTE replace(body, anchor, lifetime_cases || E'\\n ' || anchor);
 
     body := pg_get_functiondef('game_item_plain_corpse_source(uuid)'::regprocedure);
     anchor := 'i.definition_production_key IN (';
@@ -459,7 +469,7 @@ if __name__ == "__main__":
     path = root / MIGRATION
     expected = migration(root)
     portable_sql = (
-        root / "apps/game-server/migrations/3254_ordinary_corpse_move_lifecycle.sql"
+        root / "apps/game-server/migrations/3332_ordinary_corpse_move_lifecycle.sql"
     )
     portable_expected = stage_portability_sql(root, portable_sql)
     if args.check:

@@ -14,6 +14,8 @@ DECLARE
     lifetime_cases TEXT := '';
     source RECORD;
     item_key TEXT;
+    installed_chain INTEGER[];
+    installed_lifetimes BIGINT[];
 BEGIN
     IF (length(chain_body)-length(replace(chain_body,chain_anchor,'')))/length(chain_anchor) <> 1
         OR (length(lifetime_body)-length(replace(lifetime_body,lifetime_anchor,'')))/length(lifetime_anchor) <> 1
@@ -211,12 +213,18 @@ BEGIN
         (54670, ARRAY[54670,54671,54672,54673], ARRAY[10000,300000,300000,60000]::BIGINT[])
     ) AS policy(item, stages, lifetimes) LOOP
         item_key := 'oteryn:item.tibia.i' || source.item::text;
-        IF game_summer_corpse_chain(item_key) IS NOT NULL
-            OR game_source_corpse_durations_v1(item_key) IS NOT NULL
-            OR source.stages[1] <> source.item
+        IF source.stages[1] IS DISTINCT FROM source.item
             OR cardinality(source.stages) <> cardinality(source.lifetimes)
         THEN
-            RAISE EXCEPTION 'Invalid or previously registered source corpse policy for %', item_key;
+            RAISE EXCEPTION 'Invalid source corpse policy for %', item_key;
+        END IF;
+        installed_chain := game_summer_corpse_chain(item_key);
+        installed_lifetimes := game_source_corpse_durations_v1(item_key);
+        IF installed_chain = source.stages AND installed_lifetimes = source.lifetimes THEN
+            CONTINUE;
+        END IF;
+        IF installed_chain IS NOT NULL OR installed_lifetimes IS NOT NULL THEN
+            RAISE EXCEPTION 'Conflicting corpse lifecycle policy for %', item_key;
         END IF;
         chain_cases := chain_cases || format(E'\n WHEN %L THEN %L::INTEGER[]',
                                              item_key, source.stages);

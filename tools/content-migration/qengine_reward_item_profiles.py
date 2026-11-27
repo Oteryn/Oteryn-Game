@@ -542,7 +542,6 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         | RAID_CORPSE_IDS
         | WILLI_WASP_DECAY
         | MERCHANT_SCENERY
-        | EXPLORER_CORPSES
         | TOKEN_EXCHANGE_ITEMS
         | {4837, 6300}
     )

@@ -365,6 +365,9 @@ def append(add, storage, callbacks, offers):
     # The donor charges immediately on the named selection after "souvenir".
     # The existing Abacus commission owns a distinct conversation and state.
     catalogue = [JORGE[start : start + 9] for start in range(0, len(JORGE), 9)]
+    for row in offers:
+        if row["npc"] == "oteryn:npc.jorge" and row["keywords"] == ["replica rewards", "souvenir"]:
+            row["keywords"] = ["replica rewards"]
     offer(
         "jorge",
         "souvenir",
