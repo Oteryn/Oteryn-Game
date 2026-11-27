@@ -53,6 +53,23 @@ fn spell_cooldowns_postgres_relogin_drops_expired_deadlines() -> TestResult {
     on_thread(admin, false, Some(true))
 }
 
+#[test]
+fn native_condition_relogin_retries_its_busy_read_in_place_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("relog-conditions-holder", move || {
+        let runtime = crate::bestiary_postgres_harness::runtime()?;
+        runtime.block_on(async {
+            let h = Harness::create_with_admission_seed(admin, "relog_conditions_holder", true, false).await?;
+            let result = scenario(&h, false, None, true).await;
+            let cleanup = h.cleanup().await;
+            result?;
+            cleanup
+        })
+    })
+}
+
 fn on_thread(admin: String, with_environment: bool, expire_cooldowns: Option<bool>) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -66,7 +83,7 @@ fn on_thread(admin: String, with_environment: bool, expire_cooldowns: Option<boo
                     false,
                 ))?;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    rt.block_on(scenario(&h, with_environment, expire_cooldowns))
+                    rt.block_on(scenario(&h, with_environment, expire_cooldowns, false))
                 }));
                 let cleanup = rt.block_on(h.cleanup());
                 match result {
@@ -99,6 +116,7 @@ async fn scenario(
     h: &Harness,
     with_environment: bool,
     expire_cooldowns: Option<bool>,
+    contend_conditions: bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
     use oteryn_protocol_oteryn::presentation::{self, ActorCooldowns};
@@ -250,13 +268,13 @@ async fn scenario(
     )
     .map_err(debug)?;
     let (mut server, _client) = tokio::io::duplex(1 << 20);
-    let mut fresh = crate::gameplay_transport::connection::admit_frame(
+    let admit = crate::gameplay_transport::connection::admit_frame(
         &mut server,
         &frame,
         &fresh_owner,
         &FreshIds,
     );
-    let fresh = if contend_conditions {
+    let mut fresh = if contend_conditions {
         use crate::gameplay_transport::composed_admission::RELOG_CONDITIONS_BARRIER;
         let barrier = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
         let hold = async {

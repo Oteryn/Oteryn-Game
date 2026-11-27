@@ -33,6 +33,10 @@ def _request(socket_path, line, limit):
         return answer
 
 
+class ProvisioningBusy(RuntimeError):
+    """All earlier fixture actions can be reconciled using the same request."""
+
+
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
     item = NAMED_ITEM.fullmatch(profile)
@@ -40,6 +44,8 @@ def provision(socket_path, session, profile):
     if identifier.version != 7 or str(identifier) != session or not valid_profile:
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
+    if answer == b"rejected reason=holder_busy\n":
+        raise ProvisioningBusy("qualification durability holder busy")
     if answer != b"qualified\n":
         # repr escapes control/non-ASCII bytes; the 65th byte only detects overflow.
         raise RuntimeError(

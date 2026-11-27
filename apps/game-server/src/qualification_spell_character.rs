@@ -28,8 +28,43 @@ pub(super) fn debug(error: impl std::fmt::Debug) -> String {
     format!("{error:?}")
 }
 
-/// Retry only holder acquisition failure, which occurs before the semantic pass runs.
-/// Fenced writes retain their request/occurrence across attempts; ambiguous writes are final.
+/// The control request can replay its stable fixture occurrences after checkout exhaustion.
+#[derive(Debug)]
+pub(super) struct HolderBusy;
+
+impl std::fmt::Display for HolderBusy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("qualification durability holder busy")
+    }
+}
+
+impl std::error::Error for HolderBusy {}
+
+pub(super) fn fixture_error(error: impl std::fmt::Debug, busy: bool) -> Box<dyn std::error::Error> {
+    if busy {
+        Box::new(HolderBusy)
+    } else {
+        debug(error).into()
+    }
+}
+
+/// Preserve typed checkout exhaustion for the root-only provisioning reply.
+pub(super) async fn retry_provision_holder<T, E: std::fmt::Debug>(
+    root: &DurabilityRoot,
+    deadline: tokio::time::Instant,
+    busy: impl Fn(&E) -> bool,
+    step: impl AsyncFnMut() -> Result<T, E>,
+) -> TestResult<T> {
+    retry_holder(Some(root), deadline, &busy, step)
+        .await
+        .map_err(|error| {
+            let retryable = busy(&error);
+            fixture_error(error, retryable)
+        })
+}
+
+/// Retry checkout failures before each exact fenced action. Earlier successful
+/// fixture actions have stable occurrence IDs and are safe to reconcile on replay.
 pub(super) async fn retry_holder<T, E>(
     root: Option<&DurabilityRoot>,
     deadline: tokio::time::Instant,
@@ -37,7 +72,42 @@ pub(super) async fn retry_holder<T, E>(
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
     if let Some(root) = root {
-        return root.retry_foreground_holder(deadline, busy, step).await;
+        let mut wait = None;
+        let result = root
+            .retry_foreground_holder(deadline, &busy, async || {
+                let outcome = step().await;
+                if outcome.as_ref().is_err_and(&busy) && wait.is_none() {
+                    wait = Some((
+                        tokio::time::Instant::now(),
+                        root.checked_out_semantic_pass(),
+                    ));
+                }
+                outcome
+            })
+            .await;
+        if let Some((started, observation)) = wait {
+            use oteryn_error_codes::{FieldValue, Level, Line};
+            let owner = observation.map_or_else(|| "none".to_owned(), |(site, _)| site.to_string());
+            let outcome = if result.as_ref().is_err_and(&busy) {
+                "holder_busy"
+            } else {
+                "retry_finished"
+            };
+            oteryn_error_codes::emit(
+                "oteryn-game-server",
+                &Line::new(Level::Info, "node", "qualification_holder_wait")
+                    .field("purpose", FieldValue::Token("provision"))
+                    .field("owner", FieldValue::Owned(owner))
+                    .field(
+                        "waited_ms",
+                        FieldValue::U64(
+                            u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+                        ),
+                    )
+                    .field("outcome", FieldValue::Token(outcome)),
+            );
+        }
+        return result;
     }
     loop {
         let outcome = step().await;
@@ -222,16 +292,14 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     // CHAR-REV-SEQ-1: the fixture's revision writes run through one slot of this Character.
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(character).await;
-    let before = retry_holder(Some(root), deadline, progression_busy, async || {
+    let before = retry_provision_holder(root, deadline, progression_busy, async || {
         root.read_character_build_state(authority, character).await
     })
-    .await
-    .map_err(debug)?;
-    let progression = retry_holder(Some(root), deadline, progression_busy, async || {
+    .await?;
+    let progression = retry_provision_holder(root, deadline, progression_busy, async || {
         root.read_character_progression(authority, character).await
     })
-    .await
-    .map_err(debug)?;
+    .await?;
     let experience = policy
         .thresholds
         .iter()
@@ -249,12 +317,11 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             .as_ref()
             .is_some_and(|state| classed || state.level >= level)
     {
-        retry_holder(Some(root), deadline, progression_busy, async || {
+        retry_provision_holder(root, deadline, progression_busy, async || {
             root.reconcile_character_experience(authority, xp_occurrence)
                 .await
         })
-        .await
-        .map_err(debug)?
+        .await?
         .filter(|receipt| {
             receipt.character_id == character
                 && receipt.level_before == 1
@@ -270,12 +337,11 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .as_ref()
         .filter(|_| requested_vocation_present)
     {
-        retry_holder(Some(root), deadline, progression_busy, async || {
+        retry_provision_holder(root, deadline, progression_busy, async || {
             root.reconcile_character_build(authority, build_occurrence)
                 .await
         })
-        .await
-        .map_err(debug)?
+        .await?
         .is_some_and(|receipt| {
             receipt.character_id == character
                 && receipt.after.vocation() == vocation
@@ -290,12 +356,11 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     };
     if classed
         && !fixture_build
-        && !retry_holder(Some(root), deadline, progression_busy, async || {
+        && !retry_provision_holder(root, deadline, progression_busy, async || {
             root.has_unchanged_bootstrap_vocation(authority, character, before.vocation())
                 .await
         })
-        .await
-        .map_err(debug)?
+        .await?
     {
         return Err("spell fixture vocation is set".into());
     }
@@ -333,12 +398,11 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         }
         if !checkpoint
             && state.character_revision.get() != 1
-            && retry_holder(Some(root), deadline, progression_busy, async || {
+            && retry_provision_holder(root, deadline, progression_busy, async || {
                 root.has_character_experience_or_death_receipts(authority, character)
                     .await
             })
-            .await
-            .map_err(debug)?
+            .await?
         {
             return Err(
                 "spell fixture noninitial progression revision has XP or death history".into(),
@@ -360,14 +424,13 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         character_lease_generation: current.current_character_lease().generation(),
         runtime_scope: current.current_runtime_scope(),
         scope_ownership_generation: current.current_scope_generation(),
-        expected_character_revision: retry_holder(
-            Some(root),
+        expected_character_revision: retry_provision_holder(
+            root,
             deadline,
             authority_busy,
             async || root.read_current_character(authority, character).await,
         )
-        .await
-        .map_err(debug)?
+        .await?
         .revision,
     };
     if progression
@@ -377,7 +440,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         return Err("spell fixture progression revision differs from current root revision".into());
     }
     if progression.is_none() {
-        retry_holder(Some(root), deadline, progression_busy, async || {
+        retry_provision_holder(root, deadline, progression_busy, async || {
             root.initialize_character_progression(
                 authority,
                 node,
@@ -391,11 +454,10 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             )
             .await
         })
-        .await
-        .map_err(debug)?;
+        .await?;
     }
     if level > 1 && !checkpoint {
-        retry_holder(Some(root), deadline, progression_busy, async || {
+        retry_provision_holder(root, deadline, progression_busy, async || {
             slot.commit_experience(
                 root,
                 authority,
@@ -413,15 +475,13 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             )
             .await
         })
-        .await
-        .map_err(debug)?;
+        .await?;
     }
     fence.expected_character_revision =
-        retry_holder(Some(root), deadline, authority_busy, async || {
+        retry_provision_holder(root, deadline, authority_busy, async || {
             root.read_current_character(authority, character).await
         })
-        .await
-        .map_err(debug)?
+        .await?
         .revision;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
         include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
@@ -437,7 +497,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         convert_vocation(&formula, &before, vocation).map_err(debug)?
     };
     if before != after {
-        retry_holder(Some(root), deadline, progression_busy, async || {
+        retry_provision_holder(root, deadline, progression_busy, async || {
             slot.commit_build(
                 root,
                 authority,
@@ -459,32 +519,28 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             )
             .await
         })
-        .await
-        .map_err(debug)?;
+        .await?;
     }
     // Verify the requested owned state with typed errors; the cast-facts loader
     // erases holder-busy into Unavailable, which cannot safely be retried.
-    let verification_revision = retry_holder(Some(root), deadline, authority_busy, async || {
-        root.read_current_character(authority, character).await
-    })
-    .await
-    .map_err(debug)?
-    .revision;
-    let final_build = retry_holder(Some(root), deadline, progression_busy, async || {
+    let verification_revision =
+        retry_provision_holder(root, deadline, authority_busy, async || {
+            root.read_current_character(authority, character).await
+        })
+        .await?
+        .revision;
+    let final_build = retry_provision_holder(root, deadline, progression_busy, async || {
         root.read_character_build_state(authority, character).await
     })
-    .await
-    .map_err(debug)?;
-    let final_progression = retry_holder(Some(root), deadline, progression_busy, async || {
+    .await?;
+    let final_progression = retry_provision_holder(root, deadline, progression_busy, async || {
         root.read_character_progression(authority, character).await
     })
-    .await
-    .map_err(debug)?;
-    let verified_revision = retry_holder(Some(root), deadline, authority_busy, async || {
+    .await?;
+    let verified_revision = retry_provision_holder(root, deadline, authority_busy, async || {
         root.read_current_character(authority, character).await
     })
-    .await
-    .map_err(debug)?
+    .await?
     .revision;
     if verification_revision != verified_revision
         || final_build != after

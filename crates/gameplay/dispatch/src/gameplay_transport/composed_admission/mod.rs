@@ -38,6 +38,8 @@ mod first_entry;
 #[cfg(test)]
 pub(super) use first_entry::FIRST_ENTRY_CHECKOUT_PROBE;
 mod grace_expiry;
+#[cfg(test)]
+pub(super) use grace_expiry::GRACE_RELEASE_CHECKOUT;
 mod items;
 mod npc;
 mod objects;
