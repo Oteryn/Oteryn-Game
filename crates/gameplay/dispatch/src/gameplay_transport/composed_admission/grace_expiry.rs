@@ -1,6 +1,12 @@
 use super::release_deferred::{DeferReason, ExpiredGrace, report_release_deferred};
 use super::*;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static GRACE_RELEASE_CHECKOUT:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// CHARM-DESC-FENCE-LEASE: grace expiry fences the slot's damage writes under the runtime
     /// lock (step a), commits the durable release with the lock released (step b), then settles
@@ -311,12 +317,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             };
             // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
-            let pause = match self
-                .final_position_store(&store, session, actor)
-                .await
-                .release_expired_loss(session, &account_id)
-                .await
-            {
+            let releasing = self.final_position_store(&store, session, actor).await;
+            #[cfg(test)]
+            if let Ok(probe) = GRACE_RELEASE_CHECKOUT.try_with(std::sync::Arc::clone) {
+                probe.0.notify_one();
+                probe.1.notified().await;
+            }
+            let release = AdmissionRetryBudget::for_root(&session, self.root)
+                .retry_durability("grace_release_commit", || {
+                    releasing.release_expired_loss(session, &account_id)
+                })
+                .await;
+            let pause = match release {
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    // Checkout exhaustion is retryable. Reopen the kill marker for
+                    // the next lifecycle turn and retain the exact epoch fence.
+                    self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                    return GraceExpiryResult::Unknown;
+                }
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {

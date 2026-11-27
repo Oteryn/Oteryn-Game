@@ -357,6 +357,14 @@
       "note": "Qualification fixture preparation refused; session and profile only past the early refusal."
     },
     {
+      "event": "qualification_holder_wait",
+      "level": "info",
+      "span": false,
+      "fields": ["purpose", "owner", "waited_ms", "outcome"],
+      "codes": [],
+      "note": "Bounded holder wait for a root-only qualification fixture."
+    },
+    {
       "event": "qualification_spawn_cleanup_failed",
       "level": "warn",
       "span": false,
