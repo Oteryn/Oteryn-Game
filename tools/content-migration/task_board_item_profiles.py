@@ -72,21 +72,24 @@ def canonical_bytes(value):
                       separators=(',', ':')).encode()
 
 
-def delivery_items(root=ROOT):
+def delivery_item_ids(root=ROOT):
     text = (root / CATALOGUE).read_text()
     body = text.split('pub const DELIVERY_ITEMS:', 1)[1].split('];', 1)[0]
-    rows = [(int(item.replace('_', '')), int(amount.replace('_', '')))
-            for item, amount in re.findall(
-                r'item_id:\s*([0-9_]+),\s*amount:\s*([0-9_]+)', body)]
-    if len(rows) != 436 or len({item for item, _ in rows}) != 436:
+    rows = [tuple(int(value.replace('_', '')) for value in row)
+            for row in re.findall(
+                r'WeeklyDeliveryItem::new\(\s*([0-9_]+),\s*([0-9_]+),\s*([0-9_]+)\s*\)',
+                body)]
+    ids = [item for item, _, _ in rows]
+    if len(ids) != 436 or len(set(ids)) != 436:
         raise ValueError('TASK_BOARD_DELIVERY_COHORT')
-    if any(not 0 < item <= 65535 or not 0 < amount <= 50 for item, amount in rows):
+    if any(not 0 < item <= 65535 or not 0 < low <= high <= 2**32 - 1
+           for item, low, high in rows):
         raise ValueError('TASK_BOARD_DELIVERY_BOUNDS')
-    return rows
+    return ids
 
 
 def cohort_ids(root=ROOT):
-    return {item for item, _ in delivery_items(root)} | {TALISMAN}
+    return set(delivery_item_ids(root)) | {TALISMAN}
 
 
 def qualify_delivery_rows(rows):
@@ -223,7 +226,7 @@ def capture_sources(sources, root=ROOT):
         r'\{\s*itemId\s*=\s*(\d+),\s*count\s*=\s*(\d+)\s*\}',
         sources[DELIVERY].decode())]
     delivery = qualify_delivery_rows(original_delivery)
-    if delivery != delivery_items(root):
+    if [item for item, _ in delivery] != delivery_item_ids(root):
         raise ValueError('TASK_BOARD_DELIVERY_SOURCE_DRIFT')
     ids = {item for item, _ in delivery} | {TALISMAN}
     xml = source.xml_index(sources[XML])
@@ -275,8 +278,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or overlay.get('binding_revision_qualifications') != BINDING_REVISION_QUALIFICATIONS
             or len(records) != len(keys)
             or {r['production_definition']['production_key'] for r in records} != keys
-            or overlay['delivery_items'] != [{'item_id': item, 'amount': amount}
-                                             for item, amount in delivery_items(root)]):
+            # This overlay records the pinned donor quantities for provenance.
+            # Only item identity is shared with the Global runtime ranges.
+            or [row['item_id'] for row in overlay['delivery_items']] != delivery_item_ids(root)
+            or any(not 0 < row['amount'] <= 50 for row in overlay['delivery_items'])):
         raise ValueError('TASK_BOARD_PROFILE_SET')
     pinned = {r['path']: r['sha256'] for r in overlay['sources']}
     if any(pinned.get(path) != value for path, value in SOURCE_HASHES.items()):

@@ -1,9 +1,9 @@
-//! Fixed data from Crystal 201189f, not a second Item or creature authority.
+//! Task Board catalogue keyed by the authored Tibia item identities.
 //! Prices: data/scripts/lib/task_board_shop.lua:33-248.
-//! Delivery quantities: data/scripts/lib/task_board_delivery_items.lua:23-EOF.
-//! Approved source correction: PR #2764 ANSWER 6544430997 replaces non-pickupable
-//! grappling hook 5800 (Lua:64) with portable 35588 (items.xml:66376-66379), still 50.
-use super::TaskBoardItemQuantity;
+//! Delivery ranges: https://tibia.fandom.com/wiki/Delivery_Task (archive 2026-09-04).
+//! The portable grappling hook 35588 is the approved replacement for 5800 (PR #2764).
+//! Items 821 and 3509 retain their authored fixed amounts pending Global ranges.
+use std::ops::RangeInclusive;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskBoardShopKind {
@@ -255,1749 +255,455 @@ pub const SHOP_OFFERS: &[TaskBoardShopOffer] = &[
     },
 ];
 
-pub const DELIVERY_ITEMS: &[TaskBoardItemQuantity] = &[
-    TaskBoardItemQuantity {
-        item_id: 811,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 813,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 818,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 819,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 820,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 821,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 824,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 825,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 826,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 827,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 828,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 829,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 830,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3234,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3269,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3275,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3291,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3292,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3301,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3306,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3307,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3316,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3318,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3320,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3322,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3330,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3333,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3337,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3342,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3346,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3364,
-        amount: 10,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3371,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3373,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3413,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3415,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3421,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3429,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3509,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3557,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 3575,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 5479,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 35588,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 5888,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 5889,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 6558,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7381,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7383,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7386,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7387,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7388,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7402,
-        amount: 10,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7413,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7425,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7427,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7428,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7436,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7449,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 7454,
-        amount: 10,
-    },
-    TaskBoardItemQuantity {
-        item_id: 8043,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 8045,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 8050,
-        amount: 10,
-    },
-    TaskBoardItemQuantity {
-        item_id: 8061,
-        amount: 10,
-    },
-    TaskBoardItemQuantity {
-        item_id: 8074,
-        amount: 10,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9054,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9055,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9631,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9632,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9637,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9643,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9649,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9652,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9656,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9659,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9662,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9667,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9668,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 9688,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10276,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10277,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10278,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10282,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10291,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10293,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10301,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10303,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10305,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10306,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10308,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10310,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10312,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10313,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10315,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10316,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10317,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10320,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10321,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10384,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10386,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10397,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10404,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10407,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10408,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10410,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10411,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10413,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10414,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10415,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10416,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10418,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10438,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10439,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10444,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10449,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10454,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10455,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 10456,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11443,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11449,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11450,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11454,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11456,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11457,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11465,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11471,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11477,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11482,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11487,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11488,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11490,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11491,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11510,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11511,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11512,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11514,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11659,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11660,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11661,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11671,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11672,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 11673,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 12313,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 12683,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 12730,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14008,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14009,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14010,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14011,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14013,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14017,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14041,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14044,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14076,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14078,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14080,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14083,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14225,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 14247,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16130,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16132,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16133,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16135,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16138,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16139,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16140,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16160,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 16163,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17463,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17809,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17812,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17817,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17818,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17819,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17824,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17826,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17829,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17830,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17831,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17847,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17850,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17851,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17853,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17854,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17855,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17856,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17857,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 17859,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 18924,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 18925,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 18926,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 18927,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 18928,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 18995,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 19110,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 19111,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 20198,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 20201,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 20202,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 20203,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 20204,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 20206,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 20207,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21103,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21164,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21165,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21168,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21169,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21171,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21174,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21175,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21178,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21179,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21180,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21182,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21193,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21195,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21196,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21197,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21199,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21201,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21204,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 21974,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22051,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22054,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22055,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22056,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22057,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22085,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22086,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22087,
-        amount: 20,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22184,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22186,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22188,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22191,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 22729,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23502,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23503,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23504,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23505,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23506,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23510,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23511,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23514,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23515,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23516,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23518,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23519,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23520,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23521,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 23523,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 24380,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 24384,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 24385,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 24938,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25691,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25693,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25695,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25696,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25697,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25699,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25701,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 25742,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27369,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27462,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27463,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27592,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27593,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27594,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27595,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27596,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27597,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27598,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27599,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27600,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27601,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27602,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27603,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27604,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 27606,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 28566,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 28569,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 28570,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 28822,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 28823,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 30005,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 30058,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31331,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31438,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31439,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31440,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31441,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31442,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31443,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31558,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31559,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31560,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31561,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 31678,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 32698,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 33934,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 33938,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 33943,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 33944,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 33945,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 33982,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 34141,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 34160,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 34162,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 35571,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 35572,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 35573,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 35574,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 35596,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36769,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36770,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36771,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36772,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36773,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36774,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36775,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36776,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36777,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36778,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36779,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36780,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36785,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36786,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36789,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36790,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36805,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36806,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36807,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36820,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36821,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36822,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36823,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36971,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 36972,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 37109,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 37110,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39375,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39376,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39377,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39378,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39379,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39380,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39381,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39382,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39383,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39384,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39386,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39387,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39388,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39389,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39391,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39392,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39393,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39394,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39395,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39401,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39402,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39406,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39407,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39408,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39409,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39410,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39411,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39412,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39413,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 39414,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 40582,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 40583,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 40584,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 40585,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 40586,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 40587,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43729,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43730,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43731,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43732,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43734,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43846,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43848,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43849,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43850,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43851,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43852,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 43853,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 44743,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 44744,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 44745,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 44746,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 44747,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 44748,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 44749,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 48252,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 48255,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 48508,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 48509,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 48510,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 48511,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 49894,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 49908,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 50056,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 50057,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 50058,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 50059,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51419,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51420,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51422,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51423,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51425,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51426,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51427,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51472,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51473,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51474,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51475,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51476,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51477,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51478,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51479,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51480,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51482,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51484,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51485,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 51486,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52633,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52662,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52663,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52664,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52705,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52706,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52707,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52718,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52719,
-        amount: 50,
-    },
-    TaskBoardItemQuantity {
-        item_id: 52720,
-        amount: 50,
-    },
+pub struct WeeklyDeliveryItem {
+    pub item_id: u16,
+    pub quantity: RangeInclusive<u32>,
+}
+
+impl WeeklyDeliveryItem {
+    const fn new(item_id: u16, min: u32, max: u32) -> Self {
+        Self {
+            item_id,
+            quantity: min..=max,
+        }
+    }
+}
+
+pub const DELIVERY_ITEMS: &[WeeklyDeliveryItem] = &[
+    WeeklyDeliveryItem::new(811, 10, 20),
+    WeeklyDeliveryItem::new(813, 100, 200),
+    WeeklyDeliveryItem::new(818, 25, 50),
+    WeeklyDeliveryItem::new(819, 25, 50),
+    WeeklyDeliveryItem::new(820, 10, 20),
+    WeeklyDeliveryItem::new(821, 20, 20),
+    WeeklyDeliveryItem::new(824, 10, 20),
+    WeeklyDeliveryItem::new(825, 10, 20),
+    WeeklyDeliveryItem::new(826, 25, 50),
+    WeeklyDeliveryItem::new(827, 10, 20),
+    WeeklyDeliveryItem::new(828, 25, 50),
+    WeeklyDeliveryItem::new(829, 50, 100),
+    WeeklyDeliveryItem::new(830, 100, 200),
+    WeeklyDeliveryItem::new(3234, 10, 20),
+    WeeklyDeliveryItem::new(3269, 50, 100),
+    WeeklyDeliveryItem::new(3275, 25, 50),
+    WeeklyDeliveryItem::new(3291, 50, 100),
+    WeeklyDeliveryItem::new(3292, 10, 20),
+    WeeklyDeliveryItem::new(3301, 10, 20),
+    WeeklyDeliveryItem::new(3306, 50, 100),
+    WeeklyDeliveryItem::new(3307, 25, 50),
+    WeeklyDeliveryItem::new(3316, 25, 50),
+    WeeklyDeliveryItem::new(3318, 25, 50),
+    WeeklyDeliveryItem::new(3320, 10, 20),
+    WeeklyDeliveryItem::new(3322, 10, 20),
+    WeeklyDeliveryItem::new(3330, 10, 20),
+    WeeklyDeliveryItem::new(3333, 10, 20),
+    WeeklyDeliveryItem::new(3337, 25, 50),
+    WeeklyDeliveryItem::new(3342, 10, 20),
+    WeeklyDeliveryItem::new(3346, 10, 20),
+    WeeklyDeliveryItem::new(3364, 5, 10),
+    WeeklyDeliveryItem::new(3371, 25, 50),
+    WeeklyDeliveryItem::new(3373, 10, 20),
+    WeeklyDeliveryItem::new(3413, 25, 50),
+    WeeklyDeliveryItem::new(3415, 50, 100),
+    WeeklyDeliveryItem::new(3421, 25, 50),
+    WeeklyDeliveryItem::new(3429, 10, 20),
+    WeeklyDeliveryItem::new(3509, 50, 50),
+    WeeklyDeliveryItem::new(3557, 100, 200),
+    WeeklyDeliveryItem::new(3575, 10, 20),
+    WeeklyDeliveryItem::new(5479, 10, 20),
+    WeeklyDeliveryItem::new(35588, 50, 100),
+    WeeklyDeliveryItem::new(5888, 10, 20),
+    WeeklyDeliveryItem::new(5889, 10, 20),
+    WeeklyDeliveryItem::new(6558, 250, 500),
+    WeeklyDeliveryItem::new(7381, 10, 20),
+    WeeklyDeliveryItem::new(7383, 10, 20),
+    WeeklyDeliveryItem::new(7386, 10, 20),
+    WeeklyDeliveryItem::new(7387, 50, 100),
+    WeeklyDeliveryItem::new(7388, 10, 20),
+    WeeklyDeliveryItem::new(7402, 10, 20),
+    WeeklyDeliveryItem::new(7413, 25, 50),
+    WeeklyDeliveryItem::new(7425, 10, 20),
+    WeeklyDeliveryItem::new(7427, 10, 20),
+    WeeklyDeliveryItem::new(7428, 10, 20),
+    WeeklyDeliveryItem::new(7436, 10, 20),
+    WeeklyDeliveryItem::new(7449, 25, 50),
+    WeeklyDeliveryItem::new(7454, 25, 50),
+    WeeklyDeliveryItem::new(8043, 10, 20),
+    WeeklyDeliveryItem::new(8045, 10, 20),
+    WeeklyDeliveryItem::new(8050, 10, 20),
+    WeeklyDeliveryItem::new(8061, 10, 20),
+    WeeklyDeliveryItem::new(8074, 10, 20),
+    WeeklyDeliveryItem::new(9054, 50, 100),
+    WeeklyDeliveryItem::new(9055, 50, 100),
+    WeeklyDeliveryItem::new(9631, 50, 100),
+    WeeklyDeliveryItem::new(9632, 100, 200),
+    WeeklyDeliveryItem::new(9637, 100, 200),
+    WeeklyDeliveryItem::new(9643, 100, 200),
+    WeeklyDeliveryItem::new(9649, 50, 100),
+    WeeklyDeliveryItem::new(9652, 50, 100),
+    WeeklyDeliveryItem::new(9656, 10, 20),
+    WeeklyDeliveryItem::new(9659, 25, 50),
+    WeeklyDeliveryItem::new(9662, 25, 50),
+    WeeklyDeliveryItem::new(9667, 50, 50),
+    WeeklyDeliveryItem::new(9668, 25, 50),
+    WeeklyDeliveryItem::new(9688, 100, 200),
+    WeeklyDeliveryItem::new(10276, 50, 100),
+    WeeklyDeliveryItem::new(10277, 25, 50),
+    WeeklyDeliveryItem::new(10278, 50, 100),
+    WeeklyDeliveryItem::new(10282, 25, 50),
+    WeeklyDeliveryItem::new(10291, 100, 200),
+    WeeklyDeliveryItem::new(10293, 100, 200),
+    WeeklyDeliveryItem::new(10301, 25, 50),
+    WeeklyDeliveryItem::new(10303, 25, 50),
+    WeeklyDeliveryItem::new(10305, 250, 500),
+    WeeklyDeliveryItem::new(10306, 268, 402),
+    WeeklyDeliveryItem::new(10308, 50, 100),
+    WeeklyDeliveryItem::new(10310, 50, 100),
+    WeeklyDeliveryItem::new(10312, 25, 50),
+    WeeklyDeliveryItem::new(10313, 10, 20),
+    WeeklyDeliveryItem::new(10315, 50, 100),
+    WeeklyDeliveryItem::new(10316, 266, 408),
+    WeeklyDeliveryItem::new(10317, 50, 100),
+    WeeklyDeliveryItem::new(10320, 50, 100),
+    WeeklyDeliveryItem::new(10321, 50, 100),
+    WeeklyDeliveryItem::new(10384, 10, 20),
+    WeeklyDeliveryItem::new(10386, 10, 20),
+    WeeklyDeliveryItem::new(10397, 50, 100),
+    WeeklyDeliveryItem::new(10404, 50, 100),
+    WeeklyDeliveryItem::new(10407, 50, 100),
+    WeeklyDeliveryItem::new(10408, 25, 50),
+    WeeklyDeliveryItem::new(10410, 25, 50),
+    WeeklyDeliveryItem::new(10411, 50, 100),
+    WeeklyDeliveryItem::new(10413, 25, 50),
+    WeeklyDeliveryItem::new(10414, 50, 100),
+    WeeklyDeliveryItem::new(10415, 25, 50),
+    WeeklyDeliveryItem::new(10416, 50, 100),
+    WeeklyDeliveryItem::new(10418, 50, 100),
+    WeeklyDeliveryItem::new(10438, 10, 20),
+    WeeklyDeliveryItem::new(10439, 10, 20),
+    WeeklyDeliveryItem::new(10444, 25, 50),
+    WeeklyDeliveryItem::new(10449, 25, 50),
+    WeeklyDeliveryItem::new(10454, 50, 100),
+    WeeklyDeliveryItem::new(10455, 50, 100),
+    WeeklyDeliveryItem::new(10456, 10, 20),
+    WeeklyDeliveryItem::new(11443, 25, 50),
+    WeeklyDeliveryItem::new(11449, 10, 20),
+    WeeklyDeliveryItem::new(11450, 10, 20),
+    WeeklyDeliveryItem::new(11454, 10, 20),
+    WeeklyDeliveryItem::new(11456, 25, 50),
+    WeeklyDeliveryItem::new(11457, 50, 100),
+    WeeklyDeliveryItem::new(11465, 304, 471),
+    WeeklyDeliveryItem::new(11471, 100, 200),
+    WeeklyDeliveryItem::new(11477, 50, 100),
+    WeeklyDeliveryItem::new(11482, 10, 20),
+    WeeklyDeliveryItem::new(11487, 100, 200),
+    WeeklyDeliveryItem::new(11488, 100, 200),
+    WeeklyDeliveryItem::new(11490, 100, 200),
+    WeeklyDeliveryItem::new(11491, 25, 50),
+    WeeklyDeliveryItem::new(11510, 25, 50),
+    WeeklyDeliveryItem::new(11511, 10, 20),
+    WeeklyDeliveryItem::new(11512, 25, 50),
+    WeeklyDeliveryItem::new(11514, 10, 20),
+    WeeklyDeliveryItem::new(11659, 50, 100),
+    WeeklyDeliveryItem::new(11660, 50, 100),
+    WeeklyDeliveryItem::new(11661, 100, 200),
+    WeeklyDeliveryItem::new(11671, 50, 100),
+    WeeklyDeliveryItem::new(11672, 25, 50),
+    WeeklyDeliveryItem::new(11673, 25, 50),
+    WeeklyDeliveryItem::new(12313, 25, 50),
+    WeeklyDeliveryItem::new(12683, 10, 20),
+    WeeklyDeliveryItem::new(12730, 100, 200),
+    WeeklyDeliveryItem::new(14008, 50, 100),
+    WeeklyDeliveryItem::new(14009, 25, 50),
+    WeeklyDeliveryItem::new(14010, 25, 50),
+    WeeklyDeliveryItem::new(14011, 50, 100),
+    WeeklyDeliveryItem::new(14013, 100, 200),
+    WeeklyDeliveryItem::new(14017, 25, 50),
+    WeeklyDeliveryItem::new(14041, 100, 200),
+    WeeklyDeliveryItem::new(14044, 25, 50),
+    WeeklyDeliveryItem::new(14076, 50, 100),
+    WeeklyDeliveryItem::new(14078, 50, 100),
+    WeeklyDeliveryItem::new(14080, 25, 50),
+    WeeklyDeliveryItem::new(14083, 50, 100),
+    WeeklyDeliveryItem::new(14225, 50, 100),
+    WeeklyDeliveryItem::new(14247, 10, 20),
+    WeeklyDeliveryItem::new(16130, 100, 200),
+    WeeklyDeliveryItem::new(16132, 25, 50),
+    WeeklyDeliveryItem::new(16133, 50, 100),
+    WeeklyDeliveryItem::new(16135, 250, 500),
+    WeeklyDeliveryItem::new(16138, 100, 200),
+    WeeklyDeliveryItem::new(16139, 25, 50),
+    WeeklyDeliveryItem::new(16140, 25, 50),
+    WeeklyDeliveryItem::new(16160, 10, 20),
+    WeeklyDeliveryItem::new(16163, 10, 20),
+    WeeklyDeliveryItem::new(17463, 50, 100),
+    WeeklyDeliveryItem::new(17809, 50, 100),
+    WeeklyDeliveryItem::new(17812, 25, 50),
+    WeeklyDeliveryItem::new(17817, 50, 100),
+    WeeklyDeliveryItem::new(17818, 50, 100),
+    WeeklyDeliveryItem::new(17819, 50, 100),
+    WeeklyDeliveryItem::new(17824, 25, 50),
+    WeeklyDeliveryItem::new(17826, 25, 50),
+    WeeklyDeliveryItem::new(17829, 10, 20),
+    WeeklyDeliveryItem::new(17830, 25, 50),
+    WeeklyDeliveryItem::new(17831, 50, 100),
+    WeeklyDeliveryItem::new(17847, 50, 100),
+    WeeklyDeliveryItem::new(17850, 100, 200),
+    WeeklyDeliveryItem::new(17851, 25, 50),
+    WeeklyDeliveryItem::new(17853, 25, 50),
+    WeeklyDeliveryItem::new(17854, 50, 100),
+    WeeklyDeliveryItem::new(17855, 50, 100),
+    WeeklyDeliveryItem::new(17856, 50, 100),
+    WeeklyDeliveryItem::new(17857, 50, 100),
+    WeeklyDeliveryItem::new(17859, 10, 20),
+    WeeklyDeliveryItem::new(18924, 10, 20),
+    WeeklyDeliveryItem::new(18925, 25, 50),
+    WeeklyDeliveryItem::new(18926, 25, 50),
+    WeeklyDeliveryItem::new(18927, 25, 50),
+    WeeklyDeliveryItem::new(18928, 25, 50),
+    WeeklyDeliveryItem::new(18995, 50, 100),
+    WeeklyDeliveryItem::new(19110, 50, 100),
+    WeeklyDeliveryItem::new(19111, 50, 100),
+    WeeklyDeliveryItem::new(20198, 100, 100),
+    WeeklyDeliveryItem::new(20201, 50, 100),
+    WeeklyDeliveryItem::new(20202, 50, 100),
+    WeeklyDeliveryItem::new(20203, 100, 200),
+    WeeklyDeliveryItem::new(20204, 50, 100),
+    WeeklyDeliveryItem::new(20206, 50, 100),
+    WeeklyDeliveryItem::new(20207, 50, 100),
+    WeeklyDeliveryItem::new(21103, 100, 200),
+    WeeklyDeliveryItem::new(21164, 10, 20),
+    WeeklyDeliveryItem::new(21165, 10, 20),
+    WeeklyDeliveryItem::new(21168, 10, 20),
+    WeeklyDeliveryItem::new(21169, 10, 20),
+    WeeklyDeliveryItem::new(21171, 10, 20),
+    WeeklyDeliveryItem::new(21174, 10, 20),
+    WeeklyDeliveryItem::new(21175, 100, 200),
+    WeeklyDeliveryItem::new(21178, 10, 20),
+    WeeklyDeliveryItem::new(21179, 10, 20),
+    WeeklyDeliveryItem::new(21180, 10, 20),
+    WeeklyDeliveryItem::new(21182, 50, 100),
+    WeeklyDeliveryItem::new(21193, 50, 100),
+    WeeklyDeliveryItem::new(21195, 100, 200),
+    WeeklyDeliveryItem::new(21196, 100, 200),
+    WeeklyDeliveryItem::new(21197, 100, 200),
+    WeeklyDeliveryItem::new(21199, 25, 50),
+    WeeklyDeliveryItem::new(21201, 25, 50),
+    WeeklyDeliveryItem::new(21204, 50, 100),
+    WeeklyDeliveryItem::new(21974, 50, 100),
+    WeeklyDeliveryItem::new(22051, 100, 200),
+    WeeklyDeliveryItem::new(22054, 100, 200),
+    WeeklyDeliveryItem::new(22055, 100, 200),
+    WeeklyDeliveryItem::new(22056, 100, 200),
+    WeeklyDeliveryItem::new(22057, 100, 200),
+    WeeklyDeliveryItem::new(22085, 10, 20),
+    WeeklyDeliveryItem::new(22086, 10, 20),
+    WeeklyDeliveryItem::new(22087, 10, 20),
+    WeeklyDeliveryItem::new(22184, 25, 50),
+    WeeklyDeliveryItem::new(22186, 100, 200),
+    WeeklyDeliveryItem::new(22188, 100, 200),
+    WeeklyDeliveryItem::new(22191, 50, 100),
+    WeeklyDeliveryItem::new(22729, 50, 100),
+    WeeklyDeliveryItem::new(23502, 50, 100),
+    WeeklyDeliveryItem::new(23503, 50, 100),
+    WeeklyDeliveryItem::new(23504, 50, 100),
+    WeeklyDeliveryItem::new(23505, 50, 100),
+    WeeklyDeliveryItem::new(23506, 50, 100),
+    WeeklyDeliveryItem::new(23510, 50, 100),
+    WeeklyDeliveryItem::new(23511, 50, 100),
+    WeeklyDeliveryItem::new(23514, 50, 100),
+    WeeklyDeliveryItem::new(23515, 50, 100),
+    WeeklyDeliveryItem::new(23516, 50, 100),
+    WeeklyDeliveryItem::new(23518, 50, 100),
+    WeeklyDeliveryItem::new(23519, 50, 100),
+    WeeklyDeliveryItem::new(23520, 50, 100),
+    WeeklyDeliveryItem::new(23521, 25, 50),
+    WeeklyDeliveryItem::new(23523, 50, 100),
+    WeeklyDeliveryItem::new(24380, 50, 100),
+    WeeklyDeliveryItem::new(24384, 50, 100),
+    WeeklyDeliveryItem::new(24385, 50, 100),
+    WeeklyDeliveryItem::new(24938, 50, 100),
+    WeeklyDeliveryItem::new(25691, 50, 100),
+    WeeklyDeliveryItem::new(25693, 100, 200),
+    WeeklyDeliveryItem::new(25695, 50, 100),
+    WeeklyDeliveryItem::new(25696, 50, 100),
+    WeeklyDeliveryItem::new(25697, 25, 50),
+    WeeklyDeliveryItem::new(25699, 10, 20),
+    WeeklyDeliveryItem::new(25701, 50, 100),
+    WeeklyDeliveryItem::new(25742, 25, 50),
+    WeeklyDeliveryItem::new(27369, 250, 500),
+    WeeklyDeliveryItem::new(27462, 100, 200),
+    WeeklyDeliveryItem::new(27463, 100, 200),
+    WeeklyDeliveryItem::new(27592, 25, 50),
+    WeeklyDeliveryItem::new(27593, 100, 200),
+    WeeklyDeliveryItem::new(27594, 50, 100),
+    WeeklyDeliveryItem::new(27595, 100, 200),
+    WeeklyDeliveryItem::new(27596, 100, 200),
+    WeeklyDeliveryItem::new(27597, 50, 100),
+    WeeklyDeliveryItem::new(27598, 50, 100),
+    WeeklyDeliveryItem::new(27599, 100, 200),
+    WeeklyDeliveryItem::new(27600, 100, 200),
+    WeeklyDeliveryItem::new(27601, 100, 200),
+    WeeklyDeliveryItem::new(27602, 250, 500),
+    WeeklyDeliveryItem::new(27603, 50, 100),
+    WeeklyDeliveryItem::new(27604, 250, 500),
+    WeeklyDeliveryItem::new(27606, 100, 200),
+    WeeklyDeliveryItem::new(28566, 250, 500),
+    WeeklyDeliveryItem::new(28569, 250, 500),
+    WeeklyDeliveryItem::new(28570, 250, 500),
+    WeeklyDeliveryItem::new(28822, 10, 20),
+    WeeklyDeliveryItem::new(28823, 10, 20),
+    WeeklyDeliveryItem::new(30005, 50, 100),
+    WeeklyDeliveryItem::new(30058, 250, 500),
+    WeeklyDeliveryItem::new(31331, 10, 20),
+    WeeklyDeliveryItem::new(31438, 25, 50),
+    WeeklyDeliveryItem::new(31439, 50, 100),
+    WeeklyDeliveryItem::new(31440, 25, 50),
+    WeeklyDeliveryItem::new(31441, 100, 200),
+    WeeklyDeliveryItem::new(31442, 50, 100),
+    WeeklyDeliveryItem::new(31443, 25, 50),
+    WeeklyDeliveryItem::new(31558, 50, 100),
+    WeeklyDeliveryItem::new(31559, 25, 50),
+    WeeklyDeliveryItem::new(31560, 100, 200),
+    WeeklyDeliveryItem::new(31561, 10, 20),
+    WeeklyDeliveryItem::new(31678, 50, 100),
+    WeeklyDeliveryItem::new(32698, 25, 50),
+    WeeklyDeliveryItem::new(33934, 10, 20),
+    WeeklyDeliveryItem::new(33938, 25, 50),
+    WeeklyDeliveryItem::new(33943, 50, 100),
+    WeeklyDeliveryItem::new(33944, 10, 20),
+    WeeklyDeliveryItem::new(33945, 50, 100),
+    WeeklyDeliveryItem::new(33982, 10, 20),
+    WeeklyDeliveryItem::new(34141, 10, 20),
+    WeeklyDeliveryItem::new(34160, 25, 50),
+    WeeklyDeliveryItem::new(34162, 50, 100),
+    WeeklyDeliveryItem::new(35571, 10, 20),
+    WeeklyDeliveryItem::new(35572, 250, 500),
+    WeeklyDeliveryItem::new(35573, 50, 100),
+    WeeklyDeliveryItem::new(35574, 50, 100),
+    WeeklyDeliveryItem::new(35596, 50, 100),
+    WeeklyDeliveryItem::new(36769, 50, 100),
+    WeeklyDeliveryItem::new(36770, 25, 50),
+    WeeklyDeliveryItem::new(36771, 10, 20),
+    WeeklyDeliveryItem::new(36772, 50, 100),
+    WeeklyDeliveryItem::new(36773, 100, 200),
+    WeeklyDeliveryItem::new(36774, 25, 50),
+    WeeklyDeliveryItem::new(36775, 50, 100),
+    WeeklyDeliveryItem::new(36776, 25, 50),
+    WeeklyDeliveryItem::new(36777, 10, 20),
+    WeeklyDeliveryItem::new(36778, 25, 50),
+    WeeklyDeliveryItem::new(36779, 50, 100),
+    WeeklyDeliveryItem::new(36780, 10, 20),
+    WeeklyDeliveryItem::new(36785, 25, 50),
+    WeeklyDeliveryItem::new(36786, 100, 200),
+    WeeklyDeliveryItem::new(36789, 10, 20),
+    WeeklyDeliveryItem::new(36790, 25, 50),
+    WeeklyDeliveryItem::new(36805, 250, 500),
+    WeeklyDeliveryItem::new(36806, 250, 500),
+    WeeklyDeliveryItem::new(36807, 10, 20),
+    WeeklyDeliveryItem::new(36820, 10, 20),
+    WeeklyDeliveryItem::new(36821, 25, 50),
+    WeeklyDeliveryItem::new(36822, 10, 20),
+    WeeklyDeliveryItem::new(36823, 25, 50),
+    WeeklyDeliveryItem::new(36971, 10, 20),
+    WeeklyDeliveryItem::new(36972, 25, 50),
+    WeeklyDeliveryItem::new(37109, 50, 100),
+    WeeklyDeliveryItem::new(37110, 5, 10),
+    WeeklyDeliveryItem::new(39375, 100, 200),
+    WeeklyDeliveryItem::new(39376, 250, 500),
+    WeeklyDeliveryItem::new(39377, 50, 100),
+    WeeklyDeliveryItem::new(39378, 50, 100),
+    WeeklyDeliveryItem::new(39379, 50, 100),
+    WeeklyDeliveryItem::new(39380, 100, 200),
+    WeeklyDeliveryItem::new(39381, 250, 500),
+    WeeklyDeliveryItem::new(39382, 25, 50),
+    WeeklyDeliveryItem::new(39383, 50, 100),
+    WeeklyDeliveryItem::new(39384, 100, 200),
+    WeeklyDeliveryItem::new(39386, 25, 50),
+    WeeklyDeliveryItem::new(39387, 25, 50),
+    WeeklyDeliveryItem::new(39388, 50, 100),
+    WeeklyDeliveryItem::new(39389, 25, 50),
+    WeeklyDeliveryItem::new(39391, 25, 50),
+    WeeklyDeliveryItem::new(39392, 25, 50),
+    WeeklyDeliveryItem::new(39393, 25, 50),
+    WeeklyDeliveryItem::new(39394, 25, 50),
+    WeeklyDeliveryItem::new(39395, 50, 100),
+    WeeklyDeliveryItem::new(39401, 25, 50),
+    WeeklyDeliveryItem::new(39402, 25, 50),
+    WeeklyDeliveryItem::new(39406, 25, 50),
+    WeeklyDeliveryItem::new(39407, 50, 100),
+    WeeklyDeliveryItem::new(39408, 10, 20),
+    WeeklyDeliveryItem::new(39409, 25, 50),
+    WeeklyDeliveryItem::new(39410, 100, 200),
+    WeeklyDeliveryItem::new(39411, 25, 50),
+    WeeklyDeliveryItem::new(39412, 50, 100),
+    WeeklyDeliveryItem::new(39413, 250, 500),
+    WeeklyDeliveryItem::new(39414, 250, 500),
+    WeeklyDeliveryItem::new(40582, 50, 100),
+    WeeklyDeliveryItem::new(40583, 25, 50),
+    WeeklyDeliveryItem::new(40584, 25, 50),
+    WeeklyDeliveryItem::new(40585, 25, 50),
+    WeeklyDeliveryItem::new(40586, 25, 50),
+    WeeklyDeliveryItem::new(40587, 25, 50),
+    WeeklyDeliveryItem::new(43729, 100, 200),
+    WeeklyDeliveryItem::new(43730, 100, 200),
+    WeeklyDeliveryItem::new(43731, 50, 100),
+    WeeklyDeliveryItem::new(43732, 10, 20),
+    WeeklyDeliveryItem::new(43734, 10, 20),
+    WeeklyDeliveryItem::new(43846, 10, 20),
+    WeeklyDeliveryItem::new(43848, 10, 20),
+    WeeklyDeliveryItem::new(43849, 25, 50),
+    WeeklyDeliveryItem::new(43850, 25, 50),
+    WeeklyDeliveryItem::new(43851, 10, 20),
+    WeeklyDeliveryItem::new(43852, 25, 50),
+    WeeklyDeliveryItem::new(43853, 25, 50),
+    WeeklyDeliveryItem::new(44743, 50, 100),
+    WeeklyDeliveryItem::new(44744, 25, 50),
+    WeeklyDeliveryItem::new(44745, 10, 20),
+    WeeklyDeliveryItem::new(44746, 50, 100),
+    WeeklyDeliveryItem::new(44747, 50, 100),
+    WeeklyDeliveryItem::new(44748, 50, 100),
+    WeeklyDeliveryItem::new(44749, 50, 100),
+    WeeklyDeliveryItem::new(48252, 10, 20),
+    WeeklyDeliveryItem::new(48255, 10, 20),
+    WeeklyDeliveryItem::new(48508, 25, 50),
+    WeeklyDeliveryItem::new(48509, 10, 20),
+    WeeklyDeliveryItem::new(48510, 10, 20),
+    WeeklyDeliveryItem::new(48511, 10, 20),
+    WeeklyDeliveryItem::new(49894, 10, 20),
+    WeeklyDeliveryItem::new(49908, 10, 20),
+    WeeklyDeliveryItem::new(50056, 100, 200),
+    WeeklyDeliveryItem::new(50057, 10, 20),
+    WeeklyDeliveryItem::new(50058, 10, 20),
+    WeeklyDeliveryItem::new(50059, 10, 20),
+    WeeklyDeliveryItem::new(51419, 50, 100),
+    WeeklyDeliveryItem::new(51420, 25, 50),
+    WeeklyDeliveryItem::new(51422, 25, 50),
+    WeeklyDeliveryItem::new(51423, 25, 50),
+    WeeklyDeliveryItem::new(51425, 10, 20),
+    WeeklyDeliveryItem::new(51426, 25, 50),
+    WeeklyDeliveryItem::new(51427, 50, 100),
+    WeeklyDeliveryItem::new(51472, 25, 50),
+    WeeklyDeliveryItem::new(51473, 25, 50),
+    WeeklyDeliveryItem::new(51474, 29, 42),
+    WeeklyDeliveryItem::new(51475, 25, 50),
+    WeeklyDeliveryItem::new(51476, 25, 50),
+    WeeklyDeliveryItem::new(51477, 25, 50),
+    WeeklyDeliveryItem::new(51478, 25, 50),
+    WeeklyDeliveryItem::new(51479, 25, 50),
+    WeeklyDeliveryItem::new(51480, 25, 50),
+    WeeklyDeliveryItem::new(51482, 25, 50),
+    WeeklyDeliveryItem::new(51484, 27, 45),
+    WeeklyDeliveryItem::new(51485, 25, 50),
+    WeeklyDeliveryItem::new(51486, 25, 50),
+    WeeklyDeliveryItem::new(52633, 25, 50),
+    WeeklyDeliveryItem::new(52662, 10, 20),
+    WeeklyDeliveryItem::new(52663, 50, 100),
+    WeeklyDeliveryItem::new(52664, 25, 50),
+    WeeklyDeliveryItem::new(52705, 25, 50),
+    WeeklyDeliveryItem::new(52706, 25, 50),
+    WeeklyDeliveryItem::new(52707, 50, 100),
+    WeeklyDeliveryItem::new(52718, 50, 100),
+    WeeklyDeliveryItem::new(52719, 50, 100),
+    WeeklyDeliveryItem::new(52720, 10, 20),
 ];

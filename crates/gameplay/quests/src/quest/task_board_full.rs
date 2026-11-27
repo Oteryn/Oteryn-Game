@@ -11,7 +11,9 @@ use super::{BOUNTY_POINTS, POINTS, TALISMAN_PATHS};
 
 #[path = "task_board_catalogue.rs"]
 mod catalogue;
-pub use catalogue::{DELIVERY_ITEMS, SHOP_OFFERS, TaskBoardShopKind, TaskBoardShopOffer};
+pub use catalogue::{
+    DELIVERY_ITEMS, SHOP_OFFERS, TaskBoardShopKind, TaskBoardShopOffer, WeeklyDeliveryItem,
+};
 
 #[path = "task_board_elite.rs"]
 pub mod elite;
@@ -764,7 +766,7 @@ fn fill_weekly(
         let item = available.swap_remove(index);
         board.deliveries.push(WeeklyDeliveryTask {
             item_id: item.item_id,
-            required: item.amount,
+            required: random(draw, *item.quantity.start(), *item.quantity.end())?,
             delivered: false,
         });
     }

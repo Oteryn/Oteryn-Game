@@ -1379,9 +1379,9 @@ fn malformed_random_or_missing_catalogue_never_mutates_state() -> Result<(), Tas
 fn all_delivery_definitions_are_unique_and_quantities_are_positive() {
     assert_eq!(DELIVERY_ITEMS.len(), 436);
     assert!(
-        DELIVERY_ITEMS
-            .iter()
-            .all(|item| item.item_id > 0 && item.amount > 0)
+        DELIVERY_ITEMS.iter().all(|item| item.item_id > 0
+            && *item.quantity.start() > 0
+            && !item.quantity.is_empty())
     );
     assert_eq!(
         DELIVERY_ITEMS
@@ -1391,6 +1391,66 @@ fn all_delivery_definitions_are_unique_and_quantities_are_positive() {
             .len(),
         436
     );
+}
+
+#[test]
+fn weekly_delivery_quantities_follow_authored_item_ranges_across_seeds()
+-> Result<(), TaskBoardRefusal> {
+    let creatures = creatures();
+    let mut ctx = context(&creatures);
+    ctx.level = 400;
+    let item_count =
+        u32::try_from(DELIVERY_ITEMS.len()).map_err(|_| TaskBoardRefusal::MissingCatalogue)?;
+    for difficulty in 0..=3 {
+        for seed in 0..item_count {
+            // Force every item into the first slot, then exercise both inclusive
+            // endpoints for that item and the remaining generated deliveries.
+            for upper_endpoint in [false, true] {
+                let mut data = TaskBoardData::default();
+                apply_action(
+                    &mut data,
+                    &mut TaskBoardBalances::default(),
+                    &TaskBoardAction::StartWeekly { difficulty },
+                    &ctx,
+                    &mut |upper| {
+                        if upper == item_count {
+                            seed
+                        } else if upper_endpoint {
+                            upper - 1
+                        } else {
+                            0
+                        }
+                    },
+                )?;
+                let board = data.weekly.ok_or(TaskBoardRefusal::WrongState)?;
+                for (index, delivery) in board.deliveries.iter().enumerate() {
+                    let item = DELIVERY_ITEMS
+                        .iter()
+                        .find(|item| item.item_id == delivery.item_id)
+                        .ok_or(TaskBoardRefusal::MissingCatalogue)?;
+                    assert!(item.quantity.contains(&delivery.required), "{delivery:?}");
+                    if index == 0 {
+                        let expected = if upper_endpoint {
+                            item.quantity.end()
+                        } else {
+                            item.quantity.start()
+                        };
+                        assert_eq!(delivery.required, *expected, "{delivery:?}");
+                    }
+                }
+            }
+        }
+    }
+    for (item_id, expected) in [(18924, 10..=20), (27593, 100..=200)] {
+        assert_eq!(
+            DELIVERY_ITEMS
+                .iter()
+                .find(|item| item.item_id == item_id)
+                .map(|item| &item.quantity),
+            Some(&expected)
+        );
+    }
+    Ok(())
 }
 
 #[test]

@@ -661,16 +661,29 @@ pub(in crate::gameplay_transport) async fn regression_world_use_with_busy_holder
 }
 
 #[cfg(test)]
+#[derive(Clone, Copy)]
+pub(in crate::gameplay_transport) enum ItemUseContention {
+    InputOnly,
+    ContainerRead,
+    PotionRead,
+}
+
+#[cfg(test)]
 pub(in crate::gameplay_transport) async fn regression_item_use_with_busy_holder(
     authority: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: AdmittedSession,
     stream: &mut tokio::io::DuplexStream,
     item: crate::gameplay_transport::item_view::ItemKey,
+    contention: ItemUseContention,
 ) -> Result<oteryn_protocol_oteryn::item_view::ItemHandle, Box<dyn std::error::Error>> {
-    use crate::gameplay_transport::loop_move::{CARRIED_USE_READ_BARRIER, CarriedUseReadBarrier};
+    use crate::gameplay_transport::{
+        composed_admission::HolderCheckoutProbe, item_ref_admission::USE_INVENTORY_CHECKOUT_PROBE,
+        loop_move::CONTAINER_USE_CHECKOUT_PROBE,
+    };
     use oteryn_protocol_oteryn::world_object::{
         COMMAND_TYPE_USE_INTENT, UseIntent, UseTarget, encode_item_use_intent,
     };
+    use std::{cell::Cell, sync::Arc};
 
     let actor = admitted.runtime_actor.ok_or("readmitted actor")?;
     let baseline = authority
@@ -748,23 +761,33 @@ pub(in crate::gameplay_transport) async fn regression_item_use_with_busy_holder(
             &mut session,
             input,
         ));
-        let barrier = std::sync::Arc::new(CarriedUseReadBarrier::default());
-        let occupy_holder = async {
-            barrier.ready.notified().await;
-            barrier.held.notify_one();
-            barrier.refused.notified().await;
-            held.run(|_, _| Box::pin(async { Ok(()) })).await
-        };
-        let mut work =
-            std::pin::pin!(CARRIED_USE_READ_BARRIER.scope(std::sync::Arc::clone(&barrier), work));
-        let outcome = tokio::select! {
-            outcome = work.as_mut() => {
-                outcome.map_err(|end| format!("readmitted USE before container owner: {:?}", end.finish(admitted)))?;
-                return Err("USE resolved before reaching the fenced container read under contention".into());
-            }
-            released = occupy_holder => {
-                released?;
-                work.await
+        let probe = Arc::new(HolderCheckoutProbe::default());
+        let container =
+            matches!(contention, ItemUseContention::ContainerRead).then(|| Arc::clone(&probe));
+        let potion =
+            matches!(contention, ItemUseContention::PotionRead).then(|| Arc::clone(&probe));
+        // Hold through the real input preflight, then move contention to the
+        // owning item's read so unrelated command guards can proceed.
+        let work = command::PREFLIGHT_TEST_HOLDER.scope(
+            Cell::new(Some(held)),
+            CONTAINER_USE_CHECKOUT_PROBE.scope(
+                Cell::new(container),
+                USE_INVENTORY_CHECKOUT_PROBE.scope(Cell::new(potion), work),
+            ),
+        );
+        let outcome = if matches!(contention, ItemUseContention::InputOnly) {
+            work.await
+        } else {
+            let mut work = std::pin::pin!(work);
+            tokio::select! {
+                outcome = work.as_mut() => {
+                    outcome.map_err(|end| format!("readmitted USE before item checkout: {:?}", end.finish(admitted)))?;
+                    return Err("first USE resolved before the owning checkout was contended".into());
+                }
+                released = probe.contend(authority.root) => {
+                    released?;
+                    work.await
+                }
             }
         };
         outcome.map_err(|end| format!("first readmitted item USE: {:?}", end.finish(admitted)))?;

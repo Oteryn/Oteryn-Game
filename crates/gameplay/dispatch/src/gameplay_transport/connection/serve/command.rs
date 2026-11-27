@@ -29,6 +29,11 @@ pub(super) fn disconnect_at(
     }
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static PREFLIGHT_TEST_HOLDER: std::cell::Cell<Option<crate::durability::IssuedSemanticPass>>;
+}
+
 pub(super) struct CommandOutcome {
     pub(super) second_logout: bool,
     pub(super) lost_while_logging_out: bool,
@@ -176,6 +181,13 @@ where
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
+    #[cfg(test)]
+    if let Ok(Some(holder)) = PREFLIGHT_TEST_HOLDER.try_with(std::cell::Cell::take) {
+        holder
+            .run(|_, _| Box::pin(async { Ok(()) }))
+            .await
+            .map_err(|error| disconnect(command, "test_preflight_holder", error))?;
+    }
     let guard_deferred =
         input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
     if guard_deferred && !session.reconcile_original_bank {
