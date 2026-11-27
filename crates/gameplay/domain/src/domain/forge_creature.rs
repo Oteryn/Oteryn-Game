@@ -8,7 +8,7 @@ pub enum ForgeCreature {
 }
 
 pub const FIENDISH_RESPAWN_SECONDS: u16 = 270;
-pub const FIENDISH_SIMULTANEOUS_MAX: u8 = 3;
+pub const FIENDISH_SIMULTANEOUS_MAX: u8 = 4;
 pub const INFLUENCED_SIMULTANEOUS_MAX: u16 = 300;
 pub const SHARED_XP_RANGE_XY: u16 = 30;
 pub const FIENDISH_RESPAWN_MICROS: u64 = FIENDISH_RESPAWN_SECONDS as u64 * 1_000_000;
@@ -31,7 +31,7 @@ pub struct FiendishTickPlan {
     pub next_tick_micros: u64,
 }
 
-/// Select enough eligible live spawns to restore the pinned three-fiend population. Existing
+/// Select enough eligible live spawns to restore the pinned four-fiend population. Existing
 /// fiends are retained first and candidates are then ordered by a deterministic per-tick draw, so
 /// replicas produce the same plan without random or wall-clock authority.
 #[must_use]
@@ -214,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn tick_retains_live_fiends_and_refills_to_three() {
+    fn tick_retains_live_fiends_and_refills_to_four() {
         use super::{FIENDISH_RESPAWN_MICROS, ForgeSpawnCandidate};
         let candidates: Vec<_> = (1..=7)
             .map(|spawn_identity| ForgeSpawnCandidate {
@@ -224,14 +224,14 @@ mod tests {
             })
             .collect();
         let plan = super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates);
-        assert_eq!(plan.selected, vec![2, 4, 1]);
+        assert_eq!(plan.selected, vec![2, 4, 1, 5]);
         assert_eq!(
             plan,
             super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates)
         );
         assert_eq!(
             super::plan_fiendish_tick(10, 3, &[2, 7, 99], &candidates).selected,
-            vec![2, 5, 4]
+            vec![2, 5, 4, 1]
         );
         assert_eq!(plan.next_tick_micros, 9 + FIENDISH_RESPAWN_MICROS);
     }

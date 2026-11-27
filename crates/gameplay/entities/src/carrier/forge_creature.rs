@@ -124,7 +124,7 @@ impl ChannelRuntimeV1 {
         now: u64,
         fixture: Option<(SpawnSourceId, ForgeCreature)>,
     ) -> Result<(), CarrierError> {
-        // Observe only the three retained incarnations on ordinary owner turns. A dead
+        // Observe only the retained incarnations on ordinary owner turns. A dead
         // fiend holds its population slot until its own replacement deadline.
         for index in 0..self.forge_fiends.len() {
             let (actor, due) = self.forge_fiends[index];
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn forge_creature_native_spawn_scales_health_retains_marker_and_replaces_incarnation() {
-        let mut current = super::super::tests::runtime(16);
+        let mut current = super::super::tests::runtime(32);
         let pin = current.content_pin().clone();
         let policy = CompiledCreaturePolicy {
             definition_key: "oteryn:creature.rat".into(),
@@ -280,28 +280,34 @@ mod tests {
             },
         };
 
+        let mut familiar = policy.clone();
+        familiar.definition_key = "fixture:familiar".into();
+        familiar.is_familiar = true;
+        familiar.forge_difficulty = None;
         current
             .install_companion_policies(
                 CompiledCreaturePolicies::from_active_artifact(
                     pin.server_artifact_digest(),
-                    vec![policy],
+                    vec![familiar, policy],
                 )
                 .unwrap(),
             )
             .unwrap();
-        let points = (2..8)
-            .map(|x| {
-                (
-                    (x, 0, 0),
-                    60_000,
-                    "oteryn:creature.rat".to_owned(),
-                    100,
-                    false,
-                )
-            })
-            .collect();
+        let points = |range: std::ops::Range<i32>| {
+            range
+                .map(|x| {
+                    (
+                        (x, 0, 0),
+                        60_000,
+                        "oteryn:creature.rat".to_owned(),
+                        100,
+                        false,
+                    )
+                })
+                .collect()
+        };
         current
-            .begin_activation_spawn_sources(vec![(points, 5_000)])
+            .begin_activation_spawn_sources(vec![(points(2..7), 5_000), (points(7..11), 5_000)])
             .unwrap();
         assert_eq!(
             current
@@ -317,7 +323,35 @@ mod tests {
                 (100, 100, None)
             );
         }
-        current.drive_forge_population(9_999_999).unwrap();
+        let session = super::super::tests::session(42);
+        let reservation = current.reserve_fresh_session(session).unwrap();
+        let owner = current.commit_fresh_session(reservation).unwrap();
+        let position = |x| MovementLocalPosition { x, y: 0, floor: 0 };
+        let familiar = current
+            .create_companion(
+                owner,
+                session,
+                "fixture:familiar",
+                position(11),
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+        let owned_rat = current
+            .create_companion(
+                owner,
+                session,
+                "oteryn:creature.rat",
+                position(12),
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        current
+            .drive_spawn_respawns(9_999_999, |_, _| true)
+            .unwrap();
         assert!(
             current
                 .spawn_point_creatures()
@@ -330,7 +364,19 @@ mod tests {
                         .is_none()
                 })
         );
-        current.drive_forge_population(10_000_000).unwrap();
+        current
+            .drive_spawn_respawns(10_000_000, |_, _| true)
+            .unwrap();
+        for owned in [familiar, owned_rat] {
+            let snapshot = current.companion_snapshot(owned).unwrap();
+            let master = snapshot.state.master.unwrap();
+            assert_eq!((master.actor, master.session), (owner, session));
+            assert_eq!(snapshot.forge, None);
+            assert_eq!(
+                current.apply_forge_classification(owned, ForgeCreature::Fiendish),
+                Err(CarrierError::InvalidCreatureTarget)
+            );
+        }
         let fiends: Vec<_> = current
             .spawn_point_creatures()
             .into_iter()
@@ -339,7 +385,30 @@ mod tests {
                 current.companion_snapshot(*a).unwrap().forge == Some(ForgeCreature::Fiendish)
             })
             .collect();
-        assert_eq!(fiends.len(), 3);
+        assert_eq!(fiends.len(), 4);
+        let mut actual: Vec<_> = current
+            .spawn_point_creatures()
+            .into_iter()
+            .filter_map(|(point, _, actor)| {
+                fiends
+                    .contains(&actor?)
+                    .then_some((u64::from(point.source) << 8) | u64::from(point.ordinal))
+            })
+            .collect();
+        let candidates: Vec<_> = current
+            .spawn_point_creatures()
+            .into_iter()
+            .map(|(point, _, _)| ForgeSpawnCandidate {
+                spawn_identity: (u64::from(point.source) << 8) | u64::from(point.ordinal),
+                alive: true,
+                eligible: true,
+            })
+            .collect();
+        let seed = u64::from_be_bytes(pin.server_artifact_digest()[..8].try_into().unwrap());
+        let mut expected = plan_fiendish_tick(10_000_000, seed, &[], &candidates).selected;
+        actual.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(actual, expected);
         let influenced: Vec<_> = current
             .spawn_point_creatures()
             .into_iter()
@@ -360,9 +429,6 @@ mod tests {
         let actor = fiends[0];
         let before = current.companion_snapshot(actor).unwrap();
         assert_eq!((before.health, before.maximum_health), (360, 360));
-        let session = super::super::tests::session(42);
-        let reservation = current.reserve_fresh_session(session).unwrap();
-        let owner = current.commit_fresh_session(reservation).unwrap();
         assert!(
             current
                 .prepare_companion_assignment(owner, session, &before)
@@ -440,7 +506,16 @@ mod tests {
                 .filter(|a| current.companion_snapshot(*a).unwrap().forge
                     == Some(ForgeCreature::Fiendish))
                 .count(),
-            2
+            3
+        );
+        assert_eq!(current.forge_next_tick_micros, 280_001_000);
+        assert!(
+            current
+                .spawn_point_creatures()
+                .into_iter()
+                .filter_map(|(_, _, actor)| actor)
+                .any(|actor| current.companion_snapshot(actor).unwrap().forge.is_none()),
+            "at least one eligible native spawn must remain for the retained slot"
         );
         current.drive_forge_population(280_001_000).unwrap();
         assert_eq!(
@@ -451,7 +526,7 @@ mod tests {
                 .filter(|a| current.companion_snapshot(*a).unwrap().forge
                     == Some(ForgeCreature::Fiendish))
                 .count(),
-            3
+            4
         );
     }
 }

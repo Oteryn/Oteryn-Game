@@ -198,6 +198,21 @@ def main(log, batch, validate=False):
             )
             verdict = f"FAIL cause={cause}" if cause else "PASS"
             print(f"SEAM_EVIDENCE e2e_all scenario={scenario} nameplate={native_test} status={verdict}")
+        if row == "P19":
+            for package, check, detail in (
+                ("oteryn-gameplay-entities",
+                 "forge_creature_native_spawn_scales_health_retains_marker_and_replaces_incarnation",
+                 "population"),
+                ("oteryn-gameplay-domain", "tick_retains_live_fiends_and_refills_to_four", "ranking"),
+            ):
+                if cause is not None:
+                    break
+                cause = replay_cause(
+                    row, package, check, names, captures,
+                    server_rows.get(scenario), log, suffix=f"-{detail}",
+                )
+                verdict = f"FAIL cause={cause}" if cause else "PASS"
+                print(f"SEAM_EVIDENCE e2e_all scenario={scenario} {detail}={check} status={verdict}")
         verdict = f"FAIL cause={cause}" if cause else "PASS"
         print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
         failed |= cause is not None
