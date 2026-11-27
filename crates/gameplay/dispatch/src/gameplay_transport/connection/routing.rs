@@ -29,7 +29,7 @@ pub(super) enum Dispatch {
     Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
     Training(oteryn_protocol_oteryn::loop_training::TrainingResult),
     /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
-    UseItem(OpenDecision, Option<ItemViewDelta>),
+    UseItem(OpenDecision, Option<ItemViewDelta>, Option<StaleUseReason>),
     /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
     ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
     ContainerPage(
@@ -72,6 +72,39 @@ pub(super) enum Dispatch {
     NoLogout,
     House(Option<Vec<u8>>),
     Unregistered,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) enum StaleUseReason {
+    ItemHandleNotLive,
+    ItemTargetNotObserved,
+    CorpseNotLive,
+    ContainerViewStale,
+    MechanicStaleState,
+}
+
+impl Dispatch {
+    pub(super) fn log_stale_use(&self, command_id: u64) {
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+        let reason = match self {
+            Self::UseItem(OpenDecision::StaleState, _, reason) => {
+                reason.unwrap_or(StaleUseReason::ItemTargetNotObserved)
+            }
+            Self::Use(outcome) if outcome.disposition == UseDisposition::StaleState => {
+                StaleUseReason::MechanicStaleState
+            }
+            _ => return,
+        };
+        let code = match reason {
+            StaleUseReason::ItemHandleNotLive => "ItemHandleNotLive",
+            StaleUseReason::ItemTargetNotObserved => "ItemTargetNotObserved",
+            StaleUseReason::CorpseNotLive => "CorpseNotLive",
+            StaleUseReason::ContainerViewStale => "ContainerViewStale",
+            StaleUseReason::MechanicStaleState => "MechanicStaleState",
+        };
+        super::super::log_use_dispatch_refused(command_id, code);
+    }
 }
 
 pub(super) fn refuse_use(

@@ -82,7 +82,7 @@ pub(in super::super) fn result(
                 ),
             )
         }
-        Dispatch::UseItem(decision, _) => {
+        Dispatch::UseItem(decision, _, _) => {
             let disposition = match decision {
                 OpenDecision::Open => UseDisposition::Committed,
                 OpenDecision::TooFar => UseDisposition::TooFar,

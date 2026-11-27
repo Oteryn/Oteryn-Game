@@ -348,11 +348,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
                 return Some(UseOutcome::rejected());
             };
-            let backpack = self
+            let backpack = match self
                 .root
                 .read_character_backpack(self.character, fence.character_id)
                 .await
-                .ok()??;
+            {
+                Ok(Some(backpack)) => backpack,
+                Ok(None) => return Some(outcome(UseDisposition::StaleState)),
+                Err(error) => {
+                    return Some(super::use_dispatch_refused(
+                        command.command_id,
+                        super::item_ref_admission::item_transfer_read_reason(&error),
+                    ));
+                }
+            };
             let Some(entry) = backpack
                 .entries
                 .iter()

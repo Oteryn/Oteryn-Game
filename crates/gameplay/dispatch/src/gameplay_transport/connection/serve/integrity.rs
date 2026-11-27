@@ -137,7 +137,7 @@ impl Integrity {
             }
             Dispatch::Attack(AttackIntentDisposition::TargetNotVisible)
             | Dispatch::ItemMove(ItemMoveOutcome::TooFar, _, _)
-            | Dispatch::UseItem(OpenDecision::TooFar, _) => (&mut self.counts.reach, 2),
+            | Dispatch::UseItem(OpenDecision::TooFar, _, _) => (&mut self.counts.reach, 2),
             _ => return,
         };
         *counter = counter.saturating_add(1);
@@ -271,7 +271,7 @@ mod tests {
             Vec::new(),
             None,
         ));
-        gate.observe(&Dispatch::UseItem(OpenDecision::TooFar, None));
+        gate.observe(&Dispatch::UseItem(OpenDecision::TooFar, None, None));
         gate.observe(&Dispatch::Attack(AttackIntentDisposition::TargetNotVisible));
         gate.observe(&Dispatch::Spell(SpellCastOutcome {
             disposition: SpellCastDisposition::Cast,

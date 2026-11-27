@@ -364,7 +364,7 @@ impl State {
                     self.item_delta(stream, admitted, &delta).await?;
                 }
             }
-            Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
+            Dispatch::UseItem(_, Some(delta), _) | Dispatch::ContainerView(_, Some(delta)) => {
                 self.item_delta(stream, admitted, &delta).await?;
             }
             Dispatch::Stash(reply) => {

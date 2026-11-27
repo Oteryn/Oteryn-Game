@@ -1392,10 +1392,14 @@ fn operator_event(line: &str) {
     operator_event_with_trace(line, connection::diagnostic_connection_trace());
 }
 
-fn use_dispatch_refused(command_id: u64, reason: &'static str) -> connection::UseOutcome {
+fn log_use_dispatch_refused(command_id: u64, reason: &'static str) {
     operator_event(&format!(
         "event=use_dispatch_refused reason={reason} command_id={command_id}"
     ));
+}
+
+fn use_dispatch_refused(command_id: u64, reason: &'static str) -> connection::UseOutcome {
+    log_use_dispatch_refused(command_id, reason);
     connection::UseOutcome::rejected()
 }
 

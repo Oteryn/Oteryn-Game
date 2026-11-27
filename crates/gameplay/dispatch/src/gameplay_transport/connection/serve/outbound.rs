@@ -252,7 +252,7 @@ where
                 })?;
             }
         }
-        Dispatch::UseItem(_, Some(delta))
+        Dispatch::UseItem(_, Some(delta), _)
         | Dispatch::ContainerView(_, Some(delta))
         | Dispatch::ContainerPage(_, delta) => {
             let Some((delta_sequence, frame)) =
@@ -641,7 +641,7 @@ where
                 ));
             }
         }
-        Dispatch::UseItem(_, None)
+        Dispatch::UseItem(_, None, _)
         | Dispatch::ContainerView(_, None)
         | Dispatch::Look(..)
         | Dispatch::Achievements(_)

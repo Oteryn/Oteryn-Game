@@ -20,6 +20,7 @@ pub(super) fn encode(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: &mut Dispatch,
 ) -> Result<Vec<u8>, ServeEnd> {
+    dispatch.log_stale_use(command.command_id);
     session.integrity.observe(dispatch);
     inventory_capacity::reread_after_command(session, command.command_type, dispatch);
     let (status, result_payload) = match dispatch {
@@ -177,7 +178,7 @@ pub(super) fn encode(
             },
             encode_spell_cast_result(outcome.disposition),
         ),
-        Dispatch::UseItem(decision, _) => {
+        Dispatch::UseItem(decision, _, _) => {
             let disposition = match decision {
                 OpenDecision::Open => UseDisposition::Committed,
                 OpenDecision::TooFar => UseDisposition::TooFar,

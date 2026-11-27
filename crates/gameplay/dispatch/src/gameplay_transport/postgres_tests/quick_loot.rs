@@ -93,6 +93,31 @@ fn corpse_use_retries_holder_contention_and_refuses_a_failed_read_postgres() -> 
     run_routed_case(admin, Case::CorpseUseRetry)
 }
 
+#[test]
+fn decayed_rat_corpse_use_bypasses_rune_route_and_logs_retirement_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario_thread::run("rat-corpse-use", move || {
+        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+        let mut outcome = Ok(());
+        let lines = oteryn_error_codes::capture(|| {
+            outcome = runtime.block_on(scenario(Case::DecayedRatUse)(admin));
+        });
+        outcome?;
+        assert!(lines.iter().any(|line| {
+            line.contains("event=use_dispatch_refused")
+                && (line.contains("reason=CorpseNotLive")
+                    || line.contains("reason=ItemHandleNotLive"))
+                && line.split_whitespace().any(|field| field == "command_id=2")
+        }), "{lines:?}");
+        Ok(())
+    })
+}
+
+const RAT_CORPSE: &str = "oteryn:item.tibia.i5964";
+const RAT_CORPSE_DECAY_STAGE: &str = "oteryn:item.tibia.i3994";
+
 fn run_routed_case(admin: String, case: Case) -> TestResult {
     scenario_thread::run("quick-loot", move || {
         tokio::runtime::Builder::new_current_thread()
@@ -112,6 +137,17 @@ enum Case {
     PouchFulfilment,
     PouchLogout,
     CorpseUseRetry,
+    DecayedRatUse,
+}
+
+impl Case {
+    fn corpse_definition(self) -> &'static str {
+        if self == Self::DecayedRatUse {
+            RAT_CORPSE
+        } else {
+            "oteryn:item.tibia.i5973"
+        }
+    }
 }
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
@@ -262,7 +298,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 &harness.node,
                 ItemMintRequest {
                     cause: cause(CORPSE_MATERIALIZATION_PURPOSE_KEY, 0),
-                    item: typed("oteryn:item.tibia.i5973"),
+                    item: typed(case.corpse_definition()),
                     quantity: 1,
                     ground: GroundPlacement {
                         spatial_position:
@@ -346,6 +382,15 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98])
                 .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(98));
+        if case == Case::DecayedRatUse {
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[4, 6, 15, 22, 98],
+                )
+                .ok_or("Rat corpse capabilities")?;
+            assert!(admitted.continuity.selected_capabilities.contains(22));
+        }
         assert!(
             crate::gameplay_transport::equipment_move::native_for_move(
                 &*deps.runtime.lock().await,
@@ -402,7 +447,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 .map_err(|_| "far cell")?;
         if !matches!(case, Case::Bulk | Case::GoldPouch | Case::PouchLogout) {
             match case {
-                Case::SelectedItem | Case::StaleHandle | Case::CorpseUseRetry => {
+                Case::SelectedItem | Case::StaleHandle | Case::CorpseUseRetry | Case::DecayedRatUse => {
                     selected_item_cases(
                         &owner,
                         admitted,
@@ -830,7 +875,7 @@ async fn selected_item_cases(
                 creature,
                 corpse,
                 "Item",
-                "oteryn:item.tibia.i5973",
+                case.corpse_definition(),
                 "definition-r1",
             )
             .map_err(debug)?;
@@ -849,6 +894,24 @@ async fn selected_item_cases(
             use oteryn_protocol_oteryn::world_object::{
                 COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_item_intent,
             };
+            if case == Case::DecayedRatUse {
+                assert_eq!(command_id, 1);
+                // Represent a completed decay transformation without waiting for a timer.
+                let mut tx = pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx).await?;
+                assert_eq!(
+                    sqlx::query("UPDATE game_item_instances SET definition_production_key=$2
+                        WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(corpse.as_slice()).bind(RAT_CORPSE_DECAY_STAGE)
+                        .execute(&mut *tx).await?.rows_affected(),
+                    1,
+                );
+                tx.commit().await?;
+                owner.runtime.lock().await
+                    .refresh_corpse_item(corpse, "Item", RAT_CORPSE_DECAY_STAGE, "definition-r1")
+                    .map_err(debug)?;
+            }
             send(
                 &mut client,
                 command_id,
@@ -867,6 +930,21 @@ async fn selected_item_cases(
             let [keep, take] = opened.entries.as_slice() else {
                 return Err("open corpse should show both entries".into());
             };
+            if case == Case::DecayedRatUse {
+                owner.runtime.lock().await.retain_live_corpse_items(&[]).map_err(debug)?;
+                command_id += 1;
+                send(
+                    &mut client,
+                    command_id,
+                    COMMAND_TYPE_USE_INTENT,
+                    &encode_use_item_intent(corpse_handle),
+                )
+                .await?;
+                let (status, payload) = command_reply(&mut client, command_id).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(decode_use_result(&payload).map_err(debug)?, UseDisposition::StaleState);
+                return Ok(());
+            }
             if case == Case::CorpseUseRetry {
                 assert_eq!(opened.entries.len(), items.len());
 
@@ -958,11 +1036,17 @@ async fn selected_item_cases(
         })
         .await??;
         (end, Ok(()))
+    } else if case == Case::DecayedRatUse {
+        tokio::time::timeout(Duration::from_secs(30), join_two(serve, drive)).await?
     } else {
         join_two(serve, drive).await
     };
     result?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    if case == Case::DecayedRatUse {
+        assert_eq!(corpse_items(pool, corpse).await?, items);
+        return Ok(());
+    }
     if case == Case::CorpseUseRetry {
         assert_eq!(corpse_items(pool, corpse).await?, items);
         eprintln!("POSTGRES_EXECUTED corpse_use_retries_holder_contention_and_refuses_a_failed_read_postgres");

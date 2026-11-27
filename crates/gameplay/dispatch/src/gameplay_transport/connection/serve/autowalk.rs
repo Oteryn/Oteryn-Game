@@ -18,7 +18,7 @@ pub(super) fn too_far(dispatch: &Dispatch) -> bool {
         Dispatch::Use(UseOutcome {
             disposition: UseDisposition::TooFar,
             ..
-        }) | Dispatch::UseItem(OpenDecision::TooFar, _)
+        }) | Dispatch::UseItem(OpenDecision::TooFar, _, _)
             | Dispatch::ItemMove(ItemMoveOutcome::TooFar, _, _)
             | Dispatch::ContainerView(
                 oteryn_protocol_oteryn::container_tree::ContainerViewOutcome::TooFar,

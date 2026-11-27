@@ -48,7 +48,7 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-08000-08499.json",
-      "sha256": "f7903994d5f2d7cbed5f4ba05248deef57d74f290c42b45a576812e7df818812"
+      "sha256": "d5e996d28b9522baba3811f3137e9d46b0fa60b7d9aa04fc59d0f06ed49b3f06"
     },
     {
       "path": "content/items/definitions/items-19000-19499.json",

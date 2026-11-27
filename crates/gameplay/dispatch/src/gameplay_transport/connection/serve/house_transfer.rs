@@ -470,6 +470,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         .await
                         .ok_or(ServeEnd::Disconnected)?
                 };
+                dispatch.log_stale_use(command.command_id);
                 integrity.observe(&dispatch);
                 let (status, payload) = house_hireling::result(selected, &dispatch)?;
                 effects = Some(dispatch);
@@ -679,6 +680,7 @@ impl PodiumWalk {
         commands: &mut crate::gameplay_transport::session_ingress::SessionCommandStream,
         dispatch: Dispatch,
     ) -> Result<(), ServeEnd> {
+        dispatch.log_stale_use(self.command_id);
         let (status, payload) =
             house_hireling::result(admitted.continuity.selected_capabilities, &dispatch)?;
         let sequence = admitted
