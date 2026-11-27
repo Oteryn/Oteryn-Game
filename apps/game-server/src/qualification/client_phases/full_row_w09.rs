@@ -165,6 +165,7 @@ async fn assert_cast_cooldowns(
     spell: NonZeroU32,
     cast_started: tokio::time::Instant,
     spell_ms: u64,
+    stance: bool,
 ) -> TestResult<[ActorCooldown; 2]> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
@@ -174,7 +175,7 @@ async fn assert_cast_cooldowns(
                 // Global: https://www.tibiawiki.com.br/wiki/Conjure_Wand_of_Darkness
                 // The frame samples server time after commit. Both cooldowns share the cast time.
                 let entries = frame.value.entries.as_slice();
-                let [spell_entry, group_entry] = entries else {
+                let [spell_entry, group_entry, additional @ ..] = entries else {
                     return Err(format!(
                         "W09 cooldown entry count diverged sequence={} frame={:?}",
                         frame.server_sequence, frame.value
@@ -184,8 +185,19 @@ async fn assert_cast_cooldowns(
                 let elapsed_ms =
                     u64::try_from(cast_started.elapsed().as_millis())?.saturating_add(1);
                 let group_remaining = group_entry.expires_at_ms.checked_sub(now);
+                let expected_stance = ActorCooldown {
+                    kind: ActorCooldownKind::Group,
+                    id: 9,
+                    expires_at_ms: spell_entry.expires_at_ms,
+                };
+                let expected_additional = if stance {
+                    std::slice::from_ref(&expected_stance)
+                } else {
+                    &[]
+                };
                 if (spell_entry.kind, spell_entry.id) != (ActorCooldownKind::Spell, spell.get())
                     || (group_entry.kind, group_entry.id) != (ActorCooldownKind::Group, 3)
+                    || additional != expected_additional
                     || spell_entry
                         .expires_at_ms
                         .checked_sub(group_entry.expires_at_ms)
@@ -413,21 +425,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let first_cast = tokio::time::Instant::now();
     cast_paid(&mut client, spell, 250).await?;
     *expected.entry(wand).or_default() += 1;
-    let cooldowns = assert_cast_cooldowns(&mut client, spell, first_cast, 1_800_000).await?;
+    let cooldowns = assert_cast_cooldowns(&mut client, spell, first_cast, 1_800_000, false).await?;
     wait_inventory(&mut client, &expected).await?;
     let mut client = reconnect_cooldowns(client, &scope, cooldowns).await?;
     if quantities(&client)? != expected {
         return Err("W09 reconnect changed the first conjure inventory".into());
     }
     assert_cooling_down(&mut client, spell, &expected).await?;
-    // Global: https://www.tibiawiki.com.br/wiki/Magic_Shield
-    // Arm a second spell and a fresh Support deadline immediately before using the Aid.
-    let shield = crate::qualification::client_spell_journey::spell_index(book, "utamo vita")?;
+    // Global: https://www.tibiawiki.com.br/wiki/Master_of_Thunder.
+    // Its 30-second stance group survives the live command latency.
+    let stance = crate::qualification::client_spell_journey::spell_index(book, "uteta vis")?;
     client.take_events();
-    let shield_cast = tokio::time::Instant::now();
-    cast_paid(&mut client, shield, 50).await?;
-    let shield_cooldowns = assert_cast_cooldowns(&mut client, shield, shield_cast, 14_000).await?;
-    let mut reset_prestate = [cooldowns[0], shield_cooldowns[0], shield_cooldowns[1]];
+    let stance_cast = tokio::time::Instant::now();
+    cast_paid(&mut client, stance, 400).await?;
+    let [stance_spell, support] =
+        assert_cast_cooldowns(&mut client, stance, stance_cast, 30_000, true).await?;
+    let stance_group = ActorCooldown {
+        kind: ActorCooldownKind::Group,
+        id: 9,
+        expires_at_ms: stance_spell.expires_at_ms,
+    };
+    let mut reset_prestate = [cooldowns[0], stance_spell, support, stance_group];
     reset_prestate.sort_by_key(|entry| (entry.kind, entry.id));
     let used_at = tokio::time::Instant::now();
     use_item(&mut client, aid, committed).await?;
@@ -441,12 +459,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 SessionEvent::ActorCooldowns(frame) => {
                     let expected_clear = reset_prestate
                         .iter()
+                        .filter(|entry| entry.expires_at_ms > frame.value.server_now_ms)
                         .map(|entry| ActorCooldown {
                             expires_at_ms: 0,
                             ..*entry
                         })
                         .collect::<Vec<_>>();
-                    if reset_prestate
+                    if [cooldowns[0], stance_spell, stance_group]
                         .iter()
                         .any(|entry| entry.expires_at_ms <= frame.value.server_now_ms)
                         || frame.value.entries != expected_clear
@@ -479,7 +498,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let second_cast = tokio::time::Instant::now();
     cast_paid(&mut client, spell, 250).await?;
     let durable_cooldowns =
-        assert_cast_cooldowns(&mut client, spell, second_cast, 1_800_000).await?;
+        assert_cast_cooldowns(&mut client, spell, second_cast, 1_800_000, false).await?;
     if first_cast.elapsed() >= natural_cooldown {
         return Err(
             "W09 Conjure Wand of Darkness recast did not precede natural cooldown expiry".into(),
