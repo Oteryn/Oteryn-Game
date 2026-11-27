@@ -1070,10 +1070,32 @@ fn row(
         .is_some_and(|details| details.system_eligibility.reward_boss);
     let source_plain = verified_source_corpses.contains(&corpse.key)
         && source_plain_corpse_pair(creature, &corpse, private_reward);
+    // These private bosses use the same 48-slot physical bodies as ordinary
+    // quest kills. Eligibility belongs to the exact creature and Item revision.
+    let shared_private_body = private_reward
+        && corpse.revision == "definition-r1"
+        && matches!(
+            (creature, corpse.key.as_str()),
+            (
+                "oteryn:creature.ancient_spawn_of_morgathla",
+                "oteryn:item.tibia.i21004"
+            ) | ("oteryn:creature.bullwark", "oteryn:item.tibia.i20996")
+                | (
+                    "oteryn:creature.grandfather_tridian",
+                    "oteryn:item.tibia.i18110"
+                )
+                | ("oteryn:creature.lokathmor", "oteryn:item.tibia.i7893")
+                | ("oteryn:creature.the_bloodweb", "oteryn:item.tibia.i7344")
+        );
     if !source_plain {
         items
             .get(&corpse)
-            .filter(|facts| facts.materializable && !(private_reward && facts.ordinary_corpse_only))
+            .filter(|facts| {
+                facts.materializable
+                    && (!private_reward
+                        || !facts.ordinary_corpse_only
+                        || (shared_private_body && facts.container_capacity == Some(48)))
+            })
             .and_then(|facts| facts.container_capacity)
             .filter(|capacity| {
                 // Private reward custody has its own loot budget; only the
@@ -1652,7 +1674,14 @@ mod protected_loot_tests {
         }
         let source: Expected =
             serde_json::from_str(super::super::native_gameplay::FOURTH_QUARTER_CORPSE_SOURCE)?;
-        assert_eq!(source.admitted.len(), 298);
+        assert_eq!(source.admitted.len(), 297);
+        assert!(!source.admitted.contains_key("oteryn:creature.the_snapper"));
+        assert!(table.row("oteryn:creature.the_snapper").is_err());
+        assert!(
+            table
+                .reward_boss_corpse("oteryn:creature.the_snapper")
+                .is_none()
+        );
         let mut protected_loot_refusals = Vec::new();
         for (creature, item) in source.admitted {
             let expected = format!("oteryn:item.tibia.i{item}");
@@ -2501,6 +2530,37 @@ mod ordinary_corpse_slice2_tests {
 #[cfg(test)]
 mod crystal_corpse_tests {
     #[test]
+    fn private_bosses_sharing_ordinary_bodies_have_empty_physical_corpses()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = super::super::production::test_source(1)?.world_id;
+        let (controller, _) =
+            super::super::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        for (boss, item) in [
+            ("ancient_spawn_of_morgathla", 21004),
+            ("bullwark", 20996),
+            ("grandfather_tridian", 18110),
+            ("lokathmor", 7893),
+            ("the_bloodweb", 7344),
+        ] {
+            let creature = format!("oteryn:creature.{boss}");
+            let row = native
+                .reward_table()
+                .reward_boss_corpse(&creature)
+                .ok_or(creature)?;
+            assert_eq!(
+                row.corpse_item.as_ref().ok_or("body")?.production_key,
+                format!("oteryn:item.tibia.i{item}")
+            );
+            assert!(row.loot_table.entries.is_empty());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn crystal_corpse_admissions_reach_the_native_reward_loader()
     -> Result<(), Box<dyn std::error::Error>> {
         let world = super::super::production::test_source(1)?.world_id;
@@ -2513,7 +2573,14 @@ mod crystal_corpse_tests {
         let expected: Vec<(String, u32)> = serde_json::from_str(include_str!(
             "../../../../../imports/crystalserver/ordinary-corpses/admissions.json"
         ))?;
-        assert_eq!(expected.len(), 299);
+        assert_eq!(expected.len(), 298);
+        assert!(!expected.iter().any(|(name, _)| name == "crocodile"));
+        assert!(
+            native
+                .reward_table()
+                .row("oteryn:creature.crocodile")
+                .is_err()
+        );
         let mut failures = Vec::new();
         for (name, item) in expected {
             let creature = format!("oteryn:creature.{name}");
