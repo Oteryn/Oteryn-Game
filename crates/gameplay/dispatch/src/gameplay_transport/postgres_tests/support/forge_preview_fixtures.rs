@@ -289,3 +289,61 @@ pub(super) async fn exercise(
     );
     Ok(())
 }
+
+pub(super) async fn browse_busy_holder(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::AdmissionRetryBudget;
+    use std::time::Duration;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let driving = async move {
+        loop {
+            let frame = super::item_look_fixtures::read_frame(&mut client).await?;
+            if oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.message_type()
+                == oteryn_protocol_oteryn::MessageType::SnapshotCommit
+            {
+                break;
+            }
+        }
+        let mut id = admitted.continuity.next_command_id;
+        let generation = admitted.continuity.connection_generation;
+        let nonce = 57;
+        let selection = wire::Selection::Browse { after: 0 };
+        let payload = wire::Request { nonce, selection }.encode().ok_or("Browse")?;
+        let held = {
+            let _deadline = h.root.boot_pass_deadline(
+                AdmissionRetryBudget::holder_wait_window() + crate::durability::DB_PASS_DEADLINE,
+            );
+            h.root.issue_ready_semantic_pass().await?
+        };
+        let started = tokio::time::Instant::now();
+        let (status, reply) = send_command(
+            &mut client, generation, id, wire::COMMAND_TYPE_FORGE_PREVIEW, &payload,
+        ).await?;
+        assert!(started.elapsed() >= AdmissionRetryBudget::holder_wait_window());
+        assert_eq!(status, CommandStatus::Rejected);
+        assert_eq!(wire::Reply::decode(&reply), Some(wire::Reply { nonce, payload: wire::Payload::Refused }));
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let (status, replay) = send_command(
+            &mut client, generation, id, wire::COMMAND_TYPE_FORGE_PREVIEW, &payload,
+        ).await?;
+        assert_eq!(status, CommandStatus::DuplicateReplay);
+        assert_eq!(replay, reply);
+        id += 1;
+        let next = read(&mut client, generation, &mut id, nonce + 1, selection).await?;
+        assert!(matches!(next.payload, wire::Payload::Page(_)));
+        client.shutdown().await?;
+        TestResult::Ok(())
+    };
+    let (end, result) = tokio::time::timeout(Duration::from_secs(15), support::together(serving, driving)).await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    Ok(())
+}

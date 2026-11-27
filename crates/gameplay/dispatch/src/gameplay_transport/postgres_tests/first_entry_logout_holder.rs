@@ -171,7 +171,14 @@ async fn scenario(admin: String, point: ContentionPoint, exhaust: bool) -> TestR
         let started = tokio::time::Instant::now();
         let mut pass = Some(match point {
             ContentionPoint::ActivityInput => {
-                let pass = h.root.issue_ready_semantic_pass().await?;
+                let pass = if exhaust {
+                    let _fixture_deadline = h.root.boot_pass_deadline(
+                        AdmissionRetryBudget::holder_wait_window() + crate::durability::DB_PASS_DEADLINE,
+                    );
+                    h.root.issue_ready_semantic_pass().await?
+                } else {
+                    h.root.issue_ready_semantic_pass().await?
+                };
                 send_logout(&mut client, 1).await?;
                 busy.notified().await;
                 pass
@@ -195,7 +202,7 @@ async fn scenario(admin: String, point: ContentionPoint, exhaust: bool) -> TestR
                 };
                 release.resume_conditions.notify_one();
                 release.retry_observed.notified().await;
-                assert_eq!(release.first_retry.get(), Some(&ReleaseRetryStage::Conditions));
+                assert_eq!(release.first_retry.get(), Some(&ReleaseRetryStage::ConditionsHolder));
                 assert_eq!(owner.states.fence_holders.counts().len(), 1);
                 pass
             }
@@ -208,13 +215,7 @@ async fn scenario(admin: String, point: ContentionPoint, exhaust: bool) -> TestR
                     release.retry_exhausted.notified(),
                 )
                 .await?;
-                assert_eq!(owner.states.fence_holders.counts().len(), 1);
-                // Let the settlement read prove that the session is still live and lift
-                // its fence. The release budget has already expired.
-                pass.take()
-                    .ok_or("checked-out release holder")?
-                    .run(|_, _| Box::pin(async { Ok(()) }))
-                    .await?;
+
             }
             let (status, result) = tokio::time::timeout(
                 AdmissionRetryBudget::holder_wait_window() + Duration::from_secs(1),
@@ -223,7 +224,9 @@ async fn scenario(admin: String, point: ContentionPoint, exhaust: bool) -> TestR
             .await??;
             assert!(started.elapsed() >= AdmissionRetryBudget::holder_wait_window());
             assert_eq!((status, result), (CommandStatus::Rejected, LogoutResult::Busy));
-            drop(pass);
+            if let Some(pass) = pass.take() {
+                pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            }
             h.root.await_ready().await?;
             assert_eq!(
                 store.current_session(admitted.game_session_id).await?.session_state(),

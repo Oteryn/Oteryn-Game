@@ -21,6 +21,34 @@ impl FreshAdmissionStore {
             .await
     }
 
+    /// Recheck an already committed admission during first entry. The receipt,
+    /// live session and transport reservation come from a single MVCC snapshot.
+    /// Ambiguous COMMIT reconciliation still uses the writer exclusion in `reconcile`.
+    pub async fn observe_committed_admission(
+        &self,
+        original: &FreshAdmissionOperationV1,
+    ) -> Result<FreshReconciliation> {
+        let store = self.clone();
+        let original = original.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend.run_pass(issued, move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = match deadline {
+                    Some(deadline) => super::db::begin_observation_transaction(holder, deadline).await?,
+                    None => sqlx::Connection::begin_with(
+                        &mut **holder,
+                        "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY",
+                    ).await?,
+                };
+                super::db::bound_periodic_lock_wait(&mut tx).await?;
+                let result = store.reconcile_locked(&mut tx, &original).await?;
+                super::admission_journal::commit_pass_read(tx, deadline).await?;
+                Ok(result)
+            })
+        }).await
+    }
+
     async fn reconcile_locked(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,

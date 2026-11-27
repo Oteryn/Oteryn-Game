@@ -678,7 +678,7 @@ fn logout_after_dagger_grant_retries_conditions_in_place_and_releases() -> TestR
 }
 
 #[test]
-fn logout_fails_closed_and_logs_phase_when_peer_durability_outlasts_retry_window() -> TestResult {
+fn logout_refuses_and_keeps_session_live_when_conditions_holder_exhausts() -> TestResult {
     logout_during_peer_durability(true)
 }
 
@@ -768,7 +768,7 @@ fn logout_during_peer_durability(hold_past_retry_window: bool) -> TestResult {
             probe.retry_observed.notified().await;
             assert_eq!(
                 probe.first_retry.get(),
-                Some(&ReleaseRetryStage::Conditions)
+                Some(&ReleaseRetryStage::ConditionsHolder)
             );
             if hold_past_retry_window {
                 probe.logout_finished.notified().await;
@@ -818,7 +818,7 @@ fn logout_during_peer_durability(hold_past_retry_window: bool) -> TestResult {
                 }),
                 "exhaustion must name the actual release phase: {logs:?}"
             );
-            assert_eq!(reply, LogoutReply::Unknown);
+            assert_eq!(reply, LogoutReply::Result(LogoutResult::Busy));
             assert!(probe.retry_count.load(std::sync::atomic::Ordering::Relaxed) > 1);
             assert_eq!(
                 session_state(&harness, &dependencies).await?,
