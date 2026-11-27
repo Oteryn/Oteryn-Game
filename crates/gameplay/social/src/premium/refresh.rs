@@ -167,8 +167,8 @@ impl PremiumRefresher {
     }
 
     /// Join the account's existing pull without issuing another Platform request.
-    /// A temporary fence checkout failure leaves a cold reader waiting for the
-    /// scheduled retry within the HTTP and durable recovery bounds.
+    /// The pull retries a busy fence checkout with the validated response still
+    /// in hand. Its final result ends this wait, including an exhausted checkout.
     pub async fn wait_for_snapshot(&self, account_id: [u8; 16]) -> Result<(), SnapshotWaitFailure> {
         if self.inner.client.is_none() {
             return Err(SnapshotWaitFailure::NotConfigured);
@@ -180,9 +180,7 @@ impl PremiumRefresher {
             .ok_or(SnapshotWaitFailure::ScheduleMissing)?;
         let outcome = tokio::time::timeout(
             PULL_TIMEOUT + crate::durability::ROOT_RECOVERY_WINDOW,
-            snapshot.wait_for(|outcome| {
-                outcome.is_some() && *outcome != Some(Err(SnapshotWaitFailure::FenceUnavailable))
-            }),
+            snapshot.wait_for(Option::is_some),
         )
         .await;
         match outcome {

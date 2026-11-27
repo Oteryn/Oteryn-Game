@@ -322,7 +322,6 @@ use connection::{
     AccountAchievementsReply, AdmissionRefusal, AdmittedSession, ConnectionIdentifiers,
     ControlLossResult, ControllerBinding, FirstEntryOutcome, FreshAdmissionAttempt,
     FreshAdmissionAuthority, GraceExpiryResult, SessionContinuity, StepOutcome, UseOutcome,
-    admit_frame, serve_admitted,
 };
 pub use fresh_evidence::{EvidenceUnavailable, FreshEvidenceSource};
 use kill_reward::{KillRelease, KillReleaseMark, ReleaseEnd};

@@ -28,7 +28,7 @@
 //! only from that view (fence before authorize, §6.3); this module holds no Premium policy.
 
 use crate::durability::db::commit_semantic_read;
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{IssuedSemanticPass, begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -193,6 +193,39 @@ pub enum PremiumFenceOutcome {
 }
 
 impl DurabilityRoot {
+    /// Keep the validated response while the current holder is busy. Once a
+    /// pass starts, its outcome is final for this pull (including unknown COMMIT).
+    async fn checkout_premium_snapshot(&self) -> Result<IssuedSemanticPass, DurabilityError> {
+        Self::with_holder_owner(async {
+            let started = tokio::time::Instant::now();
+            let deadline = started + super::ROOT_RECOVERY_WINDOW;
+            let mut attempt = 0_u32;
+            let mut waiter = None;
+            loop {
+                attempt = attempt.saturating_add(1);
+                let result = self.try_issue_semantic_pass_by(deadline);
+                self.premium_checkout_attempt(attempt, started.elapsed(), result.is_ok());
+                match result {
+                    Err(DurabilityError::RootUnavailable) => {
+                        waiter.get_or_insert_with(|| self.holder_waiter());
+                        let now = tokio::time::Instant::now();
+                        let next = (now + std::time::Duration::from_millis(50)).min(deadline);
+                        if !self.wait_holder_turn(now, next).await {
+                            tokio::time::timeout_at(deadline, self.await_ready())
+                                .await
+                                .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+                        }
+                    }
+                    result => {
+                        drop(waiter);
+                        return result;
+                    }
+                }
+            }
+        })
+        .await
+    }
+
     /// Fence one validated snapshot (module docs). Nothing is written unless the transaction
     /// commits; an error leaves the fence as it was or with an unknown commit outcome, and the
     /// caller must not authorize benefit from the evidence.
@@ -216,7 +249,7 @@ impl DurabilityRoot {
     /// Premium keeps its own authority sequence; Profile-B contributes only a durable deny floor.
     pub async fn accept_premium_with_profile_b_hint(&self,evidence:&PremiumEvidence)->Result<(PremiumFenceOutcome,u64),DurabilityError>{
         let evidence=evidence.clone();
-        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
+        self.checkout_premium_snapshot().await?.run(move|holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             let outcome=accept(&mut tx,&evidence).await?;
             let hint=profile_b_hint(&mut tx,evidence.account_id).await?;
@@ -243,7 +276,7 @@ impl DurabilityRoot {
         failure: &PremiumSemanticFailure,
     ) -> Result<(), DurabilityError> {
         let failure = failure.clone();
-        self.try_issue_semantic_pass()?
+        self.checkout_premium_snapshot().await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;

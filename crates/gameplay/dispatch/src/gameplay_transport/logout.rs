@@ -296,9 +296,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             in_protection_zone,
         )
     }
-    /// One attempt of the release on the `Abandoned` path, with no retry: the client retries a
-    /// `BUSY`. A failure before the commit reads the durable row and settles the fence
-    /// (`settle_unended`) before `BUSY`, so no character write stays fenced.
+    /// Keep this logout's fence through bounded retries of pre-commit prerequisites.
+    /// Settle the durable row and fence before returning `BUSY`.
     async fn release_logout(
         &self,
         admitted: AdmittedSession,
@@ -331,16 +330,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
         let mut kills = None;
-        let step = self
-            .release_attempt(
-                &admitted,
-                &store,
-                release,
-                &mut hold,
-                &mut settled_death,
-                &mut kills,
-            )
-            .await;
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let step = loop {
+            let step = self
+                .release_attempt(
+                    &admitted,
+                    &store,
+                    release,
+                    &mut hold,
+                    &mut settled_death,
+                    &mut kills,
+                )
+                .await;
+            if !matches!(step, ReleaseAttempt::Retry)
+                || !budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+            {
+                break step;
+            }
+        };
         Ok(match step {
             ReleaseAttempt::Done(GraceExpiryResult::Released) => {
                 LogoutReply::Result(LogoutResult::Accepted)

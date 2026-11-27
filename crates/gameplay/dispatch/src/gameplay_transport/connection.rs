@@ -36,7 +36,7 @@ use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
 #[cfg(test)]
 pub(in crate::gameplay_transport) use serve::regression_routed_step;
-use serve::serve_admitted_actor;
+use serve::serve_admitted_actor_for_join;
 
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
@@ -793,12 +793,45 @@ pub use test_support::serve_connection;
     clippy::result_large_err,
     reason = "one terminal end per connection; boxing would only add an allocation"
 )]
+#[cfg(test)]
 pub async fn admit_frame<S, A, I>(
     stream: &mut S,
     frame: &[u8],
     authority: &A,
     identifiers: &I,
 ) -> Result<AdmittedSession, ConnectionEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+{
+    admit_frame_inner(stream, frame, authority, identifiers, false)
+        .await
+        .map(|(admitted, _)| admitted)
+}
+
+/// The live listener can delay fresh Channel acceptance until it has built the join snapshot.
+pub(super) async fn admit_frame_for_join<S, A, I>(
+    stream: &mut S,
+    frame: &[u8],
+    authority: &A,
+    identifiers: &I,
+) -> Result<(AdmittedSession, Option<Vec<u8>>), ConnectionEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+{
+    admit_frame_inner(stream, frame, authority, identifiers, true).await
+}
+
+async fn admit_frame_inner<S, A, I>(
+    stream: &mut S,
+    frame: &[u8],
+    authority: &A,
+    identifiers: &I,
+    defer_fresh_acceptance: bool,
+) -> Result<(AdmittedSession, Option<Vec<u8>>), ConnectionEnd>
 where
     S: AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
@@ -893,7 +926,7 @@ where
                     // fresh House restoration. It is server provenance, not a
                     // client command: the House scope is published by the
                     // existing domain-51 join/resync snapshot instead.
-                    return Ok(resumed);
+                    return Ok((resumed, None));
                 }
                 let Some(Ok(ack)) = continuity.server_sequence.checked_add(1).map(|sequence| {
                     encode_command_result(
@@ -911,7 +944,7 @@ where
                     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
                 let mut resumed = resumed;
                 resumed.continuity.server_sequence += 1;
-                return Ok(resumed);
+                return Ok((resumed, None));
             }
             if activity_scope.is_none()
                 && (resumed.game_session_id != resume.game_session_id
@@ -924,7 +957,7 @@ where
             {
                 return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
             }
-            return Ok(resumed);
+            return Ok((resumed, None));
         }
         _ => Err(FoundationProtocolError::MalformedEnvelope),
     };
@@ -1025,10 +1058,24 @@ where
     } else {
         accepted
     };
+    // Resume and House handoffs have their own acceptance/sidecar ordering. The
+    // pending spell-repair protocol also uses liveness before it can prepare a join.
+    if defer_fresh_acceptance
+        && admitted.runtime_actor.is_some()
+        && admitted.first_entry != FirstEntryOutcome::AwaitingSpellRepair
+        && admitted.item_fence.is_none_or(|fence| {
+            matches!(
+                fence.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Channel { .. }
+            )
+        })
+    {
+        return Ok((admitted, Some(accepted)));
+    }
     write_frame(stream, &accepted)
         .await
         .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
-    Ok(admitted)
+    Ok((admitted, None))
 }
 
 /// The existing fresh wire selection, shared with native saved-House admission.
@@ -1259,6 +1306,7 @@ fn world_weather_delta(
     Some((delta_sequence, frame, new_revision))
 }
 
+#[cfg(test)]
 pub async fn serve_admitted<S, A>(
     stream: &mut S,
     admitted: AdmittedSession,
@@ -1269,9 +1317,26 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    serve_admitted_for_join(stream, admitted, authority, policy, &mut None).await
+}
+
+pub(super) async fn serve_admitted_for_join<S, A>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+    acceptance: &mut Option<Vec<u8>>,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     #[cfg(test)]
     super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
-    let end = Box::pin(serve_admitted_actor(stream, admitted, authority, policy)).await;
+    let end = Box::pin(serve_admitted_actor_for_join(
+        stream, admitted, authority, policy, acceptance,
+    ))
+    .await;
     let ended = match end {
         ConnectionEnd::AdmittedThenClosed(current, _)
         | ConnectionEnd::AdmittedThenDisconnected(current)

@@ -138,6 +138,14 @@
       "note": "A semantic pass held the single holder at least 1 s or ran past its deadline (LOGDBG-C; the DURABILITY_PASS_SLOW text line stays meanwhile); trace when the pass had a connection trace."
     },
     {
+      "event": "premium_checkout_attempt",
+      "level": "debug",
+      "span": false,
+      "fields": ["attempt", "checkout_owner", "waited_ms", "ready"],
+      "codes": [],
+      "note": "Each checkout of the Premium snapshot fence, with the current holder site and elapsed wait. No account identifiers or response contents."
+    },
+    {
       "event": "quest_experience_refused",
       "level": "warn",
       "span": false,

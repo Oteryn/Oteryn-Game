@@ -45,11 +45,71 @@ fn quick_loot_pouch_relog_releases_on_one_logout_postgres() -> TestResult {
     run(admin, Case::PouchLogout)
 }
 
+#[test]
+fn premium_snapshot_reuses_validated_response_after_busy_holder_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(move |_| async move {
+        let h = Harness::create_with_admission_seed(admin, "premium_checkout", false, false).await?;
+        let result: TestResult = async {
+            use crate::premium::{IngestOutcome, PremiumConsumer, client::fresh_nonce};
+            let consumer = PremiumConsumer::default();
+            let nonce = fresh_nonce().ok_or("test nonce")?;
+            let request = premium_test_producer::ProducerRequest {
+                account_id: crate::gameplay_transport::canonical_uuid(&id(40)),
+                nonce: nonce.clone(),
+            };
+            let response = premium_test_producer::snapshot(&request, 7, &[]);
+            let blocked = h.root.probe_premium_checkout_for_test();
+            let holder = h.root.try_issue_semantic_pass()?;
+            let ingest = async {
+                let outcome = consumer.ingest(&h.root, id(40), &nonce, &response).await;
+                assert_eq!(outcome, IngestOutcome::Accepted);
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            let release = async {
+                blocked.notified().await;
+                holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            tokio::time::timeout(
+                std::time::Duration::from_secs(8),
+                async { tokio::try_join!(ingest, release) },
+            ).await??;
+            let fence = h.root.load_premium_fence(id(40)).await?;
+            assert_eq!(fence.fence.ok_or("durable Premium fence")?.latest.authority_revision, 7);
+            Ok(())
+        }.await;
+        let cleanup = h.cleanup().await;
+        result?;
+        cleanup
+    })
+}
+
+#[test]
+fn quick_loot_relog_snapshot_waits_for_premium_checkout() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ContendedSnapshot)
+}
+
+#[test]
+fn pouch_logout_returns_holder_to_next_character_read_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ReleaseReread)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     HolderContention,
     PlatformSnapshot,
+    ContendedSnapshot,
     PouchLogout,
+    ReleaseReread,
 }
 
 fn run(admin: String, case: Case) -> TestResult {
@@ -71,7 +131,8 @@ async fn scenario(admin: String, case: Case) -> TestResult {
 }
 
 async fn exercise(h: &Harness, case: Case) -> TestResult {
-    let live_premium = case == Case::PlatformSnapshot;
+    let live_premium = matches!(case, Case::PlatformSnapshot | Case::ContendedSnapshot);
+    let pouch_logout = matches!(case, Case::PouchLogout | Case::ReleaseReread);
     let request = prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -147,7 +208,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             .bind(id(41).as_slice()).bind(pouch.as_slice()).bind(id(42).as_slice())
             .execute(&mut *tx).await?;
     tx.commit().await?;
-    if case == Case::PouchLogout {
+    if pouch_logout {
         let request = wire::QuickLootRequest {
             action: wire::QuickLootAction::AssignLoot,
             corpse: None,
@@ -287,8 +348,14 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98, 607])
             .ok_or("Quick Loot destination capability")?;
 
-    if case == Case::PouchLogout {
-        return logout_once(&owner, h, admitted).await;
+    if pouch_logout {
+        logout_once(&owner, h, admitted).await?;
+        if case == Case::ReleaseReread {
+            let next_character = h.root.read_current_character(&authority, character).await?;
+            assert_eq!(next_character.character_id, character);
+            assert!(h.root.observe_current_gameplay_fence(&authority, session, true).await?.is_none());
+        }
+        return Ok(());
     }
 
     let command = wire::QuickLootRequest {
@@ -305,7 +372,8 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     let command_type = command.action.command_type();
     if let Some(live) = live {
         return live
-            .assign(&owner, &mut admitted, command_type, payload)
+            .assign(&owner, &mut admitted, command_type, payload,
+                    (case == Case::ContendedSnapshot).then_some(&h.root))
             .await;
     }
     let reply = {
@@ -465,6 +533,7 @@ impl LivePremium {
         admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
         command_type: u32,
         payload: Vec<u8>,
+        contention: Option<&crate::durability::DurabilityRoot>,
     ) -> TestResult {
         use std::time::Duration;
         tokio::time::timeout(Duration::from_secs(5), self.requested.notified()).await?;
@@ -475,6 +544,17 @@ impl LivePremium {
         eprintln!(
             "POSTGRES_STARTED quick_loot_food_to_gold_pouch_waits_for_relog_snapshot_postgres"
         );
+        if let Some(root) = contention {
+            let blocked = root.probe_premium_checkout_for_test();
+            let holder = root.try_issue_semantic_pass()?;
+            self.respond.notify_one();
+            tokio::time::timeout(Duration::from_secs(4), blocked.notified()).await?;
+            holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            let (replies, _) = wire.await?;
+            assert_eq!(replies, [(CommandStatus::Accepted, Vec::new())]);
+            assert_eq!(self._producer.requests().len(), 2, "the contended snapshot must not be fetched again");
+            return Ok(());
+        }
         // A bounded negative assertion: hold the actual response while the old
         // join can complete and the client can attempt its first assignment.
         if let Ok(early) = tokio::time::timeout(Duration::from_secs(2), &mut wire).await {
