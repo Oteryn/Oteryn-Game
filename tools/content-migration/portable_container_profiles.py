@@ -216,17 +216,25 @@ def admit(root, items, order):
         if key not in existing:
             items["records"].append(record)
             continue
-        # Preserve the seasonal Christmas present, feedbag loot metadata, the
-        # Explorer Society crown backpack, and packed BUY's shopping bag when
-        # their custody agrees.
+        # Preserve earlier resource owners only when their custody agrees.
         prior = existing[key]
-        policy_fields = ("container", "physical", "stack", "temporal")
-        if key == "oteryn:item.tibia.i21411" and prior["semantics"]["temporal"] == source.U:
-            # The packed BUY admission leaves duration unknown. Crystal
-            # qualifies the shopping bag as a non-decaying container.
-            policy_fields = ("container", "physical", "stack")
+        prior_policy = prior["semantics"].copy()
+        if key == "oteryn:item.tibia.i5949" and prior_policy["stack"] == known(
+            {"stackable": known(False), "stack_max": source.U}
+        ):
+            # The realm reward's canonical profile leaves the nonstackable
+            # maximum unknown. Crystal qualifies it as inapplicable.
+            prior_policy["stack"] = record["semantics"]["stack"]
+        if (
+            key in {"oteryn:item.tibia.i5949", "oteryn:item.tibia.i21411"}
+            and prior_policy["temporal"] == source.U
+        ):
+            # Realm rewards and packed BUY leave duration unknown. Crystal
+            # qualifies both containers as non-decaying.
+            prior_policy["temporal"] = record["semantics"]["temporal"]
         if (
             key not in {
+                "oteryn:item.tibia.i5949",
                 "oteryn:item.tibia.i6509",
                 "oteryn:item.tibia.i9605",
                 "oteryn:item.tibia.i21292",
@@ -241,8 +249,8 @@ def admit(root, items, order):
                 )
             )
             or any(
-                prior["semantics"][field] != record["semantics"][field]
-                for field in policy_fields
+                prior_policy[field] != record["semantics"][field]
+                for field in ("container", "physical", "stack", "temporal")
             )
             or any(
                 prior["attributes"].get(field, value) != value
@@ -250,7 +258,8 @@ def admit(root, items, order):
             )
         ):
             raise ValueError(f"Conflicting portable container native policy: {key}")
-        prior["semantics"]["temporal"] = record["semantics"]["temporal"]
+        prior["semantics"]["stack"] = prior_policy["stack"]
+        prior["semantics"]["temporal"] = prior_policy["temporal"]
         prior["attributes"].update(record["attributes"])
     items["records"].sort(key=order)
 
