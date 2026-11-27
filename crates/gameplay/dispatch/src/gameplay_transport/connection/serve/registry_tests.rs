@@ -103,3 +103,30 @@ fn registry_routes_equal_handwritten_table_in_order() {
         .collect();
     assert_eq!(baseline, before);
 }
+
+#[test]
+fn registered_routes_share_client_decodable_command_refusals()
+-> Result<(), oteryn_protocol_oteryn::FoundationProtocolError> {
+    for &(command_type, name) in REGISTERED_ROUTES {
+        let command_id = u64::from(command_type);
+        let frame = super::super::result::encode_refusal(1, 2, command_id)
+            .map_err(|_| oteryn_protocol_oteryn::FoundationProtocolError::MalformedEnvelope)?;
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+        assert_eq!(
+            envelope.message_type(),
+            MessageType::CommandResult,
+            "{name}"
+        );
+        assert_eq!(envelope.server_sequence(), 2, "{name}");
+        let reply = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+        assert_eq!(reply.command_id, command_id, "{name}");
+        assert_eq!(reply.status, CommandStatus::Rejected, "{name}");
+        assert_eq!(
+            reply.error_code,
+            FoundationProtocolError::CommandRefused.code(),
+            "{name}"
+        );
+        assert!(reply.payload.is_empty(), "{name}");
+    }
+    Ok(())
+}

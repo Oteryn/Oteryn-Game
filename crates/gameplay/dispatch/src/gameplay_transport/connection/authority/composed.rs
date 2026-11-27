@@ -1,7 +1,7 @@
 //! Production delegation to the existing mechanic owners.
 
 use crate::gameplay_transport::connection::{
-    AchievementNoticeObservation, SelectedCapabilities, UseCommand,
+    AchievementNoticeObservation, ItemUseKind, SelectedCapabilities, UseCommand,
 };
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
@@ -1294,6 +1294,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<UseOutcome> {
         self.use_imbuement_item_impl(actor, command, intent, source, target)
             .await
+    }
+
+    async fn item_use_kind(&self, definition: std::num::NonZeroU32) -> Option<ItemUseKind> {
+        self.classify_item_use(definition).await
+    }
+
+    async fn use_stone(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: Option<ItemKey>,
+        definition: std::num::NonZeroU32,
+    ) -> UseOutcome {
+        self.use_classified_stone(actor, command, item, definition)
+            .await
+    }
+
+    async fn retained_rune_use(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &oteryn_protocol_oteryn::world_object::UseIntent,
+    ) -> bool {
+        self.has_retained_rune_use(actor, command, intent).await
     }
 
     async fn use_known_food(

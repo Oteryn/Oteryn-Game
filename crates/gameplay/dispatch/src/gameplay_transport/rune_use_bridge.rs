@@ -74,7 +74,7 @@ impl LegacyRuneUse {
     }
 }
 
-pub(super) fn routes(intent: &UseIntent, selected: &SelectedCapabilities) -> bool {
+pub(super) fn accepts_intent_shape(intent: &UseIntent, selected: &SelectedCapabilities) -> bool {
     selected.contains(CAPABILITY_RUNE_USE_V1)
         && matches!(intent.target, UseTarget::Item(_))
         && intent.use_with_map_item.is_none()
@@ -270,15 +270,20 @@ pub(super) fn spell_disposition(disposition: SpellCastDisposition) -> UseDisposi
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn use_legacy_rune(
-        &self,
-        actor: ExactActorRef,
-        command: UseCommand,
-        intent: UseIntent,
-        key: Option<ItemKey>,
-        visible: bool,
-        field_runes: bool,
-    ) -> Option<UseOutcome> {
+    pub(super) fn legacy_rune_spell(&self, item: u32) -> Option<&SpellDefinition> {
+        self.spells.rune(item).filter(|spell| {
+            oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(spell)
+                || matches!(
+                    spell.carrier,
+                    crate::spell::Carrier::Rune {
+                        item: 3165 | 3177 | 3178,
+                        ..
+                    }
+                )
+        })
+    }
+
+    fn normalize_legacy_rune_intent(&self, intent: UseIntent) -> UseIntent {
         let mut intent = intent;
         // Source targets retain their wire coordinates for replay and enter the
         // physical frame in target(). Other Bundles retain legacy receipt binding.
@@ -290,6 +295,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             position.floor = self.runtime_floor(position.floor);
         }
+        intent
+    }
+
+    pub(super) async fn use_legacy_rune(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        key: Option<ItemKey>,
+        visible: bool,
+        field_runes: bool,
+    ) -> Option<UseOutcome> {
+        let intent = self.normalize_legacy_rune_intent(intent);
         let store =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
         let read_session = async || {
@@ -364,25 +382,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &entry.item.definition.production_key,
                 &entry.item.definition.revision_ref,
             );
-            let spell = policy
+            let Some(spell) = policy
                 .and_then(|p| p.record().production_binding.external_id.parse().ok())
-                .and_then(|id| self.spells.rune(id));
-            let Some(spell) = spell.filter(|s| {
-                oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(s)
-                    || matches!(
-                        s.carrier,
-                        crate::spell::Carrier::Rune {
-                            item: 3165 | 3177 | 3178,
-                            ..
-                        }
-                    )
-            }) else {
-                if intent.use_with.is_none() && intent.use_with_position.is_none() {
-                    return Some(
-                        self.use_backpack_item(actor, command, ItemKey::Instance(instance))
-                            .await,
-                    );
-                }
+                .and_then(|id| self.legacy_rune_spell(id))
+            else {
                 return Some(outcome(UseDisposition::NothingToUse));
             };
             if !field_runes

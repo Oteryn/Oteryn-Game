@@ -22,6 +22,19 @@ pub struct DepotObservation {
     pub items: Vec<(u64, [u8; 16])>,
 }
 
+/// Routing facts from a generation-local item definition. The selected owner
+/// still validates the current item, custody and command fence.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ItemUseKind {
+    Stone,
+    Food,
+    Container,
+    Cube,
+    Rune,
+    SoulWar,
+    Other,
+}
+
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
@@ -693,6 +706,35 @@ pub trait FreshAdmissionAuthority {
         _item: ItemKey,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
+    }
+
+    /// Classify an issued definition against the pinned content generation.
+    fn item_use_kind(
+        &self,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = Option<ItemUseKind>> {
+        async { None }
+    }
+
+    /// Exact carried or definition-selected Adventurer's Stone USE.
+    fn use_stone(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _item: Option<ItemKey>,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = UseOutcome> {
+        async { UseOutcome::rejected() }
+    }
+
+    /// Recognize the exact original rune USE even if its item handle has retired.
+    fn retained_rune_use(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: &UseIntent,
+    ) -> impl Future<Output = bool> {
+        async { false }
     }
 
     /// Resolve a plain carried food use before unrelated item and rune owners.

@@ -6,7 +6,7 @@ use crate::durability::quest_state::adventurers_stone::STONE_KEY;
 use crate::foundation::{
     ChannelContentPin, CharacterId, CharacterLease, MovementLocalPosition, WorldId,
 };
-use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
 use crate::gameplay_transport::character_home_town::ADVENTURERS_GUILD_RETURN_ACTION;
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, UseCommand,
@@ -46,6 +46,7 @@ const THAIS: TilePos = TilePos {
 #[derive(Clone, Copy)]
 enum Case {
     Wire,
+    WireWithRuneUse,
     BattleSign,
     Return,
 }
@@ -56,6 +57,14 @@ fn adventurers_stone_use_writes_position_and_floor_map_before_result() -> TestRe
         return Ok(());
     };
     on_stack(admin, "guild_stone_wire", Case::Wire)
+}
+
+#[test]
+fn adventurers_stone_handle_reaches_teleport_owner_with_rune_use_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_stack(admin, "guild_stone_rune_use", Case::WireWithRuneUse)
 }
 
 #[test]
@@ -145,17 +154,27 @@ async fn scenario(admin: String, name: &str, case: Case) -> TestResult {
     let actor = deps.actor;
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
-    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        owner.offered_capabilities(),
-        &[
-            4,
-            6,
-            7,
-            world_object::CAPABILITY_ITEM_USE_V1,
-            world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
-        ],
-    )
-    .ok_or("Stone USE and map capabilities")?;
+    let mut supported = vec![
+        4,
+        6,
+        7,
+        world_object::CAPABILITY_ITEM_USE_V1,
+        world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+    ];
+    let mut offered = owner.offered_capabilities().to_vec();
+    if matches!(case, Case::WireWithRuneUse) {
+        supported.push(world_object::CAPABILITY_RUNE_USE_V1);
+        offered.push(OfferedCapability {
+            id: world_object::CAPABILITY_RUNE_USE_V1,
+            requires: world_object::CAPABILITY_RUNE_USE_V1_REQUIRES,
+        });
+    }
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(&offered, &supported)
+        .ok_or("Stone USE and map capabilities")?;
+    assert_eq!(
+        admitted.continuity.selected_capabilities.contains(world_object::CAPABILITY_RUNE_USE_V1),
+        matches!(case, Case::WireWithRuneUse),
+    );
     let session = admitted.game_session_id;
     let current = owner
         .current_quest_fence(session)
@@ -263,6 +282,8 @@ async fn scenario(admin: String, name: &str, case: Case) -> TestResult {
             );
             // The feedback may have reached the peer during the command update;
             // the wire fixture checks its text before closing the peer.
+        } else {
+            assert_eq!(saved_position(&owner, current).await?, ARRIVAL);
         }
     }
     let quantity: i64 = sqlx::query_scalar(
