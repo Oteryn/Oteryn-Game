@@ -33,9 +33,11 @@ impl SessionAppearance {
         let generation = admitted.continuity.connection_generation;
         let selected = admitted.continuity.selected_capabilities;
         if !self.selected {
+            let mut to_sequence = sequence;
+            let death = death_frame(channel, view, &staged_view, admitted, &mut to_sequence)?;
             let (frames, to_sequence, to_revision) = visibility_frames(
                 generation,
-                sequence,
+                to_sequence,
                 revision,
                 selected.as_slice(),
                 staged_view.lights(),
@@ -48,7 +50,10 @@ impl SessionAppearance {
                 *items = staged_items;
             }
             admitted.continuity.server_sequence = to_sequence;
-            for frame in frames {
+            if let Some((_, revision)) = &death {
+                admitted.continuity.presentation_revision = *revision;
+            }
+            for frame in death.into_iter().map(|(frame, _)| frame).chain(frames) {
                 write_frame(stream, &frame).await.map_err(|_| Unavailable)?;
             }
             return Ok((to_sequence, to_revision));
@@ -194,6 +199,13 @@ impl SessionAppearance {
         } else {
             VisibilityUpdate::Delta(delta)
         };
+        let presentation_revision =
+            death_frame(channel, view, &staged_view, admitted, &mut to_sequence)?.map(
+                |(frame, revision)| {
+                    frames.push(frame);
+                    revision
+                },
+            );
         let (spatial, next_sequence, to_revision) = visibility_frames(
             generation,
             to_sequence,
@@ -234,6 +246,9 @@ impl SessionAppearance {
             *items = staged_items;
         }
         *self = candidate;
+        if let Some(revision) = presentation_revision {
+            admitted.continuity.presentation_revision = revision;
+        }
         admitted.continuity.server_sequence = to_sequence;
         for frame in frames {
             write_frame(stream, &frame).await.map_err(|_| Unavailable)?;
@@ -263,4 +278,85 @@ impl SessionAppearance {
         self.revision = next_revision;
         Some(frame)
     }
+}
+
+// The same Channel observation supplied the exact actor departure and the
+// entering corpse. Publish the committed HP loss before that spatial frame.
+fn death_frame(
+    channel: &ChannelEntities,
+    before: &SessionVisibility,
+    after: &SessionVisibility,
+    admitted: &AdmittedSession,
+    sequence: &mut u64,
+) -> Result<Option<(Vec<u8>, u64)>, ObservationError> {
+    use crate::gameplay_transport::world_spatial::VisibleKind;
+    use oteryn_protocol_oteryn::presentation as wire;
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(wire::CAPABILITY_PRESENTATION_V1)
+    {
+        return Ok(None);
+    }
+    let events: Vec<_> = channel
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            let VisibleKind::Corpse {
+                lethal_hit: Some(hit),
+                ..
+            } = entity.kind
+            else {
+                return None;
+            };
+            let corpse = WireEntityRef {
+                identity: entity.identity,
+                generation: entity.generation,
+            };
+            if !before.shows(hit.target) || after.shows(hit.target) || !after.shows_corpse(corpse) {
+                return None;
+            }
+            Some(wire::PresentationEventKind::ValueText {
+                kind: if hit.attacker.identity == channel.observer {
+                    wire::PresentationValueKind::DamageDealt
+                } else {
+                    wire::PresentationValueKind::DamageOthers
+                },
+                position: entity.position,
+                target: hit.target,
+                attacker: before.shows(hit.attacker).then_some(hit.attacker),
+                primary: wire::PresentationValue {
+                    value: hit.value.get(),
+                    color: wire::PresentationColor::Red,
+                },
+                secondary: None,
+            })
+        })
+        .take(wire::MAX_PRESENTATION_EVENTS)
+        .enumerate()
+        .map(|(index, kind)| wire::PresentationEvent {
+            decision_ordinal: (index + 1) as u32,
+            emission_ordinal: 1,
+            kind,
+        })
+        .collect();
+    if events.is_empty() {
+        return Ok(None);
+    }
+    let payload = wire::encode_presentation_batch(&events).map_err(|_| Unavailable)?;
+    let current = admitted.continuity.presentation_revision;
+    let revision = current.checked_add(1).ok_or(Unavailable)?;
+    let next = sequence.checked_add(1).ok_or(Unavailable)?;
+    let frame = oteryn_protocol_oteryn::encode_state_delta(
+        admitted.continuity.connection_generation,
+        next,
+        wire::STATE_DOMAIN_WORLD_PRESENTATION,
+        current,
+        revision,
+        wire::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
+        &payload,
+    )
+    .map_err(|_| Unavailable)?;
+    *sequence = next;
+    Ok(Some((frame, revision)))
 }

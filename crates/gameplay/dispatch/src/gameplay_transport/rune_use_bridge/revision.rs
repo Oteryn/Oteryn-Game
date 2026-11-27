@@ -30,11 +30,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::super::actor_spell::SpellCastOutcome::rejected(),
             ));
         };
-        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
-            .await
-        else {
-            return Err(NativeCastDispatch::Pending);
+        use super::super::actor_spell::native_combat_cast::{
+            corpse_companion_spell, retry_native_checkout,
+        };
+        let retry = corpse_companion_spell(spell)
+            .then(|| super::super::AdmissionRetryBudget::for_command(self.root));
+        let unavailable = || {
+            if retry.is_some() {
+                NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome::rejected())
+            } else {
+                NativeCastDispatch::Pending
+            }
+        };
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let current = loop {
+            let result = store.current_session_at(session).await;
+            if !retry_native_checkout(retry.as_ref(), result.as_ref().err()).await {
+                break result;
+            }
+        };
+        let Ok((current, _)) = current else {
+            return Err(unavailable());
         };
         let Some(fence) = super::super::item_fence_of(current) else {
             return Err(NativeCastDispatch::Outcome(
@@ -53,9 +69,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::super::actor_spell::SpellCastOutcome::rejected(),
             ));
         };
-        let runtime = self.runtime.lock().await;
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return Err(NativeCastDispatch::Pending);
+        let (runtime, pass) = loop {
+            let runtime = self.runtime.lock().await;
+            match self.root.try_issue_semantic_pass() {
+                Ok(pass) => break (runtime, pass),
+                Err(error) => {
+                    drop(runtime);
+                    if !retry_native_checkout(retry.as_ref(), Some(&error)).await {
+                        return Err(unavailable());
+                    }
+                }
+            }
         };
         let mut context = (self, permit, &runtime, content, room, spell);
         let revision = pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {

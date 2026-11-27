@@ -43,6 +43,7 @@ enum Case {
     Outburst(u8),
     Logout,
     DepartedTarget,
+    Lethal,
     QueuedOrder,
 }
 
@@ -123,6 +124,18 @@ fn delayed_strikes_postgres_departed_target_does_not_block_timer_lane() -> TestR
 }
 
 #[test]
+fn delayed_strikes_postgres_lethal_damage_precedes_removal_and_corpse() -> TestResult {
+    scenario(Plan {
+        tag: "delayed_lethal",
+        vocation: "sorcerer",
+        experience: 30_000_000,
+        weapon: "oteryn:item.tibia.i3277",
+        spells: &[("candidate:spell/death_echo", 120, 150)],
+        case: Case::Lethal,
+    })
+}
+
+#[test]
 fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestResult {
     scenario(Plan {
         tag: "delayed_order",
@@ -138,9 +151,9 @@ fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestRes
 }
 
 fn scenario(plan: Plan) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     let started = std::time::Instant::now();
     let result = std::thread::Builder::new()
         .stack_size(128 << 20)
@@ -457,6 +470,10 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if plan.case == Case::Lethal {
+        super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
+        owner.states.test_owner_time.store(owner.owner_now().get() + 1, std::sync::atomic::Ordering::Relaxed);
+    }
     for (index, (key, _, mana)) in plan.spells.iter().enumerate() {
         let spell = (1..=deps.spells.source_len())
             .find_map(|i| {
@@ -821,6 +838,15 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             *mana,
             "{key} exact one-time cast payment before the delayed hit"
         );
+        if plan.case == Case::Lethal {
+            deps.runtime
+                .lock()
+                .await
+                .set_test_creature_health(target, 1)
+                .map_err(debug)?;
+            lethal_wire(&owner, admitted, target, position).await?;
+            continue;
+        }
         let expected_echo = if plan.case == Case::Echo {
             let runtime = deps.runtime.lock().await;
             let creature = runtime.companion_snapshot(target).map_err(debug)?;
@@ -962,4 +988,83 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn lethal_wire(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    target: crate::foundation::ExactActorRef,
+    position: crate::foundation::MovementLocalPosition,
+) -> TestResult {
+    use super::fixture::join_two;
+    use super::item_look_fixtures::read_frame;
+    use crate::foundation::{MessageType, decode_wire_envelope};
+    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn::{decode_state_delta, presentation, world_spatial_entities as spatial};
+
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 7, 18, presentation::CAPABILITY_PRESENTATION_V1])
+            .ok_or("death observation capabilities")?;
+    let target_ref = spatial::EntityRef {
+        identity: target.placement_identity(),
+        generation: target.actor_local_generation(),
+    };
+    let at = {
+        let runtime = owner.runtime.lock().await;
+        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(position)).ok_or("death position")?
+    };
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let _ = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+    };
+    let observer = async {
+        loop {
+            let bytes = read_frame(&mut client).await?;
+            if decode_wire_envelope(&bytes).map_err(debug)?.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        owner.states.test_owner_time.store(owner.owner_now().get() + 1_100_001, std::sync::atomic::Ordering::Relaxed);
+        let report = owner.drain_native_ai_timers().await.map_err(debug)?;
+        assert_eq!(report.receipts.len(), 1, "pending strike must commit");
+        assert!(report.receipts[0].batch.effects.iter().any(|effect| effect.target == target
+            && effect.health.is_some_and(|health| health.health_before == 1 && health.health_after == 0)));
+        assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, crate::gameplay_transport::kill_reward::DrainOutcome::Drained);
+        let selected = admitted.continuity.selected_capabilities;
+        let mut damage = false;
+        loop {
+            let bytes = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            if envelope.message_type() != MessageType::StateDelta {
+                continue;
+            }
+            let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+            if delta.domain_id == presentation::STATE_DOMAIN_WORLD_PRESENTATION {
+                for event in presentation::decode_presentation_batch(delta.payload).map_err(debug)? {
+                    if let presentation::PresentationEventKind::ValueText { target, position, primary, .. } = event.kind
+                        && target == target_ref
+                    {
+                        assert!(!damage, "the lethal strike must publish once");
+                        assert_eq!((position, primary.value), (at, 1));
+                        damage = true;
+                    }
+                }
+            }
+            if delta.domain_id == oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+                let spatial = spatial::decode_world_spatial_delta_view(selected.as_slice(), delta.delta_type, delta.payload).map_err(debug)?;
+                if let spatial::WorldSpatialDeltaView::Entities(change) = spatial
+                    && change.leave.contains(&target_ref)
+                {
+                    assert!(damage, "the exact final damage must precede the removal");
+                    assert!(change.enter.iter().any(|entry| entry.kind == spatial::EntityKind::Corpse && entry.position == at),
+                        "the corpse must enter in the removal delta");
+                    break;
+                }
+            }
+        }
+        drop(client);
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    tokio::time::timeout(IDLE_LIVENESS.interval, async { join_two(serving, observer).await.1 }).await?
 }

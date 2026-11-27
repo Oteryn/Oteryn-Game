@@ -148,6 +148,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::movement::interest::VisibilitySettings::REFERENCE.can_see(origin, position)
             })
         };
+        let mut corpses = item_ref_admission::visible_corpses(&runtime, self.active_generation);
+        let (lethal_hits, held_targets) = {
+            let attack = self.states.attack.lock().await;
+            (attack.kills().lethal_hits(), attack.kills().held_targets())
+        };
+        let mut pending_deaths = Vec::new();
+        for (target, hit) in &lethal_hits {
+            if let Some(corpse) = corpses
+                .iter_mut()
+                .find(|corpse| corpse.identity == target.corpse_identity())
+                && let VisibleKind::Corpse { lethal_hit, .. } = &mut corpse.kind
+            {
+                *lethal_hit = Some(*hit);
+            } else if held_targets.contains(target)
+                && let Ok(at) = runtime.read_actor_position(*target)
+                && in_view(at.position())
+            {
+                pending_deaths.push(oteryn_gameplay_entities::carrier::VisibleRuntimeActor {
+                    actor: *target,
+                    generation: target.actor_local_generation(),
+                    position: at.position(),
+                    revision: at.revision(),
+                });
+            }
+        }
         // Use the wire interest owner's exact floor/rectangle rules before cloning
         // health/policy and reading conditions. A full World has tens of thousands
         // of distant creatures; none need per-connection enrichment.
@@ -163,6 +188,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .creatures
                 .iter()
                 .map(|entry| (VisibleKind::Creature, entry)),
+        )
+        .chain(
+            pending_deaths
+                .iter()
+                .map(|entry| (VisibleKind::PendingDeath, entry)),
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .filter(|(_, entry)| in_view(entry.position))
@@ -220,10 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             revision: entry.revision,
         })
-        .chain(item_ref_admission::visible_corpses(
-            &runtime,
-            self.active_generation,
-        ))
+        .chain(corpses)
         .chain(self.source_volatile_entities(&runtime))
         .map(|entry| frame.project_entity(entry))
         .collect::<Option<Vec<_>>>()?;
