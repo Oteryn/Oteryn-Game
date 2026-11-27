@@ -204,10 +204,17 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         ));
         let candidates = client.session_mut().visible_appearances();
         let mut matching = candidates.iter().filter(|entry| entry.forge_stacks == Some(stacks));
-        let selected = matching.next().ok_or("P19 client cannot see the requested Forge marker")?.entity.entity;
+        let entry = matching.next().ok_or("P19 client cannot see the requested Forge marker")?;
+        let selected = entry.entity.entity;
         if matching.next().is_some() || selected != exact {
             return Err(format!("P19 ambiguous or wrong client Forge selection: {selected:?}, expected {exact:?}").into());
         }
+        let name = entry.entity.display_name.ok_or("P19 marker entity lacks a display name")?;
+        let name = name.as_str().map_err(|error| format!("P19 marker display name: {error:?}"))?;
+        std::fs::write(
+            directory.join("p19-nameplate.json"),
+            serde_json::to_vec(&(name, entry.forge_stacks))?,
+        )?;
         encounters.push((classification, stacks, selected));
     }
         let combat_tile = tile(client.world_spatial().actor_position)?;
@@ -243,6 +250,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         if pre_attack != before {
             return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
         }
+        let prior_kills = bestiary_occurrences(clients).await?;
         let corpse = kill_and_observe_clear(&mut client, exact).await?;
         let killed = rewards(&mut client).await?;
         dead.push(exact);
@@ -253,11 +261,21 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
         let (corpse_entity, source) = corpse_contents(&mut client, corpse).await?;
-        let expected_slivers: u64 = source.iter().filter(|item| item.item_definition_ref == sliver)
+        let corpse_slivers: u64 = source.iter().filter(|item| item.item_definition_ref == sliver)
             .map(|item| u64::from(item.count.get())).sum();
         let mut destination = backpack_quantities(&client)?;
         add_quantities(&mut destination, &source);
         let durable_corpse = full_e2ef3::e2ei_c::native_corpse_id(clients, &corpse_entity).await?;
+        let current_kills = bestiary_occurrences(clients).await?;
+        let mut new_kills = current_kills.difference(&prior_kills);
+        let occurrence = new_kills.next().ok_or("P19 exact kill lacks a new Bestiary receipt")?;
+        if new_kills.next().is_some() || !prior_kills.is_subset(&current_kills) {
+            return Err("P19 cannot isolate the observed kill's Bestiary receipt".into());
+        }
+        let expected_slivers = slivers_for_kill(stacks, occurrence[14]);
+        if corpse_slivers != expected_slivers {
+            return Err(format!("P19 {classification} corpse slivers={corpse_slivers}, expected={expected_slivers}, occurrence={occurrence:?}").into());
+        }
         let expected_items = corpse_item_ids(clients, durable_corpse, source.len()).await?;
         quick_loot_corpse(&mut client, corpse, &expected_items).await?;
         let after = rewards(&mut client).await?;
@@ -273,7 +291,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             .slivers
             .checked_sub(killed.slivers)
             .ok_or("P19 backpack slivers decreased after loot")?;
-        if !valid_reward_transition(&before, &killed, &after, stacks)
+        if !valid_reward_transition(&before, &killed, &after, stacks, expected_slivers)
             || looted != expected_slivers
             || sliver_count(&client, sliver)? != after.slivers
         {
@@ -423,6 +441,7 @@ fn valid_reward_transition(
     killed: &Rewards,
     after: &Rewards,
     stacks: u8,
+    expected_slivers: u64,
 ) -> bool {
     // TibiaWiki, Dust and Slivers: Premium kills grant 1–3 dust per stack
     // (15–45 for Fiendish); only Fiendish corpses yield slivers when looted.
@@ -437,17 +456,32 @@ fn valid_reward_transition(
         })
         && after.dust == killed.dust
         && killed.slivers == before.slivers
-        && if stacks == 15 {
-            // Global ties slivers to creature difficulty. Pinned Crystal supplies
-            // the 3–7 bounds used by Oteryn's fiendish reward function.
-            // https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/config/configmanager.cpp#L315-L316
-            after
-                .slivers
-                .checked_sub(killed.slivers)
-                .is_some_and(|gain| (3..=7).contains(&gain))
-        } else {
-            after.slivers == killed.slivers
-        }
+        && after.slivers.checked_sub(killed.slivers) == Some(expected_slivers)
+}
+
+fn slivers_for_kill(stacks: u8, roll: u8) -> u64 {
+    // Global documents difficulty scaling without a numeric Rat yield.
+    // Crystal 201189f8 configmanager.cpp:315–316 and monster.cpp:2532–2535
+    // use a uniform 3–7 draw. The Oteryn kill occurrence supplies the roll.
+    if stacks == 15 { 3 + u64::from(roll % 5) } else { 0 }
+}
+
+async fn bestiary_occurrences(
+    clients: &SeamClients<'_>,
+) -> TestResult<std::collections::BTreeSet<[u8; 16]>> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut db = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_scalar::<_, Vec<u8>>(
+            "SELECT uuid_send(bestiary_occurrence_id) FROM game_character_bestiary_kill_receipts
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(clients.characters[1].as_slice())
+        .fetch_all(&mut db)
+        .await?
+        .into_iter()
+        .map(|id| id.try_into().map_err(|_| "P19 malformed Bestiary occurrence".into()))
+        .collect()
+    }).await?
 }
 
 #[test]
@@ -464,8 +498,8 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
             ..killed
         };
         assert_eq!(
-            valid_reward_transition(&before, &killed, &after, 15),
-            (3..=7).contains(&gain),
+            valid_reward_transition(&before, &killed, &after, 15, slivers_for_kill(15, 2)),
+            gain == 5,
             "fiendish sliver gain {gain}"
         );
     }
@@ -473,19 +507,20 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
         slivers: 3,
         ..killed
     };
-    assert!(!valid_reward_transition(&before, &before, &good, 15));
-    assert!(!valid_reward_transition(&before, &good, &good, 15));
+    assert!(!valid_reward_transition(&before, &before, &good, 15, 3));
+    assert!(!valid_reward_transition(&before, &good, &good, 15, 3));
     assert!(!valid_reward_transition(
         &before,
         &killed,
         &Rewards { limit: 101, ..good },
-        15
+        15,
+        3,
     ));
     for dust in [14, 15, 45, 46, 101] {
         let killed = Rewards { dust, ..before };
         let after = Rewards { slivers: 3, ..killed };
         assert_eq!(
-            valid_reward_transition(&before, &killed, &after, 15),
+            valid_reward_transition(&before, &killed, &after, 15, 3),
             (15..=45).contains(&dust)
         );
     }
@@ -495,14 +530,16 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
         &near_cap,
         &clipped,
         &Rewards { slivers: 3, ..clipped },
-        15
+        15,
+        3,
     ));
     let influenced = Rewards { dust: 3, ..before };
     assert!(valid_reward_transition(
         &before,
         &influenced,
         &influenced,
-        3
+        3,
+        0,
     ));
     assert!(!valid_reward_transition(
         &before,
@@ -511,7 +548,8 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
             slivers: 1,
             ..influenced
         },
-        3
+        3,
+        0,
     ));
 }
 
