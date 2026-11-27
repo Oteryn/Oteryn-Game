@@ -243,7 +243,7 @@ fn scenario(case: Scenario) -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            3, // Player, follow target and the additional bound corpse fixture.
+            if matches!(case, Scenario::TurnVisibility) { 4 } else { 3 },
             channel_pin,
         )
         .map_err(debug)?;
