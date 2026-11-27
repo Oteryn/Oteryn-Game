@@ -69,6 +69,7 @@
     {"code": 1051, "name": "SESSION_JOIN_UNAVAILABLE", "category": "INTERNAL_UNAVAILABLE", "default_disposition": "TRANSPORT_FATAL", "progression": "RETRYABLE", "public_class": "TEMPORARILY_UNAVAILABLE"},
     {"code": 1200, "name": "NOT_SUPPORTED", "category": "UNSUPPORTED_REVISION", "default_disposition": "OPERATION_TERMINAL"},
     {"code": 1201, "name": "SNAPSHOT_EXPIRED", "category": "CONFLICT", "default_disposition": "OPERATION_TERMINAL"},
+    {"code": 1202, "name": "COMMAND_REFUSED", "category": "CONFLICT", "default_disposition": "OPERATION_TERMINAL"},
     {"code": 1100, "name": "ADMISSION_GRANT_MALFORMED", "category": "INVALID_INPUT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "RETRY_LOGIN"},
     {"code": 1101, "name": "ADMISSION_GRANT_AUTHENTICATION_FAILED", "category": "AUTHENTICATION_FAILED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "AUTHENTICATION_REQUIRED"},
     {"code": 1102, "name": "ADMISSION_GRANT_BINDING_MISMATCH", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "RETRY_LOGIN"},

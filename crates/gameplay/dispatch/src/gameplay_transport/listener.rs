@@ -185,6 +185,53 @@ fn connection_end_kind(end: &connection::ConnectionEnd) -> &'static str {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ServeInterruption {
+    Panicked,
+    Shutdown,
+    DrainRequested,
+}
+
+impl ServeInterruption {
+    fn reason(self) -> &'static str {
+        match self {
+            Self::Panicked => "serve_panic",
+            Self::Shutdown => "listener_shutdown",
+            Self::DrainRequested => "drain_requested",
+        }
+    }
+}
+
+/// Each admitted socket has a separate unwind boundary. The shared listener
+/// polls these futures directly; an unwind must never drop its other sockets.
+async fn supervise_admitted_serve<T>(
+    serve: impl Future<Output = T>,
+    stop: impl Future<Output = ServeInterruption>,
+    trace: Option<[u8; 16]>,
+) -> Result<T, ServeInterruption> {
+    let mut serve = pin!(serve);
+    let mut stop = pin!(stop);
+    let result = poll_fn(|cx| {
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| serve.as_mut().poll(cx))) {
+            Ok(Poll::Ready(end)) => Poll::Ready(Ok(end)),
+            Err(_) => Poll::Ready(Err(ServeInterruption::Panicked)),
+            Ok(Poll::Pending) => stop.as_mut().poll(cx).map(Err),
+        }
+    })
+    .await;
+    if let Err(interruption) = result {
+        report_unserved_end(interruption.reason(), "admitted", trace);
+    }
+    result
+}
+
+fn report_unserved_end(reason: &'static str, phase: &'static str, trace: Option<[u8; 16]>) {
+    operator_event_with_trace(
+        &format!("event=serve_end reason={reason} phase={phase}"),
+        trace,
+    );
+}
+
 fn report_transport_close(
     end: &connection::ConnectionEnd,
     served: bool,
@@ -298,6 +345,7 @@ where
             ),
             trace,
         );
+        report_unserved_end(outcome, entry_step, trace);
         observer.ended(ConnectionEnd::TransportFailed);
         return None;
     };
@@ -305,6 +353,7 @@ where
         operator_event_with_trace(&format!("event=connection_entry_slow ms={entry_ms}"), trace);
     }
     if super::world_login_info::route(&mut stream, &frame, authority).await {
+        report_unserved_end("login_info_complete", "entry_route", trace);
         return None;
     }
     // The owning authority's decision is never cancelled midway.
@@ -312,6 +361,7 @@ where
         if let Some(node) = authority.cast_node() {
             let _ = cast_observer::serve(stream, &frame, node, shutdown, unit).await;
         }
+        report_unserved_end("cast_observer_ended", "entry_route", trace);
         observer.ended(ConnectionEnd::AdmissionRefused(
             connection::AdmissionRefusal::Unavailable,
         ));
@@ -349,9 +399,12 @@ where
     let (end, served) = match admitted {
         // A durably admitted or resumed session whose acceptance could not be delivered
         // still has a controller that is gone: it enters the loss lifecycle, never limbo.
-        Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
-        Err(end) => (end, false),
-        Ok(admitted) => match first(
+        Err(end) => {
+            report_unserved_end(connection_end_kind(&end), "admission", trace);
+            let served = matches!(end, ConnectionEnd::AdmittedThenDisconnected(_));
+            (end, served)
+        }
+        Ok(admitted) => match supervise_admitted_serve(
             async {
                 match trace {
                     Some(trace)
@@ -362,33 +415,53 @@ where
                             serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
                         )
                         .await,
-                    Some(_) | None => {
-                        serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS).await
-                    }
+                    Some(trace) => connection::with_connection_trace(
+                        trace,
+                        serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+                    )
+                    .await,
+                    None => serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS).await,
                 }
             },
             async {
                 match drain {
                     Some(drain) => {
-                        let _ = first(shutdown.cancelled(), drain.requested()).await;
+                        if first(shutdown.cancelled(), drain.requested()).await.is_some() {
+                            ServeInterruption::Shutdown
+                        } else {
+                            ServeInterruption::DrainRequested
+                        }
                     }
-                    None => shutdown.cancelled().await,
+                    None => {
+                        shutdown.cancelled().await;
+                        ServeInterruption::Shutdown
+                    }
                 }
             },
+            trace,
         )
         .await
         {
-            Some(end) => (end, true),
-            // A shutdown drain is not evidence of lost playable control.
-            None => (
-                ConnectionEnd::AdmittedThenDisconnected(
-                    authority.current_activity_connection(admitted),
-                ),
-                drain.and_then(|d| d.reset()).is_some(),
-            ),
+            Ok(end) => (end, true),
+            Err(interruption) => {
+                let current = authority.current_activity_connection(admitted);
+                if interruption == ServeInterruption::Panicked {
+                    authority.player_trade_disconnected(current.game_session_id);
+                }
+                // A planned shutdown is not evidence of lost playable control.
+                let served = interruption == ServeInterruption::Panicked
+                    || drain.and_then(|d| d.reset()).is_some();
+                (ConnectionEnd::AdmittedThenDisconnected(current), served)
+            }
         },
     };
     report_transport_close(&end, served, admit_started.elapsed(), trace);
+    let _ = tokio::time::timeout(
+        IDLE_LIVENESS.interval,
+        tokio::io::AsyncWriteExt::shutdown(&mut stream),
+    )
+    .await;
+    drop(stream);
     if let ConnectionEnd::AdmittedThenClosed(session, _)
     | ConnectionEnd::AdmittedThenDisconnected(session)
     | ConnectionEnd::AdmittedThenControlLost(session)
@@ -412,7 +485,6 @@ where
         )),
         _ => None,
     };
-    drop(stream);
     // This physical socket has no subsequent loss/grace owner. Keep its
     // root through the whole serve future (including shutdown), then drop
     // only local aliases after the listener has selected the final result.
@@ -558,6 +630,62 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
 #[cfg(test)]
 mod logging_tests {
     use super::*;
+
+    #[test]
+    #[allow(
+        clippy::panic,
+        reason = "exercise an unwind while polling a live command"
+    )]
+    fn interrupted_serves_report_a_typed_end_and_leave_the_next_socket_alive()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .start_paused(true)
+            .build()?;
+        let lines = oteryn_error_codes::capture(|| {
+            runtime.block_on(async {
+                let panicked = supervise_admitted_serve(
+                    async {
+                        tokio::task::yield_now().await;
+                        panic!("command owner panicked");
+                    },
+                    std::future::pending(),
+                    None,
+                );
+                let stopped = supervise_admitted_serve(
+                    std::future::pending::<()>(),
+                    async {
+                        tokio::task::yield_now().await;
+                        ServeInterruption::DrainRequested
+                    },
+                    None,
+                );
+                let healthy = supervise_admitted_serve(
+                    async {
+                        tokio::task::yield_now().await;
+                        7
+                    },
+                    std::future::pending(),
+                    None,
+                );
+                let (panicked, stopped, healthy) = tokio::join!(panicked, stopped, healthy);
+                assert_eq!(panicked, Err(ServeInterruption::Panicked));
+                assert_eq!(stopped, Err(ServeInterruption::DrainRequested));
+                assert_eq!(healthy, Ok(7));
+            })
+        });
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains("event=serve_end reason=serve_panic phase=admitted"))
+        );
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains("event=serve_end reason=drain_requested phase=admitted"))
+        );
+        Ok(())
+    }
 
     #[test]
     fn admission_refusal_and_transport_close_emit_registered_events() {

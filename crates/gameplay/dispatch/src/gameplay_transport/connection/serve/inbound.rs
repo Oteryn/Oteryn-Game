@@ -148,8 +148,8 @@ where
             }
         }
         Next::Frame(Ok(frame)) => (frame, false, tokio::time::Instant::now()),
-        Next::Frame(Err(_)) => {
-            return Err(ServeEnd::Disconnected);
+        Next::Frame(Err(error)) => {
+            return Err(ServeEnd::Transport(TransportEnd::Read(error.kind())));
         }
         Next::Probe => {
             // Idle work (including the durable logout) stays within the existing database
@@ -163,7 +163,7 @@ where
             .await
             {
                 Ok(result) => result?,
-                Err(_) => return Err(ServeEnd::Disconnected),
+                Err(_) => return Err(ServeEnd::Transport(TransportEnd::IdleWorkDeadline)),
             }
             let probe = match session.liveness.tick() {
                 Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
@@ -181,8 +181,8 @@ where
             // in control; an unbounded write would also stall the cadence itself.
             match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
                 Ok(Ok(())) => {}
-                Ok(Err(_)) => {
-                    return Err(ServeEnd::Disconnected);
+                Ok(Err(error)) => {
+                    return Err(ServeEnd::Transport(TransportEnd::Write(error.kind())));
                 }
                 Err(_) => return Err(ServeEnd::ControlLost("probe_write_timeout")),
             }
