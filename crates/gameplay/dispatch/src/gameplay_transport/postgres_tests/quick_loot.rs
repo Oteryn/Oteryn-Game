@@ -310,7 +310,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
         };
         let mut corpses = Vec::new();
         let permit = owner.spell_lane_permit().await.ok_or("permit")?;
-        let entries: &[(u8, i32)] = if case == Case::SelectedLootAll {
+        let entries: &[(u8, u16)] = if case == Case::SelectedLootAll {
             // Actor x=7, selected corpse x=8. x=9 is in the corpse area only.
             &[(99, 8), (100, 9), (101, 6)]
         } else {

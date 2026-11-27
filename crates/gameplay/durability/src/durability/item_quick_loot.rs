@@ -322,7 +322,9 @@ impl DurabilityRoot {
                                 None
                             } else {
                                 let mut target = assignment(request)?;
-                                if let Recipient::GoldPouch(id) = target {
+                                if matches!(request.action, QuickLootAction::Assign | QuickLootAction::AssignLoot)
+                                    && let Recipient::GoldPouch(id) = target
+                                {
                                     target = Recipient::GoldPouch(resolve_inbox_pouch(&mut tx, &fence, id).await?);
                                 }
                                 recipient(&mut tx, fence.character_id, world, content, target).await?;
@@ -403,11 +405,43 @@ impl DurabilityRoot {
                     };
                 }
                 let exact = selected_corpse.filter(|_| request.action == QuickLootAction::Click);
-                // Try the selected corpse first even when the neighborhood reaches the batch cap.
-                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY (i.item_instance_id=encode($8,'hex')::uuid) DESC NULLS LAST, i.item_instance_id LIMIT $6 FOR UPDATE OF i")
-                    .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
-                    .bind(exact.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice())
-                    .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).fetch_all(&mut *tx).await?;
+                // Keep the anchor inside the result cap and lock every batch by instance ID.
+                let corpses = sqlx::query(
+                    "WITH picked AS MATERIALIZED (
+                        SELECT i.item_instance_id, g.spatial_position,
+                               (i.item_instance_id=encode($8,'hex')::uuid) AS is_anchor,
+                               (floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000
+                                 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid
+                                 OR EXISTS (
+                                   SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id)
+                                   WHERE a.character_id=r.corpse_top_damage_character_id
+                                     AND b.character_id=encode($7,'hex')::uuid
+                                 )) AS loot_allowed
+                        FROM game_item_ground_locations g
+                        JOIN game_item_instances i USING(item_instance_id)
+                        JOIN game_item_mint_receipts r USING(item_instance_id)
+                        WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid
+                          AND g.spatial_position=ANY($3)
+                          AND g.runtime_scope_ownership_generation=$4::text::numeric
+                          AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
+                          AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid)
+                        ORDER BY is_anchor DESC NULLS LAST, i.item_instance_id LIMIT $6
+                    ), locked AS MATERIALIZED (
+                        SELECT p.* FROM picked p JOIN game_item_instances i USING(item_instance_id)
+                        WHERE i.lifecycle=1 ORDER BY i.item_instance_id FOR UPDATE OF i
+                    )
+                    SELECT item_instance_id::text, spatial_position, loot_allowed
+                    FROM locked ORDER BY is_anchor DESC NULLS LAST, locked.item_instance_id",
+                )
+                .bind(world.as_slice())
+                .bind(channel.as_bytes().as_slice())
+                .bind(cells)
+                .bind(fence.scope_ownership_generation.get().to_string())
+                .bind(exact.as_ref().map(<[u8;16]>::as_slice))
+                .bind(MAX_NEARBY_CORPSES as i64)
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice))
+                .fetch_all(&mut *tx).await?;
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
