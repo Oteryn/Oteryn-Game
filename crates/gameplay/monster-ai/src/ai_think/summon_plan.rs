@@ -163,6 +163,19 @@ impl CreatureAiState {
             .map(|(actor, _)| actor)
             .or(self.target)
             .filter(|actor| find(*actor).is_some());
+        let mut reason = if forced_target.is_some() {
+            "forced"
+        } else if target.is_some() {
+            "retained"
+        } else if !targeting.hostile || !targeting.can_target {
+            "passive"
+        } else if perceived.is_empty() {
+            "no_visible_players"
+        } else if override_holds && !eligible.is_empty() {
+            "override_holds"
+        } else {
+            "no_eligible_players"
+        };
         // CREATURE-AI-0 §4.3: the ordinary search takes the nearest eligible candidate when
         // there is no target or it cannot be attacked from here, and never while an override
         // holds.
@@ -176,6 +189,7 @@ impl CreatureAiState {
             )
         {
             target = Some(found);
+            reason = "nearest_eligible";
         }
         // The timed change.
         let mut change_ticks_ms = self.change_ticks_ms;
@@ -203,6 +217,7 @@ impl CreatureAiState {
                         draw(PURPOSE_TARGET_SEARCH, 2)?,
                     ) {
                         target = Some(found);
+                        reason = "scheduled_change";
                     }
                 }
             }
@@ -218,7 +233,9 @@ impl CreatureAiState {
             && let Some(found) = strategy_search(4)?
         {
             target = Some(found);
+            reason = "flee_strategy";
         }
+        crate::observability::record_target_decision(self.actor, target, reason);
 
         let target_position = target.and_then(find).map(|candidate| candidate.position);
         let goal = self.choose_goal(

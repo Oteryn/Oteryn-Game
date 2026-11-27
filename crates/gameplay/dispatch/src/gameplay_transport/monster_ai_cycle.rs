@@ -5,7 +5,7 @@
 use crate::movement::relocate::{accepted_entry_movement, cell_open, creature_cell_admissible};
 
 use super::ComposedFreshAdmission;
-use super::actor_spell::ChannelSpellStates;
+use super::actor_spell::{ChannelSpellStates, qualified_protection_zone_at};
 use super::attack::ChannelAttackStates;
 use crate::ability::creature_bite::ReentryProtection;
 use crate::ai::{AiProvenance, AiProvenanceInput, ResourceLimit};
@@ -13,11 +13,12 @@ use crate::ai_monster_melee::{Dispatch, MeleeDefinition, think_target_only};
 use crate::ai_think::targeting::TargetCandidate;
 use crate::ai_think::{AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId};
 use crate::content::QualifiedNativeEntryRoom;
-use crate::content::{LogicalCell, ProjectV2AuthoringProfileData, ProjectV2BehaviorAuthoring};
+use crate::content::{ProjectV2AuthoringProfileData, ProjectV2BehaviorAuthoring};
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
+use oteryn_gameplay_monster_ai::observability::record_melee_outcome;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use sha2::{Digest, Sha256};
 
@@ -71,6 +72,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         trace.set("ai_permit");
         let Some(permit) = self.spell_lane_permit().await else {
+            self.log_monster_melee_no_permit();
             return;
         };
         #[cfg(test)]
@@ -103,6 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         trace.set("ai_permit");
         let Some(permit) = self.spell_lane_permit().await else {
+            self.log_monster_melee_no_permit();
             return;
         };
         #[cfg(test)]
@@ -110,6 +113,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.drain_monster_melee_with_permit(permit, now).await;
         #[cfg(test)]
         trace.set("ai_complete");
+    }
+
+    fn log_monster_melee_no_permit(&self) {
+        if !oteryn_error_codes::filter().allows(
+            oteryn_error_codes::Level::Debug,
+            "monster_ai",
+            false,
+        ) {
+            return;
+        }
+        let Ok(runtime) = self.runtime.try_lock() else {
+            return;
+        };
+        let Ok(census) = runtime.positioned_melee_census() else {
+            return;
+        };
+        drop(runtime);
+        let players = census
+            .iter()
+            .filter_map(|(_, position, session)| session.map(|_| position.position()))
+            .collect::<Vec<_>>();
+        for (monster, position, _) in census.iter().filter(|(_, _, session)| session.is_none()) {
+            if players
+                .iter()
+                .any(|player| crate::ai_think::targeting::sees_native(position.position(), *player))
+            {
+                record_melee_outcome(*monster, "no_permit", "spell_lane_unavailable");
+            }
+        }
     }
 
     /// Crystal runs a creature's onDeath and its rewards on the death itself.
@@ -468,13 +500,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             key: snapshot.state.policy.definition_key.clone(),
                             revision: snapshot.state.policy.definition_revision.clone(),
                         };
-                        let _ = states.monster_melee.creature_ai.admit_native_creature(
+                        let admission = states.monster_melee.creature_ai.admit_native_creature(
                             &runtime,
                             content,
                             actor,
                             &creature,
                             now.get(),
                         );
+                        if admission.is_err() {
+                            record_melee_outcome(actor, "blocked", "ai_admission_refused");
+                        }
                     }
                 }
                 runtime = self.runtime.lock().await;
@@ -837,6 +872,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     *actor,
                 );
                 let Some(entries) = qualified_melee(&runtime, content, *actor) else {
+                    record_melee_outcome(*actor, "missed", "no_qualified_melee");
                     continue;
                 };
                 for monster in entries {
@@ -848,9 +884,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             *actor,
                             usize::from(monster.definition.entry_index),
                         ) else {
+                            record_melee_outcome(*actor, "missed", "no_native_selection");
                             continue;
                         };
                         if selected.target.is_none() {
+                            record_melee_outcome(*actor, "missed", "no_native_target");
                             continue;
                         }
                         Some(selected)
@@ -860,17 +898,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let sequence =
                         native_selection.map_or(sequence, |selected| selected.occurrence.sequence);
                     let p = position.position();
-                    let Ok(tile) = room.movement_cells().spell_tiles().lookup(
-                        room.movement_cells().scope(),
-                        LogicalCell {
-                            x: p.x,
-                            y: p.y,
-                            z: i32::from(p.floor),
-                        },
-                    ) else {
+                    let Some(in_protection_zone) =
+                        qualified_protection_zone_at(&runtime, room.movement_cells(), *position)
+                    else {
+                        record_melee_outcome(*actor, "blocked", "unknown_attacker_tile");
                         continue;
                     };
-                    if tile.flags().protection_zone {
+                    if in_protection_zone {
+                        record_melee_outcome(*actor, "blocked", "attacker_in_protection_zone");
                         continue;
                     }
                     // Perception's limit applies to this monster's eligible local
@@ -889,6 +924,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             )
                         }),
                     ) else {
+                        record_melee_outcome(*actor, "blocked", "perception_limit");
                         continue;
                     };
                     attack.kills().boss_targets(
@@ -1051,6 +1087,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // ATTACK-0 §4: a creature attack on a player runs the incoming Charm hooks, and a
                     // landed attack starts the player's in-fight deadline. A replayed think returns its
                     // recorded dispatch without resolving a target again, so nothing runs twice.
+                    if attacked.get().is_none()
+                        && matches!(&dispatch, Ok(Dispatch::Bite(Ok(_)) | Dispatch::ZeroDamage))
+                    {
+                        // The owner returned a retained receipt without executing another bite.
+                        continue;
+                    }
+                    let (outcome, reason) = match &dispatch {
+                        Ok(Dispatch::Bite(Ok(applied))) if applied.damage.applied > 0 => {
+                            ("landed", "committed_damage")
+                        }
+                        Ok(Dispatch::Bite(Ok(_))) => ("blocked", "no_damage_after_mitigation"),
+                        Ok(Dispatch::ZeroDamage) => ("missed", "zero_roll"),
+                        Ok(Dispatch::Decision(_)) => ("missed", "no_attack_intent"),
+                        Ok(Dispatch::Bite(Err(error))) | Err(error) => {
+                            record_melee_outcome(*actor, "blocked", &format!("{error:?}"));
+                            continue;
+                        }
+                    };
+                    record_melee_outcome(*actor, outcome, reason);
                     let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
                         continue;
                     };
@@ -1379,25 +1434,14 @@ pub(in crate::gameplay_transport) fn melee_targets(
                 || runtime.actor_staff_visibility(*actor).ok()?.1;
             let protected =
                 attack.creature_target_protection(runtime, *actor, session, semantic_now)?;
-            let p = position.position();
-            let tile = room
-                .movement_cells()
-                .spell_tiles()
-                .lookup(
-                    room.movement_cells().scope(),
-                    LogicalCell {
-                        x: p.x,
-                        y: p.y,
-                        z: i32::from(p.floor),
-                    },
-                )
-                .ok()?;
+            let in_protection_zone =
+                qualified_protection_zone_at(runtime, room.movement_cells(), *position)?;
             Some((
                 *actor,
-                p,
+                position.position(),
                 session,
                 invisible,
-                protected || tile.flags().protection_zone,
+                protected || in_protection_zone,
             ))
         })
         .collect::<Vec<_>>();
@@ -1433,6 +1477,7 @@ fn local_target_indices(
 mod tests {
     mod creature_step_tests;
     use super::*;
+    use crate::content::LogicalCell;
     fn position(x: i32, floor: i16) -> MovementLocalPosition {
         MovementLocalPosition { x, y: 0, floor }
     }
