@@ -2,7 +2,7 @@
 //! revalidated after metadata I/O; instance identities never leave the server.
 use super::item_ref_admission::{definition_ref, pinned_index};
 use super::{
-    ComposedFreshAdmission,
+    AdmissionRetryBudget, ComposedFreshAdmission,
     connection::AdmittedSession,
     item_view::{ItemKey, SessionItemView},
 };
@@ -75,6 +75,7 @@ pub(super) async fn inspect(
         Request::CatalogueQuery(query) => catalogue::inspect(owner, admitted, query).await,
         Request::Item(handle) => {
             let _permit = owner.spell_lane_permit().await?;
+            let retry = AdmissionRetryBudget::for_command(owner.root);
             let views = views?;
             let (definition, count, _) = super::item_look::observe_item(
                 owner,
@@ -83,11 +84,12 @@ pub(super) async fn inspect(
                 admitted.item_fence,
                 views,
                 handle,
+                &retry,
             )
             .await
             .ok()?;
             let key = views.resolve(handle)?;
-            let metadata = metadata(owner, admitted, key, &definition, count).await?;
+            let metadata = metadata(owner, &retry, admitted, key, &definition, count).await?;
             // Unmaterialized map entries have no durable instance attributes. Their
             // first MINT has tier zero and no applied imbuements; this is an actual
             // object inspection rather than a catalogue template. Corpse entities
@@ -113,6 +115,7 @@ pub(super) async fn inspect(
                 admitted.item_fence,
                 views,
                 handle,
+                &retry,
             )
             .await
             .ok()?;
@@ -148,11 +151,13 @@ pub(super) async fn inspect(
         }
         Request::Trade { counter, index } => {
             let permit = owner.spell_lane_permit().await?;
+            let retry = AdmissionRetryBudget::for_command(owner.root);
             let (instance, definition, count) = owner
                 .inspection_trade_item(&permit, admitted, id, counter, index)
                 .await?;
             let metadata = metadata(
                 owner,
+                &retry,
                 admitted,
                 ItemKey::Instance(instance),
                 &definition,
@@ -187,6 +192,7 @@ pub(super) async fn inspect(
             }
             // Keep background refreshes off the single DB holder for this read chain.
             let _permit = owner.spell_lane_permit().await?;
+            let retry = AdmissionRetryBudget::for_command(owner.root);
             let equipment = super::equipment_move::read_current_equipment(owner, session).await?;
             let character = crate::domain::CharacterId::from_bytes(equipment.character).ok()?;
             let backpack = owner
@@ -199,6 +205,7 @@ pub(super) async fn inspect(
                 let item = &backpack.backpack;
                 let metadata = metadata(
                     owner,
+                    &retry,
                     admitted,
                     ItemKey::Instance(item.item_instance_id),
                     &item.definition,
@@ -213,6 +220,7 @@ pub(super) async fn inspect(
                 let slot = oteryn_protocol_oteryn::item_view::wire_slot(item.slot)? as u8;
                 let metadata = metadata(
                     owner,
+                    &retry,
                     admitted,
                     ItemKey::Instance(item.item_instance_id),
                     &item.definition,
@@ -284,6 +292,7 @@ async fn player(
 }
 async fn metadata(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    retry: &AdmissionRetryBudget<'_>,
     admitted: AdmittedSession,
     key: ItemKey,
     definition: &TypedDefinitionRef,
@@ -292,18 +301,9 @@ async fn metadata(
     let ItemKey::Instance(instance) = key else {
         return Some(None);
     };
-    let metadata = super::AdmissionRetryBudget::for_command(owner.root)
-        .retry_unavailable(async || {
-            owner
-                .root
-                .read_inspection_metadata(owner.character, admitted.world_id, instance)
-                .await
-                .map_err(|error| match error {
-                    crate::durability::DurabilityError::RootUnavailable => {
-                        super::connection::AdmissionRefusal::Unavailable
-                    }
-                    _ => super::connection::AdmissionRefusal::Rejected,
-                })
+    let metadata = retry
+        .retry_durability("inspection_metadata", || {
+            owner.root.read_inspection_metadata(owner.character, admitted.world_id, instance)
         })
         .await
         .ok()??;

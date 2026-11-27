@@ -209,21 +209,13 @@ pub(super) async fn read_current_equipment(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
 ) -> Option<character_equipment::EquipmentSnapshot> {
-    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
-    use crate::durability::DurabilityError;
     let retry = super::AdmissionRetryBudget::for_command(admission.root);
     let store = FreshAdmissionStore::from_root(admission.root.clone());
     // Join snapshots interleave these reads for multiple admitted players.
     // A busy holder proves neither an absent equipment view nor stale control.
     let current = retry
-        .retry_unavailable(async || {
-            store
-                .current_session_at(game_session_id)
-                .await
-                .map_err(|error| match error {
-                    DurabilityError::RootUnavailable => Unavailable,
-                    _ => Rejected,
-                })
+        .retry_durability("equipment_observation_session", || {
+            store.current_session_at(game_session_id)
         })
         .await
         .ok()?
@@ -261,21 +253,22 @@ pub(super) async fn read_equipment_within(
     fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
     digest: [u8; 32],
 ) -> Option<character_equipment::EquipmentSnapshot> {
-    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
-    use crate::durability::DurabilityError;
     let read = retry
-        .retry_unavailable(async || {
-            admission
-                .root
-                .read_movement_equipment(admission.character, admission.holder, fence, digest)
-                .await
-                .map_err(|error| match error {
-                    character_equipment::EquipmentError::Durability(
-                        DurabilityError::RootUnavailable,
-                    ) => Unavailable,
-                    _ => Rejected,
-                })
-        })
+        .retry_holder(
+            "equipment_observation",
+            || {
+                admission.root.read_movement_equipment(
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    digest,
+                )
+            },
+            |error| match error {
+                character_equipment::EquipmentError::Durability(source) => Some(source),
+                _ => None,
+            },
+        )
         .await
         .ok()?;
     if read.fence() != fence || read.equipment().content_digest != digest {

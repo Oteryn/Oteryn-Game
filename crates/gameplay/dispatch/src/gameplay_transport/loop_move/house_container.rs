@@ -4,6 +4,7 @@ use super::super::ComposedFreshAdmission;
 use super::super::container_view::ContainerObservation;
 use super::super::item_ref_admission::{definition_ref, generation_item_facts, pinned_index};
 use super::super::item_view::{ItemKey, ViewItem};
+use super::read_container_observation;
 use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ExactActorRef, RuntimeScopeRefV1};
@@ -41,9 +42,13 @@ pub(super) async fn observe(
             pinned_index(&runtime, admission.active_generation)?,
         )
     };
-    if !admission
-        .root
-        .house_action_current(admission.holder, &context)
+    let retry = super::super::AdmissionRetryBudget::for_command(admission.root);
+    let house_is_current = || {
+        admission
+            .root
+            .house_action_current(admission.holder, &context)
+    };
+    if !read_container_observation(&retry, "house_container_session", house_is_current)
         .await
         .ok()?
     {
@@ -51,34 +56,34 @@ pub(super) async fn observe(
     }
     // Preserve carried custody; only the actual same-House owner may supply a
     // separate bounded House graph. Neither path falls through to Channel Ground.
-    let carried = admission
-        .root
-        .read_item_loop_container(admission.character, fence.character_id, container)
-        .await
-        .ok()?;
+    let carried = read_container_observation(&retry, "carried_container_observation", || {
+        admission
+            .root
+            .read_item_loop_container(admission.character, fence.character_id, container)
+    })
+    .await
+    .ok()?;
     let (read, is_house) = match carried {
         Some(read) => (Some(read), false),
         None => (
-            admission
-                .root
-                .read_house_item_loop_container_with_capacity(
+            read_container_observation(&retry, "house_container_contents", || {
+                admission.root.read_house_item_loop_container_with_capacity(
                     admission.character,
                     admission.holder,
                     &context,
                     container,
                     house_capacity_v2,
                 )
-                .await
-                .ok()?,
+            })
+            .await
+            .ok()?,
             true,
         ),
     };
     let Some(read) = read else {
         return Some(ContainerObservation::Gone);
     };
-    if !admission
-        .root
-        .house_action_current(admission.holder, &context)
+    if !read_container_observation(&retry, "house_container_session", house_is_current)
         .await
         .ok()?
     {

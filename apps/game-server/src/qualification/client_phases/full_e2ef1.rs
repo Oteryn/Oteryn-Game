@@ -1379,6 +1379,67 @@ mod e2ef1 {
             client.take_events();
         }
     }
+
+    async fn logout_after_combat(
+        mut exchange: impl AsyncFnMut(
+            Duration,
+        )
+            -> TestResult<oteryn_protocol_oteryn::logout::LogoutResult>,
+    ) -> TestResult {
+        use oteryn_protocol_oteryn::logout::LogoutResult;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        let mut wait = Duration::ZERO;
+        loop {
+            wait = match exchange(wait).await? {
+                LogoutResult::Accepted => return Ok(()),
+                // Global refreshes the lock after each hit. A new refusal at the previous
+                // expiry gives the new time remaining, even past the release retry deadline.
+                LogoutResult::InFight { retry_after_ms } => {
+                    Duration::from_millis(u64::from(retry_after_ms))
+                }
+                LogoutResult::Busy if tokio::time::Instant::now() < deadline => {
+                    Duration::from_millis(250)
+                }
+                LogoutResult::Busy => return Err("M07 logout release remained busy".into()),
+            };
+        }
+    }
+
+    async fn logout_on_rope_landing(
+        client: &mut DevClientSession,
+        landing: ActorPosition,
+    ) -> TestResult {
+        use oteryn_protocol_oteryn::logout::LogoutResult;
+
+        logout_after_combat(async |wait| {
+            if !wait.is_zero() {
+                client.session_mut().service_liveness_discarding_events(wait).await?;
+            }
+            let position = client.world_spatial().actor_position;
+            let vitals = client.actor_vitals();
+            if position != landing || vitals.is_some_and(|vitals| vitals.health == 0) {
+                return Err(format!("M07 actor lost the rope landing while awaiting logout: landing={landing:?} actual={position:?} vitals={vitals:?}").into());
+            }
+            let logout = client.session_mut().logout().await?;
+            if let Some(LogoutResult::InFight { retry_after_ms }) = logout.result {
+                let nearby: Vec<_> = client
+                    .world_entities()
+                    .into_iter()
+                    .flat_map(|entities| entities.iter())
+                    .filter(|entity| {
+                        entity.kind == EntityKind::Creature && entity.position.floor == landing.floor
+                    })
+                    .map(|entity| (entity.display_name, entity.position))
+                    .collect();
+                evidence(&format!(
+                    "E2EF1_LOGOUT_FIGHT row=M07 position={landing:?} retry_after_ms={retry_after_ms} vitals={:?} creatures={nearby:?}",
+                    client.actor_vitals(),
+                ));
+            }
+            logout.result.ok_or_else(|| format!("M07 landing logout refused: {logout:?}").into())
+        })
+        .await
+    }
     /// M05 cleanup after its door checks (#3373): the doors leave the actor outside the
     /// town protection zone, where a live creature kept refreshing the 60 s PvE lock past
     /// the logout deadline. Log every visible creature as the lock-holder evidence, then
@@ -1607,7 +1668,11 @@ mod e2ef1 {
                 })
                 .await?;
             }
-            logout(&mut client).await?;
+            if *row == "M07" && checks.passed.contains("rope-ascent") {
+                logout_on_rope_landing(&mut client, saved).await?;
+            } else {
+                logout(&mut client).await?;
+            }
             drop(client);
             client = connect_world(clients, 0xb0 + u8::try_from(ordinal)?).await?;
             let durable = client.world_spatial().actor_position == saved
@@ -1672,6 +1737,33 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[tokio::test(start_paused = true)]
+        async fn qualification_m07_logout_follows_refreshed_combat_expiry() -> TestResult {
+            use oteryn_protocol_oteryn::logout::LogoutResult;
+
+            let start = tokio::time::Instant::now();
+            let mut attempts = Vec::new();
+            logout_after_combat(async |wait| {
+                tokio::time::advance(wait).await;
+                let elapsed = start.elapsed().as_millis();
+                attempts.push(elapsed);
+                Ok(match elapsed {
+                    0 => LogoutResult::InFight {
+                        retry_after_ms: 60_000,
+                    },
+                    // A hit at 55 seconds renews the lock until 115 seconds.
+                    60_000 => LogoutResult::InFight {
+                        retry_after_ms: 55_000,
+                    },
+                    115_000 => LogoutResult::Accepted,
+                    _ => return Err(format!("unexpected logout attempt at {elapsed} ms").into()),
+                })
+            })
+            .await?;
+            assert_eq!(attempts, [0, 60_000, 115_000]);
+            Ok(())
+        }
+
         #[test]
         fn qualification_m05_door_requires_a_clear_approach_and_threshold() {
             let stand = ActorPosition {

@@ -497,25 +497,37 @@ impl AdmissionRetryBudget<'_> {
     pub(super) async fn retry_durability<T, F, Fut>(
         &self,
         stage: &'static str,
-        mut step: F,
+        step: F,
     ) -> Result<T, crate::durability::DurabilityError>
     where
         F: FnMut() -> Fut,
         Fut: std::future::Future<Output = Result<T, crate::durability::DurabilityError>>,
     {
+        self.retry_holder(stage, step, |error| Some(error)).await
+    }
+
+    pub(super) async fn retry_holder<T, E, F, Fut>(
+        &self,
+        stage: &'static str,
+        mut step: F,
+        durability: impl Fn(&E) -> Option<&crate::durability::DurabilityError>,
+    ) -> Result<T, E>
+    where
+        F: FnMut() -> Fut,
+        Fut: std::future::Future<Output = Result<T, E>>,
+    {
         use crate::durability::DurabilityError;
+        let mut attempt = 0;
         loop {
+            attempt += 1;
             match step().await {
                 Ok(value) => return Ok(value),
                 Err(error) => {
-                    if matches!(error, DurabilityError::RootUnavailable)
-                        && self
-                            .retries_unavailable(AdmissionRefusal::Unavailable)
-                            .await
-                    {
-                        continue;
-                    }
-                    let kind = match &error {
+                    let Some(source) = durability(&error) else {
+                        return Err(error);
+                    };
+                    let holder_busy = matches!(source, DurabilityError::RootUnavailable);
+                    let kind = match source {
                         DurabilityError::RootUnavailable => "holder_busy",
                         DurabilityError::Database(_)
                         | DurabilityError::Migration(_)
@@ -532,6 +544,16 @@ impl AdmissionRetryBudget<'_> {
                             "unavailable"
                         }
                     };
+                    if holder_busy
+                        && self
+                            .retries_unavailable(AdmissionRefusal::Unavailable)
+                            .await
+                    {
+                        operator_event(&format!(
+                            "event=session_durability_retry stage={stage} kind={kind} attempt={attempt}"
+                        ));
+                        continue;
+                    }
                     operator_event(&format!(
                         "event=session_durability_failed stage={stage} kind={kind}"
                     ));

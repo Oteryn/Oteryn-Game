@@ -733,17 +733,30 @@ impl LoopGroundCache {
 /// A view may overlap the same connection's inventory refresh on the bounded
 /// durability holder. Retry only that temporary resource refusal, within one
 /// deadline; stored-state and authority errors still close the view.
-async fn projection_read<T, E, F, Fut>(mut read: F, busy: impl Fn(&E) -> bool) -> Option<T>
+async fn projection_read<T, E, F, Fut>(
+    stage: &'static str,
+    mut read: F,
+    busy: impl Fn(&E) -> bool,
+) -> Option<T>
 where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = Result<T, E>>,
 {
     tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        // Refresh sweeps already report holder pressure. Log the first foreground
+        // refusal without emitting a line for every 5 ms poll of the same view.
+        let mut report_retry = !crate::durability::DurabilityRoot::is_background_holder();
         loop {
             match read().await {
                 Ok(value) => return Some(value),
                 Err(error) if busy(&error) => {
-                    tokio::time::sleep(std::time::Duration::from_millis(5)).await
+                    if report_retry {
+                        super::operator_event(&format!(
+                            "event=session_durability_retry stage={stage} kind=holder_busy attempt=1"
+                        ));
+                        report_retry = false;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
                 }
                 Err(_) => return None,
             }
@@ -792,6 +805,7 @@ pub(super) async fn reconcile_cask_collision(
         pin
     };
     let retired = projection_read(
+        "retired_cask_projection",
         || {
             admission.root.read_retired_map_cask_placements(
                 world_id,
@@ -856,6 +870,7 @@ pub async fn loop_ground(
     }
     let index = index?;
     let items = projection_read(
+        "ground_items_projection",
         || async {
             if synchronize_sculpture {
                 admission
@@ -875,6 +890,7 @@ pub async fn loop_ground(
     } = scope
     {
         projection_read(
+            "map_placements_projection",
             || {
                 admission.root.read_map_item_mint_placement_states(
                     world_id,
@@ -1662,6 +1678,22 @@ pub(super) async fn observe_container_with_house_capacity(
         .await
 }
 
+async fn read_container_observation<T, F, Fut>(
+    retry: &super::AdmissionRetryBudget<'_>,
+    stage: &'static str,
+    mut read: F,
+) -> Result<T, crate::durability::DurabilityError>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<T, crate::durability::DurabilityError>>,
+{
+    if crate::durability::DurabilityRoot::is_background_holder() {
+        read().await
+    } else {
+        retry.retry_durability(stage, read).await
+    }
+}
+
 async fn observe_container_with_house_capacity_inner(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -1714,28 +1746,13 @@ async fn observe_container_with_house_capacity_inner(
         admission.active_generation,
     )?;
     let native = admission.active_generation?.native_gameplay()?;
-    let read_carried = || {
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    let carried = read_container_observation(&retry, "carried_container_observation", || {
         admission
             .root
             .read_item_loop_container(admission.character, fence.character_id, container)
-    };
-    let carried = if crate::durability::DurabilityRoot::is_background_holder() {
-        read_carried().await
-    } else {
-        super::AdmissionRetryBudget::for_command(admission.root)
-            .retry_command_guard(async || {
-                let result = read_carried().await;
-                if let Err(error) = &result {
-                    super::operator_event(&format!(
-                        "event=container_carried_read_refused source={}:{} error={error:?}",
-                        file!(),
-                        line!(),
-                    ));
-                }
-                result
-            })
-            .await
-    }
+    })
+    .await
     .ok()?;
     let is_carried = carried.is_some();
     let mut browse_parent = None;
@@ -1745,11 +1762,13 @@ async fn observe_container_with_house_capacity_inner(
         // Carried views use the Character owner's custody read, including for
         // sessions admitted without a fresh-admission receipt. Only the new
         // Ground path needs the fresh-session proof for external reach.
-        let current = super::FreshAdmissionStore::from_root(admission.root.clone())
-            .current_session_at(fence.game_session_id)
-            .await
-            .ok()?
-            .0;
+        let store = super::FreshAdmissionStore::from_root(admission.root.clone());
+        let current = read_container_observation(&retry, "ground_container_session", || {
+            store.current_session_at(fence.game_session_id)
+        })
+        .await
+        .ok()?
+        .0;
         if current.session_state() != super::GameSessionState::Active
             || super::item_fence_of(current) != Some(fence)
         {
@@ -1769,11 +1788,15 @@ async fn observe_container_with_house_capacity_inner(
             )
         };
         let overlay = loop_ground(admission, &base, Some(index)).await?;
-        let Some(root) = admission
-            .root
-            .read_item_loop_ground_container_root(admission.character, fence, container)
-            .await
-            .ok()?
+        let Some(root) = read_container_observation(&retry, "ground_container_root", || {
+            admission.root.read_item_loop_ground_container_root(
+                admission.character,
+                fence,
+                container,
+            )
+        })
+        .await
+        .ok()?
         else {
             return Some(ContainerObservation::Gone);
         };
@@ -1789,26 +1812,27 @@ async fn observe_container_with_house_capacity_inner(
             at,
             (i32::from(cell.x), i32::from(cell.y), i16::from(cell.floor)),
         );
-        let Some(read) = admission
-            .root
-            .read_item_loop_ground_container(
+        let ground = LoopGround {
+            spatial_position: ground_cell(
+                i32::from(cell.x),
+                i32::from(cell.y),
+                i16::from(cell.floor),
+            ),
+            map_revision: map_revision(&base),
+            content_revision,
+            placement_context,
+        };
+        let Some(read) = read_container_observation(&retry, "ground_container_contents", || {
+            admission.root.read_item_loop_ground_container(
                 admission.character,
                 fence,
                 container,
                 root,
-                LoopGround {
-                    spatial_position: ground_cell(
-                        i32::from(cell.x),
-                        i32::from(cell.y),
-                        i16::from(cell.floor),
-                    ),
-                    map_revision: map_revision(&base),
-                    content_revision,
-                    placement_context,
-                },
+                ground.clone(),
             )
-            .await
-            .ok()?
+        })
+        .await
+        .ok()?
         else {
             return Some(ContainerObservation::Gone);
         };
@@ -1817,11 +1841,13 @@ async fn observe_container_with_house_capacity_inner(
     // Ground custody reads can wait on physical item/location locks while
     // reconnect advances the durable session. Recheck before publishing.
     if !is_carried {
-        let current = super::FreshAdmissionStore::from_root(admission.root.clone())
-            .current_session_at(fence.game_session_id)
-            .await
-            .ok()?
-            .0;
+        let store = super::FreshAdmissionStore::from_root(admission.root.clone());
+        let current = read_container_observation(&retry, "ground_container_session", || {
+            store.current_session_at(fence.game_session_id)
+        })
+        .await
+        .ok()?
+        .0;
         if current.session_state() != super::GameSessionState::Active
             || super::item_fence_of(current) != Some(fence)
         {
@@ -2059,6 +2085,7 @@ mod tests {
             .block_on(async {
                 let attempts = std::cell::Cell::new(0);
                 let result = projection_read(
+                    "test_projection",
                     || {
                         let attempt = attempts.get() + 1;
                         attempts.set(attempt);
@@ -2071,6 +2098,7 @@ mod tests {
                 assert_eq!(attempts.get(), 3);
                 let attempts = std::cell::Cell::new(0);
                 let result = projection_read(
+                    "test_projection",
                     || {
                         attempts.set(attempts.get() + 1);
                         std::future::ready(Err::<u8, _>(false))

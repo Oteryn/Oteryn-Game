@@ -315,6 +315,7 @@ pub(super) async fn observe_item(
     fence: Option<CurrentCharacterItemFence>,
     views: &SessionItemView,
     target: ItemHandle,
+    retry: &super::AdmissionRetryBudget<'_>,
 ) -> Result<(TypedDefinitionRef, u32, i32), ItemLookRefusal> {
     let unavailable = ItemLookRefusal::NotAvailable;
     let key = views.resolve(target).ok_or(unavailable)?;
@@ -361,13 +362,15 @@ pub(super) async fn observe_item(
                     .ok_or(unavailable)?;
                 (item.definition, item.quantity, -1)
             } else if let Some(corpse) = &corpse {
-                let contents = admission
-                    .root
-                    .read_corpse_contents(admission.character, corpse.item.item_instance_id)
-                    .await
-                    .ok()
-                    .flatten()
-                    .ok_or(unavailable)?;
+                let contents = super::item_ref_admission::read_corpse_contents(
+                    admission,
+                    retry,
+                    corpse.item.item_instance_id,
+                )
+                .await
+                .ok()
+                .flatten()
+                .ok_or(unavailable)?;
                 let entry = contents
                     .into_iter()
                     .find(|entry| entry.item.item_instance_id == instance)
@@ -378,7 +381,7 @@ pub(super) async fn observe_item(
                 // the main backpack. A handle may instead name a durable Ground item, which
                 // needs no carried-item fence: without one the look goes straight to the map.
                 let read = match fence {
-                    Some(fence) => super::AdmissionRetryBudget::for_command(admission.root)
+                    Some(fence) => retry
                         .retry_durability("carried_item_observation", || {
                             admission.root.read_item_loop_container(
                                 admission.character,
@@ -437,8 +440,9 @@ async fn observe_look_item(
     use super::item_ref_admission::definition_ref;
     let unavailable = ItemLookRefusal::NotAvailable;
     let key = views.resolve(target).ok_or(unavailable)?;
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
     let (definition, count, distance) =
-        observe_item(admission, actor, session, fence, views, target).await?;
+        observe_item(admission, actor, session, fence, views, target, &retry).await?;
     let runtime = admission.runtime.lock().await;
     let index = pinned_index(&runtime, admission.active_generation).ok_or(unavailable)?;
     let observed = ObservedLookItem {
@@ -496,18 +500,19 @@ async fn observe_look_item(
         }
         let pin = content_generation(&runtime);
         drop(runtime);
-        let inscription = admission
-            .root
-            .read_authored_item_text(
-                admission.character,
-                admission.holder,
-                item_fence,
-                instance,
-                &definition,
-            )
+        let inscription = retry
+            .retry_durability("authored_item_look", || {
+                admission.root.read_authored_item_text(
+                    admission.character,
+                    admission.holder,
+                    item_fence,
+                    instance,
+                    &definition,
+                )
+            })
             .await
             .map_err(|_| unavailable)?;
-        let current = observe_item(admission, actor, session, fence, views, target).await?;
+        let current = observe_item(admission, actor, session, fence, views, target, &retry).await?;
         let runtime = admission.runtime.lock().await;
         if current != (definition, count, distance)
             || content_generation(&runtime) != pin
@@ -539,18 +544,19 @@ async fn observe_look_item(
         && let ItemKey::Instance(instance) = key
     {
         drop(runtime);
-        let inscription = admission
-            .root
-            .read_marriage_inscription(
-                admission.character,
-                *admission.world_id.as_bytes(),
-                instance,
-            )
+        let inscription = retry
+            .retry_durability("marriage_inscription_look", || {
+                admission.root.read_marriage_inscription(
+                    admission.character,
+                    *admission.world_id.as_bytes(),
+                    instance,
+                )
+            })
             .await
             .map_err(|_| unavailable)?;
         if let Some(inscription) = inscription {
             let (current, _, current_distance) =
-                observe_item(admission, actor, session, fence, views, target).await?;
+                observe_item(admission, actor, session, fence, views, target, &retry).await?;
             if current != definition || current_distance > 4 {
                 return Err(unavailable);
             }

@@ -24,7 +24,7 @@ use crate::content::item_ref::ItemDefinitionIndex;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
-    ItemStackClass, ItemTransferDestination, ItemTransferError, ItemTransferOutcome,
+    BackpackEntry, ItemStackClass, ItemTransferDestination, ItemTransferError, ItemTransferOutcome,
     ItemTransferRequest, ItemWeightLookup, ItemWeightRefused,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
@@ -168,6 +168,27 @@ pub(super) fn visible_corpses(
         .collect()
 }
 
+pub(super) async fn read_corpse_contents(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    retry: &super::AdmissionRetryBudget<'_>,
+    corpse: [u8; 16],
+) -> Result<Option<Vec<BackpackEntry>>, ItemTransferError> {
+    retry
+        .retry_holder(
+            "corpse_contents",
+            || {
+                admission
+                    .root
+                    .read_corpse_contents(admission.character, corpse)
+            },
+            |error| match error {
+                ItemTransferError::Unavailable(source) => Some(source),
+                _ => None,
+            },
+        )
+        .await
+}
+
 /// MAP-ITEM-REF-1 Part B: `USE` on a domain-1 object (ITEM-MOVE-WIRE-0 §4.3). Only a bound corpse
 /// is an item target; an unbound or vanished one is `Gone`, so no corpse Item id is ever made up.
 /// Its contents are the durable corpse entries, each named by the pinned index; any it does not
@@ -201,9 +222,8 @@ pub(super) async fn observe_item_target(
             target: UseItemTarget::Gone,
         });
     };
-    let Some(entries) = admission
-        .root
-        .read_corpse_contents(admission.character, corpse.item.item_instance_id)
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    let Some(entries) = read_corpse_contents(admission, &retry, corpse.item.item_instance_id)
         .await
         .ok()?
     else {
@@ -348,9 +368,8 @@ pub(super) async fn take_corpse_entry(
     let fence = command.item_fence.ok_or_else(rejected)?;
     let command_id = crate::foundation::CommandId::new(command.command_id)
         .map_err(|_| GroundPickupError::Transfer(ItemTransferError::InvalidInput))?;
-    let contents = admission
-        .root
-        .read_corpse_contents(admission.character, corpse)
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    let contents = read_corpse_contents(admission, &retry, corpse)
         .await?
         .ok_or(GroundPickupError::SourceMismatch)?;
     let source = contents
