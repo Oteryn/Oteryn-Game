@@ -665,6 +665,7 @@ mod read_retry_tests {
                 deadline: tokio::time::Instant::now() + Duration::from_secs(1),
                 backoff: Duration::from_millis(50),
                 stale_rounds: 1,
+                admission_phase: None,
                 root: None,
                 _foreground: None,
                 waiter: std::sync::OnceLock::new(),
