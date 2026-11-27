@@ -15,7 +15,7 @@ fn daily_boost_postgres_real_dispatch_restart_and_epoch_fence() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(Case::Restart).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "daily boost PostgreSQL scenario panicked")??;
     Ok(())
@@ -28,7 +28,7 @@ fn selected_world_login_probe_returns_boost_and_online_before_admission() -> Tes
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(Case::PreAdmission).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "world login probe PostgreSQL scenario panicked")?
         .map_err(Into::into)
@@ -107,7 +107,25 @@ async fn pre_admission_case(
     Ok(())
 }
 
-fn scenario(preadmission: bool) -> TestResult {
+#[test]
+fn daily_boost_query_after_logout_and_relogin_under_holder_contention_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("daily-boost-relog", || {
+        scenario(Case::Relog)
+    })
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Restart,
+    PreAdmission,
+    Relog,
+}
+
+fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "daily_boost_wire", true, false).await?;
@@ -180,7 +198,7 @@ fn scenario(preadmission: bool) -> TestResult {
         owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
-        if preadmission {
+        if case == Case::PreAdmission {
             let result = pre_admission_case(&owner, deps.admitted.world_id, &h.pool).await;
             drop(owner);
             drop(authority);
@@ -242,6 +260,14 @@ fn scenario(preadmission: bool) -> TestResult {
             })
             .map_err(debug)?
         );
+        if case == Case::Relog {
+            let result = logout_relogin_query(&h, &owner, admitted, first).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         let native = generation.native_gameplay().ok_or("native content")?;
         let profile = |key: &str| {
             native
@@ -448,4 +474,55 @@ fn scenario(preadmission: bool) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+
+async fn logout_relogin_query(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    expected: Vec<u8>,
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::foundation::GameSessionState;
+    use crate::gameplay_transport::composed_admission::{CONDITION_RELEASE_PROBE, HolderCheckoutProbe};
+    use crate::gameplay_transport::daily_boost::DAILY_BOOST_CHECKOUT_PROBE;
+    use oteryn_protocol_oteryn::logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result};
+    use std::{cell::Cell, sync::Arc, time::Duration};
+
+    let store = FreshAdmissionStore::from_root(h.root.clone());
+    let previous = admitted.game_session_id;
+    let logout_checkout = Arc::new(HolderCheckoutProbe::default());
+    let next = admitted.continuity.next_command_id;
+    let release_started = tokio::time::Instant::now();
+    let (result, released_holder) = tokio::time::timeout(Duration::from_secs(30), super::fixture::join_two(
+        CONDITION_RELEASE_PROBE.scope(
+            Cell::new(Some(Arc::clone(&logout_checkout))),
+            support::exchange(owner, &mut admitted, next, COMMAND_TYPE_LOGOUT_INTENT, &[]),
+        ),
+        logout_checkout.contend(&h.root),
+    )).await?;
+    released_holder?;
+    let (status, payload) = result?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(decode_logout_result(&payload).map_err(debug)?, LogoutResult::Accepted);
+    assert!(release_started.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
+    assert_eq!(store.current_session(previous).await?.session_state(), GameSessionState::Terminal);
+
+    let mut fresh = super::full_world_support::readmit_after_logout(h, owner, admitted).await?;
+    assert_ne!(fresh.game_session_id, previous);
+    let query_checkout = Arc::new(HolderCheckoutProbe::default());
+    let next = fresh.continuity.next_command_id;
+    let (result, released_holder) = tokio::time::timeout(Duration::from_secs(30), super::fixture::join_two(
+        DAILY_BOOST_CHECKOUT_PROBE.scope(
+            Cell::new(Some(Arc::clone(&query_checkout))),
+            support::exchange(owner, &mut fresh, next, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
+        ),
+        query_checkout.contend(&h.root),
+    )).await?;
+    released_holder?;
+    let (status, view) = result?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(view, expected);
+    Ok(())
 }

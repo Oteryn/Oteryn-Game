@@ -7,9 +7,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
-) -> Option<Dispatch> {
-    Some(
-        match authority
+) -> Dispatch {
+    match authority
             .daily_boost_command(
                 *admitted,
                 command.command_id,
@@ -22,7 +21,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes)
             }
             GuildReply::Rejected => Dispatch::Unregistered,
-            GuildReply::Unavailable => return None,
-        },
-    )
+        // The protocol carries a view on success and an empty typed refusal on failure.
+        GuildReply::Unavailable => Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new()),
+    }
 }

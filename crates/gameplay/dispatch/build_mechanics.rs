@@ -237,8 +237,8 @@ fn write_outputs(
         // before the caller can box it. Keep return/`?` inside the Result boundary.
         writeln!(
             routes,
-            "{pattern} => Box::pin(async move {{\nOk({{\n{}\n}})\n}}).await,",
-            mechanic.route
+            "{pattern} => Box::pin(async move {{\nOk({{\n{}\n}})\n}}).await.map_err(|end| command::disconnect_at(command, {:?}, \"route_unavailable\", end)),",
+            mechanic.route, mechanic.name
         )?;
         for command in &mechanic.commands {
             writeln!(table, "({command}, {:?}),", mechanic.name)?;

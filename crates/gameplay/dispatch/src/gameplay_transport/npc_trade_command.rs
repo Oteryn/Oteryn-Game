@@ -44,6 +44,19 @@ impl NpcTradeStep {
     }
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static TRADE_BACKPACK_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
+fn unknown_trade(stage: &'static str, kind: impl std::fmt::Debug) -> Box<NpcTradeStep> {
+    super::operator_event(&format!(
+        "event=session_durability_failed stage={stage} kind={kind:?}"
+    ));
+    Box::new(NpcTradeStep::Unknown)
+}
+
 /// A UUIDv7-shaped identity of the command `command_id` of `session`, distinct per `tag`.
 pub(super) fn derived(tag: &[u8], session: GameSessionId, command_id: u64) -> [u8; 16] {
     let hash = Sha256::new()
@@ -175,30 +188,42 @@ pub(super) async fn trade(
     else {
         return Err(Box::new(NpcTradeStep::rejected()));
     };
-    let Some(_permit) = admission.spell_lane_permit().await else {
-        return Err(Box::new(NpcTradeStep::Unknown));
-    };
     let command_ref = CommandRef::new(session, command_id);
     let occurrence = occurrence(session, command.command_id, intent.npc_actor);
-    match admission
-        .root
-        .read_npc_trade(
-            admission.character,
-            fence.character_id,
-            command_ref,
-            occurrence,
-        )
-        .await
-    {
-        Ok(Some(receipt)) if answers(&receipt, &intent, mode) => {
+    // Decoding an NPC trade already proves a current trade candidate. Recheck
+    // the exact occurrence under its lock so a possibly committed trade can
+    // recover even when an earlier writer is still finishing.
+    let budget = super::AdmissionRetryBudget::for_command(admission.root);
+    let Some(permit) = admission.spell_lane_permit().await else {
+        return Err(unknown_trade("npc_trade_permit", "lane_unavailable"));
+    };
+    let receipt = budget
+        .retry_command_guard(async || {
+            match admission
+                .root
+                .read_npc_trade(
+                    admission.character,
+                    fence.character_id,
+                    command_ref,
+                    occurrence,
+                )
+                .await
+            {
+                Err(NpcTradeError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        })
+        .await;
+    match receipt {
+        Ok(Ok(Some(receipt))) if answers(&receipt, &intent, mode) => {
             return Ok(SoldUnits {
                 units: receipt.quantity,
                 gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
             });
         }
-        Ok(None) => {}
-        Err(NpcTradeError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
-        Ok(Some(_)) | Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+        Ok(Ok(None)) => {}
+        Err(error) => return Err(unknown_trade("npc_trade_replay", error)),
+        _ => return Err(Box::new(NpcTradeStep::rejected())),
     }
 
     let mut hireling = match super::npc_command::hireling_services::authorize_trade(
@@ -207,7 +232,9 @@ pub(super) async fn trade(
     .await
     {
         Ok(selection) => selection,
-        Err(NpcTradeError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
+        Err(NpcTradeError::Unavailable(error)) => {
+            return Err(unknown_trade("npc_trade_service", error));
+        }
         Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     };
     if (hireling.is_some() && (include_equipped || matches!(mode, Mode::Packed)))
@@ -384,18 +411,54 @@ pub(super) async fn trade(
             return Err(Box::new(NpcTradeStep::rejected()));
         }
     }
-    let backpack = match admission
-        .root
-        .read_character_backpack(admission.character, fence.character_id)
+    #[cfg(test)]
+    let probe = TRADE_BACKPACK_CHECKOUT_PROBE
+        .try_with(std::cell::Cell::take)
+        .ok()
+        .flatten();
+    #[cfg(test)]
+    if let Some(probe) = &probe {
+        probe.pause().await;
+    }
+    let backpack = match budget
+        .retry_command_guard(async || {
+            let result = admission
+                .root
+                .read_character_backpack(admission.character, fence.character_id)
+                .await;
+            #[cfg(test)]
+            if matches!(
+                result,
+                Err(ItemTransferError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable
+                ))
+            ) && let Some(probe) = &probe
+            {
+                probe.blocked();
+            }
+            match result {
+                Err(ItemTransferError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        })
         .await
     {
-        Ok(Some(current)) => match generation_item_facts(native, &current.backpack.definition) {
-            Ok(facts) => facts,
-            Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
-        },
-        Ok(None) => return Err(Box::new(NpcTradeStep::rejected())),
-        Err(ItemTransferError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
-        Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+        Ok(Ok(Some(current))) => {
+            match generation_item_facts(native, &current.backpack.definition) {
+                Ok(facts) => facts,
+                Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+            }
+        }
+        Err(
+            crate::durability::DurabilityError::RootUnavailable
+            | crate::durability::DurabilityError::RootPassDeadlineExceeded,
+        ) => {
+            return Err(Box::new(NpcTradeStep::Refused(NpcTradeRefusal::only(
+                super::npc_command::busy_disposition(command, "npc_trade_backpack"),
+            ))));
+        }
+        Err(error) => return Err(unknown_trade("npc_trade_backpack", error)),
+        _ => return Err(Box::new(NpcTradeStep::rejected())),
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
     let shopping_bag = if matches!(mode, Mode::Packed) {
@@ -519,6 +582,19 @@ pub(super) async fn trade(
             .commit_npc_trade(admission.character, admission.holder, fence, request)
             .await
     };
+    // Settlement awaits the return of its semantic pass. Hand the lane back
+    // before transport begins its independent post-commit projection.
+    drop(hireling_runtime);
+    if let Err(NpcTradeError::Unavailable(crate::durability::DurabilityError::RootUnavailable)) =
+        result
+    {
+        return Err(Box::new(NpcTradeStep::Refused(NpcTradeRefusal::only(
+            super::npc_command::busy_disposition(command, "npc_trade_checkout"),
+        ))));
+    }
+    if let Err(NpcTradeError::Unavailable(error)) = &result {
+        return Err(unknown_trade("npc_trade_commit", error));
+    }
     let outcome = step_of(result);
     if include_equipped && outcome.is_ok() {
         admission
@@ -533,9 +609,13 @@ pub(super) async fn trade(
             != Ok(true)
         {
             // The receipt is committed. Rejoin must reload equipment before the receipt is sent.
-            return Err(Box::new(NpcTradeStep::Unknown));
+            return Err(unknown_trade(
+                "npc_trade_equipment_refresh",
+                "inventory_unavailable",
+            ));
         }
     }
+    drop(permit);
     outcome
 }
 

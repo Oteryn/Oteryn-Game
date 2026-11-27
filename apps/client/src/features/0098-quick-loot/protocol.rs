@@ -58,6 +58,44 @@ impl Outbox {
         state.history.selected =
             session.server_mechanic_selected(154) && session.server_mechanic_selected(285);
     }
+    pub(in crate::play) async fn restore_quick_loot(
+        &self,
+        session: &mut impl crate::play::Stepper,
+    ) -> Result<(), oteryn_session::SessionError> {
+        use oteryn_client_ui::quick_loot::Action;
+        use oteryn_session::{CommandStatus, quick_loot::*};
+        if !session.server_mechanic_selected(CAPABILITY_QUICK_LOOT_DESTINATIONS_V1) {
+            return Ok(());
+        }
+        let Ok(payload) = encode_quick_loot_request(&quick_loot_filter_review_request()) else {
+            return Ok(());
+        };
+        let response = session.server_mechanic(&ServerMechanicCommand {
+            capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            payload,
+        }).await?;
+        if response.status != CommandStatus::Accepted {
+            return Ok(());
+        }
+        if let Ok(saved) = decode_quick_loot_destinations(&response.payload) {
+            let mut mailbox = lock(&self.0);
+            let panel = &mut mailbox.discovery.loot;
+            panel.destinations = saved.loot.into_iter().map(|row| Action::Destination {
+                category: row.category,
+                recipient: row.recipient,
+                id: row.recipient_id,
+                fallback: saved.fallback_to_main,
+            }).collect();
+            if let Some(filters) = saved.filters {
+                panel.filter_mode = Some(filters.mode);
+                panel.skipped = filters.skipped.into_iter().collect();
+                panel.accepted = filters.accepted.into_iter().collect();
+            }
+        }
+        Ok(())
+    }
+
     pub(in crate::play) fn discovery_result(
         &self,
         capability: u32,

@@ -80,7 +80,11 @@ where
         })
         .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(command::disconnect(
+            command,
+            "command_terminalize",
+            "receipt_unavailable",
+        ));
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
     if matches!(dispatch, Dispatch::Depot(_))
@@ -118,9 +122,9 @@ where
         }
         return Err(ServeEnd::LoggedOut);
     }
-    if write_frame(stream, &result).await.is_err() {
-        return Err(ServeEnd::Disconnected);
-    }
+    write_frame(stream, &result)
+        .await
+        .map_err(|error| command::disconnect(command, "command_result_write", error.kind()))?;
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing
     // scope barrier before observing any destination-owned state.
@@ -141,7 +145,11 @@ where
             .await);
         }
         if outcome.lost_while_logging_out {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "logout_in_flight",
+                "transport_lost",
+            ));
         }
     }
     emit(
@@ -154,7 +162,9 @@ where
         outcome.training_logged_out,
     )
     .await?;
-    super::analyser::emit(stream, authority, session).await
+    super::analyser::emit(stream, authority, session)
+        .await
+        .map_err(|end| command::disconnect_at(command, "command_analyser", "emit_failed", end))
 }
 
 async fn emit<S, A>(
@@ -205,29 +215,41 @@ where
                 text,
             )
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| command::disconnect(command, "logout_notice", "emit_failed"))?;
         }
         Dispatch::Step(outcome, _) => {
-            effects::step(stream, authority, session, outcome).await?;
+            effects::step(stream, authority, session, outcome)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "step_effects", "emit_failed", end)
+                })?;
         }
         Dispatch::Use(outcome) => {
             use_effects::use_effects(stream, authority, session, command, outcome).await?;
         }
         Dispatch::Spell(outcome) | Dispatch::ParameterSpell(outcome, _) => {
-            effects::spell(stream, authority, session, outcome).await?;
+            effects::spell(stream, authority, session, outcome)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "spell_effects", "emit_failed", end)
+                })?;
         }
         Dispatch::Timed(_, deltas) | Dispatch::ContainerSort(deltas) => {
             for delta in deltas {
                 let Some((delta_sequence, frame)) =
                     item_view_delta(session.generation, session.sequence, &delta)
                 else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "item_view_delta",
+                        "encode_failed",
+                    ));
                 };
                 session.sequence = delta_sequence;
                 session.admitted.continuity.server_sequence = session.sequence;
-                if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
-                }
+                write_frame(stream, &frame).await.map_err(|error| {
+                    command::disconnect(command, "item_view_write", error.kind())
+                })?;
             }
         }
         Dispatch::UseItem(_, Some(delta))
@@ -236,31 +258,39 @@ where
             let Some((delta_sequence, frame)) =
                 item_view_delta(session.generation, session.sequence, &delta)
             else {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "container_view_delta",
+                    "encode_failed",
+                ));
             };
             session.sequence = delta_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
-            if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
-            }
+            write_frame(stream, &frame).await.map_err(|error| {
+                command::disconnect(command, "container_view_write", error.kind())
+            })?;
         }
         Dispatch::Stash(reply) => {
             if !session
                 .selected_capabilities
                 .contains(oteryn_protocol_oteryn::stash::CAPABILITY_STASH_V1)
             {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "stash_delta",
+                    "capability_missing",
+                ));
             }
             let revision = session
                 .stash_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| command::disconnect(command, "stash_delta", "revision_exhausted"))?;
             let sequence = session
                 .sequence
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| command::disconnect(command, "stash_delta", "sequence_exhausted"))?;
             let payload = oteryn_protocol_oteryn::stash::encode_stash_reply(&reply)
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|error| command::disconnect(command, "stash_payload", error))?;
             let frame = oteryn_protocol_oteryn::encode_state_delta(
                 session.generation,
                 sequence,
@@ -270,16 +300,20 @@ where
                 1,
                 &payload,
             )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|error| command::disconnect(command, "stash_delta", error))?;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|error| command::disconnect(command, "stash_write", error.kind()))?;
             session.stash_revision = revision;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             if reply.outcome == oteryn_protocol_oteryn::stash::StashOutcome::Committed {
                 let Some(view) = session.item_view.as_mut() else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "stash_inventory_refresh",
+                        "view_missing",
+                    ));
                 };
                 if item_use_view_refresh::refresh(
                     stream,
@@ -293,7 +327,11 @@ where
                 .await
                 .is_none()
                 {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "stash_inventory_refresh",
+                        "update_failed",
+                    ));
                 }
             }
         }
@@ -303,7 +341,11 @@ where
                 oteryn_protocol_oteryn::container_batch::Reply::Committed(_)
             ) {
                 let Some(view) = session.item_view.as_mut() else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "carried_batch_inventory_refresh",
+                        "view_missing",
+                    ));
                 };
                 if item_use_view_refresh::refresh(
                     stream,
@@ -317,14 +359,22 @@ where
                 .await
                 .is_none()
                 {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "carried_batch_inventory_refresh",
+                        "update_failed",
+                    ));
                 }
             }
         }
         Dispatch::Depot(reply) => {
             if reply.outcome == oteryn_protocol_oteryn::depot::DepotOutcome::Moved {
                 let Some(view) = session.item_view.as_mut() else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "depot_inventory_refresh",
+                        "view_missing",
+                    ));
                 };
                 if item_use_view_refresh::refresh(
                     stream,
@@ -338,7 +388,11 @@ where
                 .await
                 .is_none()
                 {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "depot_inventory_refresh",
+                        "update_failed",
+                    ));
                 }
             }
         }
@@ -362,7 +416,11 @@ where
                 session.inventory_capacity_refresh_at = None;
             }
             let Some(view) = session.item_view.as_mut() else {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "reply_inventory_refresh",
+                    "view_missing",
+                ));
             };
             if item_use_view_refresh::refresh(
                 stream,
@@ -376,7 +434,41 @@ where
             .await
             .is_none()
             {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "reply_inventory_refresh",
+                    "update_failed",
+                ));
+            }
+        }
+        Dispatch::Reply(CommandStatus::Accepted, payload)
+            if routing::quick_loot::selected_moved(command.command_type, &payload) =>
+        {
+            if let Some(view) = session.item_view.as_mut() {
+                let item_move::ItemMoveStep::Result(_, deltas) = item_move::moved(
+                    authority,
+                    session.actor,
+                    UseCommand {
+                        game_session_id: session.admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: session.admitted.item_fence,
+                    },
+                    view,
+                )
+                .await
+                else {
+                    return Err(command::disconnect(
+                        command,
+                        "quick_loot_inventory",
+                        "observation_unavailable",
+                    ));
+                };
+                session.admitted.continuity.item_view = view.continuity();
+                effects::item_move(stream, authority, session, ItemMoveOutcome::Moved, deltas)
+                    .await
+                    .map_err(|end| {
+                        command::disconnect_at(command, "quick_loot_effects", "emit_failed", end)
+                    })?;
             }
         }
         Dispatch::Reply(CommandStatus::Accepted, _)
@@ -385,10 +477,18 @@ where
                     == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE =>
         {
             session.inventory_capacity_refresh_at = None;
-            forge::refresh(stream, authority, session).await?;
+            forge::refresh(stream, authority, session)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "forge_inventory_refresh", "emit_failed", end)
+                })?;
         }
         Dispatch::ItemMove(outcome, deltas, _) => {
-            effects::item_move(stream, authority, session, outcome, deltas).await?;
+            effects::item_move(stream, authority, session, outcome, deltas)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "item_move_effects", "emit_failed", end)
+                })?;
         }
         Dispatch::Reply(_, payload)
             if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET
@@ -396,14 +496,12 @@ where
                     .selected_capabilities
                     .domain_selected(oteryn_protocol_oteryn::market::STATE_DOMAIN_MARKET) =>
         {
-            let next = session
-                .market_revision
-                .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
-            let sequence = session
-                .sequence
-                .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+            let next = session.market_revision.checked_add(1).ok_or_else(|| {
+                command::disconnect(command, "market_delta", "revision_exhausted")
+            })?;
+            let sequence = session.sequence.checked_add(1).ok_or_else(|| {
+                command::disconnect(command, "market_delta", "sequence_exhausted")
+            })?;
             let frame = encode_state_delta(
                 session.generation,
                 sequence,
@@ -413,31 +511,39 @@ where
                 1,
                 &payload,
             )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|error| command::disconnect(command, "market_delta", error))?;
             session.market_revision = next;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|error| command::disconnect(command, "market_write", error.kind()))?;
         }
         Dispatch::QuestLog(domain) => {
             let Some((delta_sequence, frame)) =
                 quest_log_delta(session.generation, session.sequence, &domain)
             else {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "quest_log_delta",
+                    "encode_failed",
+                ));
             };
             session.sequence = delta_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
-            if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
-            }
+            write_frame(stream, &frame)
+                .await
+                .map_err(|error| command::disconnect(command, "quest_log_write", error.kind()))?;
         }
         // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks. CHAT-2B: an
         // opened or closed room follows the result as one domain 12 delta type 2.
         Dispatch::Chat(_, spell) => {
             if let Some(outcome) = spell {
-                effects::spell(stream, authority, session, outcome).await?;
+                effects::spell(stream, authority, session, outcome)
+                    .await
+                    .map_err(|end| {
+                        command::disconnect_at(command, "spell_effects", "emit_failed", end)
+                    })?;
             }
             if let Some(rooms) = authority.chat_rooms_changed_bound(session.admitted).await {
                 let Some((delta_sequence, frame, chat_revision)) = chat_delta(
@@ -447,27 +553,47 @@ where
                     DELTA_TYPE_CHAT_ROOMS_V1,
                     &encode_chat_rooms(rooms),
                 ) else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "chat_rooms_delta",
+                        "encode_failed",
+                    ));
                 };
                 session.sequence = delta_sequence;
                 session.admitted.continuity.server_sequence = session.sequence;
                 session.admitted.continuity.chat_revision = chat_revision;
-                if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
-                }
+                write_frame(stream, &frame).await.map_err(|error| {
+                    command::disconnect(command, "chat_rooms_write", error.kind())
+                })?;
             }
-            refresh::channel_list(stream, authority, session).await?;
+            refresh::channel_list(stream, authority, session)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "chat_channel_list", "emit_failed", end)
+                })?;
         }
         // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
         // follow the result, to the speaker alone.
         Dispatch::NpcTrade(_, update, deltas) | Dispatch::NpcShop(_, _, update, deltas) => {
-            effects::npc_trade(authority, stream, session, update, deltas).await?;
+            effects::npc_trade(authority, stream, session, update, deltas)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "npc_trade_effects", "emit_failed", end)
+                })?;
         }
         Dispatch::Npc(_, update, _) => {
-            effects::npc(authority, stream, session, update).await?;
+            effects::npc(authority, stream, session, update)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "npc_effects", "emit_failed", end)
+                })?;
         }
         Dispatch::Attack(_) => {
-            pvp_expert::refresh(stream, authority, session).await?;
+            pvp_expert::refresh(stream, authority, session)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "pvp_expert_refresh", "emit_failed", end)
+                })?;
             // The changed target or modes reach domain 10 right after the result.
             let Some(state) = authority
                 .observe_combat_state(session.actor, session.admitted.game_session_id)
@@ -480,14 +606,18 @@ where
                 session.sequence,
                 state,
             ) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "combat_delta",
+                    "encode_failed",
+                ));
             };
             if let Some((delta_sequence, frame)) = change {
                 session.sequence = delta_sequence;
                 session.admitted.continuity.server_sequence = session.sequence;
-                if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
-                }
+                write_frame(stream, &frame)
+                    .await
+                    .map_err(|error| command::disconnect(command, "combat_write", error.kind()))?;
             }
         }
         Dispatch::Guild(_) if command.command_type == 73 && command.payload.first() == Some(&4) => {
@@ -504,7 +634,11 @@ where
                 .await
                 .is_none()
             {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "guild_inventory_refresh",
+                    "update_failed",
+                ));
             }
         }
         Dispatch::UseItem(_, None)
@@ -523,10 +657,22 @@ where
         | Dispatch::House(_)
         | Dispatch::Unregistered => {}
     }
-    refresh::sounds(stream, authority, session).await?;
-    player_trade::refresh(stream, authority, session).await?;
-    cyclopedia_tracker::refresh(stream, authority, session).await?;
-    native_cues::refresh(stream, authority, session).await?;
+    refresh::sounds(stream, authority, session)
+        .await
+        .map_err(|end| command::disconnect_at(command, "sound_refresh", "emit_failed", end))?;
+    player_trade::refresh(stream, authority, session)
+        .await
+        .map_err(|end| {
+            command::disconnect_at(command, "player_trade_refresh", "emit_failed", end)
+        })?;
+    cyclopedia_tracker::refresh(stream, authority, session)
+        .await
+        .map_err(|end| {
+            command::disconnect_at(command, "cyclopedia_tracker_refresh", "emit_failed", end)
+        })?;
+    native_cues::refresh(stream, authority, session)
+        .await
+        .map_err(|end| command::disconnect_at(command, "native_cue_refresh", "emit_failed", end))?;
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }
@@ -548,10 +694,18 @@ where
     .await
     .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(command::disconnect(
+            command,
+            "command_relocation",
+            "update_failed",
+        ));
     }
     if observe_achievements {
-        achievement_notices::refresh(stream, authority, session).await?;
+        achievement_notices::refresh(stream, authority, session)
+            .await
+            .map_err(|end| {
+                command::disconnect_at(command, "achievement_refresh", "emit_failed", end)
+            })?;
     }
     Ok(())
 }
