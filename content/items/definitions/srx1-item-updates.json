@@ -1,4 +1,6 @@
 {
+  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
+  "base_sha256": "6f451234d9d01a33ee5da4f37f941bb9ea35d0b9d98284448ccd3af7f12e3aa5",
   "records": [
     {
       "admission": {
@@ -14985,7 +14987,5 @@
         }
       }
     }
-  ],
-  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
-  "base_sha256": "5583d57b096be3a4cff9fab4a423a4dc86deb8cb1ea046b96fdb5392758068ef"
+  ]
 }
