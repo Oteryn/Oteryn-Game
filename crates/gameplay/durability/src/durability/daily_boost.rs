@@ -68,24 +68,6 @@ impl DurabilityRoot {
         pools: (Vec<String>, Vec<String>),
         pass: IssuedSemanticPass,
     ) -> Result<DailyBoostSelection, DurabilityError> {
-        self.prepare_daily_boost_by(authority, node, permit, binding, pools, None)
-            .await
-    }
-
-    /// Run the same fenced selection under the caller's absolute query deadline.
-    pub async fn prepare_daily_boost_by(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        permit: &SpellLanePermit,
-        binding: DailyBoostBinding,
-        pools: (Vec<String>, Vec<String>),
-        deadline: Option<tokio::time::Instant>,
-    ) -> Result<DailyBoostSelection, DurabilityError> {
-        let pass = match deadline {
-            Some(deadline) => self.try_issue_semantic_pass_by(deadline)?,
-            None => self.try_issue_semantic_pass()?,
-        };
         let mut context = (authority, node, permit);
         pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let (authority, node, permit) = context;
