@@ -279,11 +279,11 @@ impl DurabilityRoot {
             .await
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
         match tokio::time::timeout_at(deadline, async {
-            let mut tx = begin_semantic_transaction(&mut connection, deadline).await?;
+            let mut tx = begin_semantic_transaction(&mut connection, deadline.into_std()).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             let receipt = load(&mut tx, character, command).await?
                 .ok_or(DurabilityError::InvalidStoredState)?.1;
-            commit_semantic_read(tx, deadline).await?;
+            commit_semantic_read(tx, deadline.into_std()).await?;
             Ok(Some(receipt))
         }).await {
             Ok(result) => result,
