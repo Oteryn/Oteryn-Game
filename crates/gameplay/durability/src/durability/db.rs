@@ -2169,7 +2169,7 @@ pub async fn begin_semantic_transaction<'a>(
 /// for admission. The same transaction keeps its ordinary budget on a player turn.
 pub(super) async fn begin_background_sensitive_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let begin = begin_semantic_transaction(holder, deadline);
     if is_background_holder() {
