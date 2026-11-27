@@ -134,6 +134,26 @@ class RuntimeEvidenceTests(unittest.TestCase):
             self.assertIn(f'event={event} failure_stage={stage}', result.stdout)
         self.assertNotIn('secret', result.stdout)
 
+    def test_logout_release_retry_keeps_closed_prerequisite_stages(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        expected = (
+            'conditions', 'death', 'drome', 'familiar', 'gourmet', 'kill_rewards',
+            'offline_training', 'pending_items', 'spell_training', 'timed_items',
+            'wheel_or_monk', 'write_fence',
+        )
+        # Keep the cases separate from the per-event cap.
+        for offset in range(0, len(expected), 8):
+            batch = expected[offset:offset + 8]
+            lines = [f'oteryn-game-server event=logout_release_retry stage={stage} account=secret'
+                     for stage in (*batch, 'secret')]
+            script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+            result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                    capture_output=True, text=True, check=True)
+            for stage in batch:
+                self.assertIn(f'event=logout_release_retry failure_stage={stage}', result.stdout)
+            self.assertNotIn('secret', result.stdout)
+
     def test_loss_publication_and_grace_keep_only_fixed_results_and_stages(self):
         monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
         prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
