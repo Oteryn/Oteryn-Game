@@ -28,7 +28,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>
     let placed_at = std::cell::Cell::new(None);
     let result = verdict::indexed_timeout(
         JOURNEY_DEADLINE,
-        verdict::observe(journey(clients, core, &placed_at)),
+        verdict::observe(async { journey(clients, core, &placed_at).await.map(|_| ()) }),
     )
     .await;
     let result = match result {
@@ -362,7 +362,75 @@ fn corridor_target_lost(
     visible && matches!(observation, Some((sequence, None)) if sequence > acknowledgment)
 }
 
-async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
+async fn owned_corridor_corpse(
+    clients: &SeamClients<'_>,
+    target: oteryn_dev_client::EntityRef,
+) -> TestResult<[u8; 16]> {
+    use crate::foundation::{ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration};
+    let world = WorldId::decode(&clients.world)?;
+    let channel = ChannelId::decode(&clients.channel)?;
+    let scope = ScopeOwnershipGeneration::new(clients.scope_generation)
+        .map_err(|error| format!("P11 invalid corpse scope: {error:?}"))?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let slots: Vec<i64> = sqlx::query_scalar(
+        "SELECT death_actor_local_id FROM game_item_mint_receipts
+         WHERE death_world_id=encode($1,'hex')::uuid
+           AND death_channel_id=encode($2,'hex')::uuid
+           AND death_scope_ownership_generation=$3::text::numeric
+           AND death_actor_local_generation=$4::text::numeric
+           AND corpse_top_damage_character_id=encode($5,'hex')::uuid
+           AND loot_purpose_key='CORPSE_MATERIALIZATION'",
+    )
+    .bind(clients.world.as_slice())
+    .bind(clients.channel.as_slice())
+    .bind(clients.scope_generation.to_string())
+    .bind(target.generation.to_string())
+    .bind(clients.characters[1].as_slice())
+    .fetch_all(&mut db)
+    .await?;
+    db.close().await?;
+    let mut matches = Vec::new();
+    for slot in slots {
+        let actor = ExactActorRef(ActorRef::from_owner_parts(
+            world, channel, scope, ActorLocalId(u32::try_from(slot)?),
+            ActorLocalGeneration(target.generation),
+        ));
+        if actor.placement_identity() == target.identity {
+            matches.push(actor.corpse_identity());
+        }
+    }
+    match matches.as_slice() {
+        [corpse] => Ok(*corpse),
+        _ => Err(format!("P11 expected one committed corpse owned by the killer for {target:?}").into()),
+    }
+}
+
+fn unique_corridor_corpse(
+    entered: &[oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity],
+    position: ActorPosition,
+    definition: std::num::NonZeroU32,
+    expected: [u8; 16],
+    old: &[oteryn_protocol_oteryn::world_spatial_entities::EntityRef],
+) -> TestResult<ItemHandle> {
+    use oteryn_dev_client::EntityDetail;
+    let mut candidates = entered.iter().filter_map(|row| {
+        if row.kind != EntityKind::Corpse || row.position != position || old.contains(&row.entity) {
+            return None;
+        }
+        match row.detail {
+            EntityDetail::Object { item_definition_ref, item_handle, .. }
+            | EntityDetail::ObjectWithAppearance { item_definition_ref, item_handle, .. }
+                if item_definition_ref == definition.get() => item_handle.map(|handle| (row.entity.identity, handle)),
+            _ => None,
+        }
+    });
+    match (candidates.next(), candidates.next()) {
+        (Some(row_and_handle), None) if row_and_handle.0 == expected => Ok(row_and_handle.1),
+        _ => Err("P11 target removal must publish exactly one matching new corpse in the same delta".into()),
+    }
+}
+
+async fn clear_corridor(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     use oteryn_dev_client::EntityDetail;
     let item_index = provisioning::item_index()?;
     let corpse_item = provisioning::item_reference(&item_index, 5995)?;
@@ -438,8 +506,9 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             .map(|row| row.entity)
             .collect();
         reject_earned_notices(client)?;
-        let mut attack_sequence = select_corridor_target(client, target.entity, "initial").await?;
-        let mut recovered_target = false;
+        let attack_sequence = select_corridor_target(client, target.entity, "initial").await?;
+        let mut corpse_handle = None;
+        let mut removed = false;
         let deadline = tokio::time::Instant::now() + TARGET_DEADLINE;
         let mut damaged = false;
         let mut last_health = 100;
@@ -449,7 +518,6 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         let mut loot_report = String::new();
         loop {
             client.service_liveness(Duration::from_millis(100)).await?;
-            let mut target_observation = None;
             for event in client.take_events() {
                 check_unexpected_notice(&event)?;
                 if let SessionEvent::ServerMessage(delta) = &event
@@ -463,8 +531,17 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
                     }
                     loot_report.push_str(text);
                 }
-                if let SessionEvent::ActorCombatState(delta) = &event {
-                    target_observation = Some((delta.server_sequence, delta.value.target));
+                if let SessionEvent::ActorCombatState(delta) = &event
+                    && corridor_target_lost(
+                        attack_sequence,
+                        Some((delta.server_sequence, delta.value.target)),
+                        !removed,
+                    )
+                {
+                    return Err(format!(
+                        "P11 target cleared before removal: target={:?} sequence={}",
+                        target.entity, delta.server_sequence
+                    ).into());
                 }
                 if let SessionEvent::WorldSpatialEntities(delta) = event {
                     for updated in delta
@@ -490,30 +567,19 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
                             ));
                         }
                     }
+                    if delta.value.leave.contains(&target.entity) {
+                        if removed || !damaged || delta.server_sequence <= attack_sequence {
+                            return Err("P11 unexpected corridor target removal".into());
+                        }
+                        let expected = owned_corridor_corpse(clients, target.entity).await?;
+                        corpse_handle = Some(unique_corridor_corpse(
+                            &delta.value.enter, last, corpse_item, expected, &existing_corpses,
+                        )?);
+                        removed = true;
+                    }
                 }
             }
-            let visible = client
-                .world_entities()
-                .ok_or("P11 corridor entity state disappeared")?;
-            let corpse_handle = if damaged && visible.get(&target.entity).is_none() && loot_report.ends_with('.') {
-                visible.iter().find_map(|row| {
-                    if row.kind != EntityKind::Corpse
-                        || row.position != last
-                        || existing_corpses.contains(&row.entity)
-                    {
-                        return None;
-                    }
-                    match row.detail {
-                        EntityDetail::Object { item_definition_ref, item_handle, .. }
-                        | EntityDetail::ObjectWithAppearance { item_definition_ref, item_handle, .. }
-                            if item_definition_ref == corpse_item.get() => item_handle,
-                        _ => None,
-                    }
-                })
-            } else {
-                None
-            };
-            if let Some(handle) = corpse_handle {
+            if let Some(handle) = corpse_handle.filter(|_| loot_report.ends_with('.')) {
                 assert_corridor_loot(client, handle, &item_index, &loot_report).await?;
                 evidence(&format!(
                     "P11_COMBAT killed={:?} corpse_at={last:?}",
@@ -525,22 +591,10 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             if vitals.health == 0 || tokio::time::Instant::now() >= deadline {
                 let lock = client.session_mut().combat_state().and_then(|state| state.target);
                 return Err(format!(
-                    "P11 corridor kill failed target={:?} lock={lock:?} attack_sequence={attack_sequence} recovered_target={recovered_target} damaged={damaged} remaining_percent={last_health} loot_report={loot_report:?} vitals={vitals:?}",
+                    "P11 corridor kill failed target={:?} lock={lock:?} attack_sequence={attack_sequence} damaged={damaged} remaining_percent={last_health} loot_report={loot_report:?} vitals={vitals:?}",
                     target.entity
                 )
                 .into());
-            }
-            if corridor_target_lost(
-                attack_sequence,
-                target_observation,
-                visible.get(&target.entity).is_some(),
-            ) {
-                if recovered_target {
-                    return Err(format!("P11 corridor lost the same target again: {:?}", target.entity).into());
-                }
-                recovered_target = true;
-                attack_sequence = select_corridor_target(client, target.entity, "observed-target-loss").await?;
-                continue;
             }
             if vitals.max_health - vitals.health >= 1200 {
                 let health = vitals.health;
@@ -775,7 +829,7 @@ async fn operate_lever(
     let combat_finished = std::cell::Cell::new(false);
     let (combat, liveness) = tokio::join!(
         async {
-            let result = clear_corridor(client).await;
+            let result = clear_corridor(client, clients).await;
             combat_finished.set(true);
             result
         },
@@ -798,7 +852,7 @@ async fn authored_granter(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     core: &SeamClients<'_>,
-) -> TestResult<(Vec<u8>, Vec<u8>, String, &'static BundleWorld)> {
+) -> TestResult<(Vec<u8>, [Vec<u8>; 3], String, String, &'static BundleWorld)> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -847,7 +901,26 @@ async fn authored_granter(
         Ok(placement)
     };
     let placement = fixed_chest(REWARD_CHEST.x)?;
-    let alternative = fixed_chest(33229)?;
+    let alternates = [fixed_chest(33229)?, fixed_chest(33231)?, fixed_chest(33233)?];
+    let wire_target = |key: u64| {
+        let mut target = world.base().digest().to_vec();
+        target.extend_from_slice(&key.to_be_bytes());
+        target
+    };
+    let key = wire_target(placement.bundle_placement_key);
+    let alternate_keys = alternates.map(|placement| wire_target(placement.bundle_placement_key));
+    // From the corridor, a bound reward chest must reject on distance.
+    // The generic map fallback for a missing binding returns NothingToUse.
+    let before_probe = client.inventory().ok_or("P11 missing inventory before binding probes")?.clone();
+    for target in std::iter::once(&key).chain(&alternate_keys) {
+        let reply = client.session_mut().use_object(target, 0).await?;
+        if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::TooFar
+            || client.inventory() != Some(&before_probe)
+        {
+            return Err(format!("P11 live reward binding probe expected TooFar: {reply:?}").into());
+        }
+        reject_earned_notices(client)?;
+    }
     let [item] = placement.placement.items.as_slice() else {
         return Err("P11 bound chest must award exactly one item".into());
     };
@@ -877,17 +950,13 @@ async fn authored_granter(
     for y in (interaction.y..CORRIDOR_Y).rev() {
         corridor_step(client, StepDirection::North, interaction.x, y).await?;
     }
-    let mut key = world.base().digest().to_vec();
-    key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
-    let mut alternate_key = world.base().digest().to_vec();
-    alternate_key.extend_from_slice(&alternative.bundle_placement_key.to_be_bytes());
-    Ok((key, alternate_key, ACHIEVEMENT.to_owned(), world))
+    Ok((key, alternate_keys, ACHIEVEMENT.to_owned(), claim.key.as_str().to_owned(), world))
 }
 
 async fn leave_reward_room(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    alternate: &[u8],
+    alternates: &[Vec<u8>; 3],
     reward: std::num::NonZeroU32,
     granted: &AccountAchievementsResult,
 ) -> TestResult {
@@ -922,22 +991,27 @@ async fn leave_reward_room(
     // captured display and statue require the walk below the display.
     use StepDirection::{East, North, South};
     corridor_step(client, East, 33228, 31657).await?;
-    let before_inventory = client.inventory().ok_or("P11 missing carried inventory")?.clone();
-    let alternate_reply = client.session_mut().use_object(alternate, 0).await?;
-    if alternate_reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
-        || page(client, 0).await? != *granted
-        || client.inventory() != Some(&before_inventory)
-        || bag_count(client, reward) != Some(1)
-    {
-        return Err(format!("P11 shared alternative chest changed the reward: {alternate_reply:?}").into());
+    for (index, target) in alternates.iter().enumerate() {
+        let x = [33228, 33230, 33232][index];
+        if index != 0 {
+            corridor_step(client, East, x - 1, 31658).await?;
+            corridor_step(client, East, x, 31658).await?;
+            corridor_step(client, North, x, 31657).await?;
+        }
+        let before_inventory = client.inventory().ok_or("P11 missing carried inventory")?.clone();
+        let reply = client.session_mut().use_object(target, 0).await?;
+        if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
+            || page(client, 0).await? != *granted
+            || client.inventory() != Some(&before_inventory)
+            || bag_count(client, reward) != Some(1)
+        {
+            return Err(format!("P11 alternative chest beside x={x} changed the reward: {reply:?}").into());
+        }
+        reject_earned_notices(client)?;
+        evidence(&format!("P11_CHECK alternative_chest_adjacent_x={x} disposition=NothingToUse inventory=unchanged page=unchanged"));
+        corridor_step(client, South, x, 31658).await?;
     }
-    reject_earned_notices(client)?;
-    evidence("P11_CHECK alternative_chest=NothingToUse inventory=unchanged page=unchanged");
-
-    corridor_step(client, South, 33228, 31658).await?;
-    for x in 33229..=33233 {
-        corridor_step(client, East, x, 31658).await?;
-    }
+    corridor_step(client, East, 33233, 31658).await?;
     corridor_step(client, South, 33233, 31659).await?;
     corridor_step(client, East, 33234, 31659).await?;
     let door = TilePos {
@@ -1070,8 +1144,11 @@ pub(super) struct GrantProof {
     pub(super) page: AccountAchievementsResult,
     pub(super) session: [u8; 16],
     pub(super) reward: std::num::NonZeroU32,
+    pub(super) claim: String,
+    pub(super) relog_chest: Vec<u8>,
 }
 
+const CONGRATULATIONS: &str = "Congratulations! You earned the achievement Annihilator.";
 const ACHIEVEMENT: &str = "oteryn:achievement/annihilator";
 const DESCRIPTION: &str = "You've daringly jumped into the infamous Annihilator and survived - taking home fame, glory and your reward.";
 
@@ -1179,14 +1256,16 @@ pub(super) async fn earn_and_logout(
     if bag_count(&client, reward) != Some(0) {
         return Err("P11 reward inventory pre-state must be zero".into());
     }
-    let (placement, alternate, achievement, world) = authored_granter(&mut client, clients, core).await?;
+    let (placement, alternate, achievement, claim, world) = authored_granter(&mut client, clients, core).await?;
     if achievement != ACHIEVEMENT {
         return Err(
             format!("P11 expected the authored Annihilator claim, got {achievement}").into(),
         );
     }
+    check_claim(clients, &claim, false).await?;
     let earliest = achievement_clock_ms()?;
     reject_earned_notices(&mut client)?;
+    let before_claim = client.inventory().ok_or("P11 missing pre-claim inventory")?.clone();
     let use_reply = client.session_mut().use_object(&placement, 0).await?;
     if use_reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!(
@@ -1196,21 +1275,37 @@ pub(super) async fn earn_and_logout(
     }
     // The Server may defer notice delivery to its next liveness refresh.
     let notice_deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let mut earned = None;
+    let mut congratulations = false;
     let earned = loop {
-        let mut notices = client.take_events().into_iter().filter_map(|event| match event {
-            SessionEvent::AchievementEarned(delta) => Some(delta.value),
-            _ => None,
-        });
-        if let Some(earned) = notices.next() {
-            if notices.next().is_some() {
-                return Err("P11 chest emitted multiple earned notices".into());
+        for event in client.take_events() {
+            match event {
+                SessionEvent::AchievementEarned(delta) => {
+                    if !fresh_notice(use_reply.result_server_sequence, delta.server_sequence, earned.is_some())
+                    {
+                        return Err("P11 earned notice was premature or duplicated".into());
+                    }
+                    earned = Some(delta.value);
+                }
+                event => {
+                    if let Some((sequence, text)) = achievement_congratulations(&event) {
+                        if !fresh_notice(use_reply.result_server_sequence, sequence, congratulations)
+                            || text != CONGRATULATIONS
+                        {
+                            return Err(format!("P11 invalid congratulations sequence={sequence} text={text:?}").into());
+                        }
+                        congratulations = true;
+                    }
+                }
             }
+        }
+        if congratulations && let Some(earned) = earned.take() {
             break earned;
         }
         let remaining = notice_deadline.saturating_duration_since(tokio::time::Instant::now());
         if remaining.is_zero() {
             return Err(format!(
-                "step=granter committed chest did not send AchievementEarned: {use_reply:?}"
+                "step=granter committed chest did not send both achievement notifications: {use_reply:?}"
             )
             .into());
         }
@@ -1224,6 +1319,9 @@ pub(super) async fn earn_and_logout(
     .await?;
     let granted = page(&mut client, 0).await?;
     let latest = achievement_clock_ms()?;
+    if !only_reward_added(&before_claim, client.inventory().ok_or("P11 missing post-claim inventory")?, reward) {
+        return Err("P11 chest must add exactly one Demon Armor and no other item changes".into());
+    }
     if earned.key != ACHIEVEMENT
         || earned.name != "Annihilator"
         || earned.watermark.fact_count != 1
@@ -1234,6 +1332,7 @@ pub(super) async fn earn_and_logout(
     }
 
     reject_earned_notices(&mut client)?;
+    let before_duplicate = client.inventory().ok_or("P11 missing inventory before repeat USE")?.clone();
     let duplicate_reply = client.session_mut().use_object(&placement, 0).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
     let unchanged = page(&mut client, 0).await?;
@@ -1241,6 +1340,7 @@ pub(super) async fn earn_and_logout(
     if duplicate_reply.disposition
         != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
         || unchanged != granted
+        || client.inventory() != Some(&before_duplicate)
         || bag_count(&client, reward) != Some(1)
     {
         return Err(
@@ -1272,11 +1372,100 @@ pub(super) async fn earn_and_logout(
         page: granted,
         session,
         reward,
+        claim,
+        relog_chest: alternate[0].clone(),
     })
 }
 
-fn check_unexpected_notice(event: &SessionEvent) -> TestResult {
-    if matches!(event, SessionEvent::AchievementEarned(_)) {
+pub(super) async fn check_claim(clients: &SeamClients<'_>, claim: &str, expected: bool) -> TestResult {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let present: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_reward_claims
+         WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key=$2)",
+    )
+    .bind(clients.characters[1].as_slice())
+    .bind(claim)
+    .fetch_one(&mut db)
+    .await?;
+    db.close().await?;
+    if present != expected {
+        return Err(format!("P11 shared claim {claim} durable state expected={expected} actual={present}").into());
+    }
+    Ok(())
+}
+
+pub(super) async fn probe_relog_claim(clients: &SeamClients<'_>, proof: &GrantProof) -> TestResult {
+    check_claim(clients, &proof.claim, true).await?;
+    // The normal relog has already verified the persisted reward and page.
+    // Position this released character at the alternate for a separate lockout probe.
+    let at = TilePos { x: 33228, y: 31658, floor: -13 };
+    place_member(clients, 1, at).await?;
+    let mut client = connect_character(clients, 0xb1, 1).await?;
+    if tile(client.world_spatial().actor_position)? != at {
+        return Err("P11 relog lockout probe did not admit at the alternate chest".into());
+    }
+    let before = client.inventory().ok_or("P11 missing relog lockout inventory")?.clone();
+    let distant = client.session_mut().use_object(&proof.relog_chest, 0).await?;
+    if distant.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::TooFar
+        || client.inventory() != Some(&before)
+    {
+        return Err(format!("P11 fresh session failed the alternate chest binding probe: {distant:?}").into());
+    }
+    reject_earned_notices(&mut client)?;
+    corridor_step(&mut client, StepDirection::North, at.x, 31657).await?;
+    let reply = client.session_mut().use_object(&proof.relog_chest, 0).await?;
+    if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
+        || client.inventory() != Some(&before)
+        || page(&mut client, 0).await? != proof.page
+        || client.inventory() != Some(&before)
+    {
+        return Err(format!("P11 shared claim lockout failed in a fresh session: {reply:?}").into());
+    }
+    reject_earned_notices(&mut client)?;
+    evidence("P11_CHECK persisted_shared_claim alternate_chest=NothingToUse inventory=unchanged page=unchanged");
+    corridor_step(&mut client, StepDirection::South, at.x, at.y).await?;
+    for x in 33229..=33233 {
+        corridor_step(&mut client, StepDirection::East, x, 31658).await?;
+    }
+    corridor_step(&mut client, StepDirection::South, 33233, 31659).await?;
+    for x in 33234..=33236 {
+        corridor_step(&mut client, StepDirection::East, x, 31659).await?;
+    }
+    for y in (31656..=31658).rev() {
+        corridor_step(&mut client, StepDirection::North, 33236, y).await?;
+    }
+    corridor_step(&mut client, StepDirection::North, 33213, 31671).await?;
+    reject_earned_notices(&mut client)?;
+    logout(&mut client).await?;
+    reject_earned_notices(&mut client)
+
+}
+
+fn only_reward_added(
+    before: &oteryn_protocol_oteryn::item_view::CharacterInventory,
+    after: &oteryn_protocol_oteryn::item_view::CharacterInventory,
+    reward: std::num::NonZeroU32,
+) -> bool {
+    let mut without_reward = after.clone();
+    without_reward.entries.retain(|entry| entry.item_definition_ref != reward);
+    inventory_count(Some(after), reward) == Some(1) && &without_reward == before
+}
+
+fn fresh_notice(result_sequence: u64, notice_sequence: u64, observed: bool) -> bool {
+    notice_sequence > result_sequence && !observed
+}
+
+fn achievement_congratulations(event: &SessionEvent) -> Option<(u64, &str)> {
+    let SessionEvent::TutorialNotice(delta) = event else { return None };
+    let oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(text) = &delta.value else {
+        return None;
+    };
+    text.starts_with("Congratulations! You earned the achievement ")
+        .then_some((delta.server_sequence, text))
+}
+
+pub(super) fn check_unexpected_notice(event: &SessionEvent) -> TestResult {
+    if matches!(event, SessionEvent::AchievementEarned(_)) || achievement_congratulations(event).is_some() {
         return Err("P11 emitted an unexpected earned notice".into());
     }
     Ok(())
@@ -1306,15 +1495,34 @@ async fn wait_for_inventory(
     Ok(())
 }
 
-async fn journey(
+pub(super) async fn journey(
     clients: &SeamClients<'_>,
     core: &SeamClients<'_>,
     placed_at: &std::cell::Cell<Option<std::time::Instant>>,
-) -> TestResult {
+) -> TestResult<String> {
+    // Reuse the preexisting two-character World fixture. Both characters are
+    // bound to the same Platform account, and neither is given achievements.
+    let account = "NODE_BOOT_C11_UNASSIGNED_ACCOUNT";
+    let leader = character_prep::dedicated_named_character(clients, account, Some("Oressa Candidate")).await?;
+    let sibling = character_prep::dedicated_named_character(clients, account, Some("First Vocation Candidate")).await?;
+    let (accounts, characters) = leader.replace_slot(clients, 1)?;
+    let sibling_scope = sibling.clients(clients);
+    if accounts[1] != sibling_scope.accounts[0] || characters[1] == sibling_scope.characters[0] {
+        return Err("P11 character-scope fixture must have two distinct characters on one account".into());
+    }
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let malformed = client_row_p11::malformed_live(clients, 1).await?;
     let proof = earn_and_logout(clients, core, placed_at).await?;
-    client_row_p11::capture_relog(clients, proof, malformed).await?;
-    Ok(())
+    let mut other = connect_character(&sibling_scope, 0xb2, 0).await?;
+    let sibling_page = page(&mut other, 0).await?;
+    if sibling_page != AccountAchievementsResult::default() {
+        return Err(format!("P11 achievement leaked to the other character on the same account: {sibling_page:?}").into());
+    }
+    reject_earned_notices(&mut other)?;
+    logout(&mut other).await?;
+    reject_earned_notices(&mut other)?;
+    evidence("P11_CHECK sibling_character=same_account page=empty points=0");
+    client_row_p11::capture_relog(clients, proof, malformed).await
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -1329,7 +1537,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 mod tests {
 
     #[test]
-    fn p11_retargets_only_a_live_target_cleared_after_the_acknowledgment() {
+    fn p11_flags_live_target_clear_after_the_acknowledgment() {
         use super::corridor_target_lost;
         use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
         let target = EntityRef { identity: [7; 16], generation: 1 };
@@ -1339,6 +1547,61 @@ mod tests {
         assert!(!corridor_target_lost(10, Some((9, None)), true));
         assert!(!corridor_target_lost(10, Some((11, Some(target))), true));
         assert!(!corridor_target_lost(10, None, true));
+    }
+
+    #[test]
+    fn p11_rejects_unrelated_or_ambiguous_corpse_entries() -> super::TestResult {
+        use super::*;
+        use oteryn_protocol_oteryn::world_spatial_entities::{EntityDetail, EntityRef, WorldSpatialEntity};
+        let position = ActorPosition { x: 33223, y: 31659, floor: 13 };
+        let definition = std::num::NonZeroU32::new(7).ok_or("corpse definition")?;
+        let handle = ItemHandle::new(8).ok_or("corpse handle")?;
+        let corpse = WorldSpatialEntity {
+            motion: None,
+            display_name: None,
+            kind: EntityKind::Corpse,
+            entity: EntityRef { identity: [1; 16], generation: 1 },
+            position,
+            detail: EntityDetail::Object { item_definition_ref: definition.get(), quantity: 1, item_handle: Some(handle) },
+        };
+        let other = WorldSpatialEntity {
+            entity: EntityRef { identity: [2; 16], generation: 1 }, ..corpse
+        };
+        assert_eq!(unique_corridor_corpse(&[corpse], position, definition, corpse.entity.identity, &[])?, handle);
+        assert!(unique_corridor_corpse(&[], position, definition, corpse.entity.identity, &[]).is_err());
+        assert!(unique_corridor_corpse(&[corpse], position, definition, corpse.entity.identity, &[corpse.entity]).is_err());
+        assert!(unique_corridor_corpse(&[other], position, definition, corpse.entity.identity, &[]).is_err());
+        assert!(unique_corridor_corpse(&[corpse, other], position, definition, corpse.entity.identity, &[]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn p11_rejects_extra_inventory_and_relog_congratulations() -> super::TestResult {
+        use super::*;
+        use oteryn_protocol_oteryn::item_view::CharacterInventory;
+        use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+        let reward = std::num::NonZeroU32::new(7).ok_or("reward")?;
+        let count = std::num::NonZeroU32::new(1).ok_or("count")?;
+        let handle = ItemHandle::new(1).ok_or("handle")?;
+        let before = CharacterInventory::default();
+        let armor = ItemEntry { appearance_id: 0, handle, item_definition_ref: reward, count, sub_type: 0 };
+        let mut after = CharacterInventory { entries: vec![armor], ..before.clone() };
+        assert!(only_reward_added(&before, &after, reward));
+        after.entries.push(ItemEntry { item_definition_ref: count, ..armor });
+        assert!(!only_reward_added(&before, &after, reward));
+        let event = SessionEvent::TutorialNotice(oteryn_dev_client::AppliedDelta {
+            server_sequence: 11,
+            base_revision: 0,
+            new_revision: 1,
+            value: TutorialNotice::StatusText(CONGRATULATIONS.into()),
+        });
+        assert_eq!(achievement_congratulations(&event), Some((11, CONGRATULATIONS)));
+        assert!(check_unexpected_notice(&event).is_err());
+        assert!(fresh_notice(10, 11, false));
+        assert!(!fresh_notice(11, 11, false));
+        assert!(!fresh_notice(12, 11, false));
+        assert!(!fresh_notice(10, 11, true));
+        Ok(())
     }
 
     #[test]

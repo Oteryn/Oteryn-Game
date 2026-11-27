@@ -116,6 +116,9 @@ async fn observe<S: SessionStream>(client: &mut Session<S>) -> TestResult<Observ
     {
         return Err("achievement reader logout was refused".into());
     }
+    for event in client.take_events() {
+        full_row_p11::check_unexpected_notice(&event)?;
+    }
     Ok(Observation {
         session,
         commands: [first, next, pagination],
@@ -507,10 +510,7 @@ pub(super) async fn malformed_live(
 }
 
 async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResult<String> {
-    let index = 1;
-    let malformed = malformed_live(clients, index).await?;
-    let proof = full_row_p11::earn_and_logout(clients, core, &std::cell::Cell::new(None)).await?;
-    capture_relog(clients, proof, malformed).await
+    full_row_p11::journey(clients, core, &std::cell::Cell::new(None)).await
 }
 
 pub(super) async fn capture_relog(
@@ -553,6 +553,7 @@ pub(super) async fn capture_relog(
         return Err("P11 new session did not load the exact earned achievement".into());
     }
     drop(client);
+    full_row_p11::probe_relog_claim(clients, &proof).await?;
     let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .ok_or("P11 requires the wrapper's fresh capture directory")?;
     let directory = Path::new(&directory);
