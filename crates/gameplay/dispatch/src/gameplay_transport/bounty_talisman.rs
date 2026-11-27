@@ -21,8 +21,8 @@ pub(in crate::gameplay_transport) fn damage_effect(change: &OwnerCombatChange) -
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Read before taking Channel guards and while the caller owns the spell lane.
-    /// Commands that change bounty/equipment use that same lane.
+    /// Publish the quest refresh's committed bonuses for future swings. The
+    /// combat pass only reads the session snapshot under its usual owner guards.
     pub(in crate::gameplay_transport) async fn bounty_talisman_for_session(
         &self,
         session: GameSessionId,
@@ -36,7 +36,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await?;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        states.set_elite_bounty(&runtime, session, snapshot.elite_race());
+        if runtime.owner_fence().is_ok()
+            && runtime.binding().runtime_scope() == fence.runtime_scope
+            && runtime.binding().scope_generation() == fence.scope_ownership_generation
+            && let Ok(Some((actor, _))) = runtime.positioned_player_for_session(session)
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            states.set_elite_bounty(&runtime, session, snapshot.elite_race());
+            states
+                .swing_talismans
+                .insert(session, (actor, snapshot.clone()));
+        }
         Ok(snapshot)
     }
 }

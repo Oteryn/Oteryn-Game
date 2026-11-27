@@ -245,7 +245,7 @@ pub(super) async fn query(
     .ok_or_else(|| format!("step-{step}: client did not encode DAILY_BOOST_QUERY"))?;
     let reply = raw_feature::send(client.session_mut(), &command).await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("step-{step}: DAILY_BOOST_QUERY observed reply {reply:?}").into());
+        return Err(format!("step-{step}: DAILY_BOOST_QUERY observed reply {reply:?}, refusal={:?}", wire::DailyBoostRefusal::decode(&reply.payload)).into());
     }
     daily_boost::apply_result(&mut panel, &reply);
     panel
@@ -519,7 +519,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &[0],
         )
         .await?;
-    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
+    if refused.status != CommandStatus::Rejected || wire::DailyBoostRefusal::decode(&refused.payload) != Ok(wire::DailyBoostRefusal::MalformedQuery) {
         return Err(format!("step-3: malformed query observed reply {refused:?}").into());
     }
     evidence("W13_CHECK step=3 malformed-query-rejected");

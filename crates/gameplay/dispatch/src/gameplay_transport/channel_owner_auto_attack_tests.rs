@@ -1842,6 +1842,7 @@ fn floor_exhaust_pauses_due_attack_without_clearing_target_or_consuming_swing() 
     let entry = owner.attack.entries.first_mut().expect("held attack");
     entry.weapon = Some(WeaponFacts {
         item_key: None,
+        talisman_equipped: false,
         weapon: SwingWeapon::Fists,
         content_digest: digest,
         read_at: at(T0 + STAIRHOP_MICROS),

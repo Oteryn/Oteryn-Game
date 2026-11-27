@@ -187,6 +187,7 @@ pub use oteryn_gameplay_combat_rules::resolution::SwingWeapon;
 struct WeaponFacts {
     weapon: SwingWeapon,
     item_key: Option<String>,
+    talisman_equipped: bool,
     ranged: Option<Arc<ranged::RangedLoadout>>,
     content_digest: [u8; 32],
     read_at: SemanticTimeMicros,
@@ -543,9 +544,10 @@ impl ChannelAttackStates {
         entry.state.target()?;
         let fresh = entry.weapon.as_ref().is_some_and(|facts| {
             &facts.content_digest == digest
-                && now
-                    .elapsed_since(facts.read_at)
-                    .is_ok_and(|age| age < WEAPON_REFRESH_MICROS)
+                && (facts.ranged.is_none()
+                    || now
+                        .elapsed_since(facts.read_at)
+                        .is_ok_and(|age| age < WEAPON_REFRESH_MICROS))
         });
         (!fresh).then_some(entry.weapon_epoch)
     }
@@ -1281,15 +1283,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .chase_yield_to_client(actor, session, now);
     }
-    /// Read the swing weapon of this connection's `actor` from the equipment owner when its
-    /// held target's swings need one ([`ChannelAttackStates::weapon_read_due`]). A failed read
-    /// stores nothing, so the swings wait (fail closed).
+    /// Refresh the equipment snapshot and its auxiliary projections at target selection.
     pub(in crate::gameplay_transport) async fn refresh_attack_weapon(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
     ) {
-        self.refresh_attack_weapon_at_time(actor, session, None)
+        self.refresh_attack_weapon_at_time(actor, session, None, true)
+            .await;
+    }
+
+    /// Combat cadence reads only the weapon and ammunition required to swing.
+    pub(super) async fn refresh_swing_weapon(&self, actor: ExactActorRef, session: GameSessionId) {
+        self.refresh_attack_weapon_at_time(actor, session, None, false)
             .await;
     }
 
@@ -1300,7 +1306,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         now: SemanticTimeMicros,
     ) {
-        self.refresh_attack_weapon_at_time(actor, session, Some(now))
+        self.refresh_attack_weapon_at_time(actor, session, Some(now), false)
             .await;
     }
 
@@ -1309,6 +1315,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         now: Option<SemanticTimeMicros>,
+        projections: bool,
     ) {
         let Some(content) = self
             .active_generation
@@ -1395,33 +1402,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
         });
         if let Some(catalogue) = self.proficiency_catalogue.as_ref()
-            && let Ok((current, _)) =
-                crate::durability::fresh_admission::FreshAdmissionStore::from_root(
-                    self.root.clone(),
-                )
-                .current_session_at(session)
-                .await
-            && let Ok(character) =
-                crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-            && let Ok((tracks, _)) = self
-                .root
-                .read_character_proficiency_with_definitions(
-                    self.character,
-                    character,
-                    None,
-                    std::sync::Arc::clone(catalogue) as std::sync::Arc<dyn ProficiencyDefinitions>,
-                )
-                .await
+            && let Some(key) = item_key.as_deref()
             && let Ok(mut sessions) = self.states.proficiencies.lock()
         {
             let owner = sessions.entry(session).or_default();
-            for stored in tracks {
-                if let Some(track) = catalogue.live_track(&stored) {
-                    owner.install_track(stored.state.item_key().to_owned(), track);
-                }
-            }
-            if let Some(key) = item_key.as_deref()
-                && owner.track(key).is_none()
+            if owner.track(key).is_none()
                 && let Some(track) = catalogue.empty_track(key)
             {
                 owner.install_track(key, track);
@@ -1434,12 +1419,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             WeaponFacts {
                 weapon,
                 item_key,
+                talisman_equipped: equipment.items.iter().any(|item| {
+                    item.slot == 10
+                        && item.definition.production_key
+                            == oteryn_gameplay_quests::quest::task_board::TALISMAN_ITEM
+                }),
                 ranged,
                 content_digest: digest,
                 read_at,
             },
         );
-        let _ = self.refresh_cyclopedia_combat(actor, session, None).await;
+        if projections {
+            let _ = self.refresh_cyclopedia_combat(actor, session, None).await;
+        }
     }
 }
 

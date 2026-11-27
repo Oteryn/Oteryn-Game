@@ -4,15 +4,15 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::daily_boost::*;
 
 #[test]
 fn daily_boost_postgres_real_dispatch_restart_and_epoch_fence() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(Case::Restart).map_err(|e| e.to_string()))?
@@ -74,18 +74,31 @@ async fn pre_admission_case(
     // Keep the old committed epoch as the active pointer, with no retirement in
     // progress, after its Berlin boundary has elapsed.
     let mut tx = pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-    sqlx::query("UPDATE game_world_reset_epochs SET activated_at=statement_timestamp()-interval '2 days'
-                 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
-        .bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "UPDATE game_world_reset_epochs SET activated_at=statement_timestamp()-interval '2 days'
+                 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0",
+    )
+    .bind(world.as_bytes().as_slice())
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
     let (mut stream, mut peer) = tokio::io::duplex(8192);
     assert!(crate::gameplay_transport::world_login_info::route(&mut stream, &request, owner).await);
     drop(stream);
-    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await.map_err(debug)?;
-    let info = login::decode_reply(&reply).and_then(|reply| reply.info).ok_or("available world")?;
+    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer)
+        .await
+        .map_err(debug)?;
+    let info = login::decode_reply(&reply)
+        .and_then(|reply| reply.info)
+        .ok_or("available world")?;
     assert_eq!(info.players_online, 1);
-    assert!(info.boost.is_none(), "an expired boost must be omitted before retirement starts");
+    assert!(
+        info.boost.is_none(),
+        "an expired boost must be omitted before retirement starts"
+    );
 
     let (mut stream, mut peer) = tokio::io::duplex(8192);
     let unknown = id(97);
@@ -118,7 +131,7 @@ fn daily_boost_query_after_logout_and_relogin_under_holder_contention_postgres()
     })
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Case {
     Restart,
     PreAdmission,
@@ -129,9 +142,7 @@ fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "daily_boost_wire", true, false).await?;
-        eprintln!(
-            "POSTGRES_STARTED BOOSTED-1 daily_boost_postgres_real_dispatch_restart_and_epoch_fence"
-        );
+        eprintln!("POSTGRES_STARTED BOOSTED-1 daily_boost case={case:?}");
         prepare_current_session(&h).await?;
         // Verify the allocated migration can be reapplied without dropping choices.
         sqlx::raw_sql(sqlx::AssertSqlSafe(
@@ -227,14 +238,26 @@ fn scenario(case: Case) -> TestResult {
             .0,
             CommandStatus::Rejected
         );
-        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-            &crate::gameplay_transport::daily_boost::offered(
-                owner.offered_capabilities(),
-                owner.daily_boost_available(),
-            ),
-            &[CAPABILITY_DAILY_BOOST_V1],
-        )
-        .ok_or("capability")?;
+        let supported = if case == Case::Relog {
+            &[
+                oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1,
+                CAPABILITY_DAILY_BOOST_V1,
+            ][..]
+        } else {
+            &[CAPABILITY_DAILY_BOOST_V1][..]
+        };
+        admitted.continuity.selected_capabilities =
+            crate::gameplay_transport::connection::fresh_capability_selection(&owner, supported)
+                .await
+                .ok_or("capability")?;
+        for &capability in supported {
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(capability)
+            );
+        }
         let (status, first) = support::exchange(
             &owner,
             &mut admitted,
@@ -405,7 +428,7 @@ fn scenario(case: Case) -> TestResult {
             owner
                 .daily_boost_wire(admitted, 5, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])
                 .await,
-            crate::gameplay_transport::guild_intent::GuildReply::Unavailable
+            Err(DailyBoostRefusal::SelectionUnavailable)
         ));
         let permit = owner.spell_lane_permit().await.ok_or("new epoch permit")?;
         let mut next = binding();
@@ -431,12 +454,19 @@ fn scenario(case: Case) -> TestResult {
         // even though it is no longer the immediately previous epoch.
         for (epoch, age, expected_creature, expected_boss) in [
             (2_u64, "29 days 23 hours", "fresh creature", "fresh boss"),
-            (3, "30 days 1 hour", choice.creature.as_str(), choice.boss.as_str()),
+            (
+                3,
+                "30 days 1 hour",
+                choice.creature.as_str(),
+                choice.boss.as_str(),
+            ),
         ] {
             sqlx::query("UPDATE game_world_daily_boosts SET selected_at=clock_timestamp()-$1::text::interval WHERE world_id=encode($2,'hex')::uuid AND reset_epoch=0")
                 .bind(age).bind(id(42).as_slice()).execute(&h.pool).await?;
             let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
             sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,$2::text::numeric,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
                 .bind(id(42).as_slice()).bind(epoch.to_string()).execute(&mut *tx).await?;
             sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
@@ -453,16 +483,39 @@ fn scenario(case: Case) -> TestResult {
                 ] {
                     let mut exhausted = binding();
                     exhausted.epoch = epoch;
-                    assert!(h.root.prepare_daily_boost(&authority, &h.node, &permit, exhausted, pools).await.is_err());
+                    assert!(
+                        h.root
+                            .prepare_daily_boost(&authority, &h.node, &permit, exhausted, pools)
+                            .await
+                            .is_err()
+                    );
                 }
             }
             let pools = (
-                vec![choice.creature.clone(), tomorrow.creature.clone(), "fresh creature".into()],
-                vec![choice.boss.clone(), tomorrow.boss.clone(), "fresh boss".into()],
+                vec![
+                    choice.creature.clone(),
+                    tomorrow.creature.clone(),
+                    "fresh creature".into(),
+                ],
+                vec![
+                    choice.boss.clone(),
+                    tomorrow.boss.clone(),
+                    "fresh boss".into(),
+                ],
             );
-            let selected = h.root.prepare_daily_boost(&authority, &h.node, &permit, next, pools).await.map_err(debug)?;
-            assert_eq!(selected.creature, expected_creature, "30-day creature exclusion at epoch {epoch}");
-            assert_eq!(selected.boss, expected_boss, "30-day boss exclusion at epoch {epoch}");
+            let selected = h
+                .root
+                .prepare_daily_boost(&authority, &h.node, &permit, next, pools)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                selected.creature, expected_creature,
+                "30-day creature exclusion at epoch {epoch}"
+            );
+            assert_eq!(
+                selected.boss, expected_boss,
+                "30-day boss exclusion at epoch {epoch}"
+            );
             eprintln!("POSTGRES_HISTORY SV08 epoch={epoch} age={age} verified");
         }
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_daily_boosts")
@@ -476,7 +529,6 @@ fn scenario(case: Case) -> TestResult {
     })
 }
 
-
 async fn logout_relogin_query(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -485,9 +537,13 @@ async fn logout_relogin_query(
 ) -> TestResult {
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::GameSessionState;
-    use crate::gameplay_transport::composed_admission::{CONDITION_RELEASE_PROBE, HolderCheckoutProbe};
+    use crate::gameplay_transport::composed_admission::{
+        CONDITION_RELEASE_PROBE, HolderCheckoutProbe,
+    };
     use crate::gameplay_transport::daily_boost::DAILY_BOOST_CHECKOUT_PROBE;
-    use oteryn_protocol_oteryn::logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result};
+    use oteryn_protocol_oteryn::logout::{
+        COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+    };
     use std::{cell::Cell, sync::Arc, time::Duration};
 
     let store = FreshAdmissionStore::from_root(h.root.clone());
@@ -495,31 +551,45 @@ async fn logout_relogin_query(
     let logout_checkout = Arc::new(HolderCheckoutProbe::default());
     let next = admitted.continuity.next_command_id;
     let release_started = tokio::time::Instant::now();
-    let (result, released_holder) = tokio::time::timeout(Duration::from_secs(30), super::fixture::join_two(
-        CONDITION_RELEASE_PROBE.scope(
-            Cell::new(Some(Arc::clone(&logout_checkout))),
-            support::exchange(owner, &mut admitted, next, COMMAND_TYPE_LOGOUT_INTENT, &[]),
+    let (result, released_holder) = tokio::time::timeout(
+        Duration::from_secs(30),
+        super::fixture::join_two(
+            CONDITION_RELEASE_PROBE.scope(
+                Cell::new(Some(Arc::clone(&logout_checkout))),
+                support::exchange(owner, &mut admitted, next, COMMAND_TYPE_LOGOUT_INTENT, &[]),
+            ),
+            logout_checkout.contend(&h.root),
         ),
-        logout_checkout.contend(&h.root),
-    )).await?;
+    )
+    .await?;
     released_holder?;
     let (status, payload) = result?;
     assert_eq!(status, CommandStatus::Accepted);
-    assert_eq!(decode_logout_result(&payload).map_err(debug)?, LogoutResult::Accepted);
+    assert_eq!(
+        decode_logout_result(&payload).map_err(debug)?,
+        LogoutResult::Accepted
+    );
     assert!(release_started.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
-    assert_eq!(store.current_session(previous).await?.session_state(), GameSessionState::Terminal);
+    assert_eq!(
+        store.current_session(previous).await?.session_state(),
+        GameSessionState::Terminal
+    );
 
     let mut fresh = super::full_world_support::readmit_after_logout(h, owner, admitted).await?;
     assert_ne!(fresh.game_session_id, previous);
     let query_checkout = Arc::new(HolderCheckoutProbe::default());
     let next = fresh.continuity.next_command_id;
-    let (result, released_holder) = tokio::time::timeout(Duration::from_secs(30), super::fixture::join_two(
-        DAILY_BOOST_CHECKOUT_PROBE.scope(
-            Cell::new(Some(Arc::clone(&query_checkout))),
-            support::exchange(owner, &mut fresh, next, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
+    let (result, released_holder) = tokio::time::timeout(
+        Duration::from_secs(30),
+        super::fixture::join_two(
+            DAILY_BOOST_CHECKOUT_PROBE.scope(
+                Cell::new(Some(Arc::clone(&query_checkout))),
+                support::exchange(owner, &mut fresh, next, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
+            ),
+            query_checkout.contend(&h.root),
         ),
-        query_checkout.contend(&h.root),
-    )).await?;
+    )
+    .await?;
     released_holder?;
     let (status, view) = result?;
     assert_eq!(status, CommandStatus::Accepted);

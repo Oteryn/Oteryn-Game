@@ -87,9 +87,9 @@ async fn query(
 
 fn require_reply(reply: &Reply, expected: CommandStatus) -> TestResult {
     if reply.status != expected
-        || (expected == CommandStatus::Rejected && !reply.payload.is_empty())
+        || (expected == CommandStatus::Rejected && wire::DailyBoostRefusal::decode(&reply.payload) != Ok(wire::DailyBoostRefusal::MalformedQuery))
     {
-        return Err(format!("daily boost expected {expected:?}, observed {reply:?}").into());
+        return Err(format!("daily boost expected {expected:?}, observed {reply:?}, refusal={:?}", wire::DailyBoostRefusal::decode(&reply.payload)).into());
     }
     Ok(())
 }
@@ -213,7 +213,7 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
         apply_result(&mut panel, &reply);
         assert!(!panel.pending);
         if status == CommandStatus::Rejected {
-            assert!(reply.payload.is_empty());
+            assert_eq!(wire::DailyBoostRefusal::decode(&reply.payload), Ok(wire::DailyBoostRefusal::MalformedQuery));
             assert_eq!(panel.boost, before);
             assert_eq!(panel.feedback, Some("The server refused the action"));
             panel = DailyBoostPanel {

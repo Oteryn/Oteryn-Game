@@ -8,16 +8,13 @@ use super::{charm_combat, equipped_offence};
 use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
+use crate::durability::DurabilityError;
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::durability::{
-    DurabilityError, character_progression::CharacterProgressionError,
-    task_board::BountyTalismanSnapshot,
-};
 use crate::foundation::CharacterId;
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
-use crate::gameplay_transport::connection::AdmissionRefusal;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
+use crate::gameplay_transport::operator_event;
 use crate::gameplay_transport::task_board::bounty_talisman;
 use crate::spell::cast::{CharacterCastFacts, SwingSkills};
 use crate::spell::combat_execution::actor_atom;
@@ -76,11 +73,19 @@ fn native_health_swing_targets(
     constants: &AttackConstants,
 ) -> Result<Vec<ExactActorRef>, ()> {
     let mut preview = entry.clone();
-    let Some(selected) = select_swing(&mut preview, runtime, states, room, digest, now, constants)
+    let Ok(selected) =
+        select_swing_inner(&mut preview, runtime, states, room, digest, now, constants)
     else {
         return Ok(Vec::new());
     };
-    let mut targets = equipped_offence::cleave_targets(&preview, &selected, runtime, room, now);
+    let mut targets =
+        if equipped_offence::attacker_offence(states, runtime, entry.actor, entry.session).cleave
+            > 0
+        {
+            equipped_offence::cleave_targets(&preview, &selected, runtime, room, now)
+        } else {
+            Vec::new()
+        };
     targets.push(selected.target);
     targets.retain(|target| runtime.contains_live_creature(*target));
     let mut required = Vec::new();
@@ -170,6 +175,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         let Some(mut pvp_permit) = self.spell_lane_permit().await else {
+            let attack = self.states.attack.lock().await;
+            for entry in &attack.entries {
+                if let Some(target) = entry.state.target() {
+                    log_swing_skip(entry, Some(target), SwingSkip::BudgetStarved);
+                }
+            }
             return;
         };
         // A failed native health callback retains its original occurrence.
@@ -178,40 +189,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.drain_cloak_blood_with_permit(&pvp_permit).await {
             return;
         }
-        let sessions = self
-            .states
-            .attack
-            .lock()
-            .await
-            .entries
-            .iter()
-            .filter(|entry| entry.state.target().is_some())
-            .map(|entry| entry.session)
-            .collect::<std::collections::BTreeSet<_>>();
-        let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root);
-        // Talisman bonuses are optional. Keep the base swing when a holder or
-        // quest row is busy.
-        let mut talismans = std::collections::BTreeMap::new();
-        for session in sessions {
-            if let Ok(snapshot) = retry
-                .retry_unavailable(async || {
-                    self.root
-                        .with_periodic_lock_budget(self.bounty_talisman_for_session(session))
-                        .await
-                        .map_err(|error| match error {
-                            CharacterProgressionError::Unavailable(
-                                DurabilityError::RootUnavailable,
-                            ) => AdmissionRefusal::Unavailable,
-                            _ => AdmissionRefusal::Rejected,
-                        })
-                })
-                .await
-            {
-                talismans.insert(session, snapshot);
-            }
-        }
-        drop(retry);
-        let no_talisman = BountyTalismanSnapshot::default();
         let now = now.unwrap_or_else(|| self.owner_now());
         let needs_health_names = {
             let runtime = self.runtime.lock().await;
@@ -353,20 +330,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         let mut pvp_hits = Vec::new();
+        let no_talisman = crate::durability::task_board::BountyTalismanSnapshot::default();
         for entry in entries.iter_mut() {
             if runtime
                 .actor_staff_visibility(entry.actor)
                 .is_ok_and(|flags| flags.0)
             {
+                log_swing_skip(entry, entry.state.target(), SwingSkip::StaffInvisible);
                 entry.clear_target();
                 continue;
             }
             if unavailable_source_players.contains(&entry.actor.placement_identity()) {
+                log_swing_skip(entry, entry.state.target(), SwingSkip::SourceUnavailable);
                 continue;
             }
             let Ok(required_health) =
                 native_health_swing_targets(entry, &runtime, &states, room, digest, now, constants)
             else {
+                log_swing_skip(
+                    entry,
+                    entry.state.target(),
+                    SwingSkip::NativeHealthUnavailable,
+                );
                 continue;
             };
             if required_health.iter().any(|target| {
@@ -374,6 +359,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }) {
                 // A foreign identity change after the detached read retries
                 // without consuming the actual held attack's timer or ordinal.
+                log_swing_skip(
+                    entry,
+                    entry.state.target(),
+                    SwingSkip::NativeHealthUnavailable,
+                );
                 continue;
             }
             let state_before = entry.state.clone();
@@ -441,9 +431,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Err(DurabilityError::RootUnavailable) => {
                         entry.state = state_before;
                         entry.next_ordinal = ordinal_before;
+                        log_swing_skip(entry, Some(selected.target), SwingSkip::BudgetStarved);
                         continue;
                     }
                     _ => {
+                        log_swing_skip(entry, Some(selected.target), SwingSkip::PvpRefused);
                         entry.clear_target();
                         continue;
                     }
@@ -465,6 +457,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
             {
+                log_swing_skip(entry, Some(selected.target), SwingSkip::PaymentUnavailable);
                 if pvp_permit.has_unresolved() {
                     return;
                 }
@@ -494,6 +487,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let global_critical =
                     effects.gem_value_milli("critical_extra_damage", "Critical Extra Damage") / 10;
                 let Ok(global_critical) = u16::try_from(global_critical) else {
+                    log_swing_skip(entry, Some(selected.target), SwingSkip::DamageUnavailable);
                     continue;
                 };
                 offence.critical_damage = offence.critical_damage.saturating_add(global_critical);
@@ -522,6 +516,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 CRITICAL_ROLL_MAX as i64,
             )
             .and_then(|roll| u64::try_from(roll).ok()) else {
+                log_swing_skip(entry, Some(selected.target), SwingSkip::DamageUnavailable);
                 continue;
             };
             let primary = selected.target;
@@ -554,6 +549,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .borrow_exact_actor_commit()
                     .bound_attacker_lease(entry.actor, swing.lineage)
                 else {
+                    log_swing_skip(entry, Some(target), SwingSkip::AttackerLeaseUnavailable);
                     if !extension {
                         entry.clear_target();
                     }
@@ -590,6 +586,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some((mut damage, revision)) =
                     draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
                 else {
+                    log_swing_skip(entry, Some(target), SwingSkip::DamageUnavailable);
                     continue;
                 };
                 // The drawn primary auto-attack receives one additive shrine multiplier
@@ -767,15 +764,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let Ok(snapshot) = runtime.companion_snapshot(target) else {
+                    log_swing_skip(entry, Some(target), SwingSkip::StaleTarget);
                     if !extension {
                         entry.clear_target();
                     }
                     continue;
                 };
                 let race_key = snapshot.state.policy.definition_key.clone();
-                let talisman = talismans.get(&entry.session).unwrap_or(&no_talisman);
+                let mut talisman = states
+                    .swing_talismans
+                    .get(&entry.session)
+                    .filter(|(actor, _)| *actor == entry.actor)
+                    .map_or(&no_talisman, |(_, snapshot)| snapshot)
+                    .clone();
+                talisman.set_equipped(selected.weapon.talisman_equipped);
                 let [talisman_damage, talisman_life] = bounty_talisman::hit_bonuses(
-                    talisman,
+                    &talisman,
                     &race_key,
                     &root,
                     swing_occurrence(entry.actor, swing.lineage, ordinal, b"bounty-talisman"),
@@ -788,6 +792,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     runtime.effective_creature_defense(&snapshot).ok(),
                     snapshot.state.policy.armor,
                 ) else {
+                    log_swing_skip(entry, Some(target), SwingSkip::TargetDefenseUnavailable);
                     continue;
                 };
                 // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
@@ -796,6 +801,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && offence.elemental_conversion.is_none()
                     && creature_physically_immune(&snapshot.state.policy)
                 {
+                    log_swing_skip(entry, Some(target), SwingSkip::Immune);
                     continue;
                 }
                 if let Some(ranged) = &selected.weapon.ranged
@@ -1029,6 +1035,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         now,
                         &mut trained,
                     );
+                    log_swing_skip(entry, Some(target), SwingSkip::NoDamage);
                     continue;
                 }
                 let Some(plan) = swing_plan(
@@ -1047,6 +1054,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     plan.occurrence(),
                     ExactActorProposal::client(target),
                 ) else {
+                    log_swing_skip(entry, Some(target), SwingSkip::StaleTarget);
                     if !extension {
                         entry.clear_target();
                     }
@@ -1101,6 +1109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     committed
                 };
                 let Ok(result) = committed else {
+                    log_swing_skip(entry, Some(target), SwingSkip::CommitRefused);
                     if !extension {
                         entry.clear_target();
                     }
@@ -1954,6 +1963,71 @@ fn train_swing(
     );
 }
 
+#[derive(Clone, Copy, Debug)]
+enum SwingSkip {
+    NoTarget,
+    AttackerNotCurrent,
+    HiddenTarget,
+    DeadAttacker,
+    Pacified,
+    StairhopCooldown,
+    SpellReserved,
+    WeaponUnavailable,
+    SkillUnavailable,
+    PositionUnavailable,
+    Cooldown,
+    Cleared(oteryn_gameplay_combat_rules::attack::target::TargetCleared),
+    Waiting(oteryn_gameplay_combat_rules::attack::target::SwingWait),
+    Ranged(ranged::ShotRefusal),
+    StaffInvisible,
+    SourceUnavailable,
+    NativeHealthUnavailable,
+    BudgetStarved,
+    PvpRefused,
+    PaymentUnavailable,
+    AttackerLeaseUnavailable,
+    DamageUnavailable,
+    StaleTarget,
+    TargetDefenseUnavailable,
+    Immune,
+    NoDamage,
+    CommitRefused,
+}
+
+fn log_swing_skip(entry: &ActorAttack, target: Option<ExactActorRef>, reason: SwingSkip) {
+    let held = target.zip(
+        entry
+            .state
+            .held_target_lineage()
+            .map(|(_, lineage)| lineage),
+    );
+    log_held_swing_skip(held, reason);
+}
+
+fn log_held_swing_skip(held: Option<(ExactActorRef, CommandRef)>, reason: SwingSkip) {
+    // Closed reason tokens with no debug whitespace or private character IDs.
+    let reason = match reason {
+        SwingSkip::Cleared(detail) => format!("Cleared.{detail:?}"),
+        SwingSkip::Waiting(detail) => format!("Waiting.{detail:?}"),
+        SwingSkip::Ranged(detail) => format!("Ranged.{detail:?}"),
+        other => format!("{other:?}"),
+    };
+    let (target, command) = held.map_or_else(
+        || ("none".into(), 0),
+        |(target, lineage)| {
+            let id = target
+                .placement_identity()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            (id, lineage.command_id().get())
+        },
+    );
+    operator_event(&format!(
+        "event=auto_attack_swing_skipped command_id={command} target={target} reason={reason}"
+    ));
+}
+
 pub(super) fn select_swing(
     entry: &mut ActorAttack,
     runtime: &ChannelRuntimeV1,
@@ -1963,15 +2037,36 @@ pub(super) fn select_swing(
     now: SemanticTimeMicros,
     constants: &AttackConstants,
 ) -> Option<SelectedSwing> {
-    let target = entry.state.target()?;
-    let player = states.get(runtime, entry.actor, entry.session)?;
+    let held = entry.state.held_target_lineage();
+    match select_swing_inner(entry, runtime, states, room, digest, now, constants) {
+        Ok(swing) => Some(swing),
+        Err(reason) => {
+            log_held_swing_skip(held, reason);
+            None
+        }
+    }
+}
+
+fn select_swing_inner(
+    entry: &mut ActorAttack,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    digest: [u8; 32],
+    now: SemanticTimeMicros,
+    constants: &AttackConstants,
+) -> Result<SelectedSwing, SwingSkip> {
+    let target = entry.state.target().ok_or(SwingSkip::NoTarget)?;
+    let player = states
+        .get(runtime, entry.actor, entry.session)
+        .ok_or(SwingSkip::AttackerNotCurrent)?;
     if states.player_hidden_from(runtime, entry.actor, target, now) {
         entry.clear_target();
-        return None;
+        return Err(SwingSkip::HiddenTarget);
     }
     if states.is_dead(entry.actor) {
         entry.clear_target();
-        return None;
+        return Err(SwingSkip::DeadAttacker);
     }
     // CONDITIONS-0 §3.5: applying `pacified` clears a running target.
     if pacified_applied_since(
@@ -1982,7 +2077,7 @@ pub(super) fn select_swing(
         entry.target_set_at,
     ) {
         entry.clear_target();
-        return None;
+        return Err(SwingSkip::Pacified);
     }
     // Canary Player::doAttacking pauses swings without dropping the held target or timer.
     if player
@@ -1990,29 +2085,33 @@ pub(super) fn select_swing(
         .group_ready_at(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
         .is_some_and(|until| now < until)
     {
-        return None;
+        return Err(SwingSkip::StairhopCooldown);
     }
     // SPELL-LOCK-2 §1.3: while the attacker's own slot is reserved by a pending spell
     // batch, its swing defers to a later turn; the held target and swing clock stay.
     if states.has_pending_spell_commit(entry.actor, entry.session)
         || runtime.assert_actor_spell_unreserved(entry.actor).is_err()
     {
-        return None;
+        return Err(SwingSkip::SpellReserved);
     }
-    // ATTACK-2: a swing waits for a swing weapon read under this pin within one attack
-    // interval; the attacker's own connection refreshes it (`refresh_attack_weapon`).
+    // Equipment mutation invalidates the melee snapshot by epoch. Ranged still
+    // refreshes periodically because the shot transaction consumes ammunition.
     let weapon = entry
         .weapon
         .as_ref()
         .filter(|facts| {
             facts.content_digest == digest
-                && now
-                    .elapsed_since(facts.read_at)
-                    .is_ok_and(|age| age <= constants.attack_interval_micros())
+                && (facts.ranged.is_none()
+                    || now
+                        .elapsed_since(facts.read_at)
+                        .is_ok_and(|age| age <= constants.attack_interval_micros()))
         })
-        .cloned()?;
+        .cloned()
+        .ok_or(SwingSkip::WeaponUnavailable)?;
     let mut character_facts = player.character_facts();
-    character_facts.magic_level = player.owned_effective_magic_level(now.get()).ok()?;
+    character_facts.magic_level = player
+        .owned_effective_magic_level(now.get())
+        .map_err(|_| SwingSkip::SkillUnavailable)?;
     // MELEE-SKILL-1: the swing reads the attacker's live skill of the swung weapon (fist for
     // fists) and live shielding, before the swing is taken, so an unresolved skill takes none.
     let attack_index = if weapon.ranged.is_some() {
@@ -2024,7 +2123,8 @@ pub(super) fn select_swing(
         }
     };
     let mut skills = player
-        .swing_skills(attack_index, now.get())?
+        .swing_skills(attack_index, now.get())
+        .ok_or(SwingSkip::SkillUnavailable)?
         .unwrap_or(SwingSkills {
             attack: constants.starting_skill,
             shielding: constants.starting_skill,
@@ -2033,12 +2133,18 @@ pub(super) fn select_swing(
         && player
             .wheel_effects_at(now.get())
             .is_some_and(|effects| effects.active_unique_perks.contains("positional_tactics"))
-        && crate::spell::cast::wheel_adjacent_monsters(runtime, entry.actor)? == 0
+        && crate::spell::cast::wheel_adjacent_monsters(runtime, entry.actor)
+            .ok_or(SwingSkip::PositionUnavailable)?
+            == 0
     {
         // Crystal player_wheel.cpp:3009-3017: the no-adjacent-monster branch adds 3 distance.
-        skills.attack = skills.attack.checked_add(3)?;
+        skills.attack = skills
+            .attack
+            .checked_add(3)
+            .ok_or(SwingSkip::SkillUnavailable)?;
     }
-    let mut facts = target_facts(runtime, room, entry.actor, entry.session, target, now)?;
+    let mut facts = target_facts(runtime, room, entry.actor, entry.session, target, now)
+        .ok_or(SwingSkip::PositionUnavailable)?;
     // Vanished/dead/nonattackable targets still reach the original clearing rules, even
     // when ammunition is missing. Cost/range gates may only stall a valid held target.
     if let Some(ranged) = &weapon.ranged
@@ -2052,7 +2158,7 @@ pub(super) fn select_swing(
                 facts.present_and_visible,
                 player.vitals().mana,
             )
-            .ok()?;
+            .map_err(SwingSkip::Ranged)?;
         // Range was checked with the qualified launcher range. All other target gates and
         // the timer remain the existing attack owner's rules.
         facts.distance = facts.distance.min(1);
@@ -2062,13 +2168,13 @@ pub(super) fn select_swing(
         .poll_swing(now, constants.attack_interval_micros(), &facts)
     {
         SwingPoll::Swing(swing) => swing,
-        SwingPoll::Cleared(_) => {
+        SwingPoll::Cleared(reason) => {
             entry.target_ref = None;
-            return None;
+            return Err(SwingSkip::Cleared(reason));
         }
-        SwingPoll::NoTarget | SwingPoll::Waiting(_) | SwingPoll::NotDue { .. } => {
-            return None;
-        }
+        SwingPoll::NoTarget => return Err(SwingSkip::NoTarget),
+        SwingPoll::Waiting(reason) => return Err(SwingSkip::Waiting(reason)),
+        SwingPoll::NotDue { .. } => return Err(SwingSkip::Cooldown),
     };
     // The ordinal advances on every swing, a zero draw included, so every swing has its
     // own RNG occurrence; the lineage ends at the last ordinal.
@@ -2077,7 +2183,7 @@ pub(super) fn select_swing(
         Some(next) => entry.next_ordinal = next,
         None => entry.clear_target(),
     }
-    Some(SelectedSwing {
+    Ok(SelectedSwing {
         target,
         character_facts,
         skills,

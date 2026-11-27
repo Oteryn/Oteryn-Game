@@ -19,9 +19,14 @@ Capability 151 `DAILY_BOOST_V1`, command 177 `DAILY_BOOST_QUERY`.
 The payload is empty. The admitted route requires the negotiated capability,
 current actor control and matching connection/scope fence. It revalidates the
 World's active epoch and Channel owner in the bounded durability transaction.
-An unavailable selection is rejected; storage/owner failures close the connection
-through the existing unavailable disposition. Only bundle Worlds compose this
-mechanic. A capability offer alone does not create a daily selection.
+Only bundle Worlds compose the mechanic. A capability offer alone does not
+create a daily selection.
+
+## Refusal
+
+A rejected command result carries a one-byte `DailyBoostRefusal`. The server
+logs the reason with the command ID and result sequence. A rejected query has
+no post-command presentation refresh.
 
 ## View
 

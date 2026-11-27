@@ -125,6 +125,16 @@ where
     write_frame(stream, &result)
         .await
         .map_err(|error| command::disconnect(command, "command_result_write", error.kind()))?;
+    // A read-only refusal has no effects to flush. Leave pending cues
+    // to the normal view refresh and keep this result independent of them.
+    if command.command_type == oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
+        && matches!(
+            dispatch,
+            Dispatch::Reply(crate::foundation::CommandStatus::Rejected, _)
+        )
+    {
+        return Ok(());
+    }
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing
     // scope barrier before observing any destination-owned state.
