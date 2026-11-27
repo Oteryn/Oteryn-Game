@@ -18,7 +18,7 @@ const RAT_AT: MovementLocalPosition = cell(1, 1);
 const CASTER_AT: MovementLocalPosition = cell(2, 2);
 const CASTER_OUT: MovementLocalPosition = cell(3, 2);
 const OTHER_AT: MovementLocalPosition = cell(3, 1);
-const OTHER_TARGET_AT: MovementLocalPosition = cell(4, 0);
+const OTHER_TARGET_AT: MovementLocalPosition = cell(3, 0);
 const FAR_AT: MovementLocalPosition = cell(5, 2);
 const FAR_TARGET_AT: MovementLocalPosition = cell(6, 2);
 
@@ -160,6 +160,8 @@ async fn scenario(harness: &Harness) -> TestResult {
         Some(caster.0),
         "late placement selects the adjacent caster"
     );
+    assert_eq!(target(&owner, near_rat).await, Some(other.0));
+    assert_eq!(target(&owner, far_rat).await, Some(far.0));
     step(&owner, caster.0, CASTER_OUT).await?;
     advance(&owner, &mut now).await?;
     assert_eq!(target(&owner, rat).await, Some(caster.0));
@@ -177,7 +179,6 @@ async fn scenario(harness: &Harness) -> TestResult {
     // The Rat has no cardinal exit from its island. Both victims are now in diagonal
     // melee range. Only the original target is entitled to the held melee occurrence.
     step(&owner, caster.0, CASTER_AT).await?;
-    step(&owner, other.0, cell(3, 0)).await?;
     step(&owner, other.0, cell(2, 0)).await?;
     let exact = EntityRef {
         identity: rat.placement_identity(),
@@ -198,6 +199,7 @@ async fn scenario(harness: &Harness) -> TestResult {
             .interval_ms
             * 1_000
     };
+    // The authored range includes zero. Allow one further attack interval for a zero roll.
     let deadline = now.get() + 2 * interval_us;
     while now.get() < deadline {
         advance(&owner, &mut now).await?;
@@ -316,7 +318,6 @@ fn bundle_world(
     let ground = sector.tiles.first().ok_or("fixture ground")?.items.clone();
     sector.tiles = [
         cell(2, 0),
-        cell(3, 0),
         OTHER_TARGET_AT,
         RAT_AT,
         OTHER_AT,
