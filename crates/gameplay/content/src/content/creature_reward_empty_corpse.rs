@@ -1,8 +1,8 @@
 //! Empty physical reward-boss corpses retain their source container capacity.
 //! Private loot rows still use the existing 30-entry admission and contents bounds.
 use super::{
-    BestiaryRace, CreatureRewardRow, HashMap, HashSet, NoSettlementReason,
-    ProjectV2CreatureAuthoring, SectionItemFacts, SectionLootTable, SectionRef,
+    BestiaryRace, CreatureRewardRow, HashMap, NoSettlementReason, ProjectV2CreatureAuthoring,
+    SectionItemFacts, SectionLootTable, SectionRef, VerifiedSourceCorpses,
 };
 
 pub(super) fn reward_boss_row(
@@ -11,7 +11,7 @@ pub(super) fn reward_boss_row(
     tables: &HashMap<&SectionRef, &SectionLootTable>,
     items: &HashMap<&SectionRef, &SectionItemFacts>,
     race: Option<BestiaryRace>,
-    verified_source_corpses: &HashSet<String>,
+    verified_source_corpses: &VerifiedSourceCorpses,
 ) -> Result<CreatureRewardRow, NoSettlementReason> {
     if !profile
         .details
