@@ -99,6 +99,14 @@ impl SpellLane {
         }
     }
 
+    /// Local combat effects yield a turn to a durable spell writer or its
+    /// parked install. They never wait for a holder or resolve that writer.
+    pub fn try_acquire_for_local_effect(&self) -> Option<SpellLanePermit> {
+        let guard = Arc::clone(&self.state).try_lock_owned().ok()?;
+        let permit = SpellLanePermit { scope: self.scope, guard };
+        (!permit.has_unresolved()).then_some(permit)
+    }
+
     /// A Channel reload from durable truth (§1.6): the in-memory attempt is dropped with the
     /// runtime it belonged to.
     pub async fn clear_after_reload(&self) {
