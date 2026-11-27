@@ -835,6 +835,7 @@ async fn prepare_build(
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("p11-corridor-knight", "01934f10-7c00-7000-8000-000000000004")
+            | ("p11-corridor-knight", UNASSIGNED_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
