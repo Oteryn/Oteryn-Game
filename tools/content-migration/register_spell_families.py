@@ -376,10 +376,9 @@ def admit_agony_field(root: Path, generated: dict[str, bytes]) -> None:
     generated[path] = spell_import.canonical_bytes(document)
 
 
-def admit_exaltation_chest(root: Path, items: dict) -> None:
-    """Admit the delivered chest using its retained Global container facts."""
-    key = "oteryn:item.tibia.i37561"
-    shard = root / "content/items/definitions/items-22500-22999.json"
+def admit_retained_portable_item(root: Path, items: dict, key: str, shard_name: str) -> None:
+    """Admit an item using its retained Global inventory facts."""
+    shard = root / "content/items/definitions" / shard_name
     definition = next(
         row["definition"]
         for row in json.loads(shard.read_bytes())["records"]
@@ -1839,7 +1838,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
 
     healing_global_overrides.apply_native_profiles(items)
     admit_dream_courts_supplies(root, items)
-    admit_exaltation_chest(root, items)
+    admit_retained_portable_item(root, items, "oteryn:item.tibia.i37561", "items-22500-22999.json")
+    # Global temple travel: https://tibia.fandom.com/wiki/Adventurer%27s_Stone
+    admit_retained_portable_item(root, items, "oteryn:item.tibia.i16277", "items-05500-05999.json")
     import protected_loot_yields
 
     protected_loot_yields.admit(root, items, provider_order)
