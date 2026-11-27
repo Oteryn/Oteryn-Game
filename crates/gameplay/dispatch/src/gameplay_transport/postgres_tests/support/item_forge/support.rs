@@ -117,7 +117,10 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 .current_session_at(deps.admitted.game_session_id)
                 .await?
                 .0;
-        let preview = matches!(case, Case::Preview | Case::Items(Operation::Transfer));
+        let preview = matches!(
+            case,
+            Case::Preview | Case::Items(Operation::Transfer) | Case::Chest(Operation::Transfer)
+        );
         if preview {
             deps.runtime
                 .lock()
