@@ -417,7 +417,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         # bones grants the axe through the direct reward path.
         self.assertIn('oteryn:item.tibia.i3085', expected)
         axe = 'oteryn:item.tibia.i3320'
-        self.assertNotIn(axe, expected)
+        self.assertIn(axe, expected)
         self.assertTrue(rows[axe]['admission']['materializable'])
         self.assertIn('CharacterInventory', rows[axe]['admission']['legal_destinations'])
         self.assertEqual(rows[axe]['production_binding']['target']['key'], axe)
