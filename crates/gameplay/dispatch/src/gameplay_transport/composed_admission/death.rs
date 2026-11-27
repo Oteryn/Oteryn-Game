@@ -74,7 +74,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .get_mut(&runtime, actor, session)?
                         .rebase_after_death(after);
                 }
-                states.respawn(&runtime, actor, session, death.occurrence, now)
+                let vitals = states.respawn(&runtime, actor, session, death.occurrence, now)?;
+                self.states
+                    .quest_callbacks
+                    .retire_respawned_koshei_visit(&runtime, actor, session);
+                Some(vitals)
             },
         )
         .await

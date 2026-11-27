@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, id};
 use super::m01b_explore_fixtures::koshei::{POINTS, TRACK, relocate, step};
 use super::quest_world_callbacks_fixtures::{input_item, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
 use oteryn_gameplay_world::map::view::MapFacts;
@@ -57,6 +58,8 @@ pub(super) fn world(
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let mut project =
         source::project_regions(&root, &[(127, 123), (129, 126), (129, 127), (130, 126)])?;
+    // The cropped route uses its safe pinned start for the normal temple respawn.
+    project.families.subareas = Default::default();
     project
         .families
         .spawns
@@ -626,11 +629,68 @@ pub(super) async fn exercise(
     let [member] = encounter.players.as_slice() else {
         return Err("one Koshei staging position".into());
     };
-    move_to(owner, admitted, member.from).await?;
+    let session = admitted.game_session_id;
+    let actor = admitted.runtime_actor.ok_or("Koshei player")?;
+    let stage = super::quest_world_callbacks_fixtures::local(member.from);
+    assert_eq!(owner.home_temple(session).await, Some(stage));
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    // Protect the quest amulet and combat supplies through the fixture's PvE loss.
+    sqlx::query(
+        "INSERT INTO game_character_blessings(character_id,blessing_key,provenance) \
+         SELECT encode($1,'hex')::uuid,blessing,'fixture' FROM unnest($2::text[]) AS blessing",
+    )
+    .bind(id(41).as_slice())
+    .bind(
+        &[
+            "oteryn:blessing.the_embrace_of_tibia",
+            "oteryn:blessing.the_fire_of_the_suns",
+            "oteryn:blessing.the_spark_of_the_phoenix",
+            "oteryn:blessing.the_spiritual_shielding",
+            "oteryn:blessing.the_wisdom_of_solitude",
+        ][..],
+    )
+    .execute(&mut *seed)
+    .await?;
+    seed.commit().await?;
+    let death = {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks_fixtures::local(member.to)
+        );
+        let mut states = owner.states.spell_states.lock().await;
+        let now = SemanticTimeMicros::from_micros(owner.owner_now().get());
+        let hit = states
+            .apply_creature_damage_native(&runtime, actor, session, 100_000, now)
+            .ok_or("lethal PvE hit inside the Koshei room")?;
+        assert_eq!(hit.damage.health_after, 0);
+        states
+            .player_death(&runtime, actor, session)
+            .ok_or("Koshei player death")?
+    };
+    let (_, vitals) = Box::pin(owner.respawn_after_death(actor, session, death))
+        .await
+        .ok_or("durable death and home respawn")?;
+    assert_eq!(vitals.health, vitals.max_health);
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(actor).map_err(debug)?.position(),
+            stage
+        );
+        assert!(
+            runtime.contains_live_creature(native_boss),
+            "the ambient boss survives the player's death"
+        );
+    }
     let switch = target(owner, SWITCH, 1)?;
     assert_eq!(
         use_next(owner, admitted, &switch).await?,
-        UseDisposition::Occupied
+        UseDisposition::Committed,
+        "the new life can claim the same native defender through framed USE"
     );
     let entry_receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -638,8 +698,8 @@ pub(super) async fn exercise(
     .bind(ENTRY)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(entry_receipts, 1, "a live defender cannot be claimed again");
-    move_to(owner, admitted, member.to).await?;
+    assert_eq!(entry_receipts, 2, "entry has one receipt per admitted life");
+    assert_eq!(State::read(h).await?, expected);
     super::elvenbane_combat_fixtures::fight(
         owner,
         admitted,

@@ -1,4 +1,5 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
+use super::super::grizzly_kills::KosheiVisitClaim;
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
@@ -6,6 +7,7 @@ use oteryn_gameplay_entities::carrier::encounter_access::{
     EncounterDefenders, StagedQuestEncounter,
 };
 use oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY;
+use std::sync::Arc;
 
 struct PreparedPhase {
     phase: Option<super::super::encounter_phases::ActivePhase>,
@@ -38,13 +40,41 @@ pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
+    native_claim: Option<Arc<KosheiVisitClaim>>,
 }
 
 impl EncounterVisit {
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
-        self.creatures
-            .iter()
-            .any(|actor| runtime.contains_live_creature(*actor))
+        self.native_claim
+            .as_ref()
+            .is_none_or(|claim| claim.holds(runtime))
+            && self
+                .creatures
+                .iter()
+                .any(|actor| runtime.contains_live_creature(*actor))
+    }
+}
+
+impl PendingCallbacks {
+    /// Called after the fenced temple placement and the matching vitals refill.
+    /// A defender already killed keeps its existing settlement.
+    pub(in crate::gameplay_transport) fn retire_respawned_koshei_visit(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        let visits = self
+            .encounters
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for visit in visits.iter() {
+            if let Some(claim) = &visit.native_claim
+                && visit.active(runtime)
+            {
+                claim.retire_respawned(runtime, actor, session);
+            }
+        }
     }
 }
 
@@ -535,9 +565,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .encounters
                     .lock()
                     .map_or(true, |visits| {
-                        visits
-                            .iter()
-                            .any(|visit| visit.creatures.contains(&defender))
+                        visits.iter().any(|visit| {
+                            visit.creatures.contains(&defender) && visit.active(runtime)
+                        })
                     })
             {
                 return UseDisposition::Occupied;
@@ -618,8 +648,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let native_claim = if native_koshei.is_some() {
+            let Some(claim) = KosheiVisitClaim::new(runtime, actor, session) else {
+                return UseDisposition::Rejected;
+            };
+            Some(Arc::new(claim))
+        } else {
+            None
+        };
         let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
-            match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
+            match capture.prepare_encounter(
+                runtime,
+                &callback.key,
+                hash,
+                &party,
+                native_claim.clone(),
+            ) {
                 Ok(prepared) => Some(prepared),
                 Err(_) => return UseDisposition::Rejected,
             }
@@ -715,6 +759,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     room: encounter.clone(),
                     participants: party,
                     creatures: Vec::new(),
+                    native_claim: None,
                 }),
             });
             return UseDisposition::Committed;
@@ -746,11 +791,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
+                native_claim,
             });
         }
         drop(visits);
-        // The visit claims this exact defender until it dies. Its lifecycle
-        // stays with the ordinary spawn owner during personal quest cleanup.
+        // The ordinary spawn owner retains the ambient defender through both
+        // personal quest cleanup and retirement of the player's room visit.
         if native_koshei.is_none()
             && let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)

@@ -1,8 +1,64 @@
 //! Native room admissions share the existing death capture owner and its lock order.
 use super::*;
+use crate::foundation::CharacterLease;
 use oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 const MAX_RUNS: usize = 64;
+
+/// The room visit and its kill capture share the same claim on a live ambient defender.
+/// Both owners read or retire it in a turn of the same Channel runtime.
+#[derive(Debug)]
+pub(in crate::gameplay_transport) struct KosheiVisitClaim {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    lease: CharacterLease,
+    retired: AtomicBool,
+}
+
+impl KosheiVisitClaim {
+    pub(in crate::gameplay_transport) fn new(
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Self> {
+        Some(Self {
+            actor,
+            session,
+            lease: runtime.bound_attacker_lease(actor, session).ok()?,
+            retired: AtomicBool::new(false),
+        })
+    }
+
+    fn retired(&self) -> bool {
+        self.retired.load(Ordering::Relaxed)
+    }
+
+    pub(in crate::gameplay_transport) fn holds(&self, runtime: &ChannelRuntimeV1) -> bool {
+        !self.retired()
+            && match runtime.present_player_lease(self.actor) {
+                Ok(current) => current == (self.session, self.lease),
+                // A transient write fence alone does not abandon a present player.
+                Err(_) => runtime
+                    .player_control_facts(self.actor, self.session)
+                    .is_ok(),
+            }
+    }
+
+    pub(in crate::gameplay_transport) fn retire_respawned(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        if self.actor == actor
+            && self.session == session
+            && runtime.present_player_lease(actor) == Ok((session, self.lease))
+        {
+            self.retired.store(true, Ordering::Relaxed);
+        }
+    }
+}
 
 #[derive(Debug)]
 pub(super) struct Participant {
@@ -18,12 +74,14 @@ pub(super) struct EncounterRun {
     pub(super) definition_hash: [u8; 32],
     pub(super) participants: Vec<Participant>,
     pub(super) roster: EncounterDefenders,
+    native_claim: Option<Arc<KosheiVisitClaim>>,
 }
 
 pub(in crate::gameplay_transport) struct PreparedEncounter {
     source: String,
     definition_hash: [u8; 32],
     participants: Vec<Participant>,
+    native_claim: Option<Arc<KosheiVisitClaim>>,
 }
 impl GrizzlyCaptureCache {
     /// Every allocation, lease and active source check precedes physical publication.
@@ -33,18 +91,30 @@ impl GrizzlyCaptureCache {
         source: &str,
         definition_hash: [u8; 32],
         selected: &[(ExactActorRef, GameSessionId)],
+        native_claim: Option<Arc<KosheiVisitClaim>>,
     ) -> Result<PreparedEncounter, ()> {
+        if native_claim.as_ref().is_some_and(|claim| {
+            selected != [(claim.actor, claim.session)].as_slice() || !claim.holds(runtime)
+        }) {
+            return Err(());
+        }
         self.encounters.retain(|run| {
-            run.participants.iter().any(|participant| {
-                runtime
-                    .bound_attacker_lease(participant.actor, participant.session)
-                    .is_ok_and(|lease| {
-                        lease.character_id().as_bytes() == &participant.character
-                            && lease.generation() == participant.lease_generation
-                    })
-            }) && run.roster.defenders().iter().any(|actor| {
-                runtime.contains_live_creature(*actor) || runtime.retains_corpse_projection(*actor)
-            })
+            let current = match &run.native_claim {
+                Some(claim) => claim.holds(runtime),
+                None => run.participants.iter().any(|participant| {
+                    runtime
+                        .bound_attacker_lease(participant.actor, participant.session)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == &participant.character
+                                && lease.generation() == participant.lease_generation
+                        })
+                }),
+            };
+            current
+                && run.roster.defenders().iter().any(|actor| {
+                    runtime.contains_live_creature(*actor)
+                        || runtime.retains_corpse_projection(*actor)
+                })
         });
         if self.encounters.len() >= MAX_RUNS
             || !(1..=8).contains(&selected.len())
@@ -93,6 +163,7 @@ impl GrizzlyCaptureCache {
             source: source.into(),
             definition_hash,
             participants,
+            native_claim,
         })
     }
     /// Capacity was reserved by prepare_encounter under this same cache guard.
@@ -106,6 +177,7 @@ impl GrizzlyCaptureCache {
             definition_hash: prepared.definition_hash,
             participants: prepared.participants,
             roster,
+            native_claim: prepared.native_claim,
         });
     }
 }
@@ -123,7 +195,13 @@ impl GrizzlyCaptureCache {
     ) -> bool {
         self.encounters
             .iter()
-            .filter(|run| run.source == source)
+            .filter(|run| {
+                run.source == source
+                    && run
+                        .native_claim
+                        .as_ref()
+                        .is_none_or(|claim| !claim.retired())
+            })
             .all(|run| {
                 let Some(participant) = run.participants.iter().find(|participant| {
                     participant.actor == actor && participant.session == session
@@ -158,6 +236,10 @@ pub(super) fn capture(
     let mut recipients = Vec::new();
     for run in runs {
         if !run.roster.defenders().contains(&entry.target)
+            || run
+                .native_claim
+                .as_ref()
+                .is_some_and(|claim| !claim.holds(runtime))
             || !run.participants.iter().any(|participant| {
                 participant.actor == principal.actor
                     && participant.session == principal.session
@@ -250,6 +332,7 @@ mod tests {
                 admission_revision: 10,
             }],
             roster: EncounterDefenders::new(&[participant], &[target]).map_err(checked)?,
+            native_claim: None,
         });
         assert!(!cache.encounter_door_allowed("source-room", hash, participant, session, 2));
         assert!(cache.encounter_door_allowed("other-room", hash, participant, session, 2));
@@ -274,6 +357,7 @@ mod tests {
                 admission_revision: 11,
             }],
             roster: EncounterDefenders::new(&[participant], &[target]).map_err(checked)?,
+            native_claim: None,
         });
         assert!(!cache.encounter_door_allowed("source-room", hash, participant, session, 2));
         Ok(())
