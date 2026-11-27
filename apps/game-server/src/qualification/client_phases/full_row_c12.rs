@@ -423,18 +423,18 @@ impl Hunt {
             .ok_or("C12 accepted cast omitted actor-vitals")?;
         let vitals = delta.value;
         let in_flight = client.take_events();
-        let mana_before_cast = in_flight
-            .iter()
-            .filter_map(|event| match event {
-                SessionEvent::ActorVitals(update)
-                    if update.server_sequence < delta.server_sequence =>
-                {
-                    Some(update)
+        let mana_before_cast = super::client_row_c12::frame_capture::mana_before_cast(
+            in_flight.iter().filter_map(|event| match event {
+                SessionEvent::ActorVitals(update) => {
+                    Some((update.server_sequence, update.value.mana))
                 }
                 _ => None,
-            })
-            .max_by_key(|update| update.server_sequence)
-            .map_or(before.mana, |update| update.value.mana);
+            }),
+            before.mana,
+            before.max_mana,
+            delta.server_sequence,
+        )
+        .ok_or("C12 full unexpected mana change before the cast delta")?;
         if mana_before_cast.checked_sub(CAST_MANA) != Some(vitals.mana) {
             return Err(format!(
                 "C12 expected {CAST_MANA} mana spent, observed {mana_before_cast} -> {} from wire sequence {}",
@@ -455,18 +455,30 @@ impl Hunt {
         // attributed hit before advancing to the next action, including late batches.
         let mut hits = Vec::new();
         super::client_row_c12::collect_hits(&in_flight, own, victim, spell, &mut hits);
+        let mut timers = super::client_row_c12::validate_cast_timers(
+            client.session_mut(),
+            &in_flight,
+            spell,
+            8_000,
+        )?;
+        client.service_liveness(Duration::from_secs(2)).await?;
+        super::client_row_c12::require_cooldown(client.session_mut(), spell).await?;
         let window = tokio::time::Instant::now() + Duration::from_secs(8);
         while let Some(remaining) = window.checked_duration_since(tokio::time::Instant::now()) {
             client
                 .service_liveness(remaining.min(Duration::from_millis(250)))
                 .await?;
-            super::client_row_c12::collect_hits(
-                &client.take_events(),
-                own,
-                victim,
+            let trailing = client.take_events();
+            timers |= super::client_row_c12::validate_cast_timers(
+                client.session_mut(),
+                &trailing,
                 spell,
-                &mut hits,
-            );
+                8_000,
+            )?;
+            super::client_row_c12::collect_hits(&trailing, own, victim, spell, &mut hits);
+        }
+        if !timers {
+            return Err("C12 full spender cooldown projection missing".into());
         }
         let damage = hits.first().copied().unwrap_or(0);
         let after = *client.actor_vitals().ok_or("post-cast vitals absent")?;
@@ -727,9 +739,25 @@ async fn build_harmony(
         .into());
     }
     let mut evidence = client.take_events();
+    let mana = super::client_row_c12::frame_capture::mana_before_cast(
+        evidence.iter().filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) => Some((update.server_sequence, update.value.mana)),
+            _ => None,
+        }),
+        before.mana,
+        before.max_mana,
+        effect.server_sequence,
+    );
+    if mana.and_then(|mana| mana.checked_sub(3)) != Some(effect.value.mana) {
+        return Err("C12 full Swift Jab must spend exactly 3 mana".into());
+    }
     // Swift Jab's authored attack group lasts two seconds.
     client.service_liveness(Duration::from_secs(2)).await?;
     evidence.extend(client.take_events());
+    if !super::client_row_c12::validate_cast_timers(client.session_mut(), &evidence, spell, 2_000)?
+    {
+        return Err("C12 full Swift Jab cooldown projection missing".into());
+    }
     if evidence
         .iter()
         .all(|event| cast_damage_in(event, own, target, spell.get()) == 0)
@@ -991,7 +1019,6 @@ struct GuildPortals {
 // Global places the other sphere on the Adventurers' Guild island. The World
 // callback supplies the exact landing, which must lie in the Guild's sector.
 fn guild_portals(callbacks: &serde_json::Value) -> TestResult<GuildPortals> {
-    let guild = |pos: TilePos| pos.x / 256 == 125 && pos.y / 256 == 126;
     let read_tile = |value: &serde_json::Value| -> TestResult<TilePos> {
         Ok(TilePos {
             x: value["x"]
@@ -1029,9 +1056,9 @@ fn guild_portals(callbacks: &serde_json::Value) -> TestResult<GuildPortals> {
     };
     let (entrance, valley_landing) = route(5)?;
     let (exit, guild_landing) = route(2)?;
-    if !guild(guild_landing) {
+    if guild_landing != STONE_ARRIVAL {
         return Err(format!(
-            "BLOCKED-CONTENT: blue-valley-2 Guarded Crystal Sphere at ({},{},{}) returns to ({},{},{}), outside Adventurers' Guild",
+            "BLOCKED-CONTENT: blue-valley-2 Guarded Crystal Sphere at ({},{},{}) returns to ({},{},{}), expected exact Guild arrival tile",
             exit.x, exit.y, exit.floor, guild_landing.x, guild_landing.y, guild_landing.floor,
         ).into());
     }
@@ -1389,6 +1416,18 @@ async fn acquire_pema(
         .iter()
         .find(|entry| entry.key == "oteryn:npc.enpa_deia_pema")
         .ok_or("Enpa-Deia Pema absent from the compiled NPC table")?;
+    const PEMA_TILE: TilePos = TilePos {
+        x: 33603,
+        y: 31468,
+        floor: -7,
+    };
+    if !matches!(seller.placements.as_slice(), [only]
+        if (only.x, only.y, only.floor) == (PEMA_TILE.x, PEMA_TILE.y, PEMA_TILE.floor))
+    {
+        return Err(
+            "C12 Pema must have exactly the independently pinned Blue Valley placement".into(),
+        );
+    }
     let near_placement = |at: TilePos, placement: TilePos| {
         at.floor == placement.floor
             && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
@@ -2174,6 +2213,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let fresh_spell_index = spell(&mut fresh)?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index, augment).await?;
     row.record_cast("fresh-admission", &replay, weapon(&fresh)?);
+    let catalyst =
+        provisioning::item_reference(&provisioning::item_index()?, GREATER_PROFICIENCY_CATALYST)?;
+    let position = fresh.world_spatial().actor_position;
+    let target = hunt.entity;
+    let mut fresh = super::client_row_c12::verify_individual_perks(
+        fresh, clients, world, definition, catalyst, target, position,
+    )
+    .await?;
     logout(&mut fresh, false).await?;
     row.pass("augment-attribution", (ITEM_ID, augment));
     Ok(())

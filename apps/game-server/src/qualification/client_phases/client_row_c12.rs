@@ -2,7 +2,7 @@
 
 use super::*;
 use oteryn_dev_client::native_session::{Admission, Session, SessionStream};
-use oteryn_dev_client::{EntityRef, SessionEvent};
+use oteryn_dev_client::{EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -313,141 +313,11 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let combat_tile = tile(position)?;
-    let target_tile = TilePos {
-        y: combat_tile
-            .y
-            .checked_sub(1)
-            .ok_or("C12 target tile overflow")?,
-        ..combat_tile
-    };
-    let is_protection_zone = |at: TilePos| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| tile.protection_zone())
-    };
-    if is_protection_zone(combat_tile) {
-        return Err("C12 refusal must be attempted outside a protection zone".into());
-    }
-    let mut perks = SELECTED_DAMAGE_PERKS;
-    for level in [0, 2] {
-        require_perk_reply(
-            fresh.session_mut(),
-            definition,
-            level,
-            None,
-            proficiency::SelectPerkResult::NotInProtectionZone,
-            perks,
-        )
-        .await?;
-    }
-    full_row_c12::require_fists_damage_perks(clients).await?;
-    evidence("C12_CLIENT_PERK_CLEAR_REFUSED reason=NotInProtectionZone perks=1,3");
-    let to_protection_zone = route_avoiding(&world, combat_tile, is_protection_zone, |at| {
-        at != target_tile
-    })
-    .ok_or("C12 no authored route to a protection zone")?;
     full_row_c12::equip_right(&mut fresh, definition).await?;
-    for (changes, active_level) in [
-        (&[(0, None)][..], 3),
-        (&[(0, Some(0)), (2, None)][..], 1),
-        (&[(0, None)][..], 0),
-    ] {
-        let clear = fresh.session_mut().attack_target(None).await?;
-        require_mechanic_acceptance(clear.status, "C12.client clear target before perk changes")?;
-        if clear.disposition != AttackIntentDisposition::Ok {
-            return Err(format!("C12.client clear target failed: {clear:?}").into());
-        }
-        full_row_c12::wait_combat_target(&mut fresh, None).await?;
-        full_row_c12::walk_exact_route(&mut fresh, &world, &to_protection_zone).await?;
-        let protection_tile = tile(fresh.world_spatial().actor_position)?;
-        if !is_protection_zone(protection_tile) {
-            return Err("C12 perk control did not reach a protection zone".into());
-        }
-        for &(level, perk) in changes {
-            perks[usize::from(level)] = perk;
-            require_perk_reply(
-                fresh.session_mut(),
-                definition,
-                level,
-                perk,
-                proficiency::SelectPerkResult::Accepted,
-                perks,
-            )
-            .await?;
-        }
-        if active_level == 0 {
-            require_fists_browse(fresh.session_mut(), definition, [None; 4]).await?;
-            let previous = fresh.join_snapshot().game_session_id;
-            full_row_c12::logout(&mut fresh, false).await?;
-            drop(fresh);
-            fresh = full_row_c12::connect_c12_character(clients).await?;
-            if fresh.join_snapshot().game_session_id == previous
-                || tile(fresh.world_spatial().actor_position)? != protection_tile
-            {
-                return Err("C12 perk removal requires a fresh admission at the saved tile".into());
-            }
-            require_fists_browse(fresh.session_mut(), definition, [None; 4]).await?;
-            require_consumed_catalyst(fresh.session_mut(), catalyst)?;
-            evidence(
-                "C12_CLIENT_PERKS_CLEARED fresh_session=true xp=100000 perks=none catalyst=absent",
-            );
-        }
-        let back_to_target = route_avoiding(
-            &world,
-            protection_tile,
-            |at| at == combat_tile,
-            |at| at != target_tile,
-        )
-        .ok_or("C12 no authored route back to the same combat tile")?;
-        full_row_c12::walk_exact_route(&mut fresh, &world, &back_to_target).await?;
-        if !frame_capture::equipped(
-            fresh
-                .inventory()
-                .ok_or("C12 equipped control inventory absent")?,
-            definition,
-        ) {
-            return Err(
-                "C12 proficiency control requires the Fists equipped and off hand vacant".into(),
-            );
-        }
-        let own = select_target(fresh.session_mut(), target, position).await?;
-        let spell = spell_index(fresh.session_mut(), "exori nia")?;
-        let builder = spell_index(fresh.session_mut(), "exori infir pug")?;
-        // A five-Harmony roll makes each 4% contribution observable after rounding.
-        let harmony = if active_level == 0 { 1 } else { 5 };
-        for before in 0..harmony {
-            build_harmony(
-                fresh.session_mut(),
-                own,
-                target,
-                position,
-                builder,
-                before,
-                false,
-            )
-            .await?;
-        }
-        let bps = if active_level == 0 { 0 } else { 400 };
-        let mut control = cast_checked(
-            fresh.session_mut(),
-            own,
-            target,
-            position,
-            spell,
-            harmony,
-            bps,
-        )
-        .await?;
-        fresh.service_liveness(Duration::from_secs(8)).await?;
-        collect_hits(&fresh.take_events(), own, target, spell, &mut control.hits);
-        control.verify_hits()?;
-        evidence(&format!(
-            "C12_CLIENT_PERK_CONTROL active_level={active_level} augment_bps={bps} command={} damage={}",
-            control.command, control.damage
-        ));
-    }
+    verify_individual_perks(
+        fresh, clients, &world, definition, catalyst, target, position,
+    )
+    .await?;
 
     let CheckedCast {
         command,
@@ -513,6 +383,153 @@ fn wire_boundary(received: &Mutex<Vec<u8>>) -> TestResult<usize> {
         .lock()
         .map_err(|_| "C12 capture lock unavailable")?
         .len())
+}
+
+pub(super) async fn verify_individual_perks(
+    mut fresh: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    definition: NonZeroU32,
+    catalyst: NonZeroU32,
+    target: EntityRef,
+    position: ActorPosition,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let combat_tile = tile(position)?;
+    let target_tile = TilePos {
+        y: combat_tile
+            .y
+            .checked_sub(1)
+            .ok_or("C12 target tile overflow")?,
+        ..combat_tile
+    };
+    let is_protection_zone = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
+    };
+    if is_protection_zone(combat_tile) {
+        return Err("C12 refusal must be attempted outside a protection zone".into());
+    }
+    let mut perks = SELECTED_DAMAGE_PERKS;
+    for level in [0, 2] {
+        require_perk_reply(
+            fresh.session_mut(),
+            definition,
+            level,
+            None,
+            proficiency::SelectPerkResult::NotInProtectionZone,
+            perks,
+        )
+        .await?;
+    }
+    full_row_c12::require_fists_damage_perks(clients).await?;
+    evidence("C12_CLIENT_PERK_CLEAR_REFUSED reason=NotInProtectionZone perks=1,3");
+    let to_protection_zone = route_avoiding(world, combat_tile, is_protection_zone, |at| {
+        at != target_tile
+    })
+    .ok_or("C12 no authored route to a protection zone")?;
+    for (changes, active_level) in [
+        (&[(0, None)][..], 3),
+        (&[(0, Some(0)), (2, None)][..], 1),
+        (&[(0, None)][..], 0),
+    ] {
+        let clear = fresh.session_mut().attack_target(None).await?;
+        require_mechanic_acceptance(clear.status, "C12.client clear target before perk changes")?;
+        if clear.disposition != AttackIntentDisposition::Ok {
+            return Err(format!("C12.client clear target failed: {clear:?}").into());
+        }
+        full_row_c12::wait_combat_target(&mut fresh, None).await?;
+        full_row_c12::walk_exact_route(&mut fresh, world, &to_protection_zone).await?;
+        let protection_tile = tile(fresh.world_spatial().actor_position)?;
+        if !is_protection_zone(protection_tile) {
+            return Err("C12 perk control did not reach a protection zone".into());
+        }
+        for &(level, perk) in changes {
+            perks[usize::from(level)] = perk;
+            require_perk_reply(
+                fresh.session_mut(),
+                definition,
+                level,
+                perk,
+                proficiency::SelectPerkResult::Accepted,
+                perks,
+            )
+            .await?;
+        }
+        if active_level == 0 {
+            require_fists_browse(fresh.session_mut(), definition, [None; 4]).await?;
+            let previous = fresh.join_snapshot().game_session_id;
+            full_row_c12::logout(&mut fresh, false).await?;
+            drop(fresh);
+            fresh = full_row_c12::connect_c12_character(clients).await?;
+            if fresh.join_snapshot().game_session_id == previous
+                || tile(fresh.world_spatial().actor_position)? != protection_tile
+            {
+                return Err("C12 perk removal requires a fresh admission at the saved tile".into());
+            }
+            require_fists_browse(fresh.session_mut(), definition, [None; 4]).await?;
+            require_consumed_catalyst(fresh.session_mut(), catalyst)?;
+            evidence(
+                "C12_CLIENT_PERKS_CLEARED fresh_session=true xp=100000 perks=none catalyst=absent",
+            );
+        }
+        let back_to_target = route_avoiding(
+            world,
+            protection_tile,
+            |at| at == combat_tile,
+            |at| at != target_tile,
+        )
+        .ok_or("C12 no authored route back to the same combat tile")?;
+        full_row_c12::walk_exact_route(&mut fresh, world, &back_to_target).await?;
+        if !frame_capture::equipped(
+            fresh
+                .inventory()
+                .ok_or("C12 equipped control inventory absent")?,
+            definition,
+        ) {
+            return Err(
+                "C12 proficiency control requires the Fists equipped and off hand vacant".into(),
+            );
+        }
+        let own = select_target(fresh.session_mut(), target, position).await?;
+        let spell = spell_index(fresh.session_mut(), "exori nia")?;
+        let builder = spell_index(fresh.session_mut(), "exori infir pug")?;
+        // A five-Harmony roll makes each 4% contribution observable after rounding.
+        let harmony = if active_level == 0 { 1 } else { 5 };
+        for before in 0..harmony {
+            build_harmony(
+                fresh.session_mut(),
+                own,
+                target,
+                position,
+                builder,
+                before,
+                false,
+            )
+            .await?;
+        }
+        let bps = if active_level == 0 { 0 } else { 400 };
+        let mut control = cast_checked(
+            fresh.session_mut(),
+            own,
+            target,
+            position,
+            spell,
+            harmony,
+            bps,
+        )
+        .await?;
+        fresh.service_liveness(Duration::from_secs(8)).await?;
+        collect_hits(&fresh.take_events(), own, target, spell, &mut control.hits);
+        control.verify_hits()?;
+        evidence(&format!(
+            "C12_CLIENT_PERK_CONTROL active_level={active_level} augment_bps={bps} command={} damage={}",
+            control.command, control.damage
+        ));
+    }
+
+    Ok(fresh)
 }
 
 fn spell_index<S: SessionStream>(session: &Session<S>, words: &str) -> TestResult<NonZeroU32> {
@@ -694,6 +711,7 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
             }
             break entry.entity;
         }
+        drop(matching);
         if tokio::time::Instant::now() >= deadline {
             return Err("C12 Tarantula absent at the original authored spawn".into());
         }
@@ -701,6 +719,15 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
             .service_liveness_discarding_events(Duration::from_millis(50))
             .await?;
     };
+    let own = session
+        .world_entities()
+        .and_then(|entities| {
+            entities
+                .iter()
+                .find(|entry| entry.entity.identity == *entities.own_identity())
+        })
+        .ok_or("C12 authored caster absent")?
+        .entity;
     let spell = spell_index(session, "exori nia")?;
     let attack = session.attack_target(Some(&target)).await?;
     require_mechanic_acceptance(attack.status, "C12 authored Tarantula target")?;
@@ -716,6 +743,7 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     require_mechanic_acceptance(outcome.status, "C12 authored Tarantula cast")?;
     let update = outcome
         .actor_vitals_delta
+        .as_ref()
         .ok_or("C12 authored cast vitals missing")?;
     let events = session.take_events();
     let mana = frame_capture::mana_before_cast(
@@ -734,11 +762,25 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
             format!("C12 authored cast did not commit its 50 mana debit: {outcome:?}").into(),
         );
     }
+    let mut damage = events
+        .iter()
+        .any(|event| full_row_c12::cast_damage_in(event, own, target, spell.get()) > 0);
+    let until = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while !damage {
+        if tokio::time::Instant::now() >= until {
+            return Err("C12 authored Tarantula did not receive attributed cast damage".into());
+        }
+        session.service_liveness(Duration::from_millis(50)).await?;
+        damage = session
+            .take_events()
+            .iter()
+            .any(|event| full_row_c12::cast_damage_in(event, own, target, spell.get()) > 0);
+    }
     evidence("C12_CLIENT_AUTHORED_CAST spawn=32294,32333,-8 cast=32295,32334,-8 mana_debit=50");
     Ok(())
 }
 
-fn validate_cast_timers<S: SessionStream>(
+pub(super) fn validate_cast_timers<S: SessionStream>(
     session: &Session<S>,
     events: &[SessionEvent],
     spell: NonZeroU32,
@@ -772,7 +814,7 @@ fn validate_cast_timers<S: SessionStream>(
     }
 }
 
-async fn require_cooldown<S: SessionStream>(
+pub(super) async fn require_cooldown<S: SessionStream>(
     session: &mut Session<S>,
     spell: NonZeroU32,
 ) -> TestResult {
