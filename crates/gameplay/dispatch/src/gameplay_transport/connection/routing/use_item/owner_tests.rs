@@ -22,6 +22,7 @@ enum Owner {
     Corpse,
     Container,
     Cube,
+    KooldownAid,
     Rune,
     Callback,
     Door,
@@ -60,6 +61,7 @@ impl FreshAdmissionAuthority for Authority {
             Owner::Food => ItemUseKind::Food,
             Owner::Container => ItemUseKind::Container,
             Owner::Cube => ItemUseKind::Cube,
+            Owner::KooldownAid => ItemUseKind::KooldownAid,
             Owner::Rune => ItemUseKind::Rune,
             _ => ItemUseKind::Other,
         })
@@ -80,7 +82,8 @@ impl FreshAdmissionAuthority for Authority {
     async fn use_drome_cube(
         &self, _: ExactActorRef, _: UseCommand, _: UseIntent, _: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        Ok(Some(self.use_with(Owner::Cube)))
+        let owner = if self.expected == Owner::KooldownAid { Owner::KooldownAid } else { Owner::Cube };
+        Ok(Some(self.use_with(owner)))
     }
 
     async fn use_rune(
@@ -255,6 +258,7 @@ owner_case!(food_reaches_food_owner, Food);
 owner_case!(corpse_reaches_corpse_view_owner, Corpse);
 owner_case!(container_reaches_container_view_owner, Container);
 owner_case!(cube_reaches_cube_owner, Cube);
+owner_case!(kooldown_aid_reaches_drome_owner, KooldownAid);
 owner_case!(rune_reaches_rune_owner, Rune);
 owner_case!(map_callback_reaches_world_item_owner, Callback);
 owner_case!(door_reaches_world_object_owner, Door);

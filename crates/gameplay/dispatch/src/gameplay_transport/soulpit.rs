@@ -106,17 +106,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encode_item_use_intent(intent).map_err(|_| ())?,
             ground: None,
         };
-        if let Some(result) = self
-            .root
-            .craft_soul_core(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &NativeItemWeights(native),
-                true,
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        if let Some(result) = budget
+            .retry_use_holder(
+                "soul_core_receipt",
+                async || {
+                    self.root
+                        .craft_soul_core(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &NativeItemWeights(native),
+                            true,
+                        )
+                        .await
+                },
+                super::root_holder_busy,
             )
             .await
             .map_err(|_| ())?
@@ -136,9 +144,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
         }
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = budget
+            .retry_use_holder(
+                "soul_core_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
             .map_err(|_| ())?;
         let source = match intent.target {

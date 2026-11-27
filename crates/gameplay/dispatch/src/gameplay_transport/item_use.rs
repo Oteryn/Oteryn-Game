@@ -396,6 +396,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ItemUseKind::Catalyst
             }
             DROME_CUBE_KEY => ItemUseKind::Cube,
+            crate::durability::item_use::concoction::kooldown_aid::KOOLDOWN_AID_KEY => {
+                ItemUseKind::KooldownAid
+            }
             _ if source_use(&TypedDefinitionRef {
                 family: "Item".into(),
                 production_key: key.into(),

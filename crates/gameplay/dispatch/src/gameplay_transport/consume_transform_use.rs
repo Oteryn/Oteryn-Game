@@ -148,17 +148,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: [b"oteryn:lottery-ticket-use:v1".as_slice(), id.as_slice()].concat(),
         };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
-        match self
-            .root
-            .consume_transform(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_use_holder(
+                "lottery_receipt",
+                async || {
+                    self.root
+                        .consume_transform(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &content,
+                            true,
+                        )
+                        .await
+                },
+                super::root_holder_busy,
             )
             .await
         {

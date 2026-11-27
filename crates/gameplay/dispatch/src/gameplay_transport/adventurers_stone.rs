@@ -284,14 +284,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match result {
             Ok(()) => {}
             Err(DurabilityError::RootUnavailable) => return Err(StoneMoveError::HolderBusy),
-            Err(DurabilityError::CommitOutcomeUnknown) => {
-                // Resolve the same command and captured landing through its immutable receipt.
+            Err(DurabilityError::CommitRejected) => return Err(StoneMoveError::Refused),
+            Err(_) => {
+                // Other storage failures can follow a successful COMMIT, including a
+                // failure to prove the holder's return. Resolve the exact original.
                 budget
                     .retry_use_holder("stone_receipt", attempt, super::root_holder_busy)
                     .await
                     .map_err(|_| StoneMoveError::OutcomeUnknown)?;
             }
-            Err(_) => return Err(StoneMoveError::Refused),
         }
         let mut runtime = self.runtime.lock().await;
         let arrival = runtime.commit_source_step(proof).ok();

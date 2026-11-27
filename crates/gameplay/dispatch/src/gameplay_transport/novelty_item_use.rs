@@ -101,17 +101,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         // The original bounded USE bytes identify history even when both item and view handle
         // have retired. No current inventory or target read may precede this probe.
-        let replay = self
-            .root
-            .consume_transform_detailed(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let replay = budget
+            .retry_use_holder(
+                "novelty_receipt",
+                async || {
+                    self.root
+                        .consume_transform_detailed(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &content,
+                            true,
+                        )
+                        .await
+                },
+                super::root_holder_busy,
             )
             .await
             .map_err(|_| ())?;
@@ -138,9 +146,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome));
         }
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = budget
+            .retry_use_holder(
+                "novelty_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
             .map_err(|_| ())?;
         let carried = inventory

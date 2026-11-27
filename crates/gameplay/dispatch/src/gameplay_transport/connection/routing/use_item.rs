@@ -109,7 +109,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && !admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
             crate::foundation::RuntimeScopeRefV1::Instance { .. }))
         && !opens_item
-        && (kind.is_none() || kind == Some(ItemUseKind::Cube))
+        && matches!(kind, None | Some(ItemUseKind::Cube | ItemUseKind::KooldownAid))
         && let Ok(intent) = &decoded
         && matches!(intent.target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
         && !matches!(source, Some(ItemKey::MapBase { .. } | ItemKey::MapAdded(_)))

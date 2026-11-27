@@ -65,9 +65,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
         }
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = super::super::AdmissionRetryBudget::for_command(self.root)
+            .retry_use_holder(
+                "soul_war_source_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::super::item_use_holder_busy,
+            )
             .await
             .ok()?;
         let mut runtime = self.runtime.lock().await;
