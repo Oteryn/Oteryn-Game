@@ -60,6 +60,60 @@ fn unrelated_inventory(
     durable_inventory(inventory)
 }
 
+type ChestContents = std::collections::BTreeMap<String, Vec<(String, String, i16, i64)>>;
+
+async fn forge_chests(db: &mut FixtureDb, clients: &SeamClients<'_>) -> TestResult<ChestContents> {
+    let [character] = clients.characters else {
+        return Err("Forge chest check requires one character".into());
+    };
+    let rows: Vec<(String, Option<String>, Option<String>, i16, i64)> = sqlx::query_as(
+        "SELECT chest.item_instance_id::text, child.item_instance_id::text,
+                child.definition_production_key, coalesce(tier.tier,0)::smallint,
+                coalesce(child.quantity,0)::bigint
+         FROM game_item_container_entries e
+         JOIN game_item_instances chest ON chest.item_instance_id=e.item_instance_id
+         LEFT JOIN game_item_nested_entries nested ON nested.parent_item_instance_id=chest.item_instance_id
+         LEFT JOIN game_item_instances child ON child.item_instance_id=nested.item_instance_id
+         LEFT JOIN game_item_tiers tier ON tier.item_instance_id=child.item_instance_id
+         WHERE e.character_id=$1::uuid AND chest.lifecycle=1
+           AND chest.definition_production_key='oteryn:item.tibia.i37561'
+         ORDER BY chest.item_instance_id,child.item_instance_id",
+    ).bind(uuid_text(character)).fetch_all(db).await?;
+    let mut chests = ChestContents::new();
+    for (chest, child, definition, tier, count) in rows {
+        let entries = chests.entry(chest).or_default();
+        if let Some((child, definition)) = child.zip(definition) {
+            entries.push((child, definition, tier, count));
+        }
+    }
+    Ok(chests)
+}
+
+fn chest_delivery_matches(before: &ChestContents, after: &ChestContents, expected: Option<&str>) -> bool {
+    let added = after.iter().filter(|(id, _)| !before.contains_key(*id)).collect::<Vec<_>>();
+    before.iter().all(|(id, items)| after.get(id) == Some(items))
+        && match (expected, added.as_slice()) {
+            (None, []) => true,
+            (Some(expected), [(_, children)]) => matches!(
+                children.as_slice(),
+                [(_, definition, 1, 1)] if definition == expected
+            ),
+            _ => false,
+        }
+}
+
+#[test]
+fn p18_chest_checks_exact_nested_result() {
+    let before = ChestContents::new();
+    let mut after = ChestContents::new();
+    let dagger = "oteryn:item.tibia.i3267";
+    after.insert("new chest".into(), vec![("receiver".into(), dagger.into(), 0, 1)]);
+    assert!(!chest_delivery_matches(&before, &after, Some(dagger)));
+    after.get_mut("new chest").expect("chest")[0].2 = 1;
+    assert!(chest_delivery_matches(&before, &after, Some(dagger)));
+    assert!(!chest_delivery_matches(&before, &after, None));
+}
+
 fn valid_history_ordinals(history: &[serde_json::Value]) -> bool {
     history.iter().rev().enumerate().all(|(index, entry)| {
         let first = history.last().and_then(|entry| entry["ordinal"].as_u64());
@@ -320,6 +374,10 @@ async fn fusion_case(
     }
     let mut affected = coins.iter().map(|(definition, _)| definition.get()).collect::<Vec<_>>();
     affected.push(pair_ref.get());
+    if expected_success {
+        affected.push(provisioning::item_reference(&definitions, 37561)?.get());
+    }
+    let chests_before = forge_chests(&mut bank, dedicated).await?;
     let before = unrelated_inventory(client.inventory().cloned().ok_or("Fusion pre-state missing")?, &affected);
     let mut fusion_outcome = None;
     let operations = [Operation::Fusion];
@@ -402,6 +460,14 @@ async fn fusion_case(
         .inventory()
         .cloned()
         .ok_or("step-6 inventory absent")?;
+    let chests_after = forge_chests(&mut bank, dedicated).await?;
+    let chest_ref = provisioning::item_reference(&definitions, 37561)?;
+    if super::full_e2ef7::units(&client, chest_ref) != u64::try_from(chests_after.len())? {
+        return Err("Fusion live inventory did not project the carried Exaltation Chest".into());
+    }
+    if !chest_delivery_matches(&chests_before, &chests_after, expected_success.then_some(FUSION_PAIR)) {
+        return Err("standard Fusion did not deliver the exact Exaltation Chest result".into());
+    }
     let retained_balance = super::client_row_p18::dust(&mut client).await?;
     logout(&mut client).await?;
     drop(client);
@@ -413,7 +479,8 @@ async fn fusion_case(
     }
     let (expected_tiers, succeeded, dust_paid, gold_paid) =
         fusion_outcome.ok_or("funded valid-pair Fusion was never exercised")?;
-    if bank_balance(&mut bank, dedicated).await? != 0
+    if forge_chests(&mut bank, dedicated).await? != chests_after
+        || bank_balance(&mut bank, dedicated).await? != 0
         || carried_gold(&fresh, &coins) != gold_before - gold_paid
         || dagger_tiers(&mut fresh, pair_ref.get()).await? != expected_tiers
         || super::client_row_p18::dust(&mut fresh).await? != retained_balance
@@ -880,6 +947,12 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     if case.cores != 0 || case.operation == Operation::SliversToCores {
         affected.push(core.get());
     }
+    let chests_before = forge_chests(&mut db, clients).await?;
+    let expected_chest = case.pair.map(|pair| format!("oteryn:item.tibia.i{}", pair[0].0));
+    if expected_chest.is_some() {
+        affected.push(provisioning::item_reference(&definitions, 37561)?.get());
+        affected.extend(target_ref);
+    }
     affected.extend(donor_ref);
     let before = unrelated_inventory(client.inventory().cloned().ok_or("Forge pre-state missing")?, &affected);
     let history_before = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
@@ -933,7 +1006,13 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         .inventory()
         .cloned()
         .ok_or("Forge outcome inventory missing")?;
-    if unrelated_inventory(retained.clone(), &affected) != before
+    let chests_after = forge_chests(&mut db, clients).await?;
+    let chest_ref = provisioning::item_reference(&definitions, 37561)?;
+    if super::full_e2ef7::units(&client, chest_ref) != u64::try_from(chests_after.len())? {
+        return Err("Forge live inventory did not project the carried Exaltation Chest".into());
+    }
+    if !chest_delivery_matches(&chests_before, &chests_after, expected_chest.as_deref())
+        || unrelated_inventory(retained.clone(), &affected) != before
         || i64::try_from(carried_gold(&client, &coins))? != expected_carried
         || bank_balance(&mut db, clients).await? != expected_bank {
         return Err("Forge changed unrelated inventory or debited the wrong gold source".into());
@@ -966,6 +1045,7 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
         || (case.operation.changes_inventory() && !result.changed)
         || *observed != expected_receipt
         || actual_dust != (expected_dust, expected_cap)
+        || forge_chests(&mut db, clients).await? != chests_after
         || actual_bank != expected_bank
         || actual_carried != expected_carried
         || actual_counts != (expected_slivers, expected_cores)
