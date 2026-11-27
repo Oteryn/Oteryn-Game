@@ -1272,6 +1272,9 @@ def main() -> int:
     for census in ("equipment", "audit_sites", "room_sites"):
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
+    # The Stampede collector reads the earlier raid catalogue. Refresh it again
+    # from the final placement regions before the seasonal inventory checks its pins.
+    run(["python3", "tools/content-migration/raid_catalogue.py", "content"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(

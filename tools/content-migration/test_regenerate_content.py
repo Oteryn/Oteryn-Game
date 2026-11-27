@@ -662,6 +662,32 @@ def test_normal_generation_orders_native_callback_producers() -> None:
         ), (producer, consumer)
 
 
+def test_raid_catalogue_follows_final_placements_before_seasonal_inventory() -> None:
+    commands: list[tuple[str, ...]] = []
+    assert full_generation_trace(commands, lambda *_: None) == 0
+    raid = ("python3", "tools/content-migration/raid_catalogue.py", "content")
+    collector = (
+        "python3", "tools/content-schema/quest-authoring/questpc3_collectors.py", "content"
+    )
+    traversal = ("python3", "tools/content-schema/world-authoring/crystal_traversal.py")
+    feroxa = ("python3", "tools/content-schema/world-object-authoring/feroxa_static.py")
+    seasonal = ("python3", "tools/content-migration/refresh_season_creature_inventory.py")
+    early_raid, final_raid = (
+        index for index, command in enumerate(commands) if command == raid
+    )
+    last_feroxa = max(
+        index for index, command in enumerate(commands) if command == feroxa
+    )
+    assert early_raid < commands.index(collector)
+    assert (
+        commands.index(traversal)
+        < commands.index(("world-metadata",))
+        < last_feroxa
+        < final_raid
+        < commands.index(seasonal)
+    )
+
+
 def full_generation_trace(
     events, inspect_command, *, prepare=None, checks=False
 ) -> int:
@@ -1148,9 +1174,9 @@ def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> Non
     assert full_generation_trace(events, consume, checks=True) == 0
     assert all(events.count(command) == 1 for command in commands)
     authored = [("python3", tool, "content") for tool in rc.AUTHORING_TOOLS]
-    last_authored = max(i for i, command in enumerate(events) if command in authored)
+    last_initial_authoring = max(events.index(command) for command in authored)
     assert (
-        last_authored
+        last_initial_authoring
         < events.index(commands[0])
         < events.index(commands[1])
         < events.index(native)
@@ -1597,6 +1623,7 @@ def main() -> None:
         test_native_generation_refreshes_custody_census_before_first_pin,
         test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
         test_normal_generation_orders_native_callback_producers,
+        test_raid_catalogue_follows_final_placements_before_seasonal_inventory,
         test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them,
         test_materializer_copies_only_a_complete_document_inventory,
         test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped,
