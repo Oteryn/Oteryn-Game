@@ -461,6 +461,14 @@ where
         let now = tokio::time::Instant::now();
         session.chase_due = Some(session.pacer.wait_until(now).unwrap_or(now));
     }
+    combat_state(stream, session, state).await
+}
+
+pub(super) async fn combat_state<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    state: oteryn_protocol_oteryn::attack::ActorCombatState,
+) -> Result<(), ServeEnd> {
     let Some(change) =
         session
             .admitted
@@ -619,6 +627,9 @@ where
     A: FreshAdmissionAuthority,
 {
     sounds(stream, authority, session).await?;
+    // Some health changes, including field and condition ticks, have no damage text.
+    *step = "creature_health";
+    creature_health(stream, authority, session).await?;
     *step = "inventory_pending";
     let inventory_refresh_pending = session
         .item_view
@@ -817,6 +828,50 @@ where
     }
     Ok(())
 }
+
+async fn creature_health<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd> {
+    let Some(view) = session.visibility.as_mut() else {
+        return Ok(());
+    };
+    let Some(channel) = authority.observe_visible_entities(session.actor).await else {
+        return Ok(());
+    };
+    let Some(mut delta) = view.refresh_creature_health(&channel) else {
+        return Ok(());
+    };
+    if session
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1)
+    {
+        session
+            .appearances
+            .attach(&mut delta.update)
+            .ok_or(ServeEnd::Disconnected)?;
+    }
+    let (frames, sequence, revision) = visibility_frames(
+        session.generation,
+        session.sequence,
+        session.revision,
+        session.selected_capabilities.as_slice(),
+        view.lights(),
+        &VisibilityUpdate::Delta(delta),
+    )
+    .ok_or(ServeEnd::Disconnected)?;
+    for frame in frames {
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+    }
+    session.sequence = sequence;
+    session.revision = revision;
+    session.admitted.continuity.server_sequence = sequence;
+    session.admitted.continuity.spatial_revision = revision;
+    Ok(())
+}
 pub(super) async fn sounds<S, A>(
     stream: &mut S,
     authority: &A,
@@ -907,6 +962,19 @@ where
         session.sequence = sequence;
         session.admitted.continuity.server_sequence = sequence;
         session.admitted.continuity.presentation_revision = revision;
+        if events.iter().any(|event| {
+            matches!(
+                event.kind,
+                wire::PresentationEventKind::ValueText {
+                    kind: wire::PresentationValueKind::DamageDealt
+                        | wire::PresentationValueKind::DamageReceived
+                        | wire::PresentationValueKind::DamageOthers,
+                    ..
+                }
+            )
+        }) {
+            creature_health(stream, authority, session).await?;
+        }
     }
     if !item_events.is_empty() {
         item_effects(stream, session, &item_events).await?;

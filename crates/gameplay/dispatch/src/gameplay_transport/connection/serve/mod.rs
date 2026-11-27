@@ -578,3 +578,39 @@ pub(in crate::gameplay_transport) async fn regression_routed_step<A: FreshAdmiss
         }
     }
 }
+
+/// Join a real observer, apply the action, then drain its pending presentation turn.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn observe_test_spell_damage<A, F>(
+    authority: &A,
+    mut admitted: AdmittedSession,
+    action: F,
+) -> crate::bestiary_postgres_harness::TestResult<(F::Output, Vec<u8>)>
+where
+    A: FreshAdmissionAuthority,
+    F: std::future::Future,
+{
+    use tokio::io::AsyncReadExt;
+    let actor = admitted.runtime_actor.ok_or("spectator actor")?;
+    let baseline = authority.observe(actor).await.ok_or("spectator position")?;
+    let (mut server, mut reader) = tokio::io::duplex(1 << 20);
+    let mut session = setup::prepare(
+        &mut server,
+        &mut admitted,
+        authority,
+        IDLE_LIVENESS,
+        actor,
+        baseline,
+        integrity::Integrity::default(),
+    )
+    .await
+    .map_err(|_| "spectator join snapshot")?;
+    let result = action.await;
+    refresh::sounds(&mut server, authority, &mut session)
+        .await
+        .map_err(|_| "spectator presentation and health")?;
+    drop(server);
+    let mut frames = Vec::new();
+    reader.read_to_end(&mut frames).await?;
+    Ok((result, frames))
+}

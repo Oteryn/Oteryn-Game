@@ -892,6 +892,17 @@ impl ChannelAttackStates {
         session: GameSessionId,
         now: SemanticTimeMicros,
     ) {
+        self.record_fight_activity(runtime, actor, session, now);
+    }
+
+    /// Start or extend the shared combat lock at the time of a committed hostile action.
+    pub(super) fn record_fight_activity(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
         let Some(constants) = AttackConstants::checked_in() else {
             return;
         };

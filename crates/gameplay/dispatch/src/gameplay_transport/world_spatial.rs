@@ -299,6 +299,46 @@ impl SessionVisibility {
         self.published
     }
 
+    /// Health updates reuse the exact incarnations and metadata already on the wire.
+    pub(super) fn refresh_creature_health(
+        &mut self,
+        channel: &ChannelEntities,
+    ) -> Option<WorldSpatialEntitiesDelta> {
+        let (content_generation, actor_position) = self.published?;
+        if content_generation != channel.content_generation {
+            return None;
+        }
+        let mut update = Vec::new();
+        for current in &channel.entities {
+            if current.kind != VisibleKind::Creature {
+                continue;
+            }
+            let Some(shown) = self.entities.get_mut(&current.identity) else {
+                continue;
+            };
+            if shown.entity.generation != current.generation || shown.kind != EntityKind::Creature {
+                continue;
+            }
+            let (EntityDetail::Actor { health_percent, .. }
+            | EntityDetail::ActorWithIcons { health_percent, .. }) = &mut shown.detail
+            else {
+                continue;
+            };
+            if *health_percent != current.health_percent {
+                *health_percent = current.health_percent;
+                update.push(*shown);
+            }
+        }
+        update.sort_unstable_by_key(|entry| entry.entity);
+        (!update.is_empty()).then_some(WorldSpatialEntitiesDelta {
+            content_generation,
+            actor_position,
+            enter: Vec::new(),
+            update,
+            leave: Vec::new(),
+        })
+    }
+
     /// Reuse published names for exact incarnations and defer actors without a name.
     pub(crate) fn defer_unnamed_actors(&self, channel: &mut ChannelEntities) {
         channel.entities.retain_mut(|entity| {

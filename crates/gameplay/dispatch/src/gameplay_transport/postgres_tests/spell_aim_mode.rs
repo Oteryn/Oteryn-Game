@@ -29,10 +29,8 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, actor_spell, decode_command_result, encode_client_command,
 };
 use std::time::Duration;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-/// The rat's health before the cast: far above one hit, so the health lost is the damage.
-const RAT_HEALTH: i64 = 10_000;
 /// Scorch: a level-1 sorcerer wave whose matrix centre is the tile next to the caster.
 const SPELL: &str = "candidate:spell/scorch";
 const MANA: i64 = 8;
@@ -144,6 +142,8 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         )
         .await
         .map_err(debug)?;
+    let caster_experience = progression.policy.thresholds.iter().find(|entry| entry.level == 15)
+        .ok_or("level 15 experience threshold")?.minimum_experience;
     h.root
         .commit_character_experience(
             &authority,
@@ -151,7 +151,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             current_fence(&owner, session).await?,
             ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(6_000_000),
+                amount: caster_experience,
                 context: progression.context.clone(),
                 policy_revision: progression.policy_revision.clone(),
                 reward_revision: progression.reward_revision.clone(),
@@ -171,6 +171,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     };
     assert!(i64::from(facts.max_mana) >= MANA, "max mana");
     let targets;
+    let rat_health;
     let caster;
     {
         let mut runtime = deps.runtime.lock().await;
@@ -196,12 +197,9 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         runtime
             .install_companion_policies(native.policies().clone())
             .map_err(debug)?;
-        let health = runtime
-            .companion_policy("oteryn:creature.rat")
-            .map_err(debug)?
-            .maximum_health;
+        // Start at full fixture health so the hit changes the wire percentage without killing.
         // The front rat stands at the aimed wave's origin. The second stands one tile deeper.
-        let health = u64::try_from(health)?;
+        rat_health = u64::try_from(runtime.companion_policy("oteryn:creature.rat").map_err(debug)?.maximum_health)?;
         runtime
             .realize_activation_spawns(
                 [(1, 0), (2, 0)]
@@ -210,7 +208,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
                         60_000,
                         5_000,
                         "oteryn:creature.rat".into(),
-                        health,
+                        rat_health,
                     ))
                     .to_vec(),
             )
@@ -222,9 +220,6 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             .map(|creature| creature.actor)
             .collect::<Vec<_>>();
         assert_eq!(targets.len(), 2);
-        for target in &targets {
-            runtime.set_test_creature_health(*target, RAT_HEALTH).map_err(debug)?;
-        }
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -270,7 +265,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     admitted.item_fence = item_fence_of(current);
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
+        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7, 17, 23])
             .ok_or("chat capabilities")?;
     let spell = (1..=deps.spells.source_len())
         .find_map(|i| {
@@ -313,7 +308,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     };
     if negotiated {
         // Without capability 480 field 5 is unknown: the route refuses it and nothing is spent.
-        let refused = exchange(
+        let (refused, _) = exchange(
             &owner,
             &mut admitted,
             &[(
@@ -330,7 +325,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         for &target in &targets {
             assert_eq!(
                 runtime.live_creature_health(target),
-                Some(u64::try_from(RAT_HEALTH)?),
+                Some(rat_health),
                 "the refused cast must not damage either creature"
             );
         }
@@ -344,7 +339,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         assert_eq!(unchanged, before, "the refused cast must not spend mana");
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[6, 7, actor_spell::CAPABILITY_SPELL_AIM_MODE_V1],
+            &[6, 7, 17, 23, actor_spell::CAPABILITY_SPELL_AIM_MODE_V1],
         )
         .ok_or("aim mode capabilities")?;
         assert!(
@@ -365,15 +360,26 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     };
     let (cursor, _) = owner.observe_sounds(viewer, viewer_session, u64::MAX)
         .await.ok_or("spectator presentation cursor")?;
-    let results = exchange(
-        &owner,
-        &mut admitted,
-        &[(
-            actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
-            payload,
-        )],
-    )
-    .await?;
+    let observer = AdmittedSession {
+        game_session_id: viewer_session,
+        runtime_actor: Some(viewer),
+        controller: None,
+        item_fence: None,
+        continuity: crate::gameplay_transport::connection::SessionContinuity {
+            selected_capabilities: SelectedCapabilities::select(owner.offered_capabilities(), &[6, 23])
+                .ok_or("spectator presentation capabilities")?,
+            ..crate::gameplay_transport::connection::SessionContinuity::FRESH
+        },
+        ..admitted
+    };
+    let commands = [(actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, payload)];
+    let (cast, spectator_frames) =
+        crate::gameplay_transport::connection::observe_test_spell_damage(
+            &owner, observer, exchange(&owner, &mut admitted, &commands)
+        ).await?;
+    let (results, caster_frames) = cast?;
+    assert!(admitted.continuity.combat.sent.is_some_and(|state| state.in_fight),
+        "a committed offensive spell must immediately project the battle sign");
     assert_eq!(
         actor_spell::decode_spell_cast_result(&results[0].1).map_err(debug)?,
         actor_spell::SpellCastDisposition::Cast
@@ -401,8 +407,16 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     let runtime = deps.runtime.lock().await;
     for target in targets {
         let hit = runtime.live_creature_health(target).ok_or("rat survives")?;
-        let damage = u64::try_from(RAT_HEALTH)? - hit;
+        let damage = rat_health - hit;
         assert!(damage > 0);
+        let target_ref = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+            identity: target.placement_identity(),
+            generation: target.actor_local_generation(),
+        };
+        let percent = u8::try_from((hit * 100 / rat_health).max(1))?;
+        assert!(percent < 100);
+        assert_damage_then_health(&caster_frames, target_ref, damage, percent)?;
+        assert_damage_then_health(&spectator_frames, target_ref, damage, percent)?;
         assert_eq!(events.iter().filter(|event| event.decision_ordinal == decision && matches!(
             event.kind,
             Kind::ValueText { kind: PresentationValueKind::DamageOthers, target: shown,
@@ -428,11 +442,13 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     h.cleanup().await
 }
 
+type CastExchange = (Vec<(CommandStatus, Vec<u8>)>, Vec<u8>);
+
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     commands: &[(u32, Vec<u8>)],
-) -> TestResult<Vec<(CommandStatus, Vec<u8>)>> {
+) -> TestResult<CastExchange> {
     let session = *admitted;
     let first_command_id = admitted.continuity.next_command_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -470,7 +486,9 @@ async fn exchange(
             }
         }
         client.shutdown().await?;
-        Ok(results)
+        let mut frames = Vec::new();
+        client.read_to_end(&mut frames).await?;
+        Ok((results, frames))
     };
     let (end, results): (_, TestResult<_>) =
         tokio::time::timeout(Duration::from_secs(45), join_two(serving, driving)).await?;
@@ -481,4 +499,38 @@ async fn exchange(
         other => return Err(format!("spell aim mode serving ended: {other:?}").into()),
     }
     results
+}
+
+fn assert_damage_then_health(
+    mut frames: &[u8],
+    target: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    damage: u64,
+    percent: u8,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{decode_state_delta, presentation as cues, world_spatial_entities as spatial};
+    let mut saw_damage = false;
+    while !frames.is_empty() {
+        let length = u32::from_be_bytes(frames.get(..4).ok_or("frame length")?.try_into()?) as usize;
+        let envelope = decode_wire_envelope(frames.get(4..4 + length).ok_or("frame")?)?;
+        frames = &frames[4 + length..];
+        if envelope.message_type() != MessageType::StateDelta {
+            continue;
+        }
+        let delta = decode_state_delta(envelope.payload())?;
+        if delta.domain_id == cues::STATE_DOMAIN_WORLD_PRESENTATION {
+            saw_damage |= cues::decode_presentation_batch(delta.payload).map_err(debug)?.iter().any(
+                |event| matches!(event.kind, cues::PresentationEventKind::ValueText { target: shown, primary, .. }
+                    if shown == target && primary.value == damage)
+            );
+        } else if delta.domain_id == oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+            let update = spatial::decode_world_spatial_entities_delta(delta.payload).map_err(debug)?;
+            for entry in update.update {
+                if entry.entity == target && matches!(entry.detail, spatial::EntityDetail::Actor { health_percent, .. } if health_percent == percent) {
+                    assert!(saw_damage, "the creature health must follow its damage text");
+                    return Ok(());
+                }
+            }
+        }
+    }
+    Err(format!("missing creature health {percent} after damage {damage}, saw_damage={saw_damage}").into())
 }

@@ -379,6 +379,18 @@ async fn client_cast(
                 Expected::Result(UseDisposition::Committed),
             )
             .await?;
+            // The accepted rune Use is followed by the negotiated combat-state delta.
+            loop {
+                let frame = read_frame(client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                assert_eq!(envelope.message_type(), MessageType::StateDelta);
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                if delta.domain_id == oteryn_protocol_oteryn::attack::STATE_DOMAIN_ACTOR_COMBAT_STATE {
+                    assert!(oteryn_protocol_oteryn::attack::decode_actor_combat_state(delta.payload)
+                        .map_err(debug)?.in_fight, "a committed offensive rune projects the battle sign");
+                    break;
+                }
+            }
             let victim_actor = victim_actor.ok_or("the original target exists")?;
             let after = owner
                 .runtime
@@ -818,10 +830,17 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?;
     }
     assert!(owner.offered_capabilities().iter().all(|c| c.id != 22));
+    let mut offered = RUNE_USE_OFFERED.to_vec();
+    offered.push(crate::gameplay_transport::capabilities::OfferedCapability {
+        id: oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1,
+        requires: &oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1_REQUIRES,
+    });
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        RUNE_USE_OFFERED,
+        &offered,
         if case == Case::NoCapability {
             &[4, 6, 15]
+        } else if case == Case::Replay {
+            &[4, 6, 15, 17, 22]
         } else {
             &[4, 6, 15, 22]
         },

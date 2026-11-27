@@ -20,7 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        actor_spell::cast_in_channel(
+        let outcome = actor_spell::cast_in_channel(
             &runtime,
             &mut states,
             self.spells,
@@ -29,7 +29,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command_id,
             &intent,
             now,
-        )
+        );
+        if outcome.disposition == actor_spell::SpellCastDisposition::Cast
+            && self
+                .spells
+                .indexed(intent.spell)
+                .is_some_and(|spell| spell.aggressive)
+        {
+            self.states.attack.lock().await.record_fight_activity(
+                &runtime,
+                actor,
+                game_session_id,
+                now,
+            );
+        }
+        outcome
     }
 
     pub(in crate::gameplay_transport) async fn complete_actor_spell(

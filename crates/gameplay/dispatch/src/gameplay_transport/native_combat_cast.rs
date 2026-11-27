@@ -3153,6 +3153,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             attack.record_committed_shared_experience_batch(&runtime,content,
                 attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
             if let Some(at) = attempt.prepared.batch().now_us && batch.applied {
+                if spell.aggressive {
+                    attack.record_fight_activity(&runtime, actor, session, at);
+                }
                 for effect in &batch.effects {
                     if effect.health.is_some_and(|h| h.committed_health_loss().is_some())
                         && let Ok(snapshot) = runtime.companion_snapshot_including_dead(effect.target)
