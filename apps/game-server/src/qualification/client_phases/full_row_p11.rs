@@ -1495,22 +1495,64 @@ async fn wait_for_inventory(
     Ok(())
 }
 
+async fn bootstrap_sibling(clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
+    const NAME: &str = "Annihilator Sibling";
+    const OPERATION: &str = "01934f10-7c04-7b11-805b-3b1122334b11";
+    let work = std::path::PathBuf::from(required("NODE_BOOT_PLATFORM_GRANT_DIR")?);
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let composition = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/game_platform/composition.py");
+    let account = clients.accounts[1].clone();
+    let world = uuid_text(&clients.world);
+    let deploy = work.join("deploy");
+    let intent = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("python3")
+            .arg(composition).arg("bootstrap").arg(work)
+            .args([&account, &world, OPERATION,
+                "nb-profile-1", "nb-ruleset-1", "s3b-content-1", "newhaven-starter-r1", NAME, "Knight"])
+            .output()
+    }).await??;
+    if !intent.status.success() {
+        return Err(format!("P11 sibling fixture Platform intent failed: {}", intent.status).into());
+    }
+    let birth = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("timeout")
+            .arg("30")
+            .arg(deploy.join("bin/oteryn-game-ops"))
+            .arg("--config").arg(deploy.join("ops/ops.toml"))
+            .args(["character", "bootstrap", "--socket", &socket, "--operation-id", OPERATION])
+            .output()
+    }).await??;
+    if !birth.status.success() || !String::from_utf8_lossy(&birth.stdout).contains("character_bootstrap=committed") {
+        return Err(format!("P11 sibling fixture Game bootstrap failed: {}", birth.status).into());
+    }
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let id: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(character_id) FROM game_character_roots
+         WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid AND name=$3",
+    )
+    .bind(&clients.accounts[1]).bind(clients.world.as_slice()).bind(NAME)
+    .fetch_one(&mut db).await?;
+    db.close().await?;
+    let sibling = id.as_slice().try_into()?;
+    if sibling == clients.characters[1] {
+        return Err("P11 character-scope fixture must have two distinct characters on one account".into());
+    }
+    evidence(&format!("FIXTURE_P11 sibling_character={} same_account=true", uuid_text(&sibling)));
+    Ok(sibling)
+}
+
 pub(super) async fn journey(
     clients: &SeamClients<'_>,
     core: &SeamClients<'_>,
     placed_at: &std::cell::Cell<Option<std::time::Instant>>,
 ) -> TestResult<String> {
-    // Reuse the preexisting two-character World fixture. Both characters are
-    // bound to the same Platform account, and neither is given achievements.
-    let account = "NODE_BOOT_C11_UNASSIGNED_ACCOUNT";
-    let leader = character_prep::dedicated_named_character(clients, account, Some("Oressa Candidate")).await?;
-    let sibling = character_prep::dedicated_named_character(clients, account, Some("First Vocation Candidate")).await?;
-    let (accounts, characters) = leader.replace_slot(clients, 1)?;
-    let sibling_scope = sibling.clients(clients);
-    if accounts[1] != sibling_scope.accounts[0] || characters[1] == sibling_scope.characters[0] {
-        return Err("P11 character-scope fixture must have two distinct characters on one account".into());
-    }
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let sibling_characters = [bootstrap_sibling(clients).await?];
+    let sibling_scope = SeamClients {
+        accounts: &clients.accounts[1..2],
+        characters: &sibling_characters,
+        ..*clients
+    };
     let malformed = client_row_p11::malformed_live(clients, 1).await?;
     let proof = earn_and_logout(clients, core, placed_at).await?;
     let mut other = connect_character(&sibling_scope, 0xb2, 0).await?;
