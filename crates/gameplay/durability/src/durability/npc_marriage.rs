@@ -5,7 +5,7 @@ use super::character_progression::{
     state_matches_root,
 };
 use super::db::{
-    DB_PASS_DEADLINE, begin_semantic_transaction, begin_type2_transaction, commit_semantic_read,
+    DB_PASS_DEADLINE, begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
     lock_admission_relations,
 };
 use super::item_loop_move::ItemLoopContent;
@@ -283,7 +283,7 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             let receipt = load(&mut tx, character, command).await?
                 .ok_or(DurabilityError::InvalidStoredState)?.1;
-            commit_semantic_read(tx, deadline).await?;
+            commit_semantic_transaction(tx, deadline).await?;
             Ok(Some(receipt))
         }).await {
             Ok(result) => result,
