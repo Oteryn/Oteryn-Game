@@ -17,12 +17,16 @@ const MEAT_SATIETY: Duration = Duration::from_secs(180);
 const RAT_MAX_HP: u64 = 20;
 // Keep the Rat outside melee reach while its attack target is selected.
 const CAST_TILE: TilePos = TilePos {
-    x: 32356,
-    y: 32247,
+    x: 32405,
+    y: 32204,
     floor: -7,
 };
 const RAT_TILE: TilePos = TilePos { x: CAST_TILE.x + 2, ..CAST_TILE };
-const REST_TILE: TilePos = TilePos { y: CAST_TILE.y + 3, ..CAST_TILE };
+const REST_TILE: TilePos = TilePos {
+    x: 32394,
+    y: 32203,
+    ..CAST_TILE
+};
 const MIN_SPAWN_DISTANCE: u16 = 24;
 const WORDS: &str = "exevo infir flam hur";
 

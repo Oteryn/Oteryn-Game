@@ -471,8 +471,8 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         .map_err(|error| format!("{error:?}"))?;
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     let origin = ActorPosition {
-        x: 32356,
-        y: 32247,
+        x: 32405,
+        y: 32204,
         floor: 7,
     };
     let rat_tile = ActorPosition {
@@ -626,11 +626,11 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
     let origin = ActorPosition {
-        x: 32356,
-        y: 32247,
+        x: 32405,
+        y: 32204,
         floor: 7,
     };
-    let rat_tile = ActorPosition { x: 32358, ..origin };
+    let rat_tile = ActorPosition { x: 32407, ..origin };
     let caster = EntityRef {
         identity: [1; 16],
         generation: 1,
