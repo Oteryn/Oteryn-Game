@@ -54,6 +54,38 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if definition.mana != crate::spell::ManaCost::Fixed(SCORCH_MANA) || definition.soul != 0 {
         return Err("C18a Scorch must cost exactly 8 mana and 0 soul".into());
     }
+    let profile = definition
+        .authored
+        .as_ref()
+        .ok_or("C18a Scorch lacks an authored profile")?;
+    let ability = profile
+        .ability
+        .as_ref()
+        .ok_or("C18a Scorch lacks an authored ability")?;
+    let matrix = &ability
+        .area
+        .as_ref()
+        .ok_or("C18a Scorch lacks a cone")?
+        .matrix;
+    if matrix.north != ["xxxxx", ".xxx.", ".xxx.", "..C.."]
+        || matrix.diagonal.as_deref().is_none_or(|matrix| {
+            matrix != ["....x.", "...xx.", "..xxx.", ".xxxx.", "xxxxx.", ".....C"]
+        })
+        || !profile.dependencies.effects.iter().any(|effect| {
+            effect.identity.key == "candidate:ability/spell/scorch/effect"
+                && effect.operation == "damage"
+                && effect.damage_type.as_deref() == Some("fire")
+                && ability.effects.iter().any(|reference| {
+                    reference.family == "Effect"
+                        && reference.key == effect.identity.key
+                        && reference.revision == effect.identity.revision
+                })
+        })
+    {
+        return Err(
+            "C18a authored Scorch cone or fire effect differs from the expected profile".into(),
+        );
+    }
     let spawn_cells = metadata
         .spawns
         .sources
@@ -92,14 +124,19 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         rat
     };
     let target = rat.entity;
-    let combat_before = *client
+    let initial_combat = *client
         .session_mut()
         .combat_state()
         .ok_or("C18a missing combat state")?;
-    if combat_before.target.is_some() {
+    if initial_combat.target.is_some() {
         return Err("C18a directional cast requires no active attack target".into());
     }
-    let facing = StepDirection::East;
+    let selection = client.session_mut().attack_target(Some(&target)).await?;
+    require_mechanic_acceptance(selection.status, "C18a first Rat selection")?;
+    if selection.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("C18a selection refused: {selection:?}").into());
+    }
+    let facing = StepDirection::West;
     let intent =
         target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(facing))
             .map_err(|error| format!("C18a turn encoding failed: {error:?}"))?;
@@ -111,9 +148,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             &intent,
         )
         .await?;
-    require_mechanic_acceptance(turn.status, "C18a turn toward the observed Rat")?;
+    require_mechanic_acceptance(turn.status, "C18a turn away from the selected Rat")?;
     if turn.payload != [8, 1] {
-        return Err("C18a turn toward the observed Rat was refused".into());
+        return Err("C18a turn away from the selected Rat was refused".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     let (caster, health_before) = loop {
@@ -141,10 +178,17 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             break (own.entity, health_percent);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("C18a did not observe the caster facing toward the observed Rat".into());
+            return Err("C18a did not observe the caster facing away from the selected Rat".into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     };
+    let combat_before = *client
+        .session_mut()
+        .combat_state()
+        .ok_or("C18a missing selected combat state")?;
+    if combat_before.target != Some(target) || combat_before.modes != initial_combat.modes {
+        return Err("C18a did not retain the exact selected Rat while facing away".into());
+    }
     client.take_events();
     let pre_cast_sequence = client.last_server_sequence();
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
@@ -156,10 +200,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         CombatCommand::Cast(spell),
     ))
     .await;
+    let cast_exchange_len = exchange.inbound.len();
     let report = report?;
     let (result_server_sequence, status, cast_payload) =
         received_cast_payload(&exchange.inbound, command_id).await?;
-    require_mechanic_acceptance(status, "C18a directional Scorch")?;
+    require_mechanic_acceptance(status, "C18a aimed Scorch")?;
     if report != CombatReport::Cast(SpellCastDisposition::Cast)
         || feedback.text() != Some("Spell cast")
     {
@@ -274,8 +319,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .session_mut()
         .combat_state()
         .ok_or("C18a missing post-cast combat state")?;
-    if combat_after.target.is_some() || combat_after.modes != combat_before.modes {
-        return Err("C18a directional cast changed the attack target or fight modes".into());
+    if combat_after.target != Some(target) || combat_after.modes != combat_before.modes {
+        return Err("C18a aimed cast changed the attack target or fight modes".into());
     }
     evidence(&format!(
         "SEAM_EVIDENCE c18a_health command={} reply_sequence={} delta_sequence={health_sequence} target={target:?} before={health_before} after={health_after} damage={damage_value}",
@@ -292,6 +337,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .payload
         .clone();
     let damage_payload = received_damage_payload(&exchange.inbound, damage_sequence).await?;
+
+    let clear = client.session_mut().attack_target(None).await?;
+    require_mechanic_acceptance(clear.status, "C18a first target clear")?;
+    if clear.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("C18a target clear refused: {clear:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    while client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.target.is_some())
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C18a target clear did not remove the selected Rat".into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+        collect_vitals(&mut client, Some(&mut regeneration));
+    }
 
     // Use a fixed prefix of the return route. The caster stays outdoors until
     // the ordinary combat lock clears.
@@ -364,6 +427,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if (fresh_vitals.mana, fresh_vitals.soul) != (logout_vitals.mana, logout_vitals.soul) {
         return Err(format!("C18a relog vitals differ after Scorch: expected mana={} soul={}, observed mana={} soul={}", logout_vitals.mana, logout_vitals.soul, fresh_vitals.mana, fresh_vitals.soul).into());
     }
+    if logout_vitals.mana >= logout_vitals.max_mana || logout_vitals.soul >= 100 {
+        return Err(format!(
+            "C18a logout mana {} equals capacity {}; a full-mana reset would pass",
+            logout_vitals.mana, logout_vitals.max_mana
+        )
+        .into());
+    }
     evidence(&format!(
         "SEAM_EVIDENCE c18a_mana before={} pre_cast_sequence={pre_cast_sequence} cast_sequence={result_server_sequence} charge={} vitals_sequence={vitals_sequence} logout={} logout_sequence={logout_sequence} relog={}",
         before.mana, after.mana, logout_vitals.mana, fresh_vitals.mana
@@ -384,6 +454,10 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
 
     let root = std::path::PathBuf::from(required("E2E_ALL_CAPTURE_DIR")?);
+    std::fs::write(
+        root.join("c18a-exchange.bin"),
+        &exchange.inbound[..cast_exchange_len],
+    )?;
     let cast_intent = sent_cast_payload(&exchange.outbound, command_id).await?;
     std::fs::write(root.join("c18a-intent.bin"), cast_intent)?;
     use std::os::unix::fs::MetadataExt;
@@ -430,6 +504,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "caster_identity": caster.identity,
             "caster_generation": caster.generation,
             "mana_before": before.mana,
+            "vitals_before": actor_spell::encode_actor_vitals(&before).map_err(|error| format!("{error:?}"))?,
             "mana_after": after.mana,
             "pre_cast_sequence": pre_cast_sequence,
             "vitals_sequence": vitals_sequence,

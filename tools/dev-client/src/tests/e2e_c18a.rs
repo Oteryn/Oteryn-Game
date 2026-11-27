@@ -22,6 +22,18 @@ struct Fixture {
     spell: NonZeroU32,
     expected: oteryn_session::SpellCastDisposition,
     feedback: &'static str,
+    live: Option<LiveExchange>,
+}
+
+struct LiveExchange {
+    inbound: Vec<u8>,
+    intent: Vec<u8>,
+    session: oteryn_protocol_oteryn::GameSessionId,
+    command_id: u64,
+    preceding_sequence: u64,
+    vitals_before: Vec<u8>,
+    vitals_revision: u64,
+    charged: actor_spell::ActorVitals,
 }
 
 fn fixture() -> Result<Fixture, Error> {
@@ -41,6 +53,7 @@ fn fixture() -> Result<Fixture, Error> {
         spell: NonZeroU32::MIN,
         expected: SpellCastDisposition::TargetIllegal,
         feedback: "Illegal target",
+        live: None,
     })
 }
 
@@ -62,13 +75,18 @@ fn e2e_c18a_replays_captured_damage_or_unit_refusal() -> Result<(), Error> {
 
 #[test]
 fn synthetic_refusal_keeps_combat_state() -> Result<(), Error> {
+    replay_through_session(fixture()?)
+}
+
+fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
     let Fixture {
         combat,
         result,
         spell,
         expected,
         feedback: expected_feedback,
-    } = fixture()?;
+        live,
+    } = fixture;
     assert!(attack::decode_actor_combat_state(&[0xff]).is_err());
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -77,20 +95,26 @@ fn synthetic_refusal_keeps_combat_state() -> Result<(), Error> {
                 .enable_all()
                 .build()?
                 .block_on(async move {
+                    let charged = live.as_ref().map(|live| live.charged);
+                    let (generation, command_id, sequence, session_id) = if let Some(live) = &live {
+                        let frame = read_frame(&mut live.inbound.as_slice()).await?;
+                        let generation = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.connection_generation();
+                        (generation, live.command_id, live.preceding_sequence, live.session)
+                    } else {
+                        (1, 1, 1, oteryn_protocol_oteryn::GameSessionId::decode(&id(1))?)
+                    };
                     let (client, mut peer) = tokio::io::duplex(64 * 1024);
                     let server = tokio::spawn(async move {
                         read_frame(&mut peer).await?;
                         write_frame(
                             &mut peer,
                             &encode_server_accepted(&ServerAcceptedValue {
-                                game_session_id: oteryn_protocol_oteryn::GameSessionId::decode(
-                                    &id(1),
-                                )?,
+                                game_session_id: session_id,
                                 world_id: oteryn_protocol_oteryn::WorldId::decode(&id(2))?,
                                 channel_id: oteryn_protocol_oteryn::ChannelId::decode(&id(3))?,
-                                connection_generation: 1,
-                                current_server_sequence: 0,
-                                next_command_id: 1,
+                                connection_generation: generation,
+                                current_server_sequence: sequence - 1,
+                                next_command_id: command_id,
                                 schema_revision: 1,
                                 selected_capabilities: &[6, 17],
                             })?,
@@ -119,17 +143,32 @@ fn synthetic_refusal_keeps_combat_state() -> Result<(), Error> {
                         ).map_err(|error| format!("{error:?}"))?;
                         let overlay = oteryn_protocol_oteryn::world_object::encode_world_object_overlay_snapshot(&[])
                             .map_err(|error| format!("{error:?}"))?;
-                        let domains = [
+                        let mut domains = vec![
                                 DomainSnapshot { domain_id: oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, revision: 1, snapshot_type: oteryn_protocol_oteryn::world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload: &spatial },
                                 DomainSnapshot { domain_id: oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, revision: 1, snapshot_type: oteryn_protocol_oteryn::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, payload: &overlay },
                                 DomainSnapshot { domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, revision: 1, snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1, payload: &combat },
                         ];
-                        for frame in encode_single_chunk_snapshot(1, 1, 1, &domains)? {
+                        if let Some(live) = &live {
+                            domains.push(DomainSnapshot {
+                                domain_id: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                                revision: live.vitals_revision,
+                                snapshot_type: actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                                payload: &live.vitals_before,
+                            });
+                        }
+                        for frame in encode_single_chunk_snapshot(generation, 1, sequence, &domains)? {
                             write_frame(&mut peer, &frame).await?;
                         }
                         let frame = read_frame(&mut peer).await?;
                         let command = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?
-                            .client_command(1)?;
+                            .client_command(generation)?;
+                        if let Some(live) = &live {
+                            use tokio::io::AsyncWriteExt;
+                            assert_eq!(command.command_id, live.command_id);
+                            assert_eq!(command.payload, live.intent);
+                            peer.write_all(&live.inbound).await?;
+                            return Ok::<_, Error>(());
+                        }
                         let intent = actor_spell::decode_spell_cast_intent(command.payload)
                             .map_err(|e| format!("{e:?}"))?;
                         assert_eq!(
@@ -179,6 +218,9 @@ fn synthetic_refusal_keeps_combat_state() -> Result<(), Error> {
                     assert_eq!(disposition, expected);
                     assert_eq!(feedback.text(), Some(expected_feedback));
                     assert_eq!(session.combat_state(), before.as_ref());
+                    if let Some(charged) = charged {
+                        assert_eq!(session.actor_vitals(), Some(&charged));
+                    }
                     server.await??;
                     Ok(())
                 })
@@ -210,6 +252,7 @@ struct Proof {
     caster_identity: [u8; 16],
     caster_generation: u64,
     mana_before: u32,
+    vitals_before: Vec<u8>,
     mana_after: u32,
     mana_relog: u32,
     mana_logout: u32,
@@ -305,6 +348,9 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         (charged.mana, charged.soul),
         (proof.mana_after, proof.soul_after)
     );
+    if proof.mana_logout >= charged.max_mana || proof.soul_logout >= 100 {
+        return Err("C18a full logout vitals cannot catch a reset".into());
+    }
     if !crate::qualification_mana_history(
         (vitals.server_sequence, charged.mana, charged.soul),
         &proof.regeneration,
@@ -313,20 +359,38 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     ) {
         return Err("C18a replay found unexplained mana or soul before logout".into());
     }
-    verify_directional_intent(&std::fs::read(root.join("c18a-intent.bin"))?, proof.spell)?;
+    let intent = std::fs::read(root.join("c18a-intent.bin"))?;
+    verify_aimed_intent(&intent, proof.spell)?;
     let before = attack::decode_actor_combat_state(&proof.combat_before)
         .map_err(|error| format!("{error:?}"))?;
     let after = attack::decode_actor_combat_state(&proof.combat_after)
         .map_err(|error| format!("{error:?}"))?;
-    assert_eq!(before.target, None);
-    assert_eq!(after.target, None);
+    let rat = wire::EntityRef {
+        identity: proof.identity,
+        generation: proof.generation,
+    };
+    assert_eq!(before.target, Some(rat));
+    assert_eq!(after.target, Some(rat));
     assert_eq!(before.modes, after.modes);
-    let disposition = actor_spell::decode_spell_cast_result(&cast.payload)
-        .map_err(|error| format!("{error:?}"))?;
-    let mut feedback = SpellFeedback::default();
-    feedback.record(disposition);
-    assert_eq!(disposition, oteryn_session::SpellCastDisposition::Cast);
-    assert_eq!(feedback.text(), Some("Spell cast"));
+    let inbound = std::fs::read(root.join("c18a-exchange.bin"))?;
+    let vitals_revision = cast_exchange_revision(&inbound, &cast, &vitals)?;
+    replay_through_session(Fixture {
+        combat: proof.combat_before,
+        result: cast.payload,
+        spell: NonZeroU32::new(proof.spell).ok_or("C18a invalid spell index")?,
+        expected: oteryn_session::SpellCastDisposition::Cast,
+        feedback: "Spell cast",
+        live: Some(LiveExchange {
+            inbound,
+            intent,
+            session,
+            command_id: cast.command_id,
+            preceding_sequence: proof.pre_cast_sequence,
+            vitals_before: proof.vitals_before,
+            vitals_revision,
+            charged,
+        }),
+    })?;
 
     let fields = wire::EntityFields::selected(&proof.capabilities);
     let (delta, _, _) =
@@ -413,11 +477,14 @@ fn valid_run_log(log: &str, binding: &str) -> bool {
         && !log.lines().any(|line| line.contains("FIXTURE_RETRY "))
 }
 
-fn verify_directional_intent(payload: &[u8], spell: u32) -> Result<(), Error> {
+fn verify_aimed_intent(payload: &[u8], spell: u32) -> Result<(), Error> {
     let intent =
         actor_spell::decode_spell_cast_intent(payload).map_err(|error| format!("{error:?}"))?;
-    if intent.spell.get() != spell || intent.target != SpellTarget::None || intent.aim_at_target {
-        return Err("C18a outbound cast was not the ordinary directional intent".into());
+    if intent.spell.get() != spell
+        || intent.target != SpellTarget::AttackTarget
+        || !intent.aim_at_target
+    {
+        return Err("C18a outbound cast was did not aim at the selected opponent".into());
     }
     Ok(())
 }
@@ -489,18 +556,15 @@ fn verify_damage(
 fn rejects_false_c18a_damage_cost_and_aim() {
     let spell = std::num::NonZeroU32::new(1).unwrap();
     for (target, aim_at_target, expected) in [
-        (SpellTarget::None, false, true),
-        (SpellTarget::AttackTarget, true, false),
+        (SpellTarget::None, false, false),
+        (SpellTarget::AttackTarget, true, true),
     ] {
         let payload = actor_spell::encode_spell_cast_intent(&SpellCastIntent {
             spell,
             target,
             aim_at_target,
         });
-        assert_eq!(
-            verify_directional_intent(&payload, spell.get()).is_ok(),
-            expected
-        );
+        assert_eq!(verify_aimed_intent(&payload, spell.get()).is_ok(), expected);
     }
     assert!(exact_rat_loss(100, 60, 8));
     assert!(!exact_rat_loss(100, 60, 7));
@@ -625,4 +689,102 @@ fn rejects_an_unexplained_cast_refund() {
         30,
         logout
     ));
+}
+
+fn cast_exchange_revision(
+    inbound: &[u8],
+    cast: &Envelope,
+    vitals: &Envelope,
+) -> Result<u64, Error> {
+    use oteryn_protocol_oteryn::{
+        MessageType, decode_command_result, decode_state_delta, decode_wire_envelope,
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .build()?
+        .block_on(async {
+            let mut inbound = inbound;
+            let mut saw_result = false;
+            while !inbound.is_empty() {
+                let frame = read_frame(&mut inbound).await?;
+                let wire = decode_wire_envelope(&frame)?;
+                match wire.message_type() {
+                    MessageType::CommandResult
+                        if wire.server_sequence() == cast.server_sequence =>
+                    {
+                        let result = decode_command_result(wire.payload())?;
+                        if result.command_id != cast.command_id
+                            || result.status as u32 != cast.status
+                            || result.payload != cast.payload
+                        {
+                            return Err("C18a raw cast reply disagrees with capture".into());
+                        }
+                        saw_result = true;
+                    }
+                    MessageType::StateDelta
+                        if wire.server_sequence() == vitals.server_sequence && saw_result =>
+                    {
+                        let result = decode_state_delta(wire.payload())?;
+                        if result.domain_id != actor_spell::STATE_DOMAIN_ACTOR_VITALS
+                            || result.payload != vitals.payload
+                        {
+                            return Err("C18a raw charged stats disagree with capture".into());
+                        }
+                        return Ok(result.base_revision);
+                    }
+                    _ => {}
+                }
+            }
+            Err("C18a raw exchange lacks the cast or charged stats".into())
+        })
+}
+
+#[test]
+fn successful_aimed_exchange_runs_the_admitted_client() -> Result<(), Error> {
+    use oteryn_protocol_oteryn::encode_state_delta;
+    let mut fixture = fixture()?;
+    fixture.expected = oteryn_session::SpellCastDisposition::Cast;
+    fixture.feedback = "Spell cast";
+    let command_id = 7;
+    let preceding_sequence = 40;
+    let before = actor_spell::ActorVitals {
+        health: 150,
+        max_health: 150,
+        mana: 55,
+        max_mana: 55,
+        soul: 100,
+        ..Default::default()
+    };
+    let charged = actor_spell::ActorVitals { mana: 47, ..before };
+    let result = actor_spell::encode_spell_cast_result(fixture.expected);
+    let mut inbound = Vec::new();
+    for frame in [
+        encode_command_result(1, 41, command_id, CommandStatus::Accepted, &result)?,
+        encode_state_delta(
+            1,
+            42,
+            actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+            3,
+            4,
+            actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+            &actor_spell::encode_actor_vitals(&charged).map_err(|e| format!("{e:?}"))?,
+        )?,
+    ] {
+        inbound.extend(u32::try_from(frame.len())?.to_be_bytes());
+        inbound.extend(frame);
+    }
+    fixture.live = Some(LiveExchange {
+        inbound,
+        intent: actor_spell::encode_spell_cast_intent(&SpellCastIntent {
+            spell: fixture.spell,
+            target: SpellTarget::AttackTarget,
+            aim_at_target: true,
+        }),
+        session: oteryn_protocol_oteryn::GameSessionId::decode(&id(1))?,
+        command_id,
+        preceding_sequence,
+        vitals_before: actor_spell::encode_actor_vitals(&before).map_err(|e| format!("{e:?}"))?,
+        vitals_revision: 3,
+        charged,
+    });
+    replay_through_session(fixture)
 }
