@@ -1100,7 +1100,7 @@ async fn buy_watch_use_and_logout(
     watch: std::num::NonZeroU32,
 ) -> TestResult {
     use super::autowalk_fixtures::{read, send};
-    use super::quick_loot::command_reply;
+    use super::full_world_support::command_reply;
     use crate::gameplay_transport::{
         composed_admission::HolderCheckoutProbe,
         item_ref_admission::USE_INVENTORY_CHECKOUT_PROBE,

@@ -94,7 +94,7 @@ async fn purchase_then_use(
     watch: std::num::NonZeroU32,
 ) -> TestResult {
     use super::autowalk_fixtures::{read, send};
-    use super::quick_loot::command_reply;
+    use super::full_world_support::command_reply;
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::GameSessionState;
     use crate::gameplay_transport::composed_admission::HolderCheckoutProbe;

@@ -748,3 +748,20 @@ macro_rules! world_scenario {
 }
 
 pub(super) use world_scenario;
+
+pub(super) async fn command_reply(
+    client: &mut tokio::io::DuplexStream,
+    id: u64,
+) -> TestResult<(oteryn_protocol_oteryn::CommandStatus, Vec<u8>)> {
+    use oteryn_protocol_oteryn::{MessageType, decode_command_result, decode_wire_envelope};
+
+    loop {
+        let frame = super::autowalk_fixtures::read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
+}
