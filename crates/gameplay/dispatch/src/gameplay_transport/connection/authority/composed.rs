@@ -1958,6 +1958,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.resume_session(attempt).await
     }
 
+    async fn release_unaccepted_join(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let Some(controller) = admitted.controller else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        // The listener still owns the unsent acceptance. Use its exact transport
+        // to release this ACTIVE lease through the current Channel's terminal owner.
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        scoped
+            .as_ref()
+            .unwrap_or(self)
+            .release_terminal_with_store(
+                admitted,
+                TerminalRelease::UnacceptedJoin(controller.transport),
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                    self.root.clone(),
+                ),
+                false,
+            )
+            .await
+    }
+
     /// The abandoned-session release follows the same fence, commit and settle steps as grace
     /// expiry (CHARM-DESC-FENCE-LEASE §3 item 1), under one transition token minted for it.
     async fn release_abandoned(&self, admitted: AdmittedSession) -> GraceExpiryResult {

@@ -63,7 +63,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // A client logout needs its actual command id and already has
                 // its own accepted adapter. This path cannot fabricate one.
-                TerminalRelease::Logout(_) => return GraceExpiryResult::Unknown,
+                TerminalRelease::Logout(_) | TerminalRelease::UnacceptedJoin(_) => {
+                    return GraceExpiryResult::Unknown;
+                }
             };
             let commit = match owner.return_due_activity(next, reason).await {
                 Ok(NativeActivityOutcome::Committed(commit)) => commit,
@@ -135,7 +137,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     TerminalRelease::CapabilityMismatch(epoch)
                 }
             }
-            TerminalRelease::Logout(_) => return GraceExpiryResult::Unknown,
+            TerminalRelease::Logout(_) | TerminalRelease::UnacceptedJoin(_) => {
+                return GraceExpiryResult::Unknown;
+            }
         };
         let result = destination
             .release_terminal_in_scope(next, translated)
