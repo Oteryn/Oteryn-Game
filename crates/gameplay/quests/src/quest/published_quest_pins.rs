@@ -404,6 +404,8 @@ type GameplayPredecessors = (&'static str, DefinitionHash, &'static [DefinitionH
 
 const NEW_FRONTIER_SOURCE_PIN: DefinitionHash =
     hash(b"e947f2485cdf2c3094ba301e71369a208d98b017d08aef8e727705a992b6f0be");
+const NEW_FRONTIER_AUTHORED_PIN: DefinitionHash =
+    hash(b"f419510de4813df96a8270dcd2f648101981daa98ef1fe46fade5dab4d636984");
 // The native route is also loaded without authored bindings. Keep its exact predecessor.
 const NEW_FRONTIER_NATIVE_PREDECESSORS: GameplayPredecessors = (
     "oteryn:quest.the_new_frontier_quest",
@@ -851,6 +853,11 @@ const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"61034f9e3365c8817d659f8ffa59a0f21e404d2a41dfc6099a48a5cedd71018f"),
         hash(b"6aba631a049bcb9213d7192bcc98fcaf7c94ef7ce643c4c741c7f738f3e0a233"),
     ),
+    (
+        "oteryn:quest.the_new_frontier_quest",
+        hash(b"6aba631a049bcb9213d7192bcc98fcaf7c94ef7ce643c4c741c7f738f3e0a233"),
+        NEW_FRONTIER_AUTHORED_PIN,
+    ),
 ];
 
 fn is_content_train_successor(
@@ -876,8 +883,9 @@ fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionH
 // and the preceding route shipped on main in #3452.
 const AUTHORED_GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[(
     "oteryn:quest.the_new_frontier_quest",
-    hash(b"78161561d1fda5955ac5783020a521447d1924558bd69fad889b1bf8ba39a4d6"),
+    NEW_FRONTIER_AUTHORED_PIN,
     &[
+        hash(b"78161561d1fda5955ac5783020a521447d1924558bd69fad889b1bf8ba39a4d6"),
         hash(b"af6dcf481c46b3e06577bd6ba47cb37fa06aca9e37b48b21c36b6159b3b4d462"),
         hash(b"cb5d7d7008e10821fc65677dec2475d278235b7f5c82ac1f99a2e615873b9e1c"),
     ],
@@ -891,7 +899,12 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 }
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
-    retain(catalogue, GAMEPLAY_PREDECESSORS.iter().chain([&NEW_FRONTIER_NATIVE_PREDECESSORS]));
+    retain(
+        catalogue,
+        GAMEPLAY_PREDECESSORS
+            .iter()
+            .chain([&NEW_FRONTIER_NATIVE_PREDECESSORS]),
+    );
 }
 
 pub(super) fn retain_authored_predecessors(catalogue: &mut QuestStateCatalogue) {
@@ -1056,9 +1069,15 @@ mod tests {
                 unrelated_revision
             );
         }
-        for &(quest, current, previous) in GAMEPLAY_PREDECESSORS.iter().chain(AUTHORED_GAMEPLAY_PREDECESSORS) {
+        for &(quest, current, previous) in GAMEPLAY_PREDECESSORS
+            .iter()
+            .chain(AUTHORED_GAMEPLAY_PREDECESSORS)
+        {
             let active = catalogue.definition_hash(quest);
-            if AUTHORED_GAMEPLAY_PREDECESSORS.iter().any(|&(owner, pin, _)| owner == quest && pin == current) {
+            if AUTHORED_GAMEPLAY_PREDECESSORS
+                .iter()
+                .any(|&(owner, pin, _)| owner == quest && pin == current)
+            {
                 assert_eq!(active, Some(current), "{quest}");
             } else {
                 assert!(is_successor(quest, current, active), "{quest}: {active:?}");

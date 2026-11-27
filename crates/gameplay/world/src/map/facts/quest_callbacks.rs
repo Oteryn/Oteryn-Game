@@ -1,7 +1,7 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
-use crate::foundation::CommandRef;
 use crate::content::{QualifiedSpellTile, SpellTileLookupError};
+use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 
 // A committed callback can replace or remove one exact native door. Keep every

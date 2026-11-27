@@ -605,7 +605,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             };
             let area_damage = if has_area {
-                draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence, pure_elemental_with_attack_points, true)
+                draw_swing_damage(
+                    entry,
+                    &runtime,
+                    &selected,
+                    constants,
+                    &root,
+                    &offence,
+                    pure_elemental_with_attack_points,
+                    true,
+                )
             } else {
                 None
             };
@@ -688,7 +697,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     area_damage
                 } else {
                     draw_swing_damage(
-                        entry, &runtime, &selected, constants, &root, &offence, pure_elemental_with_attack_points, false,
+                        entry,
+                        &runtime,
+                        &selected,
+                        constants,
+                        &root,
+                        &offence,
+                        pure_elemental_with_attack_points,
+                        false,
                     )
                 }) else {
                     continue;
@@ -1018,15 +1034,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if physical_immune && secondary_immune {
                     if train {
                         train_swing(
-                        &mut states,
-                        &runtime,
-                        content,
-                        entry,
-                        &selected.weapon,
-                        (None, HitBlock::Immunity),
-                        now,
-                        &mut trained,
-                    );
+                            &mut states,
+                            &runtime,
+                            content,
+                            entry,
+                            &selected.weapon,
+                            (None, HitBlock::Immunity),
+                            now,
+                            &mut trained,
+                        );
                     }
                     continue;
                 }
@@ -2383,6 +2399,12 @@ fn draw_swing_damage(
         ordinal,
         ..
     } = *selected;
+    let creature = runtime.contains_live_creature(target);
+    if selected.weapon.ranged.is_some() && creature {
+        entry
+            .state
+            .record_hit(swing.at, constants.in_fight_micros());
+    }
     let mode = constants.fight_mode(fight_mode(entry.modes.fight_mode));
     let mut scripted = None;
     let (formula, attack_value, revision) = if let Some(ranged) = &selected.weapon.ranged {
@@ -2408,11 +2430,7 @@ fn draw_swing_damage(
         shielding_skill: skills.shielding,
         shield_defense: None,
     };
-    let creature = runtime.contains_live_creature(target);
     if let Some(script) = scripted {
-        if creature {
-            entry.state.record_hit(swing.at, constants.in_fight_micros());
-        }
         return script.damage(
             &inputs,
             root,

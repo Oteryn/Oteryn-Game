@@ -48,6 +48,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -94,9 +97,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -199,6 +199,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -245,9 +248,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -350,6 +350,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -396,9 +399,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -501,6 +501,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -547,9 +550,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -652,6 +652,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -698,9 +701,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2317,6 +2317,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "owned_field_buff",
@@ -2357,9 +2360,6 @@
               "expiry_requires_caster_online": false
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2458,6 +2458,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 190,
         "execution": {
           "native_behavior": {
@@ -2598,9 +2601,6 @@
               "placement_gate": "existing_tile_and_no_pz_from_outside_pz"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -5149,6 +5149,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": true,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 60,
         "execution": {
           "native_behavior": {
@@ -5467,9 +5470,6 @@
               }
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -5850,6 +5850,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "locate_message",
@@ -5913,9 +5916,6 @@
               "no_target_message": "At the moment there is no fiend with special loot roaming this world."
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -15276,6 +15276,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 42,
         "execution": {
           "native_behavior": {
@@ -15551,9 +15554,6 @@
               "source_schedule_order": "before_immediate_combat_result"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {

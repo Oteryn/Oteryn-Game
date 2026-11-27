@@ -8,8 +8,8 @@ use crate::spell::formula::{Formula, FormulaInputs};
 use oteryn_gameplay_combat_rules::attack::ranged::{
     player_distance_formula, shot_hit_chance, shot_hits, wand_formula,
 };
-use oteryn_gameplay_progression::hit_training::HitBlock;
 use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
+use oteryn_gameplay_progression::hit_training::HitBlock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ScriptedArrow {

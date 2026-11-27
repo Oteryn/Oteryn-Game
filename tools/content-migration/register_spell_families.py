@@ -608,6 +608,38 @@ def apply_spell_catalog_registration(root: Path, catalog: dict) -> None:
     module.apply_owner_decisions(catalog)
 
 
+def project_spell_catalog(root: Path, generated: dict[str, bytes]) -> None:
+    native_manifest = json.loads(generated[NATIVE_MANIFEST])
+    # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
+    # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
+    catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
+    catalog = json.loads(generated[catalog_path])
+    apply_spell_catalog_registration(root, catalog)
+    generated[catalog_path] = spell_import.canonical_bytes(catalog)
+    catalog_digest = spell_import.digest(generated[catalog_path])
+    # C18b replaces the Barrage formulas in the registered bundles and Formula collection.
+    _, formula_path = spell_import.DEPENDENCIES["Formula"]
+    formulas = json.loads(generated[formula_path])
+    formulas_by_id = {
+        (formula["identity"]["key"], formula["identity"]["revision"]): formula
+        for entry in catalog["bundles"]
+        for formula in entry["dependencies"]["formulas"]
+    }
+    formulas["records"] = [
+        formulas_by_id[(formula["identity"]["key"], formula["identity"]["revision"])]
+        for formula in formulas["records"]
+    ]
+    formulas["source_catalog"]["sha256"] = catalog_digest
+    generated[formula_path] = spell_import.canonical_bytes(formulas)
+    selection_path = spell_import.PROVIDER_DESTINATIONS["source_selection"]
+    selection = json.loads(generated[selection_path])
+    selection["catalog_sha256"] = catalog_digest
+    generated[selection_path] = spell_import.canonical_bytes(selection)
+    for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
+        native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+
+
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     from native_profile_composition import compact_native_profile_scope
     from qualification_inputs import appearance_input_scope
@@ -1980,34 +2012,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     native_manifest["creature_profiles"]["sha256"] = hashlib.sha256(
         generated[creature_path]
     ).hexdigest()
-    # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
-    # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
-    catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
-    catalog = json.loads(generated[catalog_path])
-    apply_spell_catalog_registration(root, catalog)
-    generated[catalog_path] = spell_import.canonical_bytes(catalog)
-    catalog_digest = spell_import.digest(generated[catalog_path])
-    # C18b replaces the Barrage formulas in the registered bundles and Formula collection.
-    _, formula_path = spell_import.DEPENDENCIES["Formula"]
-    formulas = json.loads(generated[formula_path])
-    formulas_by_id = {
-        (formula["identity"]["key"], formula["identity"]["revision"]): formula
-        for entry in catalog["bundles"]
-        for formula in entry["dependencies"]["formulas"]
-    }
-    formulas["records"] = [
-        formulas_by_id[(formula["identity"]["key"], formula["identity"]["revision"])]
-        for formula in formulas["records"]
-    ]
-    formulas["source_catalog"]["sha256"] = catalog_digest
-    generated[formula_path] = spell_import.canonical_bytes(formulas)
-    selection_path = spell_import.PROVIDER_DESTINATIONS["source_selection"]
-    selection = json.loads(generated[selection_path])
-    selection["catalog_sha256"] = catalog_digest
-    generated[selection_path] = spell_import.canonical_bytes(selection)
-    for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
-        native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+    project_spell_catalog(root, generated)
 
     pin_repository_inputs(root, generated)
     native_goal_loot_items.refresh_outfit_boss_loot(

@@ -159,7 +159,7 @@ async fn paid_splash(
     assert_eq!(owner.expert_fight_modes(actor, session, 1, ExpertFightModes {
         modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT },
         expert: ExpertMode::RedFist,
-    }).await, attack::AttackIntentDisposition::Ok);
+    }).await.map_err(debug)?, attack::AttackIntentDisposition::Ok);
     let rat = {
         let mut runtime = owner.runtime.lock().await;
         runtime.install_companion_policies(content.policies().clone()).map_err(debug)?;

@@ -417,7 +417,7 @@ async fn scenario_inner(
         tx.commit().await?;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7, 17, 21, 87]).ok_or("PvP capabilities")?;
         assert_eq!(owner.expert_fight_modes(actor, session, admitted.continuity.next_command_id,
-            ExpertFightModes { modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT }, expert: ExpertMode::RedFist }).await,
+            ExpertFightModes { modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT }, expert: ExpertMode::RedFist }).await.map_err(debug)?,
             attack::AttackIntentDisposition::Ok);
         Some((victim, target_session, target_ref))
     } else {
