@@ -16,6 +16,10 @@ use oteryn_protocol_oteryn::quick_loot::{
 };
 use std::sync::atomic::{AtomicU64, Ordering};
 
+#[allow(dead_code, unexpected_cfgs)]
+#[path = "../../../../../../apps/game-server/src/qualification_spell_character.rs"]
+mod provision;
+
 struct SnapshotClock(TrustedNow);
 impl clock_registration::Registered for SnapshotClock {}
 impl RegisteredPremiumClock for SnapshotClock {
@@ -72,17 +76,47 @@ fn scenario() -> TestResult {
          owner,
          fence,
          admitted| {
-            // The full-world fixture starts with a synthetic Monk actor but
-            // an unassigned durable vocation. Persist the matching test input
-            // so the successor can restore the build through normal admission.
-            let assigned = sqlx::query(
-                "UPDATE game_character_build_state SET vocation='monk' \
-                 WHERE character_id=encode($1,'hex')::uuid AND vocation='none'",
+            let policy = owner
+                .active_generation
+                .and_then(|active| active.progression())
+                .ok_or("fixture progression")?
+                .policy_for("profile-1", "ruleset-1", "content-1")
+                .map_err(debug)?;
+            let current = FreshAdmissionStore::from_root(h.root.clone())
+                .current_session(session)
+                .await?;
+            provision::prepare_character_with_policy(
+                &h.root,
+                &authority,
+                &h.node,
+                &current,
+                provision::QualificationBuildSpec {
+                    vocation: "monk",
+                    level: 8,
+                    context: policy.context.clone(),
+                    xp_occurrence: id(183),
+                    build_occurrence: id(184),
+                },
+                policy,
             )
-            .bind(id(41).as_slice())
-            .execute(&h.pool)
             .await?;
-            assert_eq!(assigned.rows_affected(), 1);
+            assert_eq!(
+                h.root
+                    .read_character_progression(&authority, fence.character_id)
+                    .await
+                    .map_err(debug)?
+                    .ok_or("fixture progression after provisioning")?
+                    .level,
+                8
+            );
+            assert_eq!(
+                h.root
+                    .read_character_build_state(&authority, fence.character_id)
+                    .await
+                    .map_err(debug)?
+                    .vocation(),
+                "monk"
+            );
             const ISSUED: i64 = 1_790_769_600_000_000;
             let now = TrustedNow::new(ISSUED + 60_000_000, 0).ok_or("snapshot clock")?;
             let reads = SpellPremiumCoordinator::new(
