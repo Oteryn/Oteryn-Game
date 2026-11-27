@@ -217,7 +217,7 @@ def admit(root, items, order):
             items["records"].append(record)
             continue
         # Preserve earlier Item owners when their custody agrees, including
-        # Ruprecht's Mushroom Backpack from the token exchange.
+        # Gnomally's Mushroom Backpack from the token exchange.
         prior = existing[key]
         policy_fields = ("container", "physical", "stack", "temporal")
         if key == "oteryn:item.tibia.i21411" and prior["semantics"]["temporal"] == source.U:
