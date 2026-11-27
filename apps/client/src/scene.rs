@@ -343,6 +343,16 @@ impl Scene {
             .unwrap_or_else(|| self.world.atlas())
     }
 
+    #[cfg(all(test, bevy_shell))]
+    pub(crate) fn set_test_presentation_atlas(
+        &mut self,
+        atlas: AtlasImage,
+    ) -> Result<(), BatchError> {
+        self.presentation_atlas = Some(Arc::new(atlas));
+        self.lit_atlas = None;
+        self.rebuild_sprites()
+    }
+
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
         self.lit_atlas

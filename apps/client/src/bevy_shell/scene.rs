@@ -60,8 +60,11 @@ fn upload_atlas(
         RenderAssetUsages::default(),
     );
     image.sampler = ImageSampler::nearest();
+    // Bevy can update a same-size texture in place. A resize creates a new GPU
+    // texture, so give it a new asset ID to invalidate cached bindings.
     let updated = if let Some(handle) = handle
         && let Some(mut existing) = images.get_mut(&*handle)
+        && existing.size() == image.size()
     {
         *existing = image;
         handle.clone()
@@ -112,6 +115,11 @@ pub(super) fn project(
         cache.minimap_image = None;
         image.clone()
     };
+    // Hidden smooth batches can still hold a strong reference to the old atlas.
+    // Rebind them too so Bevy can release it once the remaining users update.
+    cache
+        .smooth
+        .rebind_atlases(&mut mesh_assets, [&image, &minimap_image]);
     let scene_size = scene.view().viewport_px();
     let size = if viewport.size.x > 0 {
         viewport.size.as_vec2()
