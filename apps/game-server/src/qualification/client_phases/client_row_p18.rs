@@ -240,7 +240,7 @@ async fn walk_to_station(
                 },
             ),
             selection: Some(world_interaction::Selection {
-                position: oteryn_session::ActorPosition {
+                position: oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: FORGE_STATION.x.into(),
                     y: FORGE_STATION.y.into(),
                     floor: -i16::from(FORGE_STATION.floor),
