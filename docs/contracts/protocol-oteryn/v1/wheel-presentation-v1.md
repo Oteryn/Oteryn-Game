@@ -28,9 +28,11 @@ Malformed requests have an empty rejection. Use 6119 for one's own Wheel.
 
 Capability 148 gates an empty request. An accepted response is the current
 revelation stage (one byte, 0 through 3) followed by a little-endian u64 remaining
-online cooldown in milliseconds, rounded up. Stage zero denotes inactive. An
-unavailable timer or a stale actor/session yields an empty rejection. The client
+cooldown in milliseconds, rounded up. It runs while the perk is active and the
+actor has a battle sign. Stage zero denotes inactive and carries a zero timer.
+The exact remainder persists across logout. An unavailable active timer or a
+stale actor/session yields an empty rejection. The client
 can use the stage and timer for a passive action-bar assignment. Assignment is a
 client preference. This query cannot activate Gift of Life, which triggers in
 the existing damage owner.
-[Crystal cooldown status](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/wheel/player_wheel.cpp#L1646-L1668).
+[Tibia Fandom archive, Gift of Life](https://tibia.fandom.com/api.php?action=parse&page=Gift_of_Life&prop=wikitext&format=json).

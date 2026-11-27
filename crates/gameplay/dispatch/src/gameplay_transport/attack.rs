@@ -884,6 +884,24 @@ impl ChannelAttackStates {
         }
     }
 
+    /// Publish the same hit boundary to the Gift of Life clock while the two
+    /// combat owners still hold the current player.
+    pub(super) fn record_player_hit_taken(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        players: &mut super::actor_spell::ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
+        self.record_hit_taken(runtime, actor, session, now);
+        if let Some(until) = self.in_fight_until(actor, session, now)
+            && let Some(player) = players.get_mut(runtime, actor, session)
+        {
+            player.record_wheel_gift_battle(now.get(), until.get());
+        }
+    }
+
     /// A creature hit `actor`: the in-fight deadline runs from `now`.
     pub fn record_hit_taken(
         &mut self,

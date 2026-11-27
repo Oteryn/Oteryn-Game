@@ -50,7 +50,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         force: bool,
     ) -> bool {
         use crate::durability::character_progression::CharacterProgressionError as Error;
-        // No DB work for an actor that did not activate the perk since its last checkpoint.
+        // Only a started or restored timer needs a terminal snapshot.
         let pending = {
             let runtime = self.runtime.lock().await;
             self.states
@@ -58,7 +58,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .await
                 .get(&runtime, actor, session)
-                .and_then(|state| state.wheel_gift_save(self.owner_now().get(), force))
+                .and_then(|state| {
+                    state.wheel_gift_snapshot_for_persistence(self.owner_now().get(), force)
+                })
         };
         if pending.is_none() {
             return true;
@@ -76,7 +78,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .await
                 .get(&runtime, actor, session)
-                .and_then(|state| state.wheel_gift_save(self.owner_now().get(), force))
+                .and_then(|state| {
+                    state.wheel_gift_snapshot_for_persistence(self.owner_now().get(), force)
+                })
         };
         let Some((generation, remaining)) = snapshot else {
             return true;

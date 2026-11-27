@@ -138,6 +138,9 @@ fn wheel_allocation_postgres_unsocket_refusals_replay_and_relogin() -> TestResul
 
 #[test]
 fn wheel_allocation_postgres_gift_trigger_snapshot_receipts_and_relogin() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     run_wheel_case(Some(WheelExtensionCase::Gift))
 }
 
@@ -664,7 +667,13 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             match transition {
                 WheelExtensionCase::Socket => eprintln!("WHEEL_SOCKET POSTGRES_CASE_COMPLETED"),
                 WheelExtensionCase::Unsocket => eprintln!("WHEEL_UNSOCKET POSTGRES_CASE_COMPLETED"),
-                WheelExtensionCase::Gift => eprintln!("WHEEL_GIFT POSTGRES_CASE_COMPLETED"),
+                WheelExtensionCase::Gift => {
+                    gift_battle_relogin(
+                        &restarted, &h, admitted, gift_remaining.ok_or("Gift remainder")?,
+                    ).await?;
+                    eprintln!("WHEEL_GIFT POSTGRES_CASE_COMPLETED");
+                }
+
                 WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel => {
                     return Err("case already handled".into());
                 }
@@ -961,6 +970,107 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn gift_battle_relogin(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+    remaining: u64,
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::gameplay_transport::connection::{ControllerBinding, FirstEntryOutcome, LogoutReply};
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    use std::sync::atomic::Ordering;
+
+    let actor = admitted.runtime_actor.ok_or("Gift actor")?;
+    let session = admitted.game_session_id;
+    let _clock = owner.freeze_owner_clock_for_test();
+    let set_time = |at| owner.states.test_owner_time.store(at + 1, Ordering::Relaxed);
+    let status = |admitted| async move {
+        let payload = crate::gameplay_transport::wheel_presentation::gift_status(owner, admitted)
+            .await.ok_or("Gift status")?;
+        Ok::<_, Box<dyn std::error::Error>>((payload[0], u64::from_le_bytes(payload[1..].try_into()?)))
+    };
+
+    // Advancing the owner clock alone leaves the visible cooldown unchanged.
+    let started = owner.owner_now().get();
+    assert_eq!(status(admitted).await?, (3, remaining.div_ceil(1_000)));
+    let hit_at = started + 2_000_000;
+    set_time(hit_at);
+    assert_eq!(status(admitted).await?, (3, remaining.div_ceil(1_000)));
+
+    let (effects, battle_until) = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let player = states.get_mut(&runtime, actor, session).ok_or("Gift actor")?;
+        let effects = player.wheel_effects_at(hit_at).ok_or("active Wheel effects")?.clone();
+        player.install_wheel_effects_at(Default::default(), hit_at);
+        let mut attack = owner.states.attack.lock().await;
+        let now = owner.owner_now();
+        attack.record_player_hit_taken(&runtime, &mut states, actor, session, now);
+        (effects, attack.in_fight_until(actor, session, now).ok_or("battle sign")?.get())
+    };
+    // An existing battle sign cannot spend time while the perk is unallocated.
+    let enabled_at = hit_at + 2_000_000;
+    set_time(enabled_at);
+    assert_eq!(status(admitted).await?, (0, 0));
+    {
+        let runtime = owner.runtime.lock().await;
+        owner.states.spell_states.lock().await.get_mut(&runtime, actor, session)
+            .ok_or("Gift actor")?.install_wheel_effects_at(effects, enabled_at);
+    }
+    assert_eq!(status(admitted).await?, (3, remaining.div_ceil(1_000)));
+    let tick = enabled_at + 2_000_001;
+    set_time(tick);
+    assert_eq!(status(admitted).await?, (3, (remaining - (tick - enabled_at)).div_ceil(1_000)));
+
+    // Let the battle sign expire with no intervening tick. Force-save at the
+    // terminal release must deduct only the part where the two gates overlapped.
+    let expected = remaining - (battle_until - enabled_at);
+    set_time(battle_until + 10_000_000);
+    assert_eq!(status(admitted).await?, (3, expected.div_ceil(1_000)));
+    assert_eq!(owner.logout_session(admitted).await, LogoutReply::Result(LogoutResult::Accepted));
+    let character = admitted.item_fence.ok_or("previous Gift fence")?.character_id;
+    assert_eq!(h.root.read_character_wheel_gift(owner.character, character).await.map_err(debug)?, expected);
+
+    let (session, request) = super::full_world_support::relogin_request(h).await?;
+    assert_ne!(session, admitted.game_session_id);
+    let transport = FreshAdmissionStore::from_root(h.root.clone()).current_session(session)
+        .await?.current_transport().ok_or("relog transport")?;
+    let next_actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        runtime.commit_fresh_session(reserved).map_err(debug)?
+    };
+    // Skip time between terminal logout and the fresh actor's initialization.
+    set_time(battle_until + 30_000_000);
+    owner.admit_premium(id(40), session);
+    let (first_entry, item_fence, _) =
+        Box::pin(owner.initialize_first_entry(&request, session, transport, next_actor)).await;
+    assert!(matches!(first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled));
+    let next_fence = item_fence.ok_or("fresh relog fence")?;
+    assert!(next_fence.character_lease_generation
+        > admitted.item_fence.ok_or("original lease")?.character_lease_generation);
+    let readmitted = AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(next_actor),
+        controller: Some(ControllerBinding { transport, account_id: id(40) }),
+        item_fence,
+        first_entry,
+        ..admitted
+    };
+    owner.admit_wheel_session(session).await;
+    assert!(owner.refresh_wheel_vitals(next_actor, session).await);
+    assert_eq!(status(readmitted).await?, (3, expected.div_ceil(1_000)));
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    assert_eq!(
+        states.get(&runtime, next_actor, session).ok_or("fresh Gift actor")?
+            .wheel_gift_save(owner.owner_now().get(), true),
+        Some((0, expected)),
+    );
+    Ok(())
 }
 
 async fn assert_gift_runtime_guards(h: &Harness) -> TestResult {

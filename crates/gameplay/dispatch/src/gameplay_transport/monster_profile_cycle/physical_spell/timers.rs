@@ -272,7 +272,7 @@ pub(super) async fn drain_through(
     states.monster_spells = spells;
     for (_, outcome) in outcomes.map_err(|_| ())? {
         if let Ok(outcome) = outcome {
-            record_hits(runtime, attack, None, &players, outcome, now);
+            record_hits(runtime, states, attack, None, &players, outcome, now);
         }
     }
     let Some(chains) = states.monster_chains.as_ref() else {
@@ -373,7 +373,7 @@ pub(super) async fn drain_through(
     states.monster_spells = spells;
     for (_, _, outcome) in outcomes.map_err(|_| ())? {
         if let Ok(outcome) = outcome {
-            record_hits(runtime, attack, None, &players, outcome, now);
+            record_hits(runtime, states, attack, None, &players, outcome, now);
         }
     }
     Ok(())

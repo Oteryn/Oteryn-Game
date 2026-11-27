@@ -169,11 +169,12 @@ pub(super) async fn gift_status(
     let states = owner.states.spell_states.lock().await;
     let state = states.get(&runtime, admitted.runtime_actor?, admitted.game_session_id)?;
     let now = owner.owner_now().get();
-    let stage = state
-        .wheel_effects_at(now)
-        .and_then(|effects| effects.revelation_stages.get("gift_of_life").copied())
-        .unwrap_or(0);
-    let (_, remaining) = state.wheel_gift_save(now, true)?;
+    let stage = state.wheel_gift_stage(now);
+    let remaining = if stage == 0 {
+        0
+    } else {
+        state.wheel_gift_save(now, true)?.1
+    };
     let mut result = [stage; wire::GIFT_OF_LIFE_STATUS_BYTES];
     result[1..].copy_from_slice(&remaining.div_ceil(1000).to_le_bytes());
     Some(result)

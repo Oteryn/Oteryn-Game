@@ -346,7 +346,7 @@ impl PlayerBatchPreflight {
     }
 
     // Only the compositor below calls this, after the unchanged exclusive owner borrow
-    // has validated every index. No allocation, lookup, callback or fallible step follows.
+    // has validated every successor index. Lock updates use those same owned books.
     fn install(self, states: &mut ChannelSpellStates) -> OwnerCombatBatch {
         states.deaths.extend(self.deaths);
         states.pvp_locks.retain(|(actor, session, _)| {
@@ -355,17 +355,13 @@ impl PlayerBatchPreflight {
                 .iter()
                 .any(|(a, s, _)| a == actor && s == session)
         });
-        if let Some(now) = self.batch.now_us {
-            for (actor, session, aggression) in self.pvp_locks {
-                let lock = super::super::pvp_live::lock_mut(states, actor, session);
-                lock.on_pvp_hit(now);
-                if aggression {
-                    lock.on_aggression(now);
-                }
-            }
-        }
         for replacement in self.replacements {
             states.actors[replacement.index].2 = replacement.next;
+        }
+        if let Some(now) = self.batch.now_us {
+            for (actor, session, aggression) in self.pvp_locks {
+                super::super::pvp_live::record_hit(states, actor, session, now, aggression);
+            }
         }
         self.batch
     }

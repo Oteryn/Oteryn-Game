@@ -1,7 +1,7 @@
 //! Gift of Life in the existing vitals successor. Crystal 201189f
 //! player_wheel.cpp:3166-3187,3952-4002 and game.cpp:7741-7747.
-//! The pinned onThink decreases this timer before its combat/PZ guard (3367-3375):
-//! elapsed online time counts; loading a saved remainder never counts offline time.
+//! Tibia Global counts only time with an available perk and a battle sign.
+//! Persist the unspent microseconds, independent of either session's clock.
 
 use super::cast::PlayerSpellState;
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
@@ -13,8 +13,10 @@ pub const MAX_GIFT_COOLDOWN_MICROS: u64 = 30 * 60 * 60 * 1_000_000;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct GiftOfLifeState {
     loaded: bool,
+    timer_started: bool,
     remaining_micros: u64,
     anchored_at: u64,
+    battle_until: u64,
     generation: u64,
     saved_generation: u64,
     /// Admitted instant-spell identities and their optional secondary group.
@@ -22,15 +24,52 @@ pub(crate) struct GiftOfLifeState {
     instant_secondary_groups: Arc<BTreeMap<String, Option<String>>>,
 }
 
-impl GiftOfLifeState {
-    fn remaining(&self, now: u64) -> Option<u64> {
-        self.loaded.then_some(())?;
-        let elapsed = now.checked_sub(self.anchored_at)?;
-        Some(self.remaining_micros.saturating_sub(elapsed))
-    }
-}
-
 impl PlayerSpellState {
+    pub fn wheel_gift_stage(&self, now: u64) -> u8 {
+        self.wheel_effects_at(now)
+            .and_then(|effects| effects.revelation_stages.get("gift_of_life").copied())
+            .unwrap_or(0)
+    }
+
+    fn wheel_gift_remaining(&self, now: u64) -> Option<u64> {
+        let gift = &self.wheel_gift;
+        if !gift.loaded || now < gift.anchored_at {
+            return None;
+        }
+        // At each eligibility change we settle the previous interval. Premium
+        // can also expire without an owner turn, so cap the interval there.
+        let elapsed = if self.wheel_gift_stage(gift.anchored_at) > 0 {
+            now.min(gift.battle_until)
+                .min(self.premium_valid_until_micros.unwrap_or(0))
+                .saturating_sub(gift.anchored_at)
+        } else {
+            0
+        };
+        Some(gift.remaining_micros.saturating_sub(elapsed))
+    }
+
+    pub fn settle_wheel_gift(&mut self, now: u64) {
+        if let Some(remaining) = self.wheel_gift_remaining(now) {
+            self.wheel_gift.remaining_micros = remaining;
+            self.wheel_gift.anchored_at = now;
+        }
+    }
+
+    /// Both combat owners publish their deadlines at the hit, before a later
+    /// refresh can hide a gap between two separate battle signs.
+    pub fn record_wheel_gift_battle(&mut self, now: u64, until: u64) {
+        let now = now.max(self.wheel_gift.anchored_at);
+        if self.health > 0 && until > now {
+            self.settle_wheel_gift(now);
+            self.wheel_gift.battle_until = self.wheel_gift.battle_until.max(until);
+        }
+    }
+
+    pub fn clear_wheel_gift_battle(&mut self, now: u64) {
+        self.settle_wheel_gift(now);
+        self.wheel_gift.battle_until = 0;
+    }
+
     pub fn wheel_gift_loaded(&self) -> bool {
         self.wheel_gift.loaded
     }
@@ -42,8 +81,10 @@ impl PlayerSpellState {
         }
         self.wheel_gift = GiftOfLifeState {
             loaded: true,
+            timer_started: remaining_micros > 0,
             remaining_micros,
             anchored_at: now,
+            battle_until: self.wheel_gift.battle_until,
             generation: 0,
             saved_generation: 0,
             instant_secondary_groups: Arc::default(),
@@ -74,7 +115,14 @@ impl PlayerSpellState {
         if !force && gift.generation == gift.saved_generation {
             return None;
         }
-        Some((gift.generation, gift.remaining(now)?))
+        Some((gift.generation, self.wheel_gift_remaining(now)?))
+    }
+
+    /// An empty load (including a character with no Gift row) needs no write.
+    /// A running cooldown must still write zero when the last microsecond is spent.
+    pub fn wheel_gift_snapshot_for_persistence(&self, now: u64, force: bool) -> Option<(u64, u64)> {
+        self.wheel_gift.timer_started.then_some(())?;
+        self.wheel_gift_save(now, force)
     }
 
     /// Advances only in the hit successor that actually triggers Gift of Life.
@@ -96,10 +144,7 @@ impl PlayerSpellState {
         damage: u32,
         now: u64,
     ) -> Result<(), SpellCastDisposition> {
-        let stage = self
-            .wheel_effects_at(now)
-            .and_then(|effects| effects.revelation_stages.get("gift_of_life").copied())
-            .unwrap_or(0);
+        let stage = self.wheel_gift_stage(now);
         let (percent, hours) = match stage {
             1 => (20_u32, 30_u64),
             2 => (25, 20),
@@ -109,7 +154,7 @@ impl PlayerSpellState {
         if self.health == 0
             || self.facts.max_health == 0
             || damage < self.health
-            || self.wheel_gift.remaining(now) != Some(0)
+            || self.wheel_gift_remaining(now) != Some(0)
             || (u64::from(damage - self.health) * 100 / u64::from(self.facts.max_health))
                 > u64::from(percent)
         {
@@ -150,6 +195,7 @@ impl PlayerSpellState {
             *deadline =
                 SemanticTimeMicros::from_micros(deadline.get().saturating_sub(60_000_000).max(now));
         }
+        self.wheel_gift.timer_started = true;
         self.wheel_gift.remaining_micros = hours * 60 * 60 * 1_000_000;
         self.wheel_gift.anchored_at = now;
         self.wheel_gift.generation = generation;
@@ -332,6 +378,7 @@ mod tests {
         original
             .apply_wheel_gift(200, 0)
             .map_err(|e| format!("{e:?}"))?;
+        original.record_wheel_gift_battle(0, 10_000_000);
         let (generation, remaining) = original.wheel_gift_save(10_000_000, true).unwrap_or((0, 0));
         original.wheel_gift_saved(generation.saturating_sub(1));
         assert!(original.wheel_gift_save(10_000_000, false).is_some());
@@ -341,12 +388,39 @@ mod tests {
         restored.wheel_gift = GiftOfLifeState::default();
         assert!(restored.restore_wheel_gift(remaining, 5));
         assert_eq!(
-            restored.wheel_gift.remaining(5),
+            restored.wheel_gift_remaining(5),
             Some(20 * 60 * 60 * 1_000_000 - 10_000_000)
         );
-        assert_eq!(restored.wheel_gift.remaining(5 + remaining), Some(0));
-        assert_eq!(restored.wheel_gift.remaining(4), None);
+        assert_eq!(
+            restored.wheel_gift_remaining(5 + remaining),
+            Some(remaining)
+        );
+        restored.record_wheel_gift_battle(5, 5 + remaining);
+        assert_eq!(restored.wheel_gift_remaining(5 + remaining), Some(0));
+        assert_eq!(restored.wheel_gift_remaining(4), None);
         assert!(!restored.restore_wheel_gift(0, 10));
+        Ok(())
+    }
+
+    #[test]
+    fn gift_counts_overlapping_battle_signs_once_and_stops_at_protection() -> Result<(), String> {
+        let mut state = actor(3)?;
+        assert_eq!(state.wheel_gift_snapshot_for_persistence(0, true), None);
+        state
+            .apply_wheel_gift(200, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        let start = 10 * 60 * 60 * 1_000_000;
+        state.record_wheel_gift_battle(5, 10);
+        state.record_wheel_gift_battle(7, 12);
+        assert_eq!(state.wheel_gift_remaining(14), Some(start - 7));
+        state.record_wheel_gift_battle(20, 25);
+        state.clear_wheel_gift_battle(22);
+        assert_eq!(state.wheel_gift_remaining(30), Some(start - 9));
+        state.record_wheel_gift_battle(30, 30 + start);
+        assert_eq!(
+            state.wheel_gift_snapshot_for_persistence(30 + start, true),
+            Some((1, 0))
+        );
         Ok(())
     }
 
@@ -374,6 +448,7 @@ mod tests {
 
         let mut current = before.clone();
         assert!(current.restore_wheel_gift(7_000_000, 1_000_000));
+        current.record_wheel_gift_battle(1_000_000, 2_000_000);
         assert_eq!(current.vitals(), before.vitals());
         assert_eq!(current.revision(), before.revision());
         assert_eq!(

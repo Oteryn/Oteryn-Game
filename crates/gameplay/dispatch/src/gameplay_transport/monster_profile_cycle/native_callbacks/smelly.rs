@@ -132,10 +132,10 @@ impl NativeSmelly {
                                 .ok_or(())?;
                             super::super::physical_spell::record_native_player_hit(
                                 runtime,
+                                states,
                                 attack,
                                 Some(actor),
-                                target,
-                                session,
+                                (target, session),
                                 &hit,
                                 now,
                             );

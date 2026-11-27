@@ -499,6 +499,24 @@ impl PlayerSpellState {
         Some(())
     }
 
+    pub fn install_wheel_effects_at(&mut self, effects: WheelRuntimeEffects, now: u64) {
+        if self
+            .wheel_effects
+            .revelation_stages
+            .get("gift_of_life")
+            .copied()
+            .unwrap_or(0)
+            != effects
+                .revelation_stages
+                .get("gift_of_life")
+                .copied()
+                .unwrap_or(0)
+        {
+            self.settle_wheel_gift(now);
+        }
+        self.install_wheel_effects(effects);
+    }
+
     pub fn install_wheel_effects(&mut self, effects: WheelRuntimeEffects) {
         if !effects.active_unique_perks.contains("sanctuary") {
             self.wheel_sanctuary = None;

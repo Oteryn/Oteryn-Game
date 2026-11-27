@@ -587,9 +587,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let charm_critical =
                     base_critical != (offence.critical_chance, offence.critical_damage);
-                let Some((mut damage, revision)) =
-                    draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
-                else {
+                let drawn =
+                    draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence);
+                if runtime.contains_live_creature(selected.target)
+                    && entry.state.in_fight(swing.at)
+                    && let Some(until) = entry.state.in_fight_until()
+                    && let Some(player) = states.get_mut(&runtime, entry.actor, entry.session)
+                {
+                    player.record_wheel_gift_battle(swing.at.get(), until.get());
+                }
+                let Some((mut damage, revision)) = drawn else {
                     continue;
                 };
                 // The drawn primary auto-attack receives one additive shrine multiplier

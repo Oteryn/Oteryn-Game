@@ -650,7 +650,15 @@ impl NativeCasts {
         }
         for (issuer, _, _, outcome) in outcomes.map_err(|_| ())? {
             if let Ok(outcome) = outcome {
-                physical_spell::record_hits(runtime, attack, Some(issuer), &players, outcome, now);
+                physical_spell::record_hits(
+                    runtime,
+                    states,
+                    attack,
+                    Some(issuer),
+                    &players,
+                    outcome,
+                    now,
+                );
             }
         }
         Ok(())

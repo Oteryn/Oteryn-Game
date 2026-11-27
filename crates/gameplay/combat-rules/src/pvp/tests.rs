@@ -277,6 +277,7 @@ fn combat_lock_blocks_logout_pz_entry_and_landing_and_never_shortens() {
     assert!(!lock.blocks_pz_entry(t(90_000)));
 
     lock.on_kill(t(1_000_000));
+    assert_eq!(lock.battle_sign_until(), Some(t(90_000)));
     assert!(lock.blocks_logout(t(999_999), None));
     assert!(!lock.landing_allowed(t(999_999), true));
     assert!(!lock.blocks_logout(t(1_000_000), None));

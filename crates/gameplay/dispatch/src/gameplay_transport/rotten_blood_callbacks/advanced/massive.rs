@@ -353,7 +353,7 @@ async fn drive_through(
                 }
                 if let Some(hit) = hit {
                     super::super::super::monster_profile_cycle::physical_spell::record_native_player_hit(
-                        runtime, attack, Some(boss), target, session, &hit, now,
+                        runtime, states, attack, Some(boss), (target, session), &hit, now,
                     );
                     #[cfg(test)]
                     {

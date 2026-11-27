@@ -76,7 +76,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return false;
                 }
-                state.install_wheel_effects(bonuses);
+                state.install_wheel_effects_at(bonuses, self.owner_now().get());
                 true
             })
     }
