@@ -330,6 +330,8 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
     for label in [
         "near",
         "boundary-whisper-two",
+        "boundary-whisper-two-x",
+        "boundary-whisper-two-y",
         "boundary-north",
         "outside-north",
         "boundary-west",
@@ -340,10 +342,14 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         "outside-east",
         "boundary-diagonal",
         "other-floor",
+        "adjacent-other-floor",
     ] {
         let (dx, dy) = match label {
-            "boundary-north" => (1, 0),
-            "boundary-south" => (-1, 0),
+            "boundary-whisper-two-x" => (1, 0),
+            "boundary-whisper-two-y" => (-1, 0),
+            "adjacent-other-floor" => (7, 3),
+            "boundary-north" => (1, -1),
+            "boundary-south" => (-1, 1),
             "boundary-west" => (0, 1),
             "boundary-east" => (0, 2),
             "boundary-diagonal" => (0, -1),
@@ -393,17 +399,19 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         y: value(&metadata, "balcony_y")?.parse()?,
         floor: value(&metadata, "balcony_floor")?.parse()?,
     };
-    for (mode, suffix) in [
-        (ChatSpeechMode::Say, "say"),
-        (ChatSpeechMode::Whisper, "whisper"),
-    ] {
-        listener_lines.push(ChatLine::Local {
-            speaker: balcony_speaker,
-            speaker_name: "Packet One".into(),
-            mode,
-            text: format!("s18-below-floor-{suffix}-{run}"),
-            position: balcony_position,
-        });
+    for label in ["below-floor", "adjacent-below-floor"] {
+        for (mode, suffix) in [
+            (ChatSpeechMode::Say, "say"),
+            (ChatSpeechMode::Whisper, "whisper"),
+        ] {
+            listener_lines.push(ChatLine::Local {
+                speaker: balcony_speaker,
+                speaker_name: "Packet One".into(),
+                mode,
+                text: format!("s18-{label}-{suffix}-{run}"),
+                position: balcony_position,
+            });
+        }
     }
     block_on(async {
         for (role, envelope_file, relog_file, expected) in [

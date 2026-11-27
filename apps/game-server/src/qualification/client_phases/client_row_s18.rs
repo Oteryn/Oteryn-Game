@@ -245,7 +245,7 @@ async fn logout_recorded(
         .into());
     }
     evidence(&format!(
-        "S18_LOGOUT_RELEASE phase={phase} terminal_at_ack=true"
+        "S18_LOGOUT_RELEASE phase={phase} terminal_observed_after_ack=true"
     ));
     let mut byte = [0; 1];
     let closed = tokio::time::timeout(
@@ -388,18 +388,21 @@ async fn journey(
     for (dx, dy, dz, label, audible) in [
         (1, -1, 0, "near", true),
         (2, -1, 0, "boundary-whisper-two", true),
+        (3, 0, 0, "boundary-whisper-two-x", true),
+        (-1, -2, 0, "boundary-whisper-two-y", true),
         // The temple aisles give fixed inside and outside probes in each direction.
-        (0, -6, 0, "boundary-north", true),
+        (0, -7, 0, "boundary-north", true),
         (0, -7, 0, "outside-north", false),
         (-8, 3, 0, "boundary-west", true),
         (-9, 3, 0, "outside-west", false),
-        (0, 6, 0, "boundary-south", true),
+        (0, 7, 0, "boundary-south", true),
         (0, 7, 0, "outside-south", false),
         (8, 3, 0, "boundary-east", true),
         (9, 3, 0, "outside-east", false),
         (8, 5, 0, "boundary-diagonal", true),
         // The balcony landing is inside the horizontal window, one native floor above.
         (7, 4, 1, "other-floor", false),
+        (7, 4, 1, "adjacent-other-floor", false),
     ] {
         let target = TilePos {
             x: origin
@@ -422,8 +425,11 @@ async fn journey(
         .await?;
         // Distinguish every obscured whisper by its original speaker position.
         let (speaker_dx, speaker_dy) = match label {
-            "boundary-north" => (1, 0),
-            "boundary-south" => (-1, 0),
+            "boundary-whisper-two-x" => (1, 0),
+            "boundary-whisper-two-y" => (-1, 0),
+            "adjacent-other-floor" => (7, 3),
+            "boundary-north" => (1, -1),
+            "boundary-south" => (-1, 1),
             "boundary-west" => (0, 1),
             "boundary-east" => (0, 2),
             "boundary-diagonal" => (0, -1),
@@ -545,48 +551,81 @@ async fn journey(
         generation: std::num::NonZeroU64::new(listener_actor.generation)
             .ok_or("S18 balcony speaker generation is zero")?,
     };
-    for (mode, suffix) in [
-        (ChatSpeechMode::Say, "say"),
-        (ChatSpeechMode::Whisper, "whisper"),
+    let below_target = TilePos {
+        x: origin.x + 7,
+        y: origin.y + 3,
+        ..origin
+    };
+    for (label, target) in [
+        ("below-floor", origin),
+        ("adjacent-below-floor", below_target),
     ] {
-        let text = format!("s18-below-floor-{suffix}-{run}");
-        let outcome = service_while(&mut speaker, async {
-            Ok(listener
-                .chat(&ChatIntent::Say {
-                    mode,
-                    text: text.clone(),
-                })
-                .await?)
-        })
-        .await?;
-        require_mechanic_acceptance(outcome.status, "S18 balcony speech")?;
-        if outcome.disposition != ChatDisposition::Ok {
-            return Err(format!("S18 balcony speech refused: {outcome:?}").into());
-        }
-        listener_receipts.push((outcome.command_id, outcome.result_server_sequence));
-        listener_expected.push(ChatLine::Local {
-            speaker: balcony_speaker,
-            speaker_name: "Packet One".into(),
-            mode,
-            text,
-            position: listener_landing,
-        });
-        let (below, own) = tokio::join!(
-            observe_delivery(
+        service_while(
+            &mut listener,
+            move_listener(
                 &mut speaker,
-                &speaker_expected,
-                "below-floor must hear no speech"
+                world,
+                tile(listener_landing)?,
+                target,
+                &mut speaker_receipts,
             ),
-            observe_delivery(&mut listener, &listener_expected, "balcony speaker echo"),
-        );
-        below?;
-        own?;
-        verdict::Harness::global().progress("speech-delivery");
-        evidence(&format!(
-            "S18_DELIVERY case=below-floor mode={mode:?} x={} y={} floor={} heard=false",
-            position.x, position.y, position.floor
-        ));
+        )
+        .await?;
+        let below_at = speaker.world_spatial().actor_position;
+        for (mode, suffix) in [
+            (ChatSpeechMode::Say, "say"),
+            (ChatSpeechMode::Whisper, "whisper"),
+        ] {
+            let text = format!("s18-{label}-{suffix}-{run}");
+            let outcome = service_while(&mut speaker, async {
+                Ok(listener
+                    .chat(&ChatIntent::Say {
+                        mode,
+                        text: text.clone(),
+                    })
+                    .await?)
+            })
+            .await?;
+            require_mechanic_acceptance(outcome.status, "S18 balcony speech")?;
+            if outcome.disposition != ChatDisposition::Ok {
+                return Err(format!("S18 balcony speech refused: {outcome:?}").into());
+            }
+            listener_receipts.push((outcome.command_id, outcome.result_server_sequence));
+            listener_expected.push(ChatLine::Local {
+                speaker: balcony_speaker,
+                speaker_name: "Packet One".into(),
+                mode,
+                text,
+                position: listener_landing,
+            });
+            let (below, own) = tokio::join!(
+                observe_delivery(
+                    &mut speaker,
+                    &speaker_expected,
+                    "below-floor must hear no speech"
+                ),
+                observe_delivery(&mut listener, &listener_expected, "balcony speaker echo"),
+            );
+            below?;
+            own?;
+            verdict::Harness::global().progress("speech-delivery");
+            evidence(&format!(
+                "S18_DELIVERY case={label} mode={mode:?} x={} y={} floor={} heard=false",
+                below_at.x, below_at.y, below_at.floor
+            ));
+        }
     }
+    service_while(
+        &mut listener,
+        move_listener(
+            &mut speaker,
+            world,
+            tile(listener_landing)?,
+            origin,
+            &mut speaker_receipts,
+        ),
+    )
+    .await?;
 
     let speaker_session = speaker.join_snapshot().game_session_id;
     let listener_session = listener.join_snapshot().game_session_id;
@@ -705,7 +744,7 @@ async fn journey(
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = tokio::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(340),
+        Duration::from_secs(420),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
             let checkout = std::process::Command::new("git")
