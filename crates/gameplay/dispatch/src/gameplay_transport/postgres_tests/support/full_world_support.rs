@@ -76,6 +76,14 @@ pub(super) use std::time::Duration;
 #[path = "../../../../../social/src/premium/test_producer.rs"]
 pub(super) mod premium_test_producer;
 
+// Exercise the exact helper used by the node's root-only qualification socket.
+#[allow(
+    dead_code,
+    reason = "this mount uses the served-policy provisioning entry point"
+)]
+#[path = "../../../../../../../apps/game-server/src/qualification_spell_character.rs"]
+pub(super) mod provision;
+
 pub(super) const GOLD: &str = "oteryn:item.tibia.i3031";
 
 pub(super) const BACKPACK: &str = "oteryn:item.tibia.i2854";
