@@ -188,14 +188,24 @@ async fn complete_bounty_with_placement(
         ChannelId::decode(&clients.channel)?,
     )?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (index, offer) = reachable_offer(&opened.bounty.offers, |race| {
-        has_reachable_spawn(world, from, &metadata.spawns, race)
-    })
+    let fixture_species = if fixture {
+        let input = native_input()?;
+        let profiles: oteryn_gameplay_content::content::native_gameplay::CreatureProfilesDocument =
+            serde_json::from_slice(&input.creature_profiles.bytes)?;
+        profiles.records.into_iter().map(|record| record.profile.target.key).collect()
+    } else {
+        std::collections::BTreeSet::new()
+    };
+    let can_place = fixture && p04_fixture_route(world, from).is_some();
+    let (index, offer) = bounty_offer(
+        &opened.bounty.offers,
+        fixture,
+        |race| has_reachable_spawn(world, from, &metadata.spawns, race),
+        |race| can_place && fixture_species.contains(race),
+    )
     .ok_or_else(|| {
-        format!(
-            "step=bounty-route no reachable authored spawn for {:?}",
-            opened.bounty.offers
-        )
+        let eligibility = if fixture { "fixture-eligible offer" } else { "reachable authored spawn" };
+        format!("step=bounty-route no {eligibility} for {:?}", opened.bounty.offers)
     })?;
 
     let mut state = accepted(4, command(client, 8, u16::try_from(index)?).await?)?;
@@ -434,22 +444,27 @@ pub(super) async fn hunt_for_race(
     hunt_target(client, key, target).await
 }
 
+fn p04_fixture_route(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> {
+    let outside_protection = |at: TilePos| {
+        world.base().tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    route(world, from, |at| {
+        outside_protection(at)
+            && [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+                .into_iter()
+                .any(|direction| destination(world, at, direction).is_some_and(outside_protection))
+    })
+}
+
 pub(super) async fn hunt_p04_fixture(
     client: &mut DevClientSession,
     world: &BundleWorld,
     key: &str,
 ) -> TestResult<KillSample> {
-    let outside_protection = |at: TilePos| {
-        world.base().tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-    };
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
-        outside_protection(at)
-            && [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
-                .into_iter()
-                .any(|direction| destination(world, at, direction).is_some_and(outside_protection))
-    }).ok_or("P04 hunt fixture needs a nearby open combat tile")?;
+    let path = p04_fixture_route(world, from)
+        .ok_or("P04 hunt fixture needs a nearby open combat tile")?;
     for direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, before, direction).ok_or("P04 hunt fixture route lost its landing")?;
@@ -486,7 +501,7 @@ async fn hunt_target(
     key: &str,
     target: oteryn_dev_client::WorldSpatialEntity,
 ) -> TestResult<KillSample> {
-    use oteryn_dev_client::{EntityKind, SessionEvent};
+    use oteryn_dev_client::{EntityDetail, EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
     let race = race_reference(key)?;
     let old_corpses: Vec<_> = client
@@ -582,7 +597,17 @@ async fn hunt_target(
     if used.status != CommandStatus::Accepted
         || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
     {
-        return Err("hunt corpse USE refused".into());
+        let (item, appearance) = match corpse.detail {
+            EntityDetail::ObjectWithAppearance { item_definition_ref, appearance_id, .. } => {
+                (Some(item_definition_ref), Some(appearance_id.get()))
+            }
+            EntityDetail::Object { item_definition_ref, .. } => (Some(item_definition_ref), None),
+            _ => (None, None),
+        };
+        return Err(format!(
+            "hunt corpse USE refused command_id={} server_sequence={} status={:?} disposition={:?} item_definition_ref={item:?} appearance_id={appearance:?} position={:?}",
+            used.command_id, used.result_server_sequence, used.status, used.disposition, corpse.position,
+        ).into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while client
@@ -681,14 +706,22 @@ pub(super) fn has_reachable_spawn(
         .is_some()
 }
 
-fn reachable_offer(
+fn bounty_offer(
     offers: &[full::BountyOffer],
-    mut reachable: impl FnMut(&str) -> bool,
+    fixture: bool,
+    mut naturally_reachable: impl FnMut(&str) -> bool,
+    mut fixture_eligible: impl FnMut(&str) -> bool,
 ) -> Option<(usize, &full::BountyOffer)> {
     offers
         .iter()
         .enumerate()
-        .filter(|(_, offer)| !offer.elite && offer.required > 0 && reachable(&offer.race))
+        .filter(|(_, offer)| {
+            !offer.elite && offer.required > 0 && if fixture {
+                fixture_eligible(&offer.race)
+            } else {
+                naturally_reachable(&offer.race)
+            }
+        })
         .min_by_key(|(_, offer)| offer.required)
 }
 
@@ -891,10 +924,10 @@ impl verdict::IndexedError for StepFailure {
 
 #[cfg(test)]
 mod tests {
-    use super::{full, reachable_offer, sanitize};
+    use super::{bounty_offer, full, sanitize};
 
     #[test]
-    fn selects_shortest_reachable_ordinary_offer_at_its_wire_index() {
+    fn selects_shortest_eligible_ordinary_offer_at_its_wire_index_in_each_mode() {
         let offer = |race: &str, required, elite| full::BountyOffer {
             elite,
             dust: 0,
@@ -911,10 +944,15 @@ mod tests {
             offer("reachable", 4, false),
         ];
         assert_eq!(
-            reachable_offer(&offers, |race| race == "reachable"),
+            bounty_offer(&offers, false, |race| race == "reachable", |_| true),
             Some((3, &offers[3]))
         );
-        assert_eq!(reachable_offer(&offers, |_| false), None);
+        assert_eq!(bounty_offer(&offers, false, |_| false, |_| true), None);
+        assert_eq!(
+            bounty_offer(&offers, true, |_| false, |race| race == "unreachable"),
+            Some((0, &offers[0]))
+        );
+        assert_eq!(bounty_offer(&offers, true, |_| true, |_| false), None);
     }
 
     #[test]
