@@ -23,6 +23,15 @@ fn named_item(profile: &str) -> Option<(u32, u32)> {
 }
 
 #[cfg(feature = "qualification-spawn")]
+fn p04_max_item(profile: &str) -> Option<u32> {
+    let id = profile.strip_prefix("p04-max-item-")?;
+    if id.starts_with('0') || !id.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    id.parse().ok()
+}
+
+#[cfg(feature = "qualification-spawn")]
 pub(super) const UNASSIGNED_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000014";
 #[cfg(feature = "qualification-spawn")]
 const KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000015";
@@ -64,7 +73,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "p04-master-399" => Some(("sorcerer", 399)),
         "p04-master-400" => Some(("sorcerer", 400)),
-        "p04-task-board" => Some(("sorcerer", 8)),
+        "p04-task-board" => Some(("sorcerer", 399)),
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
@@ -96,6 +105,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
         || profile.strip_prefix("p04-").and_then(named_item).is_some()
+        || p04_max_item(profile).is_some()
         || profile == "premium";
     allowed.then_some((session, profile))
 }
@@ -759,7 +769,12 @@ async fn prepare_build(
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some((id, count)) = profile.strip_prefix("p04-").and_then(named_item) {
-        return prepare_p04_delivery(root, authority, proof, &current, native, id, count).await;
+        return prepare_p04_delivery(root, authority, proof, &current, native, id, Some(count))
+            .await;
+    }
+    #[cfg(feature = "qualification-spawn")]
+    if let Some(id) = p04_max_item(profile) {
+        return prepare_p04_delivery(root, authority, proof, &current, native, id, None).await;
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {
@@ -1059,7 +1074,7 @@ async fn prepare_p04_delivery(
     >,
     native: &NativeGameplayState,
     id: u32,
-    count: u32,
+    count: Option<u32>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::domain::item_definition::ItemStackClass;
     use crate::durability::item_mint::TypedDefinitionRef;
@@ -1072,7 +1087,7 @@ async fn prepare_p04_delivery(
     )
     .map_err(qualification_build::debug)?;
     let attempts = std::sync::atomic::AtomicU8::new(1);
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let record = root
         .retry_foreground_holder(
             deadline,
@@ -1136,9 +1151,9 @@ async fn prepare_p04_delivery(
     let (key, revision) = index
         .definition_at(reference)
         .ok_or("P04 delivery item not in active index")?;
-    let delivery_item = oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS
+    let authored = oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS
         .iter()
-        .any(|entry| {
+        .find(|entry| {
             native
                 .item_policy_for_source_id(u32::from(entry.item_id))
                 .is_some_and(|policy| {
@@ -1146,9 +1161,8 @@ async fn prepare_p04_delivery(
                     definition.production_key == key && definition.revision_ref == revision
                 })
         });
-    if !delivery_item {
-        return Err("P04 item is not in the active delivery catalogue".into());
-    }
+    let authored = authored.ok_or("P04 item is not in the active delivery catalogue")?;
+    let count = count.unwrap_or(*authored.quantity.end());
     let item = generation_item_facts(
         native,
         &TypedDefinitionRef {
@@ -1166,70 +1180,124 @@ async fn prepare_p04_delivery(
     if maximum == 0 {
         return Err("P04 delivery item stack capacity is zero".into());
     }
-    let mut remaining = count;
-    let mut contents = Vec::new();
-    while remaining != 0 {
-        let quantity = remaining.min(maximum);
-        contents.push(RewardClaimMintContent {
-            item: item.clone(),
-            quantity,
-            key_number: None,
-            text: None,
-            fluid_subtype: None,
-            charges_remaining: None,
-        });
-        remaining -= quantity;
+    let delivery_bag = facts(2854)?;
+    let per_bag = delivery_bag
+        .container_capacity
+        .ok_or("P04 delivery bag has no slots")?
+        .checked_mul(maximum)
+        .filter(|capacity| *capacity != 0)
+        .ok_or("P04 invalid delivery bag capacity")?;
+    let bags = count.div_ceil(per_bag);
+    let slots = backpack
+        .container_capacity
+        .ok_or("P04 backpack has no slots")?;
+    if bag.entries.len() + usize::try_from(bags)? > usize::try_from(slots)? {
+        return Err(format!(
+            "P04 delivery fixture needs {bags} free backpack slots out of {slots}"
+        )
+        .into());
     }
-    let request = RewardClaimMintRequest {
-        command: crate::foundation::CommandRef::new(
-            fence.game_session_id,
-            crate::foundation::CommandId::new(
-                u64::MAX - (1 << 40) - (u64::from(id) << 5) - u64::from(count),
-            )?,
-        ),
-        claim: TypedDefinitionRef {
-            family: "RewardClaim".into(),
-            production_key: fixture_gear_claim(
-                fence.game_session_id,
-                &format!("p04-i{id}-{count}"),
-            ),
-            revision_ref: "qualification-v1".into(),
-        },
-        source_placement: "oteryn:qualification.node-boot".into(),
-        item: facts(2854)?,
-        quantity: 1,
-        contents,
-        backpack_outputs: false,
-        additional_items: Vec::new(),
-        root_text: None,
-        root_fluid_subtype: None,
-        root_charges_remaining: None,
-        backpack,
-        content_revision: p04_delivery_weight_revision(native.source_digest()),
-        ruleset_revision: inventory.ruleset_revision,
-        sim_revision: "qualification-v1".into(),
-        achievement: None,
-        quest_transition: None,
-        key_number: None,
-    };
     let weights = FixtureItemContent(native);
-    let mut candidate = reserve_p04_delivery_bag(
-        root, authority, proof, fence, &request, &weights, deadline, &attempts,
-    )
-    .await
-    .map_err(|error| format!("P04 delivery bag reserve: {error:?}"))?;
-    let (outcome, _) = root
-        .commit_reward_claim_mint_weighted_noticed(
-            authority,
-            proof,
-            fence,
-            &mut candidate,
-            None,
-            &weights,
+    let (capacity, carried) = root
+        .retry_foreground_holder(
+            deadline,
+            |error| {
+                matches!(error, DurabilityError::RootUnavailable)
+                    && p04_fixture_retry(&attempts, deadline, "read-delivery-capacity")
+            },
+            async || {
+                root.read_inventory_capacity(authority, proof, fence, None, &weights)
+                    .await
+            },
+        )
+        .await?
+        .ok_or("P04 delivery fixture capacity unavailable")?;
+    let incoming = u64::from(item.weight.ok_or("P04 delivery item weight absent")?)
+        * u64::from(count)
+        + u64::from(
+            delivery_bag
+                .weight
+                .ok_or("P04 delivery bag weight absent")?,
+        ) * u64::from(bags);
+    if incoming > capacity.saturating_sub(carried) {
+        return Err(format!(
+            "P04 delivery fixture maximum weighs {incoming} centi-oz, capacity={capacity} carried={carried}"
+        ).into());
+    }
+    for ordinal in 0..bags {
+        let mut remaining = (count - ordinal * per_bag).min(per_bag);
+        let mut contents = Vec::new();
+        while remaining != 0 {
+            let quantity = remaining.min(maximum);
+            contents.push(RewardClaimMintContent {
+                item: item.clone(),
+                quantity,
+                key_number: None,
+                text: None,
+                fluid_subtype: None,
+                charges_remaining: None,
+            });
+            remaining -= quantity;
+        }
+        let request = RewardClaimMintRequest {
+            command: crate::foundation::CommandRef::new(
+                fence.game_session_id,
+                crate::foundation::CommandId::new(
+                    u64::MAX
+                        - (1 << 40)
+                        - (u64::from(id) << 20)
+                        - (u64::from(count) << 10)
+                        - u64::from(ordinal),
+                )?,
+            ),
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: fixture_gear_claim(
+                    fence.game_session_id,
+                    &format!("p04-i{id}-{count}-{ordinal}"),
+                ),
+                revision_ref: "qualification-v1".into(),
+            },
+            source_placement: "oteryn:qualification.node-boot".into(),
+            item: delivery_bag.clone(),
+            quantity: 1,
+            contents,
+            backpack_outputs: false,
+            additional_items: Vec::new(),
+            root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
+            backpack: backpack.clone(),
+            content_revision: p04_delivery_weight_revision(native.source_digest()),
+            ruleset_revision: inventory.ruleset_revision.clone(),
+            sim_revision: "qualification-v1".into(),
+            achievement: None,
+            quest_transition: None,
+            key_number: None,
+        };
+        let mut candidate = reserve_p04_delivery_bag(
+            root, authority, proof, fence, &request, &weights, deadline, &attempts,
         )
         .await
-        .map_err(|error| format!("P04 delivery bag commit: {error:?}"))?;
-    fixture_item_committed(outcome, 1)?;
+        .map_err(|error| format!("P04 delivery bag reserve: {error:?}"))?;
+        let (outcome, _) = root
+            .commit_reward_claim_mint_weighted_noticed(
+                authority,
+                proof,
+                fence,
+                &mut candidate,
+                None,
+                &weights,
+            )
+            .await
+            .map_err(|error| format!("P04 delivery bag commit: {error:?}"))?;
+        fixture_item_committed(outcome, 1)?;
+    }
+    eprintln!(
+        "FIXTURE row=P04.full fixture_containers={bags} item={} units={count} slots_per_bag={} backpack_slots={slots} incoming_centi_oz={incoming} capacity_centi_oz={capacity}",
+        authored.item_id,
+        per_bag / maximum
+    );
     Ok(())
 }
 
@@ -2499,6 +2567,7 @@ mod tests {
             "c12-monk",
             "c06-sorcerer",
             "p04-item-7386-20",
+            "p04-max-item-4294967295",
             "p04-master-400",
             "p04-master-399",
             "premium",
@@ -2516,6 +2585,9 @@ mod tests {
             format!("qualify {id} c11-town-return"),
             format!("qualify {id} item-0-1"),
             format!("qualify {id} p04-item-7386-21"),
+            format!("qualify {id} p04-max-item-0"),
+            format!("qualify {id} p04-max-item-4294967296"),
+            format!("qualify {id} p04-max-item-1-20"),
             format!("qualify {id} item-43895-0"),
             format!("qualify {id} item-43895-21"),
             format!("qualify {id} item-4294967296-1"),
