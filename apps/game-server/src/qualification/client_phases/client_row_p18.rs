@@ -14,10 +14,78 @@ use std::num::NonZeroU64;
 
 use oteryn_protocol_oteryn::item_forge::COMMAND_TYPE_FORGE_DUST_QUERY;
 
-const FORGE_STATION: TilePos = TilePos { x: 32209, y: 32274, floor: -7 };
-const FORGE_APPROACH: TilePos = TilePos { x: 32209, y: 32275, floor: -7 };
+const FORGE_STATION: TilePos = TilePos {
+    x: 32209,
+    y: 32274,
+    floor: -7,
+};
+const FORGE_APPROACH: TilePos = TilePos {
+    x: 32209,
+    y: 32275,
+    floor: -7,
+};
 
-fn station_opened(status: CommandStatus, disposition: oteryn_protocol_oteryn::world_object::UseDisposition) -> bool {
+const ADVENTURERS_STONE: u32 = 16277;
+const THAIS_TEMPLE: TilePos = TilePos {
+    x: 32369,
+    y: 32238,
+    floor: -7,
+};
+const GUILD_LANDING: TilePos = TilePos {
+    x: 32210,
+    y: 32300,
+    floor: -6,
+};
+
+pub(super) async fn prepare_station_travel(client: &DevClientSession, row: &str) -> TestResult {
+    let position = tile(client.world_spatial().actor_position)?;
+    if position == FORGE_APPROACH {
+        // The dust-cap preparation can already have completed the Guild entry.
+        return Ok(());
+    }
+    if position != THAIS_TEMPLE {
+        return Err(format!("P18 expected the Thais temple fixture, observed {position:?}").into());
+    }
+    character_prep::grant_item(client, ADVENTURERS_STONE, 1).await?;
+    evidence(&format!(
+        "FIXTURE row={row} input=adventurers_stone item={ADVENTURERS_STONE} temple={THAIS_TEMPLE:?}"
+    ));
+    Ok(())
+}
+
+async fn enter_guild(client: &mut DevClientSession) -> TestResult {
+    // Global city-temple entry: https://tibia.fandom.com/wiki/Adventurer%27s_Stone
+    let definitions = provisioning::item_index()?;
+    let stone = provisioning::item_reference(&definitions, ADVENTURERS_STONE)?;
+    let handle = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == stone)
+        })
+        .ok_or("P18 carried Adventurer's Stone missing")?
+        .handle;
+    let reply = client.use_item(handle).await?;
+    let landing = tile(client.world_spatial().actor_position)?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        || landing != GUILD_LANDING
+    {
+        return Err(format!(
+            "P18 Adventurer's Stone USE expected {GUILD_LANDING:?}, observed {landing:?}: {reply:?}"
+        )
+        .into());
+    }
+    evidence(&format!("P18_STONE_USE landing={landing:?}"));
+    Ok(())
+}
+
+fn station_opened(
+    status: CommandStatus,
+    disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
+) -> bool {
     status == CommandStatus::Accepted
         && disposition == oteryn_protocol_oteryn::world_object::UseDisposition::ForgeOpened
 }
@@ -25,28 +93,64 @@ fn station_opened(status: CommandStatus, disposition: oteryn_protocol_oteryn::wo
 #[test]
 fn p18_station_requires_the_actual_forge_open_disposition() {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
-    assert!(station_opened(CommandStatus::Accepted, UseDisposition::ForgeOpened));
-    assert!(!station_opened(CommandStatus::Accepted, UseDisposition::Committed));
-    assert!(!station_opened(CommandStatus::Rejected, UseDisposition::ForgeOpened));
+    assert!(station_opened(
+        CommandStatus::Accepted,
+        UseDisposition::ForgeOpened
+    ));
+    assert!(!station_opened(
+        CommandStatus::Accepted,
+        UseDisposition::Committed
+    ));
+    assert!(!station_opened(
+        CommandStatus::Rejected,
+        UseDisposition::ForgeOpened
+    ));
 }
 
-pub(super) async fn open_station(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+pub(super) async fn open_station(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let station = world.base().tile(FORGE_STATION.x, FORGE_STATION.y, FORGE_STATION.floor)
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let station = world
+        .base()
+        .tile(FORGE_STATION.x, FORGE_STATION.y, FORGE_STATION.floor)
         .ok_or("P18 physical Forge tile (32209,32274,7) absent from served region 125,126")?;
-    let ordinal = station.ids().iter().zip(station.depths())
-        .filter(|(_, depth)| **depth == 0).enumerate()
+    let ordinal = station
+        .ids()
+        .iter()
+        .zip(station.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
         .find_map(|(ordinal, (&id, _))| {
             let ordinal = u8::try_from(ordinal).ok()?;
-            world.facts().base_entry(FORGE_STATION, ordinal, id)
+            world
+                .facts()
+                .base_entry(FORGE_STATION, ordinal, id)
                 .filter(|entry| entry.appearance_id == 37122 && !entry.pickupable)
                 .map(|_| ordinal)
-        }).ok_or("P18 real Exaltation Forge object i37122 absent from its tile")?;
-    let key = crate::map::view::placement_key(FORGE_STATION, ordinal).ok_or("Forge placement key")?;
+        })
+        .ok_or("P18 real Exaltation Forge object i37122 absent from its tile")?;
+    let key =
+        crate::map::view::placement_key(FORGE_STATION, ordinal).ok_or("Forge placement key")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
+    let position = tile(client.world_spatial().actor_position)?;
+    if position == THAIS_TEMPLE {
+        enter_guild(client).await?;
+    } else if position != FORGE_APPROACH {
+        return Err(format!(
+            "P18 expected the Thais temple or the persisted Forge approach, observed {position:?}"
+        )
+        .into());
+    }
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| at == FORGE_APPROACH)
         .ok_or("P18 no walkable route to the fixed Exaltation Forge approach")?;
@@ -62,11 +166,15 @@ pub(super) async fn open_station(client: &mut DevClientSession, clients: &SeamCl
         }
         client.take_events();
     }
-    let reply = client.use_object(&placement, world.facts().object_revision(key)).await?;
+    let reply = client
+        .use_object(&placement, world.facts().object_revision(key))
+        .await?;
     if !station_opened(reply.status, reply.disposition) {
         return Err(format!("P18 Forge USE did not open the station: {reply:?}").into());
     }
-    evidence(&format!("P18_FORGE_OPEN from={start:?} at={FORGE_APPROACH:?}"));
+    evidence(&format!(
+        "P18_FORGE_OPEN from={start:?} at={FORGE_APPROACH:?}"
+    ));
     Ok(())
 }
 
@@ -205,7 +313,9 @@ async fn submit_forge(
     operation: Operation,
     command: ServerMechanicCommand,
 ) -> TestResult<(LiveReply, serde_json::Value)> {
-    if (command.capability, command.command_type) != (CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE) {
+    if (command.capability, command.command_type)
+        != (CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE)
+    {
         return Err(format!("{operation:?} client command used incorrect routing").into());
     }
     let reply = client
@@ -233,15 +343,27 @@ async fn capture_preview(
     panel: &mut ItemForgePanel,
     selection: wire::Selection,
 ) -> TestResult<LiveReply> {
-    let request = forge_ui::preview_request(panel, selection).ok_or("Forge preview did not start")?;
-    let response = client.session_mut()
-        .gated_command(request.capability, request.kind, &request.payload).await?;
+    let request =
+        forge_ui::preview_request(panel, selection).ok_or("Forge preview did not start")?;
+    let response = client
+        .session_mut()
+        .gated_command(request.capability, request.kind, &request.payload)
+        .await?;
     if response.status != CommandStatus::Accepted {
-        return Err(format!("Forge preview {selection:?} was refused: {:?}", response.status).into());
+        return Err(format!(
+            "Forge preview {selection:?} was refused: {:?}",
+            response.status
+        )
+        .into());
     }
     forge_ui::preview::apply(panel, &request, &response);
-    Ok((response.command_id, response.server_sequence, response.status as u32,
-        response.payload, request.payload))
+    Ok((
+        response.command_id,
+        response.server_sequence,
+        response.status as u32,
+        response.payload,
+        request.payload,
+    ))
 }
 
 fn confirm_resource(
@@ -347,6 +469,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let scope = dedicated.clients(clients);
     let clients = &scope;
     let mut fixture = connect_character(clients, 0x43, 0).await?;
+    prepare_station_travel(&fixture, "P18.client").await?;
     character_prep::grant_item(&fixture, 3267, 2).await?;
     character_prep::grant_item(&fixture, 3043, 3).await?;
     evidence("FIXTURE row=P18.client input=carried_fusion_gold gold=30000");
@@ -421,16 +544,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("Forge inventory changed before the next submitted action".into());
         }
         let attempt = occurrence(session, ordinal);
-        let expected_before = if operation == Operation::DustToSlivers { (100, 100) } else { (40, 100) };
+        let expected_before = if operation == Operation::DustToSlivers {
+            (100, 100)
+        } else {
+            (40, 100)
+        };
         if dust(&mut client).await? != expected_before
-            || confirmation_panel.confirm_resource(confirmation_panel.resource_dialog.serial, attempt).is_some()
+            || confirmation_panel
+                .confirm_resource(confirmation_panel.resource_dialog.serial, attempt)
+                .is_some()
         {
-            return Err("Forge resource pre-state invalid or confirmation available before preview".into());
+            return Err(
+                "Forge resource pre-state invalid or confirmation available before preview".into(),
+            );
         }
         let quote = capture_preview(
-            &mut client, &mut confirmation_panel, wire::Selection::Resource(operation),
-        ).await?;
-        let (_, preview_history) = forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+            &mut client,
+            &mut confirmation_panel,
+            wire::Selection::Resource(operation),
+        )
+        .await?;
+        let (_, preview_history) =
+            forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
         let expected_history = if operation == Operation::DustToSlivers {
             serde_json::json!([])
         } else {
@@ -441,7 +576,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             || super::full_row_p18::bank_balance(&mut bank, clients).await? != 0
             || preview_history != expected_history
         {
-            return Err(format!("Forge {operation:?} preview changed live state before confirmation").into());
+            return Err(format!(
+                "Forge {operation:?} preview changed live state before confirmation"
+            )
+            .into());
         }
         quotes.push(quote);
         client.service_liveness(Duration::from_millis(490)).await?;
@@ -540,15 +678,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let browse = capture_preview(&mut client, panel, wire::Selection::Browse { after: 0 }).await?;
     let item = |handle| wire::Item {
-        handle, definition_ref: dagger.get(), appearance: 3267, name: "dagger".into(),
-        classification: 1, tier: 0, maximum_tier: 1, container: false,
+        handle,
+        definition_ref: dagger.get(),
+        appearance: 3267,
+        name: "dagger".into(),
+        classification: 1,
+        tier: 0,
+        maximum_tier: 1,
+        container: false,
     };
     if panel.preview.item(pair.0.get()) != Some(&item(pair.0))
         || panel.preview.item(pair.1.get()) != Some(&item(pair.1))
     {
         return Err("Forge browse displayed incorrect dagger metadata before selection".into());
     }
-    if !panel.choose_item(true, pair.0.get()) || !panel.choose_item(false, pair.1.get())
+    if !panel.choose_item(true, pair.0.get())
+        || !panel.choose_item(false, pair.1.get())
         || panel.selection() != Some(selection)
     {
         return Err("The Forge picker did not select the two live daggers".into());
@@ -560,18 +705,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     quotes.push(capture_preview(&mut client, panel, selection).await?);
     quotes.push(browse);
     let expected_quote = wire::Quote {
-        selection, first: item(pair.0), second: item(pair.1),
+        selection,
+        first: item(pair.0),
+        second: item(pair.1),
         resources: wire::Resources {
-            carried_gold: 30_050, bank_gold: 0, bank_spendable: true,
-            dust: 15, dust_limit: 101, cores: 0, slivers: 3,
+            carried_gold: 30_050,
+            bank_gold: 0,
+            bank_spendable: true,
+            dust: 15,
+            dust_limit: 101,
+            cores: 0,
+            slivers: 3,
         },
-        cost: wire::Cost { gold: 25_000, dust: 100, cores: 0 },
-        target_tier: 1, success_percent: 50, protection_percent: 0,
+        cost: wire::Cost {
+            gold: 25_000,
+            dust: 100,
+            cores: 0,
+        },
+        target_tier: 1,
+        success_percent: 50,
+        protection_percent: 0,
     };
     if panel.preview.quote.as_ref() != Some(&expected_quote) {
         return Err(format!("Fusion quote mismatch: {:?}", panel.preview.quote).into());
     }
-    let fusion = panel.paid_request(fusion_id).and_then(|request| request.encode())
+    let fusion = panel
+        .paid_request(fusion_id)
+        .and_then(|request| request.encode())
         .ok_or("reviewed Fusion could not be submitted")?;
     let fusion = forge_ui::request(panel, forge_ui::command(fusion.to_vec()))
         .ok_or("reviewed Fusion request was rejected by the panel")?;
@@ -594,20 +754,34 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             submit_forge(&mut client, operation, fusion.clone()).await?
         } else {
             let attempt = occurrence(session, u8::try_from(ordinal + 1)?);
-            let preview = capture_preview(&mut client, panel, wire::Selection::Resource(operation)).await?;
-            let dialog = panel.resource_dialog.content.as_ref().ok_or("resource refusal dialog missing")?;
+            let preview =
+                capture_preview(&mut client, panel, wire::Selection::Resource(operation)).await?;
+            let dialog = panel
+                .resource_dialog
+                .content
+                .as_ref()
+                .ok_or("resource refusal dialog missing")?;
             if forge_ui::resource_dialog::dialog_text(dialog, 0)
                 != "This resource conversion is unavailable with your current resources or dust limit."
-                || panel.confirm_resource(panel.resource_dialog.serial, attempt).is_some()
+                || panel
+                    .confirm_resource(panel.resource_dialog.serial, attempt)
+                    .is_some()
             {
                 return Err(format!("{name} incorrectly offered or rendered confirmation").into());
             }
             quotes.push(preview);
             // Keep the independent wire refusal probe after verifying the UI blocks it.
             let payload = Request {
-                operation, occurrence: attempt, first_item: None, second_item: None,
-                boost: false, protect: false, history_limit: 0,
-            }.encode().ok_or("Forge refusal request was not canonical")?;
+                operation,
+                occurrence: attempt,
+                first_item: None,
+                second_item: None,
+                boost: false,
+                protect: false,
+                history_limit: 0,
+            }
+            .encode()
+            .ok_or("Forge refusal request was not canonical")?;
             let command = forge_ui::request(panel, forge_ui::command(payload.to_vec()))
                 .ok_or("Forge refusal probe did not start")?;
             submit_forge(&mut client, operation, command).await?
@@ -615,9 +789,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         use oteryn_dev_client::client_runtime::server_mechanic::{
             CommandStatus as Status, ServerMechanicResponse,
         };
-        forge_ui::apply_result(panel, &ServerMechanicResponse {
-            command_id: bytes.0, server_sequence: bytes.1, status: Status::Accepted, payload: bytes.3.clone(),
-        });
+        forge_ui::apply_result(
+            panel,
+            &ServerMechanicResponse {
+                command_id: bytes.0,
+                server_sequence: bytes.1,
+                status: Status::Accepted,
+                payload: bytes.3.clone(),
+            },
+        );
         check_refusal(&body, expected_reason).map_err(|error| format!("{name}: {error}"))?;
         if dust(&mut client).await? != balance
             || client.inventory() != Some(&inventory)

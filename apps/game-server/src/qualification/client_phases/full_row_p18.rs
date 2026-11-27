@@ -56,7 +56,9 @@ fn unrelated_inventory(
     mut inventory: oteryn_protocol_oteryn::item_view::CharacterInventory,
     affected_definitions: &[u32],
 ) -> oteryn_protocol_oteryn::item_view::CharacterInventory {
-    inventory.entries.retain(|item| !affected_definitions.contains(&item.item_definition_ref.get()));
+    inventory
+        .entries
+        .retain(|item| !affected_definitions.contains(&item.item_definition_ref.get()));
     durable_inventory(inventory)
 }
 
@@ -89,9 +91,18 @@ async fn forge_chests(db: &mut FixtureDb, clients: &SeamClients<'_>) -> TestResu
     Ok(chests)
 }
 
-fn chest_delivery_matches(before: &ChestContents, after: &ChestContents, expected: Option<&str>) -> bool {
-    let added = after.iter().filter(|(id, _)| !before.contains_key(*id)).collect::<Vec<_>>();
-    before.iter().all(|(id, items)| after.get(id) == Some(items))
+fn chest_delivery_matches(
+    before: &ChestContents,
+    after: &ChestContents,
+    expected: Option<&str>,
+) -> bool {
+    let added = after
+        .iter()
+        .filter(|(id, _)| !before.contains_key(*id))
+        .collect::<Vec<_>>();
+    before
+        .iter()
+        .all(|(id, items)| after.get(id) == Some(items))
         && match (expected, added.as_slice()) {
             (None, []) => true,
             (Some(expected), [(_, children)]) => matches!(
@@ -107,7 +118,10 @@ fn p18_chest_checks_exact_nested_result() {
     let before = ChestContents::new();
     let mut after = ChestContents::new();
     let dagger = "oteryn:item.tibia.i3267";
-    after.insert("new chest".into(), vec![("receiver".into(), dagger.into(), 0, 1)]);
+    after.insert(
+        "new chest".into(),
+        vec![("receiver".into(), dagger.into(), 0, 1)],
+    );
     assert!(!chest_delivery_matches(&before, &after, Some(dagger)));
     after.get_mut("new chest").expect("chest")[0].2 = 1;
     assert!(chest_delivery_matches(&before, &after, Some(dagger)));
@@ -117,8 +131,11 @@ fn p18_chest_checks_exact_nested_result() {
 fn valid_history_ordinals(history: &[serde_json::Value]) -> bool {
     history.iter().rev().enumerate().all(|(index, entry)| {
         let first = history.last().and_then(|entry| entry["ordinal"].as_u64());
-        first.is_some_and(|first| first > 0 && (history.len() == 50 || first == 1)
-            && first.checked_add(index as u64) == entry["ordinal"].as_u64())
+        first.is_some_and(|first| {
+            first > 0
+                && (history.len() == 50 || first == 1)
+                && first.checked_add(index as u64) == entry["ordinal"].as_u64()
+        })
     })
 }
 
@@ -275,7 +292,11 @@ async fn fusion_occurrence(
             .fetch_one(&mut connection)
             .await?;
     let root = GameplayDecisionRoot::from_bytes(
-        sha2::Sha256::new().chain_update(seed).chain_update(character).finalize().into(),
+        sha2::Sha256::new()
+            .chain_update(seed)
+            .chain_update(character)
+            .finalize()
+            .into(),
     );
     for counter in 0_u32..100_000 {
         occurrence[9..13].copy_from_slice(&counter.to_be_bytes());
@@ -286,7 +307,9 @@ async fn fusion_occurrence(
         };
         if (draw(0)? % 100 < 50) == success && draw(2)? % 10_001 < 7400 {
             let outcome = if success { "success" } else { "failure" };
-            evidence(&format!("FIXTURE row=P18.full forced fusion roll={outcome}"));
+            evidence(&format!(
+                "FIXTURE row=P18.full forced fusion roll={outcome}"
+            ));
             return Ok(occurrence);
         }
     }
@@ -300,7 +323,13 @@ async fn fusion_case(
 ) -> TestResult<Observation> {
     let tag = if expected_success { 0xda } else { 0xd7 };
     let mut fixture = connect_character(dedicated, tag, 0).await?;
-    character_prep::grant_item(&fixture, character_prep::item_id(FUSION_PAIR)?, if expected_success { 1 } else { 2 }).await?;
+    super::client_row_p18::prepare_station_travel(&fixture, "P18.full").await?;
+    character_prep::grant_item(
+        &fixture,
+        character_prep::item_id(FUSION_PAIR)?,
+        if expected_success { 1 } else { 2 },
+    )
+    .await?;
     character_prep::grant_item(&fixture, 3043, 3).await?;
     logout(&mut fixture).await?;
     drop(fixture);
@@ -372,13 +401,22 @@ async fn fusion_case(
         )
         .into());
     }
-    let mut affected = coins.iter().map(|(definition, _)| definition.get()).collect::<Vec<_>>();
+    let mut affected = coins
+        .iter()
+        .map(|(definition, _)| definition.get())
+        .collect::<Vec<_>>();
     affected.push(pair_ref.get());
     if expected_success {
         affected.push(provisioning::item_reference(&definitions, 37561)?.get());
     }
     let chests_before = forge_chests(&mut bank, dedicated).await?;
-    let before = unrelated_inventory(client.inventory().cloned().ok_or("Fusion pre-state missing")?, &affected);
+    let before = unrelated_inventory(
+        client
+            .inventory()
+            .cloned()
+            .ok_or("Fusion pre-state missing")?,
+        &affected,
+    );
     let mut fusion_outcome = None;
     let operations = [Operation::Fusion];
     let mut observations = Vec::new();
@@ -397,7 +435,12 @@ async fn fusion_case(
         let observed = command(
             &mut client,
             operation,
-            fusion_occurrence(dedicated, occurrence(session, u8::try_from(index + 1)?), expected_success).await?,
+            fusion_occurrence(
+                dedicated,
+                occurrence(session, u8::try_from(index + 1)?),
+                expected_success,
+            )
+            .await?,
             pair,
             0,
         )
@@ -417,9 +460,11 @@ async fn fusion_case(
             let bonus = observed.body["bonus"]
                 .as_u64()
                 .ok_or("Fusion bonus missing")?;
-            if success != expected_success || bonus != 0
+            if success != expected_success
+                || bonus != 0
                 || observed.body["operation"] != "fusion"
-                || observed.body.get("reason") != Some(&serde_json::Value::Null) {
+                || observed.body.get("reason") != Some(&serde_json::Value::Null)
+            {
                 return Err(format!("invalid Fusion outcome: {}", observed.body).into());
             }
             let target = u8::from(success);
@@ -443,7 +488,12 @@ async fn fusion_case(
                 || carried_gold(&client, &coins) != gold_before - gold_paid
                 || bank_balance(&mut bank, dedicated).await? != 0
                 || dagger_tiers(&mut client, pair_ref.get()).await? != expected_tiers
-                || client.inventory().cloned().map(|inventory| unrelated_inventory(inventory, &affected)) .as_ref() != Some(&before)
+                || client
+                    .inventory()
+                    .cloned()
+                    .map(|inventory| unrelated_inventory(inventory, &affected))
+                    .as_ref()
+                    != Some(&before)
             {
                 return Err("Fusion exact live gold, dust, or dagger tiers mismatch".into());
             }
@@ -453,7 +503,10 @@ async fn fusion_case(
     }
     client.service_liveness(Duration::from_millis(490)).await?;
     let history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    let applied_observations = expected_prior_history.iter().copied().chain(observations.iter())
+    let applied_observations = expected_prior_history
+        .iter()
+        .copied()
+        .chain(observations.iter())
         .collect::<Vec<_>>();
     validate_history("step-6", &history, &applied_observations)?;
     let retained = client
@@ -465,7 +518,11 @@ async fn fusion_case(
     if super::full_e2ef7::units(&client, chest_ref) != u64::try_from(chests_after.len())? {
         return Err("Fusion live inventory did not project the carried Exaltation Chest".into());
     }
-    if !chest_delivery_matches(&chests_before, &chests_after, expected_success.then_some(FUSION_PAIR)) {
+    if !chest_delivery_matches(
+        &chests_before,
+        &chests_after,
+        expected_success.then_some(FUSION_PAIR),
+    ) {
         return Err("standard Fusion did not deliver the exact Exaltation Chest result".into());
     }
     let retained_balance = super::client_row_p18::dust(&mut client).await?;
@@ -496,7 +553,9 @@ async fn fusion_case(
     evidence(&format!(
         "P18_FUSION_CHECK status=PASS succeeded={succeeded} dust_paid={dust_paid} gold_paid={gold_paid} durable_dagger_tiers={expected_tiers:?}"
     ));
-    observations.pop().ok_or_else(|| "missing Fusion observation".into())
+    observations
+        .pop()
+        .ok_or_else(|| "missing Fusion observation".into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -643,7 +702,9 @@ async fn activate_type2_fixture(db: &mut FixtureDb) -> TestResult {
     use oteryn_gameplay_durability::durability::item_mint_audit::TYPE2_AUDIT_ACTIVATION_FENCE;
 
     let mut tx = sqlx::Connection::begin(db).await?;
-    sqlx::query("SET LOCAL lock_timeout = '5s'").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL lock_timeout = '5s'")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("SELECT pg_advisory_xact_lock($1)")
         .bind(TYPE2_AUDIT_ACTIVATION_FENCE)
         .execute(&mut *tx)
@@ -708,7 +769,10 @@ async fn raise_cap_for_funding(
 ) -> TestResult {
     let current: i16 = sqlx::query_scalar(
         "SELECT dust_limit FROM game_character_forge_dust WHERE character_id=$1::uuid",
-    ).bind(character).fetch_one(&mut *db).await?;
+    )
+    .bind(character)
+    .fetch_one(&mut *db)
+    .await?;
     if u64::try_from(current)? >= required {
         return Ok(());
     }
@@ -716,34 +780,56 @@ async fn raise_cap_for_funding(
     super::client_row_p18::open_station(&mut client, clients).await?;
     let session = client.join_snapshot().game_session_id;
     let baseline = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    let mut expected_history = baseline.body.as_array().cloned().ok_or("invalid cap history baseline")?;
+    let mut expected_history = baseline
+        .body
+        .as_array()
+        .cloned()
+        .ok_or("invalid cap history baseline")?;
     if baseline.status != CommandStatus::Accepted || !valid_history_ordinals(&expected_history) {
         return Err("invalid cap history baseline".into());
     }
     for limit in u64::try_from(current)?..required {
         let cost = limit - 75;
         let mut tx = sqlx::Connection::begin(&mut *db).await?;
-        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
         if fixture_dust(&mut tx, character, i64::try_from(cost)?).await? != (cost, limit) {
             return Err("Forge cap progression funding mismatch".into());
         }
         tx.commit().await?;
-        evidence(&format!("FIXTURE row=P18.full input=dust_for_cap_upgrade dust={cost} cap={limit}"));
+        evidence(&format!(
+            "FIXTURE row=P18.full input=dust_for_cap_upgrade dust={cost} cap={limit}"
+        ));
         client.service_liveness(Duration::from_millis(490)).await?;
         let result = command(
-            &mut client, Operation::DustLimit, occurrence(session, u8::try_from(limit - 100)?),
-            None, 0,
-        ).await?;
+            &mut client,
+            Operation::DustLimit,
+            occurrence(session, u8::try_from(limit - 100)?),
+            None,
+            0,
+        )
+        .await?;
         if result.status != CommandStatus::Accepted
-            || result.body != serde_json::json!({
-                "operation":"dust_limit","succeeded":true,"result":{"dust":0,"dust_limit":limit+1}
-            })
+            || result.body
+                != serde_json::json!({
+                    "operation":"dust_limit","succeeded":true,"result":{"dust":0,"dust_limit":limit+1}
+                })
             || super::client_row_p18::dust(&mut client).await? != (0, limit + 1)
         {
-            return Err(format!("live Forge cap upgrade {limit} → {} failed: {}", limit+1, result.body).into());
+            return Err(format!(
+                "live Forge cap upgrade {limit} → {} failed: {}",
+                limit + 1,
+                result.body
+            )
+            .into());
         }
-        let next = expected_history.first().and_then(|entry| entry["ordinal"].as_u64())
-            .unwrap_or(0).checked_add(1).ok_or("cap history ordinal overflow")?;
+        let next = expected_history
+            .first()
+            .and_then(|entry| entry["ordinal"].as_u64())
+            .unwrap_or(0)
+            .checked_add(1)
+            .ok_or("cap history ordinal overflow")?;
         expected_history.insert(0, serde_json::json!({"ordinal":next,"receipt":result.body}));
         expected_history.truncate(50);
     }
@@ -771,6 +857,7 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     };
     let character = uuid_text(character);
     let mut grant = connect_character(clients, tag, 0).await?;
+    super::client_row_p18::prepare_station_travel(&grant, "P18.full").await?;
     if let Some(pair) = case.pair {
         for (item, _) in pair {
             character_prep::grant_item(&grant, item, 1).await?;
@@ -788,7 +875,14 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     drop(grant);
 
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    raise_cap_for_funding(clients, &mut db, &character, u64::try_from(case.dust)?, tag - 64).await?;
+    raise_cap_for_funding(
+        clients,
+        &mut db,
+        &character,
+        u64::try_from(case.dust)?,
+        tag - 64,
+    )
+    .await?;
     if case.gold > 0 {
         activate_type2_fixture(&mut db).await?;
     }
@@ -909,14 +1003,24 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
             return Err("exact fixture pair did not receive a quote".into());
         };
         if quote.selection != selection
-            || (quote.target_tier, quote.success_percent, quote.protection_percent) != (1, 100, 0)
-            || (u64::from(quote.resources.dust), u64::from(quote.resources.dust_limit)) != funded
+            || (
+                quote.target_tier,
+                quote.success_percent,
+                quote.protection_percent,
+            ) != (1, 100, 0)
+            || (
+                u64::from(quote.resources.dust),
+                u64::from(quote.resources.dust_limit),
+            ) != funded
             || quote.resources.carried_gold != u64::try_from(carried_before)?
             || quote.resources.bank_gold != u64::try_from(gold)?
             || !quote.resources.bank_spendable
             || (quote.resources.slivers, quote.resources.cores) != (slivers, cores)
         {
-            return Err(format!("incorrect Forge quote selection, tiers, odds or resources: {quote:?}").into());
+            return Err(format!(
+                "incorrect Forge quote selection, tiers, odds or resources: {quote:?}"
+            )
+            .into());
         }
         if (
             u64::from(quote.cost.dust),
@@ -941,20 +1045,31 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     if carried_debit != 0 {
         affected.extend(coins.iter().map(|(definition, _)| definition.get()));
     }
-    if matches!(case.operation, Operation::DustToSlivers | Operation::SliversToCores) {
+    if matches!(
+        case.operation,
+        Operation::DustToSlivers | Operation::SliversToCores
+    ) {
         affected.push(sliver.get());
     }
     if case.cores != 0 || case.operation == Operation::SliversToCores {
         affected.push(core.get());
     }
     let chests_before = forge_chests(&mut db, clients).await?;
-    let expected_chest = case.pair.map(|pair| format!("oteryn:item.tibia.i{}", pair[0].0));
+    let expected_chest = case
+        .pair
+        .map(|pair| format!("oteryn:item.tibia.i{}", pair[0].0));
     if expected_chest.is_some() {
         affected.push(provisioning::item_reference(&definitions, 37561)?.get());
         affected.extend(target_ref);
     }
     affected.extend(donor_ref);
-    let before = unrelated_inventory(client.inventory().cloned().ok_or("Forge pre-state missing")?, &affected);
+    let before = unrelated_inventory(
+        client
+            .inventory()
+            .cloned()
+            .ok_or("Forge pre-state missing")?,
+        &affected,
+    );
     let history_before = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
     if history_before.status != CommandStatus::Accepted {
         return Err("starting Forge history command was refused".into());
@@ -1014,7 +1129,8 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     if !chest_delivery_matches(&chests_before, &chests_after, expected_chest.as_deref())
         || unrelated_inventory(retained.clone(), &affected) != before
         || i64::try_from(carried_gold(&client, &coins))? != expected_carried
-        || bank_balance(&mut db, clients).await? != expected_bank {
+        || bank_balance(&mut db, clients).await? != expected_bank
+    {
         return Err("Forge changed unrelated inventory or debited the wrong gold source".into());
     }
     logout(&mut client).await?;
@@ -1155,7 +1271,10 @@ async fn forge_items(client: &mut DevClientSession) -> TestResult<Vec<preview::I
     Ok(items)
 }
 
-pub(super) async fn dagger_tiers(client: &mut DevClientSession, definition: u32) -> TestResult<Vec<u8>> {
+pub(super) async fn dagger_tiers(
+    client: &mut DevClientSession,
+    definition: u32,
+) -> TestResult<Vec<u8>> {
     let mut tiers: Vec<_> = forge_items(client)
         .await?
         .into_iter()
@@ -1195,9 +1314,16 @@ async fn quoted_pair(
                 protect: false,
             };
             match preview(client, selection).await? {
-                preview::Payload::Quote(quote) if quote.selection == selection
-                    && (quote.cost.gold, quote.cost.dust, quote.cost.cores) == (25_000, 100, 0)
-                    && (quote.target_tier, quote.success_percent, quote.protection_percent) == (1, 50, 0) => {
+                preview::Payload::Quote(quote)
+                    if quote.selection == selection
+                        && (quote.cost.gold, quote.cost.dust, quote.cost.cores)
+                            == (25_000, 100, 0)
+                        && (
+                            quote.target_tier,
+                            quote.success_percent,
+                            quote.protection_percent,
+                        ) == (1, 50, 0) =>
+                {
                     return Ok(Some((first.handle, second.handle)));
                 }
                 preview::Payload::Refused => {
@@ -1248,7 +1374,10 @@ mod tests {
         use super::valid_history_ordinals;
         use serde_json::json;
 
-        assert!(valid_history_ordinals(&[json!({"ordinal":2}), json!({"ordinal":1})]));
+        assert!(valid_history_ordinals(&[
+            json!({"ordinal":2}),
+            json!({"ordinal":1})
+        ]));
         for invalid in [
             [json!({"ordinal":1}), json!({"ordinal":1})],
             [json!({}), json!({"ordinal":1})],
@@ -1273,10 +1402,15 @@ mod tests {
             count: NonZeroU32::MIN,
             sub_type: 0,
         });
-        assert_ne!(unrelated_inventory(changed.clone(), &[2]), unrelated_inventory(original.clone(), &[2]));
-        assert_eq!(unrelated_inventory(changed, &[1]), unrelated_inventory(original, &[1]));
+        assert_ne!(
+            unrelated_inventory(changed.clone(), &[2]),
+            unrelated_inventory(original.clone(), &[2])
+        );
+        assert_eq!(
+            unrelated_inventory(changed, &[1]),
+            unrelated_inventory(original, &[1])
+        );
     }
-
 
     #[test]
     fn forge_pair_prerequisites_follow_the_selected_operation() -> TestResult {
