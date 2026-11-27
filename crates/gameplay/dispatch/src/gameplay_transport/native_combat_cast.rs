@@ -2319,7 +2319,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         access: &A,
     ) -> NativeCastDispatch {
         let Some(mut permit) = self.spell_lane_permit().await else {
-            return NativeCastDispatch::Pending;
+            let corpse_cast = self
+                .spells
+                .indexed(rune.intent.spell)
+                .is_some_and(corpse_companion_spell);
+            return self
+                .native_preflight_refusal(actor, session, corpse_cast)
+                .await;
         };
         let mut rune = *rune;
         if rune.expected_state_revision == 0 {
@@ -2621,43 +2627,55 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let (objects, pass) = loop {
-            let objects = if let Some(retry) = &retry {
+            let objects = if retry.is_some() {
+                self.door.try_lock().ok()
+            } else {
+                Some(self.door.lock().await)
+            };
+            let door_busy = objects.is_none();
+            if let Some(objects) = objects
+                && let Ok(pass) = self.root.try_issue_semantic_pass()
+            {
+                break (objects, pass);
+            }
+            let Some(retry) = &retry else {
+                return unavailable();
+            };
+            // A map or durability owner may need the Channel turn to finish.
+            // Wait without either guard, then acquire them in the usual order.
+            drop(states);
+            drop(runtime);
+            #[cfg(test)]
+            super::super::rune_use_bridge::test_faults::observed_contention();
+            if door_busy {
                 match tokio::time::timeout_at(retry.deadline, self.door.lock()).await {
-                    Ok(objects) => objects,
+                    Ok(objects) => drop(objects),
                     Err(_) => return unavailable(),
                 }
-            } else {
-                self.door.lock().await
+            } else if !retry
+                .retries_unavailable(
+                    crate::gameplay_transport::connection::AdmissionRefusal::Unavailable,
+                )
+                .await
+            {
+                return unavailable();
+            }
+            let Ok(guards) = tokio::time::timeout_at(retry.deadline, async {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                (runtime, states)
+            })
+            .await
+            else {
+                return unavailable();
             };
-            match self.root.try_issue_semantic_pass() {
-                Ok(pass) => break (objects, pass),
-                Err(_) if retry.is_none() => return unavailable(),
-                Err(_) => {
-                    // The pass which took the holder may need one of these
-                    // guards to finish. Give it back the Channel turn.
-                    drop(objects);
-                    drop(states);
-                    drop(runtime);
-                    let Some(retry) = &retry else {
-                        return unavailable();
-                    };
-                    if !retry
-                        .retries_unavailable(
-                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable,
-                        )
-                        .await
-                    {
-                        return unavailable();
-                    }
-                    runtime = self.runtime.lock().await;
-                    states = self.states.spell_states.lock().await;
-                    if runtime.player_control_facts(actor, session).is_err()
-                        || runtime.owner_fence().is_err()
-                        || runtime.content_pin().server_artifact_digest() != native.source_digest()
-                    {
-                        return unavailable();
-                    }
-                }
+            (runtime, states) = guards;
+            if retry.check_deadline().is_err()
+                || runtime.player_control_facts(actor, session).is_err()
+                || runtime.owner_fence().is_err()
+                || runtime.content_pin().server_artifact_digest() != native.source_digest()
+            {
+                return unavailable();
             }
         };
         let intent = *intent;
@@ -2731,6 +2749,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         // The attempt lives in the external context before any committing await. Deadline
         // cancellation cannot discard the original normalized occurrence: before the commit
         // window it stays in the context, after it the window parks it in the lane.
+        let mut completed = None;
         let mut context = (
             self,
             access,
@@ -2738,9 +2757,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Some((runtime, states, objects)),
             parameter_output,
             native_health_observations,
+            &mut completed,
         );
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
-            let (owner,access,writer,guards,parameter_output,native_health_observations)=ctx;
+            let (owner,access,writer,guards,parameter_output,native_health_observations,completed)=ctx;
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
@@ -3156,11 +3176,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             drop(attack);
             let disposition=private_result.as_ref().map_or(SpellCastDisposition::Cast,|r|r.disposition);
             **parameter_output=private_result;
-            Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,
-                vitals:super::observe_vitals(&runtime,&states,actor,session)}))
+            let outcome=super::SpellCastOutcome{disposition,
+                vitals:super::observe_vitals(&runtime,&states,actor,session)};
+            **completed=Some(outcome);
+            Ok(NativeCastDispatch::Outcome(outcome))
         })).await;
-        let (_, _, writer, guards, _, _) = context;
+        let (_, _, writer, guards, _, _, _) = context;
         drop(guards);
+        // Holder return cannot retract a result that installed after COMMIT.
+        let result = completed.map_or(result, |outcome| Ok(NativeCastDispatch::Outcome(outcome)));
         // On a fresh corpse cast, only a parked attempt can have crossed
         // COMMIT. Release a staged physical reservation after a definite failure.
         let mut runtime = if fresh_corpse_cast && result.is_err() {
