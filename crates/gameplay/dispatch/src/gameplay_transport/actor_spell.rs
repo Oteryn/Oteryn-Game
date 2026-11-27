@@ -57,6 +57,7 @@ pub(in crate::gameplay_transport) use familiar_cast::{
 mod familiar_defense;
 #[path = "field_step_ingress.rs"]
 mod field_step_ingress;
+pub(super) use field_step_ingress::destination as field_step_destination;
 #[path = "native_combat_cast.rs"]
 pub(in crate::gameplay_transport) mod native_combat_cast;
 #[path = "parameter_cast.rs"]
@@ -1354,27 +1355,6 @@ impl ChannelSpellStates {
             false,
             public_cause,
         )
-    }
-
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "routing reuses native movement preflight without granting movement or Item authority"
-    )]
-    pub(super) fn cloak_blood_ingress_needed(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        cells: &crate::content::NativeEntryMovementCells,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        origin: crate::foundation::MovementPositionSnapshot,
-        direction: crate::movement::CardinalStep,
-        blocking: &dyn crate::map::floor::CellBlocker,
-    ) -> bool {
-        !self.cloak_blood_cells.is_empty()
-            && field_step_ingress::destination(
-                runtime, cells, actor, session, origin, direction, blocking,
-            )
-            .is_ok_and(|p| self.cloak_blood_cells.contains(&(p.x, p.y, p.floor)))
     }
 
     /// Crystal's blood MoveEvent uses addHealth with ENERGY and a null attacker.
