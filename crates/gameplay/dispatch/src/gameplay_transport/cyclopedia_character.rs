@@ -306,8 +306,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                 };
                 let (view, mut extension) = if request.tab == wire::CharacterTab::GeneralStats {
-                    read.budget.retry_durability("cyclopedia_general_stats", || async {
-                        tokio::time::timeout_at(read.budget.deadline, read_tab())
+                    let mut budget = super::AdmissionRetryBudget::for_foreground_command(self.root)
+                        .map_err(|_| ())?;
+                    budget.deadline = tokio::time::Instant::now() + super::connection::IDLE_LIVENESS.interval;
+                    budget.retry_durability("cyclopedia_general_stats", || async {
+                        tokio::time::timeout_at(budget.deadline, read_tab())
                             .await
                             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
                             .map_err(|error| match error {
