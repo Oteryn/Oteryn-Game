@@ -117,6 +117,22 @@ fn finite_policy_covers_every_base_vocation_level_without_extrapolation() -> Tes
 
 #[test]
 fn qualification_provision_keeps_its_turn_for_the_admission_read() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    provision_admission_checkout(admin, false)
+}
+
+#[test]
+fn qualification_provision_refuses_retryably_after_holder_budget_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    provision_admission_checkout(admin, true)
+}
+
+fn provision_admission_checkout(admin: String, exhaust: bool) -> TestResult {
+    use crate::qualification_spell_character::{HolderBusy, retry_provision_holder};
     use crate::bestiary_postgres_harness::{Harness, debug, runtime};
     use crate::durability::{DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore};
     use crate::party_shared_xp_postgres_tests::committed_fresh_player;
@@ -125,13 +141,6 @@ fn qualification_provision_keeps_its_turn_for_the_admission_read() -> TestResult
     use std::task::Poll;
     use std::time::Duration;
 
-    let Some(admin) = std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
-        return Ok(());
-    };
-    let admin = admin
-        .into_string()
-        .map_err(|_| "OTERYN_TEST_POSTGRES_ADMIN_URL is not valid Unicode")?;
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -148,10 +157,26 @@ fn qualification_provision_keeps_its_turn_for_the_admission_read() -> TestResult
                     let admitted = committed_fresh_player(&harness, 60, 62, 70, now).await?;
                     let session = admitted.current_game_session_id();
                     assert!(root.maintain_ready_once().await?);
+                    if exhaust {
+                        let held = root.try_issue_semantic_pass()?;
+                        let deadline = tokio::time::Instant::now() + Duration::from_millis(200);
+                        let error = retry_provision_holder(
+                            root,
+                            deadline,
+                            |error| matches!(error, DurabilityError::RootUnavailable),
+                            async || store.current_session(session).await,
+                        ).await.err().ok_or("provision read passed with its holder busy")?;
+                        assert!(tokio::time::Instant::now() >= deadline);
+                        assert!(error.is::<HolderBusy>(), "{error:?}");
+                        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                        let current = store.current_session(session).await?;
+                        assert_eq!(current, admitted);
+                        return Ok(());
+                    }
                     let mut busy = root.try_acquire_ready()?;
                     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-                    let read = DurabilityRoot::with_holder_owner(retry_holder(
-                        Some(root),
+                    let read = DurabilityRoot::with_holder_owner(retry_provision_holder(
+                        root,
                         deadline,
                         |error| matches!(error, DurabilityError::RootUnavailable),
                         async || store.current_session(session).await,

@@ -42,9 +42,9 @@ async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestR
         }
         return Err(error);
     }
-    tokio::time::timeout_at(deadline, connection.close())
-        .await
-        .map_err(|_| "character release database close deadline")??;
+    // Terminal state has already been observed. Dropping this read-only socket
+    // leaves final admission independent of the diagnostic connection's shutdown.
+    drop(connection);
     Ok(())
 }
 
@@ -94,6 +94,17 @@ async fn report_unreleased_character(
     }
 }
 
+#[derive(Debug)]
+struct FixtureReleasePending;
+
+impl std::fmt::Display for FixtureReleasePending {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("previous journey character was not terminally released after loss/grace")
+    }
+}
+
+impl std::error::Error for FixtureReleasePending {}
+
 async fn wait_release(
     deadline: tokio::time::Instant,
     mut released: impl AsyncFnMut() -> TestResult<bool>,
@@ -107,7 +118,7 @@ async fn wait_release(
         }
     })
     .await
-    .map_err(|_| "previous journey character was not terminally released after loss/grace")?
+    .map_err(|_| FixtureReleasePending)?
 }
 
 #[cfg(test)]
