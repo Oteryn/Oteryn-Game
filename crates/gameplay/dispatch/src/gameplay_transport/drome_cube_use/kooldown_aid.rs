@@ -374,7 +374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let committed_at = self.owner_now();
         operator_event(&format!(
             "event=kooldown_aid_receipt session={} command={} commit_us={} support_deadline_us={}",
-            format_connection_trace(*command.game_session_id.as_bytes()),
+            crate::gameplay_transport::format_connection_trace(*command.game_session_id.as_bytes()),
             command.command_id,
             committed_at.get(),
             state
