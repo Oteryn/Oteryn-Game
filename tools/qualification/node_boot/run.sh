@@ -911,9 +911,9 @@ if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 && "
     "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
     "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
   )
-fi
-if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
-  # Use the Platform's disposable Premium-purpose client and trust root.
+elif [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
+  # Keep this legacy fixture separate from the native Premium snapshot client.
+  # The node rejects a certificate configured for both purposes.
   local_premium_dir="$WORK/portal/certs"
   cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
   secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
