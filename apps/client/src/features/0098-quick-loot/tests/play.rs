@@ -54,10 +54,16 @@ fn cp02_0098_quick_loot_scenario() {
 fn cp02_quick_loot_native_session_scenario() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
     use oteryn_client_ui::quick_loot::*;
-    peer::scenario(|link, push, wait| {
+    peer::scenario( |link, push, wait| {
+        wait(&|| link.quick_loot_panel().filter_mode == Some(QuickLootFilterMode::Accept));
+        let panel = link.quick_loot_panel();
+        assert_eq!(panel.skipped, std::collections::BTreeSet::from([4]));
+        assert_eq!(panel.accepted, std::collections::BTreeSet::from([7]));
         let request = QuickLootRequest {
             action: QuickLootAction::FilterAdd,
             corpse: None,
+            selected_item: None,
+            review_filters: false,
             category: None,
             recipient: None,
             recipient_id: None,

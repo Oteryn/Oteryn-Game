@@ -148,7 +148,11 @@ where
                 LogoutReply::Result(result) => Dispatch::Logout(result),
                 // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
                 LogoutReply::Unknown => {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(command::disconnect(
+                        command,
+                        "logout_release",
+                        "unknown_release",
+                    ));
                 }
             }
         },

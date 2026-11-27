@@ -5,7 +5,25 @@ package oteryn.protocol.v1;
 // The Channel resolves it to the bound ItemInstance before the World/scope/range/rights
 // checks. Legacy clients may still send the durable corpse ItemInstanceId. The reply
 // and receipt binding retain the existing shape. A spatial binding wins on a collision.
+// Click field 9 optionally carries the eight-byte little-endian nonzero item-view handle
+// of one entry in the current open corpse. Field 2 can be omitted for a selected click.
+// If supplied, field 2 must match the open corpse. Other actions reject field 9.
+// A selected Click replies with selected_outcome alone. MOVED is Accepted and is followed
+// by the updated open corpse view. STALE is Rejected and covers an unknown handle or an entry
+// no longer in the current lootable corpse. Other transfer refusals use REJECTED.
+// Corpse-only Click retains the original result encoding.
+// ReviewDestinations field 10 opts in to the filter suffix on the reply.
+// Assign with a Gold Pouch recipient may name its Store Inbox fulfilment UUID in field 5.
 // filter_mode: 1 skipped-list mode, 2 accepted-list mode; definition_ref uses the admitted Item index.
-message QuickLootRequestV1 { uint32 action = 1; bytes corpse = 2; uint32 category = 3; uint32 recipient = 4; bytes recipient_id = 5; bool fallback_to_main = 6; uint32 filter_mode = 7; uint32 filter_definition_ref = 8; }
+message QuickLootRequestV1 { uint32 action = 1; bytes corpse = 2; uint32 category = 3; uint32 recipient = 4; bytes recipient_id = 5; bool fallback_to_main = 6; uint32 filter_mode = 7; uint32 filter_definition_ref = 8; optional bytes selected_item = 9; optional bool review_filters = 10; }
 message QuickLootItemResultV1 { bytes item = 1; bool accepted = 2; }
-message QuickLootResultV1 { repeated QuickLootItemResultV1 items = 1; }
+enum QuickLootClickOutcomeV1 {
+  QUICK_LOOT_CLICK_UNSPECIFIED = 0;
+  QUICK_LOOT_CLICK_MOVED = 1;
+  QUICK_LOOT_CLICK_STALE = 2;
+  QUICK_LOOT_CLICK_REJECTED = 3;
+}
+message QuickLootResultV1 {
+  repeated QuickLootItemResultV1 items = 1;
+  optional QuickLootClickOutcomeV1 selected_outcome = 2;
+}

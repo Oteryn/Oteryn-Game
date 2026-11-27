@@ -30,22 +30,31 @@ pub(super) fn encode(
         Dispatch::ServerModal(
             crate::gameplay_transport::server_modal::ServerModalOutcome::Unavailable,
         ) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "modal_result",
+                "owner_unavailable",
+            ));
         }
         Dispatch::Vip(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
         Dispatch::Vip(None) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "vip_result",
+                "owner_unavailable",
+            ));
         }
         Dispatch::House(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
         Dispatch::House(None) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "house_result",
+                "owner_unavailable",
+            ));
         }
         Dispatch::Training(result) => {
-            let Ok(payload) =
-                oteryn_protocol_oteryn::loop_training::encode_training_result(*result)
-            else {
-                return Err(ServeEnd::Disconnected);
-            };
+            let payload = oteryn_protocol_oteryn::loop_training::encode_training_result(*result)
+                .map_err(|error| command::disconnect(command, "training_result", error))?;
             (
                 if result.disposition == 4 {
                     CommandStatus::Rejected
@@ -57,10 +66,20 @@ pub(super) fn encode(
         }
         Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
             Some(result) => result,
-            None => return Err(ServeEnd::Disconnected),
+            None => {
+                return Err(command::disconnect(
+                    command,
+                    "appearance_result",
+                    "encode_failed",
+                ));
+            }
         },
         Dispatch::Appearance(None) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "appearance_result",
+                "owner_unavailable",
+            ));
         }
         Dispatch::Step(outcome, step_wait_ms) => (
             if matches!(
@@ -182,26 +201,27 @@ pub(super) fn encode(
             encode_container_view_result(*outcome),
         ),
         Dispatch::Stash(reply) => {
-            let Ok(payload) = oteryn_protocol_oteryn::stash::encode_stash_reply(reply) else {
-                return Err(ServeEnd::Disconnected);
-            };
+            let payload = oteryn_protocol_oteryn::stash::encode_stash_reply(reply)
+                .map_err(|error| command::disconnect(command, "stash_result", error))?;
             // Validate the complete native result at its production wire boundary.
-            let Ok(decoded) = oteryn_protocol_oteryn::stash::decode_stash_reply(&payload) else {
-                return Err(ServeEnd::Disconnected);
-            };
+            let decoded = oteryn_protocol_oteryn::stash::decode_stash_reply(&payload)
+                .map_err(|error| command::disconnect(command, "stash_result_round_trip", error))?;
             if &decoded != reply {
-                return Err(ServeEnd::Disconnected);
+                return Err(command::disconnect(
+                    command,
+                    "stash_result",
+                    "round_trip_mismatch",
+                ));
             }
             (CommandStatus::Accepted, payload)
         }
         Dispatch::Depot(reply) => {
-            let Ok(payload) = oteryn_protocol_oteryn::depot::encode_depot_reply(reply) else {
-                return Err(ServeEnd::Disconnected);
-            };
+            let payload = oteryn_protocol_oteryn::depot::encode_depot_reply(reply)
+                .map_err(|error| command::disconnect(command, "depot_result", error))?;
             (CommandStatus::Accepted, payload)
         }
         Dispatch::ItemMove(outcome, _, detail) => {
-            let Ok(payload) = encode_item_move_result_for(
+            let payload = encode_item_move_result_for(
                 *outcome,
                 ItemMoveSelection {
                     equip_drop: session
@@ -212,9 +232,8 @@ pub(super) fn encode(
                         .contains(CAPABILITY_WORLD_INTERACTION_V1),
                     ..ItemMoveSelection::default()
                 },
-            ) else {
-                return Err(ServeEnd::Disconnected);
-            };
+            )
+            .map_err(|error| command::disconnect(command, "item_move_result", error))?;
             (
                 CommandStatus::Accepted,
                 detailed(
@@ -225,15 +244,15 @@ pub(super) fn encode(
             )
         }
         Dispatch::Look(result, selection) => {
-            let Ok(payload) = encode_item_look_result_for(result, *selection) else {
-                return Err(ServeEnd::Disconnected);
-            };
+            let payload = encode_item_look_result_for(result, *selection)
+                .map_err(|error| command::disconnect(command, "look_result", error))?;
             (CommandStatus::Accepted, payload)
         }
         Dispatch::Reply(status, payload)
             if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET
                 || command.command_type
                     == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
+                || routing::quick_loot::selected_moved(command.command_type, payload)
                 || routing::store::is_committed_claim(command.command_type, *status, payload) =>
         {
             (*status, payload.clone())
@@ -242,9 +261,8 @@ pub(super) fn encode(
         Dispatch::NpcShop(status, payload, _, _) => (*status, std::mem::take(payload)),
         Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
         Dispatch::Chat(result, _) => {
-            let Ok(payload) = encode_chat_intent_result(result) else {
-                return Err(ServeEnd::Disconnected);
-            };
+            let payload = encode_chat_intent_result(result)
+                .map_err(|error| command::disconnect(command, "chat_result", error))?;
             (
                 if result.disposition == oteryn_protocol_oteryn::chat::ChatDisposition::Rejected {
                     CommandStatus::Rejected
@@ -271,9 +289,8 @@ pub(super) fn encode(
             encode_attack_intent_result(*disposition),
         ),
         Dispatch::Logout(result) => {
-            let Ok(payload) = encode_logout_result(*result) else {
-                return Err(ServeEnd::Disconnected);
-            };
+            let payload = encode_logout_result(*result)
+                .map_err(|error| command::disconnect(command, "logout_result", error))?;
             (
                 if result.is_rejected() {
                     CommandStatus::Rejected
@@ -285,7 +302,8 @@ pub(super) fn encode(
         }
         Dispatch::NoLogout => (
             CommandStatus::Rejected,
-            encode_logout_result(LogoutResult::Busy).map_err(|_| ServeEnd::Disconnected)?,
+            encode_logout_result(LogoutResult::Busy)
+                .map_err(|error| command::disconnect(command, "logout_busy_result", error))?,
         ),
         Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
             // The page is written once; move it out instead of copying up to 32 KiB.
@@ -325,7 +343,13 @@ pub(super) fn encode(
                 oteryn_protocol_oteryn::appearance::ChangeResult::Rejected,
             ) {
                 Some(result) => result,
-                None => return Err(ServeEnd::Disconnected),
+                None => {
+                    return Err(command::disconnect(
+                        command,
+                        "appearance_refusal",
+                        "encode_failed",
+                    ));
+                }
             }
         }
         Dispatch::Achievements(
@@ -361,8 +385,5 @@ pub(super) fn encode(
             &result_payload,
         )
     };
-    let Ok(result) = result else {
-        return Err(ServeEnd::Disconnected);
-    };
-    Ok(result)
+    result.map_err(|error| command::disconnect(command, "result_envelope", error))
 }
