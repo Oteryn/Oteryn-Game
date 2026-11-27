@@ -1502,6 +1502,7 @@ pub(super) async fn journey(
     if foreign == selected || foreign == sibling {
         return Err("I07 foreign item aliases the primary corpse item".into());
     }
+    let before_foreign_click = fresh.session_mut().last_server_sequence();
     capture
         .probe(
             &mut fresh,
@@ -1514,13 +1515,11 @@ pub(super) async fn journey(
         )
         .await?;
     fresh.service_liveness(Duration::from_millis(250)).await?;
-    if fresh
-        .take_events()
-        .into_iter()
-        .any(|event| matches!(event, oteryn_dev_client::SessionEvent::OpenContainer(_)))
-    {
-        return Err("I07 a live foreign handle changed a container".into());
-    }
+    require_no_foreign_container_events(
+        fresh.take_events(),
+        before_foreign_click,
+        capture.previous,
+    )?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -2026,4 +2025,57 @@ async fn require_corpse_view(
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
+}
+
+fn require_no_foreign_container_events(
+    events: Vec<oteryn_dev_client::SessionEvent>,
+    before_send: u64,
+    (command_id, reply_sequence): (u64, u64),
+) -> TestResult {
+    let containers: Vec<_> = events
+        .into_iter()
+        .filter_map(|event| match event {
+            oteryn_dev_client::SessionEvent::OpenContainer(delta) => Some(delta),
+            _ => None,
+        })
+        .collect();
+    if !containers.is_empty() {
+        return Err(format!(
+            "I07 a live foreign handle changed a container: command_id={command_id} before_send={before_send} reply_sequence={reply_sequence} open_container_events={containers:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn i07_foreign_container_failure_preserves_frame_order() -> TestResult {
+    use oteryn_dev_client::SessionEvent;
+    require_no_foreign_container_events(Vec::new(), 34, (23, 36))?;
+    let events = [35, 37]
+        .into_iter()
+        .map(|server_sequence| {
+            SessionEvent::OpenContainer(CorpseDelta {
+                server_sequence,
+                base_revision: 2,
+                new_revision: 3,
+                value: Default::default(),
+            })
+        })
+        .collect();
+    let Err(error) = require_no_foreign_container_events(events, 34, (23, 36)) else {
+        return Err("I07 accepted container events around a refusal".into());
+    };
+    let message = error.to_string();
+    for field in [
+        "command_id=23",
+        "before_send=34",
+        "reply_sequence=36",
+        "server_sequence: 35",
+        "server_sequence: 37",
+        "container_handle: None",
+    ] {
+        assert!(message.contains(field), "{message}");
+    }
+    Ok(())
 }
