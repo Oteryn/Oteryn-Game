@@ -2,6 +2,7 @@
 //! DUST_LIMIT. The consumer is `apply_result` and `panel_text` in
 //! `crates/client-ui/src/features/0152-item-forge`.
 use super::*;
+use crate::map::view::MapFacts;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicCommand;
 use oteryn_dev_client::client_ui::item_forge::{self as forge_ui, ItemForgePanel};
@@ -12,6 +13,62 @@ use oteryn_protocol_oteryn::item_forge::{
 use std::num::NonZeroU64;
 
 use oteryn_protocol_oteryn::item_forge::COMMAND_TYPE_FORGE_DUST_QUERY;
+
+const FORGE_STATION: TilePos = TilePos { x: 32209, y: 32274, floor: -7 };
+const FORGE_APPROACH: TilePos = TilePos { x: 32209, y: 32275, floor: -7 };
+
+fn station_opened(status: CommandStatus, disposition: oteryn_protocol_oteryn::world_object::UseDisposition) -> bool {
+    status == CommandStatus::Accepted
+        && disposition == oteryn_protocol_oteryn::world_object::UseDisposition::ForgeOpened
+}
+
+#[test]
+fn p18_station_requires_the_actual_forge_open_disposition() {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    assert!(station_opened(CommandStatus::Accepted, UseDisposition::ForgeOpened));
+    assert!(!station_opened(CommandStatus::Accepted, UseDisposition::Committed));
+    assert!(!station_opened(CommandStatus::Rejected, UseDisposition::ForgeOpened));
+}
+
+pub(super) async fn open_station(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let station = world.base().tile(FORGE_STATION.x, FORGE_STATION.y, FORGE_STATION.floor)
+        .ok_or("P18 physical Forge tile (32209,32274,7) absent from served region 125,126")?;
+    let ordinal = station.ids().iter().zip(station.depths())
+        .filter(|(_, depth)| **depth == 0).enumerate()
+        .find_map(|(ordinal, (&id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            world.facts().base_entry(FORGE_STATION, ordinal, id)
+                .filter(|entry| entry.appearance_id == 37122 && !entry.pickupable)
+                .map(|_| ordinal)
+        }).ok_or("P18 real Exaltation Forge object i37122 absent from its tile")?;
+    let key = crate::map::view::placement_key(FORGE_STATION, ordinal).ok_or("Forge placement key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| at == FORGE_APPROACH)
+        .ok_or("P18 no walkable route to the fixed Exaltation Forge approach")?;
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction).ok_or("invalid Forge route step")?;
+        let outcome = client.step(direction).await?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!("P18 Forge step failed at {before:?}: {outcome:?}").into());
+        }
+        client.take_events();
+    }
+    let reply = client.use_object(&placement, world.facts().object_revision(key)).await?;
+    if !station_opened(reply.status, reply.disposition) {
+        return Err(format!("P18 Forge USE did not open the station: {reply:?}").into());
+    }
+    evidence(&format!("P18_FORGE_OPEN from={start:?} at={FORGE_APPROACH:?}"));
+    Ok(())
+}
 
 type LiveReply = (u64, u64, u32, Vec<u8>, Vec<u8>);
 
@@ -301,6 +358,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     drop(fixture);
     seed_dust("P18.client", clients).await?;
     let mut client = connect_character(clients, 0x44, 0).await?;
+    open_station(&mut client, clients).await?;
     let session = client.join_snapshot().game_session_id;
     let definitions = provisioning::item_index()?;
     let dagger = provisioning::item_reference(&definitions, 3267)?;

@@ -264,6 +264,7 @@ async fn fusion_case(
     }
 
     let mut client = connect_character(dedicated, tag + 1, 0).await?;
+    super::client_row_p18::open_station(&mut client, dedicated).await?;
     let session = client.join_snapshot().game_session_id;
     let first_history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
     validate_history("step-2", &first_history, expected_prior_history)?;
@@ -645,6 +646,7 @@ async fn raise_cap_for_funding(
         return Ok(());
     }
     let mut client = connect_character(clients, tag, 0).await?;
+    super::client_row_p18::open_station(&mut client, clients).await?;
     let session = client.join_snapshot().game_session_id;
     let baseline = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
     let mut expected_history = baseline.body.as_array().cloned().ok_or("invalid cap history baseline")?;
@@ -769,6 +771,7 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     ));
 
     let mut client = connect_character(clients, tag + 1, 0).await?;
+    super::client_row_p18::open_station(&mut client, clients).await?;
     let session = client.join_snapshot().game_session_id;
     let definitions = provisioning::item_index()?;
     let coins = [(3031, 1), (3035, 100), (3043, 10_000)]
