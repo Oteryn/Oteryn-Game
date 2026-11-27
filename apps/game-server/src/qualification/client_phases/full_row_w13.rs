@@ -500,7 +500,8 @@ async fn prepare_hunter(
 }
 
 async fn equip_hunter_sword(client: &mut DevClientSession) -> TestResult {
-    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent};
+    use oteryn_dev_client::ItemMoveDestination;
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
     use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
 
     let index = provisioning::item_index()?;
@@ -527,12 +528,15 @@ async fn equip_hunter_sword(client: &mut DevClientSession) -> TestResult {
         .ok_or("W13 fixture sword missing from backpack after readmission")?
         .handle;
     let moved = client
-        .move_item(&ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(MoveRequest {
             source,
             destination: ItemMoveDestination::Equipment(EquipmentSlot::RightHand),
+            count: None,
         })
-        .await?;
-    if moved.status != CommandStatus::Accepted || moved.outcome != ItemMoveOutcome::Moved {
+        .await
+        .map_err(|error| format!("W13 fixture sword equip command: {error}"))?;
+    if moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("W13 fixture sword equip observed {moved:?}").into());
     }
     full_row_p05::wait_for_inventory(client, "w13-fixture-sword-equip", equipped).await
