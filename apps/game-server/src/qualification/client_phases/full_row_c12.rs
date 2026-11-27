@@ -951,6 +951,11 @@ async fn walk_exact_route(
         if expected == from {
             return Err("C12 planned STEP does not change position".into());
         }
+        let session = hex_bytes(client.join_snapshot().game_session_id.as_bytes());
+        let command = client.session_mut().next_command_id();
+        evidence(&format!(
+            "C12_FULL_COMMAND session={session} command={command} operation=STEP direction={direction:?} from={from:?} expected={expected:?}"
+        ));
         let step = client.step(direction).await?;
         require_mechanic_acceptance(step.status, "C12 STEP")?;
         let actual = tile(client.world_spatial().actor_position)?;
