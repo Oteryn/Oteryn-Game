@@ -217,6 +217,79 @@ async fn retire_count(h: &Harness) -> TestResult<i64> {
     )
 }
 
+pub(super) async fn open_fresh_rat_while_holder_returns(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    children: i64,
+) -> TestResult {
+    use crate::gameplay_transport::{
+        capabilities::SelectedCapabilities,
+        connection::{FreshAdmissionAuthority, regression_routed_corpse_open},
+        item_view::SessionItemView,
+        world_spatial::{SessionVisibility, encode_visibility_snapshot},
+    };
+    use oteryn_protocol_oteryn::{
+        item_view::{STATE_DOMAIN_OPEN_CONTAINER, decode_open_container},
+        world_spatial_entities::{
+            EntityDetail, EntityKind, decode_world_spatial_entities_snapshot_with_item_handles,
+        },
+    };
+
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6])
+            .ok_or("corpse view capabilities")?;
+    let actor = admitted.runtime_actor.ok_or("corpse opener")?;
+    let channel = owner
+        .observe_channel_entities(actor)
+        .await
+        .ok_or("kill projection")?;
+    let mut visibility = SessionVisibility::with_objects(true);
+    let mut view = SessionItemView::resume(admitted.continuity.item_view);
+    let snapshot = visibility
+        .snapshot(&channel, &mut |entities| {
+            view.attach_spatial_handles(entities)
+                .map_err(|_| oteryn_protocol_oteryn::world_spatial::WorldSpatialError::Malformed)
+        })
+        .map_err(debug)?;
+    let (_, bytes) = encode_visibility_snapshot(&[4, 6], &snapshot).map_err(debug)?;
+    let decoded =
+        decode_world_spatial_entities_snapshot_with_item_handles(&bytes).map_err(debug)?;
+    let handle = decoded
+        .entities
+        .iter()
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .find_map(|entity| match entity.detail {
+            EntityDetail::Object { item_handle, .. } => item_handle,
+            _ => None,
+        })
+        .ok_or("visible Rat corpse handle")?;
+    let mut items = Some(view);
+
+    // The real owner cadence and USE share a holder. Keep it occupied for the first
+    // dispatch poll, then return it through the same observed pass-completion path.
+    owner.root.maintain_ready_once().await.map_err(debug)?;
+    let held = owner.root.try_issue_semantic_pass().map_err(debug)?;
+    let open = regression_routed_corpse_open(owner, &mut admitted, handle, &mut items, visibility);
+    tokio::pin!(open);
+    let first_poll = tokio::select! {
+        biased;
+        result = &mut open => Some(result),
+        () = std::future::ready(()) => None,
+    };
+    held.run(|_, _| Box::pin(async { Ok(()) }))
+        .await
+        .map_err(debug)?;
+    let delta = match first_poll {
+        Some(result) => result?,
+        None => open.await?,
+    };
+    assert_eq!(delta.domain_id, STATE_DOMAIN_OPEN_CONTAINER);
+    let opened = decode_open_container(&delta.payload).map_err(debug)?;
+    assert_eq!(opened.container_handle, Some(handle));
+    assert_eq!(i64::try_from(opened.entries.len())?, children);
+    Ok(())
+}
+
 pub(super) async fn qualify_first_transform(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,

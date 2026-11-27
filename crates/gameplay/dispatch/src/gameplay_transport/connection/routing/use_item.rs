@@ -523,6 +523,16 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => {
                 let key = item_view.as_ref().and_then(|view| view.resolve(handle));
+                let command_id = command.command_id;
+                let connection_generation = admitted.continuity.connection_generation;
+                let server_sequence = admitted.continuity.server_sequence;
+                let last_handle = item_view.as_ref().map_or(0, |view| view.table().last_issued());
+                let stale = |stage: &str| {
+                    transport::operator_event(&format!(
+                        "event=item_use_view_stale stage={stage} command_id={command_id} server_sequence={server_sequence} connection_generation={connection_generation} requested_handle={handle} last_handle={last_handle}"
+                    ));
+                    OpenDecision::StaleState
+                };
                 let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
                 let container = container.filter(|_| opens_container);
                 // BAGS-USE-1: a carried entry of an open view can be used under capability
@@ -572,7 +582,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                                 ContainerViewOutcome::Opened => OpenDecision::Open,
                                 ContainerViewOutcome::TooFar => OpenDecision::TooFar,
                                 ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
-                                    OpenDecision::StaleState
+                                    stale("container_view")
                                 }
                                 ContainerViewOutcome::NotAContainer
                                 | ContainerViewOutcome::TooManyViews => {
@@ -588,9 +598,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         let Ok((decision, delta)) = opened else {
                             return None;
                         };
+                        if decision == OpenDecision::StaleState {
+                            stale("corpse_gone");
+                        }
                         Dispatch::UseItem(decision, delta)
                     }
-                    _ => Dispatch::UseItem(OpenDecision::StaleState, None),
+                    _ => Dispatch::UseItem(
+                        stale(if key.is_none() { "handle_resolution" } else { "item_observation" }),
+                        None,
+                    ),
                 }
             }
             Ok(UseIntent {

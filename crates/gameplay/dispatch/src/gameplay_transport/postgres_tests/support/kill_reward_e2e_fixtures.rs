@@ -1748,6 +1748,11 @@ fn scenario_with_creature_observed(
                 super::corpse_decay_fixtures::qualify_first_transform(&mut owner, &harness).await
             }
             Some(CorpseDecayCheck::Retirement(reconcile)) => {
+                if !reconcile && !capacity && creature_key == "oteryn:creature.rat" {
+                    super::corpse_decay_fixtures::open_fresh_rat_while_holder_returns(
+                        &owner, admitted, children,
+                    ).await?;
+                }
                 super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, reconcile)
                     .await
                     .map_err(|error| format!("corpse decay qualification: {error}").into())
