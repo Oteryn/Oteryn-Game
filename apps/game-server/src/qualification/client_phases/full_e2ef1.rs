@@ -1155,6 +1155,7 @@ mod e2ef1 {
         let mut families_ok = true;
         for (kind, case) in [
             (AuthoredClosedDoor::Plain, "basic-door"),
+            (AuthoredClosedDoor::KeyLocked, "locked-refusal"),
             (AuthoredClosedDoor::KeyUnlocked, "unlocked-key-door"),
         ] {
             let result: TestResult = async {
@@ -1178,12 +1179,24 @@ mod e2ef1 {
                                         }))
                     },
                     1,
-                    |_, _| true,
+                    // End the door journey in protection so the cleanup budget
+                    // is available for logout and release.
+                    |stand, _| {
+                        kind != AuthoredClosedDoor::KeyUnlocked || is_logout_rest_tile(world, stand)
+                    },
                 )
                 .await?;
-                let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
-                door_cycle(client, world, object, revision).await?;
-                revisions.insert((object.at, object.ordinal), revision + 2);
+                if kind == AuthoredClosedDoor::KeyLocked {
+                    let before = client.world_spatial().actor_position;
+                    toggle(client, world, object, 0, UseDisposition::Locked).await?;
+                    if client.world_spatial().actor_position != before {
+                        return Err("locked door use moved actor".into());
+                    }
+                } else {
+                    let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
+                    door_cycle(client, world, object, revision).await?;
+                    revisions.insert((object.at, object.ordinal), revision + 2);
+                }
                 checks.pass(case, object);
                 Ok(())
             }
@@ -1193,21 +1206,6 @@ mod e2ef1 {
                 evidence(&format!("E2EF1_GAP row=M05 case={case} error={error}"));
             }
         }
-        let object = approach(
-            client,
-            world,
-            objects,
-            |o| o.kind == ObjectKind::Door(AuthoredClosedDoor::KeyLocked),
-            1,
-            |_, _| true,
-        )
-        .await?;
-        let before = client.world_spatial().actor_position;
-        toggle(client, world, object, 0, UseDisposition::Locked).await?;
-        if client.world_spatial().actor_position != before {
-            return Err("locked door use moved actor".into());
-        }
-        checks.pass("locked-refusal", object);
         if !families_ok {
             return Err("one or more door families incomplete".into());
         }
