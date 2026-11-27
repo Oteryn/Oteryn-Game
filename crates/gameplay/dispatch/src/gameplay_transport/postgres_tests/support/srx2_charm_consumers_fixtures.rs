@@ -570,11 +570,27 @@ pub(super) async fn control(
             },
         );
         let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let mut states = owner.states.spell_states.lock().await;
+        let caster = states.get_mut(&runtime, actor, session).ok_or("player")?;
+        caster.facts.level = 30;
+        let damage = super::party_xp_fixtures::fixture_fist_damage(
+            &runtime,
+            (actor, session),
+            caster,
+            victim.actor,
+            owner.owner_now(),
+        )?;
+        let health = runtime.companion_snapshot(victim.actor).map_err(debug)?.health;
         let command = (1..1000)
-            .find(|command| {
+            .find(|&command| {
+                if !damage(command)
+                    .is_some_and(|(blocked, unblocked)| blocked > 0 && unblocked < health)
+                {
+                    return false;
+                }
                 let occurrence = oteryn_gameplay_combat_rules::resolution::swing_occurrence(
                     actor.placement_identity(),
-                    (*session.as_bytes(), *command),
+                    (*session.as_bytes(), command),
                     0,
                     b"committed-hit",
                 );
@@ -607,13 +623,7 @@ pub(super) async fn control(
                 })
             })
             .ok_or("triggering attack")?;
-        let mut states = owner.states.spell_states.lock().await;
         assert!(states.install_charm_state(&runtime, actor, session, state));
-        states
-            .get_mut(&runtime, actor, session)
-            .ok_or("player")?
-            .facts
-            .level = 30;
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
@@ -650,9 +660,11 @@ pub(super) async fn control(
             );
             return Ok(());
         }
-        runtime
-            .commit_monster_lab_damage(victim, b"srx2-flee-threshold", after - 1)
-            .map_err(debug)?;
+        if after > 1 {
+            runtime
+                .commit_monster_lab_damage(victim, b"srx2-flee-threshold", after - 1)
+                .map_err(debug)?;
+        }
         owner
             .states
             .attack
