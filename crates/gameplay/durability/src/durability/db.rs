@@ -1291,6 +1291,8 @@ pub struct DurabilityRoot {
     holder_queue: Arc<StdMutex<HolderQueue>>,
     /// Which semantic pass has the holder checked out (NBDIAG-4).
     holder_owner: Arc<StdMutex<HolderOwner>>,
+    #[cfg(any(test, feature = "test-support"))]
+    premium_checkout_probe: Arc<StdMutex<Option<Arc<Notify>>>>,
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
     /// `DB_PASS_DEADLINE` except while a [`BootPassDeadline`] guard lives.
     pass_deadline_millis: Arc<AtomicU64>,
@@ -1456,6 +1458,8 @@ impl DurabilityRoot {
             runtime,
             ready_demand: Arc::new(AtomicBool::new(true)),
             holder_owner: Arc::new(StdMutex::new(None)),
+            #[cfg(any(test, feature = "test-support"))]
+            premium_checkout_probe: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             holder_priority: Arc::default(),
@@ -1530,6 +1534,8 @@ impl DurabilityRoot {
             },
             ready_demand: Arc::new(AtomicBool::new(true)),
             holder_owner: Arc::new(StdMutex::new(None)),
+            #[cfg(any(test, feature = "test-support"))]
+            premium_checkout_probe: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             holder_priority: Arc::default(),
@@ -1652,6 +1658,38 @@ impl DurabilityRoot {
             return None;
         }
         HolderWaiter::enqueue(&self.holder_queue, &self.holder_returned)
+    }
+
+    /// Observe the next refused Premium checkout on this test root.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn probe_premium_checkout_for_test(&self) -> Arc<Notify> {
+        let probe = Arc::new(Notify::new());
+        if let Ok(mut slot) = self.premium_checkout_probe.lock() {
+            *slot = Some(Arc::clone(&probe));
+        }
+        probe
+    }
+
+    pub(super) fn premium_checkout_attempt(&self, attempt: u32, waited: Duration, ready: bool) {
+        #[cfg(any(test, feature = "test-support"))]
+        if !ready
+            && let Ok(mut slot) = self.premium_checkout_probe.lock()
+            && let Some(probe) = slot.take()
+        {
+            probe.notify_one();
+        }
+        let owner = self.holder_owner.lock().ok().and_then(|owner| *owner);
+        let owner = owner.map_or_else(|| "none".to_owned(), |(caller, ..)| caller.to_string());
+        let line = oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Debug,
+            "durability",
+            "premium_checkout_attempt",
+        )
+        .field("attempt", oteryn_error_codes::FieldValue::U64(u64::from(attempt)))
+        .field("checkout_owner", oteryn_error_codes::FieldValue::Owned(owner))
+        .field("waited_ms", millis(waited))
+        .field("ready", oteryn_error_codes::FieldValue::Token(if ready { "true" } else { "false" }));
+        oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
     }
 
     /// Waits for the retry of a step that found the holder busy, for an owner holding a

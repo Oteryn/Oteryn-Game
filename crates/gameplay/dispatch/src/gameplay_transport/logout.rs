@@ -296,9 +296,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             in_protection_zone,
         )
     }
-    /// Give pre-commit prerequisites the ordinary command retry window while retaining
-    /// this logout's transition token. Settle the durable row and fence before replying Busy
-    /// if a prerequisite still cannot complete.
+    /// Keep this logout's fence through bounded retries of pre-commit prerequisites.
+    /// Settle the durable row and fence before returning `BUSY`.
     async fn release_logout(
         &self,
         admitted: AdmittedSession,
@@ -343,13 +342,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &mut kills,
                 )
                 .await;
-            let ReleaseAttempt::Retry(stage) = step else {
-                break step;
-            };
-            operator_event(&format!("event=logout_release_retry stage={stage}"));
-            if !budget
-                .retries_unavailable(AdmissionRefusal::Unavailable)
-                .await
+            if !matches!(step, ReleaseAttempt::Retry(_))
+                || !budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
             {
                 break step;
             }

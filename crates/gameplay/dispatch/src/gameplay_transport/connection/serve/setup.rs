@@ -24,6 +24,12 @@ impl From<ServeEnd> for JoinFailure {
     }
 }
 
+pub(super) struct JoinProjection<'a> {
+    pub(super) actor: ExactActorRef,
+    pub(super) baseline: WorldSpatialObservation,
+    pub(super) acceptance: &'a mut Option<Vec<u8>>,
+}
+
 /// A join that could not be prepared reports `SESSION_JOIN_UNAVAILABLE` before the same end;
 /// a failed snapshot write has no transport left to report on, and a session that already
 /// joined ends as before (FND-02 §13.3: unresolved pending work only disconnects).
@@ -40,13 +46,43 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    let generation = admitted.continuity.connection_generation;
-    match join(
-        stream, admitted, authority, policy, actor, baseline, integrity,
+    prepare_for_join(
+        stream,
+        admitted,
+        authority,
+        policy,
+        JoinProjection {
+            actor,
+            baseline,
+            acceptance: &mut None,
+        },
+        integrity,
     )
     .await
-    {
+}
+
+pub(super) async fn prepare_for_join<S, A>(
+    stream: &mut S,
+    admitted: &mut AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+    projection: JoinProjection<'_>,
+    integrity: integrity::Integrity,
+) -> Result<ServeState, ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let pending = projection.acceptance.is_some();
+    let generation = admitted.continuity.connection_generation;
+    match join(stream, admitted, authority, policy, projection, integrity).await {
         Ok(state) => Ok(state),
+        Err(JoinFailure::Unprepared(_)) if pending => {
+            send_join_unavailable(stream, 0).await;
+            Err(ServeEnd::Closed(
+                FoundationProtocolError::SessionJoinUnavailable,
+            ))
+        }
         Err(JoinFailure::Unprepared(end)) => {
             send_join_unavailable(stream, generation).await;
             Err(end)
@@ -61,14 +97,18 @@ async fn join<S, A>(
     admitted: &mut AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
-    actor: ExactActorRef,
-    baseline: WorldSpatialObservation,
+    projection: JoinProjection<'_>,
     integrity: integrity::Integrity,
 ) -> Result<ServeState, JoinFailure>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let JoinProjection {
+        actor,
+        baseline,
+        acceptance,
+    } = projection;
     let generation = admitted.continuity.connection_generation;
     let revision = admitted.continuity.spatial_revision;
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
@@ -233,6 +273,11 @@ where
         return Err(ServeEnd::Disconnected.into());
     };
     record_join_progress("snapshot_write", admitted.first_entry);
+    if let Some(frame) = acceptance.take()
+        && write_frame(stream, &frame).await.is_err()
+    {
+        return Err(JoinFailure::Transport);
+    }
     for frame in &snapshot {
         if write_frame(stream, frame).await.is_err() {
             return Err(JoinFailure::Transport);
