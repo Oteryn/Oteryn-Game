@@ -1480,7 +1480,7 @@ impl KillSettlementQueue {
 
     /// The killed actor of every queued, parked or in-flight entry: the corpse projections the
     /// queue still binds to (Codex 4248192466).
-    fn held_targets(&self) -> Vec<ExactActorRef> {
+    pub(super) fn held_targets(&self) -> Vec<ExactActorRef> {
         let state = self.state();
         state
             .in_flight
@@ -4458,6 +4458,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 "kill_reward_corpse_unbound creature={} reason={error:?}",
                 entry.creature
             ));
+            // The committed MINT is replayable after transient projection allocation failure.
+            if matches!(error, CarrierError::AllocationFailed) {
+                report.verdict = SettleVerdict::Retry;
+                return report;
+            }
         }
         if !source_plain_body && let Ok(outcome) = &outcome {
             admission
