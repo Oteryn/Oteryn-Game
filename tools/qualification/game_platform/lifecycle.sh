@@ -112,7 +112,7 @@ game_platform_start() {
     reference_accounts=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
   fi
   python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
-    "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" "${reference_accounts[@]}" \
+    "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" "$GAME_PLATFORM_SHA" "${reference_accounts[@]}" \
     || prepare_code=$?
   [[ "$prepare_code" != 3 ]] || game_platform_fail platform real_portal_binary_missing
   [[ "$prepare_code" == 0 ]] || game_platform_fail platform configuration_failed
