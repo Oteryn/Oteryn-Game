@@ -14,7 +14,7 @@ pub const ITEM_CLIENT_MARKET_MINT_PACKET: &[u8] = include_bytes!(
 );
 // Regenerate with `lower_client_market_mint_packet.py`; the generator prints this digest.
 pub const ITEM_CLIENT_MARKET_MINT_PACKET_SHA256: &str =
-    "420c7e43350e24ce922f64a2c0479eea5040f32d27b5c8606674a36c971c4801";
+    "92fca356846928e25f6c2099975384d7166e991fbcc582a5fcf8f24cd7324c0b";
 const RECORDS: usize = 68;
 
 #[derive(Deserialize)]
