@@ -39,30 +39,32 @@ pub(crate) fn fixture(selected: bool) -> Result<Fixture, Box<dyn std::error::Err
     Ok((app, commands, outbox))
 }
 pub(crate) fn open(app: &mut App) -> TestResult {
-    let event = oteryn_input_actions::NormalizedInputEvent::Key {
-        code: oteryn_input_actions::KeyCode::new(20)?,
-        state: oteryn_input_actions::ButtonState::Pressed,
-        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
-            .with(oteryn_input_actions::Modifier::Alt),
-        repeat: false,
-    };
-    app.world_mut()
-        .non_send_mut::<HostOwner>()
-        .route_input(&[event], false);
+    use oteryn_input_actions::{Modifier, Modifiers};
+    loot_shortcut(app, Modifiers::one(Modifier::Control).with(Modifier::Alt))?;
     app.update();
     Ok(())
 }
+
 pub(crate) fn nearby_hotkey(app: &mut App) -> TestResult {
-    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    app.world_mut().non_send_mut::<HostOwner>().route_input(
-        &[NormalizedInputEvent::Key {
-            code: KeyCode::new(20)?,
-            state: ButtonState::Pressed,
-            modifiers: Modifiers::one(Modifier::Alt),
-            repeat: false,
-        }],
-        false,
-    );
+    use oteryn_input_actions::{Modifier, Modifiers};
+    loot_shortcut(app, Modifiers::one(Modifier::Alt))
+}
+
+fn loot_shortcut(app: &mut App, modifiers: oteryn_input_actions::Modifiers) -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, NormalizedInputEvent};
+    let code = KeyCode::new(20)?;
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    for state in [ButtonState::Pressed, ButtonState::Released] {
+        owner.route_input(
+            &[NormalizedInputEvent::Key {
+                code,
+                state,
+                modifiers,
+                repeat: false,
+            }],
+            false,
+        );
+    }
     Ok(())
 }
 pub(crate) fn click_corpse_tile(

@@ -955,56 +955,57 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     .map_err(|error| format!("I07 captured picker inventory: {error:?}"))?;
     ui::prepare_filter_picker(&mut app, &outbox, picker_inventory.clone());
     ui::open(&mut app)?;
-    let replay_inbox = |app: &mut bevy::app::App,
-                        commands: &mut tokio::sync::mpsc::UnboundedReceiver<
-        crate::combat_input::PlayCommand,
-    >,
-                        label,
-                        session: &str|
-     -> Result<(u64, u64), Box<dyn std::error::Error>> {
-        use oteryn_client_runtime::cui3::store as store_wire;
-        outbox.bevy_store_initialize();
-        assert_eq!(
-            ui::link(app)?.quick_loot_inbox().0,
-            None,
-            "I07 stale Inbox after admission"
-        );
-        app.update();
-        ui::click_inbox_refresh(app)?;
-        let crate::combat_input::PlayCommand::ServerMechanic(inbox_command) =
-            commands.try_recv()?
-        else {
-            return Err("I07 client queued the wrong Store Inbox command".into());
+    let replay_inbox =
+        |app: &mut bevy::app::App,
+         commands: &mut tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+         label,
+         session: &str|
+         -> Result<(u64, u64), Box<dyn std::error::Error>> {
+            use oteryn_client_runtime::cui3::store as store_wire;
+            outbox.bevy_store_initialize();
+            assert_eq!(
+                ui::link(app)?.quick_loot_inbox().0,
+                None,
+                "I07 stale Inbox after admission"
+            );
+            app.update();
+            ui::click_inbox_refresh(app)?;
+            let crate::combat_input::PlayCommand::ServerMechanic(inbox_command) = commands
+                .try_recv()
+                .map_err(|error| format!("I07 {label} refresh did not dispatch: {error}"))?
+            else {
+                return Err("I07 client queued the wrong Store Inbox command".into());
+            };
+            assert_eq!(inbox_command.capability, store_wire::CAPABILITY_STORE_V1);
+            assert_eq!(
+                inbox_command.command_type,
+                store_wire::COMMAND_TYPE_STORE_INBOX_CLAIM
+            );
+            assert_eq!(
+                inbox_command.payload,
+                std::fs::read(directory.join(format!("i07-{label}-request.bin")))?
+            );
+            let inbox: Reply = serde_json::from_slice(&std::fs::read(
+                directory.join(format!("i07-{label}.json")),
+            )?)?;
+            assert_eq!(inbox.game_session_id, session);
+            assert_eq!(inbox.status, CommandStatus::Accepted as u32);
+            crate::play::session_loop::route_server_mechanic_reply(
+                &outbox,
+                &inbox_command,
+                &GatedCommandResult {
+                    command_id: inbox.command_id,
+                    server_sequence: inbox.server_sequence,
+                    status: CommandStatus::Accepted,
+                    payload: inbox.payload,
+                },
+            );
+            assert_eq!(
+                ui::link(app)?.quick_loot_inbox().0,
+                Some(expected.fulfilment)
+            );
+            Ok((inbox.command_id, inbox.server_sequence))
         };
-        assert_eq!(inbox_command.capability, store_wire::CAPABILITY_STORE_V1);
-        assert_eq!(
-            inbox_command.command_type,
-            store_wire::COMMAND_TYPE_STORE_INBOX_CLAIM
-        );
-        assert_eq!(
-            inbox_command.payload,
-            std::fs::read(directory.join(format!("i07-{label}-request.bin")))?
-        );
-        let inbox: Reply =
-            serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{label}.json")))?)?;
-        assert_eq!(inbox.game_session_id, session);
-        assert_eq!(inbox.status, CommandStatus::Accepted as u32);
-        crate::play::session_loop::route_server_mechanic_reply(
-            &outbox,
-            &inbox_command,
-            &GatedCommandResult {
-                command_id: inbox.command_id,
-                server_sequence: inbox.server_sequence,
-                status: CommandStatus::Accepted,
-                payload: inbox.payload,
-            },
-        );
-        assert_eq!(
-            ui::link(app)?.quick_loot_inbox().0,
-            Some(expected.fulfilment)
-        );
-        Ok((inbox.command_id, inbox.server_sequence))
-    };
     let first_inbox = replay_inbox(&mut app, &mut commands, "inbox", &first.game_session_id)?;
     let mut sessions = [String::new(), String::new()];
     let mut previous = first_inbox;
@@ -1269,7 +1270,10 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             }
         };
         assert!(dispatched, "I07 probe {key}");
-        let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        let crate::combat_input::PlayCommand::ServerMechanic(command) = commands
+            .try_recv()
+            .map_err(|error| format!("I07 probe {key} did not dispatch: {error}"))?
+        else {
             return Err("I07 client queued the wrong command".into());
         };
         let captured = std::fs::read(directory.join(format!("i07-{key}-request.bin")))?;
