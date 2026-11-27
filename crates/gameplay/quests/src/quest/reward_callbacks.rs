@@ -582,9 +582,9 @@ struct Document {
     callbacks: Vec<RewardCallback>,
 }
 
+// Cartography 101's captured assignment stays offline pending the landmark and report bindings.
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/cartography-101.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/classic-missions.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),

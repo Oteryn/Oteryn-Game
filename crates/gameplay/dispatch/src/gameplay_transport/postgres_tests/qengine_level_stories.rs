@@ -3,11 +3,11 @@
 use super::TestResult;
 
 #[test]
-fn rotem_valos_issues_one_adventurers_map() -> TestResult {
+fn rotem_valos_does_not_offer_unimplemented_cartography() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::qengine_rewards_fixtures::scenario("qengine-rewards-cartography-assignment")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-cartography-held")
 }
 
 #[test]

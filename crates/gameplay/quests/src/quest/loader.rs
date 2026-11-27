@@ -699,26 +699,25 @@ mod tests {
     }
 
     #[test]
-    fn rotem_valos_assigns_cartography_and_gives_the_adventurers_map() -> Result<(), String> {
+    fn cartography_has_no_runtime_assignment_or_map_grant() -> Result<(), String> {
         use super::super::reward_callbacks;
+        const QUEST: &str = "oteryn:quest.authored.cartography_101_quest";
+        const ASSIGNMENT: &str = "oteryn:quest-reward/cartography-101/assign";
+        const TRACK: &str = "oteryn:quest-progress/cartography-101/assignment";
         let state = embedded();
-        let callbacks = reward_callbacks::load()?;
-        let assignment = callbacks
-            .iter()
-            .find(|c| c.key == "oteryn:quest-reward/cartography-101/assign")
-            .ok_or("Cartography assignment")?;
-        assert_eq!(assignment.npc, "oteryn:npc.rotem_valos");
-        assert_eq!(assignment.keywords, ["map"]);
-        assert_eq!(
-            assignment.give.as_ref().ok_or("map reward")?.item,
-            "oteryn:item.tibia.i22107"
+        let catalogue = state.catalogue();
+        assert!(
+            reward_callbacks::offered_for(catalogue)?
+                .iter()
+                .all(|row| row.quest != QUEST)
         );
-        let transition = state
-            .catalogue()
-            .transition(&assignment.key)
-            .ok_or("assignment transition")?;
-        assert_eq!(transition.effects.len(), 1);
-        assert!(!transition.completes);
+        assert!(
+            reward_callbacks::load_for(catalogue)?
+                .iter()
+                .all(|row| row.quest != QUEST)
+        );
+        assert!(catalogue.transition(ASSIGNMENT).is_none());
+        assert!(catalogue.track(TRACK).is_none());
         Ok(())
     }
 

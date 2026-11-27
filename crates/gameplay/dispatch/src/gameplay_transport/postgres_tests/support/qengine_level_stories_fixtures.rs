@@ -554,13 +554,13 @@ async fn makeshift(
     Ok(())
 }
 
-
-pub(super) async fn assign_cartography(
+pub(super) async fn cartography_held(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    use super::m39_bone_journey_fixtures::{carried, grant, stage};
+    use super::m39_bone_journey_fixtures::{carried, stage};
+    use super::qengine_rewards_fixtures::talk_outcome;
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
@@ -568,20 +568,25 @@ pub(super) async fn assign_cartography(
         )
         .ok_or("Cartography NPC capability")?;
     let [rotem] =
-        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.rotem_valos"]).await?;
+        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.rotem_valos"])
+            .await?;
     let track = "oteryn:quest-progress/cartography-101/assignment";
     assert_eq!(stage(h, track).await?, None);
     assert_eq!(carried(h, 22107).await?, 0);
-    assert_eq!(
-        grant(owner, admitted, rotem, "cartography-101/assign").await?.0,
-        NpcIntentDisposition::Ok
+    assert_eq!(receipts(h).await?, 0);
+    let command = admitted.continuity.next_command_id;
+    let greeting = talk_outcome(owner, admitted, rotem, command, "hi").await?;
+    assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
+    assert!(
+        greeting
+            .conversation
+            .is_some_and(|reply| reply.open.is_some())
     );
-    assert_eq!(stage(h, track).await?, Some(1));
-    assert_eq!(carried(h, 22107).await?, 1);
-    assert_eq!(
-        grant(owner, admitted, rotem, "cartography-101/assign").await?.0,
-        NpcIntentDisposition::Rejected
-    );
-    assert_eq!(carried(h, 22107).await?, 1);
+    let attempt = talk_outcome(owner, admitted, rotem, command + 1, "map").await?;
+    assert!(attempt.conversation.is_none());
+    assert!(!attempt.inventory_changed);
+    assert_eq!(stage(h, track).await?, None);
+    assert_eq!(carried(h, 22107).await?, 0);
+    assert_eq!(receipts(h).await?, 0);
     Ok(())
 }

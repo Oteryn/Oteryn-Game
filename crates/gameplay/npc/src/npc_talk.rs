@@ -56,7 +56,6 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
     include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
-    include_str!("../../../../content/quests/npc-callbacks/cartography-101.json"),
     include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../content/quests/npc-callbacks/quest-contacts.json"),
@@ -1551,13 +1550,12 @@ mod tests {
             source_dialogue_tests::assert_reward_lore(name, entry);
         }
         let rotem = "oteryn:npc.rotem_valos";
-        assert!(reward_callback_npc(rotem));
+        assert!(!reward_callback_npc(rotem));
         let native_book = NpcTalkBook::from_model_with_native_quests(&model, &[rotem]);
-        let entry = native_book
-            .get(rotem)
-            .ok_or("Rotem's native conversation")?;
+        let entry = native_book.get(rotem).ok_or("Rotem's conversation")?;
         assert!(entry.admitted_dialogue);
         assert!(entry.dialogue_keywords.is_empty());
+        assert!(!entry.matches_focus_or_dialogue("map"));
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
         Ok(())
     }
