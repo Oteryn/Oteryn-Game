@@ -46,7 +46,8 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
     O: ConnectionObserver,
 {
     let units = Semaphore::new(limits.handshake_units);
-    let mut connections: Vec<Pin<Box<dyn Future<Output = Option<LostControl>> + '_>>> = Vec::new();
+    let mut connections: Vec<Pin<Box<dyn Future<Output = Option<EndedController>> + '_>>> =
+        Vec::new();
     // Loss/grace lifecycles of ended admitted connections. They hold no socket
     // and at most one exists per admitted session, so they stay outside the
     // connection budget; shutdown cancels them.
@@ -103,7 +104,7 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
                 Poll::Ready(lost) => {
                     if let Some(lost) = lost {
                         let mut lifecycle = Box::pin(DurabilityRoot::with_holder_owner(
-                            control_loss_lifecycle(authority, lost, shutdown),
+                            ended_controller_lifecycle(authority, lost, shutdown),
                         ));
                         // Registers the lifecycle's first wake-up.
                         if lifecycle.as_mut().poll(context).is_pending() {
@@ -144,9 +145,9 @@ const LISTENER_POLL_REPORT: Duration = Duration::from_millis(500);
 
 /// Polls one connection and reports a poll that kept the shared listener task (NBDIAG-6).
 fn timed_poll(
-    connection: Pin<&mut (dyn Future<Output = Option<LostControl>> + '_)>,
+    connection: Pin<&mut (dyn Future<Output = Option<EndedController>> + '_)>,
     context: &mut std::task::Context<'_>,
-) -> Poll<Option<LostControl>> {
+) -> Poll<Option<EndedController>> {
     let started = std::time::Instant::now();
     let poll = connection.poll(context);
     let polled = started.elapsed();
@@ -247,7 +248,7 @@ async fn serve_accepted<A, I, O>(
     observer: &O,
     shutdown: &CancellationToken,
     drain: Option<&gameplay_drain::GameplayDrain>,
-) -> Option<LostControl>
+) -> Option<EndedController>
 where
     A: FreshAdmissionAuthority,
     I: ConnectionIdentifiers,
@@ -346,6 +347,7 @@ where
             trace,
         ),
     }
+    let mut unpublished_join = false;
     let (end, served) = match admitted {
         // A durably admitted or resumed session whose acceptance could not be delivered
         // still has a controller that is gone: it enters the loss lifecycle, never limbo.
@@ -385,14 +387,12 @@ where
             match served {
                 Some(
                     end @ ConnectionEnd::AdmittedThenClosed(
-                        session,
+                        _,
                         FoundationProtocolError::SessionJoinUnavailable,
                     ),
                 ) if acceptance.is_some() => {
-                    // This committed owner never sent its acceptance. Release it
-                    // before waiting for normal transport-loss grace.
-                    let released = authority.release_abandoned(session).await;
-                    (end, released != GraceExpiryResult::Released)
+                    unpublished_join = true;
+                    (end, true)
                 }
                 Some(end) => (end, true),
                 // A shutdown drain is not evidence of lost playable control.
@@ -444,7 +444,7 @@ where
     observer.ended(end);
     lost.map(|(session, wait)| {
         let reset = drain.and_then(|drain| drain.reset());
-        LostControl {
+        let lost = LostControl {
             session,
             wait: if reset.is_some() {
                 Duration::ZERO
@@ -452,8 +452,45 @@ where
                 wait
             },
             reset,
+        };
+        if unpublished_join {
+            EndedController::UnpublishedJoin(lost)
+        } else {
+            EndedController::LostControl(lost)
         }
     })
+}
+
+enum EndedController {
+    UnpublishedJoin(LostControl),
+    LostControl(LostControl),
+}
+
+async fn ended_controller_lifecycle<A: FreshAdmissionAuthority>(
+    authority: &A,
+    ended: EndedController,
+    shutdown: &CancellationToken,
+) {
+    let lost = match ended {
+        EndedController::LostControl(lost) => lost,
+        EndedController::UnpublishedJoin(lost) => {
+            // A refused snapshot closes its socket before the durable release waits.
+            match first(
+                authority.release_abandoned(lost.session),
+                shutdown.cancelled(),
+            )
+            .await
+            {
+                Some(GraceExpiryResult::Released) => {
+                    authority.finish_activity_connection_lineage(lost.session);
+                    return;
+                }
+                Some(_) => lost,
+                None => return,
+            }
+        }
+    };
+    control_loss_lifecycle(authority, lost, shutdown).await;
 }
 
 /// An ended admitted connection whose control is lost after `wait` without restored control.
@@ -575,6 +612,61 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
 #[cfg(test)]
 mod logging_tests {
     use super::*;
+
+    struct BlockedJoinRelease<'a>(&'a tokio::sync::Notify);
+
+    impl FreshAdmissionAuthority for BlockedJoinRelease<'_> {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn release_abandoned(&self, _: AdmittedSession) -> GraceExpiryResult {
+            self.0.notify_one();
+            std::future::pending().await
+        }
+    }
+
+    #[tokio::test]
+    async fn unpublished_join_release_can_stop_with_listener()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let id = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
+        let lost = LostControl {
+            session: AdmittedSession {
+                game_session_id: GameSessionId::decode(&id)?,
+                world_id: WorldId::decode(&id)?,
+                channel_id: ChannelId::decode(&id)?,
+                runtime_actor: None,
+                first_entry: FirstEntryOutcome::RefusedUnavailable,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            },
+            wait: Duration::ZERO,
+            reset: None,
+        };
+        let started = tokio::sync::Notify::new();
+        let authority = BlockedJoinRelease(&started);
+        let shutdown = CancellationToken::new();
+        let close = async {
+            started.notified().await;
+            shutdown.cancel();
+        };
+        tokio::time::timeout(IDLE_LIVENESS.interval, async {
+            tokio::join!(
+                ended_controller_lifecycle(
+                    &authority,
+                    EndedController::UnpublishedJoin(lost),
+                    &shutdown
+                ),
+                close,
+            );
+        })
+        .await?;
+        Ok(())
+    }
 
     #[test]
     fn admission_refusal_and_transport_close_emit_registered_events() {
