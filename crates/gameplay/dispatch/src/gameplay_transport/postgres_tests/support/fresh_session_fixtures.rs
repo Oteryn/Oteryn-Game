@@ -1,5 +1,7 @@
 //! The existing fresh-session publication helper, shared without rebuilding its receipt.
 use super::*;
+use crate::durability::DurabilityRoot;
+use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 
 pub(super) async fn prepare_current_session(
     harness: &Harness,
@@ -11,11 +13,20 @@ pub(super) async fn prepare_current_session_for_account(
     harness: &Harness,
     account: [u8; 16],
 ) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
+    prepare_current_session_from(&harness.root, &harness.pool, &harness.node, account).await
+}
+
+pub(super) async fn prepare_current_session_from(
+    root: &DurabilityRoot,
+    pool: &sqlx::PgPool,
+    node: &NodeIncarnationProof,
+    account: [u8; 16],
+) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&harness.pool)
+            .fetch_one(pool)
             .await?;
-    prepare_after_runtime_observation_for_account(harness, now, account).await
+    prepare_after_runtime_observation_for_account(root, pool, node, now, account).await
 }
 
 #[cfg(oteryn_pg_shard_primary)]
@@ -23,11 +34,15 @@ pub(super) async fn prepare_after_runtime_observation(
     harness: &Harness,
     now: i64,
 ) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
-    prepare_after_runtime_observation_for_account(harness, now, id(40)).await
+    prepare_after_runtime_observation_for_account(
+        &harness.root, &harness.pool, &harness.node, now, id(40),
+    ).await
 }
 
 async fn prepare_after_runtime_observation_for_account(
-    harness: &Harness,
+    root: &DurabilityRoot,
+    pool: &sqlx::PgPool,
+    node: &NodeIncarnationProof,
     now: i64,
     account: [u8; 16],
 ) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
@@ -41,9 +56,7 @@ async fn prepare_after_runtime_observation_for_account(
         crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
     let runtime_publication =
         AdmissionAuthorityPublicationV1::prepare(&runtime_source, now).map_err(debug)?;
-    harness
-        .root
-        .publish_runtime_readiness(&harness.node, &runtime_publication)
+    root.publish_runtime_readiness(node, &runtime_publication)
         .await
         .map_err(debug)?;
     // Runtime publication may block under concurrent PostgreSQL load. Observe
@@ -51,7 +64,7 @@ async fn prepare_after_runtime_observation_for_account(
     // decision deadline must cover admission, not runtime setup work.
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&harness.pool)
+            .fetch_one(pool)
             .await?;
     let mut source = fresh_fixture::fresh::Source::appearance_observer(
         now,
@@ -87,12 +100,12 @@ async fn prepare_after_runtime_observation_for_account(
     source.rows.retain(|row| !matches!(row.key,
         crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
     let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
-    let guards = AdmissionGuardStore::from_root(harness.root.clone());
+    let guards = AdmissionGuardStore::from_root(root.clone());
     guards
         .publish(&publication)
         .await
         .map_err(|e| format!("fresh fixture publication: {e:?}"))?;
-    let store = FreshAdmissionStore::from_root(harness.root.clone());
+    let store = FreshAdmissionStore::from_root(root.clone());
     let outcome = store
         .commit(&request)
         .await

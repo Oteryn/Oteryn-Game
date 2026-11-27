@@ -9,6 +9,27 @@ pub(in crate::gameplay_transport) struct HolderCheckoutProbe {
 }
 
 #[cfg(test)]
+#[derive(Debug)]
+pub(in crate::gameplay_transport) enum HolderCheckoutProbeError {
+    Checkout(crate::durability::DurabilityError),
+    Return(crate::durability::DurabilityError),
+}
+
+#[cfg(test)]
+impl std::fmt::Display for HolderCheckoutProbeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (stage, error) = match self {
+            Self::Checkout(error) => ("competing semantic holder checkout", error),
+            Self::Return(error) => ("competing semantic holder return", error),
+        };
+        write!(f, "{stage}: {error:?}")
+    }
+}
+
+#[cfg(test)]
+impl std::error::Error for HolderCheckoutProbeError {}
+
+#[cfg(test)]
 impl HolderCheckoutProbe {
     pub(in crate::gameplay_transport) async fn pause(&self) {
         self.before_read.notify_one();
@@ -22,7 +43,7 @@ impl HolderCheckoutProbe {
     pub(in crate::gameplay_transport) async fn contend(
         &self,
         root: &DurabilityRoot,
-    ) -> Result<(), crate::durability::DurabilityError> {
+    ) -> Result<(), HolderCheckoutProbeError> {
         self.contend_with(root, async {}).await
     }
 
@@ -30,14 +51,22 @@ impl HolderCheckoutProbe {
         &self,
         root: &DurabilityRoot,
         after_refusal: impl Future<Output = T>,
-    ) -> Result<T, crate::durability::DurabilityError> {
+    ) -> Result<T, HolderCheckoutProbeError> {
         self.before_read.notified().await;
         // Another foreground pass briefly wins the real holder at the selected checkout.
-        let holder = root.try_issue_semantic_pass()?;
+        let holder = AdmissionRetryBudget::for_release_holder(root)
+            .retry_durability("release_probe_checkout", || async {
+                root.try_issue_semantic_pass()
+            })
+            .await
+            .map_err(HolderCheckoutProbeError::Checkout)?;
         self.proceed.notify_one();
         self.read_failed.notified().await;
         let result = after_refusal.await;
-        holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        holder
+            .run(|_, _| Box::pin(async { Ok(()) }))
+            .await
+            .map_err(HolderCheckoutProbeError::Return)?;
         Ok(result)
     }
 }

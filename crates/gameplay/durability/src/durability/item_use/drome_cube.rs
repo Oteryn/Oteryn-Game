@@ -1,8 +1,7 @@
 //! W09: the Cube reuses the item-use TRANSFORM, its fences and Type 2 audit.
 //! Crystal 201189f8 `data/scripts/actions/items/drome_cube.lua:27-39`.
 
-use crate::durability::db::commit_semantic_read;
-use super::super::db::{begin_semantic_transaction};
+use super::super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::super::item_loop_move::ItemLoopContent;
 use super::super::item_transfer::read_derived_transfer_capacity_centi_oz;
 use super::*;
@@ -69,6 +68,31 @@ impl DurabilityRoot {
         command: CommandRef,
         binding: [u8; 32],
     ) -> super::Result<Option<DromeCubeReceipt>> {
+        self.drome_cube_receipt(authority, fence, command, binding, false)
+            .await
+    }
+
+    /// Resolve an uncertain write. Take the writer's relation fence before reading so
+    /// that a missing receipt proves the earlier transaction has settled without it.
+    pub async fn reconcile_drome_cube_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        binding: [u8; 32],
+    ) -> super::Result<Option<DromeCubeReceipt>> {
+        self.drome_cube_receipt(authority, fence, command, binding, true)
+            .await
+    }
+
+    async fn drome_cube_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        binding: [u8; 32],
+        settle_write: bool,
+    ) -> super::Result<Option<DromeCubeReceipt>> {
         if command.game_session_id() != fence.game_session_id {
             return Err(ItemUseError::InvalidInput);
         }
@@ -80,6 +104,9 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
+                    if settle_write {
+                        lock_admission_relations(&mut tx).await?;
+                    }
                     let row = sqlx::query(
                         "SELECT p.wire_binding, p.reward_index, \
                                 uuid_send(u.character_id) AS character, \

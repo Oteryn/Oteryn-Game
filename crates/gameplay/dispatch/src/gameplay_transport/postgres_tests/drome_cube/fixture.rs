@@ -5,13 +5,22 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
     let label = match case {
         Case::FullRetry => "drome_cube_full",
         Case::HandleReplay => "drome_cube_handle",
+        Case::CommitUnknown => "drome_cube_commit_unknown",
         Case::ExistingStack => "drome_cube_stack",
         Case::ConcurrentLastUnit => "drome_cube_concurrent",
         Case::KooldownAid => "kooldown_aid",
         Case::Logout => "drome_cube_logout",
         Case::LogoutLiveness => "drome_cube_logout_liveness",
     };
-    let harness = Harness::create(admin, label, true).await?;
+    let proves_logout = matches!(case, Case::Logout | Case::LogoutLiveness);
+    let harness = Harness::create_with_admission_seed(admin, label, true, !proves_logout).await?;
+    if proves_logout {
+        super::super::fresh_session_fixtures::prepare_current_session_from(
+            &harness.root, &harness.pool, &harness.node, id(40),
+        )
+            .await
+            .map_err(|error| format!("Cube logout fresh admission: {error}"))?;
+    }
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
         .root
@@ -163,6 +172,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
             super::logout::run(&owner, &harness, actor, session, index, case).await
         }
         Case::HandleReplay => super::cases::handle_replay(&owner, &harness, actor, session).await,
+        Case::CommitUnknown => super::cases::commit_unknown(&owner, &harness, actor, session).await,
         Case::ExistingStack => super::cases::stack(&owner, &harness, actor, session, index).await,
         Case::ConcurrentLastUnit => {
             super::cases::concurrent(&owner, &harness, actor, session, index).await
