@@ -16,21 +16,8 @@ pub(super) struct Effects {
     pub dust_before: ForgeDustBalance,
 }
 
-fn operation_name(operation: Operation) -> &'static str {
-    match operation {
-        Operation::QueryHistory => "history",
-        Operation::Fusion => "fusion",
-        Operation::ConvergenceFusion => "convergence_fusion",
-        Operation::Transfer => "transfer",
-        Operation::ConvergenceTransfer => "convergence_transfer",
-        Operation::DustToSlivers => "dust_to_slivers",
-        Operation::SliversToCores => "slivers_to_cores",
-        Operation::DustLimit => "dust_limit",
-    }
-}
-
 pub(super) fn refusal(request: Request, reason: &str) -> Value {
-    json!({"operation":operation_name(request.operation),"succeeded":false,"applied":false,
+    json!({"operation":request.operation.name(),"succeeded":false,"applied":false,
         "reason":reason,"bonus":0,"result":null})
 }
 
@@ -240,7 +227,7 @@ pub(super) async fn plan(
             .map_err(|_| DurabilityError::InvalidStoredState)?
             .after
     };
-    let reply = json!({"operation":operation_name(request.operation),"succeeded":success,"applied":true,"reason":null,"bonus":bonus,
+    let reply = json!({"operation":request.operation.name(),"succeeded":success,"applied":true,"reason":null,"bonus":bonus,
         "result":{"first_item":request.first_item.map(|handle|handle.get()),"first_tier":first,
             "second_item":request.second_item.map(|handle|handle.get()),"second_tier":second,
             "dust":dust_after.balance(),"dust_limit":dust_after.limit().get(),"gold_spent":gold,"cores_spent":spent_cores,

@@ -196,6 +196,16 @@ fn scenario(case: Case) -> TestResult {
                 assert_eq!(gold_in_backpack(&h).await?, 0);
             }
             Case::Forge => {
+                super::super::item_forge_fixtures::support::open_fixture_station_at(
+                    &owner,
+                    admitted,
+                    crate::map::overlay::TilePos {
+                        x: 7,
+                        y: 1,
+                        floor: -7,
+                    },
+                )
+                .await?;
                 sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING").execute(&h.pool).await?;
                 let current = owner
                     .current_quest_fence(session)

@@ -1,5 +1,6 @@
 //! Native DustLimit and history through the actual admitted connection router.
 use super::fixture::{Harness, debug, id, run};
+use super::item_forge_fixtures::support;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::domain::CharacterRevision;
 use crate::durability::character_forge_dust::{
@@ -35,7 +36,10 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active generation")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -56,7 +60,9 @@ fn scenario() -> TestResult {
                 },
             )
             .map_err(debug)?;
+        let station_cells = support::station_cells(&deps, generation)?;
         let mut owner = deps.owner(&h, &authority);
+        owner.movement_cells = (&station_cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
         let current =
@@ -117,6 +123,9 @@ fn scenario() -> TestResult {
                 ids,
             )
             .ok_or("capabilities")?;
+            if enabled {
+                support::open_fixture_station(&owner, admitted).await?;
+            }
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let serve = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
             let first_command = admitted.continuity.next_command_id;

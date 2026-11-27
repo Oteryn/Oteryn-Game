@@ -1,7 +1,6 @@
 //! Native controls for Item Forge.
 #[path = "state/exaltation.rs"]
 pub mod exaltation;
-mod input;
 #[path = "protocol/preview.rs"]
 pub mod preview;
 mod protocol;
@@ -12,7 +11,6 @@ mod selection;
 mod state;
 pub use protocol::reply;
 mod view;
-pub use input::open_key;
 pub use protocol::{apply_result, command, control_request, preview_request, request};
 pub use selection::{MAX_CANDIDATES, PreviewState};
 pub use state::ItemForgePanel;

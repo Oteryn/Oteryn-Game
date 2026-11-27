@@ -8,6 +8,7 @@ use crate::durability::character_forge_dust::{ForgeDustLimitError, ForgeResolved
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId};
 use crate::map::{overlay::TilePos, view::MapFacts};
+use oteryn_protocol_oteryn::item_forge::{CAPABILITY_ITEM_FORGE_V1, Operation, Request};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::{collections::HashMap, sync::Mutex};
 
@@ -30,6 +31,8 @@ impl Stations {
 
 /// Crystal 201189f8 data/scripts/actions/objects/exaltation_forge.lua:3–9
 /// registers these usable pieces of the Global Exaltation Forge object.
+/// Fandom Equipment Upgrade: "In order to upgrade an item, players must visit the
+/// [[Exaltation Forge]] in the [[Adventurers' Guild]]."
 fn station_position(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &ChannelRuntimeV1,
@@ -128,7 +131,11 @@ pub(super) async fn use_station(
     let current = super::AdmissionRetryBudget::for_command(owner.root)
         .retry_command_guard(async || store.current_session(fence.game_session_id).await)
         .await;
-    if current.ok().and_then(super::item_fence_of) != Some(fence) {
+    if !current.is_ok_and(|current| {
+        current.session_state() == crate::foundation::GameSessionState::Active
+            && current.current_control_loss_epoch().is_none()
+            && super::item_fence_of(current) == Some(fence)
+    }) {
         return Some(UseOutcome::rejected());
     }
 
@@ -183,26 +190,13 @@ async fn at_open_station(
 }
 
 fn station_required(request: Request) -> Option<Vec<u8>> {
-    use Operation::*;
-    let operation = match request.operation {
-        QueryHistory => "history",
-        Fusion => "fusion",
-        ConvergenceFusion => "convergence_fusion",
-        Transfer => "transfer",
-        ConvergenceTransfer => "convergence_transfer",
-        DustToSlivers => "dust_to_slivers",
-        SliversToCores => "slivers_to_cores",
-        DustLimit => "dust_limit",
-    };
     serde_json::to_vec(&serde_json::json!({
-        "operation": operation, "applied": false, "succeeded": false,
+        "operation": request.operation.name(), "applied": false, "succeeded": false,
         "reason": oteryn_protocol_oteryn::item_forge::FORGE_STATION_REQUIRED,
         "bonus": 0, "result": null
     }))
     .ok()
 }
-
-use oteryn_protocol_oteryn::item_forge::{CAPABILITY_ITEM_FORGE_V1, Operation, Request};
 
 macro_rules! authority_methods {
     () => {
@@ -346,32 +340,25 @@ pub(super) async fn execute(
             return Some(Vec::new());
         }
     }
-    if request.operation != Operation::QueryHistory && !at_open_station(owner, actor, fence).await {
-        return station_required(request);
-    }
     let command = CommandRef::new(admitted.game_session_id, id);
-    let retry = super::AdmissionRetryBudget::for_command(owner.root);
-    // A consumed item, changed content, new trade or cooldown must not change a retained reply.
     // The read independently proves current session, lease, scope and node authority.
-    let retained = loop {
-        match owner
-            .root
-            .read_item_forge_reply(owner.character, owner.holder, fence, command, request)
-            .await
-        {
-            Err(ForgeDustLimitError::Unavailable(
-                crate::durability::DurabilityError::RootUnavailable,
-            )) if retry
-                .retries_unavailable(super::connection::AdmissionRefusal::Unavailable)
-                .await => {}
-            result => break result,
-        }
-    };
-    match retained {
-        Ok(Some(result)) => return serde_json::to_vec(&result).ok(),
-        Ok(None) => {}
+    let retained = match owner
+        .root
+        .read_item_forge_reply(owner.character, owner.holder, fence, command, request)
+        .await
+    {
+        Ok(result) => result,
         Err(ForgeDustLimitError::Unavailable(_)) => return None,
         Err(_) => return Some(Vec::new()),
+    };
+    // A consumed item, changed content, new trade or cooldown must not change a retained reply.
+    if let Some(result) = retained {
+        if request.operation != Operation::QueryHistory
+            && !at_open_station(owner, actor, fence).await
+        {
+            return station_required(request);
+        }
+        return serde_json::to_vec(&result).ok();
     }
     // Resolve only after receipt lookup. A reconnect has new handles, and a
     // consumed source no longer has a live handle, but both must still replay.
@@ -412,38 +399,28 @@ pub(super) async fn execute(
     {
         return Some(Vec::new());
     }
-    let weights =
-        super::item_ref_admission::NativeItemWeights(native).with_wheel(owner.premium_coordinator);
-    loop {
-        if request.operation != Operation::QueryHistory
-            && !at_open_station(owner, actor, fence).await
-        {
-            return station_required(request);
-        }
-        let result = owner
-            .root
-            .execute_item_forge(
-                &permit,
-                owner.character,
-                owner.holder,
-                fence,
-                command,
-                request,
-                resolved_items,
-                native,
-                &weights,
-            )
-            .await;
-        match result {
-            Err(ForgeDustLimitError::Unavailable(
-                crate::durability::DurabilityError::RootUnavailable,
-            )) if retry
-                .retries_unavailable(super::connection::AdmissionRefusal::Unavailable)
-                .await => {}
-            Ok(result) => return serde_json::to_vec(&result).ok(),
-            Err(ForgeDustLimitError::Unavailable(_)) => return None,
-            Err(_) => return Some(Vec::new()),
-        }
+    if request.operation != Operation::QueryHistory && !at_open_station(owner, actor, fence).await {
+        return station_required(request);
+    }
+    match owner
+        .root
+        .execute_item_forge(
+            &permit,
+            owner.character,
+            owner.holder,
+            fence,
+            command,
+            request,
+            resolved_items,
+            native,
+            &super::item_ref_admission::NativeItemWeights(native)
+                .with_wheel(owner.premium_coordinator),
+        )
+        .await
+    {
+        Ok(result) => serde_json::to_vec(&result).ok(),
+        Err(ForgeDustLimitError::Unavailable(_)) => None,
+        Err(_) => Some(Vec::new()),
     }
 }
 

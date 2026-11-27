@@ -28,6 +28,7 @@ fn fuzz_decode_use_result() {
                 UseDisposition::Rejected,
                 UseDisposition::BedWoken,
                 UseDisposition::OfflineTraining,
+                UseDisposition::ForgeOpened,
             ])
         },
         decode_use_result,

@@ -29,35 +29,38 @@ impl Outbox {
         // are taken to the wire frame, inside the runtime send.
         let raw_wire = lock(&self.0).wire_frame() == crate::play::wire_frame::WireFrame::Raw;
         let result = session.world_context(command, raw_wire).await;
-        if matches!(result, Ok(Reply::ForgeOpened)) {
+        let opened_forge = matches!(result, Ok(Reply::ForgeOpened));
+        {
+            let mut mailbox = lock(&self.0);
+            mailbox.world_context.pending = false;
+            mailbox.use_with_pending = false;
+            // The ordinary use owns the result; refresh advisory multiaction data afterwards.
+            mailbox.bar_actions.item_cooldowns.clear();
+            match result {
+                Ok(reply) => {
+                    let text = reply.feedback();
+                    #[cfg(bevy_shell)]
+                    crate::play::feature_local_text_messages::view::record_look(
+                        &mut mailbox,
+                        command.action,
+                        &text,
+                    );
+                    mailbox
+                        .world_context
+                        .set_feedback(text, std::time::Instant::now());
+                }
+                Err(error) => {
+                    mailbox
+                        .world_context
+                        .set_feedback(tr!("Session unavailable").into(), std::time::Instant::now());
+                    return Err(error);
+                }
+            }
+        }
+        if opened_forge {
             self.open_forge(session).await?;
         }
-        let mut mailbox = lock(&self.0);
-        mailbox.world_context.pending = false;
-        mailbox.use_with_pending = false;
-        // The ordinary use owns the result; refresh advisory multiaction data afterwards.
-        mailbox.bar_actions.item_cooldowns.clear();
-        match result {
-            Ok(reply) => {
-                let text = reply.feedback();
-                #[cfg(bevy_shell)]
-                crate::play::feature_local_text_messages::view::record_look(
-                    &mut mailbox,
-                    command.action,
-                    &text,
-                );
-                mailbox
-                    .world_context
-                    .set_feedback(text, std::time::Instant::now());
-                Ok(())
-            }
-            Err(error) => {
-                mailbox
-                    .world_context
-                    .set_feedback(tr!("Session unavailable").into(), std::time::Instant::now());
-                Err(error)
-            }
-        }
+        Ok(())
     }
 }
 

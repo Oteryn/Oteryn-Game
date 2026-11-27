@@ -43,6 +43,7 @@ pub(in super::super) enum Case {
     Concurrent,
     NoRoom,
     StationRequired,
+    StationOpened,
     Stash,
     Nested,
     HistoryBound,
@@ -98,7 +99,9 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 },
             )
             .map_err(debug)?;
+        let station_cells = station_cells(&deps, generation)?;
         let mut owner = deps.owner(&h, &authority);
+        owner.movement_cells = (&station_cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
         let current =
@@ -187,6 +190,12 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 gameplay,
             ));
         }
+        if !matches!(
+            case,
+            Case::StationRequired | Case::StationOpened | Case::CurrentDust
+        ) {
+            open_fixture_station(&owner, admitted).await?;
+        }
         match case {
             Case::Preview => {
                 super::super::forge_preview_fixtures::exercise(&h, &owner, &mut admitted).await?
@@ -213,8 +222,52 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 assert_eq!(result["reason"], "FORGE_STATION_REQUIRED", "{result}");
                 assert_eq!(result["applied"], false);
                 assert_eq!(balances(&h).await?, before);
+                let started: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_forge_reservations")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(started, 0);
             }
+            Case::StationOpened => {
+                use protocol::world_object::{self, UseDisposition};
+                let target = fixture_station(&owner)?;
+                let (status, reply) = exchange_typed(
+                    &owner,
+                    &mut admitted,
+                    world_object::COMMAND_TYPE_USE_INTENT,
+                    &world_object::encode_use_intent(&target).map_err(debug)?,
+                )
+                .await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(
+                    world_object::decode_use_result(&reply).map_err(debug)?,
+                    UseDisposition::ForgeOpened
+                );
+                let (status, result) = exchange(
+                    &owner,
+                    &mut admitted,
+                    request(Operation::DustToSlivers, 164),
+                )
+                .await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(result["applied"], true, "{result}");
+                assert_eq!(balances(&h).await?, (40, 100, 3, 0));
 
+                super::super::autowalk_fixtures::place(
+                    &owner,
+                    admitted,
+                    super::super::autowalk_fixtures::at(8, 0),
+                )
+                .await?;
+                let (_, result) = exchange(
+                    &owner,
+                    &mut admitted,
+                    request(Operation::DustToSlivers, 165),
+                )
+                .await?;
+                assert_eq!(result["reason"], "FORGE_STATION_REQUIRED", "{result}");
+                assert_eq!(balances(&h).await?, (40, 100, 3, 0));
+            }
             Case::Stash => super::materials_and_history::stash(&h, &owner, &mut admitted).await?,
             Case::Nested => super::materials_and_history::nested(&h, &owner, &mut admitted).await?,
             Case::HistoryBound => {
@@ -266,6 +319,92 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+pub(in super::super) const STATION: &str = "oteryn:item.tibia.i37122";
+const COIN: &str = "oteryn:item.tibia.i3031";
+const STATION_TILE: crate::map::overlay::TilePos = crate::map::overlay::TilePos {
+    x: 6,
+    y: 0,
+    floor: -7,
+};
+
+pub(in super::super) fn station_cells(
+    deps: &Dependencies,
+    generation: &crate::content::ActiveGeneration,
+) -> TestResult<crate::content::NativeEntryMovementCells> {
+    use crate::map::{
+        boot::{BootPins, boot, native_item_definition, tests::bundle_with_item_ids},
+        overlay::{TilePos, map_revision},
+    };
+
+    let native = generation.native_gameplay();
+    let item = |key: &str| native_item_definition(native, key);
+    let station = item(STATION).ok_or("station definition")?;
+    let coin = item(COIN).ok_or("coin definition")?;
+    let (bytes, bundle) = bundle_with_item_ids(
+        (STATION, station.reference.get() - 1),
+        (COIN, coin.reference.get() - 1),
+    );
+    let base = crate::map::load(&bytes, &bundle).map_err(debug)?;
+    let world = boot(
+        &bytes,
+        &BootPins {
+            map_revision: map_revision(&base),
+            bundle,
+            start: TilePos {
+                x: 7,
+                ..STATION_TILE
+            },
+        },
+        deps.admitted.world_id,
+        deps.admitted.channel_id,
+        item,
+    )
+    .map_err(debug)?;
+    world
+        .movement_cells(deps.room.movement_cells())
+        .map_err(debug)
+}
+
+fn fixture_station(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<protocol::world_object::WorldObjectTarget> {
+    let map = owner.bundle_map().ok_or("Forge fixture bundle")?;
+    super::super::autowalk_fixtures::object(map.overlay.base().digest(), STATION_TILE, 0)
+}
+
+pub(in super::super) async fn open_fixture_station(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    open_fixture_station_at(owner, admitted, STATION_TILE).await
+}
+
+pub(in super::super) async fn open_fixture_station_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    position: crate::map::overlay::TilePos,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("Forge fixture bundle")?;
+    let target = super::super::autowalk_fixtures::object(map.overlay.base().digest(), position, 0)?;
+    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+    let outcome = owner
+        .use_object(
+            admitted.runtime_actor.ok_or("Forge actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: admitted.continuity.next_command_id,
+                item_fence: admitted.item_fence,
+            },
+            target,
+        )
+        .await;
+    assert_eq!(
+        outcome.disposition,
+        protocol::world_object::UseDisposition::ForgeOpened
+    );
+    Ok(())
 }
 
 pub(in super::super) fn request(operation: Operation, seed: u8) -> Request {

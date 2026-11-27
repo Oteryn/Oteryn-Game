@@ -24,6 +24,20 @@ pub enum Operation {
 
 impl Operation {
     #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::QueryHistory => "history",
+            Self::Fusion => "fusion",
+            Self::ConvergenceFusion => "convergence_fusion",
+            Self::Transfer => "transfer",
+            Self::ConvergenceTransfer => "convergence_transfer",
+            Self::DustToSlivers => "dust_to_slivers",
+            Self::SliversToCores => "slivers_to_cores",
+            Self::DustLimit => "dust_limit",
+        }
+    }
+
+    #[must_use]
     pub const fn changes_inventory(self) -> bool {
         matches!(
             self,

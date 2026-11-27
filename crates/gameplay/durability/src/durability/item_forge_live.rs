@@ -1,8 +1,8 @@
 //! Live Forge adapter. Rules, native item/fee/dust owners and retained outcomes
 //! share one session-fenced Type-2 transaction; reservation fixes every random draw.
-use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::domain::forge::ItemTier;
+use crate::durability::db::commit_semantic_read;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
@@ -76,7 +76,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| ForgeDustLimitError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+        self.issue_ready_semantic_pass().await?.run(move |holder, deadline| {
             Box::pin(async move {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
@@ -115,7 +115,8 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| ForgeDustLimitError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?
+        self.issue_ready_semantic_pass()
+            .await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -192,7 +193,8 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| ForgeDustLimitError::AuthorityRejected)?;
         let prepared = self
-            .try_issue_semantic_pass()?
+            .issue_ready_semantic_pass()
+            .await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -284,7 +286,8 @@ impl DurabilityRoot {
         };
         let node = node.clone();
         let mut context = (native, content);
-        self.try_issue_semantic_pass()?
+        self.issue_ready_semantic_pass()
+            .await?
             .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
                     let (native, content) = *context;
