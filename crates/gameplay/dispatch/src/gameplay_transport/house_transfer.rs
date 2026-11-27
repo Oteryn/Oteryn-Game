@@ -96,11 +96,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if capabilities.selected() != admitted.continuity.selected_capabilities {
             return refuse();
         }
-        if !self
+        match self
             .prepare_house_transfer_checkpoints(actor, admitted.game_session_id)
             .await
         {
-            return None;
+            Ok(true) => {}
+            Err(crate::durability::DurabilityError::RootUnavailable) => {
+                return Some((None, oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec()));
+            }
+            Ok(false) | Err(_) => return None,
         }
         let _lane = self.spell_lane_permit().await?;
         let tracked_equipment = self

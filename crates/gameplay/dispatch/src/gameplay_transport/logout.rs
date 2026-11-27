@@ -498,16 +498,28 @@ impl AdmissionRetryBudget<'_> {
         Fut: std::future::Future<Output = Result<T, crate::durability::DurabilityError>>,
     {
         use crate::durability::DurabilityError;
+        let mut attempt = 0_u32;
         loop {
+            attempt += 1;
             match step().await {
                 Ok(value) => return Ok(value),
                 Err(error) => {
-                    if matches!(error, DurabilityError::RootUnavailable)
-                        && self
+                    if matches!(error, DurabilityError::RootUnavailable) {
+                        operator_event(&format!(
+                            "event=session_durability_holder_busy stage={stage} attempt={attempt}"
+                        ));
+                        #[cfg(test)]
+                        let _ = super::charm_progression::HOLDER_BUSY_WITNESS.try_with(|witness| {
+                            if witness.0 == stage {
+                                witness.1.notify_one();
+                            }
+                        });
+                        if self
                             .retries_unavailable(AdmissionRefusal::Unavailable)
                             .await
-                    {
-                        continue;
+                        {
+                            continue;
+                        }
                     }
                     let kind = match &error {
                         DurabilityError::RootUnavailable => "holder_busy",

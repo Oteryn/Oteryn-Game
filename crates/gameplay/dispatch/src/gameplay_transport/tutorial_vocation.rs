@@ -163,14 +163,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation?
             .native_gameplay()?
             .training_formula()?;
-        if retained.is_none()
-            && !matches!(
-                self.save_spell_training(actor, session, true).await,
-                super::actor_spell::TrainingSave::Saved
-                    | super::actor_spell::TrainingSave::NotApplicable
-            )
-        {
-            return None;
+        if retained.is_none() {
+            match self.save_spell_training_checked(actor, session, true).await {
+                Ok(super::actor_spell::TrainingSave::Saved | super::actor_spell::TrainingSave::NotApplicable) => {}
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    return Some(oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec());
+                }
+                _ => return None,
+            }
         }
         let fence = self.npc_vocation_fence(session).await?;
         if !same_authority(&initial, &fence) {

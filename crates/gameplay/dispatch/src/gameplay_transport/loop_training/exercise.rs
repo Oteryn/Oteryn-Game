@@ -444,12 +444,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Crystal 201189f exercise_training_weapons.lua:159-164.
                 return Some(TrainingResult::REFUSED);
             }
-            if matches!(
-                self.save_spell_training(actor, admitted.game_session_id, true)
-                    .await,
-                super::super::actor_spell::TrainingSave::Unknown
-            ) {
-                return None;
+            match self
+                .save_spell_training_checked(actor, admitted.game_session_id, true)
+                .await
+            {
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    return Some(TrainingResult::REFUSED);
+                }
+                Ok(super::super::actor_spell::TrainingSave::Unknown) | Err(_) => return None,
+                Ok(_) => {}
             }
             let (Some(ItemKey::Instance(weapon)), Some(dummy)) = (weapon, dummy) else {
                 return Some(TrainingResult::REFUSED);

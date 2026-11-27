@@ -431,6 +431,13 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::charm_progression::COMMAND_TYPE_CHARM_PROGRESSION
+            | oteryn_protocol_oteryn::charm_progression::catalogue::COMMAND_TYPE_BESTIARY_ANIMUS_XP_QUERY => {
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
+                )
+            }
             _ => Dispatch::Unregistered,
         };
         result::encode(session, command, &mut refusal)?

@@ -20,6 +20,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             )
             .await
         {
+            transport::guild_intent::GuildReply::Payload(bytes)
+                if bytes == oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL =>
+            {
+                Dispatch::Reply(crate::foundation::CommandStatus::Rejected, bytes)
+            }
             transport::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
             transport::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
             transport::guild_intent::GuildReply::Unavailable => {
