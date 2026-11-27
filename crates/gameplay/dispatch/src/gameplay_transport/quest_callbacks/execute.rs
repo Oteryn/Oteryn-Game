@@ -160,34 +160,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        let (pos, mut after) = if callback.effects.loot_merchant
-            || oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some()
-        {
-            let Some(source) = shared_added_source(map, callback, key) else {
-                return UseDisposition::Rejected;
-            };
-            source
-        } else {
-            let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
-                return UseDisposition::Rejected;
-            };
-            let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
-                return UseDisposition::Rejected;
-            };
-            let Some(id) = base
-                .ids()
-                .iter()
-                .zip(base.depths())
-                .filter(|(_, d)| **d == 0)
-                .nth(usize::from(ordinal))
-                .map(|(id, _)| *id)
-            else {
-                return UseDisposition::Rejected;
-            };
-            let Some(after) = map.facts.base_entry(pos, ordinal, id) else {
-                return UseDisposition::Rejected;
-            };
-            (pos, after)
+        let Some((pos, mut after)) = callback_source_entry(map, callback, key) else {
+            return UseDisposition::Rejected;
         };
         if map.facts.object_revision(key) != expected_revision {
             // A known-commit source visual batch may have published its first
@@ -247,10 +221,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
-        if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
-            callback,
-            after.appearance_id,
-        ) {
+        if !source_is_ready(callback, after.appearance_id) {
             return UseDisposition::NothingToUse;
         }
         if callback.key == oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR {

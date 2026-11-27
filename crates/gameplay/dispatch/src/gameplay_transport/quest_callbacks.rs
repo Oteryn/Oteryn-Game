@@ -57,8 +57,9 @@ use crate::foundation::{
 use crate::map::{
     boot::BundleMap,
     overlay::TilePos,
-    view::{MapFacts, placement_key},
+    view::{EntryFacts, MapFacts, placement_key},
 };
+use oteryn_gameplay_quests::quest::source_world_objects::source_is_ready;
 use oteryn_gameplay_quests::quest::world_callbacks::{
     self, Callback, Position, Trigger, VampireCoffinKind,
 };
@@ -417,6 +418,27 @@ fn shared_added_source(
         .find(|entry| matches!(entry.source,EntrySource::Added(id) if id.get()==key))?;
     (!entry.facts.pickupable && entry.facts.bound && entry.facts.appearance_id == appearance)
         .then_some((pos, entry.facts))
+}
+
+fn callback_source_entry(
+    map: &BundleMap,
+    callback: &Callback,
+    key: u64,
+) -> Option<(TilePos, EntryFacts)> {
+    if callback.effects.loot_merchant
+        || oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some()
+    {
+        return shared_added_source(map, callback, key);
+    }
+    let (pos, ordinal) = crate::map::view::placement_of(key)?;
+    let base = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+    let (id, _) = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))?;
+    Some((pos, map.facts.base_entry(pos, ordinal, *id)?))
 }
 
 // The shared claim proof authorizes a retained UID at the callback's exact
@@ -1417,9 +1439,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_some_and(|tool| tool.selected_instance)
                     == selected_tool.is_some()
             });
-        // A bare action at a tool-only source belongs to the quest. If a separate
-        // bare callback exists at the placement, it still owns that action.
+        // A ready tool-only source owns the bare action and refuses the missing tool.
+        // A transformed source can still match its original placement after use.
         if selected_tool.is_none() && selected.is_empty() && !other_input.is_empty() {
+            if other_input.iter().all(|callback| {
+                callback_source_entry(map, callback, resolved.placement_key)
+                    .is_some_and(|(_, entry)| !source_is_ready(callback, entry.appearance_id))
+            }) {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::NothingToUse,
+                    ..UseOutcome::rejected()
+                });
+            }
             return Some(UseOutcome::rejected());
         }
         let source_trial = selected
