@@ -5,4 +5,4 @@ composed=house_rotation
 authority=house_rotation
 offer=700,house_rotation::offered,house_rotation_available
 [route]
-match routing::house_rotation::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::server("house_rotation_outcome_unavailable")) }
+match routing::house_rotation::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => command_unavailable(command, "house_rotation_outcome_unavailable") }

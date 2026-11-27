@@ -3,5 +3,5 @@ commands=64
 [route]
 match routing::world_event::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("world_event_outcome_unavailable")),
+    None => command_unavailable(command, "world_event_outcome_unavailable"),
 }

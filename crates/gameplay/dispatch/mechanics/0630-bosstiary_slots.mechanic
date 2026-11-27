@@ -3,5 +3,5 @@ commands=491
 [route]
 match routing::boss_encounter::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("bosstiary_slots_outcome_unavailable")),
+    None => command_unavailable(command, "bosstiary_slots_outcome_unavailable"),
 }

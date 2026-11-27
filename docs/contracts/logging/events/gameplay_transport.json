@@ -330,6 +330,18 @@
       "note": "Successfully encoded domain 17 map replacement (not delivery): exact encoded nonempty tile/item counts and native map origin, including whether its tile has items. Join delivery is established by snapshot_flushed. No player identity, item identity or payload."
     },
     {
+      "event": "mechanic_outcome_unavailable",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "command_type",
+        "command_id",
+        "cause"
+      ],
+      "codes": [],
+      "note": "A registered command owner supplied no result. The connection sends COMMAND_REFUSED for the original command and remains available."
+    },
+    {
       "event": "native_owner_turn",
       "level": "info",
       "span": false,

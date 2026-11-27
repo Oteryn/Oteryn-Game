@@ -216,6 +216,15 @@ impl ContainerViewState {
         self.views.get(&id).map(|view| view.container)
     }
 
+    pub(super) fn carried_entry_definition(&self, key: ItemKey) -> Option<std::num::NonZeroU32> {
+        self.views
+            .values()
+            .filter(|view| matches!(view.container, ItemKey::Instance(_)))
+            .flat_map(|view| view.page_entries())
+            .find(|entry| entry.key == key)
+            .map(|entry| entry.item_definition_ref)
+    }
+
     #[cfg(test)]
     pub fn open_views(&self) -> usize {
         self.views.len()

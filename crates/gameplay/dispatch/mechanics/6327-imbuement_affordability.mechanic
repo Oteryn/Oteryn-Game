@@ -3,5 +3,5 @@ commands=6327,6328
 [route]
 match routing::imbuement_details::route(authority, &session.admitted, command, &session.item_view).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("imbuement_affordability_outcome_unavailable")),
+    None => command_unavailable(command, "imbuement_affordability_outcome_unavailable"),
 }

@@ -7,5 +7,5 @@ offer=560,task_board::offered,task_board_available
 [route]
 match routing::task_board::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("task_board_outcome_unavailable")),
+    None => command_unavailable(command, "task_board_outcome_unavailable"),
 }

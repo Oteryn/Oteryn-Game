@@ -6,5 +6,5 @@ authority=forge_preview
 [route]
 match routing::forge_preview::route(authority, &session.admitted, command, &session.item_view).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("forge_preview_outcome_unavailable")),
+    None => command_unavailable(command, "forge_preview_outcome_unavailable"),
 }

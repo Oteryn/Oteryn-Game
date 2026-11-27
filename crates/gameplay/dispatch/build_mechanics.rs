@@ -29,6 +29,11 @@ fn parse(text: &str) -> Result<Mechanic, String> {
     if route.trim().is_empty() {
         return Err("empty [route] expression".into());
     }
+    if route.contains("ServeEnd::server") || route.contains("ServeEnd::ControlLost") {
+        return Err(
+            "mechanic routes must return a command refusal for unavailable outcomes".into(),
+        );
+    }
     let mut fields = BTreeMap::new();
     for line in header.lines().filter(|line| !line.is_empty()) {
         let (key, value) = line.split_once('=').ok_or("expected key=value")?;
