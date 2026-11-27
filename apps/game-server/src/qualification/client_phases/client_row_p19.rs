@@ -27,14 +27,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 
 async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let capture = required("E2E_ALL_CAPTURE_DIR")?;
-    let dedicated =
-        character_prep::dedicated_character(clients, "NODE_BOOT_C11_KNIGHT_ACCOUNT").await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P19_ACCOUNT").await?;
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
     let clients = &SeamClients {
         accounts: &accounts,
         characters: &characters,
         ..*clients
     };
+    if !requires_platform_grant(&clients.accounts[1]) {
+        return Err("P19 requires Platform-issued admission for its Premium fixture".into());
+    }
     character_prep::declare_seeded("P19.client", "knight,premium", "Forge combat and rewards");
     let mut client = character_prep::Seeded {
         profile: "knight",
@@ -46,8 +48,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let axe = provisioning::item_reference(&index, 3276)?;
     equip_fixture_axe(&mut client, axe).await?;
     let sliver = provisioning::item_reference(&index, 37109)?;
-    character_prep::grant_premium(&client).await?;
-    evidence("P19 FIXTURE premium=granted");
+    evidence("P19 FIXTURE premium=platform_snapshot");
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_FORGE_CREATURE_V1)
