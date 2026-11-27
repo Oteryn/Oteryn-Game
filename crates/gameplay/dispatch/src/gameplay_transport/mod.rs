@@ -17,6 +17,7 @@ pub mod activity_runtime;
 mod activity_terminal_release;
 pub mod actor_spell;
 mod admission_queue;
+mod adventurers_stone;
 mod analyser;
 pub mod atelier;
 mod attack;

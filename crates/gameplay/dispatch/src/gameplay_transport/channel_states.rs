@@ -38,6 +38,7 @@ pub struct ChannelSessionStates {
     /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.
     pub(super) cyclopedia_tracker_refresh: super::cyclopedia_tracker::TrackerRefresh,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
+    pub(super) guild_stone_moves: super::adventurers_stone::GuildStoneMoves,
     pub(super) dawnport_departures: super::dawnport_departure::Departures,
     /// S16c: sessions whose Dawnport trial build commit awaits live installation; their last
     /// position capture is held like a retained NPC vocation choice. A leaf lock.
