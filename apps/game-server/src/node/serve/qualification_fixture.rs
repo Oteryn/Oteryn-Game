@@ -175,7 +175,11 @@ pub(super) async fn prepare(
         Ok(()) => "qualified",
         Err(error) => {
             emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
-            "rejected"
+            if error.is::<qualification_build::HolderBusy>() {
+                "rejected reason=holder_busy"
+            } else {
+                "rejected"
+            }
         }
     }
 }
@@ -750,14 +754,13 @@ async fn prepare_build(
     // Independently resolve current admission, never synthesize a fence from
     // fixture SQL or expose the node proof to the client process.
     let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone());
-    let current = qualification_build::retry_holder(
-        Some(root),
+    let current = qualification_build::retry_provision_holder(
+        root,
         deadline,
         |error| matches!(error, DurabilityError::RootUnavailable),
         async || store.current_session(session).await,
     )
-    .await
-    .map_err(|error| format!("qualification admission: {error:?}"))?;
+    .await?;
     let scope = current.current_runtime_scope();
     if Some(*scope.world_id().as_bytes()) != super::super::uuid_bytes(&config.scope.world_id)
         || scope.channel_id().map(|id| *id.as_bytes())
@@ -806,14 +809,13 @@ async fn prepare_build(
         {
             return Err("dedicated preparation requires an active admission".into());
         }
-        let record = qualification_build::retry_holder(
-            Some(root),
+        let record = qualification_build::retry_provision_holder(
+            root,
             deadline,
             qualification_build::authority_busy,
             async || root.read_current_character(authority, character).await,
         )
-        .await
-        .map_err(qualification_build::debug)?;
+        .await?;
         let account = uuid_text(record.account_id.as_bytes());
         match (profile, account.as_str()) {
             (
@@ -842,8 +844,8 @@ async fn prepare_build(
             _ => return Err("preparation profile does not match dedicated account".into()),
         }
     }
-    let interpretation = qualification_build::retry_holder(
-        Some(root),
+    let interpretation = qualification_build::retry_provision_holder(
+        root,
         deadline,
         qualification_build::authority_busy,
         async || {
@@ -851,8 +853,7 @@ async fn prepare_build(
                 .await
         },
     )
-    .await
-    .map_err(|error| format!("qualification interpretation: {error:?}"))?
+    .await?
     .ok_or("qualification interpretation unavailable")?;
     let [profile_revision, ruleset_revision, content_revision, _] = interpretation.revisions();
     let progression = native
@@ -1334,8 +1335,8 @@ async fn prepare_items(
         scope_ownership_generation: current.current_scope_generation(),
     };
     let read_inventory = async || {
-        qualification_build::retry_holder(
-            Some(root),
+        qualification_build::retry_provision_holder(
+            root,
             deadline,
             |error| {
                 matches!(
@@ -1348,7 +1349,6 @@ async fn prepare_items(
             async || root.read_item_use_inventory(authority, proof, fence).await,
         )
         .await
-        .map_err(|error| format!("qualification inventory: {error:?}"))
     };
     #[cfg(not(feature = "qualification-spawn"))]
     let named: Option<(u32, u32)> = None;
@@ -1359,8 +1359,8 @@ async fn prepare_items(
             key: fixture_gear_claim(current.current_game_session_id(), "backpack"),
             ..StarterTemplate::main()
         };
-        let outcome = qualification_build::retry_holder(
-            Some(root),
+        let outcome = qualification_build::retry_provision_holder(
+            root,
             deadline,
             |error| matches!(error, DurabilityError::RootUnavailable),
             async || {
@@ -1374,8 +1374,7 @@ async fn prepare_items(
                 .await
             },
         )
-        .await
-        .map_err(|error| format!("qualification backpack recovery: {error:?}"))?;
+        .await?;
         if outcome == StarterGrantOutcome::NotAdmitted {
             return Err("qualification backpack recovery was not admitted".into());
         }
@@ -1486,8 +1485,8 @@ async fn prepare_items(
             key_number: None,
         };
         // Reservation replay retains the same CommandRef and frozen semantic intent.
-        let mut candidate = qualification_build::retry_holder(
-            Some(root),
+        let mut candidate = qualification_build::retry_provision_holder(
+            root,
             deadline,
             |error| {
                 matches!(
@@ -1502,12 +1501,19 @@ async fn prepare_items(
                     .await
             },
         )
-        .await
-        .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
+        .await?;
         let outcome = root
             .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
-            .map_err(|error| format!("qualification Item commit: {error:?}"))?;
+            .map_err(|error| {
+                let busy = matches!(
+                    &error,
+                    crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    )
+                );
+                qualification_build::fixture_error(error, busy)
+            })?;
         fixture_item_committed(outcome, quantity)?;
     }
     Ok(())
