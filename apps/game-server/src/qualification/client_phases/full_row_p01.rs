@@ -231,6 +231,49 @@ pub(super) async fn place_rat(
     }
 }
 
+async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent};
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
+
+    let hands = [EquipmentSlot::LeftHand, EquipmentSlot::RightHand];
+    let equipment = client
+        .inventory()
+        .ok_or("unarmed fixture inventory absent")?;
+    let held: Vec<_> = equipment
+        .equipment
+        .iter()
+        .filter(|entry| hands.contains(&entry.slot))
+        .map(|entry| (entry.slot, entry.item.handle))
+        .collect();
+    for (slot, handle) in held {
+        let result = client
+            .move_item(&ItemMoveIntent {
+                source: handle,
+                destination: ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if result.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("unarmed fixture refused to stow {slot:?}: {result:?}").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            if client.inventory().is_some_and(|inventory| {
+                inventory.equipment.iter().all(|entry| entry.slot != slot)
+                    && inventory.entries.iter().any(|item| item.handle == handle)
+            }) {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("unarmed fixture did not stow {slot:?}: {result:?}").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+        evidence(&format!("P01_FIXTURE stowed hand={slot:?}"));
+    }
+    evidence("P01_CHECK unarmed-baseline PASS hands=empty");
+    Ok(())
+}
+
 async fn hunt_for_rat(
     client: &mut DevClientSession,
     race: NonZeroU32,
@@ -290,9 +333,15 @@ async fn hunt_for_rat(
                     AnalyserFact::Impact(
                         oteryn_protocol_oteryn::analyser::AnalyserImpact::Damage {
                             element: oteryn_protocol_oteryn::damage_element::DamageElement::Fire,
-                            ..
+                            value,
                         },
-                    ) => fire_damage = true,
+                    ) => {
+                        evidence(&format!(
+                            "P01_CHECK rat-fire-impact value={value} target={:?}",
+                            target.entity
+                        ));
+                        fire_damage = true;
+                    }
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
                     _ => {}
                 }
@@ -553,6 +602,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    prepare_unarmed(&mut client).await?;
     prepare_rat_ground(&mut client, world).await?;
     let first_kill = hunt_for_rat(&mut client, race, rat_stage).await?;
     let current = query(&mut client).await?;
