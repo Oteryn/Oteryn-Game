@@ -218,23 +218,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         command_id: u64,
         target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    ) -> bool {
-        let Some(named) = target else { return true };
+    ) -> Result<bool, DurabilityError> {
+        let Some(named) = target else { return Ok(true) };
         let visible = runtime.visible_entities();
         let Some(player) = visible.players.iter().find(|p| {
             p.actor.placement_identity() == named.identity && p.generation == named.generation
         }) else {
-            return true;
+            return Ok(true);
         };
         if player.actor == actor {
-            return true;
+            return Ok(true);
         }
         let Some(room) = room else {
-            return false;
+            return Ok(false);
         };
         let modes = self.states.attack.lock().await.expert_modes(actor, session);
         let Ok(id) = crate::foundation::CommandId::new(command_id) else {
-            return false;
+            return Ok(false);
         };
         let objects = self.door.lock().await;
         self.pvp_target_legal(
@@ -249,7 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             modes,
         )
         .await
-        .is_ok_and(|result| result.is_some())
+        .map(|result| result.is_some())
     }
 
     /// A source-fenced transaction is also used for target selection: no receipt or damage there.

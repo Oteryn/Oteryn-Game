@@ -1,4 +1,7 @@
 use super::*;
+use crate::durability::DurabilityError;
+use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn select_attack_target(
@@ -6,13 +9,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
         command_id: u64,
-        target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        target: Option<EntityRef>,
+    ) -> AttackIntentDisposition {
+        // Each attempt drops the spell lane and runtime guards before waiting for the holder.
+        super::super::AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("attack_target_selection", || {
+                self.select_attack_target_once(actor, game_session_id, command_id, target)
+            })
+            .await
+            .unwrap_or(AttackIntentDisposition::Rejected)
+    }
+
+    async fn select_attack_target_once(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        target: Option<EntityRef>,
+    ) -> Result<AttackIntentDisposition, DurabilityError> {
         let permit = if target.is_some() {
-            let Some(permit) = self.spell_lane_permit().await else {
-                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
-            };
-            Some(permit)
+            Some(self.try_spell_lane_permit().await?)
         } else {
             None
         };
@@ -20,7 +36,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let Some(state) = states.get(&runtime, actor, game_session_id) else {
-            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            return Ok(AttackIntentDisposition::Rejected);
         };
         // CONDITIONS-0 §3.5 / ATTACK-0 §3: a `pacified` held in the player store or the runtime
         // slot refuses a new target first; the typed gate stays in the operator log (§7) and
@@ -41,16 +57,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     "event=attack_target_condition_gated gate={}",
                     gate.key()
                 ));
-                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+                return Ok(AttackIntentDisposition::Rejected);
             }
             if states.is_dead(actor) {
-                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+                return Ok(AttackIntentDisposition::Rejected);
             }
         }
         let room = self.rooms().gate_attack_target();
         if target.is_some_and(|target| states.player_ref_hidden_from(&runtime, actor, target, now))
         {
-            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::TargetNotVisible;
+            return Ok(AttackIntentDisposition::TargetNotVisible);
         }
         if let Some(permit) = permit.as_ref()
             && !self
@@ -64,11 +80,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     command_id,
                     target,
                 )
-                .await
+                .await?
         {
-            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            return Ok(AttackIntentDisposition::Rejected);
         }
-        self.states.attack.lock().await.set_target(
+        Ok(self.states.attack.lock().await.set_target(
             &runtime,
             room,
             actor,
@@ -76,7 +92,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             now,
             target,
             command_id,
-        )
+        ))
     }
 
     pub(in crate::gameplay_transport) async fn set_fight_modes(

@@ -205,13 +205,20 @@ pub async fn prepare_from_owners(
             None => 0,
         }
     };
-    let elemental = if parameters.get("elemental_stance").is_some() {
-        owned
+    let elemental = match parameters.get("elemental_stance") {
+        None => ElementalStance::None,
+        // An unprovided stance can use the authored base cast. An existing
+        // projection must still be current before it can change the element.
+        Some(stance)
+            if owned.access.elemental_stance.is_none()
+                && stance["routes"]["none"].as_str() == Some("energy") =>
+        {
+            ElementalStance::None
+        }
+        Some(_) => owned
             .elemental_stance(now.get())
-            .ok_or(SpellCastDisposition::Rejected)?
-    } else {
-        ElementalStance::None
-    }; // unconsumed for these recipes
+            .ok_or(SpellCastDisposition::Rejected)?,
+    };
     let roster = runtime
         .positioned_actor_census()
         .map_err(|_| SpellCastDisposition::Rejected)?;

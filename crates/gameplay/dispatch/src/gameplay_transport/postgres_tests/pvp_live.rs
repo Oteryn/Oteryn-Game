@@ -55,3 +55,13 @@ fn pvp_expert_optional_world_ignores_expert_choice() -> TestResult {
 fn pvp_expert_white_hand_reads_party_and_guild_aggressors() -> TestResult {
     super::item_look_fixtures::large_stack(|| scenario(13))
 }
+
+#[test]
+fn pvp_live_target_selection_retries_held_holder() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(14))
+}
+
+#[test]
+fn pvp_live_energy_beam_casts_outside_protection_without_a_stance() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(15))
+}

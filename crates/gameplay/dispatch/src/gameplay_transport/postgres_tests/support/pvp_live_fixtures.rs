@@ -290,8 +290,13 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         let progression = owner.progression_binding(session).ok_or("progression")?;
         let formula = native.training_formula().ok_or("formula")?;
-        let druid =
-            convert_vocation(formula, &DurableBuildState::default(), "druid").map_err(debug)?;
+        let (vocation, level, experience) = if mode == 15 {
+            ("sorcerer", 25, 204_800)
+        } else {
+            ("druid", 20, 98_800)
+        };
+        let build =
+            convert_vocation(formula, &DurableBuildState::default(), vocation).map_err(debug)?;
         h.root
             .commit_character_build(
                 &authority,
@@ -301,7 +306,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
                     cause: BuildCause::VocationChoice,
                     before: DurableBuildState::default(),
-                    after: druid.clone(),
+                    after: build.clone(),
                     pruned_stance: None,
                 },
                 formula,
@@ -315,7 +320,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 current_fence(&owner, session).await?,
                 ExperienceAwardRequest {
                     occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                    amount: oteryn_simulation_determinism::ExactI64::new(98_800),
+                    amount: oteryn_simulation_determinism::ExactI64::new(experience),
                     context: progression.context.clone(),
                     policy_revision: progression.policy_revision.clone(),
                     reward_revision: progression.reward_revision.clone(),
@@ -348,7 +353,8 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                         actor,
                         session,
                         crate::spell::cast::CharacterCastFacts {
-                            level: 20,
+                            level,
+                            vocation: crate::spell::Vocation::from_key(vocation).ok_or("fixture vocation")?,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (0, 0),
@@ -356,11 +362,11 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     )
                     .is_some()
             );
-            assert!(states.load_owned_build(&runtime, actor, session, &druid));
+            assert!(states.load_owned_build(&runtime, actor, session, &build));
             states
                 .get_mut(&runtime, actor, session)
                 .ok_or("caster")?
-                .enable_owned_training(&druid, formula)
+                .enable_owned_training(&build, formula)
                 .map_err(debug)?;
         }
         let target = observer::initialize(&deps, &owner).await?;
@@ -419,6 +425,102 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             }
         };
         let original_health = health(&owner, target).await?;
+        if mode == 14 {
+            use crate::durability::DurabilityRoot;
+            use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
+
+            tokio::time::timeout(Duration::from_secs(15), async {
+                loop {
+                    let ready: bool = sqlx::query_scalar(
+                        "SELECT r.authorization_decided_at <= floor(extract(epoch FROM clock_timestamp()))::bigint - 10
+                         FROM game_durability_fresh_admission_receipts r
+                         JOIN game_durability_reconnect_sessions s
+                           ON COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) = r.replay_key
+                         WHERE s.game_session_id = encode($1,'hex')::uuid",
+                    )
+                    .bind(session.as_bytes().as_slice())
+                    .fetch_one(&h.pool)
+                    .await?;
+                    if ready {
+                        return Ok::<_, sqlx::Error>(());
+                    }
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await??;
+            let modes = ExpertFightModes {
+                modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT },
+                expert: ExpertMode::RedFist,
+            };
+            assert_eq!(
+                owner.set_expert_fight_modes(actor, session, 1, modes).await?,
+                attack::AttackIntentDisposition::Ok,
+            );
+            assert_eq!(
+                owner.select_attack_target(actor, session, 2, Some(entity)).await,
+                attack::AttackIntentDisposition::Ok,
+                "staged player must be legal before testing holder contention",
+            );
+            assert_eq!(
+                owner.select_attack_target(actor, session, 3, None).await,
+                attack::AttackIntentDisposition::Ok,
+            );
+
+            {
+                let held = h.root.try_issue_background_semantic_pass()?;
+                let mut selection = std::pin::pin!(DurabilityRoot::with_holder_owner(
+                    owner.select_attack_target(actor, session, 4, Some(entity))
+                ));
+                let first = std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(selection.as_mut(), cx))
+                }).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(first.is_pending(), "legal PvP selection must wait for the holder: {first:?}");
+                assert!(deps.runtime.try_lock().is_ok(), "a target retry must release its runtime guard");
+                assert_eq!(selection.await, attack::AttackIntentDisposition::Ok);
+            }
+            assert_eq!(health(&owner, target).await?, original_health);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+        if mode == 15 {
+            use crate::gameplay_transport::actor_spell::qualified_protection_zone;
+            use oteryn_protocol_oteryn::world_spatial::StepDirection;
+            let book = native.spell_book();
+            let energy_beam = (1..=u32::try_from(book.source_len())?)
+                .filter_map(std::num::NonZeroU32::new)
+                .find(|index| {
+                    book.indexed(*index)
+                        .is_some_and(|spell| spell.key == "candidate:spell/energy_beam")
+                })
+                .ok_or("Energy Beam is absent from the compiled spell book")?;
+            {
+                let mut runtime = deps.runtime.lock().await;
+                assert_eq!(
+                    qualified_protection_zone(&mut runtime, owner.movement_cells(), actor),
+                    Some(false),
+                );
+            }
+            assert!(owner.turn_actor(actor, session, StepDirection::East).await);
+            let before = owner.observe_vitals(actor, session).await.ok_or("caster vitals")?.1;
+            let remaining_mana = before.mana.checked_sub(40).ok_or("insufficient fixture mana")?;
+            let cast = owner
+                .complete_actor_spell(actor, session, 1, actor_spell::SpellCastIntent {
+                    spell: energy_beam,
+                    target: actor_spell::SpellTarget::None,
+                    aim_at_target: false,
+                })
+                .await
+                .ok_or("Energy Beam remained pending")?;
+            assert_eq!(cast.disposition, actor_spell::SpellCastDisposition::Cast);
+            assert_eq!(cast.vitals.ok_or("Energy Beam did not publish vitals")?.1.mana, remaining_mana);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let serving = async { serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await };
         let driving = async {
