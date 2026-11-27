@@ -720,17 +720,21 @@ pub(super) async fn journey(
     let picker_inventory = client
         .inventory()
         .ok_or("I07 admitted picker inventory missing")?;
-    for definition in [skip_reference, gold_reference, accept_reference] {
-        if !picker_inventory
+    let picker_handles = [skip_reference, gold_reference, accept_reference].map(|definition| {
+        let mut entries = picker_inventory
             .entries
             .iter()
-            .any(|entry| entry.item_definition_ref.get() == definition)
-        {
-            return Err(
-                format!("I07 live backpack lacks filter picker definition {definition}").into(),
-            );
+            .filter(|entry| entry.item_definition_ref.get() == definition);
+        let entry = entries
+            .next()
+            .ok_or("I07 live backpack lacks a filter picker item")?;
+        if entry.count.get() != 1 || entries.next().is_some() {
+            return Err("I07 fixture must supply a single distinct picker item");
         }
-    }
+        Ok(entry.handle)
+    });
+    let [skip_picker, gold_picker, armor_picker] = picker_handles;
+    let picker_handles = [skip_picker?, gold_picker?, armor_picker?];
     write_capture(
         &capture_dir.join("i07-picker-inventory.bin"),
         &oteryn_protocol_oteryn::item_view::encode_character_inventory_with_appearances(
@@ -743,6 +747,16 @@ pub(super) async fn journey(
     let mut expected_backpack =
         placements(&mut database, Storage::Backpack, character, &backpack).await?;
     require_placements(&mut database, Storage::InboxPouch, character, &pouch, &[]).await?;
+    let picker_keys = [
+        "oteryn:item.tibia.i3577",
+        "oteryn:item.tibia.i3031",
+        "oteryn:item.tibia.i3357",
+    ];
+    let seeded_count = expected_backpack.len();
+    expected_backpack.retain(|item| !picker_keys.contains(&item.key.as_str()));
+    if expected_backpack.len() + picker_keys.len() != seeded_count {
+        return Err("I07 picker fixture custody must add exactly three items".into());
+    }
     let mut bag_armor = armor.clone();
     bag_armor.slot = expected_backpack.last().map_or(1, |item| item.slot + 1);
     let mut pouch_coin = coin.clone();
@@ -904,6 +918,37 @@ pub(super) async fn journey(
         .probe(&mut client, 8, armor_route(false), &[])
         .await?;
     capture.probe(&mut client, 9, accept, &[]).await?;
+    // Remove the three temporary picker inputs before the capacity-sensitive transfer.
+    let discard = oteryn_protocol_oteryn::item_view::WorldTilePosition {
+        x: admitted_position
+            .x
+            .checked_sub(1)
+            .ok_or("I07 fixture discard tile overflow")?,
+        y: admitted_position.y,
+        floor: admitted_position.floor,
+    };
+    for source in picker_handles {
+        let moved = client
+            .move_item(&oteryn_dev_client::ItemMoveIntent {
+                source,
+                destination: oteryn_dev_client::ItemMoveDestination::Ground(discard),
+            })
+            .await?;
+        if moved.status != CommandStatus::Accepted
+            || moved.outcome != oteryn_dev_client::ItemMoveOutcome::Moved
+        {
+            return Err(format!("I07 first picker fixture discard refused: {moved:?}").into());
+        }
+    }
+    require_placements(
+        &mut database,
+        Storage::Backpack,
+        character,
+        &backpack,
+        &expected_backpack,
+    )
+    .await?;
+    evidence("FIXTURE I07 picker inputs=discarded backpack=exact_starter_custody");
     require_filters(&mut database, character, true, &expected_filters).await?;
     require_routes(&mut database, character, &pouch, false, true, full, false).await?;
     capture
