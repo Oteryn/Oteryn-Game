@@ -392,11 +392,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
-        if let Some(outcome) =
-            super::super::item_forge::use_station(self, actor, command, &target).await
-        {
-            return outcome;
-        }
         if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
             return outcome;
         }

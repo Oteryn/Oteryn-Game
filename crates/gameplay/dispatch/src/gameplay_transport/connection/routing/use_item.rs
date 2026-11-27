@@ -23,6 +23,30 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    if admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1)
+        && let Ok(UseIntent {
+            target: UseTarget::WorldObject(target),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        }) = &decoded
+        && let Some(outcome) = authority
+            .use_forge_station(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                target,
+            )
+            .await
+    {
+        return Some(Dispatch::Use(outcome));
+    }
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
     // Preserve the same timeout/unknown close used by receipt-backed Item actions.
