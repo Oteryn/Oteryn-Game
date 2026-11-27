@@ -946,14 +946,14 @@ pub(super) async fn journey(
     };
     for source in picker_handles {
         let moved = client
-            .move_item(&oteryn_dev_client::ItemMoveIntent {
+            .session_mut()
+            .move_item_counted(oteryn_dev_client::client_runtime::inventory::MoveRequest {
                 source,
                 destination: oteryn_dev_client::ItemMoveDestination::Ground(discard),
+                count: None,
             })
             .await?;
-        if moved.status != CommandStatus::Accepted
-            || moved.outcome != oteryn_dev_client::ItemMoveOutcome::Moved
-        {
+        if moved.outcome != oteryn_dev_client::ItemMoveOutcome::Moved {
             return Err(format!("I07 first picker fixture discard refused: {moved:?}").into());
         }
     }
