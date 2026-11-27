@@ -33,7 +33,7 @@ pub(super) async fn prepare(
                 .map_err(debug)?;
         }
     }
-    // A genuine prior ledger entry establishes a nearly full balance, preserving all guards.
+    // A genuine prior ledger entry establishes the starting balance, preserving all guards.
     let fence = owner
         .current_quest_fence(players[0].1)
         .await
@@ -54,7 +54,7 @@ pub(super) async fn prepare(
         crate::durability::character_forge_dust::ForgeDustGainCause::CreatureKill {
             occurrence: id(200),
         },
-        98,
+        starting_dust(case),
         crate::durability::character_forge_dust::ForgeDustWriteIds {
             entry_id: id(201),
             transaction_id: id(202),
@@ -239,5 +239,161 @@ pub(super) async fn assert_duplex_expiry_retry(
         "SELECT count(*) FROM game_task_board_receipts WHERE cause_kind='creature_death'",
     ).fetch_one(&h.pool).await?;
     assert!(credits > 0);
+    Ok(())
+}
+
+fn starting_dust(case: Case) -> u32 {
+    if matches!(case, Case::ForgeKillDust) {
+        4
+    } else {
+        98
+    }
+}
+
+pub(super) async fn assert_kill_reward(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    case: Case,
+    pending: &crate::gameplay_transport::kill_reward::PendingKillSettlement,
+    killer: (ExactActorRef, GameSessionId),
+) -> TestResult {
+    use crate::gameplay_transport::{
+        capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
+        connection::{
+            AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, SessionContinuity,
+        },
+        kill_reward::DrainOutcome,
+        world_spatial::VisibleKind,
+    };
+    use oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1;
+    use std::{future::Future, task::Poll, time::Duration};
+
+    let (actor, session) = killer;
+    assert_eq!(pending.facts.principal.actor, actor);
+    assert_eq!(pending.facts.principal.session, session);
+    let forge = pending.forge.as_ref().ok_or("classified kill")?;
+    assert_eq!(
+        forge.kind,
+        crate::domain::forge_creature::ForgeCreature::Fiendish
+    );
+
+    if matches!(case, Case::ForgeKillCorpse) {
+        let held = owner.root.try_issue_semantic_pass()?;
+        let mut drain = std::pin::pin!(owner.drain_kill_rewards(session));
+        let first = std::future::poll_fn(|cx| Poll::Ready(drain.as_mut().poll(cx))).await;
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let result = match first {
+            Poll::Ready(result) => result,
+            Poll::Pending => tokio::time::timeout(Duration::from_secs(10), drain).await?,
+        };
+        assert_eq!(
+            result,
+            DrainOutcome::Drained,
+            "the death settles when the busy holder returns"
+        );
+        let identity = pending.target.corpse_identity();
+        let corpse = owner
+            .runtime
+            .lock()
+            .await
+            .bound_corpse(identity)
+            .ok_or("bound fiendish corpse")?;
+        assert_eq!(corpse.position, pending.facts.corpse);
+        let visible = owner
+            .observe_channel_entities(actor)
+            .await
+            .ok_or("spatial projection")?;
+        assert!(
+            visible.entities.iter().any(|entity| {
+                entity.identity == identity && matches!(entity.kind, VisibleKind::Corpse { .. })
+            }),
+            "the fiendish corpse is published in the ordinary spatial view"
+        );
+        return assert_committed_sliver_in_corpse(h).await;
+    }
+
+    let Some(fence) = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "killer fence")?
+    else {
+        return Err("missing killer fence".into());
+    };
+    let mut admitted = AdmittedSession {
+        game_session_id: session,
+        world_id: owner.world_id,
+        channel_id: owner.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: None,
+        continuity: SessionContinuity::FRESH,
+        item_fence: Some(fence.item_fence()),
+    };
+    admitted.continuity.connection_generation = fence.connection_generation.get();
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[4, 6, 12, 14, CAPABILITY_ITEM_FORGE_V1],
+    )
+    .ok_or("Forge capability selection")?;
+
+    if matches!(case, Case::ForgeKillDust) {
+        // The real swing has already committed and queued the death. Settle its exact
+        // ledger proof without an auto-attack entry, as for a spell-only killer.
+        let mut attack = owner.states.attack.lock().await;
+        attack.discard_test_attack_entry(actor, session);
+        let death_at = pending.activity_observed_at.ok_or("death clock")?;
+        assert!(attack.in_fight_until(actor, session, death_at).is_none());
+    }
+    let initial = starting_dust(case);
+    let before = owner
+        .item_forge_balance(admitted, 100)
+        .await
+        .ok_or("initial dust reply")?;
+    let before: serde_json::Value = serde_json::from_slice(&before)?;
+    let limit = u32::from(crate::domain::forge_dust::DustLimit::INITIAL.get());
+    assert_eq!(
+        before,
+        serde_json::json!({"current_dust": initial, "dust_limit": limit})
+    );
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    let award = forge.kind.dust(forge.roll);
+    let capped = (initial + award).min(limit);
+    let entries = ledger(h).await?;
+    assert_eq!(
+        entries.len(),
+        2,
+        "the kill adds exactly one durable dust entry"
+    );
+    let credit = entries
+        .iter()
+        .find(|entry| entry.0 != id(201))
+        .ok_or("kill credit")?;
+    assert_eq!(
+        (credit.1, credit.2, credit.3, credit.4),
+        (
+            i64::from(award),
+            i64::from(initial + award - capped),
+            i64::from(initial),
+            i64::from(capped),
+        )
+    );
+
+    let held = owner.root.try_issue_semantic_pass()?;
+    let mut query = std::pin::pin!(owner.item_forge_balance(admitted, 101));
+    let first = std::future::poll_fn(|cx| Poll::Ready(query.as_mut().poll(cx))).await;
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    let bytes = match first {
+        Poll::Ready(reply) => reply,
+        Poll::Pending => tokio::time::timeout(Duration::from_secs(10), query).await?,
+    }
+    .ok_or("post-kill Forge balance was lost to holder contention")?;
+    let after: serde_json::Value = serde_json::from_slice(&bytes)?;
+    assert_eq!(
+        after,
+        serde_json::json!({"current_dust": capped, "dust_limit": limit})
+    );
     Ok(())
 }
