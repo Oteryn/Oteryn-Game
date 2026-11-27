@@ -292,6 +292,20 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         "normal fresh Channel admission defers acceptance"
     );
 
+    if case == Case::Soulpit {
+        // The cadence must sleep when a join reserves the idle holder, even if
+        // the regular background policy permits a pass.
+        assert!(h.root.background_holder_ready());
+        let wait = h.root.holder_waiter().ok_or("fresh join ticket")?;
+        wait.set_join_wait_deadline(Some(
+            tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW,
+        ));
+        assert!(h.root.is_ready());
+        assert!(!h.root.background_holder_ready());
+        drop(wait);
+        assert!(h.root.background_holder_ready());
+    }
+
     if case == Case::InitialRaw {
         // Exercise the uncached PvP read during the initial ACTOR_VITALS observation.
         owner.states.spell_states.lock().await.pvp_locks.clear();
