@@ -96,6 +96,7 @@ pub struct Reply {
     pub headers: Vec<(String, String)>,
     pub body: Vec<u8>,
     pub delay: Duration,
+    ready: Option<Arc<tokio::sync::Notify>>,
 }
 
 impl Reply {
@@ -106,6 +107,7 @@ impl Reply {
             headers: vec![("Content-Type".into(), "application/json".into())],
             body,
             delay: Duration::ZERO,
+            ready: None,
         }
     }
 
@@ -115,11 +117,18 @@ impl Reply {
             headers: Vec::new(),
             body: Vec::new(),
             delay: Duration::ZERO,
+            ready: None,
         }
     }
 
     pub fn header(mut self, name: &str, value: &str) -> Self {
         self.headers.push((name.into(), value.into()));
+        self
+    }
+
+    #[allow(dead_code, reason = "only the cold overview scenario holds a response")]
+    pub fn after_notification(mut self, ready: Arc<tokio::sync::Notify>) -> Self {
+        self.ready = Some(ready);
         self
     }
 
@@ -193,6 +202,9 @@ impl TestProducer {
                     seen.lock().unwrap().push(request.clone());
                     let handler = shared.lock().unwrap().clone();
                     let reply = handler(&request);
+                    if let Some(ready) = &reply.ready {
+                        ready.notified().await;
+                    }
                     tokio::time::sleep(reply.delay).await;
                     let _ = tls.write_all(&response(&reply)).await;
                     let _ = tls.shutdown().await;
