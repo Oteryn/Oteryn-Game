@@ -984,6 +984,7 @@ impl PreparedNativeCombatCast {
                     .expect("same held guards preserve the prevalidated direct slot");
             }
             if let Some(companion) = self.corpse_companion.take() {
+                let corpse = *companion.spawn.corpse_item_instance_id();
                 crate::spell::companion_lifecycle::install_reserved_companion(
                     runtime,
                     companion.spawn,
@@ -991,6 +992,9 @@ impl PreparedNativeCombatCast {
                     companion_receipt.expect("prevalidated actual compound COMMIT"),
                 )
                 .expect("same held guards retain the prevalidated companion slot");
+                runtime
+                    .retire_committed_corpse_item(corpse)
+                    .expect("the committed companion shares the same scope owner");
             }
             if let Some(proof) = self.presentation.take() {
                 states
@@ -3455,6 +3459,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 // Phase 2: no awaited work, allocation, new random draw or fallible branch.
                 let mut attempt=window.install();
                 let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+                if batch.applied && attempt.request.operations.iter().any(|operation| matches!(operation,
+                    crate::durability::spell_items_abi::SpellItemOperation::ConsumeCorpse(_)
+                    | crate::durability::spell_items_abi::SpellItemOperation::RemoveGround(_))) {
+                    // Invalidate while observers are still excluded by the runtime turn.
+                    owner.states.loop_ground.invalidate();
+                }
                 if batch.applied && let (Some(hits),Some((target,ordinal,item,creature)))=(&mut hits,&source)
                     && batch.effects.iter().any(|effect|effect.target==*target && effect.sub_ordinal==*ordinal
                         && effect.health.is_some_and(|health|health.committed_health_loss().is_some()))

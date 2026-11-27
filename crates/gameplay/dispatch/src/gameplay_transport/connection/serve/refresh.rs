@@ -688,73 +688,18 @@ where
         }
     }
     // VIS-3: entities that moved, entered or left without this actor's step.
-    let Some(view) = session.visibility.as_mut() else {
+    if session.visibility.is_none() {
         return Ok(());
-    };
-    *step = "entity_names";
-    let projection = match Box::pin(crate::gameplay_transport::entity_names::observe_result(
-        authority,
-        session.actor,
-        session.admitted.continuity.selected_capabilities,
-    ))
-    .await
-    {
-        Ok(channel) => {
-            *step = "appearances";
-            Box::pin(session.appearances.refresh_result(
-                stream,
-                authority,
-                session.actor,
-                &mut session.admitted,
-                view,
-                &channel,
-                session.item_view.as_mut(),
-                (session.sequence, session.revision),
-                false,
-            ))
-            .await
-        }
-        Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
-        Err(_) => return Err(ServeEnd::Disconnected),
-    };
-    match projection {
-        Ok((to_sequence, to_revision)) => {
-            session.sequence = to_sequence;
-            session.revision = to_revision;
-            session.admitted.continuity.spatial_revision = session.revision;
+    }
+    match spatial_entities(stream, authority, session, step).await {
+        Ok(map_current) => {
             *step = "party_skull";
             party_skull::refresh(stream, authority, session).await?;
             inventory_capacity::refresh(stream, authority, session).await?;
             guild_emblem::refresh(stream, authority, session).await?;
-            // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
-            *step = "world_map";
-            if let (Some(view), Some(items)) =
-                (session.world_map.as_mut(), session.item_view.as_mut())
-            {
-                let update = world_map_frames(
-                    authority,
-                    session.actor,
-                    session.generation,
-                    session.sequence,
-                    view,
-                    items,
-                )
-                .await;
-                session.admitted.continuity.item_view = items.continuity();
-                let Some(update) = update else {
-                    return Err(ServeEnd::Disconnected);
-                };
-                if let Some((next_sequence, frames)) = update {
-                    *step = "world_map_write";
-                    session.sequence = next_sequence;
-                    session.admitted.continuity.server_sequence = session.sequence;
-                    session.admitted.continuity.world_map_revision = view.revision();
-                    for frame in frames {
-                        if write_frame(stream, &frame).await.is_err() {
-                            return Err(ServeEnd::Disconnected);
-                        }
-                    }
-                }
+            // Corpses that departed already updated their tile before the spatial frame.
+            if !map_current {
+                world_map(stream, authority, session, step).await?;
             }
         }
         // The discarded candidate consumed no appearance, visibility or item
@@ -817,6 +762,137 @@ where
     }
     Ok(())
 }
+/// Publish a spatial change already committed by a positional item use before
+/// the command's inventory update. The periodic observer path uses the same refresh.
+pub(super) async fn committed_position_use<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let mut step = "entity_names";
+    match spatial_entities(stream, authority, session, &mut step).await {
+        Ok(true) | Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => Ok(()),
+        Ok(false) => world_map(stream, authority, session, &mut step).await,
+        Err(ObservationError::Unavailable) => {
+            operator_event(&format!("event=visibility_refresh_refused step={step}"));
+            Err(ServeEnd::Disconnected)
+        }
+    }
+}
+
+/// As in p11's combat refresh, publish through the same interest-set cursor as
+/// the periodic observer. The captured entity set can contain a corpse leave
+/// and Skeleton enter in one delta. Send the tile revision first as well.
+async fn spatial_entities<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    step: &mut &'static str,
+) -> Result<bool, ObservationError>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let Some(view) = session.visibility.as_ref() else {
+        return Ok(false);
+    };
+    *step = "entity_names";
+    let selected = session.admitted.continuity.selected_capabilities;
+    let mut channel = Box::pin(crate::gameplay_transport::entity_names::observe_result(
+        authority,
+        session.actor,
+        selected,
+    ))
+    .await;
+    if selected.contains(oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2)
+        && matches!(channel, Err(AdmissionRefusal::Unavailable))
+    {
+        channel = Box::pin(
+            crate::gameplay_transport::entity_names::observe_with_published_names(
+                authority,
+                session.actor,
+                selected,
+                view,
+            ),
+        )
+        .await;
+    }
+    let channel = match channel {
+        Ok(channel) => channel,
+        Err(AdmissionRefusal::Unavailable) => return Err(ObservationError::HolderBusy),
+        Err(_) => return Err(ObservationError::Unavailable),
+    };
+    let corpse_left = view.loses_corpse(&channel);
+    if corpse_left {
+        world_map(stream, authority, session, step)
+            .await
+            .map_err(|_| ObservationError::Unavailable)?;
+    }
+    let view = session
+        .visibility
+        .as_mut()
+        .ok_or(ObservationError::Unavailable)?;
+    *step = "appearances";
+    let (sequence, revision) = Box::pin(session.appearances.refresh_result(
+        stream,
+        authority,
+        session.actor,
+        &mut session.admitted,
+        view,
+        &channel,
+        session.item_view.as_mut(),
+        (session.sequence, session.revision),
+        corpse_left,
+    ))
+    .await?;
+    session.sequence = sequence;
+    session.revision = revision;
+    session.admitted.continuity.spatial_revision = revision;
+    Ok(corpse_left)
+}
+
+async fn world_map<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    step: &mut &'static str,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    *step = "world_map";
+    let (Some(view), Some(items)) = (session.world_map.as_mut(), session.item_view.as_mut()) else {
+        return Ok(());
+    };
+    let update = world_map_frames(
+        authority,
+        session.actor,
+        session.generation,
+        session.sequence,
+        view,
+        items,
+    )
+    .await;
+    session.admitted.continuity.item_view = items.continuity();
+    if let Some((sequence, frames)) = update.ok_or(ServeEnd::Disconnected)? {
+        *step = "world_map_write";
+        session.sequence = sequence;
+        session.admitted.continuity.server_sequence = sequence;
+        session.admitted.continuity.world_map_revision = view.revision();
+        for frame in frames {
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+        }
+    }
+    Ok(())
+}
+
 pub(super) async fn sounds<S, A>(
     stream: &mut S,
     authority: &A,

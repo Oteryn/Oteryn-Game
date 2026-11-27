@@ -24,6 +24,24 @@ pub(super) async fn observe_result<A: FreshAdmissionAuthority>(
     authority.observe_projected_entities(actor, selected).await
 }
 
+/// Recover the current scene without a second durable player-name read. Intrinsic
+/// creature names are captured in the same runtime turn as their positions.
+pub(super) async fn observe_with_published_names<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    selected: SelectedCapabilities,
+    view: &SessionVisibility,
+) -> Result<ChannelEntities, AdmissionRefusal> {
+    let without_names = selected.without_projection(
+        oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+    );
+    let mut channel = authority
+        .observe_projected_entities(actor, without_names)
+        .await?;
+    view.defer_unnamed_actors(&mut channel);
+    Ok(channel)
+}
+
 enum Source {
     Player(GameSessionId),
     Name(EntityDisplayName),
