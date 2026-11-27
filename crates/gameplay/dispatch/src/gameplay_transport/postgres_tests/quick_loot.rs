@@ -103,11 +103,11 @@ fn corpse_use_refuses_initial_durable_read_failure_postgres() -> TestResult {
 }
 
 #[test]
-fn selected_loot_all_uses_the_corpse_neighborhood_postgres() -> TestResult {
+fn loot_all_without_source_uses_actor_neighborhood_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_routed_case(admin, Case::SelectedLootAll)
+    run_routed_case(admin, Case::ActorLootAll)
 }
 
 fn run_routed_case(admin: String, case: Case) -> TestResult {
@@ -129,7 +129,7 @@ enum Case {
     PouchFulfilment,
     ManagedPouchFulfilment,
     CorpseReadFailure,
-    SelectedLootAll,
+    ActorLootAll,
     PouchLogout,
 }
 
@@ -310,9 +310,9 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
         };
         let mut corpses = Vec::new();
         let permit = owner.spell_lane_permit().await.ok_or("permit")?;
-        let entries: &[(u8, u16)] = if case == Case::SelectedLootAll {
-            // Actor x=7, selected corpse x=8. x=9 is in the corpse area only.
-            &[(99, 8), (100, 9), (101, 6)]
+        let entries: &[(u8, u16)] = if case == Case::ActorLootAll {
+            // The actor at x=7 can loot from x=6 and x=8 in the same batch.
+            &[(99, 8), (100, 6), (101, 9)]
         } else {
             &[(99, 7)]
         };
@@ -519,38 +519,31 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                     };
                     pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool, action).await?
                 }
-                Case::SelectedLootAll => {
-                    let [(nearby, nearby_items), (actor_only, actor_only_items)] =
-                        corpses.as_slice()
+                Case::ActorLootAll => {
+                    let [(nearby, nearby_items), (outside, outside_items)] = corpses.as_slice()
                     else {
-                        return Err("expected two neighboring corpse fixtures".into());
-                    };
-                    let selected_all = QuickLootRequest {
-                        corpse: Some(corpse_id),
-                        ..all
+                        return Err(
+                            "expected one neighboring corpse and one outside the actor's reach"
+                                .into(),
+                        );
                     };
                     let next = admitted.continuity.next_command_id;
-                    let replies =
-                        wire_requests(&owner, &mut admitted, &[(next, selected_all)]).await?;
+                    let replies = wire_requests(&owner, &mut admitted, &[(next, all)]).await?;
                     let [(CommandStatus::Accepted, result)] = replies.as_slice() else {
                         return Err(debug(replies).into());
                     };
-                    let observed: Vec<_> = result.items.iter().map(|row| row.item).collect();
+                    let mut observed: Vec<_> = result.items.iter().map(|row| row.item).collect();
+                    observed.sort_unstable();
+                    let mut expected: Vec<_> = items.iter().chain(nearby_items).copied().collect();
+                    expected.sort_unstable();
                     assert_eq!(
-                        observed,
-                        items
-                            .iter()
-                            .chain(nearby_items)
-                            .copied()
-                            .collect::<Vec<_>>()
+                        observed, expected,
+                        "Loot All uses the actor's reachable cells"
                     );
                     assert!(result.items.iter().all(|row| row.accepted));
                     assert!(corpse_items(&harness.pool, corpse_id).await?.is_empty());
                     assert!(corpse_items(&harness.pool, *nearby).await?.is_empty());
-                    assert_eq!(
-                        corpse_items(&harness.pool, *actor_only).await?,
-                        *actor_only_items
-                    );
+                    assert_eq!(corpse_items(&harness.pool, *outside).await?, *outside_items);
                 }
                 Case::Bulk | Case::GoldPouch | Case::PouchLogout => {
                     return Err("unexpected dedicated case".into());
