@@ -227,6 +227,30 @@ pub(super) async fn command_reply(
     }
 }
 
+pub(super) async fn acknowledge_while_held(
+    client: &mut tokio::io::DuplexStream,
+    policy: crate::gameplay_transport::connection::LivenessPolicy,
+) -> TestResult {
+    // Each ACK is sent before the next cadence and before we return the holder.
+    for _ in 0..=policy.missed_limit {
+        tokio::time::advance(policy.interval).await;
+        loop {
+            let frame = read(client).await?;
+            match decode_wire_envelope(&frame)?.message_type() {
+                MessageType::LivenessProbe => {
+                    ack_probe(client, &frame).await?;
+                    break;
+                }
+                MessageType::CommandResult => {
+                    return Err("logout replied before the held pass returned".into());
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(())
+}
+
 pub(super) async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Vec<u8>, usize)> {
     let mut steps = 0;
     loop {
