@@ -16,6 +16,14 @@
       "note": "First-entry retry decision and pre-snapshot callback phase completion. Outcome is phase-local playable, unplayable or retries_exhausted; attempts counts actual first-entry calls (one for each callback phase); elapsed_ms covers the retry loop or named callback phase. Phase identifies the last first-entry participant or callback phase. Connection trace when available; no player identity or raw errors."
     },
     {
+      "event": "admission_retry",
+      "level": "warn",
+      "span": false,
+      "fields": ["phase", "cause", "remaining_ms"],
+      "codes": [],
+      "note": "A preparation read or admission step deferred within the original admission deadline. Records the cause and the remaining shared budget."
+    },
+    {
       "event": "admission_stage",
       "level": "info",
       "span": false,
@@ -504,7 +512,7 @@
       "event": "serve_end",
       "level": "info",
       "span": false,
-      "fields": [],
+      "fields": ["reason", "path", "phase", "cause", "source", "next_command_id", "server_sequence"],
       "codes": [],
       "note": "Seeded from current server code."
     },

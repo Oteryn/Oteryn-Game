@@ -515,11 +515,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let retry =
-            super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
-                .map_err(|_| ())?;
+        let retry = super::AdmissionRetryBudget::for_join_root(
+            &admitted.game_session_id,
+            self.root,
+            "house_scope",
+        )
+        .map_err(|_| ())?;
         let Some(mut receipt) = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root
                     .await_ready()
                     .await
@@ -538,7 +541,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let controller = admitted.controller.ok_or(())?;
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let (session, _) = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root
                     .await_ready()
                     .await

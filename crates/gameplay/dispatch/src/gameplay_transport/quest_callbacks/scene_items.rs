@@ -451,7 +451,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => return true,
             Err(()) => return false,
         };
-        match self.read_scene_item_receipt(&attempt.intent).await {
+        let budget = super::super::AdmissionRetryBudget::for_join_read(self.root, "scene_receipt");
+        match budget
+            .retry_durability("scene_receipt", || {
+                self.read_scene_item_receipt(&attempt.intent)
+            })
+            .await
+        {
             Ok(SourceSceneReceipt::Committed | SourceSceneReceipt::Absent) => {
                 self.states.loop_ground.invalidate();
                 // The original USE cannot report a closed scene: only custody

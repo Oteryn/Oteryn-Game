@@ -200,6 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.root,
                 crate::durability::ROOT_RECOVERY_WINDOW,
             )
+            .with_join_deadline("grizzly_receipt")
         } else {
             AdmissionRetryBudget::for_command(self.root)
         };
@@ -255,7 +256,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let entry = match budget
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root
                     .pending_grizzly_boss_entry_for_session(self.character, session)
                     .await

@@ -132,7 +132,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<Vec<SpellCatalogEntry>> {
         // This is a required join domain. Share one bounded retry budget across
         // its durable reads; only a busy holder is transient, never a bad fence.
-        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let retry = super::AdmissionRetryBudget::for_join_read(self.root, "spell_catalog");
         let refusal = |error| match error {
             crate::durability::DurabilityError::RootUnavailable => {
                 super::connection::AdmissionRefusal::Unavailable
@@ -157,7 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let house_fence = if house {
             let (current, _) = retry
-                .retry_unavailable(async || {
+                .retry_admission_checkout(async || {
                     super::FreshAdmissionStore::from_root(self.root.clone())
                         .current_session_at(session)
                         .await
@@ -170,7 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let learned = retry
-            .retry_unavailable(async || {
+            .retry_admission_checkout(async || {
                 self.root
                     .read_character_known_spells(self.character, character)
                     .await

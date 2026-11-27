@@ -604,8 +604,8 @@ pub(super) async fn observe_character_inventory(
     use crate::durability::{DurabilityError, item_use::ItemUseError};
     // These reads share the root's single holder with the node cadence. A busy
     // holder must not turn a valid join/resume into a missing inventory snapshot.
-    let backpack = super::AdmissionRetryBudget::for_command(admission.root)
-        .retry_unavailable(async || {
+    let backpack = super::AdmissionRetryBudget::for_join_read(admission.root, "inventory")
+        .retry_admission_checkout(async || {
             let current = FreshAdmissionStore::from_root(admission.root.clone())
                 .current_session_at(game_session_id)
                 .await

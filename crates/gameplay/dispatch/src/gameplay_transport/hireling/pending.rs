@@ -169,7 +169,7 @@ pub(in crate::gameplay_transport) async fn recover_ingress(
     let Some(pending)=pending else{return true};
     let Some(reference)=reference(pending.command()) else{return false};
     if !owner.states.command_ingress.pending_reconciliation(reference){return true}
-    let retry=super::super::AdmissionRetryBudget::for_command(owner.root);
+    let retry=super::super::AdmissionRetryBudget::for_join_read(owner.root, "hireling_ingress");
     if !retry.retry_until(async || resolve(owner,actor,admitted.game_session_id).await).await{return false}
     // A missing probe is not a terminal verdict. Preserve the unresolved ingress
     // rather than fabricating a refusal or executing replacement client bytes.

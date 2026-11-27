@@ -190,6 +190,10 @@ enum ServeEnd {
     ControlLost(&'static str),
     LoggedOut,
     Closed(FoundationProtocolError),
+    JoinRefused {
+        refusal: JoinRefusal,
+        unpublished: bool,
+    },
 }
 
 impl ServeEnd {
@@ -210,24 +214,32 @@ impl ServeEnd {
             Self::ControlLost(_) => "control_lost",
             Self::LoggedOut => "logged_out",
             Self::Closed(_) => "protocol_error",
+            Self::JoinRefused { .. } => "join_refused",
         };
         let path = match &self {
             Self::ControlLost(path) => format!(" path={path}"),
             _ => String::new(),
         };
         let phase = phase.map_or_else(String::new, |phase| format!(" phase={phase}"));
-        operator_event(&format!(
-            "event=serve_end reason={reason}{path}{phase} source={} next_command_id={} server_sequence={}",
-            std::panic::Location::caller(),
-            admitted.continuity.next_command_id,
-            admitted.continuity.server_sequence,
-        ));
+        match &self {
+            Self::JoinRefused { refusal, .. } => refusal.report(admitted),
+            _ => report_serve_end(admitted, &format!("{reason}{path}{phase}")),
+        }
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
             Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
             Self::ControlLost(_) => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
             Self::Closed(error) => ConnectionEnd::AdmittedThenClosed(admitted, error),
+            Self::JoinRefused {
+                unpublished: true, ..
+            } => ConnectionEnd::AdmittedThenClosed(
+                admitted,
+                FoundationProtocolError::SessionJoinUnavailable,
+            ),
+            Self::JoinRefused {
+                unpublished: false, ..
+            } => ConnectionEnd::AdmittedThenDisconnected(admitted),
         }
     }
 }
@@ -244,9 +256,14 @@ async fn close<S: AsyncWrite + Unpin>(
 async fn refuse_pending_join<S: AsyncWrite + Unpin>(
     stream: &mut S,
     admitted: AdmittedSession,
+    refusal: JoinRefusal,
 ) -> ConnectionEnd {
     send_join_unavailable(stream, 0).await;
-    ServeEnd::Closed(FoundationProtocolError::SessionJoinUnavailable).finish(admitted)
+    ServeEnd::JoinRefused {
+        refusal,
+        unpublished: true,
+    }
+    .finish(admitted)
 }
 
 #[cfg(test)]
@@ -299,36 +316,52 @@ where
         {
             Ok(Ok(Some(next))) => scoped_authority = Some(next),
             Ok(Ok(None)) => {}
-            _ if acceptance.is_some() => return refuse_pending_join(stream, admitted).await,
+            result if acceptance.is_some() => {
+                let refusal = result
+                    .err()
+                    .unwrap_or_else(|| JoinRefusal::unprepared("readiness"));
+                return refuse_pending_join(stream, admitted, refusal).await;
+            }
             _ => return ServeEnd::Disconnected.finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         // Resolve the admitted scope before checking its actor, including a
         // reconnect whose actor already belongs to an activity Instance.
-        if !matches!(
-            admission_stage(
-                deadline,
-                "staff_refresh",
-                "runtime_lock_durability_holder",
-                Box::pin(authority.staff_refresh(admitted))
-            )
-            .await,
-            Ok(true)
-        ) {
+        let staff = admission_stage(
+            deadline,
+            "staff_refresh",
+            "runtime_lock_durability_holder",
+            Box::pin(authority.staff_refresh(admitted)),
+        )
+        .await;
+        if !matches!(staff, Ok(true)) {
             if acceptance.is_some() {
-                return refuse_pending_join(stream, admitted).await;
+                let refusal = staff
+                    .err()
+                    .unwrap_or_else(|| JoinRefusal::unprepared("staff_refresh"));
+                return refuse_pending_join(stream, admitted, refusal).await;
             }
             return ServeEnd::Disconnected.finish(admitted);
         }
         if !authority.remember_activity_connection(admitted) {
             if acceptance.is_some() {
-                return refuse_pending_join(stream, admitted).await;
+                return refuse_pending_join(
+                    stream,
+                    admitted,
+                    JoinRefusal::unprepared("activity_lineage"),
+                )
+                .await;
             }
             return ServeEnd::Disconnected.finish(admitted);
         }
         let reconciled = {
-            let mut recovery =
-                std::pin::pin!(authority.prepare_quest_callback_resume(&mut admitted));
+            let mut recovery = std::pin::pin!(async {
+                if authority.prepare_quest_callback_resume(&mut admitted).await {
+                    Ok(())
+                } else {
+                    Err(join_refusal("callback_recovery"))
+                }
+            });
             match admission_stage(
                 deadline,
                 "callback_recovery",
@@ -337,25 +370,29 @@ where
             )
             .await
             {
-                Ok(reconciled) => Some(reconciled),
-                Err(_) => {
+                Ok(reconciled) => Ok(reconciled),
+                Err(refusal) => {
                     send_join_unavailable(stream, 0).await;
                     // Recovery can own an idempotent durable write. Let it settle before
                     // handing the unpublished controller to the existing loss lifecycle.
                     let _ = recovery.await;
-                    None
+                    Err(refusal)
                 }
             }
         };
-        if reconciled.is_none() {
-            return ServeEnd::Closed(FoundationProtocolError::SessionJoinUnavailable)
-                .finish(admitted);
-        }
-        if reconciled == Some(false) {
-            if acceptance.is_some() {
-                return refuse_pending_join(stream, admitted).await;
+        match reconciled {
+            Ok(Ok(())) => {}
+            Ok(Err(refusal)) if acceptance.is_some() => {
+                return refuse_pending_join(stream, admitted, refusal).await;
             }
-            return ServeEnd::Disconnected.finish(admitted);
+            Ok(Err(_)) => return ServeEnd::Disconnected.finish(admitted),
+            Err(refusal) => {
+                return ServeEnd::JoinRefused {
+                    refusal,
+                    unpublished: true,
+                }
+                .finish(admitted);
+            }
         }
         if admitted.item_fence.is_some_and(|fence| {
             matches!(
@@ -399,25 +436,36 @@ where
         );
         let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
             if acceptance.is_some() {
-                return refuse_pending_join(stream, admitted).await;
+                return refuse_pending_join(
+                    stream,
+                    admitted,
+                    JoinRefusal::unprepared("first_entry"),
+                )
+                .await;
             }
             record_join_progress("held_unplayable", admitted.first_entry);
             return hold_refused(stream, admitted, policy).await;
         };
         record_join_progress("baseline", admitted.first_entry);
-        let Ok(Some(baseline)) = admission_stage(
+        let baseline = admission_stage(
             deadline,
             "snapshot_baseline",
             "runtime_lock",
             authority.observe(actor),
         )
-        .await
-        else {
-            if acceptance.is_some() {
-                return refuse_pending_join(stream, admitted).await;
+        .await;
+        let baseline = match baseline {
+            Ok(Some(baseline)) => baseline,
+            result => {
+                if acceptance.is_some() {
+                    let refusal = result
+                        .err()
+                        .unwrap_or_else(|| JoinRefusal::unprepared("snapshot_baseline"));
+                    return refuse_pending_join(stream, admitted, refusal).await;
+                }
+                record_join_progress("held_no_baseline", admitted.first_entry);
+                return hold_refused(stream, admitted, policy).await;
             }
-            record_join_progress("held_no_baseline", admitted.first_entry);
-            return hold_refused(stream, admitted, policy).await;
         };
         // Keep the join snapshot and its temporary session state out of the
         // connection coroutine, which also carries the live command path.
@@ -622,6 +670,7 @@ where
                     ServeEnd::Disconnected => "Disconnected".to_owned(),
                     ServeEnd::LoggedOut => "LoggedOut".to_owned(),
                     ServeEnd::Transferred(_) => "Transferred".to_owned(),
+                    ServeEnd::JoinRefused { refusal, .. } => refusal.cause.name().to_owned(),
                 };
                 operator_event(&format!(
                     "event=serve_command_end error={error} next_command_id={}",

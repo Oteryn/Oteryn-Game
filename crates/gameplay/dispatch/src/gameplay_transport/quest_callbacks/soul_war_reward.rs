@@ -1,6 +1,7 @@
 //! Crystal's fixed Soul War chest delivers the retained reward through the existing MINT owner.
 use super::super::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
 use super::*;
+use crate::durability::DurabilityError;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::quest_state::soul_war::{
     SOUL_WAR_REWARD_PLACEMENT, SOUL_WAR_REWARD_REVISION,
@@ -49,9 +50,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut slot = self.revision_sequencer.acquire(pending.character).await;
         slot.observe_endgame_progression();
-        let result = match self
-            .root
-            .reconcile_soul_war_reward(self.character, pending.character, &pending.request)
+        let budget =
+            super::super::AdmissionRetryBudget::for_join_read(self.root, "soul_war_receipt");
+        let result = match budget
+            .retry_holder(
+                || {
+                    self.root.reconcile_soul_war_reward(
+                        self.character,
+                        pending.character,
+                        &pending.request,
+                    )
+                },
+                |error| {
+                    matches!(
+                        error,
+                        RewardClaimMintError::Unavailable(DurabilityError::RootUnavailable)
+                    )
+                },
+            )
             .await
         {
             Ok(Some(_)) => UseDisposition::Committed,

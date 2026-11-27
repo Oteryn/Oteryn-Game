@@ -24,11 +24,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
-    ) -> Option<(WorldPvpType, bool)> {
-        runtime.player_control_facts(actor, session).ok()?;
-        let fence = self.current_quest_fence(session).await.ok()??;
-        let command = CommandRef::new(session, CommandId::new(command_id).ok()?);
-        let pass = self.root.try_issue_semantic_pass().ok()?;
+    ) -> Result<(WorldPvpType, bool), DurabilityError> {
+        runtime
+            .player_control_facts(actor, session)
+            .map_err(|_| DurabilityError::CommitRejected)?;
+        let fence = self
+            .current_quest_fence_durable(session)
+            .await?
+            .ok_or(DurabilityError::CommitRejected)?;
+        let command = CommandRef::new(
+            session,
+            CommandId::new(command_id).map_err(|_| DurabilityError::CommitRejected)?,
+        );
+        let pass = self.root.try_issue_semantic_pass()?;
         let mut context = (self, runtime);
         pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
@@ -56,7 +64,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         })
         .await
-        .ok()
     }
 
     pub(super) async fn set_expert_fight_modes(
@@ -74,7 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.get(&runtime, actor, session).is_none() {
             return AttackIntentDisposition::Rejected;
         }
-        let Some((world, black)) = self
+        let Ok((world, black)) = self
             .expert_context(&runtime, actor, session, command_id, &permit)
             .await
         else {
@@ -108,11 +115,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
-    ) -> Option<ExpertFightModes> {
-        let permit = self.spell_lane_permit().await?;
+    ) -> Result<ExpertFightModes, DurabilityError> {
+        let permit = self
+            .spell_lane_permit()
+            .await
+            .ok_or(DurabilityError::Unavailable)?;
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        states.get(&runtime, actor, session)?;
+        states
+            .get(&runtime, actor, session)
+            .ok_or(DurabilityError::CommitRejected)?;
         let mut modes = self.states.attack.lock().await.expert_modes(actor, session);
         // Read the current World contract and skull together under the existing deadline.
         let (world, black) = self
@@ -135,6 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .set_expert_modes(&runtime, actor, session, modes)
             .then_some(modes)
+            .ok_or(DurabilityError::CommitRejected)
     }
 }
 

@@ -532,17 +532,139 @@ pub(super) struct PendingJoin {
     deadline: tokio::time::Instant,
 }
 
+#[derive(Clone, Copy)]
+enum JoinCause {
+    HolderBusy,
+    Deadline,
+    Unavailable,
+    Unprepared,
+}
+
+impl JoinCause {
+    fn name(self) -> &'static str {
+        match self {
+            Self::HolderBusy => "holder_busy",
+            Self::Deadline => "deadline",
+            Self::Unavailable => "authority_unavailable",
+            Self::Unprepared => "unprepared",
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct JoinRefusal {
+    phase: &'static str,
+    cause: JoinCause,
+}
+
+impl JoinRefusal {
+    fn unprepared(phase: &'static str) -> Self {
+        Self {
+            phase,
+            cause: JoinCause::Unprepared,
+        }
+    }
+
+    #[track_caller]
+    fn report(self, admitted: AdmittedSession) {
+        report_serve_end(
+            admitted,
+            &format!(
+                "join_refused phase={} cause={}",
+                self.phase,
+                self.cause.name()
+            ),
+        );
+    }
+}
+
+#[track_caller]
+fn report_serve_end(admitted: AdmittedSession, reason: &str) {
+    super::operator_event(&format!(
+        "event=serve_end reason={reason} source={} next_command_id={} server_sequence={}",
+        std::panic::Location::caller(),
+        admitted.continuity.next_command_id,
+        admitted.continuity.server_sequence,
+    ));
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static BEFORE_JOIN_SNAPSHOT:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
+struct AdmissionWait {
+    deadline: tokio::time::Instant,
+    retry: std::cell::Cell<Option<JoinRefusal>>,
+}
+
+tokio::task_local! {
+    static ADMISSION_WAIT: AdmissionWait;
+}
+
+pub(super) fn admission_wait_deadline() -> Option<tokio::time::Instant> {
+    ADMISSION_WAIT.try_with(|wait| wait.deadline).ok()
+}
+
+pub(super) fn record_admission_retry(phase: &'static str, holder_busy: bool) {
+    let cause = if holder_busy {
+        JoinCause::HolderBusy
+    } else {
+        JoinCause::Unavailable
+    };
+    let _ = ADMISSION_WAIT.try_with(|wait| {
+        wait.retry.set(Some(JoinRefusal { phase, cause }));
+        super::operator_event(&format!(
+            "event=admission_retry phase={phase} cause={} remaining_ms={}",
+            cause.name(),
+            wait.deadline
+                .saturating_duration_since(tokio::time::Instant::now())
+                .as_millis(),
+        ));
+    });
+}
+
+pub(super) fn clear_admission_retry() {
+    let _ = ADMISSION_WAIT.try_with(|wait| wait.retry.set(None));
+}
+
+fn join_refusal(phase: &'static str) -> JoinRefusal {
+    ADMISSION_WAIT
+        .try_with(|wait| wait.retry.get())
+        .ok()
+        .flatten()
+        .unwrap_or_else(|| JoinRefusal::unprepared(phase))
+}
+
 async fn admission_stage<T>(
     deadline: Option<tokio::time::Instant>,
     phase: &'static str,
     wait_on: &'static str,
     work: impl Future<Output = T>,
-) -> Result<T, tokio::time::error::Elapsed> {
+) -> Result<T, JoinRefusal> {
     let Some(deadline) = deadline else {
         return Ok(work.await);
     };
     let started = tokio::time::Instant::now();
-    let result = tokio::time::timeout_at(deadline, work).await;
+    let result = ADMISSION_WAIT
+        .scope(
+            AdmissionWait {
+                deadline,
+                retry: std::cell::Cell::new(None),
+            },
+            async {
+                tokio::time::timeout_at(deadline, work).await.map_err(|_| {
+                    ADMISSION_WAIT
+                        .with(|wait| wait.retry.get())
+                        .unwrap_or(JoinRefusal {
+                            phase,
+                            cause: JoinCause::Deadline,
+                        })
+                })
+            },
+        )
+        .await;
     super::record_admission_stage(
         phase,
         wait_on,
@@ -948,12 +1070,29 @@ where
             }
             // A real activity receipt/current owner supplies the exact scope;
             // no House acknowledgement or unsolicited command result is used.
-            let Ok(activity_scope) = authority.activity_scope_snapshot(&mut resumed).await else {
-                super::operator_event(&format!(
-                    "event=resume_bootstrap_failed phase=activity_scope code={}",
-                    FoundationProtocolError::SessionJoinUnavailable.code()
-                ));
-                return Err(join_unavailable(stream, resumed, 0).await);
+            let resume_deadline =
+                tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+            let activity_scope = admission_stage(
+                Some(resume_deadline),
+                "resume_activity_scope",
+                "durability_holder",
+                async {
+                    authority
+                        .activity_scope_snapshot(&mut resumed)
+                        .await
+                        .map_err(|()| join_refusal("resume_activity_scope"))
+                },
+            )
+            .await;
+            let activity_scope = match activity_scope {
+                Ok(Ok(scope)) => scope,
+                Ok(Err(refusal)) | Err(refusal) => {
+                    super::operator_event(&format!(
+                        "event=resume_bootstrap_failed phase=activity_scope code={}",
+                        FoundationProtocolError::SessionJoinUnavailable.code()
+                    ));
+                    return Err(join_unavailable(stream, resumed, 0, refusal).await);
+                }
             };
             let Ok(accepted) = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
@@ -963,14 +1102,35 @@ where
                 schema_revision: SERVER_SCHEMA_REVISION,
                 selected_capabilities: continuity.selected_capabilities.as_slice(),
             }) else {
-                return Err(join_unavailable(stream, resumed, 0).await);
+                return Err(join_unavailable(
+                    stream,
+                    resumed,
+                    0,
+                    JoinRefusal::unprepared("resume_acceptance_encode"),
+                )
+                .await);
             };
             write_frame(stream, &accepted)
                 .await
                 .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
             let generation = continuity.connection_generation;
-            let Ok(house_ack) = authority.house_scope_ack(resumed).await else {
-                return Err(join_unavailable(stream, resumed, generation).await);
+            let house_ack = admission_stage(
+                Some(resume_deadline),
+                "resume_house_scope",
+                "durability_holder",
+                async {
+                    authority
+                        .house_scope_ack(resumed)
+                        .await
+                        .map_err(|()| join_refusal("resume_house_scope"))
+                },
+            )
+            .await;
+            let house_ack = match house_ack {
+                Ok(Ok(ack)) => ack,
+                Ok(Err(refusal)) | Err(refusal) => {
+                    return Err(join_unavailable(stream, resumed, generation, refusal).await);
+                }
             };
             if let Some((command, payload)) = house_ack {
                 if command == 0 {
@@ -989,7 +1149,13 @@ where
                         &payload,
                     )
                 }) else {
-                    return Err(join_unavailable(stream, resumed, generation).await);
+                    return Err(join_unavailable(
+                        stream,
+                        resumed,
+                        generation,
+                        JoinRefusal::unprepared("resume_house_ack_encode"),
+                    )
+                    .await);
                 };
                 write_frame(stream, &ack)
                     .await
@@ -1066,15 +1232,18 @@ where
     .await
     {
         Ok(decision) => decision,
-        Err(_) => {
+        Err(reason) => {
             send_fresh_unavailable(stream).await;
             // A durable commit may be in flight. Keep polling its owning future and return
             // any resulting controller to the listener's unpublished-join cleanup.
             return Err(match decision.await {
-                Ok(admitted) => ConnectionEnd::AdmittedThenClosed(
-                    admitted,
-                    FoundationProtocolError::SessionJoinUnavailable,
-                ),
+                Ok(admitted) => {
+                    reason.report(admitted);
+                    ConnectionEnd::AdmittedThenClosed(
+                        admitted,
+                        FoundationProtocolError::SessionJoinUnavailable,
+                    )
+                }
                 Err(refusal) => ConnectionEnd::AdmissionRefused(refusal),
             });
         }
@@ -1139,7 +1308,13 @@ where
         Some(trace) => encode_server_accepted_with_trace(&accepted_value, &trace),
         None => encode_server_accepted(&accepted_value),
     }) else {
-        return Err(join_unavailable(stream, admitted, 0).await);
+        return Err(join_unavailable(
+            stream,
+            admitted,
+            0,
+            JoinRefusal::unprepared("acceptance_encode"),
+        )
+        .await);
     };
     let bulletin = admission_stage(
         defer_fresh_acceptance.then_some(deadline),
@@ -1148,12 +1323,16 @@ where
         authority.client_bulletin(),
     )
     .await;
-    let Ok(bulletin) = bulletin else {
-        send_join_unavailable(stream, 0).await;
-        return Err(ConnectionEnd::AdmittedThenClosed(
-            admitted,
-            FoundationProtocolError::SessionJoinUnavailable,
-        ));
+    let bulletin = match bulletin {
+        Ok(bulletin) => bulletin,
+        Err(refusal) => {
+            send_join_unavailable(stream, 0).await;
+            refusal.report(admitted);
+            return Err(ConnectionEnd::AdmittedThenClosed(
+                admitted,
+                FoundationProtocolError::SessionJoinUnavailable,
+            ));
+        }
     };
     let accepted = if let Some(document) = bulletin {
         oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
@@ -1839,8 +2018,10 @@ async fn join_unavailable<S: AsyncWrite + Unpin>(
     stream: &mut S,
     admitted: AdmittedSession,
     generation: u64,
+    refusal: JoinRefusal,
 ) -> ConnectionEnd {
     send_join_unavailable(stream, generation).await;
+    refusal.report(admitted);
     ConnectionEnd::AdmittedThenDisconnected(admitted)
 }
 
