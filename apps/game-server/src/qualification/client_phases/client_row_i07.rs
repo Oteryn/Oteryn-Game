@@ -548,9 +548,11 @@ pub(super) async fn journey(
     ) else {
         return Err("I07 fixture corpse count differs".into());
     };
-    if full {
-        evidence("I07_FULL_INPUT corpses=3 east_stack=2 source=qualification_fixture");
-    }
+    evidence(if full {
+        "I07_FULL_INPUT corpses=3 east_stack=2 source=qualification_fixture"
+    } else {
+        "FIXTURE I07.client corpses=3 east_stack=2 source=qualification_fixture"
+    });
     if !before
         .iter()
         .chain(&stacked_before)
@@ -1082,10 +1084,15 @@ pub(super) async fn journey(
         )
         .await?;
     evidence("I07_INVALID_POUCH status=rejected");
+    let _ = fresh.take_events();
     capture.probe(&mut fresh, 20, click, &[]).await?;
     fresh.service_liveness(Duration::from_secs(2)).await?;
-    if matching_corpse_delta(&mut fresh, corpse_handle)?.is_some() {
-        return Err("I07 stale Click emitted a corpse view delta".into());
+    if fresh
+        .take_events()
+        .into_iter()
+        .any(|event| matches!(event, oteryn_dev_client::SessionEvent::OpenContainer(_)))
+    {
+        return Err("I07 stale Click emitted an open-container delta".into());
     }
     require_placements(
         &mut database,
