@@ -1,15 +1,22 @@
 //! Disposable P01.full inputs. Balances are derived from Bestiary receipts.
 use super::*;
 
-const COMPLETED: [&str; 8] = [
+const COMPLETED: [&str; 15] = [
+    "oteryn:creature.acolyte_of_darkness",
     "oteryn:creature.bane_bringer",
     "oteryn:creature.bane_of_light",
+    "oteryn:creature.blue_butterfly",
     "oteryn:creature.bride_of_night",
+    "oteryn:creature.butterfly",
+    "oteryn:creature.cake_golem",
+    "oteryn:creature.cat",
+    "oteryn:creature.chocolate_blob",
+    "oteryn:creature.cream_blob",
     "oteryn:creature.crustacea_gigantica",
     "oteryn:creature.crystal_wolf",
     "oteryn:creature.diamond_servant",
-    "oteryn:creature.draptor",
-    "oteryn:creature.dryad",
+    "oteryn:creature.dire_penguin",
+    "oteryn:creature.troll",
 ];
 const RAT: &str = "oteryn:creature.rat";
 

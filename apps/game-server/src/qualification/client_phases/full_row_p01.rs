@@ -197,10 +197,17 @@ pub(super) async fn prepare_rat_ground(
 pub(super) async fn place_rat(
     client: &mut DevClientSession,
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    place_creature(client, "oteryn:creature.rat").await
+}
+
+async fn place_creature(
+    client: &mut DevClientSession,
+    key: &str,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, "oteryn:creature.rat".to_owned()).await?;
+    let answer = request_spawn(session, key.to_owned()).await?;
     let target = parse_spawned_entity(&answer)?;
-    evidence(&format!("P01_FIXTURE placed Rat {target:?}"));
+    evidence(&format!("P01_FIXTURE placed key={key} target={target:?}"));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     verdict::Harness::global().bounded_wait(deadline, "fixture-rat-visibility");
     loop {
@@ -219,12 +226,12 @@ pub(super) async fn place_rat(
                     .max(entity.position.y.abs_diff(actor.y))
                     != 1
             {
-                return Err(format!("incorrect Rat fixture placement: {entity:?}").into());
+                return Err(format!("incorrect {key} fixture placement: {entity:?}").into());
             }
             return Ok(entity);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("Rat fixture entity {target:?} absent from wire view").into());
+            return Err(format!("{key} fixture entity {target:?} absent from wire view").into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
@@ -274,14 +281,16 @@ async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn hunt_for_rat(
+async fn hunt_exact_creature(
     client: &mut DevClientSession,
+    key: &str,
     race: NonZeroU32,
-    stage: client_hunt::CorpseStage,
+    corpse_ref: u32,
+    stage: Option<client_hunt::CorpseStage>,
 ) -> TestResult<full_row_p05::KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
-    let target = place_rat(client).await?;
+    let target = place_creature(client, key).await?;
     let old_corpses: Vec<_> = client
         .world_entities()
         .into_iter()
@@ -337,9 +346,14 @@ async fn hunt_for_rat(
                         },
                     ) => {
                         evidence(&format!(
-                            "P01_CHECK rat-fire-impact value={value} target={:?}",
+                            "P01_CHECK fire-impact key={key} value={value} target={:?}",
                             target.entity
                         ));
+                        if key == "oteryn:creature.troll" && value.get() != 1 {
+                            return Err(
+                                format!("Enflame Troll impact expected 1, got {value}").into()
+                            );
+                        }
                         fire_damage = true;
                     }
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
@@ -350,7 +364,7 @@ async fn hunt_for_rat(
         if !kills.is_empty() && kills != [Some(race)] || experience.len() > 1 {
             client.session_mut().attack_target(None).await?;
             return Err(format!(
-                "step=hunt-credit expected=Rat/{race} observed={kills:?} experience={experience:?}"
+                "step=hunt-credit expected={key}/{race} observed={kills:?} experience={experience:?}"
             )
             .into());
         }
@@ -370,7 +384,7 @@ async fn hunt_for_rat(
                                 entry.detail,
                                 oteryn_dev_client::EntityDetail::Object { item_definition_ref, .. }
                                 | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_definition_ref, .. }
-                                if item_definition_ref == stage.fresh_ref
+                                if item_definition_ref == corpse_ref
                             )
                     })
                     .copied()
@@ -384,14 +398,22 @@ async fn hunt_for_rat(
         }
     };
     client.session_mut().attack_target(None).await?;
-    let corpse = client_hunt::wait_for_corpse_stage(client, corpse, stage).await?;
+    let corpse = if let Some(stage) = stage {
+        client_hunt::wait_for_corpse_stage(client, corpse, stage).await?
+    } else {
+        corpse
+    };
     let handle = match corpse.detail {
         oteryn_dev_client::EntityDetail::Object { item_handle, .. }
         | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
         _ => None,
     }
     .ok_or("Rat corpse has no server-issued item handle")?;
-    let used = client_hunt::use_rat_corpse(client, handle).await?;
+    let used = if stage.is_some() {
+        client_hunt::use_rat_corpse(client, handle).await?
+    } else {
+        client.use_item(handle).await?
+    };
     if used.status != CommandStatus::Accepted
         || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
     {
@@ -604,7 +626,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     prepare_unarmed(&mut client).await?;
     prepare_rat_ground(&mut client, world).await?;
-    let first_kill = hunt_for_rat(&mut client, race, rat_stage).await?;
+    let first_kill = hunt_exact_creature(
+        &mut client,
+        rat.key(),
+        race,
+        rat_stage.fresh_ref,
+        Some(rat_stage),
+    )
+    .await?;
     let current = query(&mut client).await?;
     if first_kill.race != race
         || first_kill.raw_xp != 5
@@ -682,6 +711,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if unlocked_state.assigned_race.is_some() {
         return Err(format!("UNLOCK unexpectedly assigned the charm: {unlocked_state:?}").into());
     }
+    // Rat's one-point Enflame base damage truncates to zero under mitigation.
+    // Troll is the mastered fixture race for the positive fire-damage assertion.
+    let troll_key = "oteryn:creature.troll";
+    let (troll_index, (troll, _)) = full_row_p05::canonical_races()?
+        .iter()
+        .enumerate()
+        .find(|(_, (definition, _))| definition.key() == troll_key)
+        .ok_or("Troll absent from Bestiary")?;
+    let race = NonZeroU32::new(u32::try_from(troll_index)? + 1).ok_or("Troll race index")?;
+    if count(&unlocked, race) != troll.final_kill_threshold() {
+        return Err("Troll fixture must be mastered before the Enflame assignment".into());
+    }
+    let troll_corpse = provisioning::item_reference(&provisioning::item_index()?, 5960)?.get();
     let assigned = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
     let assigned_state = &assigned.charms.charms[usize::try_from(charm.get() - 1)?];
     if assigned.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::Assigned)
@@ -707,8 +749,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let mut observed_proc = false;
     for _ in 0..12 {
-        let kill = hunt_for_rat(&mut client, race, rat_stage).await?;
-        if kill.race != race {
+        let kill = hunt_exact_creature(&mut client, troll_key, race, troll_corpse, None).await?;
+        if kill.race != race || kill.raw_xp != 20 {
             return Err(format!(
                 "step=assigned-combat expected-race={race} credited-race={}",
                 kill.race
@@ -779,7 +821,7 @@ fn review_p01_guards_the_journey() {
     assert!(
         include_str!("full_row_p01.rs")
             .split_once("#[cfg(test)]")
-            .is_some_and(|(body, _)| body.contains("hunt_for_rat"))
+            .is_some_and(|(body, _)| body.contains("hunt_exact_creature"))
     );
 }
 
