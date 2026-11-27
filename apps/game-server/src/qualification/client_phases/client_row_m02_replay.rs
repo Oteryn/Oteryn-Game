@@ -338,15 +338,16 @@ async fn replay(binding: &Capture, frames: &[Envelope], wire: &[Vec<u8>]) -> Tes
             )?;
             seeded = true;
         }
+        let event = session.apply_qualification_frame(body)?;
+        // Liveness is unsequenced and may arrive in any phase. Validate it above
+        // before bypassing the sequenced setup and command assertions.
+        if sequence == 0 {
+            continue;
+        }
         if sequence < binding.first_sequence {
-            session.apply_qualification_frame(body)?;
             if session.world_spatial().actor_position == FAR_SIDE {
                 return Err("M02 replay reached the logout tile before the mechanic".into());
             }
-            continue;
-        }
-        let event = session.apply_qualification_frame(body)?;
-        if sequence == 0 || sequence < binding.first_sequence {
             continue;
         }
         let frame = frames.next().ok_or("M02 extra original frame")?;
