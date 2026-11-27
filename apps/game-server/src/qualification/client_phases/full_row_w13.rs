@@ -201,13 +201,10 @@ fn fixture_approach(
 }
 
 const HUNTER_SWORD_ID: u32 = 3288;
-const HUNTER_SWORD_SKILL: u16 = 110;
 
 async fn stage_hunter(clients: &SeamClients<'_>, approach: TilePos) -> TestResult {
     wait_character_released(clients, 0).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    use sqlx::Connection as _;
-    let mut tx = db.begin().await?;
     let changed = sqlx::query(
         "UPDATE game_character_last_positions AS p
          SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
@@ -223,25 +220,12 @@ async fn stage_hunter(clients: &SeamClients<'_>, approach: TilePos) -> TestResul
     .bind(i32::from(approach.x))
     .bind(i32::from(approach.y))
     .bind(i32::from(-approach.floor))
-    .execute(&mut *tx)
+    .execute(&mut db)
     .await?;
+    db.close().await?;
     if changed.rows_affected() != 1 {
         return Err("W13 fixture requires one different saved offline world position".into());
     }
-    let skill = sqlx::query(
-        "UPDATE game_character_build_state AS b SET sword_level=$2, sword_tries=0
-         WHERE b.character_id=encode($1,'hex')::uuid AND b.vocation='knight'
-           AND (b.sword_level,b.sword_tries) IS DISTINCT FROM ($2,0)",
-    )
-    .bind(clients.characters[0].as_slice())
-    .bind(i32::from(HUNTER_SWORD_SKILL))
-    .execute(&mut *tx)
-    .await?;
-    if skill.rows_affected() != 1 {
-        return Err("W13 fixture requires one distinct offline sword skill".into());
-    }
-    tx.commit().await?;
-    db.close().await?;
     Ok(())
 }
 
@@ -451,6 +435,7 @@ async fn prepare_hunter(
     clients: &SeamClients<'_>,
     approach: TilePos,
 ) -> TestResult<DevClientSession> {
+    use crate::qualification_spell_character::W13_SWORD_SKILL;
     use oteryn_protocol_oteryn::{cyclopedia_character as stats, logout::LogoutResult};
 
     character_prep::declare_seeded("W13.full", "knight-level-200", "daily boost combat");
@@ -499,9 +484,9 @@ async fn prepare_hunter(
     }
     // The GeneralStats wire layout lists Fist, Club, then Sword after Magic Level.
     let sword_skill = u16::from_le_bytes(data[19..21].try_into()?);
-    if sword_skill != HUNTER_SWORD_SKILL {
+    if sword_skill != W13_SWORD_SKILL {
         return Err(format!(
-            "W13 fixture sword skill was {sword_skill}, expected {HUNTER_SWORD_SKILL}"
+            "W13 fixture sword skill was {sword_skill}, expected {W13_SWORD_SKILL}"
         )
         .into());
     }
