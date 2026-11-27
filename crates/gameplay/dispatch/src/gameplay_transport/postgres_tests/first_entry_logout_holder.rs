@@ -56,8 +56,12 @@ fn run(admin: String, exhaust: bool) -> TestResult {
 
 async fn scenario(admin: String, exhaust: bool) -> TestResult {
     reset();
-    let h = Harness::create_with_admission_seed(admin, "first_entry_logout_holder", true, false)
-        .await?;
+    let tag = if exhaust {
+        "first_entry_logout_holder_exhausted"
+    } else {
+        "first_entry_logout_holder_recovered"
+    };
+    let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;

@@ -693,8 +693,12 @@ fn logout_during_peer_durability(hold_past_retry_window: bool) -> TestResult {
 
     run(async move |admin| {
         reset();
-        let harness =
-            Harness::create_with_admission_seed(admin, "logout_peer_guild", true, false).await?;
+        let tag = if hold_past_retry_window {
+            "logout_peer_guild_exhausted"
+        } else {
+            "logout_peer_guild_recovered"
+        };
+        let harness = Harness::create_with_admission_seed(admin, tag, true, false).await?;
         prepare_current_session(&harness).await?;
         guild::prepare(&harness.pool).await?;
         let peer = CharacterId::from_bytes(guild::sid(90, 1))?;

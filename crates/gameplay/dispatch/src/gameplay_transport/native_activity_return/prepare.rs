@@ -69,11 +69,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             {
                 return refuse(ActivityRefusal::ReplayConflict);
             }
-            let retry_server_refusal = command.is_none()
-                && held.receipt.is_none()
-                && matches!(held.outcome, Some(NativeActivityOutcome::Refused(_)));
+            // A capacity refusal has already aborted the physical reservation.
+            // Logout can retry that exact command within its original budget.
+            let retry_refusal = held.receipt.is_none()
+                && matches!(held.outcome, Some(NativeActivityOutcome::Refused(ref refusal))
+                    if command.is_none()
+                        || (reason == ActivityReturnReason::Logout
+                            && *refusal == ActivityRefusal::NoCapacity));
             drop(held);
-            if retry_server_refusal {
+            if retry_refusal {
                 let mut entries = self.activity_runtimes.returns.lock().map_err(|_| ())?;
                 if entries
                     .get(&key)
