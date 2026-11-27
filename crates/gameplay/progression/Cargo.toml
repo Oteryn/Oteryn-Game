@@ -11,6 +11,9 @@ publish.workspace = true
 category = "gameplay"
 release-role = "production"
 
+[features]
+qualification-charm-roll = []
+
 [dependencies]
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }

@@ -934,6 +934,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (spawn, troll) = authored_target(
         &mut client, world, &metadata.spawns, troll_key, "Troll", None, false,
     ).await?;
+    let target_identity = troll.entity.identity.iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    // Force one proc, then misses for the rest of this exact Troll's hunt so
+    // the row can require one impact and one Server Log line.
+    let rolls = format!("{target_identity} {} 0:1,9999:63", troll.entity.generation);
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--force-enflame",
+        rolls,
+    ).await?;
+    evidence(&format!("P01_FIXTURE enflame-rolls target={:?}", troll.entity));
     let kill = hunt_exact_creature(
         &mut client, troll, troll_key, race, troll_corpse, None, None,
     ).await?;

@@ -1660,3 +1660,45 @@ fn charm_effect_incoming_minor_uses_post_parry_liveness_without_changing_draws()
         }
     }
 }
+
+#[cfg(feature = "qualification-charm-roll")]
+#[test]
+fn qualification_enflame_overrides_only_the_trigger_roll_then_uses_normal_rng() {
+    let catalogue = Catalogue(catalogue_charms());
+    let state = State::with(RACE, &[("oteryn:charm.enflame", 1)]);
+    let seed = (0..100)
+        .find(|&seed| !expected_trigger(seed, CharmHook::AttackHit, CharmCategory::Major, 500))
+        .expect("ordinary miss");
+    let mut forced = Some(0);
+    let lethal = input(LETHAL, seed);
+    let rejected =
+        evaluate_qualification_charm_hook(&lethal, &state, &catalogue, |_| forced.take())
+            .expect("lethal hit evaluates");
+    assert_eq!(rejected[0].result, CharmResult::NoLivingTarget);
+    assert_eq!(forced, Some(0));
+
+    let hit = input(NON_LETHAL, seed);
+    let outcomes = evaluate_qualification_charm_hook(&hit, &state, &catalogue, |key| {
+        assert_eq!(key, "oteryn:charm.enflame");
+        forced.take()
+    })
+    .expect("forced hit evaluates");
+    assert!(matches!(
+        outcomes[0].result,
+        CharmResult::Applied(CharmEffectOutcome::ProcDamage {
+            damage: CharmDamageKind {
+                element: CharmElement::Fire,
+                ..
+            },
+            amount: 500,
+        })
+    ));
+    assert_eq!(forced, None);
+    let ordinary = evaluate_charm_hook(&hit, &state, &catalogue).expect("ordinary hit evaluates");
+    assert_eq!(ordinary[0].result, CharmResult::NotTriggered);
+    assert_eq!(
+        evaluate_qualification_charm_hook(&hit, &state, &catalogue, |_| forced.take())
+            .expect("exhausted fixture hit evaluates"),
+        ordinary
+    );
+}

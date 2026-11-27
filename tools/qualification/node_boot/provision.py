@@ -80,6 +80,19 @@ def inspect_damage(socket_path, session, target):
     return answer.decode("ascii").rstrip("\n")
 
 
+def force_enflame(socket_path, session, target_rolls):
+    identifier = uuid.UUID(session)
+    if (
+        identifier.version != 7
+        or str(identifier) != session
+        or not re.fullmatch(r"[0-9a-f]{32} [1-9][0-9]{0,19} [0-9:,]{1,80}", target_rolls)
+    ):
+        raise ValueError("invalid qualification Enflame roll request")
+    answer = bytes(_request(socket_path, f"force-enflame {session} {target_rolls}\n", 64))
+    if answer != b"armed\n":
+        raise RuntimeError(f"node refused qualification Enflame rolls: {answer[:64]!r}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
@@ -88,10 +101,13 @@ if __name__ == "__main__":
     group.add_argument("--profile")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
+    group.add_argument("--force-enflame", metavar="TARGET_ROLLS")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))
+    elif args.force_enflame is not None:
+        force_enflame(args.socket, args.session, args.force_enflame)
     else:
         provision(args.socket, args.session, args.profile)

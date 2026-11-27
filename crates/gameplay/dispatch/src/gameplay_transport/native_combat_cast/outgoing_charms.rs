@@ -119,15 +119,13 @@ impl PreparedOutgoingCharms {
                 continue;
             }
             let occurrence = hit_occurrence(batch, receipt.target, receipt.sub_ordinal);
-            let outcomes = charm_combat::evaluate(
+            let outcomes = charm_combat::evaluate_scoped(
                 states,
                 runtime,
                 catalogue,
-                batch.caster,
-                batch.command.game_session_id(),
-                &creature.state.policy.definition_key,
-                &root,
-                occurrence,
+                (batch.caster, batch.command.game_session_id()),
+                (&creature.state.policy.definition_key, Some(receipt.target)),
+                (&root, occurrence),
                 CharmHookEvent::committed_hit(
                     &health,
                     CharmHitSource::CharacterAttack,

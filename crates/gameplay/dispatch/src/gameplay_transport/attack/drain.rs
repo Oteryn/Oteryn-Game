@@ -1157,15 +1157,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     } else {
                         CharmHitSource::CharacterAttack
                     };
-                    charm_combat::evaluate(
+                    charm_combat::evaluate_scoped(
                         &states,
                         &runtime,
                         self.imported_charms,
-                        entry.actor,
-                        entry.session,
-                        &race_key,
-                        &root,
-                        swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
+                        (entry.actor, entry.session),
+                        (&race_key, Some(target)),
+                        (
+                            &root,
+                            swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
+                        ),
                         CharmHookEvent::committed_hit(
                             &result,
                             source,

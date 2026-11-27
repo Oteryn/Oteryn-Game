@@ -1201,6 +1201,8 @@ struct CommittedAssignmentOwnerCycle {
 /// resource: no session map or second index is introduced.
 #[derive(Debug)]
 pub struct ScopeRuntimeV1 {
+    #[cfg(any(test, feature = "test-support"))]
+    qualification_charm_rolls: std::sync::Mutex<Vec<qualification_charm_rolls::ForcedRolls>>,
     presentations: std::collections::BTreeMap<u32, presentation::ActorPresentation>,
     binding: ScopeRuntimeAssignmentBinding,
     continuity: NamespaceContinuityGuard,
@@ -1242,6 +1244,9 @@ pub struct ScopeRuntimeV1 {
 }
 /// Existing Channel callers use the same physical owner and carrier implementation.
 pub type ChannelRuntimeV1 = ScopeRuntimeV1;
+
+#[cfg(any(test, feature = "test-support"))]
+mod qualification_charm_rolls;
 
 impl ChannelRuntimeV1 {
     /// Issue from the one non-clonable owner cycle installed by the independently committed
@@ -1381,6 +1386,8 @@ impl ChannelRuntimeV1 {
             forced_player_steps: Vec::new(),
             #[cfg(any(test, feature = "test-support"))]
             spawn_drive_visits: 0,
+            #[cfg(any(test, feature = "test-support"))]
+            qualification_charm_rolls: Default::default(),
         })
     }
 

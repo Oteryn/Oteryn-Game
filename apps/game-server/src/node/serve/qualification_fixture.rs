@@ -239,6 +239,65 @@ pub(super) async fn spawn(
     .await
 }
 
+/// `force-enflame <session> <target identity> <generation> <roll>:<count>[,...]`.
+/// The session identifies the character through the Channel's live lease.
+#[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) async fn force_enflame(
+    enabled: bool,
+    owners: Option<SpawnOwners<'_>>,
+    request: &[u8],
+) -> &'static str {
+    if !enabled {
+        return "rejected reason=not_qualification";
+    }
+    let Some((session, identity, generation, rolls)) = enflame_request(request) else {
+        return "rejected reason=malformed_request";
+    };
+    let Some(owners) = owners else {
+        return "rejected reason=native_unavailable";
+    };
+    if owners
+        .runtime
+        .lock()
+        .await
+        .qualification_set_enflame_rolls(session, identity, generation, rolls)
+        .is_none()
+    {
+        return "rejected reason=actor_unavailable";
+    }
+    "armed"
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+type EnflameRequest = (
+    crate::foundation::GameSessionId,
+    [u8; 16],
+    u64,
+    std::collections::VecDeque<u16>,
+);
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+fn enflame_request(request: &[u8]) -> Option<EnflameRequest> {
+    let text = std::str::from_utf8(request).ok()?.strip_suffix('\n')?;
+    let mut fields = text.strip_prefix("force-enflame ")?.split(' ');
+    let session =
+        crate::foundation::GameSessionId::decode(&parse_operation_id(fields.next()?.as_bytes())?)
+            .ok()?;
+    let identity = super::super::operator_files::hex_bytes::<16>(fields.next()?).ok()?;
+    let generation = fields.next()?.parse::<std::num::NonZeroU64>().ok()?.get();
+    let mut rolls = std::collections::VecDeque::new();
+    for group in fields.next()?.split(',') {
+        let (roll, count) = group.split_once(':')?;
+        let roll: u16 = roll.parse().ok()?;
+        let count: usize = count.parse().ok()?;
+        if roll >= 10_000 || count == 0 || count > 64 - rolls.len() {
+            return None;
+        }
+        rolls.extend(std::iter::repeat_n(roll, count));
+    }
+    (fields.next().is_none()).then_some((session, identity, generation, rolls))
+}
+
 #[cfg(any(test, feature = "qualification-spawn"))]
 pub(super) async fn inspect_damage(
     config: &NodeConfig,
@@ -1975,6 +2034,29 @@ mod tests {
         let line = format!("spawn {id} {}\n", "k".repeat(128));
         assert_eq!(line.len(), CONTROL_REQUEST_BYTES);
         assert!(spawn_request(true, line.as_bytes()).is_ok());
+    }
+
+    #[tokio::test]
+    async fn enflame_rolls_require_qualification_fixture_and_bounded_input() {
+        let command =
+            "force-enflame 018d0000-0000-7000-8000-000000000001 01010101010101010101010101010101 1";
+        let request = format!("{command} 0:1,9999:2\n");
+        assert_eq!(
+            force_enflame(false, None, request.as_bytes()).await,
+            "rejected reason=not_qualification"
+        );
+        assert_eq!(
+            force_enflame(true, None, request.as_bytes()).await,
+            "rejected reason=native_unavailable"
+        );
+        let rolls = enflame_request(request.as_bytes()).map(|(_, _, _, rolls)| rolls);
+        assert_eq!(
+            rolls,
+            Some(std::collections::VecDeque::from([0, 9999, 9999]))
+        );
+        for invalid in ["0:0", "10000:1", "0:1,9999:64", "0:1 trailing"] {
+            assert!(enflame_request(format!("{command} {invalid}\n").as_bytes()).is_none());
+        }
     }
 
     #[test]
