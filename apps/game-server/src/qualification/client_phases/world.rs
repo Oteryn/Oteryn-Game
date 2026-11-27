@@ -758,22 +758,17 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
 pub(crate) async fn request_fixture_control(
     session: String,
     operation: &'static str,
-    argument: String,
+    argument: impl Into<Option<String>>,
 ) -> Result<String, String> {
+    let argument = argument.into();
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
         crate::qualification::provision_python()
             .arg(script)
-            .args([
-                "--socket",
-                &socket,
-                "--session",
-                &session,
-                operation,
-                &argument,
-            ])
+            .args(["--socket", &socket, "--session", &session, operation])
+            .args(argument)
             .output()
     })
     .await
@@ -1105,6 +1100,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(2) {
+                // Requires current Premium.
                 verdict::indexed("C12.full", async {
                     full_row_c12::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1294,6 +1290,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(29) {
+                // Requires current Premium.
                 verdict::indexed("S07.full", async {
                     full_row_s07::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1308,6 +1305,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(31) {
+                // Requires current Premium.
                 verdict::indexed("S05.full", async {
                     full_row_s05::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1343,6 +1341,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(36) {
+                // Requires current Premium.
                 verdict::indexed("W12.full", async {
                     full_row_w12::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1378,6 +1377,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(41) {
+                // Requires current Premium.
                 verdict::indexed("S13c.full", async {
                     full_row_s13c::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1413,6 +1413,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(46) {
+                // Requires current Premium.
                 verdict::indexed("P20.full", async {
                     full_row_p20::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1441,6 +1442,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(50) {
+                // Requires current Premium.
                 verdict::indexed("P14.full", async {
                     full_row_p14::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1490,6 +1492,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(57) {
+                // Requires current Premium.
                 verdict::indexed("P06.full", async {
                     full_row_p06::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1553,6 +1556,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(66) {
+                // Requires current Premium.
                 verdict::indexed("E06.full", async {
                     full_row_e06::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1926,6 +1930,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(118) {
+                // Requires current Premium.
                 verdict::indexed("I07.client", async {
                     client_row_i07::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -2493,6 +2498,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(199) {
+                // Requires current Premium.
                 verdict::indexed("S13c.client", async {
                     client_row_s13c::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -2500,6 +2506,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(200) {
+                // Requires current Premium.
                 verdict::indexed("S13b.client", async {
                     client_row_s13b::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -2507,6 +2514,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(201) {
+                // Requires current Premium.
                 verdict::indexed("S13a.client", async {
                     client_row_s13a::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -3159,6 +3167,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(298) {
+                // Requires current Premium.
                 verdict::indexed("W15c.full", async {
                     full_row_w15c::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -3448,20 +3457,10 @@ async fn connect_world(
 }
 
 fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static NEXT_CONNECTION: AtomicU64 = AtomicU64::new(1);
-    let sequence = NEXT_CONNECTION
-        .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-            value.checked_add(1)
-        })
-        .map_err(|_| "qualification connection counter exhausted")?;
-    let mut nonce = [tag; 32];
-    nonce[24..].copy_from_slice(&sequence.to_be_bytes());
-    let mut attempt = v7(tag, 0x05);
-    attempt[8..].copy_from_slice(&sequence.to_be_bytes());
-    // Preserve all 64 counter bits around the UUIDv7 version and RFC variant.
-    attempt[6] |= (sequence >> 62) as u8;
-    attempt[8] = (attempt[8] & 0x3f) | 0x80;
+    let mut nonce = crate::node::operator_files::random_bytes::<32>()?;
+    nonce[0] = tag;
+    let mut attempt = crate::node::operator_files::uuid_v7()?;
+    attempt[7] = tag;
     Ok((nonce, attempt))
 }
 
@@ -3731,6 +3730,40 @@ fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResu
         .find("full_e2ef6::run(clients")
         .ok_or("missing remaining F6 rows")?;
     assert!(starter < packet && packet < remaining);
+    Ok(())
+}
+
+#[test]
+fn qualification_fresh_grants_do_not_repeat_in_new_processes() -> TestResult {
+    const CHILD: &str = "OTERYN_TEST_FRESH_GRANT_CHILD";
+    if std::env::var_os(CHILD).is_some() {
+        println!("GRANT_MATERIAL={:?}", fresh_grant_material(0xe0)?);
+        return Ok(());
+    }
+    let material = || -> TestResult<String> {
+        let output = std::process::Command::new(std::env::current_exe()?)
+            .args([
+                "qualification_fresh_grants_do_not_repeat_in_new_processes",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .output()?;
+        assert!(output.status.success());
+        String::from_utf8(output.stdout)?
+            .lines()
+            .find_map(|line| {
+                line.split_once("GRANT_MATERIAL=")
+                    .map(|(_, material)| material)
+            })
+            .map(str::to_owned)
+            .ok_or_else(|| "child did not issue a grant".into())
+    };
+    let first = material()?;
+    let second = material()?;
+    let first = first.split_once("], [").ok_or("malformed first grant")?;
+    let second = second.split_once("], [").ok_or("malformed second grant")?;
+    assert_ne!(first.0, second.0, "grant nonce reused across processes");
+    assert_ne!(first.1, second.1, "attempt ID reused across processes");
     Ok(())
 }
 

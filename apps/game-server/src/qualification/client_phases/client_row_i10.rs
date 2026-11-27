@@ -108,7 +108,7 @@ async fn prepare_house(clients: &SeamClients<'_>, key: &str) -> TestResult {
     .bind(clients.characters[1].as_slice())
     .execute(&mut db)
     .await?;
-    sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user, encode($1,'hex')::uuid, $2, 1")
+    sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user, encode($1,'hex')::uuid, $2, 1 ON CONFLICT (control_role, world_id, house_key, operation) DO NOTHING")
         .bind(clients.world.as_slice()).bind(key).execute(&mut db).await?;
     let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)
         .map_err(|_| "I10 house fixture root unavailable")?;
@@ -133,7 +133,10 @@ async fn prepare_house(clients: &SeamClients<'_>, key: &str) -> TestResult {
         })
         .await
         .map_err(|error| format!("I10 assign House scope: {error:?}"))?;
-    if !matches!(outcome, HouseScopeAssignmentOutcome::Committed(_)) {
+    if !matches!(
+        outcome,
+        HouseScopeAssignmentOutcome::Committed(_) | HouseScopeAssignmentOutcome::Replayed
+    ) {
         return Err(format!("I10 house scope assignment refused: {outcome:?}").into());
     }
     Ok(())

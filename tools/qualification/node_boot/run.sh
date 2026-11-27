@@ -338,6 +338,15 @@ PY_REUSED_GROUPS
       || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
+    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+      export NODE_BOOT_E2E_ONLY OTERYN_E2E_ROW_BATCH
+      premium_required="$(python3 "$GAME_SOURCE/tools/qualification/node_boot/row_selection.py")" ||
+        blocked kept_stack_row_selection_failed
+      if [[ "$premium_required" == 1 ]] &&
+        ! sudo grep -Fxq 'activation_id = "node-boot-fixture-premium"' "$BASE/node/node.toml"; then
+        echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_missing_premium_activation'; exit 2
+      fi
+    fi
     if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" && "${kept_pvp_port:-0}" != "$PVP_GAME_PORT" ]]; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
     fi

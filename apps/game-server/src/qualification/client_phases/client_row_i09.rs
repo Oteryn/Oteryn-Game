@@ -10,6 +10,43 @@ use oteryn_protocol_oteryn::world_object::{
     encode_item_use_intent,
 };
 
+// This non-House chair is adjacent to the chair reserved for I09.full.
+const CHAIR: TilePos = TilePos {
+    x: 32354,
+    y: 32206,
+    floor: -7,
+};
+
+#[test]
+fn i09_client_and_full_each_rotate_a_revision_zero_chair_in_either_order() -> TestResult {
+    use crate::map::facts::BundleFacts;
+    use crate::map::view::EntryFacts;
+
+    let before = EntryFacts {
+        definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+        terrain_kind: None,
+        appearance_id: 2358,
+        blocks_projectile: false,
+        pickupable: false,
+        bound: false,
+        count: 1,
+        sub_type: 0,
+    };
+    let after = EntryFacts {
+        appearance_id: 2359,
+        ..before
+    };
+    let full = super::full_e2ef3::FULL_I09_CHAIR;
+    for order in [[CHAIR, full], [full, CHAIR]] {
+        let facts = BundleFacts::default();
+        for at in order {
+            let key = crate::map::view::placement_key(at, 1).ok_or("chair placement")?;
+            assert_eq!(facts.rotate_base(key, 0, before, after), UseDisposition::Committed);
+        }
+    }
+    Ok(())
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result =
         verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
@@ -48,12 +85,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    // The fixed, non-House chair used by the native furniture journey.
-    let at = TilePos {
-        x: 32355,
-        y: 32206,
-        floor: -7,
-    };
+    let at = CHAIR;
     let mut client = connect_world(clients, 0xc9).await?;
     let path = route(
         world,

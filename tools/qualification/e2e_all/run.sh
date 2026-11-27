@@ -28,10 +28,10 @@ replay_suite() {
     "$CARGO" test --offline --locked "$@" --lib -- --list --ignored > "$ignored" || return 1
 
     # Preserve the suite's normal selection, including its default exclusion of ignored tests.
-    mapfile -t tests < <(awk '
-        FILENAME == ARGV[1] { excluded[$0] = 1; next }
-        /: test$/ && !($0 in excluded) { sub(/: test$/, ""); print }
-    ' "$ignored" "$test_list")
+    local selection
+    selection="$(python3 "$ROOT/tools/qualification/e2e_all/select_replays.py" \
+        "$RUN/node.log" "$CLIENT_CAPTURES" "$ignored" "$test_list")" || return 1
+    mapfile -t tests < <(printf '%s' "$selection")
     if (( ${#tests[@]} == 0 )); then
         printf 'Replay suite %s selected zero tests\n' "$2" >&2
         return 1
@@ -59,6 +59,8 @@ replay_suite() {
     replay_suite -p oteryn-client || status=1
     replay_suite -p oteryn-session || status=1
     replay_suite -p oteryn-dev-client || status=1
+    python3 "$ROOT/tools/qualification/e2e_all/select_replays.py" --verify-passes \
+        "$RUN"/oteryn-*.log || status=1
     exit "$status"
 ) 2>&1 | tee "$RUN/client.log" || client_status=$?
 
