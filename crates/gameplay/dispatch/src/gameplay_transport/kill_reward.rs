@@ -1951,6 +1951,12 @@ fn stale_hold(hold: KillReleaseMark) {
     ));
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static FORGE_LOOT_CHECKOUT:
+        Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 fn refuse(reason: &str, creature: &str) {
     operator_event(&format!(
         "kill_reward_refused reason={reason} creature={creature}"
@@ -3294,7 +3300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|generation| generation.native_gameplay())
             .map_or(&EMPTY, |gameplay| gameplay.reward_table())
     }
-    /// §1.4: publish fresh damage and record kills from spell batch receipts, under the caller's
+    /// §1.4: publish committed spell damage and record the batch's kills, under the caller's
     /// `runtime` and `spell_states` guards; `attack` is locked after them.
     pub(super) async fn record_spell_combat<'r>(
         &self,
@@ -3320,7 +3326,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .bind_kill_notices(&self.states.server_messages);
         let now_ms = self.owner_now().get() / 1_000;
         for receipt in receipts {
-            states.sounds.record_spell_damage(runtime, receipt);
             let sink = KillSink {
                 prey: Some(states),
                 activity: &activity,
@@ -3329,6 +3334,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 charms: Some(self.imported_charms),
             };
             record_batch_kills(runtime, sink, receipt, now_ms);
+            states.sounds.record_spell_damage(runtime, receipt);
         }
     }
     /// Settle earlier deaths before a Task Board or EXTRA equipment mutation can
@@ -4248,11 +4254,34 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
             }
             if !loot_table.entries.is_empty() {
-                let Ok(active) = admission
-                    .root
-                    .wealth_duplex_active(admission.character, self.fence.character_id)
-                    .await
-                else {
+                #[cfg(test)]
+                if let Ok(barrier) = FORGE_LOOT_CHECKOUT.try_with(Arc::clone) {
+                    barrier.0.notify_one();
+                    barrier.1.notified().await;
+                }
+                let mut retry = None;
+                let duplex = loop {
+                    use crate::durability::{DurabilityError, item_use::ItemUseError};
+                    match admission
+                        .root
+                        .wealth_duplex_active(admission.character, self.fence.character_id)
+                        .await
+                    {
+                        Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+                            if entry.forge.is_some()
+                                && retry
+                                    .get_or_insert_with(|| {
+                                        super::AdmissionRetryBudget::for_background_command(
+                                            admission.root,
+                                        )
+                                    })
+                                    .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                                    .await => {}
+                        result => break result,
+                    }
+                };
+                drop(retry);
+                let Ok(active) = duplex else {
                     return SettleReport {
                         verdict: SettleVerdict::Retry,
                         no_progression: false,

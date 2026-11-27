@@ -131,12 +131,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         casters: &[QualifiedCaster],
         access: &(impl crate::gameplay_transport::spell_access_facts::CurrentSpellAccessOwner + Sync),
         native_health_observations: &[oteryn_gameplay_entities::NativeHealthChangeObservation],
-    ) -> Result<FireReport, Error> {
+    ) -> Result<FireReport, super::TimerDrainError> {
         let objects = self.door.lock().await;
         let pass = self
             .root
             .try_issue_semantic_pass()
-            .map_err(|_| Error::StaleOwner)?;
+            .map_err(|error| match error {
+                crate::durability::DurabilityError::RootUnavailable => {
+                    super::TimerDrainError::HolderBusy
+                }
+                _ => super::TimerDrainError::Rejected(Error::StaleOwner),
+            })?;
         let mut accepted = None;
         let mut context = (runtime, states, &mut accepted);
         // A physical commit has already happened once the report is set. A
@@ -210,6 +215,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
             Ok(())
         })).await;
-        accepted.ok_or(Error::StaleOwner)
+        accepted.ok_or(super::TimerDrainError::Rejected(Error::StaleOwner))
     }
 }

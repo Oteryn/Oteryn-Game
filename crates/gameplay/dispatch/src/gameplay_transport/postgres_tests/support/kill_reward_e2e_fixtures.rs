@@ -1,7 +1,7 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::fixture::{Harness, debug, id, run};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use super::{TestResult, prepare_current_session};
 
@@ -175,6 +175,7 @@ enum CorpseDecayCheck {
     FirstTransform,
     RatChain { busy: bool },
     Retirement(bool),
+    RetirementAfterHolderReturn,
 }
 
 pub(super) fn scenario_with_rat_transform() -> TestResult {
@@ -183,6 +184,10 @@ pub(super) fn scenario_with_rat_transform() -> TestResult {
 
 pub(super) fn scenario_with_rat_chain(busy: bool) -> TestResult {
     rat_decay_scenario(CorpseDecayCheck::RatChain { busy })
+}
+
+pub(super) fn scenario_with_retirement_after_holder_return() -> TestResult {
+    rat_decay_scenario(CorpseDecayCheck::RetirementAfterHolderReturn)
 }
 
 fn rat_decay_scenario(check: CorpseDecayCheck) -> TestResult {
@@ -1361,7 +1366,9 @@ fn scenario_with_creature_observed(
             if let Some(creature) = letter_creature {
                 let runtime = owner.runtime.lock().await;
                 if runtime.visible_entities().creatures.is_empty() {
-                    return Err(format!("{creature}: lethal auto-attack queued no Letter reward").into());
+                    return Err(
+                        format!("{creature}: lethal auto-attack queued no Letter reward").into(),
+                    );
                 }
             }
             swings += 1;
@@ -1447,7 +1454,11 @@ fn scenario_with_creature_observed(
                 &mut table,
                 event_rates.loot,
             );
-            super::scheduled_event_rates_fixtures::expected(&mut table, &row.loot_table, event_rates.loot);
+            super::scheduled_event_rates_fixtures::expected(
+                &mut table,
+                &row.loot_table,
+                event_rates.loot,
+            );
             let raised = table != row.loot_table;
             assert!(
                 raised,
@@ -1765,9 +1776,13 @@ fn scenario_with_creature_observed(
                         &owner, admitted, children,
                     ).await?;
                 }
-                super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, reconcile)
+                super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, reconcile, false)
                     .await
                     .map_err(|error| format!("corpse decay qualification: {error}").into())
+            }
+            Some(CorpseDecayCheck::RetirementAfterHolderReturn) => {
+                super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, false, true)
+                    .await
             }
             None => Ok(()),
         };

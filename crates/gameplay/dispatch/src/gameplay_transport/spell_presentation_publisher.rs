@@ -655,7 +655,7 @@ impl SoundPublisher {
         });
     }
 
-    /// Keep the position at impact and the full references, including on lethal hits.
+    /// Keep the position at impact and the full actor references.
     pub(super) fn record_damage(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -687,6 +687,8 @@ impl SoundPublisher {
         for effect in &receipt.effects {
             if let Some(result) = effect.health
                 && result.committed_health_loss().is_some()
+                // The corpse visibility frame owns this hit so it can precede the removal.
+                && (result.health_after != 0 || !runtime.retains_corpse_projection(effect.target))
                 && runtime
                     .companion_snapshot_including_dead(effect.target)
                     .is_ok()
@@ -695,6 +697,7 @@ impl SoundPublisher {
             }
         }
     }
+
 
     pub(super) fn record_item_effect(
         &mut self,

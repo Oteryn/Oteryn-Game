@@ -7,17 +7,17 @@
 //! without newer evidence (Platform PREM-P §8.2, §8.5), so the lead leaves room for retries
 //! before it. A failed pull is retried with capped exponential backoff and jitter; a 429 or 503
 //! `Retry-After` is honoured within the cap. The one task per account is the only puller, so
-//! at most one request is in flight per account. Admission never waits on a pull: until one
-//! succeeds the account reads as not current. [`PremiumRefresher::release`] cancels the
-//! schedule and drops the in-memory view.
+//! at most one request is in flight per account. Fresh admission may await that same
+//! scheduled pull before applying the account's Premium state. [`PremiumRefresher::release`]
+//! cancels the schedule and drops the in-memory view.
 
-use super::client::{PremiumSnapshotClient, fresh_nonce};
+use super::client::{PULL_TIMEOUT, PremiumSnapshotClient, fresh_nonce};
 use super::{IngestOutcome, PremiumConsumer, PullTicket};
 use crate::durability::DurabilityRoot;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::sync::Notify;
+use tokio::sync::{Notify, watch};
 use tokio::task::JoinHandle;
 
 /// The floor between a successful pull and the next scheduled one (§10.2), so an authenticated
@@ -60,12 +60,25 @@ enum Next {
     /// The pull succeeded or ended in a durable denial: refresh on schedule.
     Refresh,
     /// The pull failed: retry with backoff.
-    Retry(Option<Duration>),
+    Retry(Option<Duration>, SnapshotWaitFailure),
+}
+
+/// Why the scheduled pull cannot supply fenced evidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SnapshotWaitFailure {
+    NotConfigured,
+    ScheduleMissing,
+    ScheduleStopped,
+    Deadline,
+    AuthorityUnavailable,
+    SnapshotRejected,
+    FenceUnavailable,
 }
 
 struct Schedule {
     wake: Arc<Notify>,
     task: JoinHandle<()>,
+    snapshot: watch::Receiver<Option<Result<(), SnapshotWaitFailure>>>,
 }
 
 struct Inner {
@@ -137,12 +150,46 @@ impl PremiumRefresher {
             .profile_b_register_wake(account_id, &wake);
         let task_wake = wake.clone();
         let inner = self.inner.clone();
+        let (outcome, snapshot) = watch::channel(None);
         let task = oteryn_task_supervisor::spawn_supervised_with_heartbeat(
             "premium_refresh",
             None,
-            move |heartbeat| run(inner, account_id, task_wake, heartbeat),
+            move |heartbeat| run(inner, account_id, task_wake, outcome, heartbeat),
         );
-        schedules.insert(account_id, Schedule { wake, task });
+        schedules.insert(
+            account_id,
+            Schedule {
+                wake,
+                task,
+                snapshot,
+            },
+        );
+    }
+
+    /// Join the account's existing pull without issuing another Platform request.
+    /// A temporary fence checkout failure leaves a cold reader waiting for the
+    /// scheduled retry within the HTTP and durable recovery bounds.
+    pub async fn wait_for_snapshot(&self, account_id: [u8; 16]) -> Result<(), SnapshotWaitFailure> {
+        if self.inner.client.is_none() {
+            return Err(SnapshotWaitFailure::NotConfigured);
+        }
+        let mut snapshot = self
+            .schedules()
+            .get(&account_id)
+            .map(|schedule| schedule.snapshot.clone())
+            .ok_or(SnapshotWaitFailure::ScheduleMissing)?;
+        let outcome = tokio::time::timeout(
+            PULL_TIMEOUT + crate::durability::ROOT_RECOVERY_WINDOW,
+            snapshot.wait_for(|outcome| {
+                outcome.is_some() && *outcome != Some(Err(SnapshotWaitFailure::FenceUnavailable))
+            }),
+        )
+        .await;
+        match outcome {
+            Ok(Ok(outcome)) => (*outcome).ok_or(SnapshotWaitFailure::ScheduleStopped)?,
+            Ok(Err(_)) => Err(SnapshotWaitFailure::ScheduleStopped),
+            Err(_) => Err(SnapshotWaitFailure::Deadline),
+        }
     }
 
     /// The account has no session left on this node: cancel its schedule and drop its view.
@@ -166,6 +213,7 @@ async fn run(
     inner: Arc<Inner>,
     account_id: [u8; 16],
     wake: Arc<Notify>,
+    outcome: watch::Sender<Option<Result<(), SnapshotWaitFailure>>>,
     heartbeat: oteryn_task_supervisor::Heartbeat,
 ) {
     let Some(client) = &inner.client else { return };
@@ -178,11 +226,13 @@ async fn run(
         let ticket = inner.consumer.ticket();
         let delay = match pull(&inner, client, account_id, ticket).await {
             Next::Refresh => {
+                outcome.send_replace(Some(Ok(())));
                 attempt = 0;
                 let refresh_after = inner.consumer.refresh_after_us(account_id);
                 refresh_after.map_or(MIN_REFRESH_INTERVAL, |at| after_success(at, now_us()))
             }
-            Next::Retry(retry_after) => {
+            Next::Retry(retry_after, reason) => {
+                outcome.send_replace(Some(Err(reason)));
                 let delay = after_failure(attempt, retry_after, jitter());
                 attempt = attempt.saturating_add(1);
                 delay
@@ -203,13 +253,16 @@ async fn pull(
     let consumer = &inner.consumer;
     let Some(nonce) = fresh_nonce() else {
         consumer.pull_failed(account_id, ticket);
-        return Next::Retry(None);
+        return Next::Retry(None, SnapshotWaitFailure::AuthorityUnavailable);
     };
     let body = match client.pull(account_id, &nonce).await {
         Ok(body) => body,
         Err(failure) => {
             consumer.pull_failed(account_id, ticket);
-            return Next::Retry(failure.retry_after());
+            return Next::Retry(
+                failure.retry_after(),
+                SnapshotWaitFailure::AuthorityUnavailable,
+            );
         }
     };
     match consumer
@@ -221,8 +274,10 @@ async fn pull(
         | IngestOutcome::Conflict
         | IngestOutcome::Rejected(super::snapshot::SnapshotRejection::Unsupported) => Next::Refresh,
         IngestOutcome::Stale
-        | IngestOutcome::Rejected(super::snapshot::SnapshotRejection::Malformed)
-        | IngestOutcome::FenceUnavailable => Next::Retry(None),
+        | IngestOutcome::Rejected(super::snapshot::SnapshotRejection::Malformed) => {
+            Next::Retry(None, SnapshotWaitFailure::SnapshotRejected)
+        }
+        IngestOutcome::FenceUnavailable => Next::Retry(None, SnapshotWaitFailure::FenceUnavailable),
     }
 }
 

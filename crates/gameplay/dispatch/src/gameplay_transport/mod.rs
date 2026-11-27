@@ -1533,6 +1533,13 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// lock refresh (NODEBOOT-1): a busy holder is retried, waiting for its return, for at most
     /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
     fn for_command(root: &'r DurabilityRoot) -> Self {
+        Self {
+            _foreground: root.foreground_demand().ok(),
+            ..Self::for_background_command(root)
+        }
+    }
+
+    fn for_background_command(root: &'r DurabilityRoot) -> Self {
         Self::for_holder_window(root, COMMAND_HOLDER_WINDOW)
     }
 
@@ -1542,7 +1549,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
-            _foreground: root.foreground_demand().ok(),
+            _foreground: None,
             waiter: std::sync::OnceLock::new(),
         }
     }

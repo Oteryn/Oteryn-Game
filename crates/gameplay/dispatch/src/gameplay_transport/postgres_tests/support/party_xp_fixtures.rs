@@ -1225,7 +1225,7 @@ async fn scenario(
             "SELECT loot_purpose_key FROM game_item_mint_receipts ORDER BY loot_purpose_key LIMIT 3",
         ).fetch_all(&h.pool).await?;
         assert_eq!(mints, ["CORPSE_MATERIALIZATION", "oteryn:item.tibia.i37109"]);
-        super::forge_creature_fixtures::assert_committed_sliver_in_corpse(h).await?;
+        super::forge_creature_fixtures::assert_committed_sliver_in_corpse(&h.pool).await?;
         return Ok(());
     }
     if cake_kill_before_activation || cake_kill_before_expiry {
@@ -1487,7 +1487,7 @@ async fn scenario(
             .map_err(debug)?;
         drop(first);
         drop(permit);
-        let retained_dust = super::forge_creature_fixtures::ledger(h).await?;
+        let retained_dust = super::forge_creature_fixtures::ledger(&h.pool).await?;
         let (a, b) = join_two(
             async {
                 let permit=owner.spell_lane_permit().await.ok_or(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)?;
@@ -1502,7 +1502,7 @@ async fn scenario(
         a.map_err(debug)?;
         b.map_err(debug)?;
         assert_eq!(
-            super::forge_creature_fixtures::ledger(h).await?,
+            super::forge_creature_fixtures::ledger(&h.pool).await?,
             retained_dust,
             "replay preserves capped/lost outcomes byte for byte"
         );
@@ -1617,7 +1617,7 @@ async fn scenario(
     if case.forge() {
         if let Some(entry) = forge_replay {
             let session = entry.facts.principal.session;
-            let retained = super::forge_creature_fixtures::ledger(h).await?;
+            let retained = super::forge_creature_fixtures::ledger(&h.pool).await?;
             assert_eq!(
                 owner.states.attack.lock().await.kills().append(entry),
                 crate::gameplay_transport::kill_reward::AppendOutcome::Queued
@@ -1627,7 +1627,7 @@ async fn scenario(
                 owner.drain_kill_rewards(session).await,
                 DrainOutcome::Drained
             );
-            assert_eq!(super::forge_creature_fixtures::ledger(h).await?, retained);
+            assert_eq!(super::forge_creature_fixtures::ledger(&h.pool).await?, retained);
         }
         return super::forge_creature_fixtures::assert_receipts(h, case).await;
     }

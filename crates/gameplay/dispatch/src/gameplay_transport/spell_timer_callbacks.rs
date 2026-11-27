@@ -8,6 +8,19 @@ use crate::spell::{Execution, SpellBook};
 #[path = "spell_strike_callbacks.rs"]
 mod strikes;
 
+use crate::durability::DurabilityError;
+
+enum TimerDrainError {
+    HolderBusy,
+    Rejected(Error),
+}
+
+impl From<Error> for TimerDrainError {
+    fn from(error: Error) -> Self {
+        Self::Rejected(error)
+    }
+}
+
 #[derive(Clone)]
 enum DueSource {
     Native(NativeAiTimerSource),
@@ -360,11 +373,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> Result<FireReport, Error> {
         self.root
-            .with_background_operation(self.drain_native_ai_timer_unit())
+            .with_background_operation(async {
+                let budget = super::super::AdmissionRetryBudget::for_background_command(self.root);
+                loop {
+                    match self.drain_native_ai_timer_unit().await {
+                        Ok(report) => return Ok(report),
+                        Err(TimerDrainError::Rejected(error)) => return Err(error),
+                        Err(TimerDrainError::HolderBusy) => {
+                            if !budget
+                                .retries_unavailable(super::super::AdmissionRefusal::Unavailable)
+                                .await
+                            {
+                                // Keep the due callback for the next timer turn.
+                                return Ok(FireReport::default());
+                            }
+                        }
+                    }
+                }
+            })
             .await
     }
 
-    async fn drain_native_ai_timer_unit(&self) -> Result<FireReport, Error> {
+    async fn drain_native_ai_timer_unit(&self) -> Result<FireReport, TimerDrainError> {
         let now = self.owner_now();
         let selected = {
             let runtime = self.runtime.lock().await;
@@ -491,8 +521,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 continue;
             }
-            let Ok((current, _)) = store.current_session_at(session).await else {
-                continue;
+            let current = match store.current_session_at(session).await {
+                Ok((current, _)) => current,
+                Err(DurabilityError::RootUnavailable) => return Err(TimerDrainError::HolderBusy),
+                Err(_) => continue,
             };
             let changed_strike_generation = states.spell_timers.as_ref().is_some_and(|timer| {
                 timer.payloads.iter().any(|p| match &p.payload {
@@ -518,13 +550,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let character = crate::domain::CharacterId::from_bytes(*source.attacker().as_bytes())
                 .map_err(|_| Error::StaleOwner)?;
-            if self
+            match self
                 .root
                 .read_current_character(self.character, character)
                 .await
-                .is_err()
             {
-                continue;
+                Ok(_) => {}
+                Err(
+                    crate::durability::character_authority::CharacterAuthorityError::Unavailable(
+                        DurabilityError::RootUnavailable,
+                    ),
+                ) => return Err(TimerDrainError::HolderBusy),
+                Err(_) => continue,
             }
             let lease = current.current_character_lease().generation();
             if lease == 0 {

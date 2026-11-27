@@ -66,14 +66,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.premium_only {
             return Ok(None);
         }
-        self.admit_premium(account, session);
-        let entry = PremiumEntry {
-            sessions: &self.states.premium_sessions,
-            refresher: &self.premium,
-            account,
-            session,
-            retained: false,
-        };
+        let entry = self.register_premium_entry(account, session);
         let wait = async {
             loop {
                 if self.premium_gate(account).await.require().is_ok() {
@@ -87,6 +80,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| AdmissionRefusal::PremiumRequired)?;
         Ok(Some(entry))
+    }
+
+    pub(super) fn register_premium_entry(
+        &self,
+        account: [u8; 16],
+        session: GameSessionId,
+    ) -> PremiumEntry<'_> {
+        self.admit_premium(account, session);
+        PremiumEntry {
+            sessions: &self.states.premium_sessions,
+            refresher: &self.premium,
+            account,
+            session,
+            retained: false,
+        }
     }
 
     /// PREM-1b: start (or wake) the account's Premium pulls for `session`.

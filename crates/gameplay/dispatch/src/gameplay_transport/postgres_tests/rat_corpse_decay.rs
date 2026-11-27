@@ -1,6 +1,8 @@
 //! A native Rat kill, followed by the Channel owner timer from serving.
 use super::TestResult;
-use super::kill_reward_e2e_fixtures::{scenario_thread, scenario_with_rat_chain, scenario_with_rat_transform};
+use super::kill_reward_e2e_fixtures::{
+    scenario_thread, scenario_with_rat_chain, scenario_with_rat_transform,
+};
 
 #[test]
 fn rat_corpse_owner_tick_commits_first_decay_transform() -> TestResult {
@@ -27,4 +29,16 @@ fn rat_corpse_owner_tick_retries_a_busy_holder_at_the_first_deadline() -> TestRe
     };
     drop(admin);
     scenario_thread::run("rat-corpse-chain-busy", || scenario_with_rat_chain(true))
+}
+
+#[test]
+fn decay_retire_proceeds_after_root_readiness() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario_thread::run(
+        "decay-retire-root-readiness",
+        super::kill_reward_e2e_fixtures::scenario_with_retirement_after_holder_return,
+    )
 }
