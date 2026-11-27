@@ -271,9 +271,45 @@ async fn corridor_step(
     Ok(())
 }
 
+async fn select_corridor_target(
+    client: &mut DevClientSession,
+    target: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    reason: &str,
+) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    evidence(&format!(
+        "P11_COMBAT attack_start reason={reason} session={} command={} after_sequence={} target={:?}",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        client.next_command_id(),
+        client.last_server_sequence(),
+        target
+    ));
+    let reply = client
+        .session_mut()
+        .attack_target(Some(&target))
+        .await?;
+    if reply.status != oteryn_protocol_oteryn::CommandStatus::Accepted
+        || reply.disposition != AttackIntentDisposition::Ok
+    {
+        return Err(format!(
+            "P11 corridor attack failed target={:?}: {reply:?}",
+            target
+        )
+        .into());
+    }
+    Ok(reply.result_server_sequence)
+}
+
+fn corridor_target_lost(
+    acknowledgment: u64,
+    observation: Option<(u64, Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>)>,
+    visible: bool,
+) -> bool {
+    visible && matches!(observation, Some((sequence, None)) if sequence > acknowledgment)
+}
+
 async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::{EntityDetail, EntityKind};
-    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
     let mut targets = Vec::new();
     let entities = client
         .world_entities()
@@ -344,26 +380,8 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             .map(|row| row.entity)
             .collect();
         reject_earned_notices(client)?;
-        evidence(&format!(
-            "P11_COMBAT attack_start session={} command={} after_sequence={} target={:?}",
-            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
-            client.next_command_id(),
-            client.last_server_sequence(),
-            target.entity
-        ));
-        let reply = client
-            .session_mut()
-            .attack_target(Some(&target.entity))
-            .await?;
-        if reply.status != oteryn_protocol_oteryn::CommandStatus::Accepted
-            || reply.disposition != AttackIntentDisposition::Ok
-        {
-            return Err(format!(
-                "P11 first corridor attack failed target={:?}: {reply:?}",
-                target.entity
-            )
-            .into());
-        }
+        let mut attack_sequence = select_corridor_target(client, target.entity, "initial").await?;
+        let mut recovered_target = false;
         let deadline = tokio::time::Instant::now() + TARGET_DEADLINE;
         let mut damaged = false;
         let mut last_health = 100;
@@ -372,8 +390,12 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         let mut last = target.position;
         loop {
             client.service_liveness(Duration::from_millis(100)).await?;
+            let mut target_observation = None;
             for event in client.take_events() {
                 check_unexpected_notice(&event)?;
+                if let SessionEvent::ActorCombatState(delta) = &event {
+                    target_observation = Some((delta.server_sequence, delta.value.target));
+                }
                 if let SessionEvent::WorldSpatialEntities(delta) = event {
                     for updated in delta
                         .value
@@ -417,13 +439,26 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
                 ));
                 break;
             }
-            let vitals = client.actor_vitals().ok_or("P11 corridor vitals missing")?;
+            let vitals = client.actor_vitals().cloned().ok_or("P11 corridor vitals missing")?;
             if vitals.health == 0 || tokio::time::Instant::now() >= deadline {
+                let lock = client.session_mut().combat_state().and_then(|state| state.target);
                 return Err(format!(
-                    "P11 corridor kill failed target={:?} damaged={damaged} remaining_percent={last_health} vitals={vitals:?}",
+                    "P11 corridor kill failed target={:?} lock={lock:?} attack_sequence={attack_sequence} recovered_target={recovered_target} damaged={damaged} remaining_percent={last_health} vitals={vitals:?}",
                     target.entity
                 )
                 .into());
+            }
+            if corridor_target_lost(
+                attack_sequence,
+                target_observation,
+                visible.get(&target.entity).is_some(),
+            ) {
+                if recovered_target {
+                    return Err(format!("P11 corridor lost the same target again: {:?}", target.entity).into());
+                }
+                recovered_target = true;
+                attack_sequence = select_corridor_target(client, target.entity, "observed-target-loss").await?;
+                continue;
             }
             if vitals.max_health - vitals.health >= 1200 {
                 let health = vitals.health;
@@ -1147,6 +1182,19 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn p11_retargets_only_a_live_target_cleared_after_the_acknowledgment() {
+        use super::corridor_target_lost;
+        use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+        let target = EntityRef { identity: [7; 16], generation: 1 };
+        assert!(corridor_target_lost(10, Some((11, None)), true));
+        assert!(!corridor_target_lost(10, Some((11, None)), false));
+        assert!(!corridor_target_lost(10, Some((10, None)), true));
+        assert!(!corridor_target_lost(10, Some((9, None)), true));
+        assert!(!corridor_target_lost(10, Some((11, Some(target))), true));
+        assert!(!corridor_target_lost(10, None, true));
+    }
 
     #[test]
     fn p11_uses_only_the_authored_annihilator_reward_position() {
