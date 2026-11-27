@@ -50,7 +50,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     full_row_c17b::Staging::new(world, &metadata.spawns)
         .encounter(&mut caster, &mut observer, &capture)
         .await?;
-    let rat = full_row_c17b::place_rat(&caster).await?;
+    let rat = full_row_c17b::place_rat(&mut caster).await?;
     super::mp::observations::while_servicing_liveness(
         full_row_c17b::wait_for_rat_hit(&mut caster, rat),
         async || {

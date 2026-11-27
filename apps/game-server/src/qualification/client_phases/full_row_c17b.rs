@@ -259,6 +259,35 @@ pub(super) async fn seeded_caster(
     if level != 35 || vitals.mana != vitals.max_mana || vitals.max_mana < 440 {
         return Err(format!("C17b seeded caster has level={level} vitals={vitals:?}").into());
     }
+    use oteryn_protocol_oteryn::item_view::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+    let equipment = caster
+        .inventory()
+        .ok_or("C17b caster inventory absent")?
+        .equipment
+        .clone();
+    for equipped in equipment {
+        let result = caster
+            .move_item(&ItemMoveIntent {
+                source: equipped.item.handle,
+                destination: ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if result.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("FIXTURE C17b unequip {:?}: {result:?}", equipped.slot).into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            if caster.inventory().is_some_and(|inventory| {
+                inventory.equipment.iter().all(|entry| entry.slot != equipped.slot)
+            }) {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("FIXTURE C17b slot {:?} remained equipped", equipped.slot).into());
+            }
+            caster.service_liveness(Duration::from_millis(50)).await?;
+        }
+    }
     Ok(caster)
 }
 
@@ -479,7 +508,7 @@ impl<'a> Staging<'a> {
                     .is_some_and(|tile| tile.walkable() && tile.protection_zone() == protected)
                 || self.spawn_cells.contains(&site)
             {
-                return Err(format!("C17b.client staging tile ineligible: {site:?}").into());
+                return Err(format!("C17b staging tile ineligible: {site:?}").into());
             }
         }
         let path = self.path(caster, None, |tile| tile == caster_site)?;
@@ -497,10 +526,10 @@ impl<'a> Staging<'a> {
         if tile(caster.world_spatial().actor_position)? != caster_site
             || tile(observer.world_spatial().actor_position)? != observer_site
         {
-            return Err("C17b.client staging did not land at the fixed adjacent tiles".into());
+            return Err("C17b staging did not land at the fixed adjacent tiles".into());
         }
         evidence(&format!(
-            "FIXTURE_PLACEMENT C17b.client caster={caster_site:?} observer={observer_site:?}"
+            "FIXTURE_PLACEMENT C17b encounter caster={caster_site:?} observer={observer_site:?}"
         ));
         Ok(())
     }
@@ -518,8 +547,40 @@ fn in_return_search(at: TilePos, from: TilePos) -> bool {
 }
 
 pub(super) async fn place_rat(
-    caster: &DevClientSession,
+    caster: &mut DevClientSession,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    use oteryn_dev_client::client_ui::cyclopedia_character::{
+        CyclopediaCharacterPanel, Intent, request,
+    };
+    use oteryn_protocol_oteryn::cyclopedia_character::{
+        CharacterTab,
+        combat::{CombatStat, CombatStats},
+    };
+    if caster.inventory().is_none_or(|inventory| !inventory.equipment.is_empty()) {
+        return Err("FIXTURE C17b requires a caster with empty equipment slots".into());
+    }
+    let mut panel = CyclopediaCharacterPanel {
+        selected: true,
+        tab: CharacterTab::Defence,
+        ..Default::default()
+    };
+    let command = request(&mut panel, Intent::Tab).ok_or("C17b defence tab unavailable")?;
+    let reply = caster
+        .session_mut()
+        .gated_command(command.capability, command.kind, &command.payload)
+        .await?;
+    require_mechanic_acceptance(reply.status, "FIXTURE C17b defence tab")?;
+    let stats = CombatStats::decode(&reply.payload)
+        .map_err(|error| format!("C17b defence tab decode: {error:?}"))?;
+    if stats.tab() != CharacterTab::Defence {
+        return Err(format!("C17b expected defence tab, received {:?}", stats.tab()).into());
+    }
+    let armor = stats.get(CombatStat::Armor).ok_or("C17b armour stat absent")?;
+    let defence = stats.get(CombatStat::DefenceTotal);
+    let equipment_defence = stats.get(CombatStat::DefenceEquipment);
+    if armor != 0 {
+        return Err(format!("FIXTURE C17b unarmoured caster has armour={armor}").into());
+    }
     let caster_site = tile(caster.world_spatial().actor_position)?;
     let placement = request_spawn(
         uuid_text(caster.join_snapshot().game_session_id.as_bytes()),
@@ -529,7 +590,7 @@ pub(super) async fn place_rat(
     .map_err(|error| format!("FIXTURE_PLACEMENT C17b Rat failed: {error}"))?;
     let rat = parse_spawned_entity(&placement)?;
     evidence(&format!(
-        "FIXTURE_PLACEMENT C17b caster={caster_site:?} rat={rat:?}"
+        "FIXTURE_PLACEMENT C17b caster={caster_site:?} rat={rat:?} armour={armor} defence={defence:?} equipment_defence={equipment_defence:?}"
     ));
     Ok(rat)
 }
@@ -654,25 +715,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
     let staging = Staging::new(world, &metadata.spawns);
-    let caster_site = TilePos {
-        x: 32490,
-        y: 32169,
-        floor: -7,
-    };
-    let observer_site = TilePos {
-        x: 32488,
-        ..caster_site
-    };
-    let path = staging.path(&caster, None, |tile| tile == caster_site)?;
-    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &path)).await?;
-    let path = staging.path(&observer, Some(&caster), |tile| tile == observer_site)?;
-    provisioning::with_peer_liveness(&mut caster, staging.walk(&mut observer, &path)).await?;
-    if tile(caster.world_spatial().actor_position)? != caster_site
-        || tile(observer.world_spatial().actor_position)? != observer_site
-    {
-        return Err("C17b fixture did not reach the fixed encounter tiles".into());
-    }
-    let rat = place_rat(&caster).await?;
+    let capture = oteryn_dev_client::native_session::test_support::WireCapture::default();
+    staging.encounter(&mut caster, &mut observer, &capture).await?;
+    drop(capture);
+    let rat = place_rat(&mut caster).await?;
     let caster_ref = own(&caster)?;
     let pre_damage =
         provisioning::with_peer_liveness(&mut observer, wait_for_rat_hit(&mut caster, rat)).await?;
