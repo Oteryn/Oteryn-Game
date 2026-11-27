@@ -137,12 +137,55 @@ pub(in crate::gameplay_transport) fn evaluate(
     occurrence: DecisionOccurrenceId,
     event: CharmHookEvent,
 ) -> Vec<CharmOutcome> {
+    evaluate_scoped(
+        states,
+        runtime,
+        catalogue,
+        (actor, session),
+        (race, None),
+        (root, occurrence),
+        event,
+    )
+}
+
+pub(in crate::gameplay_transport) fn evaluate_scoped(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    (actor, session): (ExactActorRef, GameSessionId),
+    (race, target): (&str, Option<ExactActorRef>),
+    (root, occurrence): (&GameplayDecisionRoot, DecisionOccurrenceId),
+    event: CharmHookEvent,
+) -> Vec<CharmOutcome> {
     let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
         return Vec::new();
     };
     let Some(state) = states.charm_state(runtime, actor, session) else {
         return Vec::new();
     };
+    #[cfg(feature = "qualification-charm-roll")]
+    if let Some(target) = target {
+        use oteryn_gameplay_progression::charm_effects::{
+            CharmEvaluationInput, evaluate_qualification_charm_hook,
+        };
+        let input = CharmEvaluationInput {
+            character: *lease.character_id().as_bytes(),
+            race_key: race,
+            decision_root: root,
+            occurrence,
+            event,
+        };
+        return evaluate_qualification_charm_hook(&input, state, catalogue, |key| {
+            if key == "oteryn:charm.enflame" {
+                runtime.qualification_take_enflame_roll(actor, session, lease, target)
+            } else {
+                None
+            }
+        })
+        .unwrap_or_default();
+    }
+    #[cfg(not(feature = "qualification-charm-roll"))]
+    let _ = target;
     run_charm_hook(
         catalogue,
         state,

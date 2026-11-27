@@ -281,6 +281,28 @@ pub fn evaluate_charm_hook_category(
     category: Option<CharmCategory>,
     source_alive: bool,
 ) -> Result<Vec<CharmOutcome>, CharmEvaluationError> {
+    evaluate_charm_hook_with_roll(input, state, catalogue, category, source_alive, |_| None)
+}
+
+/// Replace a trigger roll only once the ordinary evaluator reaches that draw.
+#[cfg(feature = "qualification-charm-roll")]
+pub fn evaluate_qualification_charm_hook(
+    input: &CharmEvaluationInput<'_>,
+    state: &dyn CharmStateRead,
+    catalogue: &dyn CharmCatalogueRead,
+    override_roll: impl FnMut(&str) -> Option<u32>,
+) -> Result<Vec<CharmOutcome>, CharmEvaluationError> {
+    evaluate_charm_hook_with_roll(input, state, catalogue, None, true, override_roll)
+}
+
+fn evaluate_charm_hook_with_roll(
+    input: &CharmEvaluationInput<'_>,
+    state: &dyn CharmStateRead,
+    catalogue: &dyn CharmCatalogueRead,
+    category: Option<CharmCategory>,
+    source_alive: bool,
+    mut override_roll: impl FnMut(&str) -> Option<u32>,
+) -> Result<Vec<CharmOutcome>, CharmEvaluationError> {
     if state.character() != input.character {
         return Err(CharmEvaluationError::StateForOtherCharacter);
     }
@@ -327,7 +349,7 @@ pub fn evaluate_charm_hook_category(
         {
             CharmResult::NoLivingTarget
         } else {
-            evaluate_effect(input, hook, lethal, definition, value)?
+            evaluate_effect(input, hook, lethal, definition, value, &mut override_roll)?
         };
         outcomes.push(CharmOutcome {
             charm_key: definition.key().to_owned(),
@@ -431,6 +453,7 @@ fn evaluate_effect(
     lethal: bool,
     definition: &CharmDefinition,
     value: CharmPercent,
+    override_roll: &mut impl FnMut(&str) -> Option<u32>,
 ) -> Result<CharmResult, CharmEvaluationError> {
     let effect = definition.effect();
     if lethal && hook == CharmHook::AttackHit && effect.targets_living_creature() {
@@ -444,7 +467,8 @@ fn evaluate_effect(
             trigger_draw_index(hook, definition.category()),
         )
         .map_err(CharmEvaluationError::Decision)?;
-        if hundredths_roll(draw) >= value.hundredths() {
+        let roll = override_roll(definition.key()).unwrap_or_else(|| hundredths_roll(draw));
+        if roll >= value.hundredths() {
             return Ok(CharmResult::NotTriggered);
         }
     }
