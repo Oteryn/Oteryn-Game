@@ -110,6 +110,17 @@ fn refusal(error: &DromeCubeError) -> UseDisposition {
     }
 }
 
+fn item_use_commit_unknown(error: &ItemUseError) -> bool {
+    matches!(
+        error,
+        ItemUseError::Unavailable(
+            DurabilityError::CommitOutcomeUnknown
+                | DurabilityError::RootPassDeadlineExceeded
+                | DurabilityError::RootTaskFailed
+        )
+    )
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// None delegates an ordinary item. The route checks PREPARE before acknowledging an error.
     pub(in crate::gameplay_transport) async fn use_drome_cube_impl(
