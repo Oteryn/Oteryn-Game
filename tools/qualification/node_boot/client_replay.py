@@ -127,7 +127,8 @@ def replay_targets():
     )]
     targets["e2e_p01"] = [(
         "oteryn-client", "e2e_p01_replays_query_refusal_and_kill_delta",
-        {"p01-initial.json", "p01-before.json", "p01-refused.json", "p01-after.json",
+        {"p01-pre-mastery.json", "p01-initial.json", "p01-before.json", "p01-refused.json",
+         "p01-refusal-readback.json", "p01-after.json",
          "p01-durable.json", "p01-expected.txt"},
     )]
     targets["e2e_p01.full"] = [(

@@ -1,4 +1,4 @@
-//! Disposable P01.full inputs. Balances are derived from Bestiary receipts.
+//! Disposable P01 inputs. Balances are derived from Bestiary receipts.
 use super::*;
 
 const COMPLETED: [&str; 15] = [
@@ -63,7 +63,12 @@ pub(super) async fn seed(clients: &SeamClients<'_>, full: bool) -> TestResult {
             .find(|(race, _)| race.key() == key)
             .ok_or_else(|| format!("P01 fixture Bestiary definition missing: {key}"))?;
         let threshold = i64::from(race.final_kill_threshold());
-        let kills = if key == RAT {
+        let kills = if !full {
+            if threshold != 250 || *award != 5 {
+                return Err("unexpected canonical Troll mastery inputs".into());
+            }
+            threshold - 1
+        } else if key == RAT {
             if threshold != 250 || *award != 5 {
                 return Err("unexpected canonical Rat mastery inputs".into());
             }

@@ -12,6 +12,8 @@ use wire::{
 };
 
 struct Replies {
+    pre_mastery: Option<GatedCommandResult>,
+    refusal_readback: Option<GatedCommandResult>,
     initial: Option<GatedCommandResult>,
     before: GatedCommandResult,
     refused: GatedCommandResult,
@@ -136,9 +138,11 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
             |name| captured_reply(&path.join(name), session, &mut previous, field(name)?);
         let durable = "p01-durable.json";
         return Ok(Replies {
+            pre_mastery: Some(original("p01-pre-mastery.json")?),
             initial: Some(original("p01-initial.json")?),
             before: original("p01-before.json")?,
             refused: original("p01-refused.json")?,
+            refusal_readback: Some(original("p01-refusal-readback.json")?),
             after: original("p01-after.json")?,
             durable: Some(captured_reply(
                 &path.join(durable),
@@ -166,6 +170,8 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
         Ok(result(CommandStatus::Accepted, &payload))
     };
     Ok(Replies {
+        pre_mastery: None,
+        refusal_readback: None,
         initial: None,
         before: fixture_reply(&view(4, 7)?)?,
         refused: fixture_reply(&refused)?,
@@ -234,10 +240,30 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
 
     let mut panel = Panel::default();
     if let Some(initial) = &replies.initial {
+        let pre_mastery = replies
+            .pre_mastery
+            .as_ref()
+            .ok_or("pre-mastery capture missing")?;
+        let (mut seeded, query) = pending(&panel, Intent::Query)?;
+        apply(&mut seeded, &query, pre_mastery);
+        let mut expected_mastery = seeded.reply.ok_or("pre-mastery Query missing")?;
+        assert_eq!(expected_mastery.charms.charm_points_available, 0);
+        let [troll] = expected_mastery.bestiary.as_mut_slice() else {
+            return Err("expected only the incomplete Troll entry".into());
+        };
+        assert_eq!(
+            (troll.race.get(), troll.kill_count, troll.kill_thresholds),
+            (replies.refusal_race, 249, [10, 100, 250])
+        );
+        troll.kill_count = 250;
+        expected_mastery.charms.charm_points_available = 5;
+        assert_eq!(replies.points_before, 5);
+        assert_eq!(replies.charm, 1);
         let (mut admitted, query) = pending(&panel, Intent::Query)?;
         apply(&mut admitted, &query, initial);
         assert_eq!(admitted.feedback, "Completed: Query; fee: 0 gold");
         let initial = admitted.reply.as_ref().ok_or("initial Query missing")?;
+        assert_eq!(initial, &expected_mastery);
         assert!(
             initial
                 .bestiary
@@ -318,6 +344,13 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
         race_line(&refusing, replies.race)?,
         line(replies.kills_before)
     );
+
+    if let Some(readback) = &replies.refusal_readback {
+        let (mut independent, query) = pending(&refusing, Intent::Query)?;
+        apply(&mut independent, &query, readback);
+        assert_eq!(independent.feedback, "Completed: Query; fee: 0 gold");
+        assert_eq!(independent.reply.as_ref(), Some(&before));
+    }
 
     // The QUERY after the credited kill shows exactly one more kill.
     let (mut hunted, query) = pending(&refusing, Intent::Query)?;

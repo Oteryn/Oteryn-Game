@@ -12,6 +12,29 @@ use std::num::NonZeroU32;
 
 const DEADLINE: Duration = Duration::from_secs(1_800);
 const RAT: &str = "oteryn:creature.rat";
+const TROLL: &str = "oteryn:creature.troll";
+const TROLL_SPAWN: TilePos = TilePos {
+    x: 32469,
+    y: 32235,
+    floor: -8,
+};
+const PROTECTED_LOGOUT: TilePos = TilePos {
+    x: 32484,
+    y: 32286,
+    floor: -7,
+};
+const RAT_SPAWNS: [TilePos; 2] = [
+    TilePos {
+        x: 32491,
+        y: 32169,
+        floor: -7,
+    },
+    TilePos {
+        x: 32503,
+        y: 32174,
+        floor: -7,
+    },
+];
 const RAT_THRESHOLDS: [u32; 3] = [10, 100, 250];
 
 pub(super) fn capture(name: &str, bytes: &[u8]) -> TestResult {
@@ -87,22 +110,25 @@ pub(super) async fn walk_rat_route(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
+    wait_for_clear_landing: bool,
 ) -> TestResult {
     for &direction in path {
         let before = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, before, direction).ok_or("Rat route step has no landing")?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-        while client.world_entities().is_some_and(|entities| {
-            entities.iter().any(|entity| {
-                matches!(
-                    entity.kind,
-                    oteryn_dev_client::EntityKind::Player
-                        | oteryn_dev_client::EntityKind::Creature
-                        | oteryn_dev_client::EntityKind::Npc
-                ) && tile(entity.position).is_ok_and(|at| at == expected)
+        while wait_for_clear_landing
+            && client.world_entities().is_some_and(|entities| {
+                entities.iter().any(|entity| {
+                    matches!(
+                        entity.kind,
+                        oteryn_dev_client::EntityKind::Player
+                            | oteryn_dev_client::EntityKind::Creature
+                            | oteryn_dev_client::EntityKind::Npc
+                    ) && tile(entity.position).is_ok_and(|at| at == expected)
+                })
             })
-        }) {
+        {
             if tokio::time::Instant::now() >= deadline {
                 let occupants: Vec<_> = client
                     .world_entities()
@@ -160,7 +186,7 @@ async fn verify_rat_kill(
         Some(clients),
     )
     .await?;
-    if kill.race != race || kill.raw_xp != 5 {
+    if kill.race != race || kill.raw_xp != 5 || kill.gained_xp != 5 {
         return Err(format!("P01.client Rat XP or credit mismatch: {kill:?}").into());
     }
     Ok(())
@@ -186,38 +212,22 @@ async fn logout_from_protected_ground(
         })
     }));
     let protected = |at: TilePos| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| tile.protection_zone())
+        at == PROTECTED_LOGOUT
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.protection_zone())
     };
-    let mut path = std::collections::VecDeque::new();
-    let mut detours = 0;
-    while !protected(tile(client.world_spatial().actor_position)?) {
-        let current = tile(client.world_spatial().actor_position)?;
-        if path.is_empty() {
-            path = route_avoiding(world, current, protected, |at| !occupied.contains(&at))
-                .ok_or_else(|| format!("no walkable route from {current:?} to protected ground"))?
-                .into();
-        }
-        let direction = path.pop_front().ok_or("protected route has no next step")?;
-        let landing =
-            destination(world, current, direction).ok_or("protected route step has no landing")?;
-        let visible = occupied_rat_route_tiles(client);
-        if visible.contains(&landing) {
-            detours += 1;
-            evidence(&format!(
-                "P01_CHECK client-logout-route occupied={landing:?} from={current:?} detour={detours}"
-            ));
-            if detours > 8 {
-                return Err("protected logout route exceeded eight occupancy detours".into());
-            }
-            occupied.extend(visible);
-            path.clear();
-            continue;
-        }
-        walk_rat_route(client, world, &[direction]).await?;
-    }
+    // The prior live run identified this Wolf landing outside its authored cell.
+    occupied.insert(TilePos {
+        x: 32495,
+        y: 32174,
+        floor: -7,
+    });
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route_avoiding(world, from, protected, |at| !occupied.contains(&at))
+        .ok_or_else(|| format!("no walkable route from {from:?} to {PROTECTED_LOGOUT:?}"))?;
+    walk_rat_route(client, world, &path, false).await?;
     let reached = tile(client.world_spatial().actor_position)?;
     if !protected(reached) {
         return Err(format!("client logout ground is not protected: {reached:?}").into());
@@ -252,9 +262,47 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         Ok(NonZeroU32::new(u32::try_from(index)? + 1).ok_or("zero race index")?)
     };
     let race = race_id(RAT)?;
-    let refusal_race = race_id("oteryn:creature.troll")?;
+    let refusal_race = race_id(TROLL)?;
     let corpse_stage = full_row_p01::rat_corpse_stage()?;
     let mut frames = String::new();
+    let before_mastery = send(
+        &mut client,
+        CharmProgressionAction::Query,
+        "p01-pre-mastery.json",
+        &mut frames,
+    )
+    .await?;
+    if before_mastery.outcome != CharmProgressionOutcome::Query
+        || before_mastery.charms.charm_points_available != 0
+        || !matches!(before_mastery.bestiary.as_slice(), [entry]
+            if entry.race == refusal_race && entry.kill_count == 249
+                && entry.kill_thresholds == RAT_THRESHOLDS && !entry.is_complete())
+    {
+        return Err("P01.client requires one incomplete Troll and zero Charm Points".into());
+    }
+    let (_, troll) = full_row_p01::authored_target(
+        &mut client,
+        world,
+        &metadata.spawns,
+        TROLL,
+        "Troll",
+        Some(TROLL_SPAWN),
+    )
+    .await?;
+    let troll_corpse = provisioning::item_reference(&provisioning::item_index()?, 5960)?.get();
+    let troll_kill = full_row_p01::hunt_exact_creature(
+        &mut client,
+        troll,
+        TROLL,
+        refusal_race,
+        troll_corpse,
+        None,
+        Some(clients),
+    )
+    .await?;
+    if troll_kill.raw_xp != 20 || troll_kill.gained_xp != 20 || troll_kill.fire_damage {
+        return Err(format!("unassigned Troll control mismatch: {troll_kill:?}").into());
+    }
     let initial = send(
         &mut client,
         CharmProgressionAction::Query,
@@ -262,21 +310,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut frames,
     )
     .await?;
-    if initial.outcome != CharmProgressionOutcome::Query
-        || !matches!(initial.bestiary.as_slice(), [entry]
-            if entry.race == refusal_race && entry.is_complete())
-    {
-        return Err("P01.client requires only a completed Troll and no Rat entry".into());
+    let mut expected_mastery = before_mastery;
+    expected_mastery.bestiary[0].kill_count = 250;
+    expected_mastery.charms.charm_points_available = 5;
+    if initial != expected_mastery {
+        return Err(format!("live Troll mastery or +5 Charm Points missing: {initial:?}").into());
     }
+    evidence("P01_CHECK client-earned-troll-mastery PASS kills=249->250 charm_points=0->5");
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2)
     {
         return Err("P01 Rat selection requires wire entity names".into());
     }
-    let (first_spawn, target) =
-        full_row_p01::authored_target(&mut client, world, &metadata.spawns, RAT, "Rat", None, true)
-            .await?;
+    let (_, target) = full_row_p01::authored_target(
+        &mut client,
+        world,
+        &metadata.spawns,
+        RAT,
+        "Rat",
+        Some(RAT_SPAWNS[0]),
+    )
+    .await?;
     verify_rat_kill(&mut client, clients, target, race, corpse_stage).await?;
     let before = send(
         &mut client,
@@ -301,13 +356,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     evidence("P01_CHECK client-first-rat-delta PASS absent-to-one exact-views");
+    // The canonical first Major Charm is Enflame (400 points at stage zero).
+    let charm = NonZeroU32::MIN;
     let locked = before
         .charms
         .charms
         .iter()
-        .find(|charm| charm.unlocked_stage == 0 && charm.next_stage_cost > 0)
-        .ok_or("no locked charm to refuse")?;
-    let charm = locked.charm;
+        .find(|entry| entry.charm == charm)
+        .ok_or("Enflame is missing")?;
+    if locked.unlocked_stage != 0
+        || locked.assigned_race.is_some()
+        || locked.effect_active
+        || locked.next_stage_cost != 400
+    {
+        return Err(format!("incorrect Enflame refusal baseline: {locked:?}").into());
+    }
+    let coins = client_row_e02::coin_refs()?;
+    let carried = client_row_e02::backpack_coins(&client, coins)?;
+    let bank = full_row_e06::bank_balance(clients, 1).await?;
+    if bank == 0 && carried == [0; 3] {
+        return Err("P01.client needs positive gold to detect a refused assignment debit".into());
+    }
     let refused = send(
         &mut client,
         CharmProgressionAction::Assign {
@@ -325,15 +394,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("locked ASSIGN reply {refused:?}").into());
     }
-    evidence("P01_CHECK client-locked-assign PASS completed-race zero-fee unchanged");
+    let refusal_readback = send(
+        &mut client,
+        CharmProgressionAction::Query,
+        "p01-refusal-readback.json",
+        &mut frames,
+    )
+    .await?;
+    if refusal_readback != expected_before
+        || client_row_e02::backpack_coins(&client, coins)? != carried
+        || full_row_e06::bank_balance(clients, 1).await? != bank
+    {
+        return Err("post-ASSIGN Query, carried coins, or bank balance changed".into());
+    }
+    evidence("P01_CHECK client-locked-assign PASS completed-race independent-query no-gold-debit");
     let (_, target) = full_row_p01::authored_target(
         &mut client,
         world,
         &metadata.spawns,
         RAT,
         "Rat",
-        Some(first_spawn),
-        true,
+        Some(RAT_SPAWNS[1]),
     )
     .await?;
     verify_rat_kill(&mut client, clients, target, race, corpse_stage).await?;

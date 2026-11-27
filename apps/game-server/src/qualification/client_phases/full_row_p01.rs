@@ -167,7 +167,7 @@ pub(super) async fn retreat_from_spawn(
         |at| !occupied.contains(&at),
     )
     .ok_or_else(|| format!("no walkable retreat from hunt at {from:?}"))?;
-    client_row_p01::walk_rat_route(client, world, &retreat).await
+    client_row_p01::walk_rat_route(client, world, &retreat, true).await
 }
 
 pub(super) async fn authored_target(
@@ -176,8 +176,7 @@ pub(super) async fn authored_target(
     spawns: &oteryn_world_bundle::spawn::Table,
     key: &str,
     name: &str,
-    excluded_spawn: Option<TilePos>,
-    allow_roaming: bool,
+    required_spawn: Option<TilePos>,
 ) -> TestResult<(TilePos, oteryn_dev_client::WorldSpatialEntity)> {
     use oteryn_dev_client::EntityKind;
     let from = tile(client.world_spatial().actor_position)?;
@@ -213,13 +212,12 @@ pub(super) async fn authored_target(
         world,
         from,
         |at| {
-            points
-                .iter()
-                .any(|&point| Some(point) != excluded_spawn && adjacent(at, point))
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|tile| !tile.protection_zone())
+            points.iter().any(|&point| {
+                required_spawn.is_none_or(|required| point == required) && adjacent(at, point)
+            }) && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
         },
         |at| !occupied.contains(&at),
     )
@@ -230,10 +228,12 @@ pub(super) async fn authored_target(
         .ok_or("authored spawn route has no landing")?;
     let point = points
         .iter()
-        .find(|&&point| Some(point) != excluded_spawn && adjacent(goal, point))
+        .find(|&&point| {
+            required_spawn.is_none_or(|required| point == required) && adjacent(goal, point)
+        })
         .copied()
         .ok_or("route does not end adjacent to its authored spawn")?;
-    client_row_p01::walk_rat_route(client, world, &path).await?;
+    client_row_p01::walk_rat_route(client, world, &path, required_spawn.is_none()).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     verdict::Harness::global().bounded_wait(deadline, "authored-creature-visibility");
     loop {
@@ -250,27 +250,7 @@ pub(super) async fn authored_target(
                             .and_then(|text| text.as_str().ok())
                             == Some(name)
                 })
-                .filter(|entity| {
-                    tile(entity.position).is_ok_and(|at| {
-                        if at.floor != point.floor {
-                            return false;
-                        }
-                        let distance =
-                            |home: TilePos| at.x.abs_diff(home.x).max(at.y.abs_diff(home.y));
-                        let selected_distance = distance(point);
-                        if !allow_roaming {
-                            return selected_distance == 0;
-                        }
-                        // Match a single visible Rat in this spawn's vicinity. Other
-                        // authored Rat cells must be farther away from that candidate.
-                        selected_distance <= 5
-                            && points.iter().all(|&home| {
-                                home == point
-                                    || home.floor != at.floor
-                                    || distance(home) > selected_distance
-                            })
-                    })
-                });
+                .filter(|entity| tile(entity.position).is_ok_and(|at| at == point));
             let target = targets.next().copied();
             if targets.next().is_some() {
                 return Err(format!("ambiguous wire {name} at authored spawn {point:?}").into());
@@ -383,7 +363,8 @@ pub(super) async fn hunt_exact_creature(
                         && text.ends_with(" (enflame charm)")
                     {
                         if key != "oteryn:creature.troll"
-                            || text != "A troll loses 1 hitpoint due to your attack. (enflame charm)"
+                            || text
+                                != "A troll loses 1 hitpoint due to your attack. (enflame charm)"
                         {
                             return Err(format!("unexpected Enflame Server Log: {text:?}").into());
                         }
@@ -403,20 +384,39 @@ pub(super) async fn hunt_exact_creature(
                     }
                     continue;
                 }
-                SessionEvent::AnalyserFacts(delta) => delta.value,
+                SessionEvent::AnalyserFacts(delta) => {
+                    if verify_principal.is_some() {
+                        return Err("P01.client received an un-attributed analyser batch".into());
+                    }
+                    delta.value
+                }
                 SessionEvent::AnalyserAttributedFacts(delta) => {
                     for entry in &delta.value {
                         let Some(source) = &entry.charm else { continue };
-                        if source.charm_key != "oteryn:charm.enflame" || source.target != target.entity {
-                            return Err(format!("unexpected charm source in unarmed hunt: {source:?}").into());
+                        if source.charm_key != "oteryn:charm.enflame"
+                            || source.target != target.entity
+                        {
+                            return Err(format!(
+                                "unexpected charm source in unarmed hunt: {source:?}"
+                            )
+                            .into());
                         }
-                        let AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Fire, value }) = entry.fact else {
+                        let AnalyserFact::Impact(AnalyserImpact::Damage {
+                            element: DamageElement::Fire,
+                            value,
+                        }) = entry.fact
+                        else {
                             return Err(format!("non-fire Enflame impact: {entry:?}").into());
                         };
                         if key == "oteryn:creature.troll" && value.get() != 1 {
-                            return Err(format!("Enflame Troll impact expected 1, got {value}").into());
+                            return Err(
+                                format!("Enflame Troll impact expected 1, got {value}").into()
+                            );
                         }
-                        evidence(&format!("P01_CHECK enflame-impact PASS charm={} damage={value} target={:?}", source.charm_key, source.target));
+                        evidence(&format!(
+                            "P01_CHECK enflame-impact PASS charm={} damage={value} target={:?}",
+                            source.charm_key, source.target
+                        ));
                         if fire_damage {
                             return Err("duplicate attributed Enflame impact".into());
                         }
@@ -429,8 +429,10 @@ pub(super) async fn hunt_exact_creature(
             for fact in facts {
                 match fact {
                     AnalyserFact::Kill { race } => kills.push(race),
-                    AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Fire, .. })
-                        if key == "oteryn:creature.rat" => fire_damage = true,
+                    AnalyserFact::Impact(AnalyserImpact::Damage {
+                        element: DamageElement::Fire,
+                        ..
+                    }) if key == "oteryn:creature.rat" => fire_damage = true,
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
                     _ => {}
                 }
@@ -481,7 +483,9 @@ pub(super) async fn hunt_exact_creature(
             return Err("Enflame Server Log did not match an attributed impact".into());
         }
         if fire_damage {
-            evidence("P01_CHECK enflame-server-log PASS A troll loses 1 hitpoint due to your attack. (enflame charm)");
+            evidence(
+                "P01_CHECK enflame-server-log PASS A troll loses 1 hitpoint due to your attack. (enflame charm)",
+            );
         }
     }
     client.session_mut().attack_target(None).await?;
@@ -545,6 +549,9 @@ pub(super) async fn hunt_exact_creature(
         .ok_or("corpse view")?
         .entries
         .clone();
+    if verify_principal.is_some() && key == "oteryn:creature.rat" && entries.is_empty() {
+        return Err("Rat corpse is empty; strict loot transfer cannot be proved".into());
+    }
     if let Some(item) = entries.first() {
         let before = client
             .inventory()
@@ -740,16 +747,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     prepare_unarmed(&mut client).await?;
-    let (_, target) = authored_target(
-        &mut client,
-        world,
-        &metadata.spawns,
-        rat.key(),
-        "Rat",
-        None,
-        false,
-    )
-    .await?;
+    let (_, target) =
+        authored_target(&mut client, world, &metadata.spawns, rat.key(), "Rat", None).await?;
     let first_kill = hunt_exact_creature(
         &mut client,
         target,
@@ -932,9 +931,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=enflame-attribution missing negotiated capability 625".into());
     }
     let (spawn, troll) = authored_target(
-        &mut client, world, &metadata.spawns, troll_key, "Troll", None, false,
-    ).await?;
-    let target_identity = troll.entity.identity.iter()
+        &mut client,
+        world,
+        &metadata.spawns,
+        troll_key,
+        "Troll",
+        None,
+    )
+    .await?;
+    let target_identity = troll
+        .entity
+        .identity
+        .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
     // Force one proc, then misses for the rest of this exact Troll's hunt so
@@ -944,11 +952,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         uuid_text(client.join_snapshot().game_session_id.as_bytes()),
         "--force-enflame",
         rolls,
-    ).await?;
-    evidence(&format!("P01_FIXTURE enflame-rolls target={:?}", troll.entity));
+    )
+    .await?;
+    evidence(&format!(
+        "P01_FIXTURE enflame-rolls target={:?}",
+        troll.entity
+    ));
     let kill = hunt_exact_creature(
-        &mut client, troll, troll_key, race, troll_corpse, None, None,
-    ).await?;
+        &mut client,
+        troll,
+        troll_key,
+        race,
+        troll_corpse,
+        None,
+        None,
+    )
+    .await?;
     if kill.race != race || kill.raw_xp != 20 {
         return Err(format!("incorrect Troll kill credit: {kill:?}").into());
     }
