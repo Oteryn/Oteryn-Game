@@ -27,7 +27,7 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
 };
 const ITEM_ID: u32 = 50_271;
 const ADVENTURERS_STONE: u32 = 16_277;
-const GREATER_PROFICIENCY_CATALYST: u32 = 51_589;
+pub(super) const GREATER_PROFICIENCY_CATALYST: u32 = 51_589;
 const THAIS: u32 = 8;
 const STONE_ARRIVAL: TilePos = TilePos {
     x: 32210,
@@ -831,7 +831,7 @@ fn combat_target(
         .target)
 }
 
-async fn wait_combat_target(
+pub(super) async fn wait_combat_target(
     client: &mut DevClientSession,
     expected: Option<oteryn_dev_client::EntityRef>,
 ) -> TestResult {
@@ -845,7 +845,7 @@ async fn wait_combat_target(
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession, prove_mana: bool) -> TestResult<u32> {
+pub(super) async fn logout(client: &mut DevClientSession, prove_mana: bool) -> TestResult<u32> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     let state = client
         .session_mut()
@@ -1207,17 +1207,29 @@ async fn enter_guild(
 async fn leave_guild(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
     clients: &SeamClients<'_>,
 ) -> TestResult {
     let origin = stone_origin(clients).await?;
     if origin != Some(i64::from(THAIS)) {
         return Err(format!("C12 Guild exit expected recorded Thais, got {origin:?}").into());
     }
+    let npc_cells: std::collections::BTreeSet<_> = npcs
+        .npcs
+        .iter()
+        .flat_map(|npc| {
+            npc.placements.iter().map(|p| TilePos {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            })
+        })
+        .collect();
     let path = route_avoiding(
         world,
         tile(client.world_spatial().actor_position)?,
         |at| at == GUILD_EXIT_STEP,
-        |at| at != GUILD_EAST_EXIT && at != GUILD_WEST_EXIT,
+        |at| at != GUILD_EAST_EXIT && at != GUILD_WEST_EXIT && !npc_cells.contains(&at),
     )
     .ok_or("C12 cannot walk to the eastern Adventurers' Guild exit")?;
     walk_exact_route(client, world, &path).await?;
@@ -1981,7 +1993,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    leave_guild(&mut client, world, clients).await?;
+    leave_guild(&mut client, world, &metadata.npcs, clients).await?;
     select_fists_damage_perks(&mut client, clients, definition).await?;
     row.pass("acquire-50271", (acquired, purchase_balance));
 
@@ -2106,6 +2118,25 @@ mod tests {
             return Err("the mainland return cannot qualify".into());
         };
         assert!(error.to_string().starts_with("BLOCKED-CONTENT:"));
+        Ok(())
+    }
+
+    #[test]
+    fn c12_one_perk_rejects_zero_and_combined_bonus() -> TestResult {
+        let marker =
+            "SEAM_EVIDENCE c12_base_damage session=test command=12 target=rat generation=2 ";
+        let sample = |damage, bps| {
+            format!(
+                "{marker}before=50 after={damage} critical=false element=physical committed={damage} committed_hits=1 augment_bps={bps}"
+            )
+        };
+        assert_eq!(
+            read_base_damage(sample(52, 400).as_bytes(), marker, 400)?.committed,
+            52
+        );
+        assert!(read_base_damage(sample(50, 0).as_bytes(), marker, 400).is_err());
+        assert!(read_base_damage(sample(54, 800).as_bytes(), marker, 400).is_err());
+        assert!(read_base_damage(sample(50, 400).as_bytes(), marker, 400).is_err());
         Ok(())
     }
 

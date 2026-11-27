@@ -117,7 +117,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::num::NonZeroU32;
 
 pub fn equipped(inventory: &CharacterInventory, definition: NonZeroU32) -> bool {
-    weapon_units(inventory, definition) == 1
+    item_units(inventory, definition) == 1
         && inventory.equipment.iter().any(|entry| {
             entry.slot == EquipmentSlot::RightHand
                 && entry.item.item_definition_ref == definition
@@ -130,14 +130,14 @@ pub fn equipped(inventory: &CharacterInventory, definition: NonZeroU32) -> bool 
 }
 
 pub fn carried(inventory: &CharacterInventory, definition: NonZeroU32) -> bool {
-    weapon_units(inventory, definition) == 1
+    item_units(inventory, definition) == 1
         && inventory
             .entries
             .iter()
             .any(|entry| entry.item_definition_ref == definition && entry.count.get() == 1)
 }
 
-fn weapon_units(inventory: &CharacterInventory, definition: NonZeroU32) -> u64 {
+pub fn item_units(inventory: &CharacterInventory, definition: NonZeroU32) -> u64 {
     inventory
         .entries
         .iter()
@@ -200,14 +200,19 @@ pub fn attributed_hits(
             secondary,
             ..
         } = event.kind
-            && target == victim
         {
-            let attributed = attacker == Some(caster)
+            let has_spell_cue = events.iter().any(|part| part.decision_ordinal == event.decision_ordinal
+                && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. }
+                    if source == caster && cue == spell));
+            // The isolated target's counterattack is the only unrelated damage in this window.
+            if target == caster && attacker == Some(victim) && !has_spell_cue {
+                continue;
+            }
+            let attributed = target == victim
+                && attacker == Some(caster)
                 && primary.color == PresentationColor::Red
                 && secondary.is_none()
-                && events.iter().any(|part| part.decision_ordinal == event.decision_ordinal
-                    && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. }
-                        if source == caster && cue == spell));
+                && has_spell_cue;
             // Preserve malformed or unattributed popups as failed observations.
             hits.push(if attributed { primary.value } else { 0 });
         }
@@ -361,6 +366,18 @@ mod tests {
         let mut hits = Vec::new();
         attributed_hits(&first, caster, target, 42, &mut hits);
         attributed_hits(&late[1..], caster, target, 42, &mut hits);
+        assert_eq!(hits, [33, 0]);
+        assert!(!exact_hit(&hits, 33));
+        let mut wrong_target = late[1];
+        if let PresentationEventKind::ValueText { target, .. } = &mut wrong_target.kind {
+            *target = EntityRef {
+                identity: [3; 16],
+                generation: 1,
+            };
+        }
+        let mut hits = Vec::new();
+        attributed_hits(&first, caster, target, 42, &mut hits);
+        attributed_hits(&[wrong_target], caster, target, 42, &mut hits);
         assert_eq!(hits, [33, 0]);
         assert!(!exact_hit(&hits, 33));
     }
