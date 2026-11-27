@@ -3,6 +3,7 @@
 //! `crates/client-ui/src/features/0152-item-forge`.
 use super::*;
 use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicCommand;
 use oteryn_dev_client::client_ui::item_forge::{self as forge_ui, ItemForgePanel};
 use oteryn_protocol_oteryn::forge_preview as wire;
 use oteryn_protocol_oteryn::item_forge::{
@@ -139,17 +140,20 @@ async fn forge(
     }
     .encode()
     .ok_or("forge request was not canonical")?;
-    submit_forge(client, operation, &payload).await
+    submit_forge(client, operation, forge_ui::command(payload.to_vec())).await
 }
 
 async fn submit_forge(
     client: &mut DevClientSession,
     operation: Operation,
-    payload: &[u8],
+    command: ServerMechanicCommand,
 ) -> TestResult<(LiveReply, serde_json::Value)> {
+    if (command.capability, command.command_type) != (CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE) {
+        return Err(format!("{operation:?} client command used incorrect routing").into());
+    }
     let reply = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE, payload)
+        .gated_command(command.capability, command.command_type, &command.payload)
         .await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("{operation:?} status={:?}", reply.status).into());
@@ -161,7 +165,7 @@ async fn submit_forge(
             reply.server_sequence,
             reply.status as u32,
             reply.payload,
-            payload.to_vec(),
+            command.payload,
         ),
         body,
     ))
@@ -183,35 +187,10 @@ async fn capture_preview(
         response.payload, request.payload))
 }
 
-async fn confirm_resource(
-    client: &mut DevClientSession,
+fn confirm_resource(
     panel: &mut ItemForgePanel,
-    operation: Operation,
     occurrence: [u8; 16],
-) -> TestResult<(LiveReply, Vec<u8>)> {
-    let preview = forge_ui::preview_request(panel, wire::Selection::Resource(operation))
-        .ok_or("Forge resource preview did not start")?;
-    let response = client
-        .session_mut()
-        .gated_command(preview.capability, preview.kind, &preview.payload)
-        .await?;
-    if response.status != CommandStatus::Accepted {
-        return Err(format!("Forge resource preview refused: {:?}", response.status).into());
-    }
-    let frame = (
-        response.command_id,
-        response.server_sequence,
-        response.status as u32,
-        response.payload.clone(),
-        preview.payload.clone(),
-    );
-    if panel
-        .confirm_resource(panel.resource_dialog.serial, occurrence)
-        .is_some()
-    {
-        return Err("Forge accepted confirmation before showing the server review".into());
-    }
-    forge_ui::preview::apply(panel, &preview, &response);
+) -> TestResult<ServerMechanicCommand> {
     let serial = panel.resource_dialog.serial;
     let confirmed = panel
         .confirm_resource(serial, occurrence)
@@ -224,7 +203,7 @@ async fn confirm_resource(
         .ok_or("Forge confirmation did not encode")?;
     let command = forge_ui::request(panel, forge_ui::command(payload.to_vec()))
         .ok_or("Forge confirmation was not submitted")?;
-    Ok((frame, command.payload))
+    Ok(command)
 }
 
 fn check_refusal(body: &serde_json::Value, reason: &str) -> TestResult {
@@ -383,15 +362,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         {
             return Err("Forge inventory changed before the next submitted action".into());
         }
-        let (quote, payload) = confirm_resource(
-            &mut client,
-            &mut confirmation_panel,
-            operation,
-            occurrence(session, ordinal),
-        )
-        .await?;
+        let attempt = occurrence(session, ordinal);
+        let expected_before = if operation == Operation::DustToSlivers { (100, 100) } else { (40, 100) };
+        if dust(&mut client).await? != expected_before
+            || confirmation_panel.confirm_resource(confirmation_panel.resource_dialog.serial, attempt).is_some()
+        {
+            return Err("Forge resource pre-state invalid or confirmation available before preview".into());
+        }
+        let quote = capture_preview(
+            &mut client, &mut confirmation_panel, wire::Selection::Resource(operation),
+        ).await?;
+        let (_, preview_history) = forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+        let expected_history = if operation == Operation::DustToSlivers {
+            serde_json::json!([])
+        } else {
+            serde_json::json!([{"ordinal":1,"receipt":applied[0]}])
+        };
+        if client.inventory() != Some(&before)
+            || dust(&mut client).await? != expected_before
+            || super::full_row_p18::bank_balance(&mut bank, clients).await? != 0
+            || preview_history != expected_history
+        {
+            return Err(format!("Forge {operation:?} preview changed live state before confirmation").into());
+        }
         quotes.push(quote);
-        let (frame, body) = submit_forge(&mut client, operation, &payload).await?;
+        client.service_liveness(Duration::from_millis(490)).await?;
+        let command = confirm_resource(&mut confirmation_panel, attempt)?;
+        let (frame, body) = submit_forge(&mut client, operation, command).await?;
         use oteryn_dev_client::client_runtime::server_mechanic::{
             CommandStatus as Status, ServerMechanicResponse,
         };
@@ -536,7 +533,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         // The item-forge-v1 contract gives new attempts and history a shared 490 ms cooldown.
         client.service_liveness(Duration::from_millis(490)).await?;
         let (bytes, body) = if operation == Operation::Fusion {
-            submit_forge(&mut client, operation, &fusion.payload).await?
+            submit_forge(&mut client, operation, fusion.clone()).await?
         } else {
             let attempt = occurrence(session, u8::try_from(ordinal + 1)?);
             let preview = capture_preview(&mut client, panel, wire::Selection::Resource(operation)).await?;
@@ -555,7 +552,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             }.encode().ok_or("Forge refusal request was not canonical")?;
             let command = forge_ui::request(panel, forge_ui::command(payload.to_vec()))
                 .ok_or("Forge refusal probe did not start")?;
-            submit_forge(&mut client, operation, &command.payload).await?
+            submit_forge(&mut client, operation, command).await?
         };
         use oteryn_dev_client::client_runtime::server_mechanic::{
             CommandStatus as Status, ServerMechanicResponse,

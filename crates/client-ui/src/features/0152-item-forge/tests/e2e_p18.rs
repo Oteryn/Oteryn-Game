@@ -364,7 +364,16 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             } else {
                 submitted_bytes
             };
-            request(&mut panel, command(payload)).ok_or("Forge UI refused submission")?;
+            let outgoing =
+                request(&mut panel, command(payload)).ok_or("Forge UI refused submission")?;
+            if (outgoing.capability, outgoing.command_type)
+                != (
+                    oteryn_client_runtime::cui3::item_forge::CAPABILITY_ITEM_FORGE_V1,
+                    oteryn_client_runtime::cui3::item_forge::COMMAND_TYPE_ITEM_FORGE,
+                )
+            {
+                return Err("Forge UI produced incorrect command routing".into());
+            }
             Some(submitted)
         };
         if !panel.pending || panel.submitted != submitted {
