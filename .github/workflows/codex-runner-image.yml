@@ -1,0 +1,59 @@
+name: Codex runner CI image
+
+# Builds the CI image for jobs on Codex Cloud runners (label codex-cloud) and
+# pushes it to ghcr.io. Not a required check.
+on:
+  pull_request:
+    paths:
+      - tools/ci/codex-runner/Dockerfile
+      - .github/workflows/codex-runner-image.yml
+  push:
+    branches: [main]
+    paths:
+      - tools/ci/codex-runner/Dockerfile
+      - .github/workflows/codex-runner-image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-runner-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    name: Codex runner CI image / build and push
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # Fork pull requests get a read-only token; build only, without a push.
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/oteryn/oteryn-game-ci-runner
+      PUSH: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Build image
+        run: |
+          tag="${GITHUB_SHA}"
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then tag="pr-${{ github.event.pull_request.number }}"; fi
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          docker build -t "$IMAGE:$tag" tools/ci/codex-runner
+          docker run --rm "$IMAGE:$tag" bash -c 'cargo --version && cargo clippy --version && cargo nextest --version && mold --version'
+      - name: Push image
+        if: env.PUSH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:$TAG"
+          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
+            docker tag "$IMAGE:$TAG" "$IMAGE:main"
+            docker push "$IMAGE:main"
+          fi

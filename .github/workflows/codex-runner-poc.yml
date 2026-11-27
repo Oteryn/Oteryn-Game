@@ -1,0 +1,157 @@
+name: Codex Cloud runner PoC
+
+# Proof of concept, not a required check: ephemeral JIT runners started inside
+# Codex Cloud tasks pick up the node boot shards. It runs only when this file
+# changes or by hand.
+on:
+  pull_request:
+    paths:
+      - .github/workflows/codex-runner-poc.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-runner-poc-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # main head of the scheduled hosted node boot run 45380109179, for comparison.
+  SOURCE_SHA: 4614584bd7552dc164ba2b9c45364a400ddb414d
+
+jobs:
+  plan:
+    name: Codex runner PoC / plan node boot shards (hosted)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - name: Check out the source head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - name: Plan the full set and keep the PoC shards
+        id: plan
+        env:
+          KEEP: basic rows-000-010 rows-200-210 g-f4-f5-f6 g-f7add-f7clock-f7cont-f7forge-f7run spells rows-100-110 rows-300-open
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          python3 tools/qualification/node_boot/matrix.py plan --set full --groups '' --rows '' \
+            --batch 10 --basic '' --spells '' --game-platform '' > "$RUNNER_TEMP/all.json"
+          python3 - "$RUNNER_TEMP/all.json" "$KEEP" > "$RUNNER_TEMP/shards.json" <<'PY'
+          import json, sys
+          keep = sys.argv[2].split()
+          shards = [s for s in json.load(open(sys.argv[1])) if s["name"] in keep]
+          assert sorted(s["name"] for s in shards) == sorted(keep), [s["name"] for s in shards]
+          print(json.dumps(shards, separators=(",", ":")))
+          PY
+          printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
+          python3 -c 'import json,sys; [print(s["name"], s["entry"], s["env"]) for s in json.load(open(sys.argv[1]))]' \
+            "$RUNNER_TEMP/shards.json" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  node_boot:
+    name: Codex runner PoC / node boot ${{ matrix.shard.name }}
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    runs-on: [self-hosted, codex-cloud]
+    timeout-minutes: 120
+    steps:
+      # The Codex Cloud environment holds a clone of this repository, the Rust toolchain and
+      # Docker. The unprivileged harness mode builds its own Game binaries on the task machine.
+      - name: Runner facts
+        run: |
+          nproc
+          free -g
+          df -h "$GITHUB_WORKSPACE" /tmp
+          id -u
+          for p in docker python3 node openssl cargo psql setsid timeout rustup; do printf '%s ' "$p"; command -v "$p" || echo missing; done
+
+      - name: Source tree from the environment clone
+        run: |
+          set -euo pipefail
+          start=$(date +%s)
+          rm -rf "$GITHUB_WORKSPACE"
+          git clone -q --shared --no-checkout /workspace/Oteryn-Game "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE"
+          if ! git cat-file -e "$SOURCE_SHA^{commit}" 2>/dev/null; then
+            git fetch -q --no-tags https://github.com/Oteryn/Oteryn-Game.git "$SOURCE_SHA"
+          fi
+          git checkout -q --detach "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          echo "source tree took $(( $(date +%s) - start ))s"
+
+      - name: Exact public Platform producer
+        env:
+          PLATFORM_REF: ${{ matrix.shard.platform_ref }}
+        run: |
+          set -euo pipefail
+          git init -q _platform
+          git -C _platform fetch -q --depth 1 --no-tags https://github.com/Oteryn/Oteryn-Platform.git "$PLATFORM_REF"
+          git -C _platform checkout -q --detach FETCH_HEAD
+          test "$(git -C _platform rev-parse HEAD)" = "$PLATFORM_REF"
+
+      - name: Select shard
+        env:
+          SHARD_JSON: ${{ toJSON(matrix.shard) }}
+        run: |
+          set -euo pipefail
+          python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" > "$RUNNER_TEMP/shard.env"
+          cat "$RUNNER_TEMP/shard.env" | tee -a "$GITHUB_ENV"
+
+      - name: Run node boot shard (unprivileged)
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set +e +x
+          set -uo pipefail
+          source /workspace/oteryn-env/env.sh >/dev/null 2>&1 || { echo '::error::environment unavailable'; exit 2; }
+          export OTERYN_AUTO_START=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+          logs="$RUNNER_TEMP/node-boot-failure-logs"
+          mkdir -p "$logs"
+          evidence="$logs/qualification-client.log"
+          started=$SECONDS
+          # The harness work directory must sit under root- or self-owned ancestors. Task
+          # containers differ, so take the first candidate whose whole chain qualifies.
+          owned_chain() {
+            local a; a="$(realpath -e -- "$1" 2>/dev/null)" || return 1
+            while :; do
+              local o; o="$(stat -c %u -- "$a")" || return 1
+              [[ "$o" == 0 || "$o" == "$EUID" ]] || return 1
+              [[ "$a" != / ]] || return 0
+              a="${a%/*}"; a="${a:-/}"
+            done
+          }
+          work_parent=""
+          for cand in /tmp /var/tmp /dev/shm "$RUNNER_TEMP" /workspace; do
+            chain=""; a="$(realpath -m -- "$cand")"
+            while :; do chain+="$a:$(stat -c %u -- "$a" 2>/dev/null || echo -) "; [[ "$a" != / ]] || break; a="${a%/*}"; a="${a:-/}"; done
+            echo "::notice title=work parent candidate::euid=$EUID $chain"
+            if [[ -z "$work_parent" ]] && owned_chain "$cand"; then work_parent="$cand"; fi
+          done
+          if [[ -z "$work_parent" ]]; then
+            mine="$(mktemp -d /tmp/nb-parent.XXXXXX 2>/dev/null || true)"
+            echo "::notice title=no qualifying work parent::fallback $mine"
+            work_parent="${mine:-/tmp}"
+          fi
+          echo "::notice title=work parent::$work_parent"
+          (export RUNNER_TEMP="$work_parent"; NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_FAILURE_LOG_DIR="$logs" \
+            bash tools/qualification/node_boot/run.sh) > "$evidence" 2>&1
+          code=$?
+          echo "shard ${SHARD_NAME:-?} exit=$code seconds=$((SECONDS - started))"
+          grep -aE '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" \
+            | grep -viE 'password|postgres(ql)?://|secret|token|key=' | tee -a "$GITHUB_STEP_SUMMARY" | tail -n 40
+          grep -aE '^NODE_BOOT_RESULT=' "$evidence" | tail -n 1 | sed 's/^/::notice title=node boot result::/'
+          grep -aE '^SEAM_EVIDENCE .*status=FAIL' "$evidence" | grep -viE 'password|postgres(ql)?://|secret|token|key=' \
+            | cut -c1-300 | head -n 20 | sed 's/^/::error title=node boot FAIL::/'
+          if [[ "$code" != 0 ]]; then
+            tail -n 30 "$evidence" | grep -viE 'password|postgres(ql)?://|secret|token|key=' | cut -c1-300 \
+              | sed 's/^/::warning title=node boot tail::/' | tail -n 10
+          fi
+          exit "$code"
