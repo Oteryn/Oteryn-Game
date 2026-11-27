@@ -1730,7 +1730,7 @@ pub(super) async fn exercise(
                 Some("oteryn:achievement/battle_mage")
             );
         }
-        let mut expected = if family == "battle-mage" && *suffix != "base" {
+        let mut expected = if family == "battle-mage" && matches!(*suffix, "book" | "epaulettes-complete") {
             let completes = *suffix == "epaulettes-complete";
             vec![
                 Requirement {
@@ -2931,7 +2931,10 @@ pub(super) async fn exercise(
             )
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(exalted, i64::from(step_index == 2), "award requires both addons");
+            let earned = callbacks[..=step_index]
+                .iter()
+                .any(|row| row.key == "oteryn:quest-reward/l2-battle-mage-epaulettes-complete");
+            assert_eq!(exalted, i64::from(earned), "award requires both addons");
         }
         if let Some(key) = &callback.achievement {
             let earned: i64 = sqlx::query_scalar(
