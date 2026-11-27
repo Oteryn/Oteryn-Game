@@ -271,8 +271,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         client.service_liveness(Duration::from_millis(20)).await?;
         collect_events(&mut client, None, clock_before.as_mut())?;
     }
-    let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
-    walk_path(
+    let final_approach_aggressors = walk_path(
         &mut client,
         world,
         &spawn_cells,
@@ -282,6 +281,9 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         clock_before.as_mut(),
     )
     .await?;
+    if !final_approach_aggressors.is_empty() {
+        return Err(format!("C18a final approach took damage from {final_approach_aggressors:?}").into());
+    }
     if !world
         .base()
         .tile(CAST_TILE.x, CAST_TILE.y, CAST_TILE.floor)
@@ -297,6 +299,16 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     if initial_combat.target.is_some() {
         return Err("C18a directional cast requires no active attack target".into());
     }
+    if initial_combat.in_fight {
+        return Err(format!("C18a combat lock already present before Rat placement: {initial_combat:?}").into());
+    }
+    // Place the live Rat only after the last paced step. The row must distinguish
+    // Scorch's lock transition from the Rat engaging the caster during approach.
+    let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
+    evidence(&format!(
+        "c18a_select_send at_ms={} command={} sequence={} caster={here:?} target={target:?}",
+        lock_trace_time_ms(), client.next_command_id(), client.last_server_sequence()
+    ));
     let selection = client.session_mut().attack_target(Some(&target)).await?;
     require_mechanic_acceptance(selection.status, "C18a first Rat selection")?;
     if selection.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
