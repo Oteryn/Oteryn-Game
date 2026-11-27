@@ -253,28 +253,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
-    ) -> bool {
+    ) -> Result<bool, crate::durability::DurabilityError> {
         if !crate::gameplay_transport::item_use::gourmet::checkpoint(self, actor, session, true)
             .await
         {
-            return false;
+            return Ok(false);
         }
         let source_scope = {
             let runtime = self.runtime.lock().await;
             let Some((_, scope)) = current_owner(&runtime, actor, session) else {
-                return false;
+                return Ok(false);
             };
             scope
         };
         if matches!(source_scope, RuntimeScopeRefV1::Channel { .. }) {
-            matches!(
-                self.save_spell_training(actor, session, true).await,
+            Ok(matches!(
+                self.save_spell_training_checked(actor, session, true)
+                    .await?,
                 TrainingSave::Saved | TrainingSave::NotApplicable
-            )
+            ))
         } else {
             // No generic training/Prey writer is admitted in a House. The
             // in-lane preflight requires its carried source work to be clean.
-            true
+            Ok(true)
         }
     }
 }

@@ -435,7 +435,9 @@ where
                 Dispatch::Attack(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
             }
             oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
-            | oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY => {
+            | oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY
+            | oteryn_protocol_oteryn::charm_progression::COMMAND_TYPE_CHARM_PROGRESSION
+            | oteryn_protocol_oteryn::charm_progression::catalogue::COMMAND_TYPE_BESTIARY_ANIMUS_XP_QUERY => {
                 Dispatch::Reply(
                     crate::foundation::CommandStatus::Rejected,
                     oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),

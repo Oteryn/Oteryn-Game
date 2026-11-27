@@ -36,11 +36,13 @@ pub(super) async fn dispatch(
         let Ok(request) = wire::decode_request(payload) else { return GuildReply::Rejected; };
         request
     };
-    let Some(current) =
-        super::super::character_gameplay_fence::current(owner, admitted.game_session_id, false)
-            .await
-    else {
-        return GuildReply::Rejected;
+    let budget = AdmissionRetryBudget::for_command(owner.root);
+    let current = match budget.retry_durability("bestiary_session", || {
+        super::super::character_gameplay_fence::current_once(owner, admitted.game_session_id, false)
+    }).await {
+        Ok(Some(current)) => current,
+        Err(DurabilityError::RootUnavailable) => return super::busy_reply(),
+        _ => return GuildReply::Rejected,
     };
     if Some(current.item_fence()) != admitted.item_fence {
         return GuildReply::Rejected;
@@ -93,10 +95,17 @@ pub(super) async fn dispatch(
     }
     let Some(page) = project(native, request) else { return GuildReply::Rejected; };
     if include_animus_xp {
-        let Ok(masteries) = owner.root.read_current_animus_masteries(
-            owner.character, owner.holder, current.item_fence(),
-        ).await else {
-            return GuildReply::Rejected;
+        let masteries = match budget.retry_durability("bestiary_animus", || async {
+            match owner.root.read_current_animus_masteries(
+                owner.character, owner.holder, current.item_fence(),
+            ).await {
+                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        }).await {
+            Ok(Ok(masteries)) => masteries,
+            Err(DurabilityError::RootUnavailable) => return super::busy_reply(),
+            _ => return GuildReply::Rejected,
         };
         let Some(races) = super::canonical_races() else { return GuildReply::Rejected; };
         let bonus = crate::combat::animus_mastery_bonus_basis_points(masteries.len());

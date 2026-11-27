@@ -11,6 +11,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .tutorial_vocation_command(*admitted, command.payload)
         .await
     {
+        Some(bytes) if bytes == oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL => {
+            Dispatch::Reply(CommandStatus::Rejected, bytes)
+        }
         Some(bytes) => Dispatch::Reply(CommandStatus::Accepted, bytes),
         None => Dispatch::Reply(CommandStatus::Rejected, Vec::new()),
     }

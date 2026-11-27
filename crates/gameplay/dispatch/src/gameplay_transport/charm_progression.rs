@@ -11,18 +11,18 @@ mod catalogue;
 mod metadata;
 use std::sync::LazyLock;
 
-use super::charm::CharmProgressionPort;
 use super::charm::native::{CharmConnectionContent, NativeCharmProgressionPort};
 use super::guild_intent::GuildReply;
-use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use crate::content::ProjectEvidenceLimits;
 use crate::domain::bestiary::BestiaryRace;
+use crate::durability::DurabilityError;
 use crate::durability::charm_state::{
-    BestiaryCharmEntry, BestiaryCharmFacts, CharmCommandOccurrence, CharmRemoveFee,
+    BestiaryCharmEntry, BestiaryCharmFacts, CharmCommandOccurrence, CharmRemoveFee, CharmStateError,
 };
 use crate::durability::item_fee_burn::FeeChangeFacts;
 use crate::foundation::CommandId;
-use oteryn_protocol_oteryn::charm::{CharmAssignIntent, CharmUnlockStageIntent};
+use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmAssignIntent, CharmUnlockStageIntent};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
@@ -191,10 +191,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(id) = CommandId::new(id) else {
             return GuildReply::Rejected;
         };
-        let Some(current) =
-            super::character_gameplay_fence::current(self, admitted.game_session_id, false).await
-        else {
-            return GuildReply::Rejected;
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let current = match budget.retry_durability("charm_session", || {
+            super::character_gameplay_fence::current_once(self, admitted.game_session_id, false)
+        }).await {
+            Ok(Some(current)) => current,
+            Err(DurabilityError::RootUnavailable) => return busy_reply(),
+            _ => return GuildReply::Rejected,
         };
         if current.item_fence() != fence
             || fence.game_session_id != admitted.game_session_id
@@ -208,13 +211,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             action,
             CharmProgressionAction::Remove { .. } | CharmProgressionAction::ResetAll
         ) {
-            match self
-                .root
-                .read_character_backpack(self.character, fence.character_id)
-                .await
-            {
-                Ok(backpack) => backpack,
-                Err(_) => return GuildReply::Unavailable,
+            // Backpack reads can wait for root recovery themselves. Keep this read
+            // inside the same command budget as the non-blocking checkouts.
+            match budget.retry_durability("charm_fee_backpack", || async {
+                match tokio::time::timeout_at(
+                    budget.deadline,
+                    self.root.read_character_backpack(self.character, fence.character_id),
+                ).await {
+                    Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
+                    Ok(Err(crate::durability::item_transfer::ItemTransferError::Unavailable(error))) => Err(error),
+                    Ok(result) => Ok(result),
+                }
+            }).await {
+                Ok(Ok(backpack)) => backpack,
+                Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => return busy_reply(),
+                _ => return GuildReply::Unavailable,
             }
         } else {
             None
@@ -252,14 +263,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // The catalogue binds the Character's current content revision: the catalogue and the
         // Bestiary source are embedded in this build, so every content revision serves them.
-        let revision = match self
-            .root
-            .read_character_progression(self.character, fence.character_id)
-            .await
-        {
-            Ok(Some(state)) => state.context.content,
-            Ok(None) => return GuildReply::Rejected,
-            Err(_) => return GuildReply::Unavailable,
+        let revision = match budget.retry_durability("charm_progression", || async {
+            match self.root.read_character_progression(self.character, fence.character_id).await {
+                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        }).await {
+            Ok(Ok(Some(state))) => state.context.content,
+            Ok(Ok(None)) => return GuildReply::Rejected,
+            Err(DurabilityError::RootUnavailable) => return busy_reply(),
+            _ => return GuildReply::Unavailable,
         };
         let Ok(content) = CharmConnectionContent::new(
             revision,
@@ -278,75 +291,84 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_some()
         };
         let content = content.with_runtime_consumers(ready);
-        let Ok(mut port) = NativeCharmProgressionPort::bind(
-            self.root,
-            self.character,
-            self.holder,
-            &self.revision_sequencer,
-            current,
-            &content,
-            bestiary
-                .facts
-                .clone()
-                .with_premium_gate(self.session_premium_gate(admitted.game_session_id).await),
-        )
-        .await
-        else {
-            return GuildReply::Rejected;
+        let facts = bestiary.facts.clone()
+            .with_premium_gate(self.session_premium_gate(admitted.game_session_id).await);
+        let (port, before) = match budget.retry_durability("charm_snapshot", || async {
+            match NativeCharmProgressionPort::bind_checked(
+                self.root, self.character, self.holder, &self.revision_sequencer,
+                current, &content, facts.clone(),
+            ).await {
+                Err(CharmStateError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        }).await {
+            Ok(Ok(port)) => port,
+            Err(DurabilityError::RootUnavailable) => return busy_reply(),
+            _ => return GuildReply::Rejected,
         };
         let Ok(occurrence) =
             CharmCommandOccurrence::from_bytes(derive(b"charm-progression:occurrence"))
         else {
             return GuildReply::Rejected;
         };
-        let (outcome, fee_gold) = match action {
-            CharmProgressionAction::Query => (CharmProgressionOutcome::Query, 0),
-            CharmProgressionAction::Unlock {
-                charm,
-                expected_stage,
-            } => (
-                CharmProgressionOutcome::Unlock(
-                    port.unlock_next_stage(
-                        occurrence,
-                        CharmUnlockStageIntent {
-                            charm,
-                            expected_stage,
-                        },
-                    )
-                    .await,
-                ),
-                0,
-            ),
-            CharmProgressionAction::Assign { charm, race } => (
-                CharmProgressionOutcome::Assign(
-                    port.assign(occurrence, CharmAssignIntent { charm, race })
-                        .await,
-                ),
-                0,
-            ),
-            CharmProgressionAction::ResetAll | CharmProgressionAction::Remove { .. } => {
-                let Some(change) = change else {
-                    return GuildReply::Rejected;
-                };
-                let fee = CharmRemoveFee {
-                    transaction_id: derive(b"charm-progression:fee"),
-                    event_id: derive(b"charm-progression:event"),
-                    occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
-                    change,
-                };
-                match action {
-                    CharmProgressionAction::Remove { charm } => {
-                        let (d, gold) = port.remove(occurrence, charm, fee).await;
-                        (CharmProgressionOutcome::Remove(d), gold)
-                    }
-                    _ => {
-                        let (d, gold) = port.reset_all(occurrence, fee).await;
-                        (CharmProgressionOutcome::ResetAll(d), gold)
-                    }
-                }
-            }
+        // Only a failed holder checkout can re-enter the action. The same wire
+        // occurrence fences receipts, and the post-action view has its own read retry.
+        let stage = match action {
+            CharmProgressionAction::Query => "charm_query",
+            CharmProgressionAction::Unlock { .. } => "charm_unlock",
+            CharmProgressionAction::Assign { .. } => "charm_assign",
+            CharmProgressionAction::Remove { .. } => "charm_remove",
+            CharmProgressionAction::ResetAll => "charm_reset_all",
         };
-        let views = port.views().await;
+        let occurred_at_unix_ms = super::npc_trade_command::unix_ms_now();
+        let action_result = budget.retry_durability(stage, || {
+            let port = &port;
+            let change = change.clone();
+            async move {
+                Ok(match action {
+                    CharmProgressionAction::Query => (CharmProgressionOutcome::Query, 0),
+                    CharmProgressionAction::Unlock { charm, expected_stage } => (
+                        CharmProgressionOutcome::Unlock(port.unlock_next_stage_checked(
+                            occurrence, CharmUnlockStageIntent { charm, expected_stage },
+                        ).await?),
+                        0,
+                    ),
+                    CharmProgressionAction::Assign { charm, race } => (
+                        CharmProgressionOutcome::Assign(port.assign_checked(
+                            occurrence, CharmAssignIntent { charm, race },
+                        ).await?),
+                        0,
+                    ),
+                    CharmProgressionAction::ResetAll | CharmProgressionAction::Remove { .. } => {
+                        let change = change.ok_or(DurabilityError::InvalidStoredState)?;
+                        let fee = CharmRemoveFee {
+                            transaction_id: derive(b"charm-progression:fee"),
+                            event_id: derive(b"charm-progression:event"),
+                            occurred_at_unix_ms,
+                            change,
+                        };
+                        if let CharmProgressionAction::Remove { charm } = action {
+                            let (d, gold) = port.remove_checked(occurrence, charm, fee).await?;
+                            (CharmProgressionOutcome::Remove(d), gold)
+                        } else {
+                            let (d, gold) = port.reset_all_checked(occurrence, fee).await?;
+                            (CharmProgressionOutcome::ResetAll(d), gold)
+                        }
+                    }
+                })
+            }
+        }).await;
+        let (outcome, fee_gold) = match action_result {
+            Ok(value) => value,
+            Err(DurabilityError::RootUnavailable) => return busy_reply(),
+            Err(_) => return GuildReply::Rejected,
+        };
+        let views = budget.retry_durability("charm_readback", || async {
+            match port.views_checked().await {
+                Err(CharmStateError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        }).await;
         // Read after CHARM-3's commit/reconciliation, then install only on the same live session.
         // If the read failed, discard the old assignment rather than continuing a removed effect.
         {
@@ -356,7 +378,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.player_control_facts(*present, *held).is_ok()
                     && !(*present == actor && *held == admitted.game_session_id)
             });
-            if let Ok(views) = &views {
+            if let Ok(Ok(views)) = &views {
                 states.install_charm_state(
                     &runtime,
                     actor,
@@ -368,8 +390,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
         }
-        let Ok(views) = views else {
-            return GuildReply::Unavailable;
+        let views = match views {
+            Ok(Ok(views)) => views,
+            Err(DurabilityError::RootUnavailable)
+                if outcome == CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked) =>
+            {
+                // The authority already refused this assignment. The validated
+                // pre-command snapshot can accompany that refusal if the final
+                // view is busy. It never replaces the live combat state.
+                match content.project(before) {
+                    Ok(views) => views,
+                    Err(_) => return GuildReply::Unavailable,
+                }
+            }
+            // A busy view after a write can be refreshed with Query. The writer
+            // has already resolved and is never rerun by this read retry.
+            Err(DurabilityError::RootUnavailable) => return busy_reply(),
+            _ => return GuildReply::Unavailable,
         };
         match wire::encode_charm_progression_reply(&CharmProgressionReply {
             outcome,
@@ -381,6 +418,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => GuildReply::Unavailable,
         }
     }
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static HOLDER_BUSY_WITNESS: (&'static str, std::sync::Arc<tokio::sync::Notify>);
+}
+
+fn busy_reply() -> GuildReply {
+    GuildReply::Payload(oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec())
 }
 
 macro_rules! authority_methods {

@@ -1,9 +1,9 @@
 //! PARITY-PROGRESSION-QUERIES-1: admitted command 84 bytes -> native charm port -> durable
 //! receipts, assignment and gold fee -> reply bytes and reload (capability 67).
 #![allow(clippy::expect_used)]
+use super::charm_progression_fixtures::seed;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
-use super::charm_progression_fixtures::{seed};
 
 use super::*;
 use crate::domain::bestiary::BestiaryRace;
@@ -114,7 +114,22 @@ fn charm_expansion_real_dispatch_discounts_removal_and_lifts_slot_limit() -> Tes
         .map_err(Into::into)
 }
 
+#[test]
+fn locked_charm_assign_waits_for_training_holder_and_next_command_is_served() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("locked-charm-holder", || {
+        scenario_with_holder(false, false, true)
+    })
+}
+
 fn scenario(expansion: bool, premium_current: bool) -> TestResult {
+    scenario_with_holder(expansion, premium_current, false)
+}
+
+fn scenario_with_holder(expansion: bool, premium_current: bool, contend: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "charm_progression", true, false).await?;
@@ -137,7 +152,10 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let dependencies = Dependencies::with_content(
@@ -250,6 +268,14 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
             NonZeroU32::new(if premium_current { 6 } else { 2 })
         );
         assert!(query.charms.charms.iter().all(|c| c.unlocked_stage == 0));
+        if contend {
+            let race = query.bestiary.first().ok_or("visible Bestiary race")?.race;
+            locked_assign_under_holder_contention(&owner, admitted, race).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         // The wire index is the position in race-key order.
         let mut keys: Vec<&str> = races.iter().map(BestiaryRace::key).collect();
         keys.sort_unstable();
@@ -557,3 +583,130 @@ mod catalogue;
 
 #[path = "charm_progression/metadata.rs"]
 mod metadata;
+
+async fn locked_assign_under_holder_contention(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    race: NonZeroU32,
+) -> TestResult {
+    use crate::gameplay_transport::charm_progression::HOLDER_BUSY_WITNESS;
+    use std::sync::Arc;
+    use tokio::io::DuplexStream;
+    use tokio::sync::Notify;
+
+    async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
+        let mut frame = vec![0; usize::try_from(client.read_u32().await?)?];
+        client.read_exact(&mut frame).await?;
+        Ok(frame)
+    }
+
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let busy = Arc::new(Notify::new());
+    let serve = HOLDER_BUSY_WITNESS.scope(("charm_session", busy.clone()), async move {
+        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await
+    });
+    let drive = async move {
+        loop {
+            let frame = read(&mut client).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
+                break;
+            }
+        }
+        // This is the same semantic holder checked out by the training_session read.
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+        let mut holder = Some(owner.root.try_issue_semantic_pass().map_err(debug)?);
+        for (offset, action, expected) in [
+            (
+                0,
+                CharmProgressionAction::Assign {
+                    charm: NonZeroU32::MIN,
+                    race,
+                },
+                Some(CharmProgressionOutcome::Assign(
+                    CharmAssignDisposition::CharmLocked,
+                )),
+            ),
+            (1, CharmProgressionAction::Query, None),
+            (
+                2,
+                CharmProgressionAction::Query,
+                Some(CharmProgressionOutcome::Query),
+            ),
+        ] {
+            // Exhaust the existing budget on the middle command. The final query
+            // proves a busy result leaves the same command stream usable.
+            if offset == 1 {
+                holder = Some(owner.root.try_issue_semantic_pass().map_err(debug)?);
+            }
+            let command_id = admitted.continuity.next_command_id + offset;
+            let payload = wire::encode_charm_progression_request(&action).map_err(debug)?;
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                admitted.continuity.connection_generation,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id,
+                    command_type: wire::COMMAND_TYPE_CHARM_PROGRESSION,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?;
+            client.write_u32(u32::try_from(frame.len())?).await?;
+            client.write_all(&frame).await?;
+            let read_result = async {
+                loop {
+                    let frame = read(&mut client).await?;
+                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    if envelope.message_type() == MessageType::CommandResult {
+                        let result =
+                            oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                                .map_err(debug)?;
+                        assert_eq!(result.command_id, command_id);
+                        return Ok::<_, Box<dyn std::error::Error>>((
+                            result.status,
+                            result.payload.to_vec(),
+                        ));
+                    }
+                    assert_ne!(envelope.message_type(), MessageType::ProtocolError);
+                }
+            };
+            let (status, payload) = if offset == 0 {
+                tokio::pin!(read_result);
+                tokio::select! {
+                    result = &mut read_result => return Err(format!("Assign resolved before the busy retry: {:?}", result?).into()),
+                    () = busy.notified() => {}
+                }
+                holder
+                    .take()
+                    .ok_or("held training holder")?
+                    .run(|_, _| Box::pin(async { Ok(()) }))
+                    .await
+                    .map_err(debug)?;
+                read_result.await?
+            } else {
+                read_result.await?
+            };
+            if let Some(expected) = expected {
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(
+                    wire::decode_charm_progression_reply(&payload)
+                        .map_err(debug)?
+                        .outcome,
+                    expected
+                );
+            } else {
+                assert_eq!(status, CommandStatus::Rejected);
+                assert_eq!(payload, oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL);
+                holder
+                    .take()
+                    .ok_or("held training holder")?
+                    .run(|_, _| Box::pin(async { Ok(()) }))
+                    .await
+                    .map_err(debug)?;
+            }
+        }
+        Ok(())
+    };
+    let (_, result) = tokio::join!(serve, drive);
+    result
+}

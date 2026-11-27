@@ -31,9 +31,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
-        let Ok(_foreground) = self.root.foreground_demand() else {
-            return TrainingSave::Unknown;
-        };
+        self.save_spell_training_checked(actor, session, force)
+            .await
+            .unwrap_or(TrainingSave::Unknown)
+    }
+
+    /// Preserve a refused pre-write checkout for foreground callers that can reply busy.
+    pub(in crate::gameplay_transport) async fn save_spell_training_checked(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+    ) -> Result<TrainingSave, DurabilityError> {
+        let _foreground = self.root.foreground_demand()?;
         // Let an already running profile finish under its existing locks before
         // starting the unchanged command read deadline.
         {
@@ -41,10 +51,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _states = self.states.spell_states.lock().await;
         }
         let budget = AdmissionRetryBudget::for_command(self.root);
-        self.save_spell_training_with_budget(actor, session, force, &budget)
+        self.save_spell_training_checked_with_budget(actor, session, force, &budget)
             .await
     }
 
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn save_spell_training_with_budget(
         &self,
         actor: ExactActorRef,
@@ -52,12 +63,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         force: bool,
         budget: &AdmissionRetryBudget<'_>,
     ) -> TrainingSave {
+        self.save_spell_training_checked_with_budget(actor, session, force, budget)
+            .await
+            .unwrap_or(TrainingSave::Unknown)
+    }
+
+    async fn save_spell_training_checked_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> Result<TrainingSave, DurabilityError> {
         match self
             .save_weapon_proficiency_with_budget(actor, session, force, budget)
             .await
         {
-            TrainingSave::Unknown => return TrainingSave::Unknown,
-            TrainingSave::FencedOut => return TrainingSave::FencedOut,
+            TrainingSave::Unknown => return Ok(TrainingSave::Unknown),
+            TrainingSave::FencedOut => return Ok(TrainingSave::FencedOut),
             TrainingSave::NotApplicable | TrainingSave::Saved => {}
         }
         // Resting gains use their own retained occurrence and must be acknowledged before
@@ -68,8 +91,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .save_resting_stamina_with_budget(actor, session, budget)
                 .await
             {
-                TrainingSave::Unknown => return TrainingSave::Unknown,
-                TrainingSave::FencedOut => return TrainingSave::FencedOut,
+                TrainingSave::Unknown => return Ok(TrainingSave::Unknown),
+                TrainingSave::FencedOut => return Ok(TrainingSave::FencedOut),
                 TrainingSave::NotApplicable => break,
                 TrainingSave::Saved => {}
             }
@@ -81,8 +104,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .save_hunting_stamina_with_budget(actor, session, budget)
                 .await
             {
-                TrainingSave::Unknown => return TrainingSave::Unknown,
-                TrainingSave::FencedOut => return TrainingSave::FencedOut,
+                TrainingSave::Unknown => return Ok(TrainingSave::Unknown),
+                TrainingSave::FencedOut => return Ok(TrainingSave::FencedOut),
                 TrainingSave::NotApplicable => break,
                 TrainingSave::Saved => {}
             }
@@ -95,31 +118,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .stamina_to_flush(actor, session)
         {
-            return TrainingSave::Unknown;
+            return Ok(TrainingSave::Unknown);
         }
         if !self.training_before_save(actor, session, force).await {
-            return TrainingSave::Unknown;
+            return Ok(TrainingSave::Unknown);
         }
         let saved = self
             .save_spell_training_once(actor, session, force, budget)
-            .await;
+            .await?;
         if saved != TrainingSave::Saved
             || !self
                 .spell_training_successor_due(actor, session, force)
                 .await
         {
-            return saved;
+            return Ok(saved);
         }
         // A replayed receipt merged the hits resolved while it was retained. A level they
         // reach is written now, never left to the cadence (SKILLS-0 §3.4); a forced save
         // writes all of them.
-        match self
-            .save_spell_training_once(actor, session, force, budget)
-            .await
-        {
-            TrainingSave::NotApplicable => TrainingSave::Saved,
-            other => other,
-        }
+        Ok(
+            match self
+                .save_spell_training_once(actor, session, force, budget)
+                .await?
+            {
+                TrainingSave::NotApplicable => TrainingSave::Saved,
+                other => other,
+            },
+        )
     }
     async fn spell_training_successor_due(
         &self,
@@ -146,35 +171,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
         budget: &AdmissionRetryBudget<'_>,
-    ) -> TrainingSave {
+    ) -> Result<TrainingSave, DurabilityError> {
         let formula = self
             .active_generation
             .and_then(|active| active.native_gameplay())
             .and_then(|native| native.training_formula());
         let Some(formula) = formula else {
-            return TrainingSave::NotApplicable;
+            return Ok(TrainingSave::NotApplicable);
         };
+        // The cadence can run between client commands; a clean training state
+        // needs no holder. Recheck the exact actor again after any durable reads.
+        if !force {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            if !states
+                .get_mut(&runtime, actor, session)
+                .is_some_and(|state| state.has_training_to_flush())
+            {
+                return Ok(TrainingSave::NotApplicable);
+            }
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok((current, _)) = budget
+        let (current, _) = match budget
             .retry_durability("training_session", async || {
                 store.current_session_at(session).await
             })
             .await
-        else {
-            return TrainingSave::Unknown;
+        {
+            Ok(value) => value,
+            Err(error @ DurabilityError::RootUnavailable) => return Err(error),
+            Err(_) => return Ok(TrainingSave::Unknown),
         };
         if current.session_state() == GameSessionState::Terminal {
-            return TrainingSave::FencedOut;
+            return Ok(TrainingSave::FencedOut);
         }
         let Ok(character) =
             crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
         else {
-            return TrainingSave::Unknown;
+            return Ok(TrainingSave::Unknown);
         };
         // CHAR-REV-SEQ-1: this Character's revision writer, held across the save and its
         // reconciliation and taken before the runtime lock.
         let mut slot = self.revision_sequencer.acquire(character).await;
-        let Ok(root) = budget
+        let root = match budget
             .retry_durability("training_character", async || {
                 self.root
                     .read_current_character(self.character, character)
@@ -182,8 +221,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(character_read_error)
             })
             .await
-        else {
-            return TrainingSave::Unknown;
+        {
+            Ok(value) => value,
+            Err(error @ DurabilityError::RootUnavailable) => return Err(error),
+            Err(_) => return Ok(TrainingSave::Unknown),
         };
         let current_fence = CurrentCharacterGameplayFence {
             character_id: character,
@@ -202,14 +243,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
         {
-            return TrainingSave::FencedOut;
+            return Ok(TrainingSave::FencedOut);
         }
         let Some(state) = states.get_mut(&runtime, actor, session) else {
-            return TrainingSave::NotApplicable;
+            return Ok(TrainingSave::NotApplicable);
         };
         let retained = if let Some(retained) = state.pending_training_checkpoint() {
             if retained.formula_digest != formula.digest() {
-                return TrainingSave::Unknown;
+                return Ok(TrainingSave::Unknown);
             }
             retained.clone()
         } else {
@@ -218,7 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 bytes[8] = (bytes[8] & 63) | 0x80;
                 BuildOccurrence::from_bytes(bytes).ok()
             }) else {
-                return TrainingSave::Unknown;
+                return Ok(TrainingSave::Unknown);
             };
             let prepared = match state.prepare_training_checkpoint(
                 self.owner_now().get(),
@@ -227,8 +268,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 force,
             ) {
                 Ok(Some(prepared)) => prepared,
-                Ok(None) => return TrainingSave::NotApplicable,
-                Err(_) => return TrainingSave::Unknown,
+                Ok(None) => return Ok(TrainingSave::NotApplicable),
+                Err(_) => return Ok(TrainingSave::Unknown),
             };
             let retained = RetainedTrainingCheckpoint {
                 fence: current_fence,
@@ -236,7 +277,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 formula_digest: formula.digest(),
             };
             if state.retain_training_checkpoint(retained.clone()).is_err() {
-                return TrainingSave::Unknown;
+                return Ok(TrainingSave::Unknown);
             }
             retained
         };
@@ -260,20 +301,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(states);
         drop(runtime);
         if matches!(outcome, Err(CharacterProgressionError::RespawnPending)) {
-            return TrainingSave::FencedOut;
+            return Ok(TrainingSave::FencedOut);
         }
         #[cfg(test)]
         if let Ok(barrier) = TRAINING_READBACK_BARRIER.try_with(std::sync::Arc::clone) {
             barrier.0.notify_one();
             barrier.1.notified().await;
         }
-        budget
+        Ok(budget
             .retry_durability("training_readback", async || {
                 self.finish_training_checkpoint_once(actor, session, &store, &retained, &outcome)
                     .await
             })
             .await
-            .unwrap_or(TrainingSave::Unknown)
+            .unwrap_or(TrainingSave::Unknown))
     }
 
     /// One readback attempt after a single write. Root acquisition misses leave

@@ -425,6 +425,17 @@
       "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
     },
     {
+      "event": "session_durability_holder_busy",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stage",
+        "attempt"
+      ],
+      "codes": [],
+      "note": "A durability stage could not acquire the shared holder. The attempt counter includes the final failed checkout."
+    },
+    {
       "event": "source_death_pending",
       "level": "warn",
       "span": false,
