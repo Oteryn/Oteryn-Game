@@ -17,7 +17,7 @@ where
     A: FreshAdmissionAuthority,
 {
     let Some(view) = session.item_view.as_mut() else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     };
     item_use_view_refresh::refresh(
         stream,
@@ -29,5 +29,5 @@ where
         &mut session.sequence,
     )
     .await
-    .ok_or(ServeEnd::Disconnected)
+    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))
 }

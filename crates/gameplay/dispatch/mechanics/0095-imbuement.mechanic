@@ -6,5 +6,5 @@ authority=imbuement
 [route]
 match routing::imbuement::route(authority, &session.admitted, command, &session.item_view).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("imbuement_outcome_unavailable")),
 }

@@ -295,7 +295,7 @@ fn run_refresh_window(window: ReturnWindow) -> RefreshTestResult {
                 let result = refresh_staff(&mut server, &owner, &mut session).await;
                 assert_eq!(owner.settlements.get(), 1);
                 if window != ReturnWindow::Commit {
-                    assert!(matches!(result, Err(ServeEnd::Disconnected)), "{window:?}");
+                    assert!(matches!(result, Err(ServeEnd::Server { .. })), "{window:?}");
                     assert_eq!(session.admitted.game_session_id, source.game_session_id);
                     assert_eq!(owner.finished.get(), 0);
                     drop(server);

@@ -4,7 +4,7 @@ use super::*;
 pub(in crate::gameplay_transport::connection::serve) struct Outcome {
     pub(in crate::gameplay_transport::connection::serve) dispatch: Dispatch,
     pub(in crate::gameplay_transport::connection::serve) second: bool,
-    pub(in crate::gameplay_transport::connection::serve) lost: bool,
+    pub(in crate::gameplay_transport::connection::serve) lost: Option<std::io::ErrorKind>,
 }
 
 impl Queue {
@@ -23,10 +23,11 @@ impl Queue {
             .held
             .iter()
             .any(|(frame, _)| is_logout_command(frame, generation));
-        let mut lost = false;
+        let mut lost = None;
         let mut logout = std::pin::pin!(authority.logout(admitted));
         let reply = loop {
-            let reading = !lost && self.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
+            let reading =
+                lost.is_none() && self.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
             let mut read = std::pin::pin!(self.frames.next(stream));
             let next = std::future::poll_fn(|cx| {
                 if let std::task::Poll::Ready(reply) = logout.as_mut().poll(cx) {
@@ -44,13 +45,13 @@ impl Queue {
                     second |= is_logout_command(&frame, generation);
                     self.held.push_back((frame, false));
                 }
-                Err(Err(_)) => lost = true,
+                Err(Err(error)) => lost = Some(error.kind()),
             }
         };
         let dispatch = match reply {
             LogoutReply::NoLogout => Dispatch::NoLogout,
             LogoutReply::Result(result) => Dispatch::Logout(result),
-            LogoutReply::Unknown => return Err(ServeEnd::Disconnected),
+            LogoutReply::Unknown => return Err(ServeEnd::server("serve_state_unavailable")),
         };
         Ok(Outcome {
             dispatch,

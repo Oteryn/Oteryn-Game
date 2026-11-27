@@ -31,7 +31,7 @@ where
         .await
         .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     refresh_newhaven_inventory(
         stream,
@@ -43,7 +43,7 @@ where
         &mut session.sequence,
     )
     .await
-    .ok_or(ServeEnd::Disconnected)?;
+    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     if tutorial_notices_transport::emit(
         stream,
         authority,
@@ -53,7 +53,7 @@ where
     .await
     .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     Ok(())
 }
@@ -91,12 +91,12 @@ where
             to,
             &value,
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
         if write_frame(stream, &delta).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
         session.admitted.continuity.vitals_revision = to;
     }
@@ -127,12 +127,12 @@ where
         let Some((delta_sequence, frame)) =
             item_view_delta(session.generation, session.sequence, &delta)
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
         if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
     }
     // ITEM-LOOP-1: a drop or pickup changed a tile in view; domain 17 shows it now.
@@ -150,7 +150,7 @@ where
         .await;
         session.admitted.continuity.item_view = items.continuity();
         let Some(update) = update else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
         if let Some((next_sequence, frames)) = update {
             session.sequence = next_sequence;
@@ -158,7 +158,7 @@ where
             session.admitted.continuity.world_map_revision = view.revision();
             for frame in frames {
                 if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("frame_write_refused"));
                 }
             }
         }
@@ -180,12 +180,12 @@ where
         let Some((delta_sequence, frame)) =
             item_view_delta(session.generation, session.sequence, &delta)
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
         if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
     }
     let Some(update_frames) = npc_update_frames(
@@ -200,12 +200,12 @@ where
         &update,
         &mut session.npc_shown,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     };
     session.admitted.continuity.server_sequence = session.sequence;
     for frame in update_frames {
         if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
     }
     Ok(())
@@ -232,12 +232,12 @@ where
         &update,
         &mut session.npc_shown,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     };
     session.admitted.continuity.server_sequence = session.sequence;
     for frame in update_frames {
         if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
     }
     Ok(())

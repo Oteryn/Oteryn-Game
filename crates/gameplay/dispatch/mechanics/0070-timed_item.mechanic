@@ -11,5 +11,5 @@ match routing::timed_item::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("timed_item_outcome_unavailable")),
 }

@@ -508,7 +508,7 @@ fn periodic_named_visibility_holder_busy_keeps_admitted_peer_live() -> TestResul
                         .await.map_err(|_| "visibility did not recover")?.is_none());
                     authority.named_refusal.set(Some(AdmissionRefusal::Rejected));
                     assert!(matches!(receive(&mut server, &authority, &mut session, Next::Visibility)
-                        .await, Err(ServeEnd::Disconnected)));
+                        .await, Err(ServeEnd::Server { .. })));
                     Ok(())
                 })
         })?

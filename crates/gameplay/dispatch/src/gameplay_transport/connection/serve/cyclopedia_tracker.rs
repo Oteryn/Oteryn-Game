@@ -15,13 +15,16 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         .cyclopedia_tracker_refresh(session.admitted, selected)
         .await
     {
-        let payload = wire::encode_snapshot(&tracker).ok_or(ServeEnd::Disconnected)?;
+        let payload = wire::encode_snapshot(&tracker)
+            .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
         let sequence = session
             .sequence
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         let base = session.cyclopedia_tracker_revision;
-        let revision = base.checked_add(1).ok_or(ServeEnd::Disconnected)?;
+        let revision = base
+            .checked_add(1)
+            .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
         let frame = oteryn_protocol_oteryn::encode_state_delta(
             session.generation,
             sequence,
@@ -31,10 +34,10 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
             wire::DELTA_TYPE_CYCLOPEDIA_TRACKER_V1,
             &payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         session.sequence = sequence;
         session.admitted.continuity.server_sequence = sequence;
         session.cyclopedia_tracker_revision = revision;

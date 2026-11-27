@@ -31,11 +31,13 @@ where
         return Ok(());
     }
     let from = combat.expert_revision;
-    let to = from.checked_add(1).ok_or(ServeEnd::Disconnected)?;
+    let to = from
+        .checked_add(1)
+        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let frame = oteryn_protocol_oteryn::encode_state_delta(
         session.generation,
         sequence,
@@ -45,12 +47,12 @@ where
         1,
         &encode_expert_fight_modes(&state),
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
     combat.expert_revision = to;
     combat.expert_sent = Some(state);
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
     write_frame(stream, &frame)
         .await
-        .map_err(|_| ServeEnd::Disconnected)
+        .map_err(|_| ServeEnd::server("frame_write_refused"))
 }

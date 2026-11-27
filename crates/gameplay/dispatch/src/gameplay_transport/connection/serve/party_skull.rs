@@ -28,7 +28,9 @@ where
         return Ok(());
     }
     // The header of the last view sent, where the client holds the actor (see `sidecar`).
-    let (content_generation, actor_position) = view.published().ok_or(ServeEnd::Disconnected)?;
+    let (content_generation, actor_position) = view
+        .published()
+        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     let mut payload =
         oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta(
             &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesDelta {
@@ -39,8 +41,9 @@ where
                 leave: Vec::new(),
             },
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
-    let encoded = encode_party_icons(&icons).map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
+    let encoded =
+        encode_party_icons(&icons).map_err(|_| ServeEnd::server("frame_encode_failed"))?;
     // Optional field 6 of the existing type-2 visibility delta; no new state domain/type.
     payload.push(0x32);
     let mut len = encoded.len();
@@ -53,11 +56,11 @@ where
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let revision = session
         .revision
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let frame = encode_state_delta(
         session.generation,
         sequence,
@@ -67,10 +70,10 @@ where
         2,
         &payload,
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
     write_frame(stream, &frame)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
     session.sequence = sequence;
     session.revision = revision;
     session.admitted.continuity.server_sequence = sequence;

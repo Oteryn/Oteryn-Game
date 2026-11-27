@@ -52,7 +52,7 @@ where
             send_join_unavailable(stream, generation).await;
             Err(end)
         }
-        Err(JoinFailure::Transport) => Err(ServeEnd::Disconnected),
+        Err(JoinFailure::Transport) => Err(ServeEnd::server("join_snapshot_unavailable")),
         Err(JoinFailure::Delivered(end)) => Err(end),
     }
 }
@@ -85,7 +85,7 @@ where
                 snapshot_type: 1,
                 payload: oteryn_protocol_oteryn::cast::Message::CasterChatEmpty
                     .encode()
-                    .map_err(|_| ServeEnd::Disconnected)?,
+                    .map_err(|_| ServeEnd::server("join_snapshot_unavailable"))?,
             },
         );
     }
@@ -96,7 +96,7 @@ where
         .map_err(|_| {
             failed(
                 "event=join_prepare_failed phase=activity_scope",
-                ServeEnd::Disconnected,
+                ServeEnd::server("join_snapshot_unavailable"),
             )
         })?
     {
@@ -170,7 +170,7 @@ where
             .ok_or_else(|| {
                 failed(
                     "event=join_prepare_failed phase=trade_open",
-                    ServeEnd::Disconnected,
+                    ServeEnd::server("join_snapshot_unavailable"),
                 )
             })?;
         record_join_progress("trade_observation", admitted.first_entry);
@@ -180,7 +180,7 @@ where
             .ok_or_else(|| {
                 failed(
                     "event=join_prepare_failed phase=trade_observation",
-                    ServeEnd::Disconnected,
+                    ServeEnd::server("join_snapshot_unavailable"),
                 )
             })?;
         payloads.push(
@@ -197,12 +197,12 @@ where
                         oteryn_protocol_oteryn::player_trade::CAPABILITY_PLAYER_TRADE_ARTWORK_V1,
                     ),
                 )
-                .map_err(|_| ServeEnd::Disconnected)?,
+                .map_err(|_| ServeEnd::server("join_snapshot_unavailable"))?,
             },
         );
     }
     if let Some(message) = zones_nologout_transport::snapshot(authority, admitted) {
-        payloads.push(message.map_err(|()| ServeEnd::Disconnected)?);
+        payloads.push(message.map_err(|()| ServeEnd::server("join_snapshot_unavailable"))?);
     }
     native_cues::snapshot_observations(authority, actor, admitted, &mut payloads).await?;
     let cooldowns = native_cues::CooldownProjection::from_snapshot(&payloads)?;
@@ -232,7 +232,7 @@ where
     ));
     let snapshot = encode_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
-        return Err(ServeEnd::Disconnected.into());
+        return Err(ServeEnd::server("frame_encode_failed").into());
     };
     record_join_progress("snapshot_write", admitted.first_entry);
     for frame in &snapshot {
@@ -361,7 +361,7 @@ async fn live<A: FreshAdmissionAuthority>(
         authority.session_commands(),
         admitted,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("join_snapshot_unavailable"));
     };
     // NPC-ECON-1: only a connection that continues an earlier one of this GameSession can carry
     // an accepted original Bank command. A fresh admission (generation 1 at CommandId 1, FND-02)

@@ -11,5 +11,5 @@ match routing::depot::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("depot_outcome_unavailable")),
 }

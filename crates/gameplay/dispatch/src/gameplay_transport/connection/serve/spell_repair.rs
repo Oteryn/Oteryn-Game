@@ -55,13 +55,15 @@ where
                         Err(LivenessEnd::ControlLost) => {
                             return Err(ServeEnd::ControlLost("spell_repair_liveness"));
                         }
-                        Err(LivenessEnd::ProbesExhausted) => return Err(ServeEnd::Disconnected),
+                        Err(LivenessEnd::ProbesExhausted) => {
+                            return Err(ServeEnd::server("serve_state_unavailable"));
+                        }
                     };
                     let probe = encode_liveness_probe(generation, id)
-                        .map_err(|_| ServeEnd::Disconnected)?;
+                        .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
                     match tokio::time::timeout(policy.interval, write_frame(stream, &probe)).await {
                         Ok(Ok(())) => {}
-                        Ok(Err(_)) => return Err(ServeEnd::Disconnected),
+                        Ok(Err(_)) => return Err(ServeEnd::server("frame_write_refused")),
                         Err(_) => return Err(ServeEnd::ControlLost("spell_repair_probe_timeout")),
                     }
                 }
@@ -73,7 +75,7 @@ where
                     };
                 }
                 PendingSpellEvent::Frame(frame) => {
-                    let frame = frame.map_err(|_| ServeEnd::Disconnected)?;
+                    let frame = frame.map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
                     decode_wire_envelope(&frame)
                         .and_then(|envelope| envelope.liveness_ack(generation))
                         .and_then(|ack| liveness.ack(ack.probe_id))

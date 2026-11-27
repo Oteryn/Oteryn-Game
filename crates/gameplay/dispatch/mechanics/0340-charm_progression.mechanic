@@ -7,5 +7,5 @@ offer=40,charm_progression::offered_for_sources,charm_progression_offers_availab
 [route]
 match routing::charm_progression::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("charm_progression_outcome_unavailable")),
 }

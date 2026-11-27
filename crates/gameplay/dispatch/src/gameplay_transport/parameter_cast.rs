@@ -1140,8 +1140,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:result.disposition,vitals:None}),result:Some(result)})
                     }
                     let objects=owner.door.lock().await;
+                    let now = owner.owner_now();
+                    let cooldowns = &states.get(runtime, actor, session).ok_or(DurabilityError::Unavailable)?.cooldowns;
+                    super::native_combat_cast::cast_cooldown_refused(cooldowns, spell, now, command_id);
                     let prepared=match prepare_parameter(&mut tx,&authority,&FreshAdmissionStore::from_root(owner.root.clone()),runtime,states,room,&objects,content,owned.clone(),
-                        spell,intent.clone(),fence,command,owner.owner_now()).await{
+                        spell,intent.clone(),fence,command,now).await{
                         Ok(p)=>p,Err(disposition)=>{
                             #[cfg(feature = "qualification-cast-evidence")]
                             eprintln!("SEAM_EVIDENCE parameter_cast_refused spell={} command={} gate=prepare disposition={disposition:?}",spell.key,command.command_id().get());
@@ -1286,6 +1289,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             if let Some(mut installation)=attempt.installation{
                 installation.training.install_into(&mut installation.paid);
                 installation.player.install_rebind_training(installation.paid);
+                installation.player.start_cast_cooldowns(owner.owner_now());
                 let _=install_owner_batch(&mut runtime,&mut states,installation.physical,Some(installation.player),checked);
                 // NPC-TALK-2: a caster the spell relocated out of talk range ends its conversation.
                 owner.states.chat.close_out_of_range(&runtime,session);

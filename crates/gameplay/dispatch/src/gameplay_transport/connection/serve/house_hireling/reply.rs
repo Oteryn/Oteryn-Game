@@ -18,7 +18,7 @@ pub(in super::super) fn result(
         Dispatch::ServerModal(
             crate::gameplay_transport::server_modal::ServerModalOutcome::Unavailable,
         ) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         }
         Dispatch::Logout(result) => (
             if result.is_rejected() {
@@ -26,11 +26,12 @@ pub(in super::super) fn result(
             } else {
                 CommandStatus::Accepted
             },
-            encode_logout_result(*result).map_err(|_| ServeEnd::Disconnected)?,
+            encode_logout_result(*result).map_err(|_| ServeEnd::server("frame_encode_failed"))?,
         ),
         Dispatch::NoLogout => (
             CommandStatus::Rejected,
-            encode_logout_result(LogoutResult::Busy).map_err(|_| ServeEnd::Disconnected)?,
+            encode_logout_result(LogoutResult::Busy)
+                .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
         ),
         Dispatch::Step(outcome, wait) => (
             if matches!(
@@ -75,7 +76,7 @@ pub(in super::super) fn result(
                         )
                         }),
                     )
-                    .map_err(|_| ServeEnd::Disconnected)?,
+                    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?,
                     outcome
                         .refusal_detail
                         .or(RefusalDetail::of_use(outcome.disposition)),
@@ -92,7 +93,8 @@ pub(in super::super) fn result(
             (
                 CommandStatus::Accepted,
                 detail(
-                    encode_use_result(disposition).map_err(|_| ServeEnd::Disconnected)?,
+                    encode_use_result(disposition)
+                        .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
                     RefusalDetail::of_use(disposition),
                 ),
             )
@@ -108,7 +110,7 @@ pub(in super::super) fn result(
                         ..ItemMoveSelection::default()
                     },
                 )
-                .map_err(|_| ServeEnd::Disconnected)?,
+                .map_err(|_| ServeEnd::server("serve_state_unavailable"))?,
                 refusal.or(RefusalDetail::of_item_move(*outcome)),
             ),
         ),
@@ -126,16 +128,16 @@ pub(in super::super) fn result(
         ),
         Dispatch::Stash(reply) => {
             let payload = oteryn_protocol_oteryn::stash::encode_stash_reply(reply)
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
             let decoded = oteryn_protocol_oteryn::stash::decode_stash_reply(&payload)
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
             if &decoded != reply {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             }
             (CommandStatus::Accepted, payload)
         }
         Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
-        _ => return Err(ServeEnd::Disconnected),
+        _ => return Err(ServeEnd::server("serve_state_unavailable")),
     })
 }
 
@@ -170,7 +172,10 @@ mod tests {
                     selected,
                     &Dispatch::ServerModal(ServerModalOutcome::Unavailable)
                 ),
-                Err(ServeEnd::Disconnected)
+                Err(ServeEnd::Server {
+                    cause: "serve_state_unavailable",
+                    ..
+                })
             ),
             "uncertain durable completion cannot become a refusal or success receipt"
         );
