@@ -207,10 +207,12 @@ pub(super) async fn write_liveness_probe<S: AsyncWrite + Unpin>(
     let probe_id = match session.liveness.tick() {
         Ok(probe_id) => probe_id,
         Err(LivenessEnd::ControlLost) => return Err(ServeEnd::ControlLost("liveness_missed")),
-        Err(LivenessEnd::ProbesExhausted) => return Err(ServeEnd::server("liveness_probe_unavailable")),
+        Err(LivenessEnd::ProbesExhausted) => {
+            return Err(ServeEnd::server("liveness_probe_unavailable"));
+        }
     };
-    let probe =
-        encode_liveness_probe(session.generation, probe_id).map_err(|_| ServeEnd::server("liveness_probe_unavailable"))?;
+    let probe = encode_liveness_probe(session.generation, probe_id)
+        .map_err(|_| ServeEnd::server("liveness_probe_unavailable"))?;
     // A peer that does not consume a probe within one cadence is no longer in control.
     match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
         Ok(Ok(())) => Ok(()),

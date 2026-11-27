@@ -177,7 +177,9 @@ where
                                 .push_back((frame, false, tokio::time::Instant::now()));
                         }
                     }
-                    LogoutEvent::Frame(Err(error)) => outcome.lost_while_logging_out = Some(error.kind()),
+                    LogoutEvent::Frame(Err(error)) => {
+                        outcome.lost_while_logging_out = Some(error.kind())
+                    }
                 }
             };
             if !matches!(reply, LogoutReply::Result(LogoutResult::Accepted))

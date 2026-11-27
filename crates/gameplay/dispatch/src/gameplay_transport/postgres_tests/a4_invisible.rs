@@ -564,9 +564,8 @@ async fn assert_invisible_cooldowns(
     let mut projection = CooldownProjection::default();
     let mut sequence = admitted.continuity.server_sequence;
     projection
-        .emit(&mut server, owner, actor, &mut admitted, &mut sequence)
-        .await
-        .map_err(debug)?;
+        .emit_for_test(&mut server, owner, actor, &mut admitted, &mut sequence)
+        .await?;
     drop(server);
     let frame = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
     let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;

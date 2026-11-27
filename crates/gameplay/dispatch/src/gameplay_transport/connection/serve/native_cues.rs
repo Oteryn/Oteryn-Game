@@ -47,8 +47,8 @@ pub(super) fn observation_snapshots(
         .iter()
         .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
     {
-        let cooldowns =
-            wire::decode_actor_cooldowns(&row.payload).map_err(|_| ServeEnd::server("cooldown_projection_unavailable"))?;
+        let cooldowns = wire::decode_actor_cooldowns(&row.payload)
+            .map_err(|_| ServeEnd::server("cooldown_projection_unavailable"))?;
         return Ok(Some(CooldownProjection {
             revision: row.revision,
             deadlines: deadlines(&cooldowns),
@@ -63,7 +63,8 @@ pub(super) fn observation_snapshots(
         domain_id: wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
         revision: 0,
         snapshot_type: wire::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1,
-        payload: wire::encode_actor_cooldowns(&cooldowns).map_err(|_| ServeEnd::Disconnected)?,
+        payload: wire::encode_actor_cooldowns(&cooldowns)
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
     });
     Ok(Some(CooldownProjection {
         revision: 0,
@@ -140,10 +141,7 @@ pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAu
 }
 
 impl CooldownProjection {
-    pub(in crate::gameplay_transport) async fn emit<
-        S: AsyncWrite + Unpin,
-        A: FreshAdmissionAuthority,
-    >(
+    async fn emit<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         &mut self,
         stream: &mut S,
         authority: &A,
@@ -189,7 +187,8 @@ impl CooldownProjection {
         let sequence = (*server_sequence)
             .checked_add(1)
             .ok_or_else(|| ServeEnd::server("cooldown_projection_unavailable"))?;
-        let payload = wire::encode_actor_cooldowns(&current).map_err(|_| ServeEnd::server("cooldown_projection_unavailable"))?;
+        let payload = wire::encode_actor_cooldowns(&current)
+            .map_err(|_| ServeEnd::server("cooldown_projection_unavailable"))?;
         let frame = encode_state_delta(
             admitted.continuity.connection_generation,
             sequence,
@@ -210,6 +209,23 @@ impl CooldownProjection {
             deadlines: next,
         };
         Ok(())
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn emit_for_test<
+        S: AsyncWrite + Unpin,
+        A: FreshAdmissionAuthority,
+    >(
+        &mut self,
+        stream: &mut S,
+        authority: &A,
+        actor: ExactActorRef,
+        admitted: &mut AdmittedSession,
+        sequence: &mut u64,
+    ) -> Result<(), &'static str> {
+        self.emit(stream, authority, actor, admitted, sequence)
+            .await
+            .map_err(|_| "cooldown wire projection failed")
     }
 }
 
