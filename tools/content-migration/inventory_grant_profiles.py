@@ -114,14 +114,18 @@ def fixture_grants(root, profiles):
                 if operand == "id":
                     # P21 chooses its target from materializable profiles whose
                     # slot count and Strike tier match the live selector.
+                    targets = []
                     for (key, _), row in profiles.items():
                         imbuement = row["semantics"].get("imbuement") or {}
                         value = imbuement.get("value", {})
                         slots = value.get("slot_count", {}).get("value", 0)
                         tiers = value.get("allowed_family_tiers", {}).get("value", [])
                         if (row["admission"]["materializable"] and 1 <= slots <= 3
-                                and any(tier["family"] == "STRIKE" for tier in tiers)):
-                            yield key, path
+                                and any(tier["family"] == "CRITICAL_HIT" for tier in tiers)):
+                            targets.append(key)
+                    if not targets:
+                        raise ValueError("The P21 Strike fixture has no native equipment target")
+                    yield from ((key, path) for key in targets)
                 else:
                     recipe = root / "crates/gameplay/items/src/imbuement_catalogue.rs"
                     basic = recipe.read_text().split("family: 1,\n        tier: 1,", 1)[1].split("},", 1)[0]

@@ -91,15 +91,18 @@ def admit(root, document, order):
             or not all(inventory_admissible(row) for row in records)):
         raise ValueError("Inventory grant source capture disagreement")
     current = {row["production_definition"]["production_key"]: row for row in document["records"]}
+    additions = []
     for row in records:
         key = row["production_definition"]["production_key"]
         previous = current.get(key)
         if previous is None:
-            document["records"].append(row)
+            additions.append(row)
         elif (previous["production_definition"] != row["production_definition"]
               or not inventory_admissible(previous)):
             raise ValueError(f"Inventory grant conflicts with an existing provider: {key}")
+    document["records"].extend(additions)
     document["records"].sort(key=order)
+    return additions
 
 
 def main():
