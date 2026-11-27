@@ -1266,6 +1266,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         None,
                         pending.selected_tool.as_ref(),
                         None,
+                        None,
                     ))
                     .await
                 }
@@ -1744,9 +1745,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(items) => items,
                 Err(disposition) => return disposition,
             };
-            if scene_items.is_some() || VampireCoffinKind::for_callback(&callback.key).is_some() {
-                publication.store(true, std::sync::atomic::Ordering::Relaxed);
-            }
             let mut scene_publication = None;
             let original_use = CommandRef::new(command.game_session_id, id);
             let result = Box::pin(self.execute_quest_callback(
@@ -1766,6 +1764,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
                 scene_items.as_ref().map(|_| &mut scene_publication),
+                Some(&publication),
             ))
             .await;
             drop(slot);
@@ -2055,6 +2054,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         read_only_gate.as_ref(),
+                        None,
                         None,
                         None,
                     ))

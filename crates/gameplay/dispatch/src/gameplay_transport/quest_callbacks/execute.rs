@@ -83,8 +83,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
         scene_publication: Option<&mut Option<super::scene_items::ScenePublication<'map>>>,
+        publication: Option<&std::sync::atomic::AtomicBool>,
     ) -> UseDisposition {
         let (mut runtime_guard, mut states_guard) = self.callback_guards().await;
+        if let Some(publication) = publication
+            && (scene_publication.is_some()
+                || VampireCoffinKind::for_callback(&callback.key).is_some())
+        {
+            publication.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
         let (mut runtime, mut states) = (&mut *runtime_guard, &mut *states_guard);
         if required_position
             .is_some_and(|expected| runtime.read_actor_position(actor) != Ok(expected))
