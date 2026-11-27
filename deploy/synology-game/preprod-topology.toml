@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "d30030cbf8be96d8299400597f4b56d0e2302f750370db9f34879eb8c138bdac"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "315ff3d6f6beb0c13e1fb8fb0f972219cea6fd25b1b078fef2ba00aa281b2199"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -55,7 +55,7 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = true
 path = "<BASE>/world/world.otbundle"
-digest = "d30030cbf8be96d8299400597f4b56d0e2302f750370db9f34879eb8c138bdac"
+digest = "315ff3d6f6beb0c13e1fb8fb0f972219cea6fd25b1b078fef2ba00aa281b2199"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "cyclopedia-creatures-crystal-201189f-r1"
