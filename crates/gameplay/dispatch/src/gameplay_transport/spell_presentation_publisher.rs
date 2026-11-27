@@ -7,6 +7,7 @@
     dead_code,
     reason = "candidate transport helpers retained alongside the production sound publisher"
 )]
+use super::connection::SoundObservation;
 use super::spell_presentations::{
     CommittedPresentation, Cue, PresentationCause, SpellPresentationOwner,
 };
@@ -706,7 +707,12 @@ impl SoundPublisher {
             let event = committed.event;
             let actor = committed.cause.actor();
             let cue = event.cue;
-            if !matches!(cue, Cue::Sound(_) | Cue::SpellWords(_) | Cue::Damage { .. }) {
+            let area_effect = matches!(cue, Cue::Effect(_))
+                && event.actor.is_none()
+                && matches!(committed.cause.as_ref(), PresentationCause::Cast { .. });
+            if !area_effect
+                && !matches!(cue, Cue::Sound(_) | Cue::SpellWords(_) | Cue::Damage { .. })
+            {
                 continue;
             }
             if last_decision != Some(committed.decision_ordinal) {
@@ -745,8 +751,7 @@ impl SoundPublisher {
         }
         self.sounds.push_back(entry);
     }
-    /// The two independently negotiated domains retain their own bounds: at most
-    /// MAX_PRESENTATION_EVENTS positional sounds plus one private ambient replacement.
+    #[cfg(test)]
     pub fn observe(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -754,19 +759,33 @@ impl SoundPublisher {
         session: GameSessionId,
         after: u64,
         selected: bool,
-    ) -> Option<(
-        u64,
-        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
-    )> {
+    ) -> Option<(u64, Vec<PresentationEvent>)> {
         if !selected {
             return Some((after, Vec::new()));
         }
+        let observation = self.observe_presentation(runtime, actor, session, after)?;
+        Some((observation.cursor, observation.events))
+    }
+
+    /// The two independently negotiated domains retain their own bounds: at most
+    /// MAX_PRESENTATION_EVENTS positional cues plus one private ambient replacement.
+    pub fn observe_presentation(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+    ) -> Option<SoundObservation> {
         if self
             .binding
             .as_ref()
             .is_some_and(|binding| context(runtime).ok().as_ref() != Some(binding))
         {
-            return Some((self.revision, Vec::new()));
+            return Some(SoundObservation {
+                cursor: self.revision,
+                events: Vec::new(),
+                item_effect_decisions: Vec::new(),
+            });
         }
         runtime.owner_fence().ok()?;
         let (position, house_scope) = if let Ok(house) = runtime.house_actor_state(actor, session) {
@@ -802,6 +821,7 @@ impl SoundPublisher {
         }
         let mut decision = u32::from(!events.is_empty());
         let mut last_revision = None;
+        let mut item_effect_decisions = Vec::new();
         for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
             if sound.house_scope != house_scope || (sound.private && sound.actor != actor) {
                 continue;
@@ -894,7 +914,12 @@ impl SoundPublisher {
                                 secondary: None,
                             }
                         }
-                        Cue::Effect(_) | Cue::Projectile(_) | Cue::Damage { .. } => continue,
+                        Cue::Effect(effect) => PresentationEventKind::MagicEffect {
+                            position,
+                            effect_id: u32::from(effect),
+                            source,
+                        },
+                        Cue::Projectile(_) | Cue::Damage { .. } => continue,
                     };
                     (emission, kind)
                 }
@@ -903,13 +928,20 @@ impl SoundPublisher {
                 decision += 1;
                 last_revision = Some(sound.revision);
             }
+            if matches!(sound.kind, JournalCue::ItemEffect(_)) {
+                item_effect_decisions.push(decision);
+            }
             events.push(PresentationEvent {
                 decision_ordinal: decision,
                 emission_ordinal,
                 kind,
             });
         }
-        Some((self.revision, events))
+        Some(SoundObservation {
+            cursor: self.revision,
+            events,
+            item_effect_decisions,
+        })
     }
 }
 

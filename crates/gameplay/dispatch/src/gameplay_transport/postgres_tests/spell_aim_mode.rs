@@ -389,9 +389,8 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             if event.decision_ordinal == decision => Some((position.x, position.y, position.floor)),
         _ => None,
     }).collect::<std::collections::BTreeSet<_>>();
-    // The east-facing matrix is clipped by Thalom's wall immediately northeast
-    // of the caster and the two solid tiles at its far southeast edge.
-    let expected = [(1, 0), (1, 1), (2, 0), (2, 1), (3, 0)]
+    // Thalom's northeast wall and solid tiles on the far edge clip this east-facing cone.
+    let expected = [(1, 0), (2, 0), (2, 1), (3, 0), (4, 1)]
         .map(|(dx, dy)| (caster.x + dx, caster.y + dy, caster.floor.abs()));
     assert_eq!(cells, expected.into_iter().collect(), "resolved Scorch cone");
     let runtime = deps.runtime.lock().await;

@@ -146,17 +146,18 @@ impl FreshAdmissionAuthority for SlowOwner {
         ))
     }
 
-    async fn observe_sounds(
+    async fn observe_presentation(
         &self,
         _actor: ExactActorRef,
         _session: GameSessionId,
         _after: u64,
-    ) -> Option<(
-        u64,
-        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
-    )> {
+    ) -> Option<crate::gameplay_transport::connection::SoundObservation> {
         self.sound_reads.set(self.sound_reads.get() + 1);
-        Some((1, Vec::new()))
+        Some(crate::gameplay_transport::connection::SoundObservation {
+            cursor: 1,
+            events: Vec::new(),
+            item_effect_decisions: Vec::new(),
+        })
     }
 
     async fn admit(

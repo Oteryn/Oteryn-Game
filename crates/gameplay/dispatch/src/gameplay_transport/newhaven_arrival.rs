@@ -240,12 +240,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 state.cooldowns = cooldowns;
             }
             let mut record = self.placed_record(&runtime, snapshot.position());
-            record.record.vitals = states
-                .saved_vitals(&runtime, actor, session)
-                .flatten()
-                .and_then(|(health, mana)| {
+            if let Some(state) = states.get(&runtime, actor, session) {
+                record.record.vitals = state.saved_vitals().and_then(|(health, mana)| {
                     crate::durability::character_last_position::LastVitals::new(health, mana)
                 });
+                record.record.rest = Some(state.bed_rest_snapshot(self.owner_now().get()));
+            }
             held.slot
                 .placement_recorded(frozen.arrival.occurrence, std::time::Instant::now())
                 .ok()?;
