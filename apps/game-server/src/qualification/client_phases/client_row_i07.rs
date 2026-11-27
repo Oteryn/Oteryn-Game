@@ -309,7 +309,7 @@ async fn require_routes(
 struct Capture<'a> {
     directory: &'a Path,
     full: bool,
-    visible_top: [u8; 16],
+    visible_top: Option<[u8; 16]>,
     previous: (u64, u64),
 }
 
@@ -356,7 +356,7 @@ impl Capture<'_> {
             );
         }
         let anchor = clicked.last().ok_or("I07 missing selected corpse")?.1;
-        if east_stack && anchor != self.visible_top {
+        if east_stack && Some(anchor) != self.visible_top {
             return Err(
                 "I07 the last published corpse must be the visible top of the east stack".into(),
             );
@@ -818,7 +818,7 @@ pub(super) async fn journey(
     let mut capture = Capture {
         directory: capture_dir,
         full,
-        visible_top: listed_corpse.as_slice().try_into()?,
+        visible_top: None,
         previous: (inbox_reply.command_id, inbox_reply.server_sequence),
     };
     let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
@@ -1172,6 +1172,26 @@ pub(super) async fn journey(
         )
         .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
+    // Spatial corpse identities name actor projections, not durable item UUIDs.
+    // Open exactly the native top candidate and independently identify it by the
+    // fixture's unique listed item before using it as the source.
+    let position = fresh.world_spatial().actor_position;
+    let east_x = position.x.checked_add(1).ok_or("I07 east tile overflow")?;
+    let visible_top = fresh
+        .world_entities()
+        .ok_or("I07 east stack unavailable")?
+        .others()
+        .filter(|entity| {
+            entity.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Corpse
+                && entity.position.x == east_x
+                && entity.position.y == position.y
+                && entity.position.floor == position.floor
+        })
+        .map(|entity| entity.entity.identity)
+        .last()
+        .ok_or("I07 east stack has no top corpse")?;
+    open_foreign_corpse(&mut fresh, visible_top, skip_reference).await?;
+    capture.visible_top = Some(visible_top);
     if full {
         capture
             .probe(&mut fresh, 21, unassigned_pouch.clone(), &[])
@@ -1371,12 +1391,7 @@ pub(super) async fn journey(
         )
         .await?;
     require_routes(&mut database, character, &pouch, false, false, full, true).await?;
-    let foreign_view = open_foreign_corpse(
-        &mut fresh,
-        listed_corpse.as_slice().try_into()?,
-        skip_reference,
-    )
-    .await?;
+    let foreign_view = open_foreign_corpse(&mut fresh, visible_top, skip_reference).await?;
     let foreign = foreign_view.value.entries[0].handle;
     if foreign == selected || foreign == sibling {
         return Err("I07 foreign item aliases the primary corpse item".into());
@@ -1522,7 +1537,7 @@ pub(super) async fn journey(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
                 "final_session": uuid_text(readback_session.as_bytes()),
-                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "east_top": listed_corpse, "foreign_view": captured_container(foreign_view)?, "fulfilment": fulfilment, "selected_handle": selected.get(),
+                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "east_top": visible_top, "foreign_view": captured_container(foreign_view)?, "fulfilment": fulfilment, "selected_handle": selected.get(),
                 "corpse_kind": corpse_entity.kind as u8,
                 "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
                 "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
@@ -1761,7 +1776,7 @@ async fn open_foreign_corpse(
                 return Err("I07 foreign corpse must expose its one live item".into());
             };
             if entry.item_definition_ref.get() != item_definition || entry.count.get() != 1 {
-                return Err("I07 foreign corpse item differs".into());
+                return Err(format!("I07 visible top corpse has definition {}; expected last-published definition {item_definition}", entry.item_definition_ref).into());
             }
             return Ok(delta);
         }
