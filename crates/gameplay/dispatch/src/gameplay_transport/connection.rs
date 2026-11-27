@@ -811,6 +811,10 @@ where
 }
 
 /// The live listener can delay fresh Channel acceptance until it has built the join snapshot.
+#[allow(
+    clippy::result_large_err,
+    reason = "preserve the committed controller for the listener's terminal lifecycle"
+)]
 pub(super) async fn admit_frame_for_join<S, A, I>(
     stream: &mut S,
     frame: &[u8],
@@ -825,6 +829,10 @@ where
     admit_frame_inner(stream, frame, authority, identifiers, true).await
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "preserve the committed controller for the listener's terminal lifecycle"
+)]
 async fn admit_frame_inner<S, A, I>(
     stream: &mut S,
     frame: &[u8],
