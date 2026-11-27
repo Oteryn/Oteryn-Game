@@ -48,9 +48,9 @@ async fn dust_capture(client: &mut DevClientSession) -> TestResult<((u64, u64), 
 fn write_capture(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult<String> {
     use sha2::Digest as _;
     use std::io::Write as _;
-    if frames.len() != 10 {
+    if frames.len() != 11 {
         return Err(format!(
-            "Forge capture requires ten live frames, got {}",
+            "Forge capture requires eleven live frames, got {}",
             frames.len()
         )
         .into());
