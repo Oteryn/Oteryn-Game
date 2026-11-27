@@ -6,6 +6,7 @@ use crate::durability::character_last_position::{
 use crate::durability::character_progression::assert_item_only_fence;
 use crate::durability::db::commit_semantic_read;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
 
 pub const STONE_KEY: &str = "oteryn:item.tibia.i16277";
 const QUEST: &str = "oteryn:quest.adventurers_guild.stone";
@@ -147,10 +148,15 @@ impl DurabilityRoot {
             {
                 return Err(DurabilityError::CommitRejected);
             }
-            let transition = oteryn_gameplay_quests::quest::QuestTransition {
+            let before = before.unwrap_or(-1);
+            let transition = QuestTransition {
                 key: key.into(),
                 quest: QUEST.into(),
-                effects: Vec::new(),
+                effects: vec![QuestEffect {
+                    track: TRACK.into(),
+                    from: QuestComparison::Eq(before),
+                    effect: QuestEffectKind::Set(value),
+                }],
                 completes: false,
                 experience: None,
                 world_change: None,
@@ -158,7 +164,7 @@ impl DurabilityRoot {
             // The storage ABI is stable across world generations and separate from the
             // visible Adventurers' Guild quest's existing progress definition.
             let hash = Sha256::digest(PIN.as_bytes()).into();
-            let changes = [QuestTrackChange { track: TRACK.into(), before: before.unwrap_or(-1), after: value }];
+            let changes = [QuestTrackChange { track: TRACK.into(), before, after: value }];
             persist::persist(&mut tx, persist::QuestWrite {
                 character, root_revision: root.revision, request: &request, transition: &transition,
                 pin: PIN, hash: &hash, changes: &changes, binding: &binding, state_exists,
