@@ -12,5 +12,5 @@ match routing::npc::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("npc_outcome_unavailable")),
+    None => command_unavailable(command, "npc_outcome_unavailable"),
 }

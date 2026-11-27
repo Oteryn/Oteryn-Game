@@ -1296,6 +1296,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_known_food(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: Option<item_view::ItemKey>,
+        definition: std::num::NonZeroU32,
+    ) -> Option<UseOutcome> {
+        self.use_admitted_food(actor, command, item, definition)
+            .await
+    }
+
     async fn use_item_completion(
         &self,
         actor: ExactActorRef,

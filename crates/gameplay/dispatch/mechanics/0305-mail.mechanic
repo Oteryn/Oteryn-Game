@@ -5,5 +5,5 @@ authority=mail
 [route]
 match routing::mail::route(authority, session.actor, &session.admitted, command, &session.item_view).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("mail_outcome_unavailable")),
+    None => command_unavailable(command, "mail_outcome_unavailable"),
 }

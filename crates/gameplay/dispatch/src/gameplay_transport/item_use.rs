@@ -356,6 +356,9 @@ enum Effect {
     Concoction,
 }
 
+#[path = "item_use/food_text.rs"]
+mod food_text;
+
 enum UseSource {
     Handle(ItemKey),
     Definition(NonZeroU32),
@@ -364,6 +367,33 @@ enum UseSource {
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn owner_ms(&self) -> u64 {
         u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
+    }
+
+    pub(super) async fn use_admitted_food(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: Option<ItemKey>,
+        definition: NonZeroU32,
+    ) -> Option<UseOutcome> {
+        let native = self.active_generation?.native_gameplay()?;
+        {
+            let runtime = self.runtime.lock().await;
+            let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+            let (key, revision) = index.definition_at(definition)?;
+            let policy = native.item_policy(key, revision)?;
+            if !matches!(&policy.record().semantics.consumption,
+                ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
+                    if food.regeneration_seconds > 0)
+            {
+                return None;
+            }
+        }
+        if self.trade_item_available(actor, command, item).await != Some(true) {
+            return Some(UseOutcome::rejected());
+        }
+        let source = item.map_or(UseSource::Definition(definition), UseSource::Handle);
+        Some(self.use_carried_item(actor, command, source).await)
     }
 
     /// One `USE` of the carried-tree entry `item` under capability 15.
@@ -817,6 +847,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Effect::Food(seconds) = effect
                 && eat_food(&mut state.clone(), seconds, self.owner_ms()).is_err()
             {
+                self.states
+                    .chat
+                    .push_quest_feedback(session, "You are full.");
                 return Err(UseDisposition::Full);
             }
             let gate = states.item_uses.gate(&runtime, actor, session);
@@ -861,6 +894,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &effect,
                 self.owner_ms(),
             );
+        }
+        if known_commit
+            && matches!(kind, ItemUseKind::Food)
+            && let Some(text) = record.and_then(|record| {
+                food_text::utterance(record.production_binding.external_id.parse().ok()?)
+            })
+        {
+            self.states
+                .chat
+                .publish_quest_speech(&runtime, actor, session, text);
         }
         if disposition == UseDisposition::Committed && matches!(kind, ItemUseKind::Potion) {
             *utterance = Some(PotionUtterance::Restore);

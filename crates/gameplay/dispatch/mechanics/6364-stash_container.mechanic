@@ -6,5 +6,5 @@ authority=stash_container
 [route]
 match routing::stash_container::route(authority, session.admitted, command, session.item_view.as_ref(), &mut session.stash_container_pending).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("stash_container_outcome_unavailable")),
+    None => command_unavailable(command, "stash_container_outcome_unavailable"),
 }

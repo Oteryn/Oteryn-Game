@@ -695,6 +695,17 @@ pub trait FreshAdmissionAuthority {
         async { UseOutcome::rejected() }
     }
 
+    /// Resolve a plain carried food use before unrelated item and rune owners.
+    fn use_known_food(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _item: Option<ItemKey>,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// A timed USE keeps an ambiguous commit open for receipt reconciliation.
     fn use_item_completion(
         &self,
@@ -717,7 +728,7 @@ pub trait FreshAdmissionAuthority {
     }
 
     /// A parked native item-use successor must reconcile before ingress can
-    /// terminalize USE. `true` closes the connection without acknowledging it.
+    /// terminalize a known effect. `true` reports an unavailable outcome.
     fn item_use_pending(
         &self,
         _actor: ExactActorRef,

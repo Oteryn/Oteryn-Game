@@ -23,6 +23,40 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    if admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1)
+        && let Ok(UseIntent {
+            target,
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        }) = &decoded
+    {
+        let food = match *target {
+            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| {
+                let key @ ItemKey::Instance(_) = view.resolve(handle)? else { return None };
+                let definition = view.backpack_entry_definition(key).or_else(|| {
+                    container_views.as_ref()?.carried_entry_definition(key)
+                })?;
+                Some((Some(key), definition))
+            }),
+            UseTarget::ItemByDefinition(definition) => Some((None, definition)),
+            _ => None,
+        };
+        if let Some((key, definition)) = food
+            && let Some(outcome) = authority.use_known_food(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                key,
+                definition,
+            ).await
+        {
+            return Some(Dispatch::Use(outcome));
+        }
+    }
     if admitted
         .continuity
         .selected_capabilities
@@ -49,7 +83,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     }
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
-    // Preserve the same timeout/unknown close used by receipt-backed Item actions.
+    // An unavailable receipt owner returns a refusal for this command.
     if let Ok(UseIntent {
         target: UseTarget::WorldObject(target),
         use_with: None,

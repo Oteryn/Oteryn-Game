@@ -6,5 +6,5 @@ authority=boss_rewards
 [route]
 match routing::boss_rewards::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("boss_rewards_outcome_unavailable")),
+    None => command_unavailable(command, "boss_rewards_outcome_unavailable"),
 }

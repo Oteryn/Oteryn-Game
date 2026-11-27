@@ -6,5 +6,5 @@ authority=player_report
 [route]
 match routing::player_report::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("player_report_outcome_unavailable")),
+    None => command_unavailable(command, "player_report_outcome_unavailable"),
 }

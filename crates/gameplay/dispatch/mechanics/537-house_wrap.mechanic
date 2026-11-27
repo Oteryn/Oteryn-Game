@@ -5,4 +5,4 @@ composed=house_wrap
 authority=house_wrap
 offer=537,house_wrap::offered,house_wrap_available
 [route]
-match routing::house_wrap::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::server("house_wrap_outcome_unavailable")) }
+match routing::house_wrap::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => command_unavailable(command, "house_wrap_outcome_unavailable") }

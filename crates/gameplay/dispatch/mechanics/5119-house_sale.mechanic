@@ -4,4 +4,4 @@ transport=house_sale
 composed=house_sale
 authority=house_sale
 [route]
-match routing::house_sale::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::server("house_sale_outcome_unavailable")) }
+match routing::house_sale::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => command_unavailable(command, "house_sale_outcome_unavailable") }

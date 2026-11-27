@@ -5,4 +5,4 @@ composed=house_podium
 authority=house_podium
 offer=51,house_podium::offered,house_podium_available
 [route]
-match routing::house_podium::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::server("house_podium_outcome_unavailable")) }
+match routing::house_podium::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => command_unavailable(command, "house_podium_outcome_unavailable") }

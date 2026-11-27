@@ -570,6 +570,7 @@ where
         | Dispatch::Training(_)
         | Dispatch::Logout(LogoutResult::Accepted | LogoutResult::Busy)
         | Dispatch::House(_)
+        | Dispatch::Unavailable
         | Dispatch::Unregistered => {}
     }
     refresh::sounds(stream, authority, session).await?;

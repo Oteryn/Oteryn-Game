@@ -11,5 +11,5 @@ match routing::npc_trade::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::server("npc_trade_outcome_unavailable")),
+    None => command_unavailable(command, "npc_trade_outcome_unavailable"),
 }
