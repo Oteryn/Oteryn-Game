@@ -211,13 +211,42 @@ async fn logout_recorded(
     client: &mut RecordedSession,
     transport: &SharedTls,
     phase: &str,
+    clients: &SeamClients<'_>,
 ) -> TestResult<CommandReceipt> {
+    let mut db = tokio::time::timeout(
+        Duration::from_secs(5),
+        sqlx::PgConnection::connect(clients.url),
+    )
+    .await
+    .map_err(|_| "S18 release observation connection deadline")??;
+    let session = client.join_snapshot().game_session_id;
     let outcome = client.logout().await?;
     require_mechanic_acceptance(outcome.status, phase)
         .map_err(|error| format!("{error}: {outcome:?}"))?;
     if outcome.result != Some(LogoutResult::Accepted) {
         return Err(format!("{phase}: first logout refused: {outcome:?}").into());
     }
+    let state = tokio::time::timeout(
+        Duration::from_secs(5),
+        sqlx::query_scalar::<_, i16>(
+            "SELECT session_state::smallint FROM game_durability_reconnect_sessions
+             WHERE world_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid",
+        )
+        .bind(clients.world.as_slice())
+        .bind(session.as_bytes().as_slice())
+        .fetch_optional(&mut db),
+    )
+    .await
+    .map_err(|_| "S18 release observation deadline")??;
+    if state != Some(3) {
+        return Err(format!(
+            "S18 {phase}: accepted logout before durable terminal release: {state:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "S18_LOGOUT_RELEASE phase={phase} terminal_at_ack=true"
+    ));
     let mut byte = [0; 1];
     let closed = tokio::time::timeout(
         Duration::from_secs(5),
@@ -391,21 +420,34 @@ async fn journey(
             move_listener(&mut listener, world, origin, target, &mut listener_receipts),
         )
         .await?;
-        if label == "boundary-diagonal" {
-            let corner_origin = TilePos {
-                y: origin
-                    .y
-                    .checked_sub(1)
-                    .ok_or("S18 corner origin overflow")?,
-                ..origin
-            };
+        // Distinguish every obscured whisper by its original speaker position.
+        let (speaker_dx, speaker_dy) = match label {
+            "boundary-north" => (1, 0),
+            "boundary-south" => (-1, 0),
+            "boundary-west" => (0, 1),
+            "boundary-east" => (0, 2),
+            "boundary-diagonal" => (0, -1),
+            _ => (0, 0),
+        };
+        let probe_origin = TilePos {
+            x: origin
+                .x
+                .checked_add_signed(speaker_dx)
+                .ok_or("S18 speaker x overflow")?,
+            y: origin
+                .y
+                .checked_add_signed(speaker_dy)
+                .ok_or("S18 speaker y overflow")?,
+            ..origin
+        };
+        if probe_origin != origin {
             service_while(
                 &mut listener,
                 move_listener(
                     &mut speaker,
                     world,
                     target,
-                    corner_origin,
+                    probe_origin,
                     &mut speaker_receipts,
                 ),
             )
@@ -477,7 +519,7 @@ async fn journey(
                 heard.is_some(),
             ));
         }
-        if label == "boundary-diagonal" {
+        if probe_origin != origin {
             service_while(
                 &mut listener,
                 move_listener(&mut speaker, world, target, origin, &mut speaker_receipts),
@@ -551,11 +593,12 @@ async fn journey(
     speaker_receipts.push(
         service_while(
             &mut listener,
-            logout_recorded(&mut speaker, &speaker_transport, "speaker"),
+            logout_recorded(&mut speaker, &speaker_transport, "speaker", clients),
         )
         .await?,
     );
-    listener_receipts.push(logout_recorded(&mut listener, &listener_transport, "listener").await?);
+    listener_receipts
+        .push(logout_recorded(&mut listener, &listener_transport, "listener", clients).await?);
     drop((speaker, listener, speaker_transport, listener_transport));
 
     let binding = format!("{head} {run}\n");
@@ -616,7 +659,8 @@ async fn journey(
         )
         .await?;
         let session = *fresh.join_snapshot().game_session_id.as_bytes();
-        let receipt = logout_recorded(&mut fresh, &transport, "relogged character").await?;
+        let receipt =
+            logout_recorded(&mut fresh, &transport, "relogged character", clients).await?;
         save(role, &wire, session, &[receipt])?;
     }
 
@@ -661,7 +705,7 @@ async fn journey(
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = tokio::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(300),
+        Duration::from_secs(340),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
             let checkout = std::process::Command::new("git")
@@ -717,6 +761,21 @@ mod audit_tests {
         };
         let expected = [line(1, 2, "Packet Two", "pspsps")];
         assert!(check_lines(expected.iter(), &expected, "control").is_ok());
+        let mut next_probe = expected[0].clone();
+        if let ChatLine::Local { position, .. } = &mut next_probe {
+            position.x += 1;
+        }
+        let probes = [expected[0].clone(), next_probe];
+        assert!(check_lines(probes.iter(), &probes, "distinct whisper probes").is_ok());
+        assert!(
+            check_lines(
+                [&probes[0], &probes[0]].into_iter(),
+                &probes,
+                "delayed duplicate cannot satisfy next whisper"
+            )
+            .is_err()
+        );
+
         for invalid in [
             line(2, 2, "Packet Two", "pspsps"),
             line(1, 3, "Packet Two", "pspsps"),

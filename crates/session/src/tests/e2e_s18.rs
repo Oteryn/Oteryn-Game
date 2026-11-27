@@ -341,13 +341,18 @@ fn e2e_s18_say_and_whisper_echo_replay() -> Result<(), BoxError> {
         "boundary-diagonal",
         "other-floor",
     ] {
-        let at = if label == "boundary-diagonal" {
-            ActorPosition {
-                y: position.y - 1,
-                ..position
-            }
-        } else {
-            position
+        let (dx, dy) = match label {
+            "boundary-north" => (1, 0),
+            "boundary-south" => (-1, 0),
+            "boundary-west" => (0, 1),
+            "boundary-east" => (0, 2),
+            "boundary-diagonal" => (0, -1),
+            _ => (0, 0),
+        };
+        let at = ActorPosition {
+            x: position.x + dx,
+            y: position.y + dy,
+            ..position
         };
         for (mode, suffix) in [
             (ChatSpeechMode::Say, "say"),
