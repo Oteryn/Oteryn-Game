@@ -166,6 +166,42 @@ async fn verify_rat_kill(
     Ok(())
 }
 
+async fn logout_from_protected_ground(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let mut occupied = occupied_rat_route_tiles(client);
+    occupied.insert(TilePos {
+        x: 32444,
+        y: 32178,
+        floor: -7,
+    });
+    let protected = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
+    };
+    let path =
+        route_avoiding(world, from, protected, |at| !occupied.contains(&at)).ok_or_else(|| {
+            format!("no walkable route from Rat hunt at {from:?} to protected ground")
+        })?;
+    walk_rat_route(client, world, &path).await?;
+    let reached = tile(client.world_spatial().actor_position)?;
+    if !protected(reached) {
+        return Err(format!("client logout ground is not protected: {reached:?}").into());
+    }
+    let (outcome, detail, _, _) = logout_once(client).await?;
+    if outcome != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P01.client first logout refused at {reached:?}: {detail}").into());
+    }
+    evidence(&format!(
+        "P01_CHECK client-protected-logout PASS position={reached:?} first-attempt"
+    ));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -292,9 +328,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     evidence("P01_CHECK client-second-rat-delta PASS one-to-two exact-views");
-    full_row_p01::retreat_from_spawn(&mut client, world, tile(target.position)?).await?;
     let old_session = client.join_snapshot().game_session_id;
-    full_row_p01::logout_when_ready(&mut client).await?;
+    logout_from_protected_ground(&mut client, world).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0x22).await?;
     if fresh.join_snapshot().game_session_id == old_session {
