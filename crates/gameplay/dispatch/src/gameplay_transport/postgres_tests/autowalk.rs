@@ -28,6 +28,9 @@ use oteryn_protocol_oteryn::{
 use std::time::Duration;
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
+#[path = "autowalk/turn_visibility.rs"]
+mod turn_visibility;
+
 const BAG: &str = "oteryn:item.tibia.i2854";
 const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
@@ -40,7 +43,7 @@ const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
 fn autowalk_real_session_use_move_cancel_and_stale_on_postgres() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(Scenario::Use).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "autowalk e2e panicked")?
         .map_err(Into::into)
@@ -50,7 +53,7 @@ fn autowalk_real_session_use_move_cancel_and_stale_on_postgres() -> TestResult {
 fn target_move_real_dispatch_walk_turn_follow_and_cancel_on_postgres() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(Scenario::TargetMove).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "target move e2e panicked")?
         .map_err(Into::into)
@@ -145,8 +148,16 @@ fn snowbunny_transaction_scenario() -> TestResult {
     })
 }
 
-fn scenario(target_move: bool) -> TestResult {
-    run(async |admin| {
+#[derive(Clone, Copy)]
+enum Scenario {
+    Use,
+    TargetMove,
+    TurnVisibility,
+}
+
+fn scenario(case: Scenario) -> TestResult {
+    run(async move |admin| {
+        let target_move = !matches!(case, Scenario::Use);
         let h = Harness::create_with_admission_seed(admin, "autowalk", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -309,6 +320,9 @@ fn scenario(target_move: bool) -> TestResult {
                 &[4, 6, 11, 13, 15, 18, 31, 64, 605],
             )
             .ok_or("target selection")?;
+        }
+        if matches!(case, Scenario::TurnVisibility) {
+            return turn_visibility::qualify(&owner, admitted).await;
         }
         let open = owner
             .item_walk_route(

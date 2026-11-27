@@ -1,4 +1,4 @@
-//! Terminalize and send the result before ordered domain updates and relocation.
+//! Retain command receipts and write ordered command frames.
 
 use super::*;
 
@@ -123,6 +123,13 @@ where
         }
         return Err(ServeEnd::LoggedOut);
     }
+    if let Some(turn) = outcome.turn {
+        // Retain the committed receipt for replay even if the direction write disconnects.
+        let result_sequence = session.sequence;
+        turn.write(stream, session).await?;
+        session.sequence = result_sequence;
+        session.admitted.continuity.server_sequence = result_sequence;
+    }
     if let Err(error) = write_frame(stream, &result).await {
         return Err(ServeEnd::Transport(TransportEnd::Write(error.kind())));
     }
@@ -188,6 +195,7 @@ where
         }) | Dispatch::Npc(..)
             | Dispatch::NpcTrade(..)
             | Dispatch::NpcShop(..)
+            | Dispatch::Turn(_)
             | Dispatch::Reply(crate::foundation::CommandStatus::Accepted, _)
     );
     let committed_store_claim = matches!(
@@ -545,6 +553,7 @@ where
         | Dispatch::CharacterInfo(_)
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
+        | Dispatch::Turn(_)
         | Dispatch::Reply(..)
         | Dispatch::ServerModal(_)
         | Dispatch::Vip(_)

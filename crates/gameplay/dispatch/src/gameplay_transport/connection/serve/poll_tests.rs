@@ -242,6 +242,43 @@ async fn live_clock() -> TestResult {
 }
 
 #[test]
+fn committed_turn_wakes_observer_before_the_visibility_timer() -> TestResult {
+    run(immediate_turn_poll)
+}
+
+async fn immediate_turn_poll() -> TestResult {
+    let authority = SlowSerene::default();
+    let (mut server, _client) = tokio::io::duplex(1 << 20);
+    let mut admitted = admitted()?;
+    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+    let mut session = setup::prepare(
+        &mut server,
+        &mut admitted,
+        &authority,
+        IDLE_LIVENESS,
+        actor,
+        observation(),
+        integrity::Integrity::default(),
+    )
+    .await
+    .map_err(|_| "prepare connection")?;
+    let (sender, receiver) = tokio::sync::broadcast::channel(2);
+    session.turns = Some(receiver);
+    let now = tokio::time::Instant::now();
+    sender.send(CommittedTurn {
+        actor,
+        revision: 2,
+        direction: StepDirection::West,
+    })?;
+    assert!(matches!(
+        next(&mut server, &authority, &mut session).await,
+        Next::Turn(turn) if turn.actor == actor && turn.revision == 2
+    ));
+    assert_eq!(tokio::time::Instant::now(), now);
+    Ok(())
+}
+
+#[test]
 fn ready_periodic_refreshes_rotate_across_input_without_delaying_probe() -> TestResult {
     run(all_ready)
 }

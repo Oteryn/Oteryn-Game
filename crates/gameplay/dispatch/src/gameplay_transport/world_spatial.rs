@@ -241,6 +241,23 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     }
 }
 
+/// A committed in-place turn of one exact player incarnation.
+#[derive(Debug, Clone, Copy)]
+pub struct CommittedTurn {
+    pub(crate) actor: crate::foundation::ExactActorRef,
+    pub(crate) revision: u64,
+    pub(crate) direction: StepDirection,
+}
+
+impl CommittedTurn {
+    pub(crate) fn entity(self) -> EntityRef {
+        EntityRef {
+            identity: self.actor.placement_identity(),
+            generation: self.actor.actor_local_generation(),
+        }
+    }
+}
+
 /// VIS-3: what one visibility refresh sends.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VisibilityUpdate {
@@ -270,6 +287,8 @@ pub enum VisibilityUpdate {
 pub struct SessionVisibility {
     shown: Option<VisibilityQuery>,
     entities: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], WorldSpatialEntity>,
+    /// Owner revisions sent by the turn publisher since the last full interest read.
+    published_turns: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], u64>,
     objects: bool,
     motion: bool,
     light: bool,
@@ -297,6 +316,48 @@ impl SessionVisibility {
     /// The content generation and own position the session last sent; `None` before any view.
     pub(crate) fn published(&self) -> Option<([u8; 32], ActorPosition)> {
         self.published
+    }
+
+    /// Publish facing with the position and metadata the client already holds.
+    /// The owner revision distinguishes a repeated TURN from the previous one.
+    pub(super) fn publish_turn(
+        &mut self,
+        turn: CommittedTurn,
+    ) -> Option<WorldSpatialEntitiesDelta> {
+        let (content_generation, actor_position) = self.published?;
+        let target = turn.entity();
+        let entry = self.entities.get_mut(&target.identity)?;
+        if entry.entity != target || entry.kind != EntityKind::Player {
+            return None;
+        }
+        let baseline = self
+            .shown
+            .as_ref()?
+            .entities()
+            .iter()
+            .find(|e| e.identity == target.identity)?;
+        let last = self
+            .published_turns
+            .get(&target.identity)
+            .copied()
+            .unwrap_or(baseline.revision);
+        if last >= turn.revision {
+            return None;
+        }
+        let (EntityDetail::Actor { direction, .. }
+        | EntityDetail::ActorWithIcons { direction, .. }) = &mut entry.detail
+        else {
+            return None;
+        };
+        *direction = turn.direction;
+        self.published_turns.insert(target.identity, turn.revision);
+        Some(WorldSpatialEntitiesDelta {
+            content_generation,
+            actor_position,
+            enter: Vec::new(),
+            update: vec![*entry],
+            leave: Vec::new(),
+        })
     }
 
     /// Health updates reuse the exact incarnations and metadata already on the wire.
@@ -525,6 +586,7 @@ impl SessionVisibility {
             .first()
             .map(|own| (channel.content_generation, own.position));
         self.shown = Some(query);
+        self.published_turns.clear();
         self.entities = selected
             .into_iter()
             .map(|entity| (entity.entity.identity, entity))
@@ -586,11 +648,18 @@ impl SessionVisibility {
                         .get(&entity.identity)
                         .ok_or(WorldSpatialError::Malformed)?,
                 ),
-                InterestChange::Update(entity) => delta.update.push(
-                    *current
+                InterestChange::Update(entity) => {
+                    let entry = current
                         .get(&entity.identity)
-                        .ok_or(WorldSpatialError::Malformed)?,
-                ),
+                        .ok_or(WorldSpatialError::Malformed)?;
+                    // An immediate turn already delivered this revision. Preserve any
+                    // other changes made to the wire record since that delivery.
+                    if self.published_turns.get(&entity.identity) != Some(&entity.revision)
+                        || self.entities.get(&entity.identity) != Some(entry)
+                    {
+                        delta.update.push(*entry);
+                    }
+                }
                 InterestChange::Leave(identity) => delta.leave.push(
                     self.entities
                         .get(identity)
@@ -1013,6 +1082,75 @@ mod tests {
             })
             .collect();
         channel
+    }
+
+    #[test]
+    fn turn_publication_distinguishes_repeated_turns_and_ignores_stale_events() {
+        use crate::foundation::{ChannelId, ExactActorRef, WorldId};
+        let mut scope = id(1);
+        scope[6] = 0x70;
+        scope[8] = 0x80;
+        let actor = ExactActorRef::transport_fixture(
+            WorldId::decode(&scope).expect("world"),
+            ChannelId::decode(&scope).expect("channel"),
+        );
+        let position = at(1, VisibleKind::Player, 101, 100, 7);
+        let mut player = ChannelEntity {
+            identity: actor.placement_identity(),
+            generation: actor.actor_local_generation(),
+            direction: StepDirection::East,
+            ..position
+        };
+        let mut observer = SessionVisibility::default();
+        observer
+            .snapshot(&channel([player]), &mut no_handles)
+            .expect("snapshot");
+        let first = CommittedTurn {
+            actor,
+            revision: 1,
+            direction: StepDirection::West,
+        };
+        let repeated = CommittedTurn {
+            revision: 2,
+            ..first
+        };
+        for turn in [first, repeated] {
+            let update = observer.publish_turn(turn).expect("each commit is sent");
+            assert_eq!(update.update[0].entity, turn.entity());
+            assert_eq!(update.update[0].position, player.position);
+            assert!(matches!(
+                update.update[0].detail,
+                EntityDetail::Actor {
+                    direction: StepDirection::West,
+                    ..
+                }
+            ));
+        }
+        assert!(observer.publish_turn(first).is_none());
+
+        player.revision = repeated.revision;
+        player.direction = repeated.direction;
+        assert_eq!(
+            observer.refresh(&channel([player]), &mut no_handles),
+            Ok(VisibilityUpdate::Unchanged),
+        );
+        assert!(observer.publish_turn(repeated).is_none());
+
+        // Ordinary refresh also carries a facing-only mutation without a turn event.
+        player.direction = StepDirection::North;
+        let VisibilityUpdate::Delta(update) = observer
+            .refresh(&channel([player]), &mut no_handles)
+            .expect("facing-only refresh")
+        else {
+            panic!("same-tile facing change was coalesced");
+        };
+        assert!(matches!(
+            update.update[0].detail,
+            EntityDetail::Actor {
+                direction: StepDirection::North,
+                ..
+            }
+        ));
     }
 
     #[test]

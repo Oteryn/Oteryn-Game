@@ -9,6 +9,7 @@ pub(super) struct CommandOutcome {
     pub(super) lost_while_logging_out: Option<std::io::ErrorKind>,
     pub(super) npc_relocation: Option<WorldSpatialObservation>,
     pub(super) training_logged_out: bool,
+    pub(super) turn: Option<super::turn::Publication>,
 }
 
 pub(super) async fn execute<S, A>(
@@ -134,6 +135,7 @@ where
                 lost_while_logging_out: None,
                 npc_relocation: None,
                 training_logged_out: false,
+                turn: None,
             },
         )
         .await;
@@ -245,6 +247,7 @@ where
         lost_while_logging_out,
         npc_relocation,
         training_logged_out: false,
+        turn: None,
     };
     let mut before_use =
         if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT {
@@ -410,11 +413,20 @@ where
         Dispatch::Vip(None) => route::command_unavailable(command, "vip_outcome_unavailable"),
         other => other,
     };
-    let Some(result_sequence) = session.sequence.checked_add(1) else {
+    if let Dispatch::Turn(turn) = dispatch {
+        outcome.turn = super::turn::prepare(session, turn)?;
+    }
+    let preceding_sequence = outcome
+        .turn
+        .as_ref()
+        .map_or(session.sequence, |turn| turn.sequence);
+    let Some(result_sequence) = preceding_sequence.checked_add(1) else {
         return Err(ServeEnd::server("sequence_exhausted"));
     };
     session.sequence = result_sequence;
-    session.admitted.continuity.server_sequence = session.sequence;
+    if outcome.turn.is_none() {
+        session.admitted.continuity.server_sequence = result_sequence;
+    }
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
     // Encode a typed refusal without running STEP or CHAT post-dispatch effects.

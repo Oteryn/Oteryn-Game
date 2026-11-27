@@ -88,11 +88,10 @@ pub(super) async fn route<A: FreshAdmissionAuthority>(
         authority.yield_chase_to_client(actor, id).await;
         match intent {
             TargetMoveIntent::Turn(direction) => {
-                reply(if authority.turn_actor(actor, id, direction).await {
-                    1
-                } else {
-                    3
-                })
+                match authority.turn_actor(actor, id, direction).await {
+                    Some(turn) => Dispatch::Turn(turn),
+                    None => reply(3),
+                }
             }
             TargetMoveIntent::Stop => {
                 let valid = authority.turn_actor_valid(actor, id).await;

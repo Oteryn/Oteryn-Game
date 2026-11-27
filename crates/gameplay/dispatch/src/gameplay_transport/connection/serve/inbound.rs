@@ -111,6 +111,19 @@ where
             refresh::chase(stream, authority, session).await?;
             return Ok(None);
         }
+        Next::Turn(turn) => {
+            if turn.actor != session.actor
+                && session
+                    .visibility
+                    .as_ref()
+                    .is_some_and(|view| view.shows(turn.entity()))
+                && authority.turn_is_visible(session.actor, turn).await
+                && let Some(publication) = super::turn::prepare(session, turn)?
+            {
+                publication.write(stream, session).await?;
+            }
+            return Ok(None);
+        }
         Next::Visibility => {
             refresh::visibility(stream, authority, session).await?;
             // Browse observations can outlast the visibility interval. Start the next
