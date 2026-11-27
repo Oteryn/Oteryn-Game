@@ -3833,7 +3833,9 @@ mod tests {
             .collect();
         assert_eq!(cave_legacy, BTreeSet::from(cave_legacy_keys));
         assert!(
-            legacy.iter().all(|callback| !cave_legacy_keys.contains(&callback.key.as_str()))
+            legacy
+                .iter()
+                .all(|callback| !cave_legacy_keys.contains(&callback.key.as_str()))
         );
         let added_keys = [
             "oteryn:quest-reward/between-the-lines-phillip-accept",
@@ -3914,7 +3916,8 @@ mod tests {
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
             assert!(
-                published.contains(&callback.key) || friends_exchanges.contains(callback.key.as_str())
+                published.contains(&callback.key)
+                    || friends_exchanges.contains(callback.key.as_str())
             );
             assert!(legacy.iter().all(|old| old.key != callback.key));
         }
