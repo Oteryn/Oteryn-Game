@@ -161,6 +161,36 @@ fn scenario(case: Case) -> TestResult {
                 let redrawn = send(&owner, &mut admitted, &wire::Request::ListReroll { slot: 1 }).await?;
                 assert!(!redrawn.slots[0].creatures.is_empty());
                 assert!(!redrawn.slots[0].creatures.iter().any(|key| key == stale));
+
+                let active = send(&owner, &mut admitted, &wire::Request::Select { slot: 1, index: 1 }).await?;
+                let stale_tier = i16::from(catalogue.rules().creatures.get(stale).ok_or("stale Prey tier")?.tier);
+                let mut saved = h.pool.begin().await?;
+                // Model a save from before the pinned loot table made this target unavailable.
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *saved).await?;
+                sqlx::query("UPDATE game_character_prey_slots SET creature_key=$1, selected_tier=$2, option='LOCK',
+                             bonus_type='LOOT', bonus_percent=3*grade+10 WHERE slot=1")
+                    .bind(stale).bind(stale_tier).execute(&mut *saved).await?;
+                for (claim, previous, before, after) in [(205, None, 0_i16, 3_i16), (206, Some(205), 3, 6)] {
+                    sqlx::query("INSERT INTO game_account_prey_wildcard_entries(claim_id,account_id,world_id,previous_claim_id,kind,requested,credited,balance_before,balance_after)
+                                 SELECT encode($1,'hex')::uuid,account_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD',3,3,$4,$5
+                                 FROM game_character_roots WHERE character_id=encode($6,'hex')::uuid")
+                        .bind(id(claim).as_slice()).bind(id(42).as_slice()).bind(previous.map(|value| id(value).to_vec()))
+                        .bind(before).bind(after).bind(id(41).as_slice()).execute(&mut *saved).await?;
+                }
+                sqlx::query("INSERT INTO game_account_prey_wildcards(account_id,world_id,balance,last_claim_id)
+                             SELECT account_id,encode($1,'hex')::uuid,6,encode($2,'hex')::uuid FROM game_character_roots
+                             WHERE character_id=encode($3,'hex')::uuid")
+                    .bind(id(42).as_slice()).bind(id(206).as_slice()).bind(id(41).as_slice()).execute(&mut *saved).await?;
+                saved.commit().await?;
+                let checkpoint = crate::durability::prey::PreyMutation::Checkpoint(vec![crate::durability::prey::PreyCheckpoint {
+                    slot: 1, creature: stale.into(), selection_epoch: active.slots[0].selection_epoch,
+                    seconds: active.slots[0].hunting_seconds, kills: 0, loot_gold: 0,
+                }]);
+                let expired = trusted(&owner, admitted, id(207), checkpoint.clone(), &catalogue, false).await?;
+                assert_eq!(expired.slots[0].state, 1);
+                assert!(!expired.slots[0].creatures.contains(&stale.to_owned()));
+                assert_eq!(expired.wildcard_balance, 6);
+                assert_eq!(trusted(&owner, admitted, id(207), checkpoint, &catalogue, false).await?, expired);
             }
             Case::Tier => {
                 let tier = initial.slots[0].allowed_tier;

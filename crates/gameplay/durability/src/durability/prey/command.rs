@@ -207,7 +207,11 @@ impl DurabilityRoot {
                             storage::record_end(&mut tx, character, &occurrence, slot, m, now, "EXPIRED").await?;
                             let cost = match slot.option { 1 => 1, 2 => 5, _ => 0 };
                             *m = storage::Metrics::default();
-                            if access[i] && cost > 0 && balance - spend >= cost {
+                            if access[i]
+                                && cost > 0
+                                && balance - spend >= cost
+                                && !catalogue.unsupported_loot.contains(&slot.selected)
+                            {
                                 spend += cost;
                                 if slot.option == 1 { set_bonus(slot, bonus_draw.bonus(bonus(slot))); }
                                 next_selection(slot)?; slot.hunting_seconds = HUNTING_SECONDS;
