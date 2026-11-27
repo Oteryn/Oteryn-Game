@@ -499,7 +499,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("W09 preparation reused its original session".into());
     }
     evidence("FIXTURE row=W09.full input=platform-premium");
-    let (initial_entitlement, _) = platform_premium_evidence(&scope, &mut client, None).await?;
+    let (initial_entitlement, initial_revision) =
+        platform_premium_evidence(&scope, &mut client, None).await?;
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
     if (level, vitals.max_health, vitals.max_mana) != (50, 395, 1350) {
@@ -545,6 +546,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&client)? != expected {
         return Err("W09 reconnect changed the first conjure inventory".into());
     }
+    platform_premium_evidence(
+        &scope,
+        &mut client,
+        Some((&initial_entitlement, initial_revision)),
+    )
+    .await?;
     assert_cooling_down(&mut client, spell, &expected).await?;
     // Global: https://www.tibiawiki.com.br/wiki/Master_of_Thunder.
     // Its 30-second stance group survives the live command latency.
