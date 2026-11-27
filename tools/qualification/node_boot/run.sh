@@ -910,17 +910,18 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   local_premium_dir="$WORK/portal/certs"
   cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
   secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
-  NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
-    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
-    "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
-    "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
-  # Stage functions run in subshells. The node launch stages share this environment.
+  # The pinned Platform fixture has one Premium client identity. Each launch uses it for one API.
   if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
     NODE_GAMEPLAY_ENV+=(
       "OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:$PORTAL_E2E_INTERNAL_PORT"
       "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
       "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
     )
+  else
+    NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
+      "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+      "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
+      "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
   fi
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
