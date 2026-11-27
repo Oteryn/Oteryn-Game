@@ -19,18 +19,23 @@ pub(super) async fn step<A: FreshAdmissionAuthority>(
         // refused and nothing moves.
         match decode_step_intent_selected(session.selected_capabilities.as_slice(), command.payload)
         {
-            Err(_) => Dispatch::Step(StepOutcome::rejected(), 0),
+            Err(_) => {
+                operator_event("event=step_rejected_movement kind=MalformedIntent");
+                Dispatch::Step(StepOutcome::rejected(), 0)
+            }
             Ok(direction)
                 if direction.is_diagonal()
                     && !session.selected_capabilities.contains(
                         oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
                     ) =>
             {
+                operator_event("event=step_rejected_movement kind=DiagonalCapability");
                 Dispatch::Step(StepOutcome::rejected(), 0)
             }
             // STEP-PACE-WIRE-1: the receipt is the time left until the pacing clock is due,
             // after the buffered step ran; none when that step did not move.
             Ok(_) if arrived_while_buffered => {
+                operator_event("event=step_blocked cause=walking_exhausted");
                 let now = tokio::time::Instant::now();
                 let left = session
                     .pacer

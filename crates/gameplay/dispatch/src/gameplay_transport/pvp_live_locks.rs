@@ -158,6 +158,6 @@ impl crate::map::floor::CellBlocker for PvpBlocker<'_> {
                     .cells
                     .spell_tiles()
                     .lookup(self.cells.scope(), cell)
-                    .map_or(true, |t| t.flags().protection_zone))
+                    .is_ok_and(|t| t.flags().protection_zone))
     }
 }

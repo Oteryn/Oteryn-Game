@@ -114,6 +114,14 @@
       "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
+      "event": "chest_command_refused",
+      "level": "warn",
+      "span": false,
+      "fields": ["command_id", "reason"],
+      "codes": [],
+      "note": "Typed reason for a refused World chest use, including an already claimed choice."
+    },
+    {
       "event": "command_disconnected",
       "level": "info",
       "span": false,

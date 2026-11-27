@@ -3239,7 +3239,7 @@ impl ChannelSpellStates {
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
         contact: Option<NonPlayerFieldContact>,
     ) -> actor_movement::StepInChannel {
-        if self.has_pending_spell_commit(actor, session) || self.is_dead(actor) {
+        if self.is_dead(actor) {
             return Err(crate::movement::MovementError::NotQualified);
         }
         let Some(contact) = contact else {

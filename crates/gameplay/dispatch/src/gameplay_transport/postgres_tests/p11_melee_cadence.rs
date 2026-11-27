@@ -193,3 +193,110 @@ fn demon_loot_report() -> TestResult {
         }
     )
 }
+
+#[test]
+fn p11_step_accepts_an_unrelated_pending_spell() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    movement_guard_case(MovementGuard::PendingSpell)
+}
+
+#[test]
+fn p11_fight_locked_step_accepts_ordinary_ground_during_holder_contention() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    movement_guard_case(MovementGuard::FightLock)
+}
+
+#[test]
+fn p11_fight_locked_step_reports_protection_zone() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    movement_guard_case(MovementGuard::ProtectionZone)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MovementGuard {
+    PendingSpell,
+    FightLock,
+    ProtectionZone,
+}
+
+fn movement_guard_case(case: MovementGuard) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("p11-step-guards", move || {
+        let mut result = Ok(());
+        let evidence = oteryn_error_codes::capture(|| {
+            result = movement_guard_scenario(case);
+        });
+        result?;
+        if case == MovementGuard::ProtectionZone {
+            assert!(evidence.iter().any(|line| {
+                line.contains("event=step_blocked") && line.contains("cause=protection_zone")
+            }), "{evidence:?}");
+        }
+        Ok(())
+    })
+}
+
+fn movement_guard_scenario(case: MovementGuard) -> TestResult {
+    world_scenario!(
+        "p11_step_guards",
+        configure = |sector: &mut oteryn_world_bundle::bundle::Sector| {
+            if case == MovementGuard::ProtectionZone
+                && let Some(tile) = sector.tiles.iter_mut().find(|tile| {
+                    i32::from(tile.x) == ENTRY.0 + 1 && i32::from(tile.y) == ENTRY.1
+                })
+            {
+                tile.flags |= 1;
+            }
+        },
+        |h, request, seal, authority, world_id, native, world, cells, room, pin, deps,
+         actor, session, owner, fence, admitted| {
+            let _ = (&request, &admitted);
+            {
+                let mut states = owner.states.spell_states.lock().await;
+                if case == MovementGuard::PendingSpell {
+                    states.enchanting_pending.push((actor, session));
+                    assert!(states.has_pending_spell_commit(actor, session));
+                } else {
+                    let now = owner.owner_now();
+                    let lock = crate::gameplay_transport::pvp_live::lock_mut(&mut states, actor, session);
+                    lock.on_aggression(now);
+                    assert!(lock.blocks_pz_entry(now));
+                }
+            }
+            let cell = crate::content::LogicalCell { x: ENTRY.0 + 1, y: ENTRY.1, z: 7 };
+            let tile = cells.spell_tiles().lookup(cells.scope(), cell).map_err(debug)?;
+            assert_eq!(tile.flags().protection_zone, case == MovementGuard::ProtectionZone);
+            let holder = if case == MovementGuard::FightLock {
+                assert!(owner.ensure_source_map_initialized().await);
+                assert!(crate::gameplay_transport::loop_move::reconcile_cask_collision(&owner).await.is_some());
+                h.root.await_ready().await?;
+                Some(h.root.try_issue_semantic_pass()?)
+            } else {
+                None
+            };
+            let (reply, _) = owner.paced_step(actor, session, StepDirection::East).await;
+            drop(holder);
+            let expected = if case == MovementGuard::ProtectionZone {
+                StepDisposition::Blocked
+            } else {
+                StepDisposition::Moved
+            };
+            assert_eq!(reply.disposition, expected, "{case:?}: {reply:?}");
+            if case == MovementGuard::PendingSpell {
+                assert!(owner.states.spell_states.lock().await.has_pending_spell_commit(actor, session));
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        }
+    )
+}

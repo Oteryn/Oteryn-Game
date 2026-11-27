@@ -401,7 +401,7 @@ pub(super) async fn relogin_into(
 // Shared lexical fixture: the controller, authority and owner borrow each other. Keeping
 // their setup in one macro preserves those lifetimes without copying setup into each case.
 macro_rules! world_scenario {
-    ($tag:literal, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
+    ($tag:literal, $(configure = $configure:expr,)? |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
         use $crate::gameplay_transport::monk_save::postgres_tests::full_world_support::*;
         run(async |admin| {
         reset();
@@ -479,6 +479,7 @@ macro_rules! world_scenario {
         };
         sector.tiles.extend((8..=12).map(|x| grass(x, 0)));
         sector.tiles.extend((6..=12).map(|x| grass(x, 1)));
+        $(($configure)(sector);)?
         sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
         let bytes =
             oteryn_world_bundle::writer::write(&bundle.manifest, &bundle.sectors, &bundle.spawns)

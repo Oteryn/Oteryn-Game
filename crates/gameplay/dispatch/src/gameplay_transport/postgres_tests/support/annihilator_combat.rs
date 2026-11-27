@@ -206,6 +206,9 @@ pub(super) async fn clear_corridor(
             encode_attack_target_intent(Some(&entity)).map_err(debug)?,
         )
         .await?;
+        let session = member.game_session_id;
+        let generation = member.continuity.connection_generation;
+        assert!(owner.states.server_messages.join(session, generation));
         let mut killed = false;
         let mut observed_outgoing_damage = false;
         for pass in 0..512 {
@@ -308,6 +311,14 @@ pub(super) async fn clear_corridor(
             ),
             "native kill drain: {outcome:?}"
         );
+        let notice = owner.states.server_messages.take(session, generation);
+        assert!(
+            matches!(notice, Some(oteryn_protocol_oteryn::zones_nologout::ServerMessage::StatusText(ref text))
+                if text.starts_with("Loot of an angry demon: ")),
+            "the original corridor melee kill must produce a notice on its exact session: {notice:?}"
+        );
+        owner.states.server_messages.leave(session, generation);
+
     }
     for x in [33223, 33224] {
         super::annihilator_route_fixtures::step(
