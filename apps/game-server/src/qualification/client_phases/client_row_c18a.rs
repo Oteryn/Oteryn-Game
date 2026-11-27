@@ -134,50 +134,6 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     character_prep::grant_item(&client, 3147, 1).await?;
     character_prep::grant_item(&client, MEAT, 1).await?;
     let item_index = provisioning::item_index()?;
-    // A held attack target would otherwise let the starter wand fire at the Rat
-    // from two tiles away. Stow it before selecting any target.
-    let wand = provisioning::item_reference(&item_index, 21348)?;
-    let inventory = client.inventory().ok_or("C18a starter inventory absent")?;
-    let wand_handle = inventory
-        .equipment
-        .iter()
-        .find(|row| {
-            row.slot == items::EquipmentSlot::RightHand && row.item.item_definition_ref == wand
-        })
-        .ok_or("C18a starter wand missing from the right hand")?
-        .item
-        .handle;
-    let wand_count = item_count(&client, wand)?;
-    let moved = client
-        .move_item(&items::ItemMoveIntent {
-            source: wand_handle,
-            destination: items::ItemMoveDestination::MainBackpack,
-        })
-        .await?;
-    if moved.outcome != items::ItemMoveOutcome::Moved {
-        return Err(format!("C18a first starter wand stow refused: {moved:?}").into());
-    }
-    let stow_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-    loop {
-        let inventory = client
-            .inventory()
-            .ok_or("C18a inventory absent after stow")?;
-        if inventory
-            .equipment
-            .iter()
-            .all(|row| row.slot != items::EquipmentSlot::RightHand)
-            && item_count(&client, wand)? == wand_count + 1
-        {
-            break;
-        }
-        if tokio::time::Instant::now() >= stow_deadline {
-            return Err(
-                "C18a starter wand did not move from the right hand into the backpack".into(),
-            );
-        }
-        client.service_liveness(Duration::from_millis(20)).await?;
-    }
-
     let blank = provisioning::item_reference(&item_index, 3147)?;
     let missile = provisioning::item_reference(&item_index, 3174)?;
 
@@ -220,10 +176,51 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         clock_before.as_mut(),
     )
     .await?;
-    clear_travel_combat(
-        &mut client, world, &spawn_cells, approach_goal, &mut aggressors,
-        clock_before.as_mut(),
-    ).await?;
+    clear_travel_combat(&mut client, approach_goal, &mut aggressors, clock_before.as_mut()).await?;
+    // A held attack target would otherwise let the starter wand fire at the Rat
+    // from two tiles away. Stow it after the travel fight and before Rat placement.
+    let wand = provisioning::item_reference(&item_index, 21348)?;
+    let inventory = client.inventory().ok_or("C18a starter inventory absent")?;
+    let wand_handle = inventory
+        .equipment
+        .iter()
+        .find(|row| {
+            row.slot == items::EquipmentSlot::RightHand && row.item.item_definition_ref == wand
+        })
+        .ok_or("C18a starter wand missing from the right hand")?
+        .item
+        .handle;
+    let wand_count = item_count(&client, wand)?;
+    let moved = client
+        .move_item(&items::ItemMoveIntent {
+            source: wand_handle,
+            destination: items::ItemMoveDestination::MainBackpack,
+        })
+        .await?;
+    if moved.outcome != items::ItemMoveOutcome::Moved {
+        return Err(format!("C18a first starter wand stow refused: {moved:?}").into());
+    }
+    let stow_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    loop {
+        let inventory = client
+            .inventory()
+            .ok_or("C18a inventory absent after stow")?;
+        if inventory
+            .equipment
+            .iter()
+            .all(|row| row.slot != items::EquipmentSlot::RightHand)
+            && item_count(&client, wand)? == wand_count + 1
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= stow_deadline {
+            return Err(
+                "C18a starter wand did not move from the right hand into the backpack".into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
+
     let meat = provisioning::item_reference(&item_index, MEAT)?;
     if item_count(&client, meat)? != 1 {
         return Err("C18a expected one meat before the combat setup".into());
@@ -1040,62 +1037,104 @@ fn fixed_cast_route(
 
 async fn clear_travel_combat(
     client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    spawn_cells: &std::collections::BTreeSet<TilePos>,
     approach: TilePos,
     aggressors: &mut Aggressors,
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    let mut escapes = 0;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(145);
+    let mut attacks = 0;
+    let mut last_aggression = None;
     loop {
         let frames = collect_events(client, None, clock.as_deref_mut())?;
-        aggressors.extend(frames.aggressors);
-        let from = tile(client.world_spatial().actor_position)?;
+        if !frames.aggressors.is_empty() {
+            last_aggression = Some(tokio::time::Instant::now());
+            aggressors.extend(frames.aggressors);
+        }
+        if tile(client.world_spatial().actor_position)? != approach
+            || client.actor_vitals().is_none_or(|vitals| vitals.health == 0)
+        {
+            return Err("C18a travel fight displaced or killed the caster".into());
+        }
         let state = *client.session_mut().combat_state()
-            .ok_or("C18a missing approach combat state")?;
-        let view = client.world_entities().ok_or("C18a missing approach visibility")?;
-        let threats: Vec<_> = aggressors.iter().filter_map(|id| {
-            view.get(id).and_then(|row| tile(row.position).ok().map(|position| (*id, position)))
-        }).collect();
-        let safe = |tile| threats.iter().all(|(_, threat)| beyond_travel_attack_reach(tile, *threat));
+            .ok_or("C18a missing travel combat state")?;
+        let view = client.world_entities().ok_or("C18a missing travel visibility")?;
+        let threat = aggressors.iter().filter_map(|id| view.get(id))
+            .filter(|row| row.kind == oteryn_dev_client::EntityKind::Creature
+                && actor_state(row.detail).is_some_and(|(_, health)| health > 0))
+            .min_by_key(|row| {
+                let position = client.world_spatial().actor_position;
+                (row.position.x.abs_diff(position.x).max(row.position.y.abs_diff(position.y)), row.entity)
+            }).copied();
         evidence(&format!(
-            "c18a_travel_lock at_ms={} sequence={} caster={from:?} state={state:?} frame={:?} attackers={threats:?}",
+            "c18a_travel_lock at_ms={} sequence={} caster={approach:?} state={state:?} frame={:?} next_attacker={:?} quiet_ms={:?}",
             lock_trace_time_ms(), client.last_server_sequence(), frames.combat,
+            threat.as_ref().map(|row| (row.entity, row.position)),
+            last_aggression.map(|at: tokio::time::Instant| at.elapsed().as_millis()),
         ));
-        if !state.in_fight && from == approach {
+        if threat.is_none() && !state.in_fight && state.target.is_none()
+            && last_aggression.is_none_or(|at| at.elapsed() >= Duration::from_secs(60))
+        {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("C18a travel combat did not clear at {from:?}: attackers={threats:?} state={state:?}").into());
+            return Err("C18a travel combat did not produce a clear frame after the quiet window".into());
         }
-        let escape = !safe(from);
-        if escape || !state.in_fight {
-            let available = |at: TilePos| !spawn_cells.contains(&at)
-                && view.iter().all(|row| &row.entity.identity == view.own_identity()
-                    || actor_state(row.detail).is_none() || tile(row.position).ok() != Some(at))
-                && (escape || safe(at));
-            let path = route_avoiding(world, from, |at| if escape { safe(at) } else { at == approach }, available)
-                .ok_or_else(|| format!("C18a no travel combat route: from={from:?} escape={escape} attackers={threats:?}"))?;
-            if path.is_empty() || path.len() > 48 || escapes >= 4 {
-                return Err(format!("C18a travel combat route exceeded its bound: from={from:?} steps={} escapes={escapes} attackers={threats:?}", path.len()).into());
+        if let Some(row) = threat {
+            if attacks >= 8 {
+                return Err("C18a travel attackers kept arriving after eight bounded fights".into());
             }
-            let end = path.iter().try_fold(from, |at, &step| destination(world, at, step))
-                .ok_or("C18a invalid travel combat route")?;
-            escapes += 1;
-            evidence(&format!("c18a_travel_escape attempt={escapes} from={from:?} to={end:?} attackers={threats:?} route={path:?}"));
-            aggressors.extend(tokio::time::timeout_at(deadline,
-                walk_path(client, world, spawn_cells, &path, end, None, clock.as_deref_mut()),
-            ).await.map_err(|_| "C18a travel combat route timed out")??);
+            attacks += 1;
+            let target = row.entity;
+            let command = client.next_command_id();
+            evidence(&format!(
+                "c18a_travel_attack at_ms={} attempt={attacks} command={command} target={target:?} position={:?}",
+                lock_trace_time_ms(), row.position,
+            ));
+            let result = client.session_mut().attack_target(Some(&target)).await?;
+            require_mechanic_acceptance(result.status, "C18a setup attack")?;
+            if result.disposition != attack::AttackIntentDisposition::Ok {
+                return Err(format!("C18a setup attack was refused: target={target:?} result={result:?}").into());
+            }
+            let fight_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(18));
+            let mut hit = false;
+            let mut kill = false;
+            let mut departed = false;
+            loop {
+                let frames = collect_events(client, None, clock.as_deref_mut())?;
+                aggressors.extend(frames.aggressors);
+                hit |= frames.damaged.contains(&target);
+                kill |= frames.kill_credit;
+                departed |= frames.departed.contains(&target);
+                if hit && kill && departed {
+                    aggressors.remove(&target);
+                    last_aggression = Some(tokio::time::Instant::now());
+                    evidence(&format!("c18a_travel_kill at_ms={} target={target:?} sequence={}",
+                        lock_trace_time_ms(), client.last_server_sequence()));
+                    break;
+                }
+                if tokio::time::Instant::now() >= fight_deadline {
+                    return Err(format!("C18a setup kill unproven: target={target:?} hit={hit} kill_credit={kill} departed={departed}").into());
+                }
+                if tile(client.world_spatial().actor_position)? != approach
+                    || client.actor_vitals().is_none_or(|vitals| vitals.health == 0)
+                {
+                    return Err("C18a setup fight displaced or killed the caster".into());
+                }
+                client.service_liveness(Duration::from_millis(200)).await?;
+            }
+            let state = client.session_mut().combat_state().ok_or("C18a missing state after setup kill")?;
+            if state.target.is_some() {
+                let clear = client.session_mut().attack_target(None).await?;
+                require_mechanic_acceptance(clear.status, "C18a setup target clear")?;
+                if clear.disposition != attack::AttackIntentDisposition::Ok {
+                    return Err(format!("C18a setup target clear refused: {clear:?}").into());
+                }
+            }
         } else {
             client.service_liveness(Duration::from_secs(1)).await?;
-            verdict::Harness::global().progress("wait-for-travel-combat");
         }
+        verdict::Harness::global().progress("wait-for-travel-combat");
     }
-}
-
-fn beyond_travel_attack_reach(caster: TilePos, attacker: TilePos) -> bool {
-    caster.floor != attacker.floor || caster.x.abs_diff(attacker.x).max(caster.y.abs_diff(attacker.y)) >= 12
 }
 
 async fn walk_once(
@@ -1524,6 +1563,9 @@ type Aggressors = std::collections::BTreeSet<oteryn_dev_client::EntityRef>;
 struct SetupCombatFrames {
     combat: Option<(u64, attack::ActorCombatState)>,
     aggressors: Aggressors,
+    damaged: Aggressors,
+    departed: Aggressors,
+    kill_credit: bool,
 }
 
 fn collect_events(
@@ -1537,11 +1579,34 @@ fn collect_events(
             history.record(&event);
         } else {
             trace_setup_combat(client, &event);
-            if let SessionEvent::AnalyserAttributedFacts(delta) = &event {
-                frames.aggressors.extend(delta.value.iter().filter_map(|fact| {
-                    fact.attacker.filter(|_| matches!(fact.fact,
-                        oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput { .. }))
-                }));
+            use oteryn_protocol_oteryn::analyser::AnalyserFact;
+            match &event {
+                SessionEvent::AnalyserAttributedFacts(delta) => {
+                    for fact in &delta.value {
+                        match fact.fact {
+                            AnalyserFact::DamageInput { .. } => frames.aggressors.extend(fact.attacker),
+                            AnalyserFact::Kill { .. } => frames.kill_credit = true,
+                            _ => {}
+                        }
+                    }
+                }
+                SessionEvent::AnalyserFacts(delta) => frames.kill_credit |= delta.value.iter()
+                    .any(|fact| matches!(fact, AnalyserFact::Kill { .. })),
+                SessionEvent::WorldSpatialEntities(delta) => frames.departed.extend(&delta.value.leave),
+                SessionEvent::Presentation(delta) => {
+                    if let Some(view) = client.world_entities() {
+                        frames.damaged.extend(delta.value.iter().filter_map(|cue| match cue.kind {
+                            presentation::PresentationEventKind::ValueText {
+                                kind: presentation::PresentationValueKind::DamageDealt,
+                                attacker: Some(actor),
+                                target,
+                                ..
+                            } if &actor.identity == view.own_identity() => Some(target),
+                            _ => None,
+                        }));
+                    }
+                }
+                _ => {}
             }
         }
         match event {
@@ -1709,15 +1774,6 @@ fn actor_state(detail: EntityDetail) -> Option<(StepDirection, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn c18a_travel_escape_requires_distance_from_the_live_attacker() {
-        let near = TilePos { x: CAST_TILE.x - 11, ..CAST_TILE };
-        let far = TilePos { x: CAST_TILE.x - 12, ..CAST_TILE };
-        assert!(!beyond_travel_attack_reach(CAST_TILE, near));
-        assert!(beyond_travel_attack_reach(CAST_TILE, far));
-        assert!(beyond_travel_attack_reach(CAST_TILE, TilePos { floor: CAST_TILE.floor + 1, ..near }));
-    }
 
     #[test]
     fn c18a_rejects_multiple_actors_on_the_rat_tile() {
