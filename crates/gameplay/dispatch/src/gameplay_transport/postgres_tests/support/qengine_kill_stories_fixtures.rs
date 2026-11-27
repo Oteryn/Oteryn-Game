@@ -565,7 +565,7 @@ async fn spike(
         return Ok(());
     }
     let migration = include_str!(
-        "../../../../../../../apps/game-server/migrations/3033_cave_completionist_backfill.sql"
+        "../../../../../../../apps/game-server/migrations/3339_cave_completionist_backfill.sql"
     );
     // Bazaar-locked roots still prove the account grant, with no Character
     // progress row to clear before the next lifecycle case.
