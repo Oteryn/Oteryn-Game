@@ -187,6 +187,19 @@ where
         Dispatch::Reply(status, payload)
             if routing::store::is_committed_claim(command.command_type, *status, payload)
     );
+    let refresh_combat = matches!(
+        &dispatch,
+        Dispatch::Spell(outcome)
+            | Dispatch::ParameterSpell(outcome, _)
+            | Dispatch::Chat(_, Some(outcome))
+            if outcome.disposition == SpellCastDisposition::Cast
+    ) || matches!(
+        &dispatch,
+        Dispatch::Use(UseOutcome {
+            disposition: UseDisposition::Committed,
+            ..
+        })
+    );
     if committed_store_claim {
         session.inventory_capacity_refresh_at = None;
     }
@@ -475,20 +488,7 @@ where
             else {
                 return Ok(());
             };
-            let Some(change) = session.admitted.continuity.combat.delta(
-                session.generation,
-                session.sequence,
-                state,
-            ) else {
-                return Err(ServeEnd::Disconnected);
-            };
-            if let Some((delta_sequence, frame)) = change {
-                session.sequence = delta_sequence;
-                session.admitted.continuity.server_sequence = session.sequence;
-                if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
-                }
-            }
+            refresh::combat_state(stream, session, state).await?;
         }
         Dispatch::Guild(_) if command.command_type == 73 && command.payload.first() == Some(&4) => {
             if let Some(view) = session.item_view.as_mut()
@@ -524,6 +524,16 @@ where
         | Dispatch::Unregistered => {}
     }
     refresh::sounds(stream, authority, session).await?;
+    if refresh_combat
+        && session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1)
+        && let Some(state) = authority
+            .observe_combat_state(session.actor, session.admitted.game_session_id)
+            .await
+    {
+        refresh::combat_state(stream, session, state).await?;
+    }
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     native_cues::refresh(stream, authority, session).await?;

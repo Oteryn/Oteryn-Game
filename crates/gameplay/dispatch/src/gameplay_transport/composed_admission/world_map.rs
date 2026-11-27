@@ -192,7 +192,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ),
             display_name: None,
             health_percent: runtime
-                .companion_snapshot(entry.actor)
+                .creature_combat_facts(entry.actor, now.get() / 1_000)
                 .ok()
                 .map_or(100, |s| {
                     u8::try_from(
