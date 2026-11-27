@@ -69,3 +69,20 @@ fn fiendish_slivers_postgres_survive_boosted_rat_at_exhausted_stamina_during_dou
 fn elite_dust_real_party_shared_off_excludes_non_damaging_member() -> TestResult {
     party_xp::run(Case::EliteNoShared)
 }
+
+#[test]
+fn fiendish_kill_credits_authored_dust_and_serves_capped_balance() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    party_xp::run_with_admin(Case::ForgeKillDust, admin.clone())?;
+    party_xp::run_with_admin(Case::ForgeKillDustCap, admin)
+}
+
+#[test]
+fn fiendish_kill_publishes_corpse_at_death_tile_after_busy_holder() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    party_xp::run_with_admin(Case::ForgeKillCorpse, admin)
+}

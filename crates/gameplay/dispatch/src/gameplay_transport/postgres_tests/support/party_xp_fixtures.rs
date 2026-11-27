@@ -81,6 +81,9 @@ pub(super) enum Case {
     ForgeBoostedExhausted,
     ForgeBoostedExhaustedDoubleLoot,
     ForgeDuplexRetry,
+    ForgeKillDust,
+    ForgeKillDustCap,
+    ForgeKillCorpse,
 }
 
 impl Case {
@@ -97,7 +100,13 @@ impl Case {
                 | Self::ForgeRollback
                 | Self::ForgeFar
                 | Self::ForgeForeign
+                | Self::ForgeKillDust
+                | Self::ForgeKillDustCap
+                | Self::ForgeKillCorpse
         )
+    }
+    fn forge_kill_reward(self) -> bool {
+        matches!(self, Self::ForgeKillDust | Self::ForgeKillDustCap | Self::ForgeKillCorpse)
     }
     /// Cases that settle a shared kill need the second member's committed activity. Its
     /// real swings are staged before the leader's, so the content-seeded draws can never
@@ -1121,7 +1130,7 @@ async fn scenario(
                     || matches!(
                         case,
                         Case::Inactive | Case::OneHit | Case::ForgeIdle | Case::EliteNoShared
-                    )))
+                    ) || case.forge_kill_reward()))
         {
             continue;
         }
@@ -1196,6 +1205,13 @@ async fn scenario(
             .clock_origin
             .checked_sub(Duration::from_secs(3))
             .expect("clock");
+    }
+    if case.forge_kill_reward() {
+        let pending = task_board::capture_pending(&owner, &players).await?;
+        assert_eq!(pending.facts.corpse, creature.position);
+        return super::forge_creature_fixtures::assert_kill_reward(
+            &owner, h, case, &pending, players[0],
+        ).await;
     }
     if matches!(task_board_case, Case::ForgeDuplexRetry) {
         let pending = task_board::capture_pending(&owner, &players).await?;
