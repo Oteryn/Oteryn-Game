@@ -231,6 +231,20 @@ fn scenario(regional: bool, confirmation: Option<ConfirmationCase>) -> TestResul
             let cleanup = h.cleanup().await;
             return result.and(cleanup);
         }
+        let spent_soul = {
+            let runtime = deps.runtime.lock().await;
+            let mut spells = owner.states.spell_states.lock().await;
+            let state = spells.get_mut(&runtime, deps.actor, session).ok_or("travel actor vitals")?;
+            state.facts.max_mana = 300;
+            state.restore_saved_vitals(state.vitals().health, 300);
+            let before = state.vitals().soul;
+            let (paid, _) = state.prepare_gem_enchanting(1, owner.owner_now().get())
+                .ok_or("soul payment")?;
+            let after = paid.vitals().soul;
+            assert!(after < before);
+            assert!(spells.commit(&runtime, deps.actor, session, paid));
+            after
+        };
         let routes = [
             (0, "help"),
             (1, "kazordoon"),
@@ -286,6 +300,15 @@ fn scenario(regional: bool, confirmation: Option<ConfirmationCase>) -> TestResul
         let gold: i64 = sqlx::query_scalar("SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i3031'")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(gold, 100);
+        // The arrival is itself a durable vitals checkpoint. A restart before any later
+        // periodic or logout write must still have the exact soul spent before boarding.
+        let stored_soul: Option<i32> = sqlx::query_scalar(
+            "SELECT rest[1] FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(stored_soul, Some(i32::try_from(spent_soul)?));
         drop(owner);
         drop(authority);
         drop(seal);

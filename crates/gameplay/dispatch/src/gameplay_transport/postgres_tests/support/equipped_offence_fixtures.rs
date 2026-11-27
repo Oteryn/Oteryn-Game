@@ -269,6 +269,11 @@ async fn qualify_global_baseline(
     assert!(sounds.iter().any(|event| matches!(event.kind,
         oteryn_protocol_oteryn::presentation::PresentationEventKind::Sound { cue_id: 1, source: oteryn_protocol_oteryn::presentation::PresentationSource::Own, .. }
     )), "the committed fist hit emits its reference weapon sound");
+    assert!(!sounds.iter().any(|event| matches!(
+        event.kind,
+        oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect { .. }
+            | oteryn_protocol_oteryn::presentation::PresentationEventKind::SpellWords { .. }
+    )), "a committed fist hit has no spell projection");
     let after = owner
         .runtime
         .lock()

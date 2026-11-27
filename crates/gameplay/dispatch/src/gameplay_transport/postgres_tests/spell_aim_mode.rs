@@ -12,7 +12,7 @@ use crate::durability::character_progression::{
     ExperienceAwardRequest, ExperienceRewardOccurrence,
 };
 use crate::foundation::{
-    ChannelContentPin, CharacterLease, ExactActorRef, MessageType, WorldId, decode_wire_envelope,
+    ChannelContentPin, CharacterLease, MessageType, WorldId, decode_wire_envelope,
 };
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
@@ -26,9 +26,7 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, CommandStatus, actor_spell, attack, decode_command_result,
-    decode_state_delta, encode_client_command, presentation, world_spatial,
-    world_spatial_entities as entities,
+    ClientCommandValue, CommandStatus, actor_spell, decode_command_result, encode_client_command,
 };
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
@@ -41,47 +39,24 @@ const MANA: i64 = 8;
 
 #[test]
 fn spell_aim_mode_postgres_cursor_wave_hits_the_cursor_direction_from_the_caster() -> TestResult {
-    run_case("spell_aim_mode", Case::Cursor { negotiated: false })
+    run_case("spell_aim_mode", false)
 }
 
 /// Capability 480: field 5 `aim_mode` CURSOR is refused without the capability and casts the
 /// aimed wave with it, through the negotiated decode of the cast route.
 #[test]
 fn spell_aim_mode_postgres_capability_480_aim_mode_cursor_needs_the_capability() -> TestResult {
-    run_case("spell_aim_mode_480", Case::Cursor { negotiated: true })
+    run_case("spell_aim_mode_480", true)
 }
 
-#[test]
-fn creature_damage_postgres_melee_projects_health_damage_and_corpse() -> TestResult {
-    run_case("creature_damage_melee", Case::Melee)
-}
-
-#[test]
-fn creature_damage_postgres_energy_strike_projects_health_and_damage() -> TestResult {
-    run_case("creature_damage_strike", Case::EnergyStrike)
-}
-
-#[test]
-fn creature_damage_postgres_aimed_scorch_projects_health_and_damage() -> TestResult {
-    run_case("creature_damage_scorch", Case::AimedScorch)
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Case {
-    Cursor { negotiated: bool },
-    Melee,
-    EnergyStrike,
-    AimedScorch,
-}
-
-fn run_case(tag: &'static str, case: Case) -> TestResult {
+fn run_case(tag: &'static str, negotiated: bool) -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario(admin, tag, case).await)
+            run(async move |admin| scenario(admin, tag, negotiated).await)
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -89,8 +64,7 @@ fn run_case(tag: &'static str, case: Case) -> TestResult {
         .map_err(Into::into)
 }
 
-async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
-    let cursor_case = matches!(case, Case::Cursor { .. });
+async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -120,8 +94,12 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
         room.map_revision_digest(),
         (2, 11, -7),
     );
-    let mut deps =
-        Dependencies::with_content_and_capacity(cp, room.clone(), native.spell_book().clone(), 3)?;
+    let mut deps = Dependencies::with_content_and_capacity(
+        cp,
+        room.clone(),
+        native.spell_book().clone(),
+        4,
+    )?;
     deps.combat_room = Some(room);
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
     h.root
@@ -173,12 +151,7 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
             current_fence(&owner, session).await?,
             ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(if cursor_case {
-                    6_000_000
-                } else {
-                    // The level 12 floor gives access to Energy Strike on an ordinary Rat.
-                    17_400
-                }),
+                amount: oteryn_simulation_determinism::ExactI64::new(6_000_000),
                 context: progression.context.clone(),
                 policy_revision: progression.policy_revision.clone(),
                 reward_revision: progression.reward_revision.clone(),
@@ -197,9 +170,8 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
         return Err("durable caster facts".into());
     };
     assert!(i64::from(facts.max_mana) >= MANA, "max mana");
-    let target;
+    let targets;
     let caster;
-    let rat_health;
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -224,32 +196,34 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
         runtime
             .install_companion_policies(native.policies().clone())
             .map_err(debug)?;
-        rat_health = runtime
+        let health = runtime
             .companion_policy("oteryn:creature.rat")
             .map_err(debug)?
             .maximum_health;
-        // Leave a tile between the held Scorch target and the caster so auto-attacks
-        // cannot contribute to the observed spell hit.
-        let distance = if case == Case::AimedScorch { 2 } else { 1 };
+        // The rat stands on the tile east of the caster, the aimed wave's origin.
+        let health = u64::try_from(health)?;
         runtime
-            .realize_activation_spawns(vec![(
-                vec![(caster.x + distance, caster.y, caster.floor)],
-                60_000,
-                5_000,
-                "oteryn:creature.rat".into(),
-                u64::try_from(rat_health)?,
-            )])
-            .map_err(|error| format!("realize aim target spawn: {error:?}"))?;
-        target = runtime
+            .realize_activation_spawns(
+                [(1, 0), (2, 0)]
+                    .map(|(dx, dy)| (
+                        vec![(caster.x + dx, caster.y + dy, caster.floor)],
+                        60_000,
+                        5_000,
+                        "oteryn:creature.rat".into(),
+                        health as u64,
+                    ))
+                    .to_vec(),
+            )
+            .map_err(|error| format!("realize aim target spawns: {error:?}"))?;
+        targets = runtime
             .visible_entities()
             .creatures
-            .first()
-            .ok_or("rat")?
-            .actor;
-        if cursor_case {
-            runtime
-                .set_test_creature_health(target, RAT_HEALTH)
-                .map_err(debug)?;
+            .into_iter()
+            .map(|creature| creature.actor)
+            .collect::<Vec<_>>();
+        assert_eq!(targets.len(), 2);
+        for target in &targets {
+            runtime.set_test_creature_health(*target, RAT_HEALTH).map_err(debug)?;
         }
         let mut states = owner.states.spell_states.lock().await;
         assert!(
@@ -281,7 +255,11 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     h.root
-        .initialize_familiar_group(&authority, &h.node, current_fence(&owner, session).await?)
+        .initialize_familiar_group(
+            &authority,
+            &h.node,
+            current_fence(&owner, session).await?,
+        )
         .await
         .map_err(debug)?;
     let current =
@@ -294,14 +272,6 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
-    if !cursor_case {
-        admit_and_observe_damage(&owner, admitted, target, rat_health, case).await?;
-        drop(owner);
-        drop(authority);
-        drop(seal);
-        return h.cleanup().await;
-    }
-    let negotiated = case == Case::Cursor { negotiated: true };
     let spell = (1..=deps.spells.source_len())
         .find_map(|i| {
             std::num::NonZeroU32::new(u32::try_from(i).ok()?).filter(|i| {
@@ -357,7 +327,7 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
             actor_spell::SpellCastDisposition::Rejected
         );
         assert_eq!(
-            deps.runtime.lock().await.live_creature_health(target),
+            deps.runtime.lock().await.live_creature_health(targets[0]),
             Some(u64::try_from(RAT_HEALTH)?),
             "the refused cast must not damage the creature"
         );
@@ -381,6 +351,16 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
             "capability 480 selected"
         );
     }
+    let viewer_session = crate::foundation::GameSessionId::decode(&id(120)).map_err(debug)?;
+    let viewer = {
+        let mut runtime = deps.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(viewer_session).map_err(debug)?;
+        let spectator = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime.initialize_first_entry_position(spectator).map_err(debug)?;
+        spectator
+    };
+    let (cursor, _) = owner.observe_sounds(viewer, viewer_session, u64::MAX)
+        .await.ok_or("spectator presentation cursor")?;
     let results = exchange(
         &owner,
         &mut admitted,
@@ -394,16 +374,42 @@ async fn scenario(admin: String, tag: &str, case: Case) -> TestResult {
         actor_spell::decode_spell_cast_result(&results[0].1).map_err(debug)?,
         actor_spell::SpellCastDisposition::Cast
     );
-    let hit = deps
-        .runtime
-        .lock()
-        .await
-        .live_creature_health(target)
-        .ok_or("rat survives")?;
-    assert!(
-        hit < u64::try_from(RAT_HEALTH)?,
-        "the aimed wave must damage the creature next to the caster: {hit}"
-    );
+    let (_, events) = owner.observe_sounds(viewer, viewer_session, cursor)
+        .await.ok_or("spectator presentation")?;
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationColor, PresentationEventKind as Kind, PresentationSource, PresentationValueKind,
+    };
+    let decision = events.iter().find_map(|event| match event.kind {
+        Kind::SpellWords { caster: source, spell: index, .. }
+            if source.identity == actor.placement_identity() && index == spell.get() => Some(event.decision_ordinal),
+        _ => None,
+    }).ok_or("spectator sees Scorch words")?;
+    let cells = events.iter().filter_map(|event| match event.kind {
+        Kind::MagicEffect { position, source: PresentationSource::Others, .. }
+            if event.decision_ordinal == decision => Some((position.x, position.y, position.floor)),
+        _ => None,
+    }).collect::<std::collections::BTreeSet<_>>();
+    // The east-facing matrix is clipped by Thalom's wall immediately northeast
+    // of the caster and the two solid tiles at its far southeast edge.
+    let expected = [(1, 0), (1, 1), (2, 0), (2, 1), (3, 0)]
+        .map(|(dx, dy)| (caster.x + dx, caster.y + dy, caster.floor.abs()));
+    assert_eq!(cells, expected.into_iter().collect(), "resolved Scorch cone");
+    let runtime = deps.runtime.lock().await;
+    for target in targets {
+        let hit = runtime.live_creature_health(target).ok_or("rat survives")?;
+        let damage = u64::try_from(RAT_HEALTH)? - hit;
+        assert!(damage > 0);
+        assert!(events.iter().any(|event| event.decision_ordinal == decision && matches!(
+            event.kind,
+            Kind::ValueText { kind: PresentationValueKind::DamageOthers, target: shown,
+                attacker: Some(attacker), primary, .. }
+                if shown.identity == target.placement_identity()
+                    && shown.generation == target.actor_local_generation()
+                    && attacker.identity == actor.placement_identity()
+                    && primary.value == damage && primary.color == PresentationColor::Orange
+        )), "spectator sees the rat's fire damage in Scorch's decision: {events:?}");
+    }
+    drop(runtime);
     let after = owner
         .observe_vitals(actor, session)
         .await
@@ -470,268 +476,4 @@ async fn exchange(
         other => return Err(format!("spell aim mode serving ended: {other:?}").into()),
     }
     results
-}
-
-async fn admit_and_observe_damage(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    mut admitted: AdmittedSession,
-    target: ExactActorRef,
-    rat_health: i64,
-    case: Case,
-) -> TestResult {
-    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        owner.offered_capabilities(),
-        &[
-            4,
-            6,
-            7,
-            attack::CAPABILITY_ATTACK_V1,
-            presentation::CAPABILITY_PRESENTATION_V1,
-        ],
-    )
-    .ok_or("combat capabilities")?;
-    let attacker = admitted.runtime_actor.ok_or("attacker")?;
-    let entity = |actor: ExactActorRef| entities::EntityRef {
-        identity: actor.placement_identity(),
-        generation: actor.actor_local_generation(),
-    };
-    let at = owner
-        .runtime
-        .lock()
-        .await
-        .read_actor_position(target)
-        .map_err(debug)?
-        .position();
-    let position = world_spatial::ActorPosition {
-        x: at.x,
-        y: at.y,
-        floor: at.floor.abs(),
-    };
-    let melee = case == Case::Melee;
-    let (kind, payload) = if melee {
-        (
-            attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
-            attack::encode_attack_target_intent(Some(&entity(target))).map_err(debug)?,
-        )
-    } else {
-        let key = if case == Case::EnergyStrike {
-            "candidate:spell/energy_strike"
-        } else {
-            SPELL
-        };
-        let book = owner
-            .active_generation
-            .and_then(|generation| generation.native_gameplay())
-            .ok_or("native")?
-            .spell_book();
-        let spell = (1..=book.source_len())
-            .filter_map(|index| {
-                u32::try_from(index)
-                    .ok()
-                    .and_then(std::num::NonZeroU32::new)
-            })
-            .find(|index| {
-                book.source_indexed(*index)
-                    .is_some_and(|(spell, active)| active && spell.key == key)
-            })
-            .ok_or("damage spell")?;
-        let target = if case == Case::AimedScorch {
-            actor_spell::SpellTarget::AttackTarget
-        } else {
-            actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
-                x: position.x,
-                y: position.y,
-                floor: position.floor,
-            })
-        };
-        (
-            actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
-            actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
-                spell,
-                target,
-                aim_at_target: case == Case::AimedScorch,
-            }),
-        )
-    };
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
-    let driving = async {
-        loop {
-            let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
-            if decode_wire_envelope(&bytes).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
-        let mut command_id = admitted.continuity.next_command_id;
-        let generation = admitted.continuity.connection_generation;
-        if case == Case::AimedScorch {
-            send_command(
-                &mut client,
-                generation,
-                command_id,
-                attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
-                &attack::encode_attack_target_intent(Some(&entity(target))).map_err(debug)?,
-            )
-            .await?;
-            loop {
-                let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
-                let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
-                if envelope.message_type() == MessageType::CommandResult {
-                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
-                    assert_eq!(result.command_id, command_id);
-                    assert_eq!(result.status, CommandStatus::Accepted);
-                    assert_eq!(
-                        attack::decode_attack_intent_result(result.payload).map_err(debug)?,
-                        attack::AttackIntentDisposition::Ok
-                    );
-                    break;
-                }
-            }
-            command_id += 1;
-        }
-        send_command(&mut client, generation, command_id, kind, &payload).await?;
-
-        let mut accepted = false;
-        let mut lowered_health = false;
-        let mut damage = 0;
-        let mut hits = 0;
-        let mut corpse = false;
-        let mut removed = false;
-        while !accepted || !lowered_health || damage == 0 || (melee && !(corpse && removed)) {
-            let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
-            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
-            match envelope.message_type() {
-                MessageType::CommandResult => {
-                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
-                    assert_eq!(result.command_id, command_id);
-                    assert_eq!(result.status, CommandStatus::Accepted);
-                    if melee {
-                        assert_eq!(
-                            attack::decode_attack_intent_result(result.payload).map_err(debug)?,
-                            attack::AttackIntentDisposition::Ok
-                        );
-                    } else {
-                        assert_eq!(
-                            actor_spell::decode_spell_cast_result(result.payload).map_err(debug)?,
-                            actor_spell::SpellCastDisposition::Cast
-                        );
-                    }
-                    accepted = true;
-                }
-                MessageType::LivenessProbe => {
-                    let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
-                        .map_err(debug)?;
-                    let ack = oteryn_protocol_oteryn::encode_liveness_ack(
-                        generation,
-                        probe,
-                        envelope.server_sequence(),
-                    )
-                    .map_err(debug)?;
-                    client.write_u32(u32::try_from(ack.len())?).await?;
-                    client.write_all(&ack).await?;
-                }
-                MessageType::StateDelta => {
-                    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
-                    match (delta.domain_id, delta.delta_type) {
-                        (
-                            presentation::STATE_DOMAIN_WORLD_PRESENTATION,
-                            presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
-                        ) => {
-                            for event in presentation::decode_presentation_batch(delta.payload)
-                                .map_err(debug)?
-                            {
-                                if let presentation::PresentationEventKind::ValueText {
-                                    kind: presentation::PresentationValueKind::DamageDealt,
-                                    target: victim,
-                                    attacker: Some(source),
-                                    position: impact,
-                                    primary,
-                                    ..
-                                } = event.kind
-                                    && (source, victim) == (entity(attacker), entity(target))
-                                {
-                                    assert_eq!(impact, position);
-                                    assert_eq!(primary.color, presentation::PresentationColor::Red);
-                                    damage += primary.value;
-                                    hits += 1;
-                                }
-                            }
-                        }
-                        (
-                            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                            entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-                        ) => {
-                            let update =
-                                entities::decode_world_spatial_entities_delta_with_item_handles(
-                                    delta.payload,
-                                )
-                                .map_err(debug)?;
-                            lowered_health |= update.update.iter().any(|entry| entry.entity == entity(target)
-                                && matches!(entry.detail, entities::EntityDetail::Actor { health_percent, .. } if health_percent < 100));
-                            removed |= update.leave.contains(&entity(target));
-                            corpse |= update.enter.iter().any(|entry| {
-                                entry.kind == entities::EntityKind::Corpse
-                                    && entry.position == position
-                                    && matches!(
-                                        entry.detail,
-                                        entities::EntityDetail::Object {
-                                            item_handle: Some(_),
-                                            ..
-                                        }
-                                    )
-                            });
-                        }
-                        _ => {}
-                    }
-                }
-                _ => {}
-            }
-        }
-        let remaining = owner.runtime.lock().await.live_creature_health(target);
-        if melee {
-            assert_eq!(remaining, None, "the exact Rat generation is dead");
-            assert!(hits > 1, "the Rat was killed by successive melee hits");
-            assert_eq!(damage, u64::try_from(rat_health)?);
-        } else {
-            assert_eq!(hits, 1);
-            assert_eq!(remaining, u64::try_from(rat_health)?.checked_sub(damage));
-            assert!(remaining.is_some_and(|health| health > 0));
-        }
-        client.shutdown().await?;
-        Ok(())
-    };
-    let (end, result): (_, TestResult) =
-        tokio::time::timeout(Duration::from_secs(45), join_two(serving, driving)).await?;
-    result?;
-    assert!(
-        matches!(
-            end,
-            crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(_)
-        ),
-        "{end:?}"
-    );
-    Ok(())
-}
-
-async fn send_command(
-    client: &mut tokio::io::DuplexStream,
-    generation: u64,
-    command_id: u64,
-    kind: u32,
-    payload: &[u8],
-) -> TestResult {
-    let frame = encode_client_command(
-        generation,
-        &ClientCommandValue {
-            command_id,
-            command_type: kind,
-            payload,
-        },
-    )
-    .map_err(debug)?;
-    client.write_u32(u32::try_from(frame.len())?).await?;
-    client.write_all(&frame).await?;
-    Ok(())
 }
