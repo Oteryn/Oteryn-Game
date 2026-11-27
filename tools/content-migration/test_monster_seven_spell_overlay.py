@@ -224,8 +224,8 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(
                 by_key[key]["production_binding"], row["production_binding"]
             )
-            expected = compact_item_record(copy.deepcopy(row))
-            registered = compact_item_record(copy.deepcopy(by_key[key]))
+            expected = compact_item_profile(compact_item_record(copy.deepcopy(row)))
+            registered = compact_item_profile(compact_item_record(copy.deepcopy(by_key[key])))
             self.assertEqual(registered["semantics"], expected["semantics"], key)
             for field, value in expected["attributes"].items():
                 self.assertEqual(registered["attributes"][field], value, (key, field))
