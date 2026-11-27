@@ -2252,7 +2252,10 @@ impl DurabilityRoot {
     /// A readiness hint for a background retry outside its previous operation grant.
     /// The checkout still arbitrates priority and readiness together.
     pub fn background_holder_ready(&self) -> bool {
-        self.is_ready() && self.holder_priority.background_can_attempt(Instant::now())
+        let now = Instant::now();
+        self.is_ready()
+            && self.holder_priority.background_can_attempt(now)
+            && self.holder_queue.lock().is_ok_and(|queue| !queue.join_waiting(now))
     }
 
     /// Subscribe before checking readiness. Returns published with `notify_waiters`
