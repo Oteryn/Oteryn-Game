@@ -372,11 +372,26 @@ pub(super) async fn hunt_exact_creature(
     let mut last_position = target.position;
     let mut kills = Vec::new();
     let mut fire_damage = false;
+    let mut enflame_log_count = 0;
     let mut experience = Vec::new();
     let (corpse, raw_xp, gained_xp) = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
             let facts = match event {
+                SessionEvent::ChatLine(delta) => {
+                    if let oteryn_protocol_oteryn::chat::ChatLine::System { text } = delta.value
+                        && text.ends_with(" (enflame charm)")
+                    {
+                        if key != "oteryn:creature.troll"
+                            || text != "A troll loses 1 hitpoint due to your attack. (enflame charm)"
+                        {
+                            return Err(format!("unexpected Enflame Server Log: {text:?}").into());
+                        }
+                        enflame_log_count += 1;
+                    }
+                    continue;
+                }
+
                 SessionEvent::WorldSpatialEntities(delta) => {
                     if let Some(updated) = delta
                         .value
@@ -402,6 +417,9 @@ pub(super) async fn hunt_exact_creature(
                             return Err(format!("Enflame Troll impact expected 1, got {value}").into());
                         }
                         evidence(&format!("P01_CHECK enflame-impact PASS charm={} damage={value} target={:?}", source.charm_key, source.target));
+                        if fire_damage {
+                            return Err("duplicate attributed Enflame impact".into());
+                        }
                         fire_damage = true;
                     }
                     delta.value.into_iter().map(|entry| entry.fact).collect()
@@ -425,7 +443,11 @@ pub(super) async fn hunt_exact_creature(
             )
             .into());
         }
-        if let [Some(_)] = kills.as_slice()
+        if key == "oteryn:creature.troll" && enflame_log_count > 1 {
+            return Err("duplicate Enflame Server Log".into());
+        }
+        if (key != "oteryn:creature.troll" || !fire_damage || enflame_log_count == 1)
+            && let [Some(_)] = kills.as_slice()
             && let [(raw, gained)] = experience.as_slice()
             && let Some(corpse) = client.world_entities().and_then(|entities| {
                 if entities.get(&target.entity).is_some() {
@@ -454,6 +476,14 @@ pub(super) async fn hunt_exact_creature(
             return Err(format!("step=hunt-credit race={race} missing target corpse, kill credit or XP; kills={kills:?} experience={experience:?}").into());
         }
     };
+    if key == "oteryn:creature.troll" {
+        if (enflame_log_count == 1) != fire_damage {
+            return Err("Enflame Server Log did not match an attributed impact".into());
+        }
+        if fire_damage {
+            evidence("P01_CHECK enflame-server-log PASS A troll loses 1 hitpoint due to your attack. (enflame charm)");
+        }
+    }
     client.session_mut().attack_target(None).await?;
     if let Some(clients) = verify_principal {
         let principal = clients.characters[1];
@@ -901,28 +931,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if !client.selected_capabilities().contains(&capability) {
         return Err("step=enflame-attribution missing negotiated capability 625".into());
     }
-    let mut last_spawn = None;
-    let mut attributed = false;
-    for _ in 0..12 {
-        let (spawn, troll) = authored_target(
-            &mut client, world, &metadata.spawns, troll_key, "Troll", last_spawn, false,
-        ).await?;
-        let kill = hunt_exact_creature(
-            &mut client, troll, troll_key, race, troll_corpse, None, None,
-        ).await?;
-        if kill.race != race || kill.raw_xp != 20 {
-            return Err(format!("incorrect Troll kill credit: {kill:?}").into());
-        }
-        retreat_from_spawn(&mut client, world, spawn).await?;
-        last_spawn = Some(spawn);
-        if kill.fire_damage {
-            attributed = true;
-            break;
-        }
+    let (spawn, troll) = authored_target(
+        &mut client, world, &metadata.spawns, troll_key, "Troll", None, false,
+    ).await?;
+    let kill = hunt_exact_creature(
+        &mut client, troll, troll_key, race, troll_corpse, None, None,
+    ).await?;
+    if kill.race != race || kill.raw_xp != 20 {
+        return Err(format!("incorrect Troll kill credit: {kill:?}").into());
     }
-    if !attributed {
-        return Err("step=enflame-attribution no committed attributed proc during 12 Troll hunts".into());
-    }
+    retreat_from_spawn(&mut client, world, spawn).await?;
     let after_hook = query(&mut client, "p01-full-after-hook.json", &mut frames).await?;
     let mut expected_durable = expected_assigned;
     expected_durable.outcome = CharmProgressionOutcome::Query;
@@ -960,6 +978,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     writeln!(frames, "charm={charm}")?;
     client_row_p01::capture("p01-full-expected.txt", frames.as_bytes())?;
     close_relog_fixture(&mut fresh).await?;
+    row.at("enflame-attribution");
+    if !kill.fire_damage {
+        return Err("no attributed Enflame proc on the selected Troll".into());
+    }
     Ok(())
 }
 

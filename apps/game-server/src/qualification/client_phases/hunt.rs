@@ -66,6 +66,10 @@ pub(super) async fn wait_for_corpse_stage(
     }
 }
 
+#[expect(
+    dead_code,
+    reason = "retained for qualification lanes; P01 now verifies the committed death receipt"
+)]
 pub(super) async fn hunt_named_target(
     client: &mut oteryn_dev_client::DevClientSession,
     target: oteryn_dev_client::WorldSpatialEntity,
