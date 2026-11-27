@@ -4,7 +4,8 @@ use crate::durability::character_progression::assert_gameplay_fence;
 use crate::durability::db::begin_type2_transaction;
 use crate::durability::item_fee_burn::{FeeBurnError, FeeBurnRequest, burn_fee_in_transaction};
 use crate::durability::item_mint_audit::Type2Transaction;
-use oteryn_gameplay_content::content::npc_catalogue::travel::TravelRoute;
+use crate::durability::quest_state::credit_postman_passage;
+use oteryn_gameplay_content::content::npc_catalogue::travel::{POSTMAN_TOUR_TRACK, TravelRoute};
 use sha2::{Digest, Sha256};
 
 #[path = "clear_gate.rs"]
@@ -49,6 +50,7 @@ pub struct PaidTravelRequest {
     pub command: crate::foundation::CommandRef,
     pub arrival: PendingArrival,
     pub route: TravelRoute,
+    pub postman_catalogue: Option<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>>,
     pub fee: FeeBurnRequest,
 }
 
@@ -77,8 +79,12 @@ async fn quote(
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
     }
-    if let Some(callback) = &route.partial_quest_callback {
-        // Only the donor stage that needs quest settlement is unavailable.
+    if let Some(callback) = &route.partial_quest_callback
+        && (callback.track != POSTMAN_TOUR_TRACK
+            || route.postman_tour_passage() != Some((callback.stage, callback.next_stage)))
+    {
+        // Keep unfinished donor callbacks held. The settled Postman passage still
+        // carries legacy callback metadata in the receipt binding.
         let needs_settlement: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
               WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=$3)",
@@ -304,8 +310,17 @@ impl DurabilityRoot {
             if !permitted {return Ok(Ok(Err(TravelRefusal::PremiumRequired)));}
             let fare = match quote(&mut tx, fence, route).await? {Ok(fare)=>fare,Err(refusal)=>return Ok(Ok(Err(refusal)))};
             if fare!=request.fee.fee_gold_units {return Ok(Ok(Err(TravelRefusal::StaleQuote)));}
+            // The quest writer owns the next Character revision. The item-only fare
+            // binds to that revision and commits with the quest receipt and arrival.
+            let mut fee_fence = fence;
+            if let (Some(passage), Some(catalogue)) =
+                (route.postman_tour_passage(), request.postman_catalogue.as_deref())
+            {
+                fee_fence.expected_character_revision =
+                    credit_postman_passage(&mut tx, fence, request.command, passage, catalogue).await?;
+            }
             if fare>0 {
-                match burn_fee_in_transaction(&mut tx,&fence,&request.fee).await {
+                match burn_fee_in_transaction(&mut tx,&fee_fence,&request.fee).await {
                     Ok(_) => (),
                     Err(FeeBurnError::InsufficientFunds | FeeBurnError::ChangeDoesNotFit | FeeBurnError::CapacityExceeded) => return Ok(Ok(Err(TravelRefusal::InsufficientFunds))),
                     Err(FeeBurnError::Unavailable(error)) => return Err(error),

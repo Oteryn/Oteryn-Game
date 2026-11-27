@@ -55,7 +55,7 @@ fn questpc7_goblin_exact_pond_consumes_rat_urine_once() -> TestResult {
 }
 
 #[test]
-fn questpc7_goblin_three_trunks_retain_the_source_hammer() -> TestResult {
+fn questpc7_goblin_third_trunk_breaks_the_source_hammer() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
     let started=std::time::Instant::now();
     let result=super::kill_reward_e2e_fixtures::scenario_thread::run("questpc7-goblin-trunks",||super::quest_world_callbacks_fixtures::scenario("qengine-rewards-goblin-trunks",Position{x:33101,y:32046,floor:-10},false));
@@ -77,4 +77,19 @@ fn questpc7_goblin_perfume_source_items_admit_without_free_grants() -> TestResul
     let started=std::time::Instant::now();
     let result=super::kill_reward_e2e_fixtures::scenario_thread::run("questpc7-goblin-perfume-items",||super::quest_world_callbacks_fixtures::scenario("qengine-rewards-goblin-perfume-items",Position{x:33294,y:31677,floor:-15},false));
     eprintln!("QUESTPC7_GOBLIN_PERFUME_ITEMS POSTGRES_CASE_COMPLETED duration={:?} success={}",started.elapsed(),result.is_ok());result
+}
+
+
+#[test]
+fn questpc7_goblin_gas_and_cheese_finish_and_pay_the_perfume_task() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc7-goblin-perfume-finish", || {
+        super::quest_world_callbacks_fixtures::scenario(
+            "qengine-rewards-goblin-perfume-finish",
+            super::questpc7_goblin_fixtures::PERFUME_GAS,
+            false,
+        )
+    })
 }

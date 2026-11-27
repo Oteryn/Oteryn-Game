@@ -216,7 +216,7 @@ fn use_resolved_door(
     commit(resolved.placement_key, resolved.pos)
 }
 
-/// Level-gate USE moves the authorized player onto the newly open doorway in
+/// Gated-door USE moves the authorized player onto the newly open doorway in
 /// the same owner turn. If the relocation or door CAS fails, neither commits.
 #[allow(
     clippy::too_many_arguments,
@@ -234,6 +234,7 @@ pub(super) fn use_owned_door(
     quest_storage_met: bool,
     now: oteryn_simulation_determinism::SemanticTimeMicros,
     target: &WorldObjectTarget,
+    authorize_step: impl FnOnce() -> bool,
 ) -> UseOutcome {
     let actor_level = states
         .get(runtime, actor, session)
@@ -248,11 +249,16 @@ pub(super) fn use_owned_door(
         |key, pos| {
             let occupied = map.overlay.has_added_item(pos)
                 || doorway_occupied(runtime, actor, actor_tile, pos);
-            if actor_tile != pos
-                && doors.can_open_level_gate(key, target.expected_revision, actor_level)
-            {
-                if occupied {
-                    return outcome(UseDisposition::Occupied);
+            if doors.opening_requirement(key).is_some_and(|requirement| {
+                use crate::map::door::DoorEntryRequirement;
+                match requirement {
+                    DoorEntryRequirement::Level(level) => actor_level >= level,
+                    DoorEntryRequirement::Storage(_) => quest_storage_met,
+                    DoorEntryRequirement::MissingAction => false,
+                }
+            }) {
+                if (pos != actor_tile && occupied) || map.overlay.has_added_item(pos) {
+                    return outcome(UseDisposition::NotPossible);
                 }
                 if states.has_pending_spell_commit(actor, session) {
                     return UseOutcome::rejected();
@@ -263,21 +269,25 @@ pub(super) fn use_owned_door(
                 ) else {
                     return outcome(UseDisposition::NotPossible);
                 };
-                let mut toggle = None;
+                if !authorize_step() {
+                    return UseOutcome::rejected();
+                }
                 let moved = runtime.commit_source_step_and_project(proof, || {
-                    toggle = doors.toggle(
-                        key,
-                        target.expected_revision,
-                        false,
-                        actor_level,
-                        quest_storage_met,
-                    );
-                    matches!(toggle, Some(DoorUse::Toggled { open: true, .. }))
+                    matches!(
+                        doors.toggle(
+                            key,
+                            target.expected_revision,
+                            false,
+                            actor_level,
+                            quest_storage_met
+                        ),
+                        Some(DoorUse::Toggled { open: true, .. })
+                    )
                 });
-                return if moved.is_ok() || toggle.is_some() {
-                    door_result(toggle)
+                return if moved.is_ok() {
+                    outcome(UseDisposition::Committed)
                 } else {
-                    outcome(UseDisposition::NotPossible)
+                    UseOutcome::rejected()
                 };
             }
             door_result(doors.toggle(
@@ -291,7 +301,6 @@ pub(super) fn use_owned_door(
     )
 }
 
-#[cfg(test)]
 #[allow(clippy::too_many_arguments)]
 pub(super) fn use_door(
     overlay: &ChannelOverlay,

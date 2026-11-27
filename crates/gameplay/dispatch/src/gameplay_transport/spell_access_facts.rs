@@ -4,11 +4,13 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
-use crate::content::ActiveGeneration;
+use crate::content::{ActiveGeneration, ProjectV2RangedWeapon};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 #[cfg(test)]
 use crate::durability::character_equipment::assert_equipment_authority_in_transaction;
-use crate::durability::character_equipment::{EquipmentError, read_cast_equipment_in_transaction};
+use crate::durability::character_equipment::{
+    EquipmentError, EquippedItem, read_cast_equipment_in_transaction,
+};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::{DurabilityError, DurabilityRoot};
@@ -289,6 +291,7 @@ pub async fn load_owned_cast_facts_in_transaction(
 /// transaction without any Channel guard. Only [`qualify_owned_cast_read`], under the guards,
 /// turns it into cast facts (ARCH-SPELL-LOCK-2 §1.6).
 pub struct OwnedCastRead {
+    quiver_ammunition: Vec<EquippedItem>,
     raw: crate::durability::character_equipment::RawCastDurableFacts,
     wheel: Option<(
         crate::durability::character_wheel::CurrentWheelCastRead,
@@ -335,7 +338,28 @@ pub async fn read_owned_cast_facts_in_transaction(
     .await?;
     // An uninitialized equipment owner is unavailable. Initialization belongs to its independent
     // admission/Item command, never to a rejected cast's hidden side effects.
-    let raw = reader.read_facts(tx).await?;
+    let (raw, quiver_ammunition) = reader
+        .read_facts_with_quiver(
+            tx,
+            &super::item_ref_admission::NativeItemWeights(native),
+            |equipment| {
+                equipment.items.iter().any(|item| {
+                    item.slot == 5
+                        && native
+                            .item_policy(
+                                &item.definition.production_key,
+                                &item.definition.revision_ref,
+                            )
+                            .is_some_and(|policy| {
+                                matches!(
+                                    policy.record().authoring.ranged,
+                                    Some(ProjectV2RangedWeapon::Distance { .. })
+                                )
+                            })
+                })
+            },
+        )
+        .await?;
     let ruleset = crate::wheel_gem_data::WheelGemData::embedded()
         .ok()
         .and_then(|data| data.wheel_ruleset().ok());
@@ -345,7 +369,11 @@ pub async fn read_owned_cast_facts_in_transaction(
         }
         None => None,
     };
-    Ok(OwnedCastRead { raw, wheel })
+    Ok(OwnedCastRead {
+        raw,
+        wheel,
+        quiver_ammunition,
+    })
 }
 
 /// The guarded part of [`load_owned_cast_facts_in_transaction`]: no await, so the caller holds
@@ -366,8 +394,8 @@ pub fn qualify_owned_cast_read(
         .player_control_facts(actor, fence.game_session_id)
         .map_err(|_| AccessFactsError::Unavailable("current player owner"))?;
     check_content_pin(runtime, active)?;
-    if let Some((wheel, ruleset)) = read.wheel.as_ref() {
-        return qualify_current_cast_facts(
+    let facts = if let Some((wheel, ruleset)) = read.wheel.as_ref() {
+        qualify_current_cast_facts(
             &read.raw,
             command,
             fence,
@@ -383,19 +411,21 @@ pub fn qualify_owned_cast_read(
             },
             now_micros,
             true,
-        );
-    }
-    qualify_raw_owned_cast_facts(
-        &read.raw,
-        command,
-        fence,
-        runtime,
-        actor,
-        state,
-        active,
-        access_owner,
-        now_micros,
-    )
+        )
+    } else {
+        qualify_raw_owned_cast_facts(
+            &read.raw,
+            command,
+            fence,
+            runtime,
+            actor,
+            state,
+            active,
+            access_owner,
+            now_micros,
+        )
+    }?;
+    Ok(facts.with_quiver_ammunition(read.quiver_ammunition.clone()))
 }
 /// Qualifies a real SQL snapshot only after the caller rechecks the current actual owner turn.
 /// This data producer grants no authority; final transaction staging still compares every revision.

@@ -6,6 +6,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 use super::questpc7_ferumbras_fixtures::{guardian, step, use_at, value, walk};
 
+use oteryn_gameplay_quests::quest::grave_danger::{OUTFIT, QUESTLINE};
+
 const QUEST: &str = "oteryn:quest.grave_danger_quest";
 
 // Measured on the complete 871c1dec catalogue.
@@ -141,6 +143,8 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     h: &Harness,
+    report_case: Option<&str>,
+    past_scarlett_objective: bool,
 ) -> TestResult {
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -190,6 +194,33 @@ pub(super) async fn exercise(
     a.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
+    if report_case == Some("legacy") {
+        const COMMISSION: &str = "oteryn:quest-progress/questpc7/inquisition/programme";
+        // Imported save from the old route with Henricus's commission already recorded.
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h,
+            owner,
+            a,
+            &[
+                (PASSAGES.into(), 7),
+                (OUTFIT.into(), 1),
+                (COMMISSION.into(), 0),
+            ],
+            233,
+        )
+        .await?;
+        owner.refresh_quest_session(a.game_session_id, false).await;
+        report(owner, a, "report").await?;
+        assert_eq!(
+            value(owner, a, QUESTLINE).await?,
+            5,
+            "legacy commission can report"
+        );
+        assert_eq!(value(owner, a, COMMISSION).await?, 0);
+        let grants: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE 'oteryn:outfit.hand_of_the_inquisition/quest-grant/%'").fetch_one(&h.pool).await?;
+        assert_eq!(grants, 0, "the outfit marker prevents a duplicate grant");
+        return Ok(());
+    }
     assert_eq!(value(owner, a, TRACK).await?, -1, "no quest progress seeds");
     step(owner, a, StepDirection::East).await?;
     assert_eq!(value(owner, a, TRACK).await?, 1);
@@ -293,6 +324,16 @@ pub(super) async fn exercise(
             .ok_or("native objective")?;
         let at = objective.guardian.as_ref().ok_or("guardian")?.position;
         let target = guardian(owner, at).await?.ok_or("earned native boss")?;
+        if past_scarlett_objective && *name == "scarlett_etzel" {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,quest_key,track_key,value,committed_character_revision)
+                SELECT character_id,$1,$2,1,character_revision FROM game_character_roots WHERE character_id=encode($3,'hex')::uuid
+                ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+                .bind(QUEST).bind(format!("oteryn:quest-progress/questpc7/grave/boss_{i}"))
+                .bind(super::fixture::id(41).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
         super::questpc7_native_deaths_fixtures::lethal_creature(
             owner,
             a,
@@ -310,6 +351,23 @@ pub(super) async fn exercise(
             .await?,
             1
         );
+        if i == 6 && report_case == Some("after-kill") {
+            assert_eq!(value(owner, a, PASSAGES).await?, 5);
+            report(owner, a, "report").await?;
+            assert_eq!(
+                value(owner, a, QUESTLINE).await?,
+                5,
+                "credited kill qualifies before passage"
+            );
+            return Ok(());
+        }
+        let scarlett_grants: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievements
+             WHERE achievement_key='oteryn:achievement/a_study_in_scarlett'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(scarlett_grants, i64::from(*name == "scarlett_etzel"));
         let name = match i {
             0 => "knight-passage-0",
             1 => "knight-passage-1",
@@ -354,6 +412,16 @@ pub(super) async fn exercise(
         1
     );
     no_rewards(h).await?;
+    assert_eq!(value(owner, a, QUESTLINE).await?, 4);
+    assert_eq!(value(owner, a, OUTFIT).await?, -1);
+    report(owner, a, "report!").await?;
+    let base: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key='oteryn:outfit.hand_of_the_inquisition/quest-grant/0'").fetch_one(&h.pool).await?;
+    assert_eq!(
+        base, 1,
+        "the qualified Zelos report alone grants the base outfit"
+    );
+    assert_eq!(value(owner, a, QUESTLINE).await?, 5);
+    assert_eq!(value(owner, a, OUTFIT).await?, 1);
     let reward = callback(&rows, "reward")?;
     let p = reward.selector.position.ok_or("reward")?;
     let appearance = reward.selector.appearance.ok_or("armour")?;
@@ -364,7 +432,11 @@ pub(super) async fn exercise(
         UseDisposition::Rejected
     );
     owner.premium_coordinator = premium;
-    no_rewards(h).await?;
+    let before_achievement: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/inquisition_s_hand'").fetch_one(&h.pool).await?;
+    assert_eq!(
+        before_achievement, 1,
+        "Jack's report awards Inquisition's Hand"
+    );
     let command = a.continuity.next_command_id;
     let payload = super::questpc7_hoist_story_fixtures::target(owner, p, appearance)?;
     assert_eq!(
@@ -424,12 +496,40 @@ pub(super) async fn exercise(
             .into(),
     };
     let command = a.continuity.next_command_id;
-    let reply =
-        super::quest_world_callbacks_fixtures::wire(owner, a, command, 25, change.encode().map_err(debug)?)
-            .await?;
+    let reply = super::quest_world_callbacks_fixtures::wire(
+        owner,
+        a,
+        command,
+        25,
+        change.encode().map_err(debug)?,
+    )
+    .await?;
     assert!(matches!(
         oteryn_protocol_oteryn::appearance::ChangeResult::decode(&reply).map_err(debug)?,
         oteryn_protocol_oteryn::appearance::ChangeResult::Committed(_)
     ));
+    Ok(())
+}
+
+async fn report(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    a: &mut AdmittedSession,
+    words: &str,
+) -> TestResult {
+    let [jack] = super::classic_quests_fixtures::install(
+        owner,
+        a,
+        [oteryn_gameplay_quests::quest::grave_danger::NPC],
+    )
+    .await?;
+    let mut npc_sequence = a.continuity.next_command_id;
+    let disposition =
+        super::questpc7_outfit_items_fixtures::talk(owner, a, jack, &mut npc_sequence, words)
+            .await?;
+    assert_eq!(
+        disposition,
+        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok,
+        "{words}"
+    );
     Ok(())
 }

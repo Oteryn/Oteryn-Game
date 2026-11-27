@@ -268,6 +268,7 @@ use bundle_map_position::bundle_world_map;
 pub use coin_market::reconcile_coin_market;
 pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
+pub use npc_command::validate_quest_reward_offers;
 pub use npc_talk::NpcTalkBook;
 pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
 pub use promotion_login::PremiumSessions;

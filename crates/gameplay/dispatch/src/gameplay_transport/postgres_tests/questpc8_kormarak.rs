@@ -12,9 +12,9 @@ fn questpc8_kormarak_native_guardian_body_and_four_outputs() -> TestResult {
         quest_world_callbacks::scenario(
             "authored-kormarak",
             Position {
-                x: 32340,
-                y: 32125,
-                floor: -10,
+                x: 32357,
+                y: 32171,
+                floor: -7,
             },
             false,
         )

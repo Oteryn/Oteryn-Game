@@ -1,4 +1,4 @@
-//! Chosen two-cache potion journey, Premium gates and consolidated gold.
+//! Native two-cache potion journey, Premium gates and exact bag allocations.
 
 use super::{TestResult, quest_world_callbacks_fixtures as quest_world_callbacks};
 

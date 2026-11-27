@@ -27,6 +27,7 @@ pub mod pickup;
 pub mod quick_loot;
 pub mod reward_bag;
 pub mod rust_lottery;
+pub mod secret_agent;
 pub mod stacking;
 pub mod starter_grant;
 

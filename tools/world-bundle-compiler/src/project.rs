@@ -421,7 +421,23 @@ impl Families {
                 encounter_bound: record
                     .pointer("/authoring/profile/encounters")
                     .and_then(Value::as_array)
-                    .is_some_and(|list| !list.is_empty()),
+                    .is_some_and(|list| {
+                        list.iter().any(|encounter| {
+                            // Ordinary world actors use these two source-core cast
+                            // rules. Their spawn entries own placement.
+                            !matches!(
+                                (key, encounter.get("key").and_then(Value::as_str)),
+                                (
+                                    "oteryn:creature.rootthing_amber_shaper",
+                                    Some("oteryn:encounter.source_core_rootthing_amber_shaper")
+                                ) | (
+                                    "oteryn:creature.rootthing_nutshell",
+                                    Some("oteryn:encounter.source_core_rootthing_nutshell")
+                                )
+                            ) || encounter["family"] != "Encounter"
+                                || encounter["revision"] != "definition-r1"
+                        })
+                    }),
             };
             if self.creatures.insert(key.to_owned(), facts).is_some() {
                 return Err(format(format!("Creature key {key} given twice")));

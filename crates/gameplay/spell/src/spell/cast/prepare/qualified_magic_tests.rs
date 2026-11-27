@@ -103,6 +103,8 @@ fn owner(
 ) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
     let (vocation, key) = if matches!(spell.name.as_str(), "Food" | "Heal Friend") {
         (Vocation::Druid, "druid")
+    } else if spell.vocations.len() == 1 && spell.vocations.contains(&Vocation::Monk) {
+        (Vocation::Monk, "monk")
     } else {
         (Vocation::Paladin, "paladin")
     };
@@ -363,6 +365,55 @@ fn gp001_qualified_magic_keeps_raw_build_binding_and_live_state_checks() -> Resu
                 "{name}, field={field}"
             );
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn qualified_unarmed_skill_casts_receive_source_attack_inputs() -> Result<(), String> {
+    let content = content()?;
+    for name in [
+        "Lesser Ethereal Spear",
+        "Ethereal Spear",
+        "Strong Ethereal Spear",
+        "Ethereal Barrage",
+        "Swift Jab",
+        "Double Jab",
+        "Forceful Uppercut",
+        "Tiger Clash",
+        "Greater Tiger Clash",
+        "Devastating Knockout",
+        "Greater Flurry of Blows",
+        "Mystic Repulse",
+        "Thousand Fist Blows",
+        "Chained Penance",
+        "Spiritual Outburst",
+        "Flurry of Blows",
+    ] {
+        let mut spell = spell(&content, name)?;
+        let (state, owned) = owner(&content, &spell, 0, 0)?;
+        let caster = owned
+            .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+            .map_err(|error| format!("{name}: {error:?}"))?;
+        assert_eq!(
+            (
+                caster.attack_skill,
+                caster.attack_value,
+                caster.attack_factor,
+                caster.melee_weapon
+            ),
+            (0, 7, 0.0, false),
+            "{name}"
+        );
+        assert!(
+            owned.intrinsic_weapon_for_spell(&spell, &content).is_none(),
+            "{name}"
+        );
+        spell.needs_weapon = true;
+        assert!(matches!(
+            owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
+            Err(OwnedFactsError::UnavailableEquipment)
+        ));
     }
     Ok(())
 }

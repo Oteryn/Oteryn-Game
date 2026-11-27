@@ -18,6 +18,9 @@ pub(crate) fn load_quest_catalogue(
     ),
     BootError,
 > {
+    if !oteryn_gameplay_dispatch::gameplay_transport::validate_quest_reward_offers() {
+        return Err(BootError::ContentActivation("quest NPC offer catalogue"));
+    }
     let lowered = load(content_revision)
         .map_err(|_| BootError::ContentActivation("quest state catalogue"))?;
     let loaded = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)

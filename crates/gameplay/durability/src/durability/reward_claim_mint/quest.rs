@@ -188,16 +188,21 @@ pub(crate) async fn apply(
     // The Character root is locked by the caller. Receipts are immutable, so an
     // optional source reset cannot erase an earlier earned milestone.
     for requirement in &callback.required_receipts {
+        let alternate = oteryn_gameplay_quests::quest::world_callbacks::nomads_window_alternate_receipt(
+            &callback.quest, &requirement.transition, &requirement.track, requirement.value,
+        );
         let earned: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM game_character_quest_receipts \
              WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 \
-               AND transition_key=$3 AND values_after[array_position(track_keys,$4)]=$5)",
+               AND (transition_key=$3 OR transition_key=$6) \
+               AND values_after[array_position(track_keys,$4)]=$5)",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(&callback.quest)
         .bind(&requirement.transition)
         .bind(&requirement.track)
         .bind(requirement.value)
+        .bind(alternate)
         .fetch_one(&mut **tx)
         .await?;
         if !earned {
@@ -227,10 +232,13 @@ pub(crate) async fn apply(
         }
         _ => return Ok(false),
     }
-    if callback
-        .cosmetic_targets()
-        .any(|reward| !outfit_compatible(admission.native, reward))
-    {
+    if callback.cosmetic_targets().any(|reward| {
+        !super::super::character_appearance::quest_grants::outfit_targets_compatible(
+            admission.native,
+            reward,
+            !callback.addon_only,
+        )
+    }) {
         return Ok(false);
     }
     if !callback.requires_actor_conditions.is_empty()
@@ -274,6 +282,7 @@ pub(crate) async fn apply(
             return Ok(false);
         }
     }
+    let mut achievement = achievement;
     if !callback.forbids_addons.is_empty()
         || !callback.forbids_outfits.is_empty()
         || callback.account_reservation.is_some()
@@ -318,6 +327,20 @@ pub(crate) async fn apply(
                         oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
                     })
                     ).await? { return Ok(false); }
+            }
+        }
+        if callback.achievement_requires_full_outfit {
+            let outfit = callback.outfit.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
+            if !super::super::character_appearance::cosmetic_owned_for_sex(
+                tx,
+                fence.character_id,
+                cosmetics,
+                EarnedCosmetic::Addon(&outfit.outfit, 3 - outfit.addons),
+                None,
+            )
+            .await?
+            {
+                achievement = None;
             }
         }
         if let Some(reservation) = &callback.account_reservation
@@ -454,12 +477,13 @@ pub(crate) async fn apply(
         ))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
         grant_keys.extend(
-            super::super::character_appearance::grant_content_outfit(
+            super::super::character_appearance::quest_grants::grant_content_outfit_targets(
                 tx,
                 fence.character_id,
                 &occurrence,
                 reward,
                 admission.native,
+                !callback.addon_only,
             )
             .await?,
         );
@@ -533,6 +557,9 @@ pub(crate) async fn apply(
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);
         };
+        let Some((_, _, permit)) = proof.corpse() else {
+            return Ok(false);
+        };
         if !super::quest_corpse::record(
             tx,
             fence,
@@ -540,6 +567,7 @@ pub(crate) async fn apply(
             callback,
             carried,
             proof,
+            permit,
             admission.native,
         )
         .await?
@@ -603,11 +631,12 @@ pub(crate) async fn give_world(
     // The deferred reward guard reconciles every BURN against this authored
     // cost list. Reusable tools are checked by the World callback owner.
     let mut take = callback.effects.carried_inputs.clone();
-    if let Some(input) = callback.item_on_target.as_ref().filter(|input| !input.reusable) {
+    if let Some(input) = &callback.item_on_target
+        && !input.reusable
+    {
         take.push(
             oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
                 fluid_subtype: None,
-
                 item: input.item.clone(),
                 count: input.count,
             },
@@ -625,7 +654,55 @@ pub(crate) async fn give_world(
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
         .bind(transaction.as_slice()).execute(&mut **tx).await?;
+    if reward.item == "oteryn:item.tibia.i4837" {
+        schedule_ice_sample(tx, admission.native, &reward.item, transaction).await?;
+    }
     Ok(true)
+}
+
+async fn schedule_ice_sample(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    native: &NativeGameplayState,
+    item: &str,
+    transaction: [u8; 16],
+) -> std::result::Result<(), DurabilityError> {
+    use oteryn_gameplay_content::content::{
+        ReferenceItemField::{Known, NotApplicable},
+        ReferenceItemTemporal, ReferenceMilliseconds, ReferenceTemporalMode,
+    };
+    let policy = native
+        .item_policy(item, "definition-r1")
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let Known(ReferenceItemTemporal {
+        consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
+        duration: Known(ReferenceMilliseconds(duration)),
+        decay_target: NotApplicable,
+        stop_duration: Known(false),
+    }) = &policy.record().semantics.temporal
+    else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let scheduled = sqlx::query(
+        "INSERT INTO game_spell_item_temporal_schedules(
+            item_instance_id,source_transaction_id,source_ordinal,duration_millis,
+            expires_at_unix_ms,definition_family,definition_production_key,
+            definition_revision,content_digest
+         )
+         SELECT i.item_instance_id,r.transaction_id,1,$2,r.occurred_at+$2,i.definition_family,
+                i.definition_production_key,i.definition_revision_ref,$3
+         FROM game_reward_claim_mint_receipts r JOIN game_item_instances i USING(item_instance_id)
+         WHERE r.transaction_id=$1 AND i.definition_production_key=$4",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(transaction))
+    .bind(i64::try_from(*duration).map_err(|_| DurabilityError::InvalidStoredState)?)
+    .bind(native.source_digest().as_slice())
+    .bind(item)
+    .execute(&mut **tx)
+    .await?;
+    if scheduled.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
 }
 
 #[allow(
@@ -953,7 +1030,6 @@ async fn mint_with_source(
     Ok(Some(reservation.transaction_id))
 }
 
-
 /// Serialize paid reservations with other appearance grants using the caller's
 /// account lock. The enclosing quest transaction rolls back on any refusal.
 async fn apply_account_reservation(
@@ -981,7 +1057,11 @@ async fn apply_account_reservation(
     .await?;
     let character = character.as_bytes().as_slice();
     match reservation {
-        AccountReservation::Start { track, pending_value, .. } => {
+        AccountReservation::Start {
+            track,
+            pending_value,
+            ..
+        } => {
             let inserted = sqlx::query(
                 "INSERT INTO game_quest_account_reservations
                  (account_id,reservation_key,character_id,pending_track,pending_value)

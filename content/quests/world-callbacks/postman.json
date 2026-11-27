@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/postman-folda-mailbox",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32013,
+            "y": 31562,
+            "floor": -4
+          },
+          "ordinal": 1,
+          "appearance": 3501
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:936-945"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ],
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32013,
+            "y": 31562,
+            "floor": -4
+          },
+          "effect": 13
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/postman-dermot-present",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32569,
+            "y": 32024,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 3501
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:240-243"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i3218",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/postman-waldo-posthorn",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32514,
+            "y": 32248,
+            "floor": -8
+          },
+          "ordinal": 2,
+          "appearance": 4240
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission08",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": "The dead human is empty.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_postman_missions_quest/actions_waldos_posthorn.lua:1-14"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i3219",
+        "count": 1,
+        "contents": []
+      },
+      "success_message": "You found Waldo's posthorn."
+    },
+    {
+      "key": "oteryn:quest-callback/postman-santa-letterbag",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32568,
+            "y": 32024,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 3501
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_postman_missions_quest/actions_package.lua:1-14"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i3217",
+        "count": 1,
+        "contents": []
+      }
+    }
+  ]
+}

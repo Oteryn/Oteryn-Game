@@ -219,11 +219,23 @@ def current_inputs(root, context_root=ROOT):
     packet = json.loads(
         base.checked(root, packet_path, context["immutable_artifacts"][packet_path])
     )
-    # Identity admission re-keyed ten records without changing observations.
+    # Identity admission re-keyed records without changing observations.
     # Recover and hash the exact frozen dictionary, rather than accepting a
     # new snapshot digest as equivalent evidence.
     frozen_records = dict(snapshot["records"])
-    for iid in (40016, 40598, 40601, 40603, 42851, 42853, 43589, 43590, 43625, 43860):
+    for iid in (
+        8748,
+        40016,
+        40598,
+        40601,
+        40603,
+        42851,
+        42853,
+        43589,
+        43590,
+        43625,
+        43860,
+    ):
         key = f"oteryn:item.tibia.i{iid}"
         if key in frozen_records:
             if str(iid) in frozen_records:

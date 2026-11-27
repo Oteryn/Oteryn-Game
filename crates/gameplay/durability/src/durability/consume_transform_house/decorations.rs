@@ -320,6 +320,7 @@ pub(super) async fn plan(
                 )
                 .ok_or(DurabilityError::InvalidStoredState)?;
             cooldown_effect = Some(json!({"key":key,"before":previous,"until":until}));
+            achievement_progress.push(json!({"key":"oteryn:achievement/vanity","target":300}));
         }
     } else if id == rules.bathtub.item_id && context.rotation.is_none() {
         family = "bathtub";

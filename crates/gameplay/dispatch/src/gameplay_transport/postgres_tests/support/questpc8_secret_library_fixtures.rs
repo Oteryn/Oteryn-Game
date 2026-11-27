@@ -24,9 +24,17 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 mod fixture_world;
 
 pub(super) fn run_library_journey() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc8-secret-library", || {
+    library_journey(false)
+}
+
+pub(super) fn library_journey(past_oberon_objective: bool) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc8-secret-library", move || {
         quest_world_callbacks::scenario(
-            "authored-secret-library",
+            if past_oberon_objective {
+                "authored-secret-library-completed-oberon"
+            } else {
+                "authored-secret-library"
+            },
             Position {
                 x: 32031,
                 y: 32463,
@@ -45,6 +53,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    past_oberon_objective: bool,
 ) -> TestResult {
     let native = owner
         .active_generation
@@ -197,27 +206,155 @@ pub(super) async fn exercise(
         -1,
         "Gail report does not replace Oberon death"
     );
+    assert!(oberon_achievements(h, 41).await?.is_empty());
     travel(owner, admitted, 33364, 31318, 9).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    let creature = "oteryn:creature.grand_master_oberon";
     let actors = owner
         .quest_guardians_for_test("oteryn:quest-death/authored-secret-library-oberon")
         .await;
     assert_eq!(actors.len(), 1);
-    super::grizzly_npc_fixtures::questpc8_campaign::lethal(
-        owner,
-        admitted,
-        actors[0],
-        "oteryn:creature.grand_master_oberon",
-        command,
-        1,
-    )
-    .await?;
+    let target = actors[0];
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    if past_oberon_objective {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,quest_key,track_key,value,committed_character_revision)
+            SELECT character_id,'oteryn:quest.the_secret_library_quest','oteryn:quest-progress/chosen/secret-library/kills',1,character_revision
+            FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+            ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let source = super::house_transfer_fixtures::RecoverySource::start(h).await?;
+        let peers = &source.evidence;
+        let admit = super::boss_rewards_fixtures::privacy::admit_gameplay_peer;
+        let peer = admit(h, peers, 1).await?;
+        let departing = admit(h, peers, 2).await?;
+        let peer_actor = oberon_peer_damage(owner, admitted, target, command, creature, peer).await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .record_control_loss(
+                peer_actor,
+                peer,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: i64::try_from(owner.owner_now().get())? + 30_000,
+                },
+            )
+            .map_err(debug)?;
+        oberon_peer_damage(owner, admitted, target, command, creature, departing).await?;
+        // Fail the first write for a different recipient. The first recipient's
+        // two requests must be invisible until the entire roster commits.
+        sqlx::raw_sql(
+            "CREATE FUNCTION reject_second_oberon_recipient() RETURNS trigger LANGUAGE plpgsql AS $$
+             BEGIN
+                 IF NEW.source_kind = 'oteryn:oberon-death' AND EXISTS (
+                     SELECT 1 FROM game_account_achievement_grant_requests
+                     WHERE source_kind = NEW.source_kind AND character_id <> NEW.character_id
+                 ) THEN RAISE EXCEPTION 'injected second Oberon recipient failure'; END IF;
+                 RETURN NEW;
+             END $$;
+             CREATE TRIGGER reject_second_oberon_recipient BEFORE INSERT ON
+                 game_account_achievement_grant_requests FOR EACH ROW
+                 EXECUTE FUNCTION reject_second_oberon_recipient()",
+        )
+        .execute(&h.pool)
+        .await?;
+        super::grizzly_npc_fixtures::questpc8_campaign::queue_lethal(
+            owner, admitted, target, creature, command, 1,
+        )
+        .await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .restore_control(peer_actor, peer, 1)
+            .map_err(debug)?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Deferred
+        );
+        assert!(oberon_achievements(h, 41).await?.is_empty());
+        assert!(oberon_achievements(h, 101).await?.is_empty());
+        sqlx::query("DROP TRIGGER reject_second_oberon_recipient ON game_account_achievement_grant_requests")
+            .execute(&h.pool).await?;
+        terminalize_oberon_peer(h, departing).await?;
+        assert!(
+            owner
+                .current_quest_fence(departing)
+                .await
+                .map_err(|()| "peer fence")?
+                .is_none()
+        );
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
+        assert!(oberon_achievements(h, 102).await?.is_empty());
+    } else {
+        // Leave the real quest descendant unresolved at the death's commit boundary.
+        sqlx::raw_sql(
+            "CREATE FUNCTION reject_oberon_objective() RETURNS trigger LANGUAGE plpgsql AS $$
+             BEGIN
+                 IF NEW.track_key = 'oteryn:quest-progress/chosen/secret-library/kills'
+                    AND NEW.value = 1
+                 THEN RAISE EXCEPTION 'injected Oberon objective failure'; END IF;
+                 RETURN NEW;
+             END $$;
+             CREATE TRIGGER reject_oberon_objective BEFORE INSERT OR UPDATE ON
+                 game_character_quest_tracks FOR EACH ROW EXECUTE FUNCTION reject_oberon_objective()",
+        )
+        .execute(&h.pool)
+        .await?;
+        super::grizzly_npc_fixtures::questpc8_campaign::queue_lethal(
+            owner, admitted, target, creature, command, 1,
+        )
+        .await?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Deferred
+        );
+        assert!(progress(h, "kills").await? < 1);
+        assert!(
+            oberon_achievements(h, 41).await?.is_empty(),
+            "a deferred death exposed its achievements"
+        );
+        sqlx::query("DROP TRIGGER reject_oberon_objective ON game_character_quest_tracks")
+            .execute(&h.pool)
+            .await?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
+    }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     assert_eq!(progress(h, "kills").await?, 1);
+    let expected = [
+        "oteryn:achievement/master_debater",
+        "oteryn:achievement/millennial_falcon",
+    ]
+    .map(str::to_owned);
+    let principal = oberon_achievements(h, 41).await?;
+    if past_oberon_objective {
+        assert_eq!(
+            (
+                principal.as_slice(),
+                oberon_achievements(h, 101).await?.as_slice()
+            ),
+            (expected.as_slice(), expected.as_slice()),
+            "principal has a completed objective and peer in reconnect grace at death has no quest progress"
+        );
+    } else {
+        assert_eq!(principal, expected);
+    }
     travel(owner, admitted, 32671, 32736, 11).await?;
     step(owner, admitted, command, StepDirection::East).await?;
     command += 1;
@@ -256,6 +393,97 @@ pub(super) async fn exercise(
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_secret_library_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);
     Ok(())
+}
+
+async fn oberon_peer_damage(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    target: crate::foundation::ExactActorRef,
+    command: u64,
+    creature: &str,
+    session: crate::foundation::GameSessionId,
+) -> TestResult<crate::foundation::ExactActorRef> {
+    use crate::foundation::{
+        CharacterId, CharacterLease, CommandId, CommandRef, OwnerDamageCommand,
+    };
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "peer fence")?
+        .ok_or("peer fence")?;
+    let now = owner.owner_now().get() / 1000;
+    let mut runtime = owner.runtime.lock().await;
+    let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+    let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+    let at = runtime
+        .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?
+        .position();
+    runtime
+        .initialize_pinned_test_position(peer, at)
+        .map_err(debug)?;
+    let lease = CharacterLease::new(
+        CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+        fence.character_lease_generation,
+    )
+    .map_err(debug)?;
+    runtime
+        .bind_attacker_lease(peer, session, lease)
+        .map_err(debug)?;
+    runtime
+        .borrow_exact_actor_commit_at(now)
+        .commit_swing_damage_for_bound_attacker(
+            target,
+            peer,
+            CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+            1,
+            OwnerDamageCommand {
+                target: creature.as_bytes(),
+                occurrence: session.as_bytes(),
+                binding: b"review-oberon",
+                damage: 1,
+            },
+        )
+        .map_err(debug)?;
+    Ok(peer)
+}
+
+async fn terminalize_oberon_peer(
+    h: &Harness,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
+
+    let store = FreshAdmissionStore::from_root(h.root.clone());
+    let current = store.current_session(session).await.map_err(debug)?;
+    let transport = current.current_transport().ok_or("peer transport")?;
+    let account: String = sqlx::query_scalar(
+        "SELECT account_id::text FROM game_durability_reconnect_sessions \
+         WHERE game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(matches!(
+        store
+            .release_logout_session(session, &account, transport)
+            .await
+            .map_err(debug)?,
+        ExpiredLossReleaseV1::Released { .. }
+    ));
+    Ok(())
+}
+
+async fn oberon_achievements(h: &Harness, character: u8) -> TestResult<Vec<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT achievement_key FROM game_account_achievements
+         WHERE account_id=(SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid)
+         AND achievement_key IN ('oteryn:achievement/master_debater', 'oteryn:achievement/millennial_falcon')
+         ORDER BY achievement_key",
+    )
+    .bind(id(character).as_slice())
+    .fetch_all(&h.pool)
+    .await?)
 }
 
 async fn carry(

@@ -47,7 +47,7 @@ def apply(root, generated, profile_path, manifest_path, canonical):
         if (profile is None or profile["admission"]["materializable"] is not True
                 or profile["production_definition"]["revision_ref"] != facts["item"]["revision"]):
             raise ValueError("WORLD_CHANGE_LOOT_ITEM_NOT_ADMITTED")
-        container = profile["semantics"]["container"]
+        container = profile["semantics"].get("container", {"state": "UNKNOWN"})
         capacity = None
         if container["state"] == "KNOWN":
             value = container["value"]["capacity"]

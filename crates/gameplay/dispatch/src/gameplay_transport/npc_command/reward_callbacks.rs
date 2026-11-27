@@ -2,8 +2,8 @@
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::quest_dialogue::{self, Choice, Step, Topic};
 use super::*;
-use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
+use oteryn_gameplay_quests::quest::{dark_trails::message_contains, reward_callbacks};
 use serde::Deserialize;
 
 #[cfg(test)]
@@ -16,6 +16,10 @@ mod offers;
 mod selection_facts;
 mod storkus;
 pub(super) use selection_facts::needs_facts;
+
+pub fn validate_quest_reward_offers() -> bool {
+    offers::embedded().is_some()
+}
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -35,9 +39,13 @@ pub(super) struct Offer {
     storage: Vec<Storage>,
     #[serde(default)]
     requires: Vec<reward_callbacks::TrackRequirement>,
+    #[serde(default)]
+    inventory: Vec<reward_callbacks::InventoryRequirement>,
     reply: Vec<String>,
     #[serde(default)]
     minimum_level: Option<u32>,
+    #[serde(default, alias = "premium")]
+    requires_premium: Option<bool>,
     #[serde(default)]
     failure_reply: Vec<String>,
 }
@@ -56,8 +64,53 @@ impl NpcConversations {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Phase {
-    Rewards,
+    Rewards { skip_opening: Option<&'static str> },
     Offers,
+}
+
+pub(super) fn alternate_opening(
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    npc: &str,
+    text: &str,
+) -> Option<&'static str> {
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog;
+
+    let (authored, has_source) = match (npc, text) {
+        ("oteryn:npc.hairycles", "mission") => (
+            "oteryn:quest-reward/ape-city/start",
+            NpcRuleCatalog::runtime()
+                .and_then(|rules| rules.admitted_for_npc(npc, catalogue))
+                .is_ok_and(|rules| rules.is_some()),
+        ),
+        ("oteryn:npc.angus", "join") => (
+            "oteryn:quest-reward/explorer-society/enrol-angus",
+            catalogue
+                .transition("oteryn:quest-reward/explorer-society/angus/enroll")
+                .is_some(),
+        ),
+        ("oteryn:npc.mortimer", "join") => (
+            "oteryn:quest-reward/explorer-society/enrol-mortimer",
+            catalogue
+                .transition("oteryn:quest-reward/explorer-society/mortimer/enroll")
+                .is_some(),
+        ),
+        _ => return None,
+    };
+    (has_source && catalogue.transition(authored).is_some()).then_some(authored)
+}
+
+pub(super) async fn prefer_source_start(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> bool {
+    match (
+        admission.session_account(session),
+        admission.premium_coordinator,
+    ) {
+        (None, _) => true,
+        (Some(account), Some(owner)) => !owner.premium_gate(account).await.premium_current(),
+        (Some(_), None) => false,
+    }
 }
 
 pub(super) fn prepare(
@@ -101,9 +154,8 @@ pub(super) fn prepare(
                 "yes" | "hi" | "hello" | "bye" | "farewell"
             )
             && offers
-                .offers
                 .iter()
-                .any(|offer| offer.npc == context.2 && offer.keywords.contains(requests_offer)))
+                .any(|offer| offer.npc == context.2 && offer.matches_keyword(requests_offer)))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -111,7 +163,6 @@ pub(super) fn prepare(
             .quest_dialogue
             .reward_request = (!says_no).then_some(context);
     }
-    let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
     let mut refused = false;
     let step = quest_dialogue::prepare(
@@ -147,7 +198,7 @@ pub(super) fn prepare(
                     Some(false) => !callback.key.starts_with(EROTH_AUTHORED),
                     None => true,
                 });
-            let offers = offers.offers.iter().filter(|offer| {
+            let offers = offers.iter().filter(|offer| {
                 eroth_uses_authored != Some(true)
                     || offer.npc != context.2
                     || !offer
@@ -178,7 +229,7 @@ pub(super) fn prepare(
                         .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
-            if phase == Phase::Rewards {
+            if let Phase::Rewards { skip_opening } = phase {
                 let topic = if text == "mission"
                     && matches!(
                         context.2.as_str(),
@@ -192,7 +243,14 @@ pub(super) fn prepare(
                     c.carried_item.is_none()
                         && c.npc == context.2
                         && c.topic == topic
-                        && c.keywords.contains(&text)
+                        && matches_reward_keyword(c, &text)
+                        && skip_opening != Some(c.key.as_str())
+                        // Hairycles continues a saved source journey before
+                        // offering the start of the separate authored route.
+                        && !(c.key == "oteryn:quest-reward/ape-city/start"
+                            && tracks
+                                .get("oteryn:quest-progress/quest/u7_6/the_ape_city/questline")
+                                .is_some_and(|stage| *stage > 0))
                         && eligible(&c.storage)
                         && c.state_ops
                             .iter()
@@ -204,6 +262,15 @@ pub(super) fn prepare(
                                     .all(|op| op.advisory_holds(catalogue, tracks))
                         })
                         && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                });
+                // Both programmes can teach Melchior's single greeting. The
+                // active Appease stage owns it when its transition is eligible.
+                let appease_greeting = context.2 == "oteryn:npc.melchior"
+                    && matching_stage
+                        .clone()
+                        .any(|c| c.key == "oteryn:quest-reward/tibia-tales/appease-learn-greeting");
+                let matching_stage = matching_stage.filter(|c| {
+                    !appease_greeting || c.key != "oteryn:quest-reward/marid-melchior-greeting"
                 });
                 let mut selected = matching_stage.clone().filter(|c| {
                     c.inventory
@@ -260,10 +327,28 @@ pub(super) fn prepare(
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
-            if let Some(offer) = offers
-                .clone()
-                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
-            {
+            let account_matches = |offer: &Offer| {
+                offer.requires_premium.is_none_or(|required| {
+                    let premium = admission
+                        .session_account(command.game_session_id)
+                        .zip(admission.premium_coordinator)
+                        .is_some_and(|(account, owner)| {
+                            owner.view(account).premium_gate().premium_current()
+                        });
+                    premium == required
+                })
+            };
+            let carried_matches = |offer: &Offer| {
+                offer
+                    .inventory
+                    .iter()
+                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+            };
+            if let Some(offer) = offers.clone().find(|c| {
+                c.admits(&context.2, topic.number, &text, catalogue, tracks)
+                    && carried_matches(c)
+                    && account_matches(c)
+            }) {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
@@ -301,8 +386,10 @@ pub(super) fn prepare(
             let mut blocked = offers.filter(|offer| {
                 offer.npc == context.2
                     && offer.matches_topic(topic.number)
-                    && offer.keywords.contains(&text)
+                    && offer.matches_keyword(&text)
                     && eligible(&offer.storage)
+                    && carried_matches(offer)
+                    && account_matches(offer)
                     && !offer.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(offer) = blocked.next()
@@ -311,14 +398,14 @@ pub(super) fn prepare(
             {
                 return Some(choice);
             }
-            // A unique exchange owns its exact keyword even before eligibility.
+            // A unique exchange owns its keyword even before eligibility.
             // Let the locked writer return the stage refusal, rather than falling
             // through to an unrelated legacy dialogue with the same text.
             let mut matching = callbacks.filter(|c| {
                 c.carried_item.is_none()
                     && c.npc == context.2
                     && c.topic == topic.number
-                    && c.keywords.contains(&text)
+                    && matches_reward_keyword(c, &text)
             });
             let callback = matching.next()?;
             if let Some(other) = matching.next() {
@@ -449,9 +536,73 @@ pub(super) fn unhandled_confirmation(
                     || requested
                     // The forge requires a specific offer before it accepts yes.
                     || callback.key == "oteryn:quest-reward/qc-obsidian-draconian-steel")
-                && callback.keywords.contains(&text)
+                && matches_reward_keyword(callback, &text)
         })
     })
+}
+
+const JORGE: &str = "oteryn:npc.jorge";
+
+fn matches_menu_or_exact_keyword(npc: &str, keywords: &[String], text: &str) -> bool {
+    keywords.iter().any(|word| {
+        word == text || (npc == JORGE && word == "souvenir" && message_contains(text, word))
+    })
+}
+
+fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &str) -> bool {
+    if callback.npc == JORGE
+        && callback.quest == "oteryn:quest.hunting_for_tokens"
+        && callback.topic == 1
+        && callback.give.is_some()
+    {
+        // Jorge opens the menu before checking item names, even at the purchase topic.
+        return !message_contains(text, "souvenir")
+            && callback
+                .keywords
+                .iter()
+                .any(|word| message_contains(text, word));
+    }
+    matches_menu_or_exact_keyword(&callback.npc, &callback.keywords, text)
+}
+
+#[cfg(test)]
+#[test]
+fn jorge_matches_souvenir_and_all_replica_names_in_messages() -> Result<(), String> {
+    let callbacks = reward_callbacks::load()?;
+    let jorge = callbacks.iter().filter(|callback| callback.npc == JORGE);
+    let menu = jorge
+        .clone()
+        .find(|callback| callback.key.ends_with("/questpc7-tokens-replica-rewards"))
+        .ok_or("Jorge's initial menu")?;
+    let repeat_menu = offers::embedded()
+        .and_then(|document| document.offers.iter().find(|offer| offer.npc == JORGE))
+        .ok_or("Jorge's repeat menu")?;
+    let menu_message = "What souvenirs do you have?";
+    assert!(matches_reward_keyword(menu, menu_message));
+    assert!(repeat_menu.matches_keyword(menu_message));
+    assert!(!matches_reward_keyword(menu, "xSouvenir souvenir"));
+    assert!(!repeat_menu.matches_keyword("xSouvenir souvenir"));
+
+    let exchanges = jorge.filter(|callback| callback.give.is_some());
+    assert_eq!(exchanges.clone().count(), 74);
+    for callback in exchanges {
+        for word in &callback.keywords {
+            assert!(
+                matches_reward_keyword(
+                    callback,
+                    &format!("I'd like {}, please", word.to_ascii_uppercase())
+                ),
+                "{} must accept {word} in a message",
+                callback.key
+            );
+            assert!(!matches_reward_keyword(callback, &format!("x{word}")));
+            assert!(!matches_reward_keyword(
+                callback,
+                &format!("souvenir {word}")
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn callback_keyword(
@@ -465,6 +616,10 @@ fn callback_keyword(
         return classic_talk::rottin_keyword(text)
             .unwrap_or_default()
             .into();
+    }
+    use oteryn_gameplay_quests::quest::grave_danger;
+    if npc == grave_danger::NPC && grave_danger::matches_report(text) {
+        return "report".into();
     }
     if npc == storkus::NPC {
         return storkus::keyword(admission, command, text)

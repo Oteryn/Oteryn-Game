@@ -6,7 +6,8 @@
    "quest": "oteryn:quest.sam_s_old_backpack_quest",
    "npc": "oteryn:npc.kroox",
    "keywords": [
-    "sam sent me"
+    "sam sent me",
+    "sam send me"
    ],
    "topic": 0,
    "next_topic": 0,
@@ -32,6 +33,7 @@
     "Oh, so it's you, he wrote me about? Sadly I have no dwarven armor in stock. But I give you the permission to retrieve one from the mines. The problem is, some giant spiders made the tunnels where the storage is their new home. Good luck."
    ],
    "sources": [
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kroox.lua:60-67",
     "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest/Spoiler: Sam backpack/yes/yes, Kroox \"Sam sent me\", sealed quest door and chest with the Dwarven Armor at 126.199,124.225,14",
     "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest: level 35, free account, reward Dwarven Armor",
     "content/quests/definitions/quests-00100-00199.json#/records/96/definition/oteryn_recipe",

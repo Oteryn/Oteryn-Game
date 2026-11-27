@@ -365,13 +365,14 @@ pub mod tests {
         extent: Option<oteryn_world_bundle::writer::Extent>,
         ground_key: &str,
     ) -> (Vec<u8>, BundlePins) {
-        bundle_with_projectiles(custom, extent, ground_key, None)
+        bundle_with_projectiles(custom, extent, ground_key, KEYS[4], None)
     }
 
     fn bundle_with_projectiles(
         custom: Option<Vec<oteryn_world_bundle::writer::Sector>>,
         extent: Option<oteryn_world_bundle::writer::Extent>,
         ground_key: &str,
+        rope_key: &str,
         projectile: Option<[Option<bool>; 9]>,
     ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
@@ -423,7 +424,12 @@ pub mod tests {
                 .zip(terrains)
                 .enumerate()
                 .map(|(id, (key, terrain))| PaletteEntry {
-                    key: if id == 0 { ground_key } else { key }.into(),
+                    key: match id {
+                        0 => ground_key,
+                        4 => rope_key,
+                        _ => key,
+                    }
+                    .into(),
                     family: Family::Item,
                     id: id as u32,
                     terrain: terrain.map(|mut terrain| {
@@ -598,6 +604,7 @@ pub mod tests {
             None,
             None,
             KEYS[0],
+            KEYS[4],
             Some([
                 Some(false),
                 Some(true),

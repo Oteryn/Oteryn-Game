@@ -9,6 +9,8 @@ from unittest import mock
 import qengine_access
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tools/content-migration"))
+from srx1_profile_updates import compact_item_record
 
 
 class WorldAdmissionTests(unittest.TestCase):
@@ -27,7 +29,7 @@ class WorldAdmissionTests(unittest.TestCase):
             # Registration adds client stack-order annotations after physical qualification.
             generated['attributes'].pop('always_on_top')
             generated['attributes'].pop('always_on_top_order')
-            self.assertEqual(generated, profile)
+            self.assertEqual(compact_item_record(generated), compact_item_record(profile))
 
     def callbacks(self):
         return [c for c in qengine_access.registered_callbacks()

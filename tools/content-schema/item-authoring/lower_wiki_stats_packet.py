@@ -58,6 +58,10 @@ MODIFIER_SOURCE_HOLD = (
 MODIFIER_SOURCE_HOLD_SHA256 = (
     "7d2a7f2d35c6099066677d7c4728d9bb832926b686b19901ff5cce1e55f4ed07"
 )
+CRYSTAL_MODIFIER_IDS = frozenset(
+    {28825, 28826, 29425, 30393, 30399, 31581, 34088, 34089, 34150, 34151, 39157, 39159}
+)
+CRYSTAL_MODIFIER_FIELD = "skill_modifiers.modifiers"
 RECORD = (
     ROOT
     / "docs"
@@ -614,13 +618,64 @@ def source_hold(path=None, digest=None):
     return json.loads(data)
 
 
-def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context=None):
+def crystal_modifier_source():
+    sys.path.insert(0, str(ROOT / "tools/content-schema/native-gameplay"))
+    sys.path.insert(0, str(ROOT / "tools/content-migration"))
+    import crystal_equipment_profiles as crystal
+    from lower_elemental_magic_modifier_packet import native_order
+
+    raw = (ROOT / crystal.FACTS).read_bytes()
+    document = json.loads(raw)
+    source = document["source"]
+    if (
+        document["schema"] != "OTERYN_CRYSTAL_EQUIPMENT_GAP_FACTS/v1"
+        or source["repository"] != "zimbadev/crystalserver"
+        or source["revision"] != "201189f871d23597b82caf88fd611454a2ddefb8"
+        or source["xml_sha256"]
+        != "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    ):
+        raise ValueError("Crystal modifier source provenance drift")
+    facts = [row for row in document["records"] if row["id"] in CRYSTAL_MODIFIER_IDS]
+    if (
+        len(facts) != len(CRYSTAL_MODIFIER_IDS)
+        or {r["id"] for r in facts} != CRYSTAL_MODIFIER_IDS
+    ):
+        raise ValueError("Crystal modifier source cohort drift")
+    order = native_order(ROOT)
+    rows = {}
+    for fact in facts:
+        vector = crystal.modifiers(fact["xml"], order)["value"]["modifiers"]["value"]
+        if "held" in fact or not vector:
+            raise ValueError(f"Unqualified Crystal modifier vector: {fact['id']}")
+        rows[fact["id"]] = {
+            "field_path": CRYSTAL_MODIFIER_FIELD,
+            "item_key": ITEM_KEY.format(fact["id"]),
+            "sources": [{"path": crystal.FACTS, "external_id": fact["id"]}],
+            "typed_value": {"kind": "MODIFIERS", "value": vector},
+        }
+    return rows, {
+        "path": crystal.FACTS,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        **source,
+    }
+
+
+def build(
+    snapshot,
+    item_ids,
+    definitions=None,
+    routed_keys=(),
+    temporal_context=None,
+    *,
+    crystal_modifier_rows=None,
+):
     source_holds = (
         source_hold(),
         source_hold(MODIFIER_SOURCE_HOLD, MODIFIER_SOURCE_HOLD_SHA256),
     )
     rows = []
     definitions = definitions or {}
+    crystal_modifier_rows = crystal_modifier_rows or {}
     # Every retained page ID participates, including retired and unbound source IDs.
     page_ids = defaultdict(set)
     for record in snapshot["records"].values():
@@ -711,6 +766,21 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                     reason = field_precondition(
                         definitions[key], field_path, typed[0]["value"]
                     )
+                if (
+                    field_path == CRYSTAL_MODIFIER_FIELD
+                    and record["item_id"] in crystal_modifier_rows
+                    and reason in (None, "KNOWN_FIELD_CONFLICT")
+                ):
+                    crystal_row = crystal_modifier_rows[record["item_id"]]
+                    canonical = definitions[key]["semantics"]["skill_modifiers"]
+                    if canonical != known(
+                        {"modifiers": known(crystal_row["typed_value"]["value"])}
+                    ):
+                        raise ValueError(
+                            f"Canonical modifier disagrees with Crystal: {key}"
+                        )
+                    rows.append(crystal_row)
+                    continue
                 if reason:
                     report["physical_field_holds"].append(
                         {
@@ -915,8 +985,14 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
         raise ValueError("wiki snapshot digest mismatch")
     definitions, routed_keys = physical_field_inputs()
     temporal_context = load_context(ROOT, snapshot, definitions, routed_keys)
+    crystal_rows, crystal_source = crystal_modifier_source()
     rows, report, counts = build(
-        snapshot, item_ids, definitions, routed_keys, temporal_context
+        snapshot,
+        item_ids,
+        definitions,
+        routed_keys,
+        temporal_context,
+        crystal_modifier_rows=crystal_rows,
     )
     packet = {
         "compiler": {"path": COMPILER_PATH, "sha256": compiler_sha256},
@@ -950,6 +1026,7 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
                 "path": str(MODIFIER_SOURCE_HOLD.relative_to(ROOT)),
                 "sha256": MODIFIER_SOURCE_HOLD_SHA256,
             },
+            "crystal_modifier_qualification": crystal_source,
             "temporal_qualification": temporal_context["qualification"],
             "external_qualification": {
                 "path": str(SOURCE_HOLD.relative_to(ROOT)),

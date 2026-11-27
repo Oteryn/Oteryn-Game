@@ -11,8 +11,8 @@ import lower_wiki_movable_packet as frame
 
 shared, base, ROOT = prior.shared, prior.base, prior.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py"
-RECEIPT = "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v10.json"
-RECEIPT_SHA = "e32ab7a10cd574bb56fd9a14332de33cdaf4554caf56810b4e4c5425e88caec4"
+RECEIPT = "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v11.json"
+RECEIPT_SHA = "343f46372aeb78085c9a35fd2d84ef8595a75ac422ac203d8e2878034e04d966"
 OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"
@@ -36,6 +36,12 @@ IDS13 = frozenset(
 )
 IDS4 = frozenset((36672, 36673, 45639, 45640))
 IDS = IDS13 | IDS4
+NATIVE_PROFILES = "content/items/definitions/spell-native-profiles.json"
+REPLAY_DEFINITIONS = "content/world/definitions/reference.json"
+RUST_PIN = (
+    ROOT
+    / "crates/gameplay/content-promotion/src/content/item_numeric_modifier_promotion.rs"
+)
 HEADERS = ("kind", "stack_class", "client_projection", "materializable")
 
 
@@ -196,7 +202,18 @@ def source_vector(entry, indexed, pages, cutoff, order):
     return values[0]["value"]
 
 
-def qualify(entry, definition, binding, obj, members, routed, vector):
+def qualify(
+    entry,
+    definition,
+    binding,
+    obj,
+    members,
+    routed,
+    vector,
+    profile=None,
+    *,
+    current_headers=None,
+):
     iid, target = entry["item_id"], entry["current_target"]
     official = entry["official_source"]
     if (
@@ -212,10 +229,36 @@ def qualify(entry, definition, binding, obj, members, routed, vector):
         or target["revision"] != "definition-r1"
     ):
         raise ValueError("numeric modifier exact/native/World identity drift")
-    if {k: definition[k] for k in HEADERS} != entry["current_published_scope_receipt"][
-        "native_headers"
-    ]:
-        raise ValueError("four scoped structural headers drift")
+    headers = {k: definition[k] for k in HEADERS}
+    historical = entry["current_published_scope_receipt"]["native_headers"]
+    if current_headers is None:
+        current_headers = historical
+    if headers != current_headers:
+        # A current native admission can supersede the historical eligibility
+        # only when both full modifier vectors and the exact identity agree.
+        native_binding = (profile or {}).get("production_binding", {})
+        admission = (profile or {}).get("admission", {})
+        if (
+            native_binding.get("source_key") != "oteryn:source.crystalserver"
+            or native_binding.get("disposition") != "EXACT"
+            or native_binding.get("external_id") != str(iid)
+            or native_binding.get("target") != target
+            or admission.get("materializable") is not True
+            or admission.get("stack_class") != "NonStackable"
+            or current_headers["materializable"] is not False
+            or current_headers["stack_class"] != "Unknown"
+            or headers
+            != current_headers
+            | {
+                "materializable": admission["materializable"],
+                "stack_class": admission["stack_class"],
+            }
+            or frame.leaf(definition, "skill_modifiers.modifiers")
+            != {"state": "KNOWN", "value": vector}
+            or frame.leaf(profile, "skill_modifiers.modifiers")
+            != {"state": "KNOWN", "value": vector}
+        ):
+            raise ValueError("four scoped structural headers drift")
     flags = obj.get("flags", {})
     if (
         obj.get("name") != official["official_name"]
@@ -255,7 +298,8 @@ def qualify(entry, definition, binding, obj, members, routed, vector):
     return {
         "source_item_id": iid,
         "target": target,
-        "headers": {k: definition[k] for k in HEADERS},
+        # WorldProject applies the promotion to the pre-admission definition.
+        "headers": historical,
         "expected_name": obj["name"],
         "modifiers": vector,
     }
@@ -327,6 +371,12 @@ def build(root=ROOT):
             if obj["id"] in objects:
                 raise ValueError("duplicate official numeric object")
             objects[obj["id"]] = obj | {"object_sha256": base.sha(raw)}
+    profiles_raw = (root / NATIVE_PROFILES).read_bytes()
+    profiles = {
+        row["production_definition"]["production_key"]: row
+        for row in json.loads(profiles_raw)["records"]
+        if row.get("production_definition")
+    }
     definitions, routed, maps = {}, set(), {}
     for path in json.loads((root / "content/items/index.json").read_bytes())["shards"]:
         shard = json.loads((root / path).read_bytes())
@@ -348,20 +398,42 @@ def build(root=ROOT):
                 for r in json.loads(path.read_bytes()).get("records", [])
                 if r.get("provenance", {}).get("item_pointer")
             )
+    replay_raw = (root / REPLAY_DEFINITIONS).read_bytes()
+    keys = {entry["item_key"] for entry in records}
+    replay = {}
+    for definition in json.loads(replay_raw)["records"]:
+        key = definition["identity"]["key"]
+        if key in keys:
+            if key in replay:
+                raise ValueError("duplicate WorldProject replay Item identity")
+            replay[key] = definition
+
     order, rows = shared.native_order(root), []
     for entry in records:
+        key = entry["item_key"]
         vector = source_vector(entry, indexed, pages, receipt["cutoff"], order)
-        rows.append(
-            qualify(
-                entry,
-                definitions.get(entry["item_key"]),
-                bindings.get(entry["item_key"]),
-                objects[entry["item_id"]],
-                members,
-                routed,
-                vector,
-            )
+        row = qualify(
+            entry,
+            definitions.get(key),
+            bindings.get(key),
+            objects[entry["item_id"]],
+            members,
+            routed,
+            vector,
+            profiles.get(key),
+            current_headers=receipt.get("native_header_successors", {}).get(
+                str(entry["item_id"])
+            ),
         )
+        replay_definition = replay.get(key)
+        if (
+            not replay_definition
+            or replay_definition["identity"] != row["target"]
+            or {header: replay_definition[header] for header in HEADERS}
+            != row["headers"]
+        ):
+            raise ValueError(f"WorldProject replay headers drift: {key}")
+        rows.append(row)
     if sum(len(r["modifiers"]) for r in rows) != 50:
         raise ValueError("closed50 atom count drift")
     return {
@@ -374,6 +446,14 @@ def build(root=ROOT):
             "receipt_sha256": RECEIPT_SHA,
             "proofs": receipt["source_proofs"],
             "compiler_sha256": base.sha((root / COMPILER).read_bytes()),
+            "native_profiles": {
+                "path": NATIVE_PROFILES,
+                "sha256": base.sha(profiles_raw),
+            },
+            "replay_definitions": {
+                "path": REPLAY_DEFINITIONS,
+                "sha256": base.sha(replay_raw),
+            },
             "world_owner_inputs": maps,
         },
     }
@@ -387,12 +467,23 @@ def main():
         json.dumps(build(), sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         + "\n"
     ).encode()
+    digest = base.sha(data)
+    pin = RUST_PIN.read_text()
+    next_pin, count = re.subn(
+        r'(ITEM_NUMERIC_MODIFIER_PACKET_SHA256: &str =\s*")[0-9a-f]{64}(")',
+        lambda match: match[1] + digest + match[2],
+        pin,
+    )
+    if count != 1:
+        raise ValueError("numeric17 Rust pin marker drift")
     if args.check:
-        if OUTPUT.read_bytes() != data:
+        if OUTPUT.read_bytes() != data or pin != next_pin:
             raise SystemExit("numeric17 packet drift")
     else:
         OUTPUT.write_bytes(data)
-    print("PASS numeric17/50", base.sha(data))
+        if pin != next_pin:
+            RUST_PIN.write_text(next_pin)
+    print("PASS numeric17/50", digest)
 
 
 if __name__ == "__main__":

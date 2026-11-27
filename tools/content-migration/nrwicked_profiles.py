@@ -63,8 +63,6 @@ def bind_hard_loot(root, creatures, definitions, tables):
     """The phase replacement has a native profile and a separate donor loot table."""
     if not any(row['profile']['target']['key'] == HARD_CREATURE for row in creatures['records']):
         return
-    if HARD_CREATURE in definitions or HARD_LOOT in tables:
-        raise ValueError('Arbaziloth hard loot already has an owner')
     source = json.loads((root / FACTS).read_bytes())['enraged_arbaziloth']
     identity = {'family': 'Loot', 'key': HARD_LOOT, 'revision': 'definition-r1'}
     entries = []
@@ -80,11 +78,20 @@ def bind_hard_loot(root, creatures, definitions, tables):
             'min_count': 1,
             'max_count': maximum,
         })
-    definitions[HARD_CREATURE] = {
+    definition = {
         'identity': {'family': 'Creature', 'key': HARD_CREATURE, 'revision': 'definition-r1'},
         'loot': identity,
     }
-    tables[HARD_LOOT] = {'identity': identity, 'algorithm': 'IndependentBernoulliPpm', 'entries': entries}
+    table = {'identity': identity, 'algorithm': 'IndependentBernoulliPpm', 'entries': entries}
+    if HARD_CREATURE in definitions or HARD_LOOT in tables:
+        canonical = definitions.get(HARD_CREATURE, {})
+        authored = tables.get(HARD_LOOT, {})
+        if ({key: canonical.get(key) for key in definition} != definition
+                or {key: authored.get(key) for key in table} != table):
+            raise ValueError('Canonical Arbaziloth hard loot disagrees with the encounter source')
+        return
+    definitions[HARD_CREATURE] = definition
+    tables[HARD_LOOT] = table
 
 
 

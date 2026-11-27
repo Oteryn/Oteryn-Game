@@ -156,16 +156,20 @@ fn authored_level_fifty_gates_boot_and_toggle_with_pinned_item_profiles() -> Tes
             })
             .find(|&pos| pos != tile && world.enterable(pos))
             .ok_or("enterable adjacent tile")?;
-        let (mut runtime, cells) = owner(&world, adjacent)?;
-        let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
-            return Err("expected bundle collision index".into());
-        };
-        let mut states = ChannelSpellStates::default();
-        for (tag, level, expected, position, revision) in [
-            (4, 49, UseDisposition::Locked, adjacent, 0),
-            (5, 50, UseDisposition::Committed, tile, 1),
+        for (tag, level, occupied, expected, position, revision) in [
+            (4, 49, false, UseDisposition::Locked, adjacent, 0),
+            (5, 50, true, UseDisposition::NotPossible, adjacent, 0),
+            (6, 50, false, UseDisposition::Committed, tile, 1),
         ] {
+            let (mut runtime, cells) = owner(&world, adjacent)?;
+            let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+                return Err("expected bundle collision index".into());
+            };
+            let mut states = ChannelSpellStates::default();
             let (actor, session) = add_player(&mut runtime, &mut states, tag, level, adjacent)?;
+            if occupied {
+                add_player(&mut runtime, &mut states, 7, level, tile)?;
+            }
             let before = runtime.read_actor_position(actor).map_err(debug)?;
             let result = map_door::use_owned_door(
                 index.map(),
@@ -179,6 +183,7 @@ fn authored_level_fifty_gates_boot_and_toggle_with_pinned_item_profiles() -> Tes
                 false,
                 SemanticTimeMicros::from_micros(0),
                 &target,
+                || true,
             );
             assert_eq!(
                 result.disposition, expected,
@@ -192,6 +197,7 @@ fn authored_level_fifty_gates_boot_and_toggle_with_pinned_item_profiles() -> Tes
                 local(position)
             );
             assert_eq!(world.facts().doors().revision(key), revision);
+            assert_eq!(world.enterable(tile), revision != 0, "{tile:?}");
         }
         assert!(world.enterable(tile), "{tile:?}");
     }
@@ -229,6 +235,7 @@ fn open_level_gate_checks_the_entering_player() -> TestResult {
         false,
         SemanticTimeMicros::from_micros(0),
         &target,
+        || true,
     );
     assert_eq!(result.disposition, UseDisposition::Committed);
     assert_eq!(

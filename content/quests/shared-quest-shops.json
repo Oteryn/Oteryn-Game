@@ -591,1973 +591,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.yaman",
-      "service": "oteryn:service.quest.djinn.yaman",
-      "offers": [
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3077",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3085",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 1000,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3085",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3097",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3097",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3051",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3051",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i16118",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 6500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3067",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 3000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3052",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 900,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3052",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3048",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 25000,
-          "count": 1,
-          "sub_type": 20,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3048",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 250,
-          "count": 1,
-          "sub_type": 20,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3070",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 200,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i16117",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 6000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3078",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3069",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8083",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3084",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 700,
-          "count": 1,
-          "sub_type": 250,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3084",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 250,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3098",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3098",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3054",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3054",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3066",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8084",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 3600,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3045",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3045",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 30,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3065",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3053",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3053",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8082",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 4400,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        }
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yaman.lua:177:sha256:83953a0c7968d7dc81b5a56c00e843dc7f73ab2bd188f40c9dd9f30c5829a351"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.haroun",
-      "service": "oteryn:service.quest.djinn.haroun",
-      "offers": [
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3092",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3092",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3056",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3056",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3093",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3093",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3082",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 500,
-          "count": 1,
-          "sub_type": 50,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3082",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 50,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3083",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3083",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3061",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3046",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 120,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3046",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 35,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3062",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3060",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 750,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3050",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3050",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3049",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 5000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3049",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 200,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3081",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 25000,
-          "count": 1,
-          "sub_type": 5,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3081",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 500,
-          "count": 1,
-          "sub_type": 5,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3091",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3091",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3073",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3072",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i16096",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 6500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8093",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3075",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 200,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i16115",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 6000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3071",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 3000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8092",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 3600,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8094",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 4400,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3074",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        }
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/haroun.lua:151:sha256:ec868176c31cacbda63d89260e9b8f375938c142d8c75466d177bf274a7cf71b"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.nah_bob",
-      "service": "oteryn:service.quest.djinn.nah_bob",
-      "offers": [
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i7436",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 5000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3567",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 10000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3418",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 7000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3418",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1200,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3079",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 30000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3301",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i7412",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 18000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3381",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 12000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3385",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 2500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3382",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 12000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3419",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 8000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3391",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 6000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3302",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 9000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3416",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 4000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3320",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 8000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3280",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 4000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i7454",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 3000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3415",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3284",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3380",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 8000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3380",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 900,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3313",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 3000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3313",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3439",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 16000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i7410",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 20000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3392",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 30000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i7451",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 10000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3271",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 8000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3271",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i7391",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 16000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3279",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 10000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3279",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1200,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_marid_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        }
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/nah_bob.lua:146:sha256:7598ed6c02bba9fe6705c56d9b63601d3727259ead8561a4f0db3e3ca8acdb83"
-      ]
-    },
-    {
       "npc": "oteryn:npc.black_bert",
       "service": "oteryn:service.trade.black_bert",
       "offers": [
@@ -4851,6 +2884,2194 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-154:sha256:d4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "service": "oteryn:service.quest_shop.cael",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i2965",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 6,
+              "maximum": 12
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i2966",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 6,
+              "maximum": 12
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10216",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 11,
+              "maximum": 12
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10288",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 12,
+              "maximum": 12
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cael.lua:30-37:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "service": "oteryn:service.trade.carlos",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3577",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_beginning_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
+              "initial": 0,
+              "minimum": 1,
+              "maximum": 1
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3582",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_beginning_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
+              "initial": 0,
+              "minimum": 1,
+              "maximum": 1
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:33-43"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "service": "oteryn:service.trade.hairycles",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3587",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5086",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5087",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5088",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:498-517",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:14546-14560",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/construction_kits.lua:38-40"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.haroun",
+      "service": "oteryn:service.quest.djinn.haroun",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3092",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3092",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3056",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3056",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3093",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3093",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3082",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 500,
+          "count": 1,
+          "sub_type": 50,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3082",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 50,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3083",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3083",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3061",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3046",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 120,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3046",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 35,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3062",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3060",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 750,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3050",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3050",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3049",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 5000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3049",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 200,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3081",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 25000,
+          "count": 1,
+          "sub_type": 5,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3081",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 500,
+          "count": 1,
+          "sub_type": 5,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3091",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3091",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3073",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3072",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i16096",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 6500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8093",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3075",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 200,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i16115",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 6000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3071",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 3000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8092",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 3600,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8094",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 4400,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3074",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/haroun.lua:151:sha256:ec868176c31cacbda63d89260e9b8f375938c142d8c75466d177bf274a7cf71b"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.nah_bob",
+      "service": "oteryn:service.quest.djinn.nah_bob",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7436",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 5000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3567",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3418",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 7000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3418",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1200,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3079",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 30000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3301",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7412",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 18000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3381",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 12000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3385",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3382",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 12000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3419",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 8000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3391",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 6000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3302",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 9000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3416",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 4000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3320",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 8000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3280",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 4000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7454",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 3000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3415",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3284",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3380",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 8000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3380",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 900,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3313",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 3000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3313",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3439",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 16000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7410",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 20000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3392",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 30000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7451",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 10000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3271",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 8000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3271",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7391",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 16000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3279",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 10000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3279",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1200,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_marid_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/nah_bob.lua:146:sha256:7598ed6c02bba9fe6705c56d9b63601d3727259ead8561a4f0db3e3ca8acdb83"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yaman",
+      "service": "oteryn:service.quest.djinn.yaman",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3077",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3085",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 1000,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3085",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3097",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3097",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3051",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3051",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i16118",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 6500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3067",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 3000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3052",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 900,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3052",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3048",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 25000,
+          "count": 1,
+          "sub_type": 20,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3048",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 250,
+          "count": 1,
+          "sub_type": 20,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3070",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 200,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i16117",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 6000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3078",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3069",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8083",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3084",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 700,
+          "count": 1,
+          "sub_type": 250,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3084",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 250,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3098",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3098",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3054",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3054",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3066",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8084",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 3600,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3045",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3045",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 30,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3065",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3053",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3053",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8082",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 4400,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yaman.lua:177:sha256:83953a0c7968d7dc81b5a56c00e843dc7f73ab2bd188f40c9dd9f30c5829a351"
       ]
     }
   ]

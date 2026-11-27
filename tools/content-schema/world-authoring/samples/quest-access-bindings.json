@@ -47,6 +47,78 @@
     },
     {
       "position": [
+        32310,
+        31975,
+        13
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30018,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 839
+    },
+    {
+      "position": [
+        32310,
+        31976,
+        13
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30019,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 951
+    },
+    {
+      "position": [
+        32312,
+        31975,
+        13
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30020,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 955
+    },
+    {
+      "position": [
+        32312,
+        31976,
+        13
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30021,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 959
+    },
+    {
+      "position": [
+        32314,
+        31975,
+        13
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30022,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 963
+    },
+    {
+      "position": [
+        32314,
+        31976,
+        13
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30023,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 967
+    },
+    {
+      "position": [
         33226,
         31671,
         13
@@ -95,6 +167,414 @@
     },
     {
       "position": [
+        32477,
+        31905,
+        7
+      ],
+      "item": 599,
+      "attribute": "unique",
+      "value": 25031,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 2238
+    },
+    {
+      "position": [
+        32476,
+        31906,
+        7
+      ],
+      "item": 599,
+      "attribute": "unique",
+      "value": 25032,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 2242
+    },
+    {
+      "position": [
+        32486,
+        31927,
+        7
+      ],
+      "item": 599,
+      "attribute": "unique",
+      "value": 25034,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 2246
+    },
+    {
+      "position": [
+        32487,
+        31927,
+        7
+      ],
+      "item": 599,
+      "attribute": "unique",
+      "value": 25035,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 2250
+    },
+    {
+      "position": [
+        32486,
+        31928,
+        7
+      ],
+      "item": 599,
+      "attribute": "unique",
+      "value": 25036,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 2254
+    },
+    {
+      "position": [
+        32487,
+        31928,
+        7
+      ],
+      "item": 599,
+      "attribute": "unique",
+      "value": 25037,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 2258
+    },
+    {
+      "position": [
+        32265,
+        31898,
+        12
+      ],
+      "item": 353,
+      "attribute": "action",
+      "value": 25019,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 887
+    },
+    {
+      "position": [
+        32266,
+        31898,
+        12
+      ],
+      "item": 353,
+      "attribute": "action",
+      "value": 25019,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 887
+    },
+    {
+      "position": [
+        32267,
+        31898,
+        12
+      ],
+      "item": 353,
+      "attribute": "action",
+      "value": 25019,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 887
+    },
+    {
+      "position": [
+        32187,
+        31937,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32188,
+        31937,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32188,
+        31938,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32189,
+        31938,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32189,
+        31939,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32189,
+        31940,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32190,
+        31940,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32191,
+        31939,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32191,
+        31938,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25020,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 896
+    },
+    {
+      "position": [
+        32187,
+        31936,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32188,
+        31936,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32189,
+        31936,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32190,
+        31936,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32191,
+        31936,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32189,
+        31937,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32190,
+        31937,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32191,
+        31937,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32187,
+        31938,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32190,
+        31938,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32187,
+        31939,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32188,
+        31939,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32190,
+        31939,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32187,
+        31940,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32188,
+        31940,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
+        32191,
+        31940,
+        14
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 25021,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 911
+    },
+    {
+      "position": [
         32966,
         32626,
         5
@@ -119,6 +599,150 @@
     },
     {
       "position": [
+        32476,
+        31903,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50308,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1268
+    },
+    {
+      "position": [
+        32477,
+        31903,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50308,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1268
+    },
+    {
+      "position": [
+        32478,
+        31903,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50308,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1268
+    },
+    {
+      "position": [
+        32479,
+        31903,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50309,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1277
+    },
+    {
+      "position": [
+        32481,
+        31902,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50309,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1277
+    },
+    {
+      "position": [
+        32476,
+        31902,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50309,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1277
+    },
+    {
+      "position": [
+        32478,
+        31902,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50310,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1286
+    },
+    {
+      "position": [
+        32479,
+        31902,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50310,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1286
+    },
+    {
+      "position": [
+        32480,
+        31902,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50310,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1286
+    },
+    {
+      "position": [
+        32477,
+        31902,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50311,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1295
+    },
+    {
+      "position": [
+        32480,
+        31903,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50311,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1295
+    },
+    {
+      "position": [
+        32481,
+        31903,
+        1
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 50311,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1295
+    },
+    {
+      "position": [
         32967,
         32630,
         8
@@ -140,6 +764,114 @@
       "value": 50022,
       "source": "data-global/startup/tables/teleport.lua",
       "line": 247
+    },
+    {
+      "position": [
+        32171,
+        31853,
+        15
+      ],
+      "item": 1959,
+      "attribute": "unique",
+      "value": 35014,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 566
+    },
+    {
+      "position": [
+        32192,
+        31938,
+        14
+      ],
+      "item": 1959,
+      "attribute": "unique",
+      "value": 35017,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 581
+    },
+    {
+      "position": [
+        32311,
+        31978,
+        13
+      ],
+      "item": 1959,
+      "attribute": "unique",
+      "value": 35018,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 586
+    },
+    {
+      "position": [
+        32219,
+        31913,
+        15
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 35019,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 591
+    },
+    {
+      "position": [
+        32476,
+        31904,
+        5
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38018,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 727
+    },
+    {
+      "position": [
+        32481,
+        31904,
+        4
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38019,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 733
+    },
+    {
+      "position": [
+        32476,
+        31904,
+        3
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38020,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 739
+    },
+    {
+      "position": [
+        32479,
+        31904,
+        2
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38021,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 745
+    },
+    {
+      "position": [
+        32481,
+        31905,
+        1
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38022,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 751
     }
   ]
 }

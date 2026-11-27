@@ -1,0 +1,4203 @@
+{
+  "bundles": [
+    {
+      "catalog": {
+        "assets": [
+          "canary.appearance:outfit/1770"
+        ],
+        "definitions": [
+          {
+            "family": "Item",
+            "key": "canary:item/2886",
+            "revision": "canary-47dfd51f"
+          }
+        ]
+      },
+      "dependencies": {
+        "abilities": [],
+        "documents": [],
+        "effects": [],
+        "formulas": [],
+        "items": [],
+        "loot_tables": []
+      },
+      "manifest": {
+        "entries": [
+          {
+            "kind": "field",
+            "resolution": "Explicit source corpse=0: creature.cpp Creature::getCorpse returns nullptr when getLookCorpse()==0; no corpse Item is created. Death residue is independent.",
+            "source_field": "corpse",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 19,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/behavior/movement/pass_through",
+            "kind": "field",
+            "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false.",
+            "source_field": "flags.pass_through",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/movement/can_walk",
+            "kind": "field",
+            "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true.",
+            "source_field": "flags.canWalk/canTarget",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "kind": "field",
+            "resolution": "Explicit empty source collection; registrar has no entries to register, so this field produces no loot, attacks, speech or summons.",
+            "source_field": "loot",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 60,
+            "status": "approved_omission"
+          },
+          {
+            "kind": "field",
+            "resolution": "Explicit empty source collection; registrar has no entries to register, so this field produces no loot, attacks, speech or summons.",
+            "source_field": "attacks",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 62,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/creature/inspection/description",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "description",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 4,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/initial_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "health",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 16,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/max_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "maxHealth",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 17,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/experience",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "experience",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 5,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/speed",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "speed",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 20,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/appearance/asset_binding",
+            "kind": "field",
+            "resolution": "Declared source appearance binding, not an admitted asset.",
+            "source_field": "outfit",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 6,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/light/level",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "light",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 55,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/flags",
+            "kind": "field",
+            "resolution": "Absent flags take monsters.hpp MonsterInfo defaults.",
+            "source_field": "flags",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/change_target",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "changeTarget",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 23,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/strategy_weights",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "strategiesTarget",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 28,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/resistances",
+            "kind": "field",
+            "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE.",
+            "source_field": "elements",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 70,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/immunities",
+            "kind": "field",
+            "resolution": "Invisible condition immunity also sets sense_invisible.",
+            "source_field": "immunities",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 83,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/armor",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.armor",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 66,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/defense",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.defense",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 65,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/mitigation_percent",
+            "kind": "field",
+            "resolution": "Canary float percent points as an exact decimal ratio.",
+            "source_field": "defenses.mitigation",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 67,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/death_residue",
+            "kind": "dependency",
+            "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse.",
+            "source_field": "race",
+            "source_file": "data-global/monster/vermins/common_beetle.lua",
+            "source_index": 0,
+            "source_line": 18,
+            "status": "mapped"
+          }
+        ],
+        "sources": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+          }
+        ]
+      },
+      "monster": {
+        "behavior": {
+          "attacks": [],
+          "defenses": [],
+          "event_bindings": [],
+          "identity": {
+            "key": "canary:behavior/common_beetle",
+            "revision": "canary-47dfd51f"
+          },
+          "movement": {
+            "can_walk": true,
+            "field_permissions": {
+              "energy": true,
+              "fire": true,
+              "poison": true
+            },
+            "pass_through": false,
+            "push_creatures": false,
+            "push_items": true,
+            "pushable": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_percent": 10,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": false,
+            "sense_invisible": true,
+            "static_attack_chance_percent": 90,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          }
+        },
+        "creature": {
+          "behavior": {
+            "family": "Behavior",
+            "key": "canary:behavior/common_beetle",
+            "revision": "canary-47dfd51f"
+          },
+          "damage_reflection": [],
+          "death_residue": {
+            "fluid_type": "slime",
+            "item": {
+              "family": "Item",
+              "key": "canary:item/2886",
+              "revision": "canary-47dfd51f"
+            }
+          },
+          "display_name": "Common Beetle",
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "healing_from_damage": [],
+          "identity": {
+            "key": "canary:creature/common_beetle",
+            "revision": "canary-47dfd51f"
+          },
+          "immunities": {
+            "conditions": [
+              "invisible",
+              "paralyze"
+            ],
+            "damage_types": []
+          },
+          "inspection": {
+            "description": "a common beetle"
+          },
+          "name_forms": {
+            "article": "a"
+          },
+          "presentation": {
+            "family": "Presentation",
+            "key": "canary:presentation/common_beetle",
+            "revision": "canary-47dfd51f"
+          },
+          "resistances": [],
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "all"
+          },
+          "stats": {
+            "armor": 50,
+            "critical_chance_percent": 0,
+            "defense": 50,
+            "experience": 0,
+            "initial_health": 3700,
+            "max_health": 3700,
+            "mitigation_percent": {
+              "denominator": 2,
+              "numerator": 3
+            },
+            "speed": 120
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": false
+          }
+        },
+        "presentation": {
+          "appearance": {
+            "asset_binding": "canary.appearance:outfit/1770",
+            "attachment_bindings": [],
+            "palette_bindings": [],
+            "visual_effect_bindings": []
+          },
+          "audio": {
+            "event_bindings": []
+          },
+          "identity": {
+            "key": "canary:presentation/common_beetle",
+            "revision": "canary-47dfd51f"
+          },
+          "light": {
+            "level": 0
+          }
+        }
+      },
+      "source": {
+        "file": "data-global/monster/vermins/common_beetle.lua",
+        "git_blob": "69752ac097dc902a4a36fe25988c31d34da31d20",
+        "sha256": "ab7c5fb1ecf12e80d5f9bfab3d5929c64f2e631d8cb38d42c2cceb8d30921115"
+      }
+    },
+    {
+      "catalog": {
+        "assets": [
+          "canary.appearance:effect/magic_red",
+          "canary.appearance:missile/onyxarrow",
+          "canary.appearance:object/10332",
+          "canary.appearance:object/10334",
+          "canary.appearance:object/10335",
+          "canary.appearance:object/10337",
+          "canary.appearance:outfit/342"
+        ],
+        "definitions": [
+          {
+            "family": "Item",
+            "key": "canary:item/10196",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/10407",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/10421",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/11479",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/2886",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3031",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3316",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3349",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3350",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3577",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/8029",
+            "revision": "canary-47dfd51f"
+          }
+        ]
+      },
+      "dependencies": {
+        "abilities": [
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/cublarc_the_plunderer/attack-1",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/cublarc_the_plunderer/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "melee",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 1
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/cublarc_the_plunderer/attack-2",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/cublarc_the_plunderer/attack-2",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 7
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/cublarc_the_plunderer/attack-3-condition",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/cublarc_the_plunderer/attack-3",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/cublarc_the_plunderer/defense-1",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/cublarc_the_plunderer/defense-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        ],
+        "documents": [],
+        "effects": [
+          {
+            "damage_type": "physical",
+            "formula": {
+              "family": "Formula",
+              "key": "canary:formula/cublarc_the_plunderer/attack-1-1",
+              "revision": "canary-47dfd51f"
+            },
+            "identity": {
+              "key": "canary:effect/cublarc_the_plunderer/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            "mitigated_by": [
+              "armor",
+              "shield"
+            ],
+            "operation": "damage"
+          },
+          {
+            "damage_type": "physical",
+            "formula": {
+              "family": "Formula",
+              "key": "canary:formula/cublarc_the_plunderer/attack-2-1",
+              "revision": "canary-47dfd51f"
+            },
+            "identity": {
+              "key": "canary:effect/cublarc_the_plunderer/attack-2",
+              "revision": "canary-47dfd51f"
+            },
+            "mitigated_by": [
+              "armor"
+            ],
+            "operation": "damage",
+            "presentation": {
+              "projectile_asset_binding": "canary.appearance:missile/onyxarrow"
+            }
+          },
+          {
+            "condition": {
+              "damage_over_time": {
+                "first_tick": "after_interval",
+                "initial_tick": {
+                  "mode": "automatic"
+                },
+                "tick_interval_ms": 2000,
+                "tick_profile": "decreasing",
+                "total_damage_range": {
+                  "maximum": 8,
+                  "minimum": 8
+                }
+              },
+              "lifetime": "damage_schedule",
+              "type": "poison"
+            },
+            "identity": {
+              "key": "canary:effect/cublarc_the_plunderer/attack-3-condition",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "condition"
+          },
+          {
+            "condition": {
+              "lifetime": "fixed_duration",
+              "speed_formula": {
+                "family": "Formula",
+                "key": "canary:formula/cublarc_the_plunderer/defense-1-1",
+                "revision": "canary-47dfd51f"
+              },
+              "type": "haste"
+            },
+            "duration_ms": 5000,
+            "identity": {
+              "key": "canary:effect/cublarc_the_plunderer/defense-1",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "condition",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/magic_red"
+            }
+          }
+        ],
+        "formulas": [
+          {
+            "identity": {
+              "key": "canary:formula/cublarc_the_plunderer/attack-1-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "range",
+            "magnitude": {
+              "maximum": 130,
+              "minimum": 0
+            }
+          },
+          {
+            "identity": {
+              "key": "canary:formula/cublarc_the_plunderer/attack-2-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "range",
+            "magnitude": {
+              "maximum": 85,
+              "minimum": 0
+            }
+          },
+          {
+            "identity": {
+              "key": "canary:formula/cublarc_the_plunderer/defense-1-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "speed_modifier",
+            "speed": {
+              "maximum_multiplier": {
+                "denominator": 20,
+                "numerator": 27
+              },
+              "maximum_offset": 40,
+              "minimum_multiplier": {
+                "denominator": 40,
+                "numerator": 27
+              },
+              "minimum_offset": 40
+            }
+          }
+        ],
+        "items": [
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "container": {
+              "capacity": 10
+            },
+            "identity": {
+              "key": "canary:item/10337",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": false,
+              "pickupable": false,
+              "weight_centioz": 0
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/10337",
+              "name": "dead orc marauder"
+            },
+            "temporal": {
+              "decay_action": "transform",
+              "decay_target": {
+                "family": "Item",
+                "key": "canary:item/10334",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_ms": 10000,
+              "stop_duration": false
+            }
+          },
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "container": {
+              "capacity": 10
+            },
+            "identity": {
+              "key": "canary:item/10334",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": true,
+              "pickupable": true,
+              "weight_centioz": 0
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/10334",
+              "name": "dead orc marauder"
+            },
+            "temporal": {
+              "decay_action": "transform",
+              "decay_target": {
+                "family": "Item",
+                "key": "canary:item/10335",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_ms": 300000,
+              "stop_duration": false
+            }
+          },
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "identity": {
+              "key": "canary:item/10335",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": true,
+              "pickupable": true,
+              "weight_centioz": 0
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/10335",
+              "name": "dead orc marauder"
+            },
+            "temporal": {
+              "decay_action": "transform",
+              "decay_target": {
+                "family": "Item",
+                "key": "canary:item/10332",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_ms": 300000,
+              "stop_duration": false
+            }
+          },
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "identity": {
+              "key": "canary:item/10332",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": true,
+              "pickupable": true,
+              "weight_centioz": 31000
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/10332",
+              "name": "dead gnarlhound"
+            },
+            "temporal": {
+              "decay_action": "remove",
+              "duration_ms": 60000,
+              "stop_duration": false
+            }
+          }
+        ],
+        "loot_tables": []
+      },
+      "manifest": {
+        "entries": [
+          {
+            "destination": "/monster/behavior/attacks/0",
+            "kind": "field",
+            "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied.",
+            "source_field": "attacks[1]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 85,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/attacks/1",
+            "kind": "field",
+            "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR on an inline physical combat, so its damage is reduced by the target armor (mitigated_by).",
+            "source_field": "attacks[2]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 86,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/attacks/2",
+            "kind": "field",
+            "resolution": "monsters.cpp deserializeSpell: |min|,|max| totals, max=0 -> min, startDamage>min -> 0, tick default 2000 ms.",
+            "source_field": "attacks[3]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 88,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/defenses/0",
+            "kind": "field",
+            "resolution": "monsters.cpp deserializeSpell speed: speedChange < -1000 clamps to -1000; >0 haste (non-aggressive), else paralyze; default duration 10000 ms; multiplier = 1 + speedChange/1000, formula vars (multiplier/2, 40, multiplier, 40).",
+            "source_field": "defenses[1]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 94,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/corpse_item",
+            "kind": "field",
+            "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms.",
+            "source_field": "corpse",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 24,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/0",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11479 \"orc leather\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[10]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 81,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/1",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3349 \"crossbow\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[9]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 80,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/2",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 8029 \"silkweaver bow\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[8]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 79,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/3",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10196 \"orc tooth\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[7]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 78,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/4",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3350 \"bow\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[6]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 77,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/5",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10421 \"disgusting trophy\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[5]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 76,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/6",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10407 \"shaggy tail\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[4]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 75,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/7",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3316 \"orcish axe\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[3]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 74,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/8",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3577 \"meat\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[2]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 73,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/9",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[1]",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 72,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/bosstiary",
+            "kind": "field",
+            "resolution": "Stage kills and points are derived from the rarity: io_bosstiary.hpp levelInfos kills/points per stage: bane 25/100/300 & 5/15/30, archfoe 5/20/60 & 10/30/60, nemesis 1/3/5 & 10/30/60.",
+            "source_field": "bosstiary.bossRace",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 18,
+            "status": "mapped"
+          },
+          {
+            "kind": "field",
+            "resolution": "Foreign identifier; provenance only.",
+            "source_field": "bosstiary.bossRaceId",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 17,
+            "status": "metadata_only"
+          },
+          {
+            "destination": "/monster/behavior/movement/pass_through",
+            "kind": "field",
+            "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false.",
+            "source_field": "flags.pass_through",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 40,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/movement/can_walk",
+            "kind": "field",
+            "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true.",
+            "source_field": "flags.canWalk/canTarget",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 40,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/inspection/description",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "description",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 4,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/initial_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "health",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 21,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/max_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "maxHealth",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 22,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/experience",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "experience",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 5,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/speed",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "speed",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 25,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/appearance/asset_binding",
+            "kind": "field",
+            "resolution": "Declared source appearance binding, not an admitted asset.",
+            "source_field": "outfit",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 6,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/light/level",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "light",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 60,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/flags",
+            "kind": "field",
+            "resolution": "Absent flags take monsters.hpp MonsterInfo defaults.",
+            "source_field": "flags",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 40,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/change_target",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "changeTarget",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 28,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/strategy_weights",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "strategiesTarget",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 33,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/voices",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "voices",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 65,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/resistances",
+            "kind": "field",
+            "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE.",
+            "source_field": "elements",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 97,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/immunities",
+            "kind": "field",
+            "resolution": "Invisible condition immunity also sets sense_invisible.",
+            "source_field": "immunities",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 110,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/armor",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.armor",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 93,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/defense",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.defense",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 92,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/death_residue",
+            "kind": "dependency",
+            "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse.",
+            "source_field": "race",
+            "source_file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "source_index": 0,
+            "source_line": 23,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature",
+            "kind": "field",
+            "resolution": "Pinned distribution-default profile only; {\"evidence\": [{\"file\": \"config.lua.dist\", \"git_blob\": \"f215fa6e4612bd8f500e859c504935ef649e3e00\", \"setting_lines\": {\"maxDamageReflection\": 561, \"maxElementalResistance\": 560, \"minElementalResistance\": 559}}], \"evidence_class\": \"OTS_HYPOTHESIS_ONLY\", \"file\": \"config.lua.dist\", \"profile\": \"PINNED_DISTRIBUTION_DEFAULT\", \"repository\": \"zimbadev/crystalserver\", \"revision\": \"201189f871d23597b82caf88fd611454a2ddefb8\", \"settings\": {\"maxDamageReflection\": 200, \"maxElementalResistance\": 200, \"minElementalResistance\": -200}}",
+            "source_field": "maxDamageReflection/minElementalResistance/maxElementalResistance",
+            "source_file": "config.lua.dist",
+            "source_index": 1,
+            "source_line": 561,
+            "status": "mapped"
+          }
+        ],
+        "sources": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+          },
+          {
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+          }
+        ]
+      },
+      "monster": {
+        "behavior": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/cublarc_the_plunderer/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 100,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/cublarc_the_plunderer/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 50,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/cublarc_the_plunderer/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 11,
+              "interval_ms": 2000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/cublarc_the_plunderer/defense-1",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 15,
+              "interval_ms": 2000
+            }
+          ],
+          "event_bindings": [],
+          "identity": {
+            "key": "canary:behavior/cublarc_the_plunderer",
+            "revision": "canary-47dfd51f"
+          },
+          "movement": {
+            "can_walk": true,
+            "field_permissions": {
+              "energy": false,
+              "fire": false,
+              "poison": false
+            },
+            "pass_through": false,
+            "push_creatures": true,
+            "push_items": true,
+            "pushable": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_percent": 10,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_percent": 90,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 4
+          },
+          "voices": {
+            "chance_percent": 10,
+            "entries": [
+              {
+                "mode": "say",
+                "text": "Orc arga Huummmak!"
+              }
+            ],
+            "interval_ms": 5000
+          }
+        },
+        "creature": {
+          "behavior": {
+            "family": "Behavior",
+            "key": "canary:behavior/cublarc_the_plunderer",
+            "revision": "canary-47dfd51f"
+          },
+          "bosstiary": {
+            "category": "nemesis",
+            "expertise_kills": 3,
+            "expertise_points": 30,
+            "mastery_kills": 5,
+            "mastery_points": 60,
+            "prowess_kills": 1,
+            "prowess_points": 10
+          },
+          "corpse_item": {
+            "family": "Item",
+            "key": "canary:item/10337",
+            "revision": "canary-47dfd51f"
+          },
+          "damage_reflection": [],
+          "death_residue": {
+            "fluid_type": "blood",
+            "item": {
+              "family": "Item",
+              "key": "canary:item/2886",
+              "revision": "canary-47dfd51f"
+            }
+          },
+          "display_name": "Cublarc The Plunderer",
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "healing_from_damage": [],
+          "identity": {
+            "key": "canary:creature/cublarc_the_plunderer",
+            "revision": "canary-47dfd51f"
+          },
+          "immunities": {
+            "conditions": [
+              "invisible"
+            ],
+            "damage_types": []
+          },
+          "inspection": {
+            "description": "Cublarc The Plunderer"
+          },
+          "loot": {
+            "family": "Loot",
+            "key": "canary:loot/cublarc_the_plunderer",
+            "revision": "canary-47dfd51f"
+          },
+          "presentation": {
+            "family": "Presentation",
+            "key": "canary:presentation/cublarc_the_plunderer",
+            "revision": "canary-47dfd51f"
+          },
+          "resistances": [
+            {
+              "damage_type": "physical",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 5
+              }
+            },
+            {
+              "damage_type": "earth",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": -5
+              }
+            },
+            {
+              "damage_type": "holy",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 10
+              }
+            },
+            {
+              "damage_type": "death",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": -10
+              }
+            }
+          ],
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "all"
+          },
+          "stats": {
+            "armor": 25,
+            "critical_chance_percent": 0,
+            "defense": 25,
+            "experience": 400,
+            "initial_health": 400,
+            "max_health": 400,
+            "speed": 105
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": true
+          }
+        },
+        "loot": {
+          "algorithm": "IndependentBernoulli",
+          "entries": [
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/11479",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 0.5,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3349",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 1.2,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/8029",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 1.81,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/10196",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 2.41,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3350",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 4.22,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/10421",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 5.42,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/10407",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 13.86,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3316",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 19.35,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3577",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 25.9,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3031",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 80,
+              "min_count": 1,
+              "probability_percent": 53.61,
+              "skip_later_same_item_after_success": false
+            }
+          ],
+          "identity": {
+            "key": "canary:loot/cublarc_the_plunderer",
+            "revision": "canary-47dfd51f"
+          }
+        },
+        "presentation": {
+          "appearance": {
+            "asset_binding": "canary.appearance:outfit/342",
+            "attachment_bindings": [],
+            "palette_bindings": [],
+            "visual_effect_bindings": []
+          },
+          "audio": {
+            "event_bindings": []
+          },
+          "identity": {
+            "key": "canary:presentation/cublarc_the_plunderer",
+            "revision": "canary-47dfd51f"
+          },
+          "light": {
+            "level": 0
+          }
+        }
+      },
+      "source": {
+        "file": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+        "git_blob": "e6ca61fd301368c0c17b5f3970e1b45532020c56",
+        "sha256": "3425a5c95ccd6b91ba4ac0592cfc8308ebcf7772b16ba688d3aee2d7de305e76"
+      }
+    },
+    {
+      "catalog": {
+        "assets": [
+          "canary.appearance:effect/carniphila",
+          "canary.appearance:effect/magic_blue",
+          "canary.appearance:effect/poff",
+          "canary.appearance:missile/earth",
+          "canary.appearance:object/9607",
+          "canary.appearance:object/9608",
+          "canary.appearance:object/9609",
+          "canary.appearance:object/9610",
+          "canary.appearance:outfit/330"
+        ],
+        "definitions": [
+          {
+            "family": "Creature",
+            "key": "canary:creature/clay_guardian",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/10309",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/238",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/2886",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3032",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3035",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3370",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3436",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/7413",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/7643",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/811",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/814",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/8896",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/9302",
+            "revision": "canary-47dfd51f"
+          }
+        ]
+      },
+      "dependencies": {
+        "abilities": [
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/gorga/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Effect",
+                "key": "canary:effect/gorga/attack-1-condition",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/gorga/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "melee",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 1
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/gorga/attack-2",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/gorga/attack-2",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 7
+          },
+          {
+            "area": {
+              "length_tiles": 8,
+              "spread_tiles": 3
+            },
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/gorga/attack-3",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/gorga/attack-3",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": true,
+            "needs_target": false,
+            "range_tiles": 0
+          },
+          {
+            "area": {
+              "radius_tiles": 7
+            },
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/gorga/attack-4",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/gorga/attack-4",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 0
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/gorga/attack-5",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/gorga/attack-5",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 7
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "canary:effect/gorga/defense-1",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "identity": {
+              "key": "canary:ability/gorga/defense-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        ],
+        "documents": [],
+        "effects": [
+          {
+            "damage_type": "physical",
+            "formula": {
+              "family": "Formula",
+              "key": "canary:formula/gorga/attack-1-1",
+              "revision": "canary-47dfd51f"
+            },
+            "identity": {
+              "key": "canary:effect/gorga/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            "mitigated_by": [
+              "armor",
+              "shield"
+            ],
+            "operation": "damage"
+          },
+          {
+            "condition": {
+              "damage_over_time": {
+                "first_tick": "after_interval",
+                "initial_tick": {
+                  "mode": "automatic"
+                },
+                "tick_interval_ms": 4000,
+                "tick_profile": "decreasing",
+                "total_damage_range": {
+                  "maximum": 42,
+                  "minimum": 42
+                }
+              },
+              "lifetime": "damage_schedule",
+              "type": "poison"
+            },
+            "identity": {
+              "key": "canary:effect/gorga/attack-1-condition",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "condition"
+          },
+          {
+            "damage_type": "life_drain",
+            "formula": {
+              "family": "Formula",
+              "key": "canary:formula/gorga/attack-2-1",
+              "revision": "canary-47dfd51f"
+            },
+            "identity": {
+              "key": "canary:effect/gorga/attack-2",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "damage",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/carniphila",
+              "projectile_asset_binding": "canary.appearance:missile/earth"
+            }
+          },
+          {
+            "damage_type": "earth",
+            "formula": {
+              "family": "Formula",
+              "key": "canary:formula/gorga/attack-3-1",
+              "revision": "canary-47dfd51f"
+            },
+            "identity": {
+              "key": "canary:effect/gorga/attack-3",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "damage",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/carniphila"
+            }
+          },
+          {
+            "condition": {
+              "lifetime": "fixed_duration",
+              "speed_formula": {
+                "family": "Formula",
+                "key": "canary:formula/gorga/attack-4-1",
+                "revision": "canary-47dfd51f"
+              },
+              "type": "paralyze"
+            },
+            "duration_ms": 10000,
+            "identity": {
+              "key": "canary:effect/gorga/attack-4",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "condition",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/poff"
+            }
+          },
+          {
+            "appearance_transform": {
+              "creature": {
+                "family": "Creature",
+                "key": "canary:creature/clay_guardian",
+                "revision": "canary-47dfd51f"
+              }
+            },
+            "duration_ms": 3000,
+            "identity": {
+              "key": "canary:effect/gorga/attack-5",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "appearance_transform"
+          },
+          {
+            "damage_type": "healing",
+            "formula": {
+              "family": "Formula",
+              "key": "canary:formula/gorga/defense-1-1",
+              "revision": "canary-47dfd51f"
+            },
+            "identity": {
+              "key": "canary:effect/gorga/defense-1",
+              "revision": "canary-47dfd51f"
+            },
+            "operation": "heal",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/magic_blue"
+            }
+          }
+        ],
+        "formulas": [
+          {
+            "identity": {
+              "key": "canary:formula/gorga/attack-1-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "range",
+            "magnitude": {
+              "maximum": 450,
+              "minimum": 0
+            }
+          },
+          {
+            "identity": {
+              "key": "canary:formula/gorga/attack-2-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "range",
+            "magnitude": {
+              "maximum": 350,
+              "minimum": 21
+            }
+          },
+          {
+            "identity": {
+              "key": "canary:formula/gorga/attack-3-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "range",
+            "magnitude": {
+              "maximum": 500,
+              "minimum": 250
+            }
+          },
+          {
+            "identity": {
+              "key": "canary:formula/gorga/attack-4-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "speed_modifier",
+            "speed": {
+              "maximum_multiplier": {
+                "denominator": 1,
+                "numerator": 1
+              },
+              "maximum_offset": 40,
+              "minimum_multiplier": {
+                "denominator": 2,
+                "numerator": 1
+              },
+              "minimum_offset": 40
+            }
+          },
+          {
+            "identity": {
+              "key": "canary:formula/gorga/defense-1-1",
+              "revision": "canary-47dfd51f"
+            },
+            "kind": "range",
+            "magnitude": {
+              "maximum": 300,
+              "minimum": 150
+            }
+          }
+        ],
+        "items": [
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "container": {
+              "capacity": 32
+            },
+            "identity": {
+              "key": "canary:item/9607",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": false,
+              "pickupable": false,
+              "weight_centioz": 0
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/9607",
+              "name": "dead medusa"
+            },
+            "temporal": {
+              "decay_action": "transform",
+              "decay_target": {
+                "family": "Item",
+                "key": "canary:item/9608",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_ms": 10000,
+              "stop_duration": false
+            }
+          },
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "container": {
+              "capacity": 32
+            },
+            "identity": {
+              "key": "canary:item/9608",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": true,
+              "pickupable": false,
+              "weight_centioz": 0
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/9608",
+              "name": "dead medusa"
+            },
+            "temporal": {
+              "decay_action": "transform",
+              "decay_target": {
+                "family": "Item",
+                "key": "canary:item/9609",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_ms": 300000,
+              "stop_duration": false
+            }
+          },
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "identity": {
+              "key": "canary:item/9609",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": true,
+              "pickupable": false,
+              "weight_centioz": 0
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/9609",
+              "name": "dead medusa"
+            },
+            "temporal": {
+              "decay_action": "transform",
+              "decay_target": {
+                "family": "Item",
+                "key": "canary:item/9610",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_ms": 300000,
+              "stop_duration": false
+            }
+          },
+          {
+            "classification": {
+              "is_corpse": true
+            },
+            "collision": {
+              "block_pathfinding": false,
+              "block_projectiles": false,
+              "block_walk": false
+            },
+            "identity": {
+              "key": "canary:item/9610",
+              "revision": "canary-47dfd51f"
+            },
+            "physical": {
+              "movable": true,
+              "pickupable": false,
+              "weight_centioz": 0
+            },
+            "presentation": {
+              "article": "a",
+              "asset_binding": "canary.appearance:object/9610",
+              "name": "dead medusa"
+            },
+            "temporal": {
+              "decay_action": "remove",
+              "duration_ms": 60000,
+              "stop_duration": false
+            }
+          }
+        ],
+        "loot_tables": []
+      },
+      "manifest": {
+        "entries": [
+          {
+            "destination": "/monster/behavior/attacks/0",
+            "kind": "field",
+            "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). monsters.cpp deserializeSpell: |min|,|max| totals, max=0 -> min, startDamage>min -> 0, tick default 2000 ms. Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied.",
+            "source_field": "attacks[1]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 81,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/attacks/1",
+            "kind": "field",
+            "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula.",
+            "source_field": "attacks[2]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 82,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/attacks/2",
+            "kind": "field",
+            "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula.",
+            "source_field": "attacks[3]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 83,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/attacks/3",
+            "kind": "field",
+            "resolution": "monsters.cpp deserializeSpell speed: speedChange < -1000 clamps to -1000; >0 haste (non-aggressive), else paralyze; default duration 10000 ms; multiplier = 1 + speedChange/1000, formula vars (multiplier/2, 40, multiplier, 40).",
+            "source_field": "attacks[4]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 84,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/attacks/4",
+            "kind": "field",
+            "resolution": "monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive.",
+            "source_field": "attacks[5]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 85,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/defenses/0",
+            "kind": "field",
+            "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula.",
+            "source_field": "defenses[1]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 92,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/corpse_item",
+            "kind": "field",
+            "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms.",
+            "source_field": "corpse",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 19,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/0",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 8896 \"slightly rusted armor\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[3]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 68,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/1",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 811 \"terra mantle\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[11]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 76,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/2",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9302 \"sacred tree amulet\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[7]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 72,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/3",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 814 \"terra amulet\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[10]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 75,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/4",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7413 \"titan axe\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[12]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 77,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/5",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3370 \"knight armor\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[2]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 67,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/6",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3436 \"medusa shield\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[1]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 66,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/7",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3032 \"small emerald\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[9]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 74,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/8",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7643 \"ultimate health potion\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[8]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 73,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/9",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 238 \"great mana potion\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[6]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 71,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/10",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3035 \"platinum coin\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[4]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 69,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/11",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10309 \"strand of medusa hair\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[5]",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 70,
+            "status": "mapped"
+          },
+          {
+            "kind": "field",
+            "resolution": "Interval/chance without any voice entry; the engine has nothing to say, so no voices section.",
+            "source_field": "voices",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 60,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/behavior/movement/pass_through",
+            "kind": "field",
+            "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false.",
+            "source_field": "flags.pass_through",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/movement/can_walk",
+            "kind": "field",
+            "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true.",
+            "source_field": "flags.canWalk/canTarget",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/inspection/description",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "description",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 4,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/initial_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "health",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 16,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/max_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "maxHealth",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 17,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/experience",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "experience",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 5,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/speed",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "speed",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 20,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/appearance/asset_binding",
+            "kind": "field",
+            "resolution": "Declared source appearance binding, not an admitted asset.",
+            "source_field": "outfit",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 6,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/light/level",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "light",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 55,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/flags",
+            "kind": "field",
+            "resolution": "Absent flags take monsters.hpp MonsterInfo defaults.",
+            "source_field": "flags",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/change_target",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "changeTarget",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 23,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/strategy_weights",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "strategiesTarget",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 28,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/resistances",
+            "kind": "field",
+            "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE.",
+            "source_field": "elements",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 95,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/immunities",
+            "kind": "field",
+            "resolution": "Invisible condition immunity also sets sense_invisible.",
+            "source_field": "immunities",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 108,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/armor",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.armor",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 90,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/defense",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.defense",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 89,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/mitigation_percent",
+            "kind": "field",
+            "resolution": "Canary float percent points as an exact decimal ratio.",
+            "source_field": "defenses.mitigation",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 91,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/death_residue",
+            "kind": "dependency",
+            "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse.",
+            "source_field": "race",
+            "source_file": "data-global/monster/bosses/gorga.lua",
+            "source_index": 0,
+            "source_line": 18,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature",
+            "kind": "field",
+            "resolution": "Pinned distribution-default profile only; {\"evidence\": [{\"file\": \"config.lua.dist\", \"git_blob\": \"f215fa6e4612bd8f500e859c504935ef649e3e00\", \"setting_lines\": {\"maxDamageReflection\": 561, \"maxElementalResistance\": 560, \"minElementalResistance\": 559}}], \"evidence_class\": \"OTS_HYPOTHESIS_ONLY\", \"file\": \"config.lua.dist\", \"profile\": \"PINNED_DISTRIBUTION_DEFAULT\", \"repository\": \"zimbadev/crystalserver\", \"revision\": \"201189f871d23597b82caf88fd611454a2ddefb8\", \"settings\": {\"maxDamageReflection\": 200, \"maxElementalResistance\": 200, \"minElementalResistance\": -200}}",
+            "source_field": "maxDamageReflection/minElementalResistance/maxElementalResistance",
+            "source_file": "config.lua.dist",
+            "source_index": 1,
+            "source_line": 561,
+            "status": "mapped"
+          }
+        ],
+        "sources": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+          },
+          {
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+          }
+        ]
+      },
+      "monster": {
+        "behavior": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/gorga/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 100,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/gorga/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 20,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/gorga/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 15,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/gorga/attack-4",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 25,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/gorga/attack-5",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 1,
+              "interval_ms": 2000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "canary:ability/gorga/defense-1",
+                "revision": "canary-47dfd51f"
+              },
+              "chance_percent": 25,
+              "interval_ms": 2000
+            }
+          ],
+          "event_bindings": [],
+          "identity": {
+            "key": "canary:behavior/gorga",
+            "revision": "canary-47dfd51f"
+          },
+          "movement": {
+            "can_walk": true,
+            "field_permissions": {
+              "energy": false,
+              "fire": false,
+              "poison": true
+            },
+            "pass_through": false,
+            "push_creatures": true,
+            "push_items": true,
+            "pushable": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_percent": 20,
+              "interval_ms": 4000
+            },
+            "flee_health": 600,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_percent": 80,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          }
+        },
+        "creature": {
+          "behavior": {
+            "family": "Behavior",
+            "key": "canary:behavior/gorga",
+            "revision": "canary-47dfd51f"
+          },
+          "corpse_item": {
+            "family": "Item",
+            "key": "canary:item/9607",
+            "revision": "canary-47dfd51f"
+          },
+          "damage_reflection": [],
+          "death_residue": {
+            "fluid_type": "blood",
+            "item": {
+              "family": "Item",
+              "key": "canary:item/2886",
+              "revision": "canary-47dfd51f"
+            }
+          },
+          "display_name": "Gorga",
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "healing_from_damage": [],
+          "identity": {
+            "key": "canary:creature/gorga",
+            "revision": "canary-47dfd51f"
+          },
+          "immunities": {
+            "conditions": [
+              "invisible",
+              "paralyze"
+            ],
+            "damage_types": []
+          },
+          "inspection": {
+            "description": "Gorga"
+          },
+          "loot": {
+            "family": "Loot",
+            "key": "canary:loot/gorga",
+            "revision": "canary-47dfd51f"
+          },
+          "presentation": {
+            "family": "Presentation",
+            "key": "canary:presentation/gorga",
+            "revision": "canary-47dfd51f"
+          },
+          "resistances": [
+            {
+              "damage_type": "energy",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": -10
+              }
+            },
+            {
+              "damage_type": "earth",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": -5
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "drowning",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "ice",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 20
+              }
+            }
+          ],
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "all"
+          },
+          "stats": {
+            "armor": 30,
+            "critical_chance_percent": 0,
+            "defense": 30,
+            "experience": 13000,
+            "initial_health": 15000,
+            "max_health": 15000,
+            "mitigation_percent": {
+              "denominator": 50,
+              "numerator": 97
+            },
+            "speed": 140
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": true
+          }
+        },
+        "loot": {
+          "algorithm": "IndependentBernoulli",
+          "entries": [
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/8896",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 1.35,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/811",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 1.35,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/9302",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 2.7,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/814",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 6.76,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/7413",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 6.76,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3370",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 10.81,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3436",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 12.16,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3032",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 4,
+              "min_count": 1,
+              "probability_percent": 13.51,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/7643",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 2,
+              "min_count": 1,
+              "probability_percent": 28.38,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/238",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 2,
+              "min_count": 1,
+              "probability_percent": 29.73,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3035",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 6,
+              "min_count": 1,
+              "probability_percent": 100,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/10309",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 100,
+              "skip_later_same_item_after_success": false
+            }
+          ],
+          "identity": {
+            "key": "canary:loot/gorga",
+            "revision": "canary-47dfd51f"
+          }
+        },
+        "presentation": {
+          "appearance": {
+            "asset_binding": "canary.appearance:outfit/330",
+            "attachment_bindings": [],
+            "palette_bindings": [],
+            "visual_effect_bindings": []
+          },
+          "audio": {
+            "event_bindings": []
+          },
+          "identity": {
+            "key": "canary:presentation/gorga",
+            "revision": "canary-47dfd51f"
+          },
+          "light": {
+            "level": 0
+          }
+        }
+      },
+      "source": {
+        "file": "data-global/monster/bosses/gorga.lua",
+        "git_blob": "73397caa68babb7af5822668800c6c53386a1c6b",
+        "sha256": "739dfc13e98ec5450705952db0a58b79fdf6dd14cd926631deaadf98d06ed06a"
+      }
+    },
+    {
+      "catalog": {
+        "assets": [
+          "canary.appearance:outfit/1767"
+        ],
+        "definitions": [
+          {
+            "family": "Item",
+            "key": "canary:item/10300",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/2886",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3597",
+            "revision": "canary-47dfd51f"
+          },
+          {
+            "family": "Item",
+            "key": "canary:item/3728",
+            "revision": "canary-47dfd51f"
+          }
+        ]
+      },
+      "dependencies": {
+        "abilities": [],
+        "documents": [],
+        "effects": [],
+        "formulas": [],
+        "items": [],
+        "loot_tables": []
+      },
+      "manifest": {
+        "entries": [
+          {
+            "kind": "field",
+            "resolution": "Explicit source corpse=0: creature.cpp Creature::getCorpse returns nullptr when getLookCorpse()==0; no corpse Item is created. Death residue is independent.",
+            "source_field": "corpse",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 19,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/loot/entries/0",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3728 \"dark mushroom\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[2]",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 70,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/1",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3597 \"corncob\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[3]",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 71,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/loot/entries/2",
+            "kind": "dependency",
+            "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10300 \"carniphila seeds\" is a declared source-scoped reference, not an admitted canonical Item.",
+            "source_field": "loot[1]",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 69,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/movement/pass_through",
+            "kind": "field",
+            "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false.",
+            "source_field": "flags.pass_through",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/movement/can_walk",
+            "kind": "field",
+            "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true.",
+            "source_field": "flags.canWalk/canTarget",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "kind": "field",
+            "resolution": "Explicit empty source collection; registrar has no entries to register, so this field produces no loot, attacks, speech or summons.",
+            "source_field": "attacks",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 74,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/creature/inspection/description",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "description",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 4,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/initial_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "health",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 16,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/max_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "maxHealth",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 17,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/experience",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "experience",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 5,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/speed",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "speed",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 20,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/appearance/asset_binding",
+            "kind": "field",
+            "resolution": "Declared source appearance binding, not an admitted asset.",
+            "source_field": "outfit",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 6,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/light/level",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "light",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 55,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/flags",
+            "kind": "field",
+            "resolution": "Absent flags take monsters.hpp MonsterInfo defaults.",
+            "source_field": "flags",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/change_target",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "changeTarget",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 23,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/strategy_weights",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "strategiesTarget",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 28,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/voices",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "voices",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 60,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/resistances",
+            "kind": "field",
+            "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE.",
+            "source_field": "elements",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 82,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/immunities",
+            "kind": "field",
+            "resolution": "Invisible condition immunity also sets sense_invisible.",
+            "source_field": "immunities",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 95,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/armor",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.armor",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 78,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/defense",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.defense",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 77,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/mitigation_percent",
+            "kind": "field",
+            "resolution": "Canary float percent points as an exact decimal ratio.",
+            "source_field": "defenses.mitigation",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 79,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/death_residue",
+            "kind": "dependency",
+            "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse.",
+            "source_field": "race",
+            "source_file": "data-global/monster/plants/grove_guardian.lua",
+            "source_index": 0,
+            "source_line": 18,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature",
+            "kind": "field",
+            "resolution": "Pinned distribution-default profile only; {\"evidence\": [{\"file\": \"config.lua.dist\", \"git_blob\": \"f215fa6e4612bd8f500e859c504935ef649e3e00\", \"setting_lines\": {\"maxDamageReflection\": 561, \"maxElementalResistance\": 560, \"minElementalResistance\": 559}}], \"evidence_class\": \"OTS_HYPOTHESIS_ONLY\", \"file\": \"config.lua.dist\", \"profile\": \"PINNED_DISTRIBUTION_DEFAULT\", \"repository\": \"zimbadev/crystalserver\", \"revision\": \"201189f871d23597b82caf88fd611454a2ddefb8\", \"settings\": {\"maxDamageReflection\": 200, \"maxElementalResistance\": 200, \"minElementalResistance\": -200}}",
+            "source_field": "maxDamageReflection/minElementalResistance/maxElementalResistance",
+            "source_file": "config.lua.dist",
+            "source_index": 1,
+            "source_line": 561,
+            "status": "mapped"
+          }
+        ],
+        "sources": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+          },
+          {
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+          }
+        ]
+      },
+      "monster": {
+        "behavior": {
+          "attacks": [],
+          "defenses": [],
+          "event_bindings": [],
+          "identity": {
+            "key": "canary:behavior/grove_guardian",
+            "revision": "canary-47dfd51f"
+          },
+          "movement": {
+            "can_walk": true,
+            "field_permissions": {
+              "energy": true,
+              "fire": true,
+              "poison": true
+            },
+            "pass_through": false,
+            "push_creatures": false,
+            "push_items": true,
+            "pushable": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_percent": 10,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": false,
+            "sense_invisible": true,
+            "static_attack_chance_percent": 90,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          },
+          "voices": {
+            "chance_percent": 10,
+            "entries": [
+              {
+                "mode": "say",
+                "text": "<creak>"
+              },
+              {
+                "mode": "say",
+                "text": "<rustle>"
+              },
+              {
+                "mode": "say",
+                "text": "<groan>"
+              }
+            ],
+            "interval_ms": 5000
+          }
+        },
+        "creature": {
+          "behavior": {
+            "family": "Behavior",
+            "key": "canary:behavior/grove_guardian",
+            "revision": "canary-47dfd51f"
+          },
+          "damage_reflection": [],
+          "death_residue": {
+            "fluid_type": "slime",
+            "item": {
+              "family": "Item",
+              "key": "canary:item/2886",
+              "revision": "canary-47dfd51f"
+            }
+          },
+          "display_name": "Grove Guardian",
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "healing_from_damage": [],
+          "identity": {
+            "key": "canary:creature/grove_guardian",
+            "revision": "canary-47dfd51f"
+          },
+          "immunities": {
+            "conditions": [
+              "invisible",
+              "paralyze"
+            ],
+            "damage_types": []
+          },
+          "inspection": {
+            "description": "a grove guardian"
+          },
+          "loot": {
+            "family": "Loot",
+            "key": "canary:loot/grove_guardian",
+            "revision": "canary-47dfd51f"
+          },
+          "name_forms": {
+            "article": "a"
+          },
+          "presentation": {
+            "family": "Presentation",
+            "key": "canary:presentation/grove_guardian",
+            "revision": "canary-47dfd51f"
+          },
+          "resistances": [
+            {
+              "damage_type": "physical",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 15
+              }
+            },
+            {
+              "damage_type": "energy",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 35
+              }
+            },
+            {
+              "damage_type": "earth",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 5
+              }
+            },
+            {
+              "damage_type": "ice",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 5
+              }
+            },
+            {
+              "damage_type": "holy",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 5
+              }
+            },
+            {
+              "damage_type": "death",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 10
+              }
+            }
+          ],
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "all"
+          },
+          "stats": {
+            "armor": 50,
+            "critical_chance_percent": 0,
+            "defense": 50,
+            "experience": 0,
+            "initial_health": 20000,
+            "max_health": 20000,
+            "mitigation_percent": {
+              "denominator": 2,
+              "numerator": 3
+            },
+            "speed": 100
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": false
+          }
+        },
+        "loot": {
+          "algorithm": "IndependentBernoulli",
+          "entries": [
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3728",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 20,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/3597",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 20,
+              "skip_later_same_item_after_success": false
+            },
+            {
+              "item": {
+                "family": "Item",
+                "key": "canary:item/10300",
+                "revision": "canary-47dfd51f"
+              },
+              "max_count": 1,
+              "min_count": 1,
+              "probability_percent": 30,
+              "skip_later_same_item_after_success": false
+            }
+          ],
+          "identity": {
+            "key": "canary:loot/grove_guardian",
+            "revision": "canary-47dfd51f"
+          }
+        },
+        "presentation": {
+          "appearance": {
+            "asset_binding": "canary.appearance:outfit/1767",
+            "attachment_bindings": [],
+            "palette_bindings": [],
+            "visual_effect_bindings": []
+          },
+          "audio": {
+            "event_bindings": []
+          },
+          "identity": {
+            "key": "canary:presentation/grove_guardian",
+            "revision": "canary-47dfd51f"
+          },
+          "light": {
+            "level": 0
+          }
+        }
+      },
+      "source": {
+        "file": "data-global/monster/plants/grove_guardian.lua",
+        "git_blob": "e549c109f2aa30f65a374d5c53e5db5fe74b7ba8",
+        "sha256": "b240c449e5c94e59fbd3a3434960fa2d9be3cbedb70f2d3e8aa25b46e57fce3d"
+      }
+    },
+    {
+      "catalog": {
+        "assets": [
+          "canary.appearance:outfit/1770"
+        ],
+        "definitions": [
+          {
+            "family": "Item",
+            "key": "canary:item/2886",
+            "revision": "canary-47dfd51f"
+          }
+        ]
+      },
+      "dependencies": {
+        "abilities": [],
+        "documents": [],
+        "effects": [],
+        "formulas": [],
+        "items": [],
+        "loot_tables": []
+      },
+      "manifest": {
+        "entries": [
+          {
+            "kind": "field",
+            "resolution": "Explicit source corpse=0: creature.cpp Creature::getCorpse returns nullptr when getLookCorpse()==0; no corpse Item is created. Death residue is independent.",
+            "source_field": "corpse",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 19,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/behavior/movement/pass_through",
+            "kind": "field",
+            "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false.",
+            "source_field": "flags.pass_through",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/movement/can_walk",
+            "kind": "field",
+            "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true.",
+            "source_field": "flags.canWalk/canTarget",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "kind": "field",
+            "resolution": "Explicit empty source collection; registrar has no entries to register, so this field produces no loot, attacks, speech or summons.",
+            "source_field": "loot",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 60,
+            "status": "approved_omission"
+          },
+          {
+            "kind": "field",
+            "resolution": "Explicit empty source collection; registrar has no entries to register, so this field produces no loot, attacks, speech or summons.",
+            "source_field": "attacks",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 62,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/creature/inspection/description",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "description",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 4,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/initial_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "health",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 16,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/max_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "maxHealth",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 17,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/experience",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "experience",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 5,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/speed",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "speed",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 20,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/appearance/asset_binding",
+            "kind": "field",
+            "resolution": "Declared source appearance binding, not an admitted asset.",
+            "source_field": "outfit",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 6,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/light/level",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "light",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 55,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/flags",
+            "kind": "field",
+            "resolution": "Absent flags take monsters.hpp MonsterInfo defaults.",
+            "source_field": "flags",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 35,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/change_target",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "changeTarget",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 23,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/strategy_weights",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "strategiesTarget",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 28,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/resistances",
+            "kind": "field",
+            "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE.",
+            "source_field": "elements",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 70,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/immunities",
+            "kind": "field",
+            "resolution": "Invisible condition immunity also sets sense_invisible.",
+            "source_field": "immunities",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 83,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/armor",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.armor",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 66,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/defense",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.defense",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 65,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/mitigation_percent",
+            "kind": "field",
+            "resolution": "Canary float percent points as an exact decimal ratio.",
+            "source_field": "defenses.mitigation",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 67,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/death_residue",
+            "kind": "dependency",
+            "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse.",
+            "source_field": "race",
+            "source_file": "data-global/monster/vermins/herd_weevil.lua",
+            "source_index": 0,
+            "source_line": 18,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature",
+            "kind": "field",
+            "resolution": "Pinned distribution-default profile only; {\"evidence\": [{\"file\": \"config.lua.dist\", \"git_blob\": \"f215fa6e4612bd8f500e859c504935ef649e3e00\", \"setting_lines\": {\"maxDamageReflection\": 561, \"maxElementalResistance\": 560, \"minElementalResistance\": 559}}], \"evidence_class\": \"OTS_HYPOTHESIS_ONLY\", \"file\": \"config.lua.dist\", \"profile\": \"PINNED_DISTRIBUTION_DEFAULT\", \"repository\": \"zimbadev/crystalserver\", \"revision\": \"201189f871d23597b82caf88fd611454a2ddefb8\", \"settings\": {\"maxDamageReflection\": 200, \"maxElementalResistance\": 200, \"minElementalResistance\": -200}}",
+            "source_field": "maxDamageReflection/minElementalResistance/maxElementalResistance",
+            "source_file": "config.lua.dist",
+            "source_index": 1,
+            "source_line": 561,
+            "status": "mapped"
+          }
+        ],
+        "sources": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+          },
+          {
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+          }
+        ]
+      },
+      "monster": {
+        "behavior": {
+          "attacks": [],
+          "defenses": [],
+          "event_bindings": [],
+          "identity": {
+            "key": "canary:behavior/herd_weevil",
+            "revision": "canary-47dfd51f"
+          },
+          "movement": {
+            "can_walk": true,
+            "field_permissions": {
+              "energy": true,
+              "fire": true,
+              "poison": true
+            },
+            "pass_through": false,
+            "push_creatures": false,
+            "push_items": true,
+            "pushable": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_percent": 10,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": false,
+            "sense_invisible": true,
+            "static_attack_chance_percent": 90,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          }
+        },
+        "creature": {
+          "behavior": {
+            "family": "Behavior",
+            "key": "canary:behavior/herd_weevil",
+            "revision": "canary-47dfd51f"
+          },
+          "damage_reflection": [],
+          "death_residue": {
+            "fluid_type": "slime",
+            "item": {
+              "family": "Item",
+              "key": "canary:item/2886",
+              "revision": "canary-47dfd51f"
+            }
+          },
+          "display_name": "Herd Weevil",
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "healing_from_damage": [],
+          "identity": {
+            "key": "canary:creature/herd_weevil",
+            "revision": "canary-47dfd51f"
+          },
+          "immunities": {
+            "conditions": [
+              "invisible",
+              "paralyze"
+            ],
+            "damage_types": []
+          },
+          "inspection": {
+            "description": "a herd weevil"
+          },
+          "name_forms": {
+            "article": "a"
+          },
+          "presentation": {
+            "family": "Presentation",
+            "key": "canary:presentation/herd_weevil",
+            "revision": "canary-47dfd51f"
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 15
+              }
+            }
+          ],
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "all"
+          },
+          "stats": {
+            "armor": 50,
+            "critical_chance_percent": 0,
+            "defense": 50,
+            "experience": 0,
+            "initial_health": 3700,
+            "max_health": 3700,
+            "mitigation_percent": {
+              "denominator": 2,
+              "numerator": 3
+            },
+            "speed": 120
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": false
+          }
+        },
+        "presentation": {
+          "appearance": {
+            "asset_binding": "canary.appearance:outfit/1770",
+            "attachment_bindings": [],
+            "palette_bindings": [],
+            "visual_effect_bindings": []
+          },
+          "audio": {
+            "event_bindings": []
+          },
+          "identity": {
+            "key": "canary:presentation/herd_weevil",
+            "revision": "canary-47dfd51f"
+          },
+          "light": {
+            "level": 0
+          }
+        }
+      },
+      "source": {
+        "file": "data-global/monster/vermins/herd_weevil.lua",
+        "git_blob": "fa56ce19d04e85ddf567f2c7517860fd31eda5a1",
+        "sha256": "6194b881a2a6418d146e641a3c74cc0e2d0042265a4f24a5e9f093d56bf93c46"
+      }
+    },
+    {
+      "catalog": {
+        "assets": [
+          "canary.appearance:object/45600"
+        ],
+        "definitions": [
+          {
+            "family": "Item",
+            "key": "canary:item/2886",
+            "revision": "canary-47dfd51f"
+          }
+        ]
+      },
+      "dependencies": {
+        "abilities": [],
+        "documents": [],
+        "effects": [],
+        "formulas": [],
+        "items": [],
+        "loot_tables": []
+      },
+      "manifest": {
+        "entries": [
+          {
+            "kind": "field",
+            "resolution": "Explicit source corpse=0: creature.cpp Creature::getCorpse returns nullptr when getLookCorpse()==0; no corpse Item is created. Death residue is independent.",
+            "source_field": "corpse",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 13,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/behavior/movement/pass_through",
+            "kind": "field",
+            "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false.",
+            "source_field": "flags.pass_through",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 29,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/movement/can_walk",
+            "kind": "field",
+            "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true.",
+            "source_field": "flags.canWalk/canTarget",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 29,
+            "status": "mapped"
+          },
+          {
+            "kind": "field",
+            "resolution": "Explicit empty source collection; registrar has no entries to register, so this field produces no loot, attacks, speech or summons.",
+            "source_field": "loot",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 54,
+            "status": "approved_omission"
+          },
+          {
+            "kind": "field",
+            "resolution": "Explicit empty source collection; registrar has no entries to register, so this field produces no loot, attacks, speech or summons.",
+            "source_field": "attacks",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 56,
+            "status": "approved_omission"
+          },
+          {
+            "destination": "/monster/creature/inspection/description",
+            "kind": "field",
+            "resolution": "Original source text, unchanged.",
+            "source_field": "description",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 4,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/initial_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "health",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 10,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/max_health",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "maxHealth",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 11,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/experience",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "experience",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 5,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/speed",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "speed",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 14,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/appearance/asset_binding",
+            "kind": "field",
+            "resolution": "Declared source appearance binding, not an admitted asset.",
+            "source_field": "outfit",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 6,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/presentation/light/level",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "light",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 49,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/flags",
+            "kind": "field",
+            "resolution": "Absent flags take monsters.hpp MonsterInfo defaults.",
+            "source_field": "flags",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 29,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/change_target",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "changeTarget",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 17,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/behavior/targeting/strategy_weights",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "strategiesTarget",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 22,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/resistances",
+            "kind": "field",
+            "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE.",
+            "source_field": "elements",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 64,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/immunities",
+            "kind": "field",
+            "resolution": "Invisible condition immunity also sets sense_invisible.",
+            "source_field": "immunities",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 77,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/armor",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.armor",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 60,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/defense",
+            "kind": "field",
+            "resolution": "Direct source value.",
+            "source_field": "defenses.defense",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 59,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/stats/mitigation_percent",
+            "kind": "field",
+            "resolution": "Canary float percent points as an exact decimal ratio.",
+            "source_field": "defenses.mitigation",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 61,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature/death_residue",
+            "kind": "dependency",
+            "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse.",
+            "source_field": "race",
+            "source_file": "data-global/monster/plants/rootthing_cocoon.lua",
+            "source_index": 0,
+            "source_line": 12,
+            "status": "mapped"
+          },
+          {
+            "destination": "/monster/creature",
+            "kind": "field",
+            "resolution": "Pinned distribution-default profile only; {\"evidence\": [{\"file\": \"config.lua.dist\", \"git_blob\": \"f215fa6e4612bd8f500e859c504935ef649e3e00\", \"setting_lines\": {\"maxDamageReflection\": 561, \"maxElementalResistance\": 560, \"minElementalResistance\": 559}}], \"evidence_class\": \"OTS_HYPOTHESIS_ONLY\", \"file\": \"config.lua.dist\", \"profile\": \"PINNED_DISTRIBUTION_DEFAULT\", \"repository\": \"zimbadev/crystalserver\", \"revision\": \"201189f871d23597b82caf88fd611454a2ddefb8\", \"settings\": {\"maxDamageReflection\": 200, \"maxElementalResistance\": 200, \"minElementalResistance\": -200}}",
+            "source_field": "maxDamageReflection/minElementalResistance/maxElementalResistance",
+            "source_file": "config.lua.dist",
+            "source_index": 1,
+            "source_line": 561,
+            "status": "mapped"
+          }
+        ],
+        "sources": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+          },
+          {
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+          }
+        ]
+      },
+      "monster": {
+        "behavior": {
+          "attacks": [],
+          "defenses": [],
+          "event_bindings": [],
+          "identity": {
+            "key": "canary:behavior/rootthing_cocoon",
+            "revision": "canary-47dfd51f"
+          },
+          "movement": {
+            "can_walk": true,
+            "field_permissions": {
+              "energy": true,
+              "fire": true,
+              "poison": true
+            },
+            "pass_through": false,
+            "push_creatures": false,
+            "push_items": false,
+            "pushable": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_percent": 10,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": false,
+            "sense_invisible": true,
+            "static_attack_chance_percent": 90,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          }
+        },
+        "creature": {
+          "behavior": {
+            "family": "Behavior",
+            "key": "canary:behavior/rootthing_cocoon",
+            "revision": "canary-47dfd51f"
+          },
+          "damage_reflection": [],
+          "death_residue": {
+            "fluid_type": "slime",
+            "item": {
+              "family": "Item",
+              "key": "canary:item/2886",
+              "revision": "canary-47dfd51f"
+            }
+          },
+          "display_name": "Rootthing Cocoon",
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "healing_from_damage": [],
+          "identity": {
+            "key": "canary:creature/rootthing_cocoon",
+            "revision": "canary-47dfd51f"
+          },
+          "immunities": {
+            "conditions": [
+              "invisible",
+              "paralyze"
+            ],
+            "damage_types": []
+          },
+          "inspection": {
+            "description": "a rootthing cocoon"
+          },
+          "name_forms": {
+            "article": "a"
+          },
+          "presentation": {
+            "family": "Presentation",
+            "key": "canary:presentation/rootthing_cocoon",
+            "revision": "canary-47dfd51f"
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "reduction_percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            }
+          ],
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "all"
+          },
+          "stats": {
+            "armor": 50,
+            "critical_chance_percent": 0,
+            "defense": 50,
+            "experience": 0,
+            "initial_health": 5000,
+            "max_health": 5000,
+            "mitigation_percent": {
+              "denominator": 2,
+              "numerator": 3
+            },
+            "speed": 0
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": false
+          }
+        },
+        "presentation": {
+          "appearance": {
+            "asset_binding": "canary.appearance:object/45600",
+            "attachment_bindings": [],
+            "palette_bindings": [],
+            "visual_effect_bindings": []
+          },
+          "audio": {
+            "event_bindings": []
+          },
+          "identity": {
+            "key": "canary:presentation/rootthing_cocoon",
+            "revision": "canary-47dfd51f"
+          },
+          "light": {
+            "level": 0
+          }
+        }
+      },
+      "source": {
+        "file": "data-global/monster/plants/rootthing_cocoon.lua",
+        "git_blob": "cd24e3d2d7a531ee2fdf7fa4f10f555e49a0a77f",
+        "sha256": "6fe81010c5e45cb1d5fab33530d9caed5fca94626dbf5979edaa505c3a29e9b3"
+      }
+    }
+  ],
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "schema": "OTERYN_CRYSTAL_SPAWN_DELTA_CREATURES/v1"
+}

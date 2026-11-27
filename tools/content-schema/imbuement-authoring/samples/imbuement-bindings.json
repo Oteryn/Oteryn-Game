@@ -13,7 +13,7 @@
     },
     "item_facts": {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "4dd7557ba437421396835dafe7dde3eabfa64ae4d3d797fa3f0f05155f797705"
+      "sha256": "2f1ab4dc56b5ad26ba89e8da69b544fc8606b49e3d86e3047ae3cb9032840eee"
     },
     "recipe_facts": {
       "digest_scope": "sources.wiki_br.records canonical compact JSON",

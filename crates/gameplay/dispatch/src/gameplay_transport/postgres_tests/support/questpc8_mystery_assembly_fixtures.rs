@@ -51,7 +51,7 @@ async fn move_third(
             r.content_pin().frame_binding_digest(),
         )
     };
-    let cell = crate::durability::map_item_mint_audit::map_item_spatial_position(33081, 32704, -5);
+    let cell = crate::durability::map_item_mint_audit::map_item_spatial_position(33081, 32670, -3);
     let destination = if pickup {
         LoopDestination::MainBackpack
     } else {
@@ -106,22 +106,33 @@ pub(super) async fn exercise(
     );
     // Mandatory introduction and prerequisite events use their existing real
     // receipt owners. No Mystery progress or quest item is inserted by SQL.
-    super::questpc8_mystery_fixtures::exercise_intro(owner, admitted, h, authority).await?;
-    for (stage_before, at, fragment) in [
+    let lai =
+        super::questpc8_mystery_fixtures::exercise_intro(owner, admitted, h, authority).await?;
+    for (stage_before, at, approach, fragment) in [
         (
             1,
             TilePos {
-                x: 32459,
-                y: 31093,
-                floor: -6,
+                x: 32463,
+                y: 31092,
+                floor: -5,
+            },
+            TilePos {
+                x: 32462,
+                y: 31092,
+                floor: -5,
             },
             50336,
         ),
         (
             2,
             TilePos {
-                x: 33198,
-                y: 31184,
+                x: 33187,
+                y: 31191,
+                floor: -6,
+            },
+            TilePos {
+                x: 33188,
+                y: 31191,
                 floor: -6,
             },
             50337,
@@ -129,15 +140,20 @@ pub(super) async fn exercise(
         (
             3,
             TilePos {
-                x: 33834,
-                y: 31697,
-                floor: -6,
+                x: 33836,
+                y: 31677,
+                floor: -4,
+            },
+            TilePos {
+                x: 33836,
+                y: 31676,
+                floor: -4,
             },
             50338,
         ),
     ] {
-        super::questpc8_mystery_geometry_fixtures::arrive(owner, admitted, at).await?;
-        let target = object_target(owner, at, 0)?;
+        super::questpc8_mystery_geometry_fixtures::arrive(owner, admitted, approach).await?;
+        let target = object_target(owner, at, 1)?;
         let command = 1 + u64::try_from(stage_before - 1)? * 2;
         assert_eq!(stage(h).await?, stage_before);
         assert_eq!(
@@ -151,7 +167,7 @@ pub(super) async fn exercise(
             use_target(owner, admitted, command, &target).await?,
             UseDisposition::Committed
         );
-        let current_target = object_target(owner, at, 0)?;
+        let current_target = object_target(owner, at, 1)?;
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
@@ -166,41 +182,51 @@ pub(super) async fn exercise(
         admitted,
         TilePos {
             x: 33081,
-            y: 32704,
-            floor: -5,
+            y: 32670,
+            floor: -3,
         },
     )
     .await?;
     let target = object_target(
         owner,
         TilePos {
-            x: 33080,
-            y: 32704,
-            floor: -5,
+            x: 33082,
+            y: 32671,
+            floor: -3,
         },
-        0,
+        2,
     )?;
     assert_eq!(
         use_target(owner, admitted, 7, &target).await?,
         UseDisposition::Rejected,
         "exploration is mandatory"
     );
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33080,
+            y: 32670,
+            floor: -3,
+        },
+    )
+    .await?;
     super::questpc8_authored_programmes_fixtures::step(
         owner,
         admitted,
         8,
-        oteryn_protocol_oteryn::world_spatial::StepDirection::West,
+        oteryn_protocol_oteryn::world_spatial::StepDirection::East,
     )
     .await?;
     assert_eq!(stage(h).await?, 5);
     let target = object_target(
         owner,
         TilePos {
-            x: 33080,
-            y: 32704,
-            floor: -5,
+            x: 33082,
+            y: 32671,
+            floor: -3,
         },
-        0,
+        2,
     )?;
     move_third(owner, admitted, h, false).await?;
     owner
@@ -252,11 +278,11 @@ pub(super) async fn exercise(
     let current_target = object_target(
         owner,
         TilePos {
-            x: 33080,
-            y: 32704,
-            floor: -5,
+            x: 33082,
+            y: 32671,
+            floor: -3,
         },
-        0,
+        2,
     )?;
     assert_eq!(
         use_target(owner, admitted, 12, &current_target).await?,
@@ -265,5 +291,29 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 50335).await?, 1);
     let complete:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
     assert!(complete);
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33835,
+            y: 32352,
+            floor: -4,
+        },
+    )
+    .await?;
+    let greeting = super::questpc8_mystery_fixtures::talk(owner, admitted, lai, 5123, "hi").await?;
+    assert_eq!(
+        greeting.disposition,
+        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok
+    );
+    super::questpc8_mystery_fixtures::assert_lai_reply(
+        owner,
+        admitted,
+        lai,
+        5124,
+        "fragment of a statue",
+        "reconstructed",
+    )
+    .await?;
     Ok(())
 }

@@ -415,3 +415,43 @@ fn gap_sv2_i05_postgres_ground_chain_survives_scope_takeover() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn crystal_energy_field_uses_its_source_deadline_and_retires() -> TestResult {
+    use crate::durability::native_world_items::qualify_source_field_chain;
+    use crate::durability::spell_items_abi::QualifiedItemDefinition;
+
+    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+    let (controller, _) =
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+    let native = controller.active().and_then(|a| a.native_gameplay()).ok_or("native")?;
+    let profile = native.item_policy_for_source_id(2122).ok_or("energy field")?;
+    let source = QualifiedItemDefinition::from_native_policy(profile)?;
+    let plan = qualify_source_field_chain(native, source).map_err(debug)?;
+    assert_eq!(plan.decay_chain.len(), 1);
+    assert_eq!(plan.decay_chain[0].duration_millis, 100_000);
+    assert!(plan.decay_chain[0].target.is_none());
+    Ok(())
+}
+
+#[test]
+fn crystal_venorean_spice_has_a_native_regrowth_chain() -> TestResult {
+    use crate::durability::native_world_items::qualify_source_item_chain;
+    use crate::durability::spell_items_abi::QualifiedItemDefinition;
+
+    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+    let (controller, _) =
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+    let native = controller.active().and_then(|a| a.native_gameplay()).ok_or("native")?;
+    let policy = native.item_policy_for_source_id(17151).ok_or("cut spice")?;
+    let source = QualifiedItemDefinition::from_native_policy(policy)?;
+    let plan = qualify_source_item_chain(native, source).map_err(debug)?;
+    assert_eq!(plan.decay_chain.len(), 2);
+    for (stage, (source, target)) in plan.decay_chain.iter().zip([(17151, 17152), (17152, 17153)]) {
+        assert_eq!(stage.definition.production_key, format!("oteryn:item.tibia.i{source}"));
+        assert_eq!(stage.duration_millis, 21_600_000);
+        assert_eq!(stage.target.as_ref().ok_or("regrowth target")?.production_key,
+                   format!("oteryn:item.tibia.i{target}"));
+    }
+    Ok(())
+}

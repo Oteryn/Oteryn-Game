@@ -105,14 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(true);
         };
         let reserved = match item {
-            Some(ItemKey::Instance(item)) => record.offers.iter().flatten().any(|leaf| {
-                (0..=leaf.contents().len()).any(|index| {
-                    u8::try_from(index)
-                        .ok()
-                        .and_then(|index| leaf.instance_at(index).ok().flatten())
-                        .is_some_and(|id| id == item)
-                })
-            }),
+            Some(ItemKey::Instance(item)) => record.reserves(item),
             None => true,
             _ => false,
         };

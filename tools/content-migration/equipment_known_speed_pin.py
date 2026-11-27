@@ -1,8 +1,11 @@
-"""Qualify the closed three source speeds while preserving generated guard integrity."""
+"""Regenerate exact equipment-speed assertions from qualified item sources."""
+
+import hashlib
 
 import qengine_reward_item_profiles as producer
 
 IDS = frozenset({2833, 5805, 5806})
+OVERLAP_IDS = frozenset({173, 646})
 BEGIN = '    // BEGIN GENERATED SOURCE-QUALIFIED ZERO SPEED\n'
 END = '    // END GENERATED SOURCE-QUALIFIED ZERO SPEED\n'
 LEGACY_BEGIN = '    // BEGIN GENERATED CUSTODY-RETAINED UNKNOWN SPEED\n'
@@ -12,13 +15,16 @@ FILTER_END = '        // END GENERATED KNOWN SPEED EXCLUSIONS\n'
 ANCHOR = ('    let content = native(&input)?;\n'
           '    let mut unknown_speed = std::collections::BTreeSet::new();\n')
 FILTER_ANCHOR = '        .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))\n'
+COLLECT = '        .collect()\n    );\n    Ok(())\n'
 
 
-def _assertion(expected, *, unknown):
+def _assertion(expected, *, unknown, merged=False):
     begin, end = (LEGACY_BEGIN, LEGACY_END) if unknown else (BEGIN, END)
     comment = ('    // Physical custody retains UNKNOWN speed for parchment and the two trophies.\n'
                if unknown else
                '    // Pinned Canary XML/client: parchment and the two arena trophy promotions.\n')
+    if merged:
+        comment = '    // Pinned source qualifies zero speed for these overlapping custody profiles.\n'
     missing = ('missing custody-owned unknown-speed Item' if unknown else
                'missing source-qualified zero-speed Item')
     speed = 'None' if unknown else 'Some(0)'
@@ -41,12 +47,21 @@ def _replace_block(source, begin, end, expected, replacement):
     if begin not in source:
         return source, False
     start, stop = source.index(begin), source.index(end) + len(end)
-    if stop <= start or source[start:stop] != expected:
+    if stop <= start or source[start:stop] not in expected:
         raise ValueError('EQUIPMENT_KNOWN_SPEED_ANCHOR')
     return source[:start] + replacement + source[stop:], True
 
 
-def refresh(source, packet):
+def _filter_bodies(keys):
+    literals = [f'"{key}"' for key in sorted(keys)]
+    compact = '        .filter(|key| ![' + ', '.join(literals) + '].contains(&key.as_str()))\n'
+    formatted = ('        .filter(|key| ![\n'
+                 + ',\n'.join(f'            {key}' for key in literals)
+                 + '\n        ]\n        .contains(&key.as_str()))\n')
+    return compact, formatted
+
+
+def refresh(source, packet, root=producer.ROOT):
     expected = {f'oteryn:item.tibia.i{i}' for i in IDS}
     records = packet['records']
     sources = [
@@ -65,25 +80,37 @@ def refresh(source, packet):
             or source.count(BEGIN) != source.count(END) or source.count(BEGIN) > 1
             or (LEGACY_BEGIN in source and BEGIN in source)):
         raise ValueError('EQUIPMENT_KNOWN_SPEED_ANCHOR')
-    assertion = _assertion(expected, unknown=False)
+
+    # Crystal 201189f items.xml:246–252,1137–1140 has neither a speed nor a slot
+    # override for the parchment or rope. Crystal items.hpp:38,242 defaults to
+    # zero. Verify the same fields in the pinned XML used by both admissions.
+    raw = (root / producer.XML).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != producer.XML_SHA:
+        raise ValueError('EQUIPMENT_KNOWN_SPEED_SOURCE')
+    entries = producer.source.xml_index(raw)
+    for item in OVERLAP_IDS:
+        if item not in entries or {'speed', 'slottype'} & producer.source.attrs(entries[item]).keys():
+            raise ValueError('EQUIPMENT_KNOWN_SPEED_SOURCE')
+    all_keys = expected | {f'oteryn:item.tibia.i{item}' for item in OVERLAP_IDS}
+    assertion = _assertion(all_keys, unknown=False, merged=True)
     source, legacy = _replace_block(
         source, LEGACY_BEGIN, LEGACY_END,
-        _assertion(expected, unknown=True), assertion)
+        (_assertion(expected, unknown=True),), assertion)
     if not legacy:
-        source, present = _replace_block(source, BEGIN, END, assertion, assertion)
+        source, present = _replace_block(
+            source, BEGIN, END, (_assertion(expected, unknown=False), assertion), assertion)
         if not present:
             source = source.replace(ANCHOR, assertion + ANCHOR)
-    keys = ', '.join(f'"{key}"' for key in sorted(expected))
-    compact_body = f'        .filter(|key| ![{keys}].contains(&key.as_str()))\n'
-    filter_body = ('        .filter(|key| ![\n'
-                   + ',\n'.join(f'            "{key}"' for key in sorted(expected))
-                   + '\n        ]\n        .contains(&key.as_str()))\n')
-    compact = FILTER_BEGIN + compact_body + FILTER_END
-    formatted = FILTER_BEGIN + filter_body + FILTER_END
-    # Accept only the exact prior compact block or its rustfmt rendering.
+    compact, formatted = _filter_bodies(all_keys)
+    filter_bodies = (*_filter_bodies(expected), compact, formatted)
     source, _ = _replace_block(
         source, FILTER_BEGIN, FILTER_END,
-        compact if compact in source else formatted, '')
-    if compact_body in source or filter_body in source:
+        tuple(FILTER_BEGIN + body + FILTER_END for body in filter_bodies), '')
+    if any(body in source for body in filter_bodies):
         raise ValueError('EQUIPMENT_KNOWN_SPEED_ANCHOR')
-    return source.replace(FILTER_ANCHOR, FILTER_ANCHOR + formatted)
+    before, anchor, after = source.partition(FILTER_ANCHOR)
+    if after.count(COLLECT) != 1:
+        raise ValueError('EQUIPMENT_KNOWN_SPEED_ANCHOR')
+    # Ordinary Crystal admissions are appended after the original filter site.
+    return before + anchor + after.replace(
+        COLLECT, FILTER_BEGIN + formatted + FILTER_END + COLLECT)

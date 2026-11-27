@@ -168,6 +168,7 @@ def complete_records(root, records, order):
     accepted = crystal.binding_index((root / CRYSTAL_BINDINGS).read_bytes())
     accepted.update((row['external_id'], row) for row in json.loads((root / BINDINGS).read_bytes()))
     current = {row['production_definition']['production_key']: row for row in records}
+    qualified = set()
     for observed in [*packet['records'], corpse['record']]:
         binding = observed['production_binding']
         reference = binding['target']
@@ -186,7 +187,9 @@ def complete_records(root, records, order):
             row['admission'] = observed['admission']
             if not has_native_custody(reference, row):
                 raise ValueError(f'CLOOT3_NATIVE_CUSTODY:{key}')
+        qualified.add(key)
     records[:] = sorted(current.values(), key=order)
+    return qualified
 
 
 if __name__ == '__main__':

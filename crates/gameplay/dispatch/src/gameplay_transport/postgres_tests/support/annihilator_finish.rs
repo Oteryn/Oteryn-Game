@@ -45,6 +45,7 @@ pub(super) async fn outer_gate(
         UseDisposition::Committed,
         "native source gate of expertise"
     );
+    // Crystal's expertise door moves the player onto the doorway on USE.
     position(owner, member, 33214, 31671).await?;
     step(owner, member, East).await?;
     position(owner, member, 33215, 31671).await

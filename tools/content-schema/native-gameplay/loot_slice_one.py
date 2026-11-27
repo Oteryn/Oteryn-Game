@@ -244,3 +244,4 @@ def admit_native(root, generated, profile_path, starter_path, order, canonical):
             )
     document["records"].sort(key=order)
     generated[profile_path] = canonical(document)
+    return keys

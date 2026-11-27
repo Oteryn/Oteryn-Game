@@ -43,7 +43,11 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
                 && (1..=1_000_000_000_000).contains(&cause.fee_gold_units)
                 && (cause.include_bank || value.bank_debit.is_none()) => {
             let purchase = cause.purchase.as_ref().ok_or(AuditError::InvalidInput)?;
-            if !purchase.service_key.starts_with("oteryn:quest-reward/") || purchase.service_key.len() > 128 { return Err(AuditError::InvalidInput); }
+            if !super::super::quest_state::npc_program::valid_quest_fee_key(
+                &purchase.service_key, cause.fee_gold_units, cause.include_bank,
+            ) {
+                return Err(AuditError::InvalidInput);
+            }
             check_content_key(&purchase.service_key)?;
             if purchase.atelier_proof.is_empty() { return Err(AuditError::InvalidInput); }
             super::atelier_cause::check_switch(purchase, value)

@@ -100,6 +100,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 held.placed,
             )
         };
+        let postman_tour = matches!(
+            &route,
+            newhaven_travel::Departure::Paid(request) if request.route.postman_tour_passage().is_some()
+        );
         if !committed {
             let result = match route {
                 newhaven_travel::Departure::Tutorial(route) => self
@@ -304,12 +308,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if consumed == crate::durability::npc_travel::ArrivalConsume::Consumed {
             self.track_respawned(session, actor, &placed, current);
         }
-        let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
-        let held = holds.get_mut(&session)?;
-        held.slot
-            .consume_outcome(frozen.arrival.occurrence, ConsumeReplay::Complete)
-            .ok()?;
-        holds.remove(&session);
+        drop(slot);
+        {
+            let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
+            let held = holds.get_mut(&session)?;
+            held.slot
+                .consume_outcome(frozen.arrival.occurrence, ConsumeReplay::Complete)
+                .ok()?;
+            holds.remove(&session);
+        }
+        if postman_tour {
+            self.refresh_quest_session(session, false).await;
+        }
         Some(true)
     }
 }

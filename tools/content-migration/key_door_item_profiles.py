@@ -1,4 +1,4 @@
-"""Admit source-derived M06/M01c/Panpipe keys, locked doors and level-door pairs."""
+"""Admit source-derived keys, locked doors and level-door pairs."""
 
 import hashlib
 import json
@@ -6,6 +6,7 @@ import json
 from native_profile_composition import encode_native_profile
 
 PATH = "tools/content-schema/native-gameplay/key-door-item-profiles.json"
+CLASSIC_QUEST_DOORS = {5106, 6251, 9565, 9566}
 IDS = {
     1628,
     1631,
@@ -29,9 +30,9 @@ IDS = {
     6263,
     6264,
     6265,
-    9565,
-    9566,
-}
+    7711,
+    7714,
+} | CLASSIC_QUEST_DOORS
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
