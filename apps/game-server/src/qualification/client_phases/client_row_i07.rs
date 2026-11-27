@@ -259,6 +259,7 @@ async fn require_routes(
     fallback: bool,
     accept_only: bool,
     full: bool,
+    gold_to_pouch: bool,
 ) -> TestResult {
     let settings: (bool, bool, bool, Option<Vec<u8>>) = sqlx::query_as(
         "SELECT accept_only, fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
@@ -269,8 +270,8 @@ async fn require_routes(
          FROM game_character_quick_loot_categories WHERE character_id=encode($1,'hex')::uuid ORDER BY category",
     ).bind(character).fetch_all(database).await?;
     let mut expected = vec![
-        (0, false, None),
-        (if full { 5 } else { 2 }, true, Some(pouch.to_vec())),
+        (0, gold_to_pouch, gold_to_pouch.then(|| pouch.to_vec())),
+        (5, true, Some(pouch.to_vec())),
     ];
     if full && !accept_only {
         expected.push((10, false, None));
@@ -590,19 +591,11 @@ pub(super) async fn journey(
         recipient: Some(recipient),
         recipient_id,
         fallback_to_main,
-        ..request(if full {
-            QuickLootAction::AssignLoot
-        } else {
-            QuickLootAction::Assign
-        })
+        ..request(QuickLootAction::AssignLoot)
     };
     let armor_route = |fallback| {
         route(
-            Some(if full {
-                QuickLootCategory::Armor
-            } else {
-                QuickLootCategory::Equipment
-            }),
+            Some(QuickLootCategory::Armor),
             QuickLootRecipient::GoldPouch,
             Some(pouch),
             fallback,
@@ -695,7 +688,7 @@ pub(super) async fn journey(
         .await?;
     capture.probe(&mut client, 9, accept, &[]).await?;
     require_filters(&mut database, character, true, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, false, true, full).await?;
+    require_routes(&mut database, character, &pouch, false, true, full, false).await?;
     capture
         .probe(
             &mut client,
@@ -750,7 +743,7 @@ pub(super) async fn journey(
     capture
         .probe(&mut client, 11, armor_route(true), &[])
         .await?;
-    require_routes(&mut database, character, &pouch, true, true, full).await?;
+    require_routes(&mut database, character, &pouch, true, true, full, false).await?;
     require_logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0x07).await?;
@@ -761,7 +754,7 @@ pub(super) async fn journey(
         return Err("I07 relog changed the original Inbox pouch or equipped backpack custody, or reused a session".into());
     }
     require_filters(&mut database, character, true, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, true, true, full).await?;
+    require_routes(&mut database, character, &pouch, true, true, full, false).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -1117,6 +1110,20 @@ pub(super) async fn journey(
     } else {
         None
     };
+    capture
+        .probe(
+            &mut fresh,
+            24,
+            route(
+                Some(QuickLootCategory::Gold),
+                QuickLootRecipient::GoldPouch,
+                Some(pouch),
+                false,
+            ),
+            &[],
+        )
+        .await?;
+    require_routes(&mut database, character, &pouch, false, false, full, true).await?;
     require_logout(&mut fresh).await?;
     drop(fresh);
     let mut readback = connect_world(clients, 0x07).await?;
@@ -1161,7 +1168,7 @@ pub(super) async fn journey(
     )
     .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
-    require_routes(&mut database, character, &pouch, false, false, full).await?;
+    require_routes(&mut database, character, &pouch, false, false, full, true).await?;
     require_retired_donor(&mut database, &other.item).await?;
     evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true");
     let restore_request = encode_quick_loot_request(
@@ -1265,7 +1272,10 @@ pub(super) async fn journey(
         } else {
             "I07_LIVE_CAPTURE"
         };
-        evidence(&format!("{marker} session={session} relog={fresh_session}"));
+        evidence(&format!(
+            "{marker} session={session} relog={fresh_session} final={}",
+            uuid_text(readback_session.as_bytes())
+        ));
     }
     Ok(())
 }

@@ -128,7 +128,7 @@ def replay_targets():
     )]
     targets["e2e_i07"] = [(
         "oteryn-client", "e2e_i07_real_replies_replay_through_play_outbox",
-        {"i07-expected.txt"}
+        {"i07-expected.txt", "i07-restore.json", "i07-restore-request.bin"}
         | {f"i07-{key}{suffix}" for key in range(1, 21) for suffix in (".json", "-request.bin")},
     )]
     return targets
@@ -138,12 +138,12 @@ def read_i07_live_session(log, captures):
     marker = "I07_FULL_LIVE_CAPTURE" if captures.name == "i07-full" else "I07_LIVE_CAPTURE"
     uuid = r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
     sessions = re.findall(
-        rf"^SEAM_EVIDENCE {marker} session=({uuid}) relog=({uuid})$",
+        rf"^SEAM_EVIDENCE {marker} session=({uuid}) relog=({uuid}) final=({uuid})$",
         log.read_text(), re.MULTILINE,
     )
-    if len(sessions) != 1 or sessions[0][0] == sessions[0][1]:
+    if len(sessions) != 1 or len(set(sessions[0])) != 3:
         return None
-    first, relog = sessions[0]
+    first, relog, final = sessions[0]
     fields = {"command_id", "game_session_id", "payload", "server_sequence", "status"}
 
     def read_fields(pairs):
@@ -153,14 +153,17 @@ def read_i07_live_session(log, captures):
         return values
 
     try:
-        for key in range(1, 21):
+        for key in [*range(1, 21), 24, *(range(21, 24) if captures.name == "i07-full" else ())]:
             envelope = json.loads((captures / f"i07-{key}.json").read_text(),
                                   object_pairs_hook=read_fields)
             if not isinstance(envelope, dict) or envelope["game_session_id"] != (first if key < 12 else relog):
                 return None
+        restore = json.loads((captures / "i07-restore.json").read_text(), object_pairs_hook=read_fields)
+        if not isinstance(restore, dict) or restore["game_session_id"] != final:
+            return None
     except (OSError, ValueError):
         return None
-    return f"{first} relog={relog}"
+    return f"{first} relog={relog} final={final}"
 
 
 def replay_cause(row, package, test, names, captures, server, log):
@@ -209,7 +212,7 @@ def replay_cause(row, package, test, names, captures, server, log):
     if counts != [("1", "0")] or not passed_test:
         return "replay-failed"
     if row.lower() == "i07":
-        replay = re.findall(r"^I07_NATIVE_REPLAY session=([^\s]+ relog=[^\s]+)$",
+        replay = re.findall(r"^I07_NATIVE_REPLAY session=([^\s]+ relog=[^\s]+ final=[^\s]+)$",
                             result.stdout, re.MULTILINE)
         if replay != [i07_session]:
             return "replay-failed"

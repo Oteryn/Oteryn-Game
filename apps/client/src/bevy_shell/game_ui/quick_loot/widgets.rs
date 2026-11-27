@@ -110,7 +110,14 @@ pub(super) fn render(
         (Some(Category::Equipment), "Equipment"),
         (Some(Category::Consumable), "Consumables"),
         (Some(Category::Other), "Other"),
+        (Some(Category::Armor), "Armors"),
+        (Some(Category::Food), "Food"),
     ] {
+        if matches!(category, Some(Category::Armor | Category::Food))
+            && !panel.destinations_selected
+        {
+            continue;
+        }
         let row = column(commands, destinations);
         text(commands, skins, row, label);
         let confirmed = panel

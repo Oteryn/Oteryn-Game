@@ -159,6 +159,22 @@ pub(in crate::play::tests) fn scenario_with_events(
         .map_err(|error| format!("{error:?}"))?,
         status: CommandStatus::Accepted,
     };
+    scenario_with_startup(startup, (1, 1), events, entities, run)
+}
+
+fn scenario_with_startup(
+    startup: Exchange,
+    response_identity: (u64, u64),
+    events: Vec<SessionEvent>,
+    entities: Vec<oteryn_session::WorldSpatialEntity>,
+    run: impl FnOnce(
+        &crate::play::PlayLink,
+        &mut dyn FnMut(Exchange, Vec<SessionEvent>),
+        &mut dyn FnMut(&dyn Fn() -> bool),
+    ) -> Result<(), String>
+    + Send
+    + 'static,
+) -> Result<(), Box<dyn std::error::Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
@@ -168,7 +184,7 @@ pub(in crate::play::tests) fn scenario_with_events(
             let task = runtime
                 .spawn(run_session(
                     Peer {
-                        response_identity: (1, 1),
+                        response_identity,
                         exchanges: queue.clone(),
                         events,
                         entities,
@@ -211,25 +227,21 @@ pub(in crate::play::tests) fn scenario_with_events(
 }
 
 #[cfg(bevy_shell)]
-pub(super) async fn restore_capture(
+pub(super) fn restore_capture(
     exchange: Exchange,
     response_identity: (u64, u64),
-) -> Result<oteryn_client_ui::quick_loot::Panel, SessionError> {
-    let (link, _, outbox) = play_channel();
-    let exchanges = Arc::new(Mutex::new(Exchanges::from([(exchange, vec![])])));
-    let mut peer = Peer {
+) -> Result<oteryn_client_ui::quick_loot::Panel, Box<dyn std::error::Error>> {
+    let (send, receive) = std::sync::mpsc::channel();
+    scenario_with_startup(
+        exchange,
         response_identity,
-        exchanges: Arc::clone(&exchanges),
-        events: vec![],
-        entities: vec![],
-    };
-    outbox.discovery_initialize(&peer);
-    outbox.restore_quick_loot(&mut peer).await?;
-    assert!(
-        exchanges
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .is_empty()
-    );
-    Ok(link.quick_loot_panel())
+        vec![],
+        vec![],
+        move |link, _, wait| {
+            wait(&|| link.quick_loot_panel().filter_mode.is_some());
+            send.send(link.quick_loot_panel())
+                .map_err(|error| error.to_string())
+        },
+    )?;
+    Ok(receive.recv()?)
 }

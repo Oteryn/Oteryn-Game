@@ -578,11 +578,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let full = directory.file_name().is_some_and(|name| name == "i07-full");
     let armor = |fallback| {
         route(
-            Some(if full {
-                QuickLootCategory::Armor
-            } else {
-                QuickLootCategory::Equipment
-            }),
+            Some(QuickLootCategory::Armor),
             QuickLootRecipient::GoldPouch,
             Some(expected.pouch),
             fallback,
@@ -873,7 +869,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         .local_preferences
         .game_window
         .loot_messages = true;
-    outbox.discovery_initialize(&Selected(full));
+    outbox.discovery_initialize(&Selected(true));
     ui::open(&mut app)?;
     let mut sessions = [String::new(), String::new()];
     let mut previous = (0, 0);
@@ -912,10 +908,17 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             ],
         );
     }
+    let gold_pouch = route(
+        Some(QuickLootCategory::Gold),
+        QuickLootRecipient::GoldPouch,
+        Some(expected.pouch),
+        false,
+    );
+    probes.push((24, (gold_pouch.clone(), &[][..], None)));
     for (key, (action, expected_items, notice)) in probes {
         let session_index = usize::from(key >= 12);
         if key == 12 {
-            outbox.discovery_initialize(&Selected(full));
+            outbox.discovery_initialize(&Selected(true));
             previous = (0, 0);
             let panel = ui::link(&app)?.discovery_panel().loot;
             assert!(panel.confirmed.is_empty() && panel.destinations.is_empty());
@@ -945,7 +948,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             continue;
         }
         let mode = |mode| (mode as u8).to_string();
-        let dispatched = if matches!(key, 4 | 5 | 7)
+        let dispatched = if matches!(key, 4 | 5 | 7 | 24)
             || matches!(
                 &action,
                 Action::LootAll
@@ -1094,27 +1097,25 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     assert_ne!(restored.command_id, 0);
     assert_ne!(restored.server_sequence, 0);
     assert_eq!(restored.status, CommandStatus::Accepted as u32);
-    let panel = tokio::runtime::Builder::new_current_thread()
-        .build()?
-        .block_on(peer::restore_capture(
-            peer::Exchange {
-                command: oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
-                    capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
-                    command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
-                    payload: std::fs::read(directory.join("i07-restore-request.bin"))?,
-                },
-                payload: restored.payload,
-                status: CommandStatus::Accepted,
+    let panel = peer::restore_capture(
+        peer::Exchange {
+            command: oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
+                capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+                command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+                payload: std::fs::read(directory.join("i07-restore-request.bin"))?,
             },
-            (restored.command_id, restored.server_sequence),
-        ))?;
+            payload: restored.payload,
+            status: CommandStatus::Accepted,
+        },
+        (restored.command_id, restored.server_sequence),
+    )?;
     assert_eq!(panel.filter_mode, Some(skip));
     assert_eq!(panel.skipped, [expected.skip].into_iter().collect());
     assert_eq!(
         panel.accepted,
         [expected.accept, expected.gold].into_iter().collect()
     );
-    let mut routes = vec![main.clone(), gold_main, armor(false)];
+    let mut routes = vec![main.clone(), gold_pouch, armor(false)];
     if full {
         routes.push(route(
             Some(QuickLootCategory::Food),
@@ -1125,8 +1126,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     }
     assert_eq!(panel.destinations, routes);
     println!(
-        "I07_NATIVE_REPLAY session={} relog={}",
-        sessions[0], sessions[1]
+        "I07_NATIVE_REPLAY session={} relog={} final={}",
+        sessions[0], sessions[1], expected.final_session
     );
     Ok(())
 }
