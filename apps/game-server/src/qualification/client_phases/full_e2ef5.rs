@@ -3911,7 +3911,11 @@ pub(super) async fn approach_melee(
     walk(client, world, &path).await
 }
 
-fn rat_corpse_item(detail: oteryn_dev_client::EntityDetail, expected: u32, require_handle: bool) -> bool {
+fn rat_corpse_item(
+    detail: oteryn_dev_client::EntityDetail,
+    expected: u32,
+    require_handle: bool,
+) -> bool {
     use oteryn_dev_client::EntityDetail::{Object, ObjectWithAppearance};
     matches!(detail,
         Object { item_definition_ref, item_handle, .. }
@@ -3923,11 +3927,22 @@ fn rat_corpse_item(detail: oteryn_dev_client::EntityDetail, expected: u32, requi
 fn rat_corpse_matches_both_wire_object_variants() {
     use oteryn_dev_client::EntityDetail::{Object, ObjectWithAppearance};
     let appearance_id = std::num::NonZeroU16::MIN;
-    let legacy = Object { item_definition_ref: 402, quantity: 1, item_handle: None };
-    let native = ObjectWithAppearance { item_definition_ref: 402, quantity: 1, item_handle: None, appearance_id };
+    let legacy = Object {
+        item_definition_ref: 402,
+        quantity: 1,
+        item_handle: None,
+    };
+    let native = ObjectWithAppearance {
+        item_definition_ref: 402,
+        quantity: 1,
+        item_handle: None,
+        appearance_id,
+    };
     let with_handle = ObjectWithAppearance {
-        item_definition_ref: 402, quantity: 1,
-        item_handle: Some(std::num::NonZeroU64::MIN), appearance_id,
+        item_definition_ref: 402,
+        quantity: 1,
+        item_handle: Some(std::num::NonZeroU64::MIN),
+        appearance_id,
     };
     assert!(rat_corpse_item(with_handle, 402, true));
     for detail in [legacy, native] {

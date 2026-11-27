@@ -118,7 +118,8 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
         .ok_or("Animate Dead rune absent")?;
     let client = connect_character(clients, 0xd5, C16C_CHARACTER).await?;
     let mut client =
-        provisioning::provision_profile(client, clients, 1, 100, "c16c-sorcerer").await?;
+        provisioning::provision_profile(client, clients, C16C_CHARACTER, 100, "c16c-sorcerer")
+            .await?;
     evidence("FIXTURE_INPUT row=C16c magic_level=4 platinum_coins=4");
     let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bundle, |_, _| Ok(()))?;

@@ -70,6 +70,11 @@ class ClassARowWiringTests(unittest.TestCase):
         self.assertIn('Refusal::Stale', row)
         self.assertIn('enter_house(clients).await?', row)
 
+    def test_c16c_reloads_the_provisioned_character(self):
+        row = (self.phases / 'client_row_c16c.rs').read_text()
+        self.assertRegex(row, r'connect_character\(clients, 0xd5, C16C_CHARACTER\)')
+        self.assertRegex(row, r'provision_profile\(\s*client,\s*clients,\s*C16C_CHARACTER,')
+
     def test_c16c_then_w10_routes_to_distinct_bootstrapped_characters(self):
         world = (self.phases / 'world.rs').read_text()
         indices = {
