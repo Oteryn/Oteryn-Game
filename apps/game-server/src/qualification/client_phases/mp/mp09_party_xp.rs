@@ -192,8 +192,8 @@ pub(super) async fn run(
             check(&format!("stop-combat-{index}"), result, &mut failures);
         }
     }
-    if let Some(started_at_ms) = activity_started {
-        let result = out_of_range(&mut bots, world, started_at_ms).await;
+    if let (Some(started_at_ms), Some(after_shared_kill)) = (activity_started, earned) {
+        let result = out_of_range(&mut bots, world, started_at_ms, after_shared_kill).await;
 
         check(
             "distance-inactive",
@@ -422,6 +422,7 @@ async fn out_of_range(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
     activity_started_at_ms: i64,
+    after_shared_kill: [u64; 3],
 ) -> TestResult<(String, [u64; 3])> {
     let own = bots[0].own()?;
     let active = bots::party_icons(&mut bots[0]).await?;
@@ -432,10 +433,7 @@ async fn out_of_range(
         return Err(format!("need active shared leader before distance transition;reply={active:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:27").into());
     }
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
-    let path = bots::route_bot(bots, 2, world, |at| {
-        at.floor == leader.floor && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) > 35
-    })?
-    .ok_or("no walkable tile outside Crystal 30-tile range")?;
+    let path = distance_route(bots, world, leader)?;
     bots::walk_bot(bots, 2, world, &path).await?;
     let reply = bots::party_icons(&mut bots[0]).await?;
     if !reply
@@ -452,13 +450,24 @@ async fn out_of_range(
     {
         return Err(format!("distant C own inactive shield absent;reply={peer_reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:28").into());
     }
-    let (award, after) = solo_hunt_award(bots, activity_started_at_ms).await?;
+    let (award, after) = solo_hunt_award(bots, activity_started_at_ms, after_shared_kill).await?;
     Ok((
         format!(
             "C walked beyond 30;A own inactive shield;reply={reply:?};{award};Crystal party.cpp:562"
         ),
         after,
     ))
+}
+
+fn distance_route(
+    bots: &[Bot<'_, '_>],
+    world: &BundleWorld,
+    leader: TilePos,
+) -> TestResult<Vec<StepDirection>> {
+    bots::route_bot(bots, 2, world, |at| {
+        at.floor == leader.floor && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) > 35
+    })?
+    .ok_or_else(|| "no walkable tile outside Crystal 30-tile range".into())
 }
 
 /// `route` limits its planning box to 160 tiles and two floors around the start; the authored dragon
@@ -586,36 +595,54 @@ async fn encounter(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<
             .await?;
     database.close().await?;
     let mut hits = [false; 3];
-    let mut corpse_identity = [0; 16];
-    // The paladin takes the distance walk. Finish their swings first so training
-    // can settle while the other members contribute and the leader finishes the kill.
-    for index in (0..bots.len()).rev() {
-        contribute(bots, index, target, deadline).await?;
-        attack_target(&mut bots[index], None).await?;
-        let (damage, corpse) = inspect_hunt_damage(bots, index, target).await?;
-        if damage == 0 {
-            return Err(format!("no committed damage from hunter {index} on {target:?}").into());
-        }
-        corpse_identity = corpse;
+    // The paladin stops swinging first so their training can settle while the druid fights.
+    for index in (1..bots.len()).rev() {
+        record_hunt_contribution(bots, index, target, deadline).await?;
         hits[index] = true;
-        evidence(&format!(
-            "MP_CHECK MP09 hunt-contribution PASS participant={} target={target:?} damage={damage}",
-            bots[index].name
-        ));
     }
 
-    bots::pump(bots).await?;
-    attack_target(&mut bots[0], Some(&target)).await?;
-    bots::wait_observation(bots, deadline, "exact hunt corpse", |bots, _| {
-        let leader = bots[0].session.as_ref().ok_or("leader closed")?;
-        Ok(leader.world_entities().is_some_and(|view| {
-            view.get(&target).is_none()
-                && view.iter().any(|entity| {
-                    entity.kind == EntityKind::Corpse && entity.entity.identity == corpse_identity
-                })
-        }))
-    })
-    .await?;
+    // Start the distance walk during the leader's fight. Every staged landing
+    // stays within sharing range so the first kill still awards all three members.
+    let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let mut at = tile(bots[2].client()?.world_spatial().actor_position)?;
+    let mut staging = distance_route(bots, world, leader)?
+        .into_iter()
+        .take_while(|&direction| {
+            let Some(next) = destination(world, at, direction) else {
+                return false;
+            };
+            at = next;
+            at.floor == leader.floor && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) <= 30
+        });
+    let (hunters, walker) = bots.split_at_mut(2);
+    super::observations::while_servicing_liveness(
+        async {
+            let corpse_identity = record_hunt_contribution(hunters, 0, target, deadline).await?;
+            bots::pump(hunters).await?;
+            attack_target(&mut hunters[0], Some(&target)).await?;
+            bots::wait_observation(hunters, deadline, "exact hunt corpse", |bots, _| {
+                let leader = bots[0].session.as_ref().ok_or("leader closed")?;
+                Ok(leader.world_entities().is_some_and(|view| {
+                    view.get(&target).is_none()
+                        && view.iter().any(|entity| {
+                            entity.kind == EntityKind::Corpse
+                                && entity.entity.identity == corpse_identity
+                        })
+                }))
+            })
+            .await
+        },
+        async || {
+            if let Some(direction) = staging.next() {
+                bots::walk_bot(walker, 0, world, &[direction]).await?;
+            } else {
+                bots::pump(walker).await?;
+            }
+            Ok(())
+        },
+    )
+    .await??;
+    hits[0] = true;
     evidence(&format!(
         "MP_CHECK MP09 hunt-kill PASS committed kill;attributed_damage={hits:?}"
     ));
@@ -645,6 +672,25 @@ async fn encounter(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<
         pool,
         activity_started_at_ms,
     })
+}
+
+async fn record_hunt_contribution(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    target: EntityRef,
+    deadline: tokio::time::Instant,
+) -> TestResult<[u8; 16]> {
+    contribute(bots, index, target, deadline).await?;
+    attack_target(&mut bots[index], None).await?;
+    let (damage, corpse) = inspect_hunt_damage(bots, index, target).await?;
+    if damage == 0 {
+        return Err(format!("no committed damage from hunter {index} on {target:?}").into());
+    }
+    evidence(&format!(
+        "MP_CHECK MP09 hunt-contribution PASS participant={} target={target:?} damage={damage}",
+        bots[index].name
+    ));
+    Ok(corpse)
 }
 
 const HUNT_MODES: FightModes = FightModes {
@@ -766,14 +812,11 @@ async fn observed_hunt_death(
 async fn solo_hunt_award(
     bots: &mut [Bot<'_, '_>],
     activity_started_at_ms: i64,
+    start: [u64; 3],
 ) -> TestResult<(String, [u64; 3])> {
     let (key, pool) = ELIGIBILITY_TARGET;
     let selection = client_daily_boost::reward_selection(bots[0].client()?).await?;
     let pool = client_daily_boost::boosted_xp(pool, key, &selection)?;
-    let mut start = Vec::new();
-    for bot in bots.iter_mut() {
-        start.push(stats(bot).await?.0);
-    }
     let session = uuid_text(bots[0].client()?.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, key.to_owned()).await?;
     let target = parse_spawned_entity(&answer)?;
