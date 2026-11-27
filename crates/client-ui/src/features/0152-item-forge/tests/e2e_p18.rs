@@ -147,9 +147,9 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                 19 => matches!(byte, b'8' | b'9' | b'a' | b'b'),
                 _ => byte.is_ascii_hexdigit(),
             })
-        || requests.len() != 11
+        || requests.len() != 14
     {
-        return Err("Forge replay requires eleven frames from a live UUIDv7 session".into());
+        return Err("Forge replay requires fourteen frames from a live UUIDv7 session".into());
     }
     let mut panel = ItemForgePanel {
         selected: true,
@@ -178,9 +178,40 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         {
             return Err(format!("invalid Forge reply metadata at frame {index}").into());
         }
-        if matches!(index, 1..=3) {
+        if index == 3 {
             use oteryn_client_runtime::{forge_preview as wire, raw_feature};
-            let quote_index = index + 7;
+            let (id, sequence, payload) = &requests[11];
+            let browse = read_envelope(std::fs::File::open(root.join("p18-frame-11.json"))?)?;
+            if browse.game_session_id != session
+                || browse.command_id != *id
+                || browse.server_sequence != *sequence
+                || browse.status != 1
+                || !(previous.0 < *id && *id < requests[10].0)
+                || !(previous.1 < *sequence && *sequence < requests[10].1)
+                || !panel.choose_operation(Operation::Fusion)
+            {
+                return Err("Fusion browse was not bound to the reviewed pair quote".into());
+            }
+            let request = preview_request(&mut panel, wire::Selection::Browse { after: 0 })
+                .ok_or("Forge picker browse did not start")?;
+            if request.payload != *payload {
+                return Err("Forge picker browse did not reproduce the live request".into());
+            }
+            crate::item_forge::preview::apply(
+                &mut panel,
+                &request,
+                &raw_feature::GatedCommandResult {
+                    command_id: browse.command_id,
+                    server_sequence: browse.server_sequence,
+                    status: raw_feature::CommandStatus::Accepted,
+                    payload: browse.payload,
+                },
+            );
+            previous = (*id, *sequence);
+        }
+        if matches!(index, 1..=5) {
+            use oteryn_client_runtime::{forge_preview as wire, raw_feature};
+            let quote_index = if index <= 3 { index + 7 } else { index + 8 };
             let (quote_id, quote_sequence, quote_request) = &requests[quote_index];
             let quote = read_envelope(std::fs::File::open(
                 root.join(format!("p18-frame-{quote_index}.json")),
@@ -199,11 +230,12 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             let submitted =
                 Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
             let selection = if index == 3 {
-                if !panel.choose_operation(Operation::Fusion) {
-                    return Err("Forge UI did not select Fusion during replay".into());
+                let first = submitted.first_item.ok_or("Fusion receiver absent")?;
+                let second = submitted.second_item.ok_or("Fusion donor absent")?;
+                if !panel.choose_item(true, first.get()) || !panel.choose_item(false, second.get())
+                {
+                    return Err("Forge picker could not select the captured daggers".into());
                 }
-                panel.first_item = submitted.first_item.ok_or("Fusion receiver absent")?.get();
-                panel.second_item = submitted.second_item.ok_or("Fusion donor absent")?.get();
                 if panel.paid_request(submitted.occurrence).is_some() {
                     return Err("Fusion replay submitted before review".into());
                 }
@@ -247,6 +279,20 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                     return Err(
                         "Fusion review did not render or submit the exact live quote".into(),
                     );
+                }
+            } else if index >= 4 {
+                let dialog = panel
+                    .resource_dialog
+                    .content
+                    .as_ref()
+                    .ok_or("resource refusal dialog missing")?;
+                if crate::item_forge::resource_dialog::dialog_text(dialog, 0)
+                    != "This resource conversion is unavailable with your current resources or dust limit."
+                    || panel
+                        .confirm_resource(panel.resource_dialog.serial, submitted.occurrence)
+                        .is_some()
+                {
+                    return Err("Underfunded resource preview showed an incorrect refusal or allowed confirmation".into());
                 }
             } else {
                 check_paid_confirmation(index, &panel.resource_dialog)?;
@@ -382,6 +428,9 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             return Err(
                 format!("Forge panel rendered incorrect resources at frame {index}").into(),
             );
+        }
+        if index == 0 && dialog_text(0) != "No Forge operations recorded" {
+            return Err("Empty Forge history dialog rendered incorrect text".into());
         }
         let expected = match (index, &panel.decoded) {
             (0, Some(reply::Reply::History(rows))) if rows.is_empty() => "No forge operations yet",

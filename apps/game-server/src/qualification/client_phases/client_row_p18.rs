@@ -48,9 +48,9 @@ async fn dust_capture(client: &mut DevClientSession) -> TestResult<((u64, u64), 
 fn write_capture(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult<String> {
     use sha2::Digest as _;
     use std::io::Write as _;
-    if frames.len() != 11 {
+    if frames.len() != 14 {
         return Err(format!(
-            "Forge capture requires eleven live frames, got {}",
+            "Forge capture requires fourteen live frames, got {}",
             frames.len()
         )
         .into());
@@ -165,6 +165,22 @@ async fn submit_forge(
         ),
         body,
     ))
+}
+
+async fn capture_preview(
+    client: &mut DevClientSession,
+    panel: &mut ItemForgePanel,
+    selection: wire::Selection,
+) -> TestResult<LiveReply> {
+    let request = forge_ui::preview_request(panel, selection).ok_or("Forge preview did not start")?;
+    let response = client.session_mut()
+        .gated_command(request.capability, request.kind, &request.payload).await?;
+    if response.status != CommandStatus::Accepted {
+        return Err(format!("Forge preview {selection:?} was refused: {:?}", response.status).into());
+    }
+    forge_ui::preview::apply(panel, &request, &response);
+    Ok((response.command_id, response.server_sequence, response.status as u32,
+        response.payload, request.payload))
 }
 
 async fn confirm_resource(
@@ -467,19 +483,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !panel.choose_operation(Operation::Fusion) {
         return Err("Forge UI did not select Fusion".into());
     }
-    panel.first_item = pair.0.get();
-    panel.second_item = pair.1.get();
+    let browse = capture_preview(&mut client, panel, wire::Selection::Browse { after: 0 }).await?;
+    if !panel.choose_item(true, pair.0.get()) || !panel.choose_item(false, pair.1.get())
+        || panel.selection() != Some(selection)
+    {
+        return Err("The Forge picker did not select the two live daggers".into());
+    }
     let fusion_id = occurrence(session, 1);
     if panel.paid_request(fusion_id).is_some() {
         return Err("Fusion could be submitted before reviewing a quote".into());
     }
-    let request = forge_ui::preview_request(panel, selection).ok_or("Fusion preview did not start")?;
-    let response = client.session_mut()
-        .gated_command(request.capability, request.kind, &request.payload).await?;
-    if response.status != CommandStatus::Accepted {
-        return Err("Fusion pair quote was refused".into());
-    }
-    forge_ui::preview::apply(panel, &request, &response);
+    quotes.push(capture_preview(&mut client, panel, selection).await?);
+    quotes.push(browse);
     let item = |handle| wire::Item {
         handle, definition_ref: dagger.get(), appearance: 3267, name: "dagger".into(),
         classification: 1, tier: 0, maximum_tier: 1, container: false,
@@ -496,8 +511,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if panel.preview.quote.as_ref() != Some(&expected_quote) {
         return Err(format!("Fusion quote mismatch: {:?}", panel.preview.quote).into());
     }
-    quotes.push((response.command_id, response.server_sequence, response.status as u32,
-        response.payload, request.payload));
     let fusion = panel.paid_request(fusion_id).and_then(|request| request.encode())
         .ok_or("reviewed Fusion could not be submitted")?;
     let fusion = forge_ui::request(panel, forge_ui::command(fusion.to_vec()))
@@ -520,9 +533,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         let (bytes, body) = if operation == Operation::Fusion {
             submit_forge(&mut client, operation, &fusion.payload).await?
         } else {
-            forge(&mut client, operation, occurrence(session, u8::try_from(ordinal + 1)?),
-                None, 0).await?
+            let attempt = occurrence(session, u8::try_from(ordinal + 1)?);
+            let preview = capture_preview(&mut client, panel, wire::Selection::Resource(operation)).await?;
+            let dialog = panel.resource_dialog.content.as_ref().ok_or("resource refusal dialog missing")?;
+            if forge_ui::resource_dialog::dialog_text(dialog, 0)
+                != "This resource conversion is unavailable with your current resources or dust limit."
+                || panel.confirm_resource(panel.resource_dialog.serial, attempt).is_some()
+            {
+                return Err(format!("{name} incorrectly offered or rendered confirmation").into());
+            }
+            quotes.push(preview);
+            // Keep the independent wire refusal probe after verifying the UI blocks it.
+            let payload = Request {
+                operation, occurrence: attempt, first_item: None, second_item: None,
+                boost: false, protect: false, history_limit: 0,
+            }.encode().ok_or("Forge refusal request was not canonical")?;
+            let command = forge_ui::request(panel, forge_ui::command(payload.to_vec()))
+                .ok_or("Forge refusal probe did not start")?;
+            submit_forge(&mut client, operation, &command.payload).await?
         };
+        use oteryn_dev_client::client_runtime::server_mechanic::{
+            CommandStatus as Status, ServerMechanicResponse,
+        };
+        forge_ui::apply_result(panel, &ServerMechanicResponse {
+            command_id: bytes.0, server_sequence: bytes.1, status: Status::Accepted, payload: bytes.3.clone(),
+        });
         check_refusal(&body, expected_reason).map_err(|error| format!("{name}: {error}"))?;
         if dust(&mut client).await? != balance
             || client.inventory() != Some(&inventory)

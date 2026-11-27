@@ -966,7 +966,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             (
                 "oteryn-client-ui",
                 "e2e_p18_replays_forge_history_and_operation_receipts",
-                {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(11))},
+                {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(14))},
             ),
         ])
         selected, _ = replay["selected_rows"]("174:1")
@@ -998,7 +998,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             def write_capture(identity, payload):
                 digest = hashlib.sha256()
                 blobs = {"p18-requests.json": json.dumps([identity, []]).encode()}
-                for index in range(11):
+                for index in range(14):
                     blobs[f"p18-frame-{index}.json"] = json.dumps({
                         "game_session_id": identity, "command_id": index + 1,
                         "server_sequence": index + 1, "status": 1, "payload": [payload],
