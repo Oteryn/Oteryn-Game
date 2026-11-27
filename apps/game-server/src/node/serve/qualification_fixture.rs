@@ -1264,7 +1264,7 @@ async fn prepare_p04_delivery(
         )
         .await
         .map_err(|error| format!("P04 delivery bag commit: {error:?}"))?;
-    fixture_item_committed(outcome)?;
+    fixture_item_committed(outcome, request.quantity)?;
     Ok(())
 }
 
