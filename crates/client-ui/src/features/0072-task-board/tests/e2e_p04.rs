@@ -276,6 +276,16 @@ fn verify_rendered_shop(text: &str, reply: &Reply) -> Result<(), Error> {
     Ok(())
 }
 
+fn verify_master_experience(text: &str) -> Result<(), Error> {
+    let summaries = text.lines().filter(|line| line.starts_with("Kill XP:"));
+    if !summaries
+        .eq(["Kill XP: 797603  Delivery XP: 797603  Pending points: 0  Pending soulseals: 0"])
+    {
+        return Err("P04 Master XP summary differs from the Global level-400 award".into());
+    }
+    Ok(())
+}
+
 fn verify_rendered_assignments(text: &str, reply: &Reply) -> Result<(), Error> {
     let rendered = text
         .lines()
@@ -360,6 +370,8 @@ fn verify_master_replay(
     assert_eq!(fresh.weekly.as_ref(), Some(active));
     assert!(!fresh.pending);
     assert!(fresh.feedback.is_none());
+    verify_master_experience(&panel_text(&panel))?;
+    verify_master_experience(&panel_text(&fresh))?;
     verify_rendered_assignments(&panel_text(&panel), active)?;
     verify_rendered_assignments(&panel_text(&fresh), active)?;
     assert_eq!(panel_text(&fresh), panel_text(&panel));
@@ -455,6 +467,20 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
 #[test]
 fn p04_unit_projection_checks_rendering_and_invalid_results() -> Result<(), Error> {
     verify_replay(fixture()?)
+}
+
+#[test]
+fn p04_master_xp_rejects_identically_wrong_or_missing_rendering() -> Result<(), Error> {
+    let expected = "Kill XP: 797603  Delivery XP: 797603  Pending points: 0  Pending soulseals: 0";
+    verify_master_experience(expected)?;
+    for wrong in [
+        "".to_owned(),
+        expected.replacen("797603", "797602", 1),
+        expected.replace("797603", "797602"),
+    ] {
+        assert!(verify_master_experience(&wrong).is_err());
+    }
+    Ok(())
 }
 
 #[test]

@@ -335,20 +335,7 @@ impl MasterCatalogue {
                 .then_some(record.profile.target.key)
             })
             .collect();
-        let amounts = include_str!("p04_master_delivery_oracle.txt")
-            .lines()
-            .filter(|line| !line.starts_with('#'))
-            .map(|line| -> TestResult<_> {
-                let mut fields = line.split(',');
-                let mut number = || -> TestResult<u32> {
-                    Ok(fields
-                        .next()
-                        .ok_or("incomplete P04 delivery oracle")?
-                        .parse()?)
-                };
-                Ok((number()?, (number()?, number()?)))
-            })
-            .collect::<Result<_, _>>()?;
+        let amounts = delivery_oracle()?;
         Ok(Self { races, amounts })
     }
 
@@ -373,6 +360,83 @@ impl MasterCatalogue {
         }
         Ok(())
     }
+}
+
+type DeliveryPool = std::collections::BTreeMap<u32, (u32, u32)>;
+
+fn delivery_oracle() -> TestResult<DeliveryPool> {
+     include_str!("p04_master_delivery_oracle.txt")
+            .lines()
+            .filter(|line| !line.starts_with('#'))
+            .map(|line| -> TestResult<_> {
+                let mut fields = line.split(',');
+                let mut number = || -> TestResult<u32> {
+                    Ok(fields
+                        .next()
+                        .ok_or("incomplete P04 delivery oracle")?
+                        .parse()?)
+                };
+                Ok((number()?, (number()?, number()?)))
+            })
+            .collect()
+}
+
+fn production_delivery_pool() -> DeliveryPool {
+    oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS
+        .iter()
+        .map(|item| (u32::from(item.item_id), (*item.quantity.start(), *item.quantity.end())))
+        .collect()
+}
+
+fn verify_delivery_pool(expected: &DeliveryPool, actual: &DeliveryPool) -> TestResult {
+    let missing_or_wrong: Vec<_> = expected.iter().filter(|(id, range)| actual.get(id) != Some(*range)).collect();
+    let extra: Vec<_> = actual.keys().filter(|id| !expected.contains_key(id)).collect();
+    if !missing_or_wrong.is_empty() || !extra.is_empty() {
+        return Err(format!("P04 Master delivery pool mismatch missing_or_wrong={missing_or_wrong:?} extra={extra:?}").into());
+    }
+    Ok(())
+}
+
+type Custody = Vec<(String, Option<String>, i16, String, String, i64, i16)>;
+
+async fn durable_carried(database: &mut sqlx::PgConnection, character: &[u8; 16]) -> TestResult<Custody> {
+    let rows = sqlx::query_as(
+        "WITH RECURSIVE tree(item, parent, slot, depth) AS (
+             SELECT item_instance_id, NULL::uuid, 0::smallint, 0
+               FROM game_item_container_slots WHERE character_id=$1::uuid
+             UNION ALL
+             SELECT e.item_instance_id, e.parent_item_instance_id, 0::smallint, t.depth+1
+               FROM tree t JOIN (
+                 SELECT item_instance_id,parent_item_instance_id
+                   FROM game_item_container_entries WHERE character_id=$1::uuid
+                 UNION ALL
+                 SELECT item_instance_id,parent_item_instance_id FROM game_item_nested_entries
+               ) e ON e.parent_item_instance_id=t.item WHERE t.depth < 9
+         ), carried AS (
+             SELECT * FROM tree
+             UNION ALL
+             SELECT item_instance_id,NULL::uuid,slot,0
+               FROM game_character_equipment_slots WHERE character_id=$1::uuid
+         )
+         SELECT c.item::text,c.parent::text,c.slot,i.definition_production_key,
+                i.definition_revision_ref,i.quantity::bigint,i.lifecycle::smallint
+           FROM carried c JOIN game_item_instances i ON i.item_instance_id=c.item
+          ORDER BY c.item,c.parent,c.slot LIMIT 510",
+    )
+    .bind(uuid_text(character))
+    .fetch_all(database)
+    .await?;
+    if rows.is_empty() || rows.len() >= 510 {
+        return Err("P04 durable starter inventory is absent or exceeded the read bound".into());
+    }
+    Ok(rows)
+}
+
+fn verify_durable_carried(before: &Custody, after: &Custody) -> TestResult {
+    if before != after {
+        return Err("P04 Master start changed durable carried inventory".into());
+    }
+    Ok(())
 }
 
 fn seeded_carried(client: &DevClientSession) -> TestResult<std::collections::BTreeMap<u32, u32>> {
@@ -464,10 +528,16 @@ async fn verify_boundary(
     } else {
         None
     };
+    let durable_before = if available.is_some() {
+        Some(durable_carried(database, &clients.characters[0]).await?)
+    } else {
+        None
+    };
+    let catalogue = available.as_ref().map(|_| MasterCatalogue::load()).transpose()?;
     let (start, frame) = send(&mut client, 5, 3, case.files[1]).await?;
     verify_start(&initial, &start, case.level)?;
-    if let Some(available) = available {
-        MasterCatalogue::load()?.verify(&start.weekly, &available)?;
+    if let (Some(available), Some(catalogue)) = (available, catalogue.as_ref()) {
+        catalogue.verify(&start.weekly, &available)?;
         if seeded_carried(&client)? != available {
             return Err("P04 Master start changed the delivery inventory".into());
         }
@@ -486,7 +556,13 @@ async fn verify_boundary(
         )
         .into());
     }
+    if let Some(before) = durable_before {
+        verify_durable_carried(&before, &durable_carried(database, &clients.characters[0]).await?)?;
+    }
     logout_released(&mut fresh, database).await?;
+    if let Some(catalogue) = catalogue {
+        verify_delivery_pool(&catalogue.amounts, &production_delivery_pool())?;
+    }
     Ok(format!(
         "{},{},{},{},{},{},{},{}",
         uuid_text(session.as_bytes()),
@@ -568,6 +644,35 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 mod tests {
     use super::*;
     use task_board::task_board::full::{DeliveryTask, KillTask};
+
+    #[test]
+    fn p04_pool_rejects_the_audited_inkwell_and_basalt_omissions() -> TestResult {
+        let oracle = delivery_oracle()?;
+        assert_eq!(oracle.get(&28568), Some(&(250, 500)));
+        assert_eq!(oracle.get(&43859), Some(&(5, 10)));
+        assert!(!oracle.contains_key(&3509));
+        verify_delivery_pool(&oracle, &oracle)?;
+        let mut legacy = oracle.clone();
+        legacy.remove(&28568);
+        legacy.remove(&43859);
+        legacy.insert(3509, (50, 50));
+        let message = verify_delivery_pool(&oracle, &legacy).unwrap_err().to_string();
+        for id in ["28568", "43859", "3509"] {
+            assert!(message.contains(id), "{message}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn p04_durable_inventory_rejects_a_debit_hidden_by_an_unchanged_projection() -> TestResult {
+        let before = vec![("instance".into(), None, 1, "item".into(), "r1".into(), 2, 1)];
+        verify_durable_carried(&before, &before)?;
+        let mut debited = before.clone();
+        debited[0].5 -= 1;
+        assert!(verify_durable_carried(&before, &debited).is_err());
+        verify_durable_carried(&before, &before[..0].to_vec()).unwrap_err();
+        Ok(())
+    }
 
     #[test]
     fn p04_writer_preserves_the_five_original_frame_fields() -> TestResult {
