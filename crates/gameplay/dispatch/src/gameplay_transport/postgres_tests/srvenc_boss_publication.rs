@@ -210,3 +210,41 @@ fn srvenc_boss_publication_postgres_scopes_replay_conflict_and_current_reader() 
         })
     })
 }
+
+#[test]
+fn boot_boss_room_publication_uses_one_insert_per_table_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("boot-boss-publications", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "boot_boss_publications", true, false).await?;
+            let world = WorldId::decode(&id(42))?;
+            let channel = ChannelId::decode(&id(43))?;
+            let qualified = templates(world, channel, &["content-1", "content-2", "content-3"])?;
+            sqlx::raw_sql(r#"
+                CREATE FUNCTION one_boot_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN
+                    IF current_setting(TG_ARGV[0], true) = '1' THEN
+                        RAISE EXCEPTION 'boot publication issued multiple inserts for %', TG_TABLE_NAME;
+                    END IF;
+                    PERFORM set_config(TG_ARGV[0], '1', true);
+                    RETURN NULL;
+                END;
+                $$;
+                CREATE TRIGGER boot_catalogue_insert AFTER INSERT ON game_boss_room_catalogue
+                    FOR EACH STATEMENT EXECUTE FUNCTION one_boot_insert('oteryn_test.boss_catalogue');
+                CREATE TRIGGER boot_publications_insert AFTER INSERT ON game_boss_room_publications
+                    FOR EACH STATEMENT EXECUTE FUNCTION one_boot_insert('oteryn_test.boss_publications');
+            "#).execute(&h.pool).await?;
+            let publisher = ActivityHandoffOwner::new(h.root.clone());
+            publisher.publish_qualified_boss_rooms(&h.node, &qualified).await?;
+            publisher.publish_qualified_boss_rooms(&h.node, &qualified).await?;
+            let published: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_room_publications WHERE boss_key=$1")
+                .bind(BOSS).fetch_one(&h.pool).await?;
+            assert_eq!(published, 3);
+            h.cleanup().await
+        })
+    })
+}
