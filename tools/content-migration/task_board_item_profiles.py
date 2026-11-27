@@ -41,6 +41,11 @@ SCHEMA = 'OTERYN_NATIVE_TASK_BOARD_ITEM_PROFILES/v1'
 TALISMAN = 51978
 # Exact overlap with the accepted 045b51c2 native provider, not a global fill policy.
 EXISTING_NATIVE_IDS = frozenset((3364, 3371, 3557, 10310, 37109))
+# Global selects these already-owned native Items. Keep 3509 in the donor
+# profile capture so existing instances of the original inkwell stay usable.
+GLOBAL_INKWELL = 28568
+GLOBAL_BASALT_CORE = 43859
+DONOR_INKWELL = 3509
 DELIVERY_CORRECTIONS = [{
     'source_item_id': 5800, 'item_id': 35588, 'amount': 50,
     'delivery_source': DELIVERY + ':64',
@@ -80,7 +85,7 @@ def delivery_item_ids(root=ROOT):
                 r'WeeklyDeliveryItem::new\(\s*([0-9_]+),\s*([0-9_]+),\s*([0-9_]+)\s*\)',
                 body)]
     ids = [item for item, _, _ in rows]
-    if len(ids) != 436 or len(set(ids)) != 436:
+    if len(ids) != 437 or len(set(ids)) != 437:
         raise ValueError('TASK_BOARD_DELIVERY_COHORT')
     if any(not 0 < item <= 65535 or not 0 < low <= high <= 2**32 - 1
            for item, low, high in rows):
@@ -90,6 +95,24 @@ def delivery_item_ids(root=ROOT):
 
 def cohort_ids(root=ROOT):
     return set(delivery_item_ids(root)) | {TALISMAN}
+
+
+def profile_capture_delivery_ids(root=ROOT):
+    ids = delivery_item_ids(root)
+    if (DONOR_INKWELL in ids or GLOBAL_INKWELL not in ids or GLOBAL_BASALT_CORE not in ids):
+        raise ValueError('TASK_BOARD_GLOBAL_DELIVERY_IDENTITIES')
+    return [DONOR_INKWELL if item == GLOBAL_INKWELL else item
+            for item in ids if item != GLOBAL_BASALT_CORE]
+
+
+def validate_global_delivery_profiles(document):
+    keys = {f'oteryn:item.tibia.i{item}' for item in (GLOBAL_INKWELL, GLOBAL_BASALT_CORE)}
+    records = {row['production_definition']['production_key']: row for row in document['records']
+               if row['production_definition']['production_key'] in keys}
+    if records.keys() != keys:
+        raise ValueError('TASK_BOARD_GLOBAL_DELIVERY_PROFILE_MISSING')
+    for record in records.values():
+        validate_record(record)
 
 
 def qualify_delivery_rows(rows):
@@ -226,7 +249,7 @@ def capture_sources(sources, root=ROOT):
         r'\{\s*itemId\s*=\s*(\d+),\s*count\s*=\s*(\d+)\s*\}',
         sources[DELIVERY].decode())]
     delivery = qualify_delivery_rows(original_delivery)
-    if [item for item, _ in delivery] != delivery_item_ids(root):
+    if [item for item, _ in delivery] != profile_capture_delivery_ids(root):
         raise ValueError('TASK_BOARD_DELIVERY_SOURCE_DRIFT')
     ids = {item for item, _ in delivery} | {TALISMAN}
     xml = source.xml_index(sources[XML])
@@ -271,7 +294,8 @@ def capture_sources(sources, root=ROOT):
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay['records']
-    ids = cohort_ids(root)
+    captured_delivery = profile_capture_delivery_ids(root)
+    ids = set(captured_delivery) | {TALISMAN}
     keys = {f'oteryn:item.tibia.i{item}' for item in ids}
     if (overlay['schema'] != SCHEMA or overlay['source_revision'] != PIN
             or overlay.get('delivery_corrections') != DELIVERY_CORRECTIONS
@@ -280,7 +304,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or {r['production_definition']['production_key'] for r in records} != keys
             # This overlay records the pinned donor quantities for provenance.
             # Only item identity is shared with the Global runtime ranges.
-            or [row['item_id'] for row in overlay['delivery_items']] != delivery_item_ids(root)
+            or [row['item_id'] for row in overlay['delivery_items']] != captured_delivery
             or any(not 0 < row['amount'] <= 50 for row in overlay['delivery_items'])):
         raise ValueError('TASK_BOARD_PROFILE_SET')
     pinned = {r['path']: r['sha256'] for r in overlay['sources']}
@@ -326,7 +350,7 @@ def refresh_canonical_inputs(root, base):
     from import_cyclopedia_global import only_weight_changed
     path = root / PATH
     overlay = json.loads(path.read_bytes())
-    definitions = canonical_definitions(root, cohort_ids(root))
+    definitions = canonical_definitions(root, set(profile_capture_delivery_ids(root)) | {TALISMAN})
     for entry in overlay['canonical_inputs']:
         current = definitions[entry['key']][1]
         if digest(canonical_bytes(current)) == entry['definition_sha256']:

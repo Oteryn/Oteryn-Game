@@ -1832,6 +1832,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import forge_item_profiles
 
     forge_item_profiles.project(items, forge_item_profiles.owners(root))
+    task_board_item_profiles.validate_global_delivery_profiles(items)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

@@ -1377,7 +1377,7 @@ fn malformed_random_or_missing_catalogue_never_mutates_state() -> Result<(), Tas
 
 #[test]
 fn all_delivery_definitions_are_unique_and_quantities_are_positive() {
-    assert_eq!(DELIVERY_ITEMS.len(), 436);
+    assert_eq!(DELIVERY_ITEMS.len(), 437);
     assert!(
         DELIVERY_ITEMS.iter().all(|item| item.item_id > 0
             && *item.quantity.start() > 0
@@ -1389,7 +1389,7 @@ fn all_delivery_definitions_are_unique_and_quantities_are_positive() {
             .map(|item| item.item_id)
             .collect::<BTreeSet<_>>()
             .len(),
-        436
+        437
     );
 }
 
@@ -1441,7 +1441,13 @@ fn weekly_delivery_quantities_follow_authored_item_ranges_across_seeds()
             }
         }
     }
-    for (item_id, expected) in [(18924, 10..=20), (27593, 100..=200)] {
+    assert!(!DELIVERY_ITEMS.iter().any(|item| item.item_id == 3509));
+    for (item_id, expected) in [
+        (18924, 10..=20),
+        (27593, 100..=200),
+        (28568, 250..=500),
+        (43859, 5..=10),
+    ] {
         assert_eq!(
             DELIVERY_ITEMS
                 .iter()
@@ -1465,12 +1471,14 @@ fn grappling_hook_delivery_uses_approved_portable_source_id() -> Result<(), Task
         .position(|item| item.item_id == 35588)
         .ok_or(TaskBoardRefusal::MissingCatalogue)?;
     let hook_index = u32::try_from(hook_index).map_err(|_| TaskBoardRefusal::InvalidInput)?;
+    let item_count =
+        u32::try_from(DELIVERY_ITEMS.len()).map_err(|_| TaskBoardRefusal::MissingCatalogue)?;
     apply_action(
         &mut data,
         &mut balances,
         &TaskBoardAction::StartWeekly { difficulty: 0 },
         &ctx,
-        &mut |upper| if upper == 436 { hook_index } else { 0 },
+        &mut |upper| if upper == item_count { hook_index } else { 0 },
     )?;
     let board = data.weekly.as_ref().ok_or(TaskBoardRefusal::WrongState)?;
     assert_eq!(

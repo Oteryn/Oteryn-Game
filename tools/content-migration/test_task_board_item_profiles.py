@@ -46,7 +46,7 @@ class TaskBoardItemProfiles(unittest.TestCase):
 
     def test_every_delivery_and_talisman_has_a_registered_portable_native_profile(self):
         ids = tool.cohort_ids()
-        self.assertEqual(len(ids), 437)
+        self.assertEqual(len(ids), 438)
         self.assertFalse(ids - self.records.keys(), 'missing production native policies')
         for item in sorted(ids):
             record = self.records[item]
@@ -76,7 +76,7 @@ class TaskBoardItemProfiles(unittest.TestCase):
 
     def test_grappling_hook_uses_only_the_approved_portable_source_id(self):
         delivery = [(row['item_id'], row['amount']) for row in self.overlay['delivery_items']]
-        self.assertEqual([item for item, _ in delivery], tool.delivery_item_ids())
+        self.assertEqual([item for item, _ in delivery], tool.profile_capture_delivery_ids())
         self.assertIn((35588, 50), delivery)
         self.assertNotIn(5800, {item for item, _ in delivery})
         self.assertEqual(self.overlay['delivery_corrections'], tool.DELIVERY_CORRECTIONS)

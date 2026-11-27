@@ -128,8 +128,8 @@ impl DurabilityRoot {
         &self,
         session: GameSessionId,
         deadline: tokio::time::Instant,
-    ) -> std::result::Result<bool, DurabilityError> {
-        self.read_gameplay_scalar(
+    ) -> std::result::Result<bool, crate::durability::GameplayScalarReadError> {
+        self.read_gameplay_scalar_with_deadline_kinds(
             sqlx::query_scalar(
                 "SELECT EXISTS(
                     SELECT 1 FROM game_character_grizzly_boss_entries b
