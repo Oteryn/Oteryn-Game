@@ -35,6 +35,7 @@ struct LiveExchange {
     vitals_revision: u64,
     clock_before: Option<(u64, Vec<u8>)>,
     charged: actor_spell::ActorVitals,
+    combat_after_exchange: Option<(u64, ActorCombatState)>,
 }
 
 fn fixture() -> Result<Fixture, Error> {
@@ -97,6 +98,7 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                 .build()?
                 .block_on(async move {
                     let charged = live.as_ref().map(|live| live.charged);
+                    let combat_after_exchange = live.as_ref().and_then(|live| live.combat_after_exchange);
                     let selected: &[u32] = if live.as_ref().is_some_and(|live| live.clock_before.is_some()) {
                         &[6, 17, world_clock::CAPABILITY_WORLD_LIGHT_V1]
                     } else {
@@ -152,7 +154,7 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                         let mut domains = vec![
                                 DomainSnapshot { domain_id: oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, revision: 1, snapshot_type: oteryn_protocol_oteryn::world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload: &spatial },
                                 DomainSnapshot { domain_id: oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, revision: 1, snapshot_type: oteryn_protocol_oteryn::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, payload: &overlay },
-                                DomainSnapshot { domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, revision: 1, snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1, payload: &combat },
+                                DomainSnapshot { domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, revision: combat_after_exchange.map_or(1, |(revision, _)| revision), snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1, payload: &combat },
                         ];
                         if let Some(live) = &live {
                             domains.push(DomainSnapshot {
@@ -231,7 +233,7 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                     let CombatReport::Cast(disposition) = report else { return Err("cast returned a non-cast report".into()); };
                     assert_eq!(disposition, expected);
                     assert_eq!(feedback.text(), Some(expected_feedback));
-                    assert_eq!(session.combat_state(), before.as_ref());
+                    assert_eq!(session.combat_state(), combat_after_exchange.as_ref().map(|(_, state)| state).or(before.as_ref()));
                     if let Some(charged) = charged {
                         assert_eq!(session.actor_vitals(), Some(&charged));
                     }
@@ -277,6 +279,7 @@ struct Proof {
     mana_logout: u32,
     soul_logout: u32,
     pre_cast_sequence: u64,
+    cast_send_offset: usize,
     vitals_sequence: u64,
     logout_sequence: u64,
     soul_before: u32,
@@ -314,6 +317,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     let cast: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-cast.json"))?)?;
     let health: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-health.json"))?)?;
     let vitals: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-vitals.json"))?)?;
+    let lock: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-lock.json"))?)?;
     let damage: Envelope = serde_json::from_slice(&std::fs::read(root.join("c18a-damage.json"))?)?;
     let proof: Proof = serde_json::from_slice(&std::fs::read(root.join("c18a-proof.json"))?)?;
     verify_capture_directory(root, &proof)?;
@@ -322,11 +326,17 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         || session_id(&health.game_session_id)? != session
         || session_id(&damage.game_session_id)? != session
         || session_id(&vitals.game_session_id)? != session
+        || session_id(&lock.game_session_id)? != session
+        || lock.command_id != proof.command_id
+        || lock.status != cast.status
+        || lock.server_sequence <= proof.pre_cast_sequence
+        || lock.server_sequence >= proof.clear_sequence
         || vitals.command_id != proof.command_id
         || vitals.status != cast.status
         || vitals.server_sequence != proof.vitals_sequence
         || !(proof.pre_cast_sequence < cast.server_sequence
-            && cast.server_sequence < vitals.server_sequence
+            && proof.pre_cast_sequence < vitals.server_sequence
+            && cast.server_sequence != vitals.server_sequence
             && vitals.server_sequence < proof.conjure_sequence
             && proof.conjure_sequence < proof.logout_sequence)
         || damage.command_id != proof.command_id
@@ -406,12 +416,25 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     assert_eq!(after.target, Some(rat));
     assert_eq!(before.modes, after.modes);
     assert!(!before.in_fight && after.in_fight);
+    assert_eq!(
+        attack::decode_actor_combat_state(&lock.payload).map_err(|error| format!("{error:?}"))?,
+        after
+    );
     let cleared = attack::decode_actor_combat_state(&proof.cleared_combat)
         .map_err(|error| format!("{error:?}"))?;
     assert_eq!(cleared.target, None);
     assert_eq!(cleared.modes, before.modes);
     let inbound = std::fs::read(root.join("c18a-exchange.bin"))?;
-    let vitals_revision = cast_exchange_revision(&inbound, &cast, &vitals)?;
+    let vitals_before = actor_spell::decode_actor_vitals(&proof.vitals_before)
+        .map_err(|error| format!("{error:?}"))?;
+    let (vitals_revision, combat_after_exchange) = cast_exchange_revision(
+        &inbound,
+        &cast,
+        &vitals,
+        proof.pre_cast_sequence,
+        proof.cast_send_offset,
+        vitals_before,
+    )?;
     replay_through_session(Fixture {
         combat: proof.combat_before,
         result: cast.payload,
@@ -428,6 +451,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
             vitals_revision,
             clock_before: proof.clock_before,
             charged,
+            combat_after_exchange,
         }),
     })?;
 
@@ -478,15 +502,20 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
 }
 
 #[test]
-fn strict_envelope_rejects_unknown_duplicate_and_missing_keys() {
+fn strict_envelope_rejects_unknown_duplicate_and_missing_keys() -> Result<(), Error> {
     let base =
         r#"{"command_id":1,"game_session_id":"x","payload":[1],"server_sequence":2,"status":1}"#;
     assert!(serde_json::from_str::<Envelope>(base).is_ok());
     for extra in [r#","status":1}"#, r#","unexpected":0}"#] {
-        let invalid = format!("{}{extra}", base.strip_suffix('}').unwrap());
+        let invalid = format!(
+            "{}{extra}",
+            base.strip_suffix('}')
+                .ok_or("C18a envelope fixture lacks a closing brace")?
+        );
         assert!(serde_json::from_str::<Envelope>(&invalid).is_err());
     }
     assert!(serde_json::from_str::<Envelope>(r#"{"payload":[1]}"#).is_err());
+    Ok(())
 }
 
 fn verify_capture_directory(root: &std::path::Path, proof: &Proof) -> Result<(), Error> {
@@ -567,7 +596,7 @@ fn exact_vitals(mana: [u32; 4], soul: [u32; 4]) -> bool {
 
 #[test]
 fn rejects_false_c18a_damage_cost_and_aim() {
-    let spell = std::num::NonZeroU32::new(1).unwrap();
+    let spell = NonZeroU32::MIN;
     for (target, aim_at_target, expected) in [
         (SpellTarget::None, false, false),
         (SpellTarget::AttackTarget, true, true),
@@ -662,7 +691,9 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         ..origin
     };
     let moved_tile = *position;
-    let mismatch = verify(&moved).expect_err("stale Rat position must fail");
+    let Err(mismatch) = verify(&moved) else {
+        return Err("stale Rat position must fail".into());
+    };
     assert!(mismatch.contains(&format!("position={rat_tile:?}")));
     assert!(mismatch.contains(&format!("position: {moved_tile:?}")));
     assert_eq!(
@@ -802,24 +833,40 @@ fn cast_exchange_revision(
     inbound: &[u8],
     cast: &Envelope,
     vitals: &Envelope,
-) -> Result<u64, Error> {
+    preceding_sequence: u64,
+    cast_send_offset: usize,
+    before: actor_spell::ActorVitals,
+) -> Result<(u64, Option<(u64, ActorCombatState)>), Error> {
     use oteryn_protocol_oteryn::{
         MessageType, decode_command_result, decode_state_delta, decode_wire_envelope,
     };
     tokio::runtime::Builder::new_current_thread()
         .build()?
         .block_on(async {
+            let total_bytes = inbound.len();
+            if cast_send_offset >= total_bytes {
+                return Err("C18a invalid raw cast send boundary".into());
+            }
             let mut inbound = inbound;
             let mut saw_result = false;
+            let mut first_stats_base = None;
+            let mut saw_charge = false;
+            let mut combat_after_exchange = None;
             while !inbound.is_empty() {
+                let offset = total_bytes - inbound.len();
                 let frame = read_frame(&mut inbound).await?;
                 let wire = decode_wire_envelope(&frame)?;
+                let before_send = offset < cast_send_offset;
+                if before_send && total_bytes - inbound.len() > cast_send_offset {
+                    return Err("C18a cast send boundary splits an inbound frame".into());
+                }
                 match wire.message_type() {
                     MessageType::CommandResult
                         if wire.server_sequence() == cast.server_sequence =>
                     {
                         let result = decode_command_result(wire.payload())?;
-                        if result.command_id != cast.command_id
+                        if before_send
+                            || result.command_id != cast.command_id
                             || result.status as u32 != cast.status
                             || result.payload != cast.payload
                         {
@@ -827,33 +874,71 @@ fn cast_exchange_revision(
                         }
                         saw_result = true;
                     }
-                    MessageType::StateDelta
-                        if wire.server_sequence() == vitals.server_sequence && saw_result =>
-                    {
-                        let result = decode_state_delta(wire.payload())?;
-                        if result.domain_id != actor_spell::STATE_DOMAIN_ACTOR_VITALS
-                            || result.payload != vitals.payload
-                        {
-                            return Err("C18a raw charged stats disagree with capture".into());
+                    MessageType::StateDelta => {
+                        let delta = decode_state_delta(wire.payload())?;
+                        if delta.domain_id == attack::STATE_DOMAIN_ACTOR_COMBAT_STATE {
+                            let state = attack::decode_actor_combat_state(delta.payload)
+                                .map_err(|error| format!("{error:?}"))?;
+                            if before_send && state.in_fight {
+                                return Err("C18a raw pre-send combat lock was already set".into());
+                            }
+                            let revision =
+                                combat_after_exchange.map_or(delta.base_revision, |(base, _)| base);
+                            combat_after_exchange = Some((revision, state));
                         }
-                        return Ok(result.base_revision);
+                        if delta.domain_id != actor_spell::STATE_DOMAIN_ACTOR_VITALS || saw_charge {
+                            continue;
+                        }
+                        let stats = actor_spell::decode_actor_vitals(delta.payload)
+                            .map_err(|error| format!("{error:?}"))?;
+                        let sequence = wire.server_sequence();
+                        first_stats_base.get_or_insert(delta.base_revision);
+                        if sequence > preceding_sequence && stats == before {
+                            continue;
+                        }
+                        if before_send
+                            || delta.delta_type != actor_spell::DELTA_TYPE_ACTOR_VITALS_V1
+                            || sequence != vitals.server_sequence
+                            || delta.payload != vitals.payload
+                            || !crate::qualification_scorch_charge(
+                                preceding_sequence,
+                                sequence,
+                                before,
+                                stats,
+                            )
+                        {
+                            return Err(
+                                "C18a raw first stats change disagrees with the exact charge"
+                                    .into(),
+                            );
+                        }
+                        saw_charge = true;
                     }
                     _ => {}
                 }
             }
-            Err("C18a raw exchange lacks the cast or charged stats".into())
+            if let (true, true, Some(revision)) = (saw_result, saw_charge, first_stats_base) {
+                Ok((revision, combat_after_exchange))
+            } else {
+                Err("C18a raw exchange lacks the cast or charged stats".into())
+            }
         })
 }
 
 #[test]
 fn successful_aimed_exchange_runs_the_admitted_client() -> Result<(), Error> {
     for with_clock in [false, true] {
-        replay_successful_aimed_exchange(with_clock)?;
+        for charge_before_receipt in [false, true] {
+            replay_successful_aimed_exchange(with_clock, charge_before_receipt)?;
+        }
     }
     Ok(())
 }
 
-fn replay_successful_aimed_exchange(with_clock: bool) -> Result<(), Error> {
+fn replay_successful_aimed_exchange(
+    with_clock: bool,
+    charge_before_receipt: bool,
+) -> Result<(), Error> {
     use oteryn_protocol_oteryn::encode_state_delta;
     let mut fixture = fixture()?;
     fixture.expected = oteryn_session::SpellCastDisposition::Cast;
@@ -891,28 +976,121 @@ fn replay_successful_aimed_exchange(with_clock: bool) -> Result<(), Error> {
             .map_err(|error| format!("{error:?}"))?,
         )?);
     }
-    let reply_sequence = preceding_sequence + 1 + u64::from(with_clock);
-    frames.push(encode_command_result(
-        1,
-        reply_sequence,
-        command_id,
-        CommandStatus::Accepted,
-        &result,
-    )?);
-    frames.push(encode_state_delta(
-        1,
-        reply_sequence + 1,
-        actor_spell::STATE_DOMAIN_ACTOR_VITALS,
-        3,
-        4,
-        actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
-        &actor_spell::encode_actor_vitals(&charged).map_err(|e| format!("{e:?}"))?,
-    )?);
+    let first_sequence = preceding_sequence + 1 + u64::from(with_clock);
+    let reply_sequence = first_sequence + u64::from(charge_before_receipt);
+    let charge_sequence = first_sequence + u64::from(!charge_before_receipt);
+    let mut cast_frames = [
+        (
+            reply_sequence,
+            encode_command_result(
+                1,
+                reply_sequence,
+                command_id,
+                CommandStatus::Accepted,
+                &result,
+            )?,
+        ),
+        (
+            charge_sequence,
+            encode_state_delta(
+                1,
+                charge_sequence,
+                actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                3,
+                4,
+                actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+                &actor_spell::encode_actor_vitals(&charged).map_err(|e| format!("{e:?}"))?,
+            )?,
+        ),
+    ];
+    cast_frames.sort_by_key(|(sequence, _)| *sequence);
+    frames.extend(cast_frames.into_iter().map(|(_, frame)| frame));
+    // The production Session also claims the mandatory post-receipt stats publication.
+    if charge_before_receipt {
+        frames.push(encode_state_delta(
+            1,
+            reply_sequence + 1,
+            actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+            4,
+            5,
+            actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+            &actor_spell::encode_actor_vitals(&charged).map_err(|e| format!("{e:?}"))?,
+        )?);
+    }
+    assert!(crate::qualification_scorch_charge(
+        preceding_sequence,
+        charge_sequence,
+        before,
+        charged
+    ));
+    assert!(!crate::qualification_scorch_charge(
+        preceding_sequence,
+        preceding_sequence,
+        before,
+        charged
+    ));
+    assert!(!crate::qualification_scorch_charge(
+        preceding_sequence,
+        charge_sequence,
+        before,
+        actor_spell::ActorVitals { mana: 48, ..before }
+    ));
     let mut inbound = Vec::new();
+    let mut charge_end = 0;
     for frame in frames {
         inbound.extend(u32::try_from(frame.len())?.to_be_bytes());
+        let sequence = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.server_sequence();
         inbound.extend(frame);
+        if sequence == charge_sequence {
+            charge_end = inbound.len();
+        }
     }
+    let cast_envelope = Envelope {
+        command_id,
+        game_session_id: String::new(),
+        payload: result,
+        server_sequence: reply_sequence,
+        status: CommandStatus::Accepted as u32,
+    };
+    let charge_envelope = Envelope {
+        payload: actor_spell::encode_actor_vitals(&charged).map_err(|e| format!("{e:?}"))?,
+        server_sequence: charge_sequence,
+        game_session_id: String::new(),
+        ..cast_envelope
+    };
+    assert_eq!(
+        cast_exchange_revision(
+            &inbound,
+            &cast_envelope,
+            &charge_envelope,
+            preceding_sequence,
+            0,
+            before
+        )?,
+        (3, None),
+    );
+    assert!(
+        cast_exchange_revision(
+            &inbound,
+            &cast_envelope,
+            &charge_envelope,
+            preceding_sequence,
+            charge_end,
+            before
+        )
+        .is_err()
+    );
+    assert!(
+        cast_exchange_revision(
+            &inbound,
+            &cast_envelope,
+            &charge_envelope,
+            preceding_sequence,
+            0,
+            actor_spell::ActorVitals { mana: 54, ..before }
+        )
+        .is_err()
+    );
     let clock_before = if with_clock {
         Some((
             8,
@@ -935,6 +1113,7 @@ fn replay_successful_aimed_exchange(with_clock: bool) -> Result<(), Error> {
         vitals_revision: 3,
         clock_before,
         charged,
+        combat_after_exchange: None,
     });
     replay_through_session(fixture)
 }

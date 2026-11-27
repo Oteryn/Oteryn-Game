@@ -19,6 +19,7 @@ tokio::task_local! {
 pub struct QualificationExchange {
     pub inbound: Vec<u8>,
     pub outbound: Vec<u8>,
+    pub write_offsets: Vec<(usize, usize)>,
 }
 
 /// Record one operation after admission on the current task.
@@ -77,8 +78,16 @@ impl AsyncWrite for QualificationTransport {
     ) -> Poll<io::Result<usize>> {
         let result = Pin::new(&mut self.0).poll_write(cx, bytes);
         if let Poll::Ready(Ok(written)) = result
-            && let Ok(Err(error)) = EXCHANGE
-                .try_with(|exchange| record(&mut exchange.borrow_mut().outbound, &bytes[..written]))
+            && let Ok(Err(error)) = EXCHANGE.try_with(|exchange| {
+                let mut exchange = exchange.borrow_mut();
+                let outbound = exchange.outbound.len();
+                let inbound = exchange.inbound.len();
+                record(&mut exchange.outbound, &bytes[..written])?;
+                if written != 0 {
+                    exchange.write_offsets.push((outbound, inbound));
+                }
+                Ok(())
+            })
         {
             return Poll::Ready(Err(error));
         }
@@ -159,6 +168,19 @@ pub fn qualification_mana_history(
         last = (sequence, mana, soul);
     }
     (last_credit_ms.is_none() || observed_full_interval) && (last.1, last.2) == (logout.1, logout.2)
+}
+
+/// The first changed stats frame in the cast exchange must carry exactly the Scorch debit.
+pub fn qualification_scorch_charge(
+    preceding_sequence: u64,
+    sequence: u64,
+    before: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    after: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+) -> bool {
+    sequence > preceding_sequence
+        && before.mana.checked_sub(8).is_some_and(|mana| {
+            after == oteryn_protocol_oteryn::actor_spell::ActorVitals { mana, ..before }
+        })
 }
 
 /// Match the east-facing Scorch footprint and fire damage in one cast decision.
