@@ -19,12 +19,12 @@ use std::sync::Arc;
 
 #[test]
 fn familiar_first_entry_grants_and_selects_vocation_look_postgres() -> TestResult {
-    scenario("familiar_login_grant_look", true, false)
+    scenario("familiar_login_grant_look", true, Check::Looks)
 }
 
 #[test]
 fn familiar_first_entry_removes_expired_premium_vocation_look_postgres() -> TestResult {
-    scenario("familiar_login_remove_look", false, false)
+    scenario("familiar_login_remove_look", false, Check::Looks)
 }
 
 #[test]
@@ -32,10 +32,27 @@ fn familiar_appearance_dispatch_confirms_only_granted_looks_postgres() -> TestRe
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario("familiar_appearance_wire", true, true)
+    scenario("familiar_appearance_wire", true, Check::Appearance)
 }
 
-fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -> TestResult {
+#[test]
+fn summoned_familiar_waits_on_both_checkouts_and_logs_out_on_first_reply_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario("familiar_logout_with_live_summon", true, Check::Logout)
+}
+
+#[derive(Clone, Copy)]
+enum Check {
+    Looks,
+    Appearance,
+    Logout,
+}
+
+fn scenario(name: &'static str, premium_current: bool, check: Check) -> TestResult {
+    let check_appearance = matches!(check, Check::Appearance);
+    let check_logout = matches!(check, Check::Logout);
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let h = if check_appearance {
             Harness::create_quest_reward(admin, name, false).await?
@@ -159,7 +176,7 @@ fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -
             let mut checkpoint = DurableFamiliarState {
                 lifecycle: Some(FamiliarLifecycleV2 {
                     version: 2,
-                    familiar_remaining_ms: 0,
+                    familiar_remaining_ms: if check_logout { 60_000 } else { 0 },
                     open: false,
                     writer: FamiliarLifecycleWriter::from_fence(&gameplay_fence).map_err(debug)?,
                     clean_end_game_session_id: None,
@@ -202,6 +219,37 @@ fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -
                 assert_eq!(after.state().selected_look, look);
             } else {
                 assert!(after.state().granted_looks.is_empty());
+            }
+            if check_logout {
+                assert!(
+                    owner
+                        .runtime
+                        .lock()
+                        .await
+                        .owned_companions(deps.actor, session)
+                        .map_err(debug)?
+                        .iter()
+                        .any(|companion| companion.state.policy.is_familiar),
+                    "first entry must restore a live familiar"
+                );
+                familiar_logout_on_wire(&owner, &deps, &h).await?;
+                let final_state = h
+                    .root
+                    .read_character_familiar_state(&authority, character)
+                    .await
+                    .map_err(debug)?;
+                let closed = final_state
+                    .state()
+                    .lifecycle
+                    .as_ref()
+                    .ok_or("saved familiar lifecycle")?;
+                assert!(!closed.open);
+                assert!(closed.familiar_remaining_ms > 0);
+                let session_text = crate::gameplay_transport::canonical_uuid(session.as_bytes());
+                assert_eq!(
+                    closed.clean_end_game_session_id.as_deref(),
+                    Some(session_text.as_str()),
+                );
             }
             if check_appearance {
                 let mut admitted = deps.admitted;
@@ -294,4 +342,97 @@ fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -
         h.cleanup().await?;
         result
     })
+}
+
+async fn familiar_logout_on_wire(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    harness: &Harness,
+) -> TestResult {
+    use super::autowalk_fixtures::{acknowledge_while_held, command_reply, send};
+    use crate::gameplay_transport::COMMAND_HOLDER_WINDOW;
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::composed_admission::{
+        FAMILIAR_READ_CHECKOUT_PROBE, FAMILIAR_WRITE_CHECKOUT_PROBE, HolderCheckoutProbe,
+    };
+    use crate::gameplay_transport::connection::{
+        ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, LivenessPolicy,
+        serve_admitted,
+    };
+    use oteryn_protocol_oteryn::logout::{
+        CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+    };
+    use std::cell::Cell;
+
+    let mut admitted = deps.admitted;
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = Some(
+        death_ml_loss_composed_fixtures::current_fence(owner, admitted.game_session_id)
+            .await?
+            .item_fence(),
+    );
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[CAPABILITY_LOGOUT_V1])
+            .ok_or("familiar logout capability")?;
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_LOGOUT_V1)
+    );
+    let policy = LivenessPolicy {
+        interval: COMMAND_HOLDER_WINDOW / (IDLE_LIVENESS.missed_limit + 1),
+        ..IDLE_LIVENESS
+    };
+
+    let read = Arc::new(HolderCheckoutProbe::default());
+    let write = Arc::new(HolderCheckoutProbe::default());
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serve = FAMILIAR_READ_CHECKOUT_PROBE.scope(
+        Cell::new(Some(Arc::clone(&read))),
+        FAMILIAR_WRITE_CHECKOUT_PROBE.scope(
+            Cell::new(Some(Arc::clone(&write))),
+            serve_admitted(&mut server, admitted, owner, policy),
+        ),
+    );
+    let drive = async {
+        let id = admitted.continuity.next_command_id;
+        send(&mut client, id, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
+        for probe in [read, write] {
+            probe
+                .contend_with(&harness.root, async {
+                    tokio::time::pause();
+                    let result = acknowledge_while_held(&mut client, policy).await;
+                    tokio::time::resume();
+                    result
+                })
+                .await??;
+        }
+        let (status, payload) = command_reply(&mut client, id).await?;
+        assert_eq!(status, crate::foundation::CommandStatus::Accepted);
+        assert_eq!(
+            decode_logout_result(&payload).map_err(debug)?,
+            LogoutResult::Accepted
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(Duration::from_secs(30), async {
+        tokio::join!(biased; serve, drive)
+    })
+    .await?;
+    result?;
+    assert!(
+        matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)),
+        "{end:?}"
+    );
+    let store =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(harness.root.clone());
+    assert_eq!(
+        store
+            .current_session(admitted.game_session_id)
+            .await?
+            .session_state(),
+        crate::foundation::GameSessionState::Terminal,
+    );
+    Ok(())
 }

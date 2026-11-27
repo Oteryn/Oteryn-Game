@@ -462,10 +462,27 @@ async fn familiar_login_checkout<T, E: From<DurabilityError>>(
     mut step: impl AsyncFnMut() -> Result<T, E>,
     is_checkout_unavailable: impl Fn(&E) -> bool,
 ) -> Result<T, E> {
+    retry_familiar_checkout(
+        budget,
+        async || {
+            if let Some(budget) = budget {
+                budget.check_deadline()?;
+            }
+            step().await
+        },
+        is_checkout_unavailable,
+    )
+    .await
+}
+
+/// Retry a refused checkout at the operation that needed it. The caller supplies
+/// the absolute cutoff, and ambiguous SQL outcomes leave this loop immediately.
+async fn retry_familiar_checkout<T, E>(
+    budget: Option<&AdmissionRetryBudget<'_>>,
+    mut step: impl AsyncFnMut() -> Result<T, E>,
+    is_checkout_unavailable: impl Fn(&E) -> bool,
+) -> Result<T, E> {
     loop {
-        if let Some(budget) = budget {
-            budget.check_deadline()?;
-        }
         let result = step().await;
         if let Some(budget) = budget
             && result.as_ref().is_err_and(&is_checkout_unavailable)
@@ -829,6 +846,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         end: FamiliarActorEnd,
     ) -> FamiliarLogoutSave {
+        self.save_familiar_logout_with_checkout(actor, session, end, None)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn save_familiar_logout_with_checkout(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        end: FamiliarActorEnd,
+        checkout: Option<&AdmissionRetryBudget<'_>>,
+    ) -> FamiliarLogoutSave {
         use crate::durability::character_familiar::{FamiliarCleanEndProof, FamiliarStateOutcome};
         use crate::durability::character_progression::CharacterProgressionError;
         let retained = self
@@ -846,7 +874,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if original.end != end {
                 return FamiliarLogoutSave::Unknown;
             }
-            return match self.reconcile_familiar_actor_end(original).await {
+            return match self.reconcile_familiar_actor_end(original, checkout).await {
                 Some(FamiliarCleanEndResolution::Committed(_)) => FamiliarLogoutSave::Saved,
                 // A later legal attempt may prepare a new snapshot only after
                 // this read proved that the original did not commit.
@@ -859,29 +887,69 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(profile) = self.first_active_familiar_profile() else {
             return FamiliarLogoutSave::NotApplicable;
         };
-        let fence = match self.familiar_logout_fence(session, end).await.into_save() {
+        let fence = match self
+            .familiar_logout_fence(session, end, checkout)
+            .await
+            .into_save()
+        {
             Ok(fence) => fence,
             Err(save) => return save,
         };
-        let Ok(Some(progression)) = self
-            .root
-            .read_character_progression(self.character, fence.character_id)
-            .await
+        #[cfg(test)]
+        let read_probe = super::super::composed_admission::FAMILIAR_READ_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &read_probe {
+            probe.pause().await;
+        }
+        let Ok(Some(progression)) = retry_familiar_checkout(
+            checkout,
+            async || {
+                let result = self
+                    .root
+                    .read_character_progression(self.character, fence.character_id)
+                    .await;
+                #[cfg(test)]
+                if result
+                    .as_ref()
+                    .is_err_and(familiar_progression_checkout_unavailable)
+                    && let Some(probe) = &read_probe
+                {
+                    probe.blocked();
+                }
+                result
+            },
+            familiar_progression_checkout_unavailable,
+        )
+        .await
         else {
             return FamiliarLogoutSave::Unknown;
         };
-        let Ok(loaded) = self
-            .root
-            .read_character_familiar_state(self.character, fence.character_id)
-            .await
+        let Ok(loaded) = retry_familiar_checkout(
+            checkout,
+            || {
+                self.root
+                    .read_character_familiar_state(self.character, fence.character_id)
+            },
+            familiar_progression_checkout_unavailable,
+        )
+        .await
         else {
             return FamiliarLogoutSave::Unknown;
         };
-        let Ok(unix) = self.root.read_familiar_unix_time(self.character).await else {
+        let Ok(unix) = retry_familiar_checkout(
+            checkout,
+            || self.root.read_familiar_unix_time(self.character),
+            familiar_progression_checkout_unavailable,
+        )
+        .await
+        else {
             return FamiliarLogoutSave::Unknown;
         };
         let runtime = self.runtime.lock().await;
-        let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
+        let measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
         let mut states = self.states.spell_states.lock().await;
         if !logout_owner(&runtime, &fence, actor, session, end)
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
@@ -890,7 +958,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let prepared = {
             // A pending paid/lifecycle cast must resolve before actor-end can snapshot it.
-            if states.has_pending_familiar(actor, session) {
+            if states.has_pending_familiar(actor, session)
+                || states
+                    .pending_familiar_logouts
+                    .iter()
+                    .any(|p| p.actor == actor && p.session == session)
+            {
                 return FamiliarLogoutSave::Unknown;
             }
             let Some(before) = states.get(&runtime, actor, session) else {
@@ -985,6 +1058,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.pending_familiar_logouts.push(prepared.clone());
             prepared
         };
+        drop(states);
+        drop(measurement);
+        drop(runtime);
         // Both actor ends are clean ends (FAMILIARS0 §5): the transaction re-proves the logout's
         // ACTIVE exact transport, or the grace expiry's RECONNECTABLE control-loss epoch past
         // its deadline, before it writes the clean-end marker.
@@ -1002,17 +1078,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()
             .flatten();
         #[cfg(test)]
-        let _ = FAMILIAR_CLEAN_END_WRITES.try_with(|writes| writes.set(writes.get() + 1));
-        let outcome = self
-            .root
-            .commit_character_familiar_clean_end(
-                self.character,
-                self.holder,
-                prepared.fence,
-                prepared.request.clone(),
-                proof,
-            )
-            .await;
+        let checkout = if held_for_test.is_some() {
+            None
+        } else {
+            checkout
+        };
+        #[cfg(test)]
+        let write_probe = super::super::composed_admission::FAMILIAR_WRITE_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &write_probe {
+            probe.pause().await;
+        }
+        let outcome = retry_familiar_checkout(
+            checkout,
+            async || {
+                // Re-prove the retained intent under the live guards for each checkout.
+                // A miss returns the guards before it waits for the competing pass.
+                let runtime = self.runtime.lock().await;
+                let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
+                let states = self.states.spell_states.lock().await;
+                if !logout_owner(&runtime, &prepared.fence, actor, session, end)
+                    || runtime.content_pin().server_artifact_digest()
+                        != prepared.request.policy_digest
+                    || states.get(&runtime, actor, session) != Some(&prepared.before)
+                    || !states.pending_familiar_logouts.contains(&prepared)
+                {
+                    return Err(CharacterProgressionError::InvalidInput);
+                }
+                #[cfg(test)]
+                let _ = FAMILIAR_CLEAN_END_WRITES.try_with(|writes| writes.set(writes.get() + 1));
+                let result = self
+                    .root
+                    .commit_character_familiar_clean_end(
+                        self.character,
+                        self.holder,
+                        prepared.fence,
+                        prepared.request.clone(),
+                        proof,
+                    )
+                    .await;
+                #[cfg(test)]
+                if result
+                    .as_ref()
+                    .is_err_and(familiar_progression_checkout_unavailable)
+                    && let Some(probe) = &write_probe
+                {
+                    probe.blocked();
+                }
+                result
+            },
+            familiar_progression_checkout_unavailable,
+        )
+        .await;
         #[cfg(test)]
         if let Some(held) = held_for_test {
             assert!(matches!(
@@ -1041,7 +1161,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 | CharacterProgressionError::RespawnPending,
             ) => {
                 // A definite refusal wrote no clean end. Login reconciles the familiar.
-                states
+                self.states
+                    .spell_states
+                    .lock()
+                    .await
                     .pending_familiar_logouts
                     .retain(|v| v.actor != actor || v.session != session || v.end != end);
                 return FamiliarLogoutSave::FencedOut;
@@ -1051,10 +1174,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !committed.matches_request(&prepared.fence, &prepared.request) {
             return FamiliarLogoutSave::Unknown;
         }
-        let fresh = match self.familiar_logout_fence(session, end).await.into_save() {
+        let fresh = match self
+            .familiar_logout_fence(session, end, checkout)
+            .await
+            .into_save()
+        {
             Ok(fresh) => fresh,
             Err(save) => return save,
         };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let mut expected = prepared.fence;
         expected.expected_character_revision = committed.committed_character_revision();
         if fresh != expected
@@ -1089,32 +1218,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return true;
         };
         matches!(original.end, FamiliarActorEnd::Logout(..))
-            && self.reconcile_familiar_actor_end(original).await.is_some()
+            && self
+                .reconcile_familiar_actor_end(original, None)
+                .await
+                .is_some()
     }
 
     async fn reconcile_familiar_actor_end(
         &self,
         original: PreparedFamiliarLogout,
+        checkout: Option<&AdmissionRetryBudget<'_>>,
     ) -> Option<FamiliarCleanEndResolution> {
         let (actor, session, end) = (original.actor, original.session, original.end);
         let fresh = self
-            .familiar_logout_fence(session, end)
+            .familiar_logout_fence(session, end, checkout)
             .await
             .into_save()
             .ok()?;
         if !same_familiar_writer(original.fence, fresh) {
             return None;
         }
-        let resolution = self
-            .root
-            .reconcile_familiar_clean_end(self.character, original.fence, original.request.clone())
-            .await
-            .ok()?;
+        let resolution = retry_familiar_checkout(
+            checkout,
+            || {
+                self.root.reconcile_familiar_clean_end(
+                    self.character,
+                    original.fence,
+                    original.request.clone(),
+                )
+            },
+            familiar_progression_checkout_unavailable,
+        )
+        .await
+        .ok()?;
         // The historical receipt is never current authority. Re-read the
         // session/lease/scope independently; unrelated Character writes may have
         // advanced its global revision without changing this familiar result.
         let fresh = self
-            .familiar_logout_fence(session, end)
+            .familiar_logout_fence(session, end, checkout)
             .await
             .into_save()
             .ok()?;
@@ -1181,10 +1322,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
         end: FamiliarActorEnd,
+        checkout: Option<&AdmissionRetryBudget<'_>>,
     ) -> FamiliarFenceRead<CurrentCharacterGameplayFence> {
-        let read = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
-            .await;
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let read = retry_familiar_checkout(
+            checkout,
+            || store.current_session_at(session),
+            familiar_checkout_unavailable,
+        )
+        .await;
         let row = read.as_ref().ok().map(|(current, _)| {
             (
                 current.session_state(),
@@ -1204,11 +1350,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return FamiliarFenceRead::Unavailable;
         };
-        let Ok(root) = self
-            .root
-            .read_current_character(self.character, character)
-            .await
-        else {
+        let Ok(root) = retry_familiar_checkout(
+            checkout,
+            || self.root.read_current_character(self.character, character),
+            |error| matches!(
+                error,
+                crate::durability::character_authority::CharacterAuthorityError::Unavailable(error)
+                    if familiar_checkout_unavailable(error)
+            ),
+        ).await else {
             return FamiliarFenceRead::Unavailable;
         };
         FamiliarFenceRead::Proven(CurrentCharacterGameplayFence {
