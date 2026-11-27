@@ -23,9 +23,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
-    // W09: a committed Cube may have consumed the last source unit. Its original
-    // command still resolves from a receipt even when the view handle no longer exists.
-    // Preserve the same timeout/unknown close used by receipt-backed Item actions.
+    let ledger = authority.session_commands();
+    let reference = crate::foundation::CommandId::new(command.command_id)
+        .ok()
+        .map(|id| crate::foundation::CommandRef::new(admitted.game_session_id, id));
+    if decoded.is_ok() && let (Some(ledger), Some(reference)) = (ledger, reference) {
+        ledger.remember_use_wire(reference, command.payload)?;
+    }
+    // A harvest can have sent its durable write before an opaque error or timeout.
     if let Ok(UseIntent {
         target: UseTarget::WorldObject(target),
         use_with: None,
@@ -67,28 +72,38 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
         )
     {
+        // A committed Cube may have consumed the last source unit. Probe its
+        // receipt even if the original handle no longer resolves.
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = tokio::time::timeout(
+        let use_command = UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: command.command_id,
+            item_fence: admitted.item_fence,
+        };
+        let receipt = ledger.zip(reference);
+        if let Some((ledger, reference)) = receipt {
+            ledger.set_use_receipt(reference, Some(transport::session_ingress::UseReceipt::Drome));
+        }
+        match tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            authority.use_drome_cube(
-                actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                intent.clone(),
-                source,
-            ),
+            authority.use_drome_cube(actor, use_command, intent.clone(), source),
         )
         .await
-        .ok()?
-        .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            Ok(Ok(Some(outcome))) => return Some(Dispatch::Use(outcome)),
+            Ok(Ok(None)) => {
+                if let Some((ledger, reference)) = receipt {
+                    ledger.set_use_receipt(reference, None);
+                }
+            }
+            Ok(Err(())) | Err(_) => {
+                transport::operator_event("drome_cube_use failed: owner_unavailable_or_deadline");
+                // The receipt read may have failed before identifying its owner.
+                return None;
+            }
         }
     }
     if let Ok(intent) = &decoded {
@@ -110,7 +125,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     },
                     source,
                 )
-                .await?
+                .await
+                .unwrap_or(false)
         {
             return Some(Dispatch::Use(UseOutcome::rejected()));
         }
@@ -137,6 +153,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     }
     // A map handle reaches only its explicit world owner. It never widens the
     // carried-item or container admissions below; stale handles keep their refusal.
+    // A ladder timeout can arrive after a movement-triggered quest write was sent.
     if let Ok(UseIntent {
         target: UseTarget::Item(handle),
         use_with: None,
@@ -190,6 +207,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && let UseTarget::Item(handle) = intent.target
     {
         let source = item_view.as_ref().and_then(|view| view.resolve(handle));
+        // Event-item commits may have been sent before the owner returns an opaque error.
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_event_item(
@@ -224,6 +242,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             }
             _ => None,
         };
+        // Soul War source consumption may already be committing on an opaque failure.
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_soul_war_source_items(
@@ -263,6 +282,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         };
         // Probe the quest receipt before fresh handle/custody admission. A
         // committed sample remains replayable after either handle disappears.
+        // An opaque failure can follow a sent quest-tool commit.
         if transport::cosmetic_item_use::quest_targets::probes(intent)
             && let Some(outcome) = tokio::time::timeout(
                 std::time::Duration::from_secs(10),
@@ -284,7 +304,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         {
             return Some(Dispatch::Use(outcome));
         }
-        if let Some(outcome) = tokio::time::timeout(
+        match tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.tame_mount(
                 actor,
@@ -302,10 +322,22 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ),
         )
         .await
-        .ok()?
-        .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            Ok(Ok(Some(outcome))) => return Some(Dispatch::Use(outcome)),
+            Ok(Ok(None)) => {}
+            Ok(Err(()))
+                if matches!(
+                    intent.use_with_map_item,
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(_))
+                ) =>
+            {
+                // Base-object USE cannot reach the taming write or the two-carried-item
+                // quest write. The base-object callback reports its pending write separately.
+                return Some(Dispatch::Use(UseOutcome::rejected()));
+            }
+            // Other target arms can lose a taming or quest commit acknowledgement,
+            // and a timeout can interrupt the base-object callback while it commits.
+            Ok(Err(())) | Err(_) => return None,
         }
     }
     Some({
@@ -321,6 +353,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     }
                     _ => None,
                 };
+                // The dispenser mutation can have been sent before an opaque failure.
                 if admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
                     crate::foundation::RuntimeScopeRefV1::Instance{..}))
                     && let Some(outcome)=tokio::time::timeout(std::time::Duration::from_secs(10),
@@ -331,6 +364,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 }
                 // Carried targets otherwise enter the pick owner directly. Probe W07
                 // here, including historical receipts whose source handle was retired.
+                // An opaque failure can follow a sent Soulpit entry or soul-core commit.
                 if let Some(outcome) = tokio::time::timeout(
                     std::time::Duration::from_secs(10),
                     authority.use_soulpit_items(
@@ -342,6 +376,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 ).await.ok()?.ok()? {
                     return Some(Dispatch::Use(outcome));
                 }
+                // Converter and catalyst failures can hide a sent, unacknowledged commit.
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority.use_coin_converter(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await.ok()?
                 { return Some(Dispatch::Use(outcome)); }
@@ -436,6 +471,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     item_fence: admitted.item_fence,
                 }, intent, item_view.as_ref()).await {
                     Some(outcome) => Dispatch::Use(outcome),
+                    // A map-tool or craft owner can lose the acknowledgement after sending COMMIT.
                     None => return None,
                 }
             }
@@ -452,6 +488,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 &admitted.continuity.selected_capabilities,
             ).await {
                 Some(outcome) => Dispatch::Use(outcome),
+                // A rune charge or spell commit may still be pending.
                 None => return None,
             },
             // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
@@ -481,6 +518,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     command_id: command.command_id,
                     item_fence: admitted.item_fence,
                 }, definition).await;
+                // A retained native item write must reconcile before acknowledging USE.
                 if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
                 Dispatch::Use(outcome)
             },
@@ -526,6 +564,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 };
                 match (item_view.as_mut(), key, observation) {
                     (_, Some(key), _) if consumable => {
+                        // The consumable writer may have sent a commit before its timeout or lost ACK.
                         let outcome = tokio::time::timeout(
                             std::time::Duration::from_secs(10),
                             authority.use_item_completion(
@@ -613,3 +652,7 @@ mod fluid_routing_tests {
         assert!(key < fluid, "key handler before fluid");
     }
 }
+
+#[cfg(test)]
+#[path = "use_item/tests.rs"]
+mod tests;

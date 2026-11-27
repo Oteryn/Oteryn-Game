@@ -13,7 +13,21 @@ impl SessionIngress {
             return Some(());
         };
         let (rejected, payload) = result.payload(pending.selected)?;
-        self.complete_reconciled(CommandId::new(pending.command).ok()?, rejected, &payload)
+        let command = CommandId::new(pending.command).ok()?;
+        let terrain_quest = matches!(
+            result,
+            ProvenNativeReply::ItemUse(
+                oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+            )
+        ) && self
+            .pending_use
+            .as_ref()
+            .is_some_and(|usage| matches!(usage.receipt, Some(UseReceipt::Terrain)));
+        self.complete_reconciled(command, rejected, &payload)?;
+        if terrain_quest {
+            self.recovered_terrain_quests.insert(command);
+        }
+        Some(())
     }
 
     pub(super) fn complete_reconciled(
@@ -45,6 +59,7 @@ impl SessionIngress {
         self.retained = Some(frame);
         self.result_sequence_floor = pending.sequence;
         self.pending_delivery = None;
+        self.pending_use = None;
         self.reconciled_sequence = Some(pending.sequence);
         Some(())
     }

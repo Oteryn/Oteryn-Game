@@ -1267,7 +1267,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             {
                 Ok(Some(outcome)) => return Some(outcome),
                 Ok(None) => {}
-                Err(()) => return None,
+                Err(_) => return None,
             }
         }
         if let Some(outcome) = self
@@ -1316,7 +1316,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
-        if let Some(outcome) = self.use_coin(actor, command, item).await {
+        if let Some(outcome) = self.use_coin(actor, command, item, false).await {
             return outcome;
         }
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {

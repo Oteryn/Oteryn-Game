@@ -1,7 +1,6 @@
 //! The ATTACK-0 §5 constants table (`content/combat/attack_constants_v1.json`).
 //!
-//! Every value is Canary-derived (`OTS_HYPOTHESIS_ONLY`) and carries `PARITY_PENDING` until
-//! ATTACK-PARITY-1 matches it against the TibiaPal calculator (§6).
+//! The checked-in table retains the ATTACK-0 source values and its fixture provenance.
 
 use std::sync::OnceLock;
 
@@ -141,6 +140,9 @@ pub struct AttackConstants {
 }
 
 impl AttackConstants {
+    /// Crystal 201189f8, player.cpp:714-720: fixed player weapon attack factor.
+    pub const PLAYER_ATTACK_FACTOR: f64 = 1.2;
+
     /// Parse and check a table: schema, parity state, nonzero periods and in-range factors.
     pub fn parse(text: &str) -> Option<Self> {
         let table: Self = serde_json::from_str(text).ok()?;
@@ -190,11 +192,16 @@ impl AttackConstants {
         TABLE.get_or_init(|| Self::parse(TABLE_JSON)).as_ref()
     }
 
+    /// Crystal fixes the attack factor. The defence entries retain the donor's internal values.
     pub fn fight_mode(&self, mode: FightMode) -> FightModeConstants {
-        match mode {
+        let defence = match mode {
             FightMode::Offensive => self.fight_modes.offensive,
             FightMode::Balanced => self.fight_modes.balanced,
             FightMode::Defensive => self.fight_modes.defensive,
+        };
+        FightModeConstants {
+            attack_factor: Self::PLAYER_ATTACK_FACTOR,
+            ..defence
         }
     }
 

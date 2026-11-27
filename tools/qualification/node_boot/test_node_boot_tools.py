@@ -279,7 +279,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 11)
+        self.assertEqual(len(accounts), 13)
         self.assertEqual(len(set(accounts)), len(accounts))
 
 

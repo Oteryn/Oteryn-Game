@@ -13,6 +13,8 @@ mod channel_boot;
 mod public_house_catalogue;
 mod qualification_fixture;
 #[cfg(test)]
+pub(crate) use qualification_fixture::fixture_build_spec;
+#[cfg(test)]
 #[path = "serve/postgres_tests/readiness.rs"]
 mod readiness_postgres_tests;
 mod supervision;

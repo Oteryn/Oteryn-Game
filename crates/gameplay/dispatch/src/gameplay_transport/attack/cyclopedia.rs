@@ -119,8 +119,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(());
             }
-            let attack = self.states.attack.try_lock().map_err(|_| ())?;
-            let mode = fight_mode(attack.expert_modes(actor, session).modes.fight_mode);
+            let mode = FightMode::Offensive;
             let facts = state.character_facts();
             let wheel = self.wheel_stat_bonuses(
                 session,

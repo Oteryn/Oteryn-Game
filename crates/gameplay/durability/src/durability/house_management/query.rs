@@ -15,6 +15,7 @@ pub struct HouseManagementSummary {
     pub own_maximum: Option<u64>,
     pub auction_sort_end: i64,
 }
+#[derive(Clone)]
 pub struct HouseManagementPage {
     pub houses: Vec<QualifiedHouse>,
     pub cursor: Option<String>,

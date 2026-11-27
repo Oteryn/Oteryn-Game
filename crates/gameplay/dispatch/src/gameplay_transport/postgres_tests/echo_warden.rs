@@ -28,6 +28,136 @@ const POSITION: MovementLocalPosition = MovementLocalPosition {
 };
 
 #[test]
+fn echo_portal_qualification_overrides_only_the_kill_reward_draw() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| echo_portal_kill_reward_draws().map_err(debug))?
+        .join()
+        .map_err(|_| "Echo Portal scenario thread panicked")?
+        .map_err(Into::into)
+}
+
+fn echo_portal_kill_reward_draws() -> TestResult {
+    use crate::gameplay_transport::{echo_warden, kill_reward::KillSettlementQueue};
+    use oteryn_gameplay_domain::domain::echo_warden::{
+        PORTAL_DELAY_MS, SPAWN_CHANCE_DEN, SPAWN_CHANCE_NUM,
+    };
+
+    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+    let (controller, activation) =
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(
+            world,
+            Some(include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            )),
+        );
+    let active = controller.active().ok_or("active native generation")?;
+    let native = active.native_gameplay().ok_or("native gameplay")?;
+    let pin = ChannelContentPin::from_activation(
+        world,
+        activation.activation_sequence(),
+        activation.identity().server_artifact_digest(),
+        activation.identity().client_artifact_digest(),
+        activation.frame_binding().digest(),
+        activation.qualified_room().map_revision_digest(),
+        (POSITION.x, POSITION.y, POSITION.floor),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        crate::foundation::NodeId::decode(&id(72)).map_err(debug)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        40,
+        pin,
+    )
+    .map_err(debug)?;
+    native
+        .install_companion_policies(&mut runtime)
+        .map_err(debug)?;
+    let session = GameSessionId::decode(&id(73)).map_err(debug)?;
+    let character = crate::foundation::CharacterId::decode(&id(74)).map_err(debug)?;
+    let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+    let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+    let lease = crate::foundation::CharacterLease::new(character, 1).map_err(debug)?;
+    runtime
+        .bind_attacker_lease(actor, session, lease)
+        .map_err(debug)?;
+    runtime
+        .initialize_first_entry_position(actor)
+        .map_err(debug)?;
+    let principal = crate::combat::CapturedRewardPrincipal {
+        character,
+        lease_generation: lease.generation(),
+        session,
+        actor,
+    };
+
+    let production = KillSettlementQueue::default();
+    let qualification = KillSettlementQueue::default();
+    qualification.enable_qualification_echo_portal();
+    let mut production_misses = 0;
+    let mut qualification_misses = 0;
+    for round in 1..=8 {
+        let target = runtime
+            .admit_encounter_actor(CREATURE, 20, POSITION)
+            .map_err(debug)?;
+        runtime
+            .install_creature_policy(target, CREATURE)
+            .map_err(debug)?;
+        damage(&mut runtime, target, (actor, session), 20, round, 400_000)?;
+        let occurrence = {
+            let mut owner = runtime.borrow_combat_death();
+            crate::combat::project_fixed_one_creature_death(&mut owner, target).map_err(debug)?;
+            owner
+                .reward_occurrence(target, *character.as_bytes())
+                .map_err(debug)?
+                .0
+        };
+        let draw = echo_warden::draw(
+            &runtime,
+            occurrence,
+            "ECHO_WARDEN_PORTAL",
+            1,
+            SPAWN_CHANCE_DEN,
+        )
+        .ok_or("production draw")?;
+        let qualifies = round > 4;
+        if draw > SPAWN_CHANCE_NUM {
+            if qualifies {
+                qualification_misses += 1;
+            } else {
+                production_misses += 1;
+            }
+        }
+        let queue = if qualifies {
+            &qualification
+        } else {
+            &production
+        };
+        record(
+            &mut runtime,
+            queue,
+            native.reward_table(),
+            target,
+            principal,
+        );
+        let visible_at = 400_000 + PORTAL_DELAY_MS;
+        runtime
+            .drive_echo_wardens(visible_at, |_| true)
+            .map_err(debug)?;
+        let seen = runtime
+            .echo_portals(visible_at)
+            .any(|portal| portal.occurrence == occurrence);
+        assert_eq!(seen, qualifies || draw <= SPAWN_CHANCE_NUM);
+    }
+    assert!(production_misses > 0 && qualification_misses > 0);
+    Ok(())
+}
+
+#[test]
 fn echo_warden_all_damagers_first_species_replay_and_real_scroll_custody_postgres() -> TestResult {
     let started = std::time::Instant::now();
     if fixture::configured_admin().is_none() {

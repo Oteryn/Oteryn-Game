@@ -45,6 +45,7 @@ pub(super) async fn query<A: super::connection::FreshAdmissionAuthority>(
     item_view: Option<&super::item_view::SessionItemView>,
 ) -> super::imbuement::ImbuementReply {
     use super::imbuement::ImbuementReply as Outcome;
+    let selected = admitted.continuity.selected_capabilities;
     let affordability = command.command_type == wire::COMMAND_TYPE_IMBUEMENT_AFFORDABILITY;
     if !admitted
             .continuity
@@ -75,7 +76,12 @@ pub(super) async fn query<A: super::connection::FreshAdmissionAuthority>(
         .await
     {
         Outcome::Payload(bytes) => {
-            let Ok(reply) = imbuement::decode_imbuement_reply(&bytes) else {
+            let decoded = if selected.contains(imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1) {
+                imbuement::decode_imbuement_reply_with_success(&bytes).map(|(reply, _)| reply)
+            } else {
+                imbuement::decode_imbuement_reply(&bytes)
+            };
+            let Ok(reply) = decoded else {
                 return Outcome::Unavailable;
             };
             let Some(window) = reply.window else {
