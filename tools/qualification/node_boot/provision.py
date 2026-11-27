@@ -1,6 +1,7 @@
 """Root-only node-boot control request; carries no proof or database credential."""
 
 import argparse
+import json
 import re
 import socket
 import time
@@ -100,6 +101,22 @@ def inspect_damage(socket_path, session, target):
     return answer.decode("ascii").rstrip("\n")
 
 
+def inspect_forge(socket_path, session):
+    identifier = uuid.UUID(session)
+    if identifier.version != 7 or str(identifier) != session:
+        raise ValueError("invalid qualification Forge census session")
+    limit = 128 * 1024
+    answer = _request(socket_path, f"inspect-forge {session}\n", limit)
+    if len(answer) > limit:
+        raise RuntimeError("qualification Forge census exceeded response limit")
+    if answer.startswith(b"rejected "):
+        raise RuntimeError(f"node refused qualification Forge census: {bytes(answer[:128])!r}")
+    census = json.loads(answer)
+    if not isinstance(census, list):
+        raise RuntimeError("qualification Forge census is not an array")
+    return census
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
@@ -109,6 +126,7 @@ if __name__ == "__main__":
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--spawn-forge", metavar='"KEY X Y FLOOR {influenced STACKS|fiendish}"')
     group.add_argument("--inspect-damage", metavar="TARGET")
+    group.add_argument("--inspect-forge", action="store_true")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
@@ -116,5 +134,7 @@ if __name__ == "__main__":
         print(spawn_forge(args.socket, args.session, args.spawn_forge))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))
+    elif args.inspect_forge:
+        print(json.dumps(inspect_forge(args.socket, args.session), separators=(",", ":")))
     else:
         provision(args.socket, args.session, args.profile)

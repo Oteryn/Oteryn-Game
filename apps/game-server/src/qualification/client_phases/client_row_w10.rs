@@ -217,7 +217,7 @@ async fn defeat_primal(
     committed_hunt_death(
         client,
         clients,
-        Some(clients.characters[1]),
+        Some(clients.characters[W10_CHARACTER]),
         PRIMAL,
         target,
         deadline,
@@ -257,6 +257,31 @@ async fn defeat_primal(
     Ok(())
 }
 
+async fn reset_kept_hazard_fixture(clients: &SeamClients<'_>) -> TestResult {
+    wait_character_released(clients, W10_CHARACTER).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mut transaction = db.begin().await?;
+    // Only this disposable fixture goes back to level one. The native kill
+    // and selection still run with the ordinary progression guards enabled.
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query(
+        "UPDATE game_character_hazard AS hazard SET unlocked = 1, selected = 1
+         FROM game_character_roots AS root
+         WHERE hazard.character_id = root.character_id
+           AND root.character_id = encode($1, 'hex')::uuid
+           AND root.world_id = encode($2, 'hex')::uuid
+           AND hazard.unlocked = 2 AND hazard.selected IN (1, 2)",
+    )
+    .bind(clients.characters[W10_CHARACTER].as_slice())
+    .bind(clients.world.as_slice())
+    .execute(&mut *transaction)
+    .await?;
+    transaction.commit().await?;
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR");
     let root = root.as_deref().map(Path::new);
@@ -268,12 +293,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    reset_kept_hazard_fixture(clients).await?;
     let mut client = connect_character(clients, 0x05, W10_CHARACTER).await?;
     let staged = client.join_snapshot().game_session_id;
     request_fixture_control(
         uuid_text(staged.as_bytes()),
         "--profile",
-        "w10-primal".into(),
+        "w10-primal".to_owned(),
     )
     .await?;
     if logout_retrying_busy(&mut client).await?.0 != Some(LogoutResult::Accepted) {
@@ -298,24 +324,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("W10 fixture readmission did not load level-1000 knight vitals".into());
     }
     let weapon = provisioning::item_reference(&provisioning::item_index()?, 7434)?;
-    let equip = client.session_mut().equip_item_definition(weapon).await?;
-    if equip.status != CommandStatus::Accepted
-        || equip.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
-    {
-        return Err(format!("W10 fixture royal axe equip refused: {equip:?}").into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    while !client.inventory().is_some_and(|inventory| {
-        inventory
-            .equipment
-            .iter()
-            .any(|slot| slot.item.item_definition_ref == weapon)
-    }) {
-        if tokio::time::Instant::now() >= deadline {
-            return Err("W10 fixture royal axe equipment delta missing".into());
+    let axe_equipped = |client: &DevClientSession| {
+        client.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .any(|slot| slot.item.item_definition_ref == weapon)
+        })
+    };
+    // The equip hotkey toggles an already-worn axe off.
+    if !axe_equipped(&client) {
+        let equip = client.session_mut().equip_item_definition(weapon).await?;
+        if equip.status != CommandStatus::Accepted
+            || equip.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+        {
+            return Err(format!("W10 fixture royal axe equip refused: {equip:?}").into());
         }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        while !axe_equipped(&client) {
+            if tokio::time::Instant::now() >= deadline {
+                return Err("W10 fixture royal axe equipment delta missing".into());
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        }
     }
     let session = client.join_snapshot().game_session_id;
     use CommandStatus::{Accepted, Rejected};

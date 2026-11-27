@@ -1,6 +1,8 @@
 """Composition guards for indexed rows and their real-capture consumers."""
 from pathlib import Path
 import re
+import subprocess
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -75,10 +77,49 @@ class IndexedVerdictTests(unittest.TestCase):
         self.assertIn('export E2E_ALL_CAPTURE_DIR=', source)
         self.assertIn('client_status=$?', source)
 
+    def test_c16d_capture_replay_requires_the_writer_in_this_run(self):
+        source = (ROOT / 'tools/qualification/e2e_all/run.sh').read_text()
+        suite = source.split('replay_suite() {', 1)[1].split('\n}\n', 1)[0]
+        capture_replay = 'tests::e2e_c16d::e2e_c16d_item_appearance_snapshot_replay'
+        other_test = 'tests::e2e_c16d::e2e_c16d_capture_round_trip_with_negotiated_entity_fields'
+        for writer_ran in (False, True):
+            with self.subTest(writer_ran=writer_ran), tempfile.TemporaryDirectory() as tmp:
+                log = Path(tmp) / 'node.log'
+                log.write_text(
+                    'SEAM_EVIDENCE e2e_all scenario=C16d.client status=PASS seconds=1.0\n'
+                    if writer_ran else
+                    'SEAM_EVIDENCE e2e_all scenario=C16c.client status=PASS seconds=1.0\n'
+                )
+                result = subprocess.run(
+                    ['bash', '-c', """
+                        set -uo pipefail
+                        RUN="$1"
+                        CARGO=mock_cargo
+                        mock_cargo() {
+                            case "$*" in
+                                *--list*--ignored*) ;;
+                                *--list*) printf '%s: test\n' "$capture_test" "$other_test" ;;
+                                *) for test in "${@:8}"; do
+                                       [[ "$test" == --exact ]] || printf 'test %s ... ok\n' "$test"
+                                   done ;;
+                            esac
+                        }
+                        """ + f"replay_suite() {{{suite}\n}}\n" +
+                     f'capture_test={capture_replay}; other_test={other_test}\n' +
+                     'replay_suite -p oteryn-session', 'test', tmp],
+                    capture_output=True, text=True, check=False, timeout=10,
+                    cwd=tmp,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn(other_test, result.stdout)
+                self.assertEqual(capture_replay in result.stdout, writer_ran)
+
     def test_real_c16_captures_do_not_write_fabricated_ids_or_repeat_full_packets(self):
         source = (PHASES / 'client_row_c16c.rs').read_text()
-        self.assertIn('status=MISSING-CLIENT', source)
-        self.assertNotIn('std::fs::write', source)
+        self.assertIn('status=PASS evidence=animate-dead-replay-captured', source)
+        self.assertIn('.c16c_capture_files(summon.entity)', source)
+        self.assertIn('for (name, bytes) in files?', source)
+        self.assertIn('std::fs::write(directory.join(name), bytes)?', source)
         for name in ['client_row_c16c', 'client_row_c16d']:
             self.assertNotIn('full_e2ef5::run(', (PHASES / (name + '.rs')).read_text())
 

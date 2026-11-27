@@ -144,5 +144,22 @@ class DamageInspectionTests(unittest.TestCase):
                 PROVISION.inspect_damage("/control.sock", SESSION, self.TARGET)
 
 
+class ForgeCensusTests(unittest.TestCase):
+    def test_inspect_forge_requests_the_exact_session_and_returns_the_census(self):
+        with patch.object(PROVISION, "_request", return_value=b'[{"stacks":3}]') as exchange:
+            self.assertEqual(PROVISION.inspect_forge("/control.sock", SESSION), [{"stacks": 3}])
+            exchange.assert_called_once_with("/control.sock", f"inspect-forge {SESSION}\n", 128 * 1024)
+
+    def test_inspect_forge_rejects_invalid_sessions_refusals_and_oversize_census(self):
+        with patch.object(PROVISION, "_request") as exchange:
+            with self.assertRaises(ValueError):
+                PROVISION.inspect_forge("/control.sock", SESSION.upper())
+            exchange.assert_not_called()
+            for reply in (b"rejected reason=forge_census_unavailable", b"{}", b" " * (128 * 1024 + 1)):
+                with self.subTest(length=len(reply)), self.assertRaises(RuntimeError):
+                    exchange.return_value = reply
+                    PROVISION.inspect_forge("/control.sock", SESSION)
+
+
 if __name__ == "__main__":
     unittest.main()

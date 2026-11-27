@@ -75,6 +75,18 @@ class ClassARowWiringTests(unittest.TestCase):
         self.assertRegex(row, r'connect_character\(clients, 0xd5, C16C_CHARACTER\)')
         self.assertRegex(row, r'provision_profile\(\s*client,\s*clients,\s*C16C_CHARACTER,')
 
+    def test_w10_death_receipt_is_queried_for_the_admitted_character(self):
+        row = (self.phases / 'client_row_w10.rs').read_text()
+        self.assertRegex(row, r'connect_character\(clients, 0x06, W10_CHARACTER\)')
+        self.assertRegex(row, r'committed_hunt_death\(\s*client,\s*clients,'
+                              r'\s*Some\(clients.characters\[W10_CHARACTER\]\)')
+
+    def test_p19_census_uses_the_qualification_operator_path(self):
+        row = (self.phases / 'client_row_p19.rs').read_text()
+        census = row.split('async fn census(', 1)[1].split('fn log_census', 1)[0]
+        self.assertRegex(census, r'request_fixture_control\(session, "--inspect-forge", None\)')
+        self.assertNotIn('UnixStream', census)
+
     def test_c16c_then_w10_routes_to_distinct_bootstrapped_characters(self):
         world = (self.phases / 'world.rs').read_text()
         indices = {
@@ -410,6 +422,20 @@ class ReuseTests(unittest.TestCase):
                     self.assertEqual(result.stdout.strip(),
                                      'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack')
             self.assertEqual(self.run_guard(temp, 'teardown', 'NODE_BOOT_E2E_ONLY=mp').returncode, 0)
+
+    def test_rows_reuse_requires_the_kept_premium_activation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(self.save_state(temp).returncode, 0)
+            without_activation = 'sudo() { [[ "$1" != grep ]]; }'
+            rows = self.run_guard(temp, 1, without_activation)
+            self.assertEqual(rows.returncode, 2, rows.stdout + rows.stderr)
+            self.assertIn('reason=kept_stack_missing_premium_activation', rows.stdout)
+            for mode, groups in ((1, 'f6'), ('teardown', 'rows')):
+                result = self.run_guard(
+                    temp, mode, f'{without_activation}; NODE_BOOT_E2E_ONLY={groups}'
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(self.run_guard(temp, 1).returncode, 0)
 
     def test_kept_or_reused_stack_never_reports_a_pass(self):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)

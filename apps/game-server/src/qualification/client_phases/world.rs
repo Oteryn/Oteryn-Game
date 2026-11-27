@@ -758,22 +758,17 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
 pub(crate) async fn request_fixture_control(
     session: String,
     operation: &'static str,
-    argument: String,
+    argument: impl Into<Option<String>>,
 ) -> Result<String, String> {
+    let argument = argument.into();
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
         crate::qualification::provision_python()
             .arg(script)
-            .args([
-                "--socket",
-                &socket,
-                "--session",
-                &session,
-                operation,
-                &argument,
-            ])
+            .args(["--socket", &socket, "--session", &session, operation])
+            .args(argument)
             .output()
     })
     .await

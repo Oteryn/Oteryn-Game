@@ -4,7 +4,6 @@ use oteryn_dev_client::native_session::AppearanceUpdate;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(serde::Deserialize)]
 struct MarkedCreature {
@@ -42,15 +41,9 @@ impl MarkedCreature {
 }
 
 async fn census(client: &DevClientSession) -> TestResult<Vec<MarkedCreature>> {
-    let mut socket = tokio::net::UnixStream::connect(required("NODE_BOOT_CONTROL_SOCKET")?).await?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    socket
-        .write_all(format!("inspect-forge {session}\n").as_bytes())
-        .await?;
-    socket.shutdown().await?;
-    let mut response = Vec::new();
-    socket.take(128 * 1024).read_to_end(&mut response).await?;
-    serde_json::from_slice(&response)
+    let response = request_fixture_control(session, "--inspect-forge", None).await?;
+    serde_json::from_str(&response)
         .map_err(|error| format!("P19 Forge census could not be read: {error}").into())
 }
 

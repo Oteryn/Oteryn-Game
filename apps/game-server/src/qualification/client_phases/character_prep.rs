@@ -5,7 +5,7 @@ pub(super) async fn grant_premium(client: &oteryn_dev_client::DevClientSession) 
     request_fixture_control(
         uuid_text(client.join_snapshot().game_session_id.as_bytes()),
         "--profile",
-        "premium".into(),
+        "premium".to_owned(),
     )
     .await?;
     Ok(())
