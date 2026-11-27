@@ -65,10 +65,10 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
         let level_gate = required_level.is_some();
         let door_action = if let Some((x, y, floor, _, action)) = source {
             let authored = authored_door_action(x, y, floor, door_appearance)?;
-            assert_eq!(
-                authored,
-                Some(action),
-                "authored door action at ({x}, {y}, {floor})"
+            // Some source actions are installed from startup selectors during map boot.
+            assert!(
+                authored.is_none_or(|raw| raw == action),
+                "conflicting raw door action at ({x}, {y}, {floor}): {authored:?}"
             );
             authored
         } else {

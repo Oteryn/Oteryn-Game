@@ -4,17 +4,17 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]
 fn circle_room_source_expertise_door_requires_level_32() -> TestResult {
-    source_key_door(32510, 31956, -13, 1032)
+    source_key_door(32510, 31956, -13, 1648, 1032)
 }
 
 #[test]
 fn crusader_helmet_source_expertise_door_requires_level_35() -> TestResult {
-    source_key_door(32475, 31946, -13, 1035)
+    source_key_door(32475, 31946, -13, 1648, 1035)
 }
 
 #[test]
 fn crystal_wand_source_expertise_door_requires_level_60() -> TestResult {
-    source_key_door(32483, 31722, -15, 1060)
+    source_key_door(32483, 31722, -15, 5111, 1060)
 }
 
 #[test]
