@@ -12,6 +12,8 @@
     "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
     "imports/canary/items-xml/items.xml#16388-16393",
     "imports/canary/items-xml/items.xml#12686-12703",
+    "https://tibia.fandom.com/wiki/Poison_Spider",
+    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L16278-L16283",
     "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910"
   ],
   "capacity_projections": [
@@ -276,6 +278,7 @@
     "oteryn:creature.pirate_corsair": 18194,
     "oteryn:creature.pirate_cutthroat": 18198,
     "oteryn:creature.pirate_marauder": 18202,
+    "oteryn:creature.poison_spider": 5974,
     "oteryn:creature.priestess": 18210,
     "oteryn:creature.rahemos": 6031,
     "oteryn:creature.reflection_of_mawhawk": 21004,
