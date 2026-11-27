@@ -100,7 +100,18 @@ fn require_reply(reply: &Reply, expected: CommandStatus) -> TestResult {
     Ok(())
 }
 
-async fn persisted(clients: &SeamClients<'_>) -> TestResult<(String, String, String)> {
+type Selection = (String, String, String);
+
+fn require_unchanged(expected: &Selection, observed: &Selection, phase: &str) -> TestResult {
+    if observed != expected {
+        return Err(format!(
+            "{phase} changed the persisted daily boost: expected {expected:?}, observed {observed:?}"
+        ).into());
+    }
+    Ok(())
+}
+
+async fn persisted(clients: &SeamClients<'_>) -> TestResult<Selection> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let selected = sqlx::query_as(
         "SELECT a.reset_epoch::text, b.creature_key, b.boss_key
@@ -125,14 +136,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("admission did not offer daily-boost capability 151".into());
     }
     let session = client.join_snapshot().game_session_id;
+    let expected = persisted(clients).await?;
     let reply = query(&mut client, &[]).await?;
     require_reply(&reply, CommandStatus::Accepted)?;
-    let expected = persisted(clients).await?;
+    require_unchanged(&expected, &persisted(clients).await?, "initial query")?;
     let refused = query(&mut client, &[0]).await?;
     require_reply(&refused, CommandStatus::Rejected)?;
-    if persisted(clients).await? != expected {
-        return Err("malformed query changed the persisted daily boost".into());
-    }
+    require_unchanged(&expected, &persisted(clients).await?, "malformed query")?;
     if client.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
         return Err("daily boost logout refused".into());
     }
@@ -140,11 +150,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     let mut fresh = connect_world(clients, 0xfb).await?;
     let fresh_session = fresh.join_snapshot().game_session_id;
-    if session == fresh_session || persisted(clients).await? != expected {
+    if session == fresh_session {
         return Err("daily boost readmission failed to retain the persisted selection".into());
     }
+    require_unchanged(&expected, &persisted(clients).await?, "readmission")?;
     let readmitted = query(&mut fresh, &[]).await?;
     require_reply(&readmitted, CommandStatus::Accepted)?;
+    require_unchanged(&expected, &persisted(clients).await?, "post-relog query")?;
     if fresh.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
         return Err("daily boost readmission logout refused".into());
     }
@@ -160,6 +172,99 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture(root, "w13-expected.json", &serde_json::to_vec(&expected)?)?;
     Ok(provenance(&observed))
+}
+
+fn expected_name(key: &str) -> String {
+    // The display contract title-cases the underscore-separated leaf of a content key.
+    let leaf = key.rsplit(['.', ':']).next().unwrap_or(key);
+    let mut name = String::new();
+    let mut starts_word = true;
+    for letter in leaf.chars() {
+        if letter == '_' {
+            name.push(' ');
+            starts_word = true;
+        } else if starts_word {
+            name.extend(letter.to_uppercase());
+            starts_word = false;
+        } else {
+            name.push(letter);
+        }
+    }
+    name
+}
+
+fn require_card_projection(
+    cards: &[daily_boost::SpotlightCard],
+    expected: &Selection,
+) -> TestResult<String> {
+    let (epoch, creature, boss) = expected;
+    let epoch_value = epoch.parse::<u64>()?;
+    let creature_name = expected_name(creature);
+    let boss_name = expected_name(boss);
+    let [creature_card, boss_card] = cards else {
+        return Err(format!("expected two spotlight cards, observed {cards:?}").into());
+    };
+    for (card, key, name, kind) in [
+        (creature_card, creature, &creature_name, "Boosted creature"),
+        (boss_card, boss, &boss_name, "Boosted boss"),
+    ] {
+        if (&card.key, &card.name, card.kind, card.reset_epoch) != (key, name, kind, epoch_value) {
+            return Err(format!(
+                "expected spotlight card ({key}, {name}, {kind}, {epoch_value}), observed {card:?}"
+            )
+            .into());
+        }
+    }
+    Ok(format!(
+        "Daily spotlight\nReset epoch: {epoch}\nBoosted creature: {creature_name}\n{creature}\nBoosted boss: {boss_name}\n{boss}\n"
+    ))
+}
+
+#[test]
+fn w13_audit_checks_reject_mutated_selection_and_cards() -> TestResult {
+    let expected: Selection = (
+        "42".into(),
+        "oteryn:creature.braindeath".into(),
+        "oteryn:creature.sir_baeloc".into(),
+    );
+    let replacement = (
+        "42".into(),
+        "oteryn:creature.rat".into(),
+        expected.2.clone(),
+    );
+    for phase in [
+        "initial query",
+        "malformed query",
+        "readmission",
+        "post-relog query",
+    ] {
+        require_unchanged(&expected, &expected, phase)?;
+        assert!(require_unchanged(&expected, &replacement, phase).is_err());
+    }
+    let cards = [
+        daily_boost::SpotlightCard {
+            kind: "Boosted creature",
+            key: expected.1.clone(),
+            name: "Braindeath".into(),
+            reset_epoch: 42,
+        },
+        daily_boost::SpotlightCard {
+            kind: "Boosted boss",
+            key: expected.2.clone(),
+            name: "Sir Baeloc".into(),
+            reset_epoch: 42,
+        },
+    ];
+    require_card_projection(&cards, &expected)?;
+    for index in 0..cards.len() {
+        let mut wrong_name = cards.clone();
+        wrong_name[index].name = "Wrong name".into();
+        assert!(require_card_projection(&wrong_name, &expected).is_err());
+        let mut wrong_epoch = cards.clone();
+        wrong_epoch[index].reset_epoch = 41;
+        assert!(require_card_projection(&wrong_epoch, &expected).is_err());
+    }
+    Ok(())
 }
 
 #[test]
@@ -189,7 +294,7 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
     }
     assert_eq!(accepted.command_id.checked_add(1), Some(refused.command_id));
     assert!(accepted.server_sequence < refused.server_sequence);
-    let expected: (String, String, String) =
+    let expected: Selection =
         serde_json::from_slice(&std::fs::read(root.join("w13-expected.json"))?)?;
     let (epoch, creature, boss) = &expected;
     let mut panel = DailyBoostPanel {
@@ -241,22 +346,9 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
             (epoch, creature, boss)
         );
         assert_eq!(panel.feedback, None);
-        let cards = spotlight_cards(&panel);
-        assert_eq!(cards.len(), 2);
-        assert_eq!(
-            (cards[0].key.as_str(), cards[1].key.as_str()),
-            (creature.as_str(), boss.as_str())
-        );
-        assert_eq!(
-            (cards[0].kind, cards[1].kind),
-            ("Boosted creature", "Boosted boss")
-        );
         assert_eq!(
             panel_text(&panel),
-            format!(
-                "Daily spotlight\nReset epoch: {epoch}\n{}: {}\n{creature}\n{}: {}\n{boss}\n",
-                cards[0].kind, cards[0].name, cards[1].kind, cards[1].name,
-            )
+            require_card_projection(&spotlight_cards(&panel), &expected)?
         );
     }
     Ok(())
