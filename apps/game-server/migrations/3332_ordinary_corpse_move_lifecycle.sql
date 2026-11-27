@@ -330,91 +330,237 @@ BEGIN
     EXECUTE format('ALTER FUNCTION game_record_rabbit_carried_corpse_schedule() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $carried_corpse_timer$;
 
--- The established skinning actions can skip an authored transform. Prove the
--- spent definition against the original MINT schedule and keep its deadlines.
+-- Timed corpse actions must still use the donor's exact old-to-spent rule.
+-- Keep these typed IDs in sync with items::fishing::corpse_skinning_rule.
+CREATE FUNCTION game_corpse_skinning_rule(p_before TEXT,p_spent TEXT,p_tool TEXT DEFAULT NULL)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM (VALUES
+            (5908,52677,ARRAY[52678,52679,52680]),
+            (5908,4012,ARRAY[4272,5969]),
+            (5908,4053,ARRAY[4052,5982]),
+            (5908,4048,ARRAY[4047,5981]),
+            (5908,4058,ARRAY[4057,5983]),
+            (5908,21093,ARRAY[21091,21092]),
+            (5908,21097,ARRAY[21095,21096]),
+            (5908,21101,ARRAY[21099,21100]),
+            (5908,21002,ARRAY[21000,21001]),
+            (5908,21006,ARRAY[21004,21005]),
+            (5908,20998,ARRAY[20996,20997]),
+            (5908,4325,ARRAY[4324,6040]),
+            (5908,4328,ARRAY[4327,6041]),
+            (5908,4322,ARRAY[4239,4321]),
+            (5908,10369,ARRAY[10368,10371]),
+            (5908,10361,ARRAY[10360,10363]),
+            (5908,10353,ARRAY[10352,10355]),
+            (5908,10365,ARRAY[10364,10367]),
+            (5908,4287,ARRAY[4286,5973]),
+            (5908,4063,ARRAY[4062,5984]),
+            (5908,4113,ARRAY[4112,5999]),
+            (5908,4213,ARRAY[4212,6030]),
+            (5908,22744,ARRAY[22742,22743]),
+            (5942,4098,ARRAY[4097,5995]),
+            (5942,4138,ARRAY[4137,6006]),
+            (5942,8742,ARRAY[8738,8744]),
+            (5942,18959,ARRAY[18958,18961]),
+            (3469,4302,ARRAY[4301]),
+            (5908,4302,ARRAY[4301]),
+            (9594,4302,ARRAY[4301]),
+            (9598,4302,ARRAY[4301])
+        ) rule(tool,spent,original)
+        WHERE p_spent='oteryn:item.tibia.i'||rule.spent
+          AND (p_tool IS NULL OR p_tool='oteryn:item.tibia.i'||rule.tool)
+          AND p_before=ANY(ARRAY(SELECT 'oteryn:item.tibia.i'||id FROM unnest(rule.original) id))
+    )
+$$;
+
+-- The existing temporal handoff has foreign keys to an actual decay receipt.
+-- A fresh mint or a skinning action supplies its own original receipt instead.
+CREATE TABLE game_corpse_skinning_handoffs (
+    item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
+    result_revision NUMERIC(20,0) NOT NULL CHECK(result_revision BETWEEN 2 AND 18446744073709551615),
+    custody_transaction_id UUID NOT NULL CHECK(game_character_is_uuid_v7(custody_transaction_id)),
+    mint_transaction_id UUID REFERENCES game_item_mint_receipts(transaction_id),
+    skinning_transaction_id UUID REFERENCES game_corpse_skinning_records(transaction_id),
+    PRIMARY KEY(item_instance_id,result_revision),
+    CHECK (num_nonnulls(mint_transaction_id,skinning_transaction_id)=1)
+);
+CREATE INDEX game_corpse_skinning_handoffs_mint ON game_corpse_skinning_handoffs(mint_transaction_id);
+CREATE INDEX game_corpse_skinning_handoffs_skinning ON game_corpse_skinning_handoffs(skinning_transaction_id);
+REVOKE ALL ON game_corpse_skinning_handoffs FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT ON game_corpse_skinning_handoffs TO oteryn_game_runtime,oteryn_game_control;
+CREATE TRIGGER game_corpse_skinning_handoffs_immutable BEFORE UPDATE OR DELETE ON game_corpse_skinning_handoffs
+FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_corpse_skinning_handoffs_no_truncate BEFORE TRUNCATE ON game_corpse_skinning_handoffs
+EXECUTE FUNCTION game_item_reject_truncate();
+
+CREATE FUNCTION game_corpse_skinning_handoff_capture() RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    mint_origin UUID;
+    skinning_origin UUID;
+BEGIN
+    -- Independent Item mutation and custody guards must prove the update.
+    IF NEW.last_transaction_id IS NULL OR NEW.last_transaction_id IS NOT DISTINCT FROM OLD.last_transaction_id
+       OR NEW.state_revision<>OLD.state_revision+1 OR NEW.quantity<>1 OR NEW.lifecycle<>1
+       OR (to_jsonb(NEW)-ARRAY['last_transaction_id','state_revision']) IS DISTINCT FROM
+          (to_jsonb(OLD)-ARRAY['last_transaction_id','state_revision']) THEN RETURN NEW; END IF;
+
+    SELECT h.mint_transaction_id,h.skinning_transaction_id INTO mint_origin,skinning_origin
+    FROM game_corpse_skinning_handoffs h
+    WHERE h.item_instance_id=OLD.item_instance_id AND h.result_revision=OLD.state_revision
+      AND h.custody_transaction_id=OLD.last_transaction_id;
+    IF NOT FOUND THEN
+        IF OLD.state_revision=1 AND OLD.last_transaction_id IS NULL THEN
+            SELECT m.transaction_id INTO mint_origin
+            FROM game_item_mint_receipts m
+            JOIN game_spell_field_temporal_schedules p ON p.item_instance_id=m.item_instance_id
+                AND p.source_transaction_id=m.transaction_id AND p.source_ordinal=0 AND p.source_stage=1
+            WHERE m.item_instance_id=OLD.item_instance_id AND m.transaction_id=OLD.minted_transaction_id
+              AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0 AND m.materialized_at IS NOT NULL
+              AND (p.definition_family,p.definition_production_key,p.definition_revision)=
+                  (OLD.definition_family,OLD.definition_production_key,OLD.definition_revision_ref)
+              AND (m.loot_table_family,m.loot_table_production_key,m.loot_table_revision_ref)=
+                  (p.definition_family,p.definition_production_key,p.definition_revision)
+              AND EXISTS (
+                  SELECT 1 FROM game_spell_field_temporal_schedules spent
+                  WHERE spent.item_instance_id=p.item_instance_id AND spent.source_transaction_id=m.transaction_id
+                    AND spent.source_ordinal=0 AND game_corpse_skinning_rule(p.definition_production_key,spent.target_production_key)
+              );
+        ELSE
+            SELECT s.transaction_id INTO skinning_origin
+            FROM game_corpse_skinning_records s
+            WHERE s.corpse_item_instance_id=OLD.item_instance_id AND s.transaction_id=OLD.last_transaction_id
+              AND (s.before_item->>'state_revision')::numeric+1=OLD.state_revision
+              AND (OLD.definition_family,OLD.definition_production_key,OLD.definition_revision_ref)=
+                  ('Item',s.spent_key,s.spent_revision)
+              AND (to_jsonb(OLD)-ARRAY['definition_production_key','definition_revision_ref','state_revision','last_transaction_id'])=
+                  (s.before_item-ARRAY['definition_production_key','definition_revision_ref','state_revision','last_transaction_id'])
+              AND EXISTS (
+                  SELECT 1 FROM game_spell_field_temporal_schedules p
+                  WHERE p.item_instance_id=OLD.item_instance_id AND p.source_transaction_id=OLD.minted_transaction_id
+                    AND p.source_ordinal=0 AND (p.target_family,p.target_production_key,p.target_revision)=
+                        ('Item',s.spent_key,s.spent_revision)
+              );
+        END IF;
+    END IF;
+    IF mint_origin IS NOT NULL OR skinning_origin IS NOT NULL THEN
+        INSERT INTO game_corpse_skinning_handoffs(
+            item_instance_id,result_revision,custody_transaction_id,mint_transaction_id,skinning_transaction_id
+        ) VALUES(NEW.item_instance_id,NEW.state_revision,NEW.last_transaction_id,mint_origin,skinning_origin);
+    END IF;
+    RETURN NEW;
+END
+$$;
+CREATE TRIGGER game_corpse_skinning_handoff_capture AFTER UPDATE ON game_item_instances
+FOR EACH ROW EXECUTE FUNCTION game_corpse_skinning_handoff_capture();
+
+CREATE OR REPLACE FUNCTION game_corpse_skinning_temporal_allowed(p_item UUID,p_spent TEXT,p_revision TEXT)
+RETURNS BOOLEAN LANGUAGE sql AS $$
+    SELECT (p_spent<>'oteryn:item.tibia.i4302' AND NOT EXISTS (
+        SELECT 1 FROM game_spell_field_temporal_schedules t WHERE t.item_instance_id=p_item
+    )) OR EXISTS (
+        SELECT 1 FROM game_item_instances i
+        JOIN game_item_mint_receipts m ON m.item_instance_id=i.item_instance_id AND m.transaction_id=i.minted_transaction_id
+        JOIN game_corpse_source_races race ON race.item_instance_id=i.item_instance_id AND race.mint_transaction_id=m.transaction_id
+        JOIN game_spell_field_temporal_schedules p
+          ON p.item_instance_id=i.item_instance_id AND p.source_transaction_id=m.transaction_id AND p.source_ordinal=0
+        JOIN game_spell_field_temporal_schedules spent
+          ON spent.item_instance_id=i.item_instance_id AND spent.source_transaction_id=m.transaction_id AND spent.source_ordinal=0
+        WHERE i.item_instance_id=p_item AND i.lifecycle=1 AND i.quantity=1
+          AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+          AND (m.loot_table_family,m.loot_table_revision_ref)=('Item','definition-r1')
+          AND m.materialized_at IS NOT NULL AND m.death_world_id=i.world_id
+          AND (p.definition_family,p.definition_production_key,p.definition_revision)=
+              (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+          AND (spent.target_family,spent.target_production_key,spent.target_revision)=('Item',p_spent,p_revision)
+          AND spent.source_stage>=p.source_stage
+          AND game_corpse_skinning_rule(i.definition_production_key,p_spent)
+          AND p.expires_at_unix_ms>floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+          AND (m.loot_table_production_key<>'oteryn:item.tibia.i5995'
+               OR (race.race_key,race.race_definition_revision)=('oteryn:creature.demon','definition-r1'))
+          AND (p_spent<>'oteryn:item.tibia.i4302' OR (
+               m.loot_table_production_key='oteryn:item.tibia.i6017'
+               AND race.race_key IN ('oteryn:creature.rabbit','oteryn:creature.killer_rabbit')
+               AND race.race_definition_revision='definition-r1'))
+          AND (
+               (p.source_stage=1 AND (m.loot_table_family,m.loot_table_production_key,m.loot_table_revision_ref)=
+                    (p.definition_family,p.definition_production_key,p.definition_revision)
+                AND ((i.state_revision=1 AND i.last_transaction_id IS NULL)
+                     OR EXISTS (
+                         SELECT 1 FROM game_corpse_skinning_handoffs h
+                         WHERE h.item_instance_id=i.item_instance_id AND h.result_revision=i.state_revision
+                           AND h.custody_transaction_id=i.last_transaction_id AND h.mint_transaction_id=m.transaction_id
+                     )))
+               OR EXISTS (
+                   SELECT 1 FROM game_spell_field_temporal_receipts r
+                   WHERE r.item_instance_id=i.item_instance_id AND r.source_stage=p.source_stage-1
+                     AND ((r.transaction_id=i.last_transaction_id AND r.state_revision_before+1=i.state_revision)
+                          OR EXISTS (
+                              SELECT 1 FROM game_item_decay_handoffs h
+                              WHERE h.item_instance_id=r.item_instance_id AND h.source_stage=r.source_stage
+                                AND h.stage_transaction_id=r.transaction_id AND h.result_revision=i.state_revision
+                                AND h.custody_transaction_id=i.last_transaction_id
+                          ))
+               )
+           )
+    )
+$$;
+
+-- The spent item can stand where its original schedule would arrive after
+-- the skipped transform. Bind that substitute to the exact craft receipt.
 CREATE FUNCTION game_ordinary_corpse_skinning_reached(
-    p_item UUID, p_stage INTEGER, p_key TEXT, p_revision TEXT,
-    p_state NUMERIC, p_transaction UUID
+    p_item UUID,p_stage INTEGER,p_key TEXT,p_revision TEXT,p_state NUMERIC,p_transaction UUID
 ) RETURNS BOOLEAN LANGUAGE sql STABLE STRICT AS $$
     SELECT EXISTS (
         SELECT 1 FROM game_corpse_skinning_records s
+        JOIN game_item_craft_records c USING(transaction_id)
         JOIN game_spell_field_temporal_schedules stage
           ON stage.item_instance_id=s.corpse_item_instance_id
          AND stage.source_transaction_id=(s.before_item->>'minted_transaction_id')::uuid
-        WHERE s.corpse_item_instance_id=p_item AND s.transaction_id=p_transaction
-          AND (s.before_item->>'state_revision')::numeric+1=p_state
-          AND (s.spent_key,s.spent_revision)=(p_key,p_revision)
-          AND s.spent_key IN ('oteryn:item.tibia.i4012','oteryn:item.tibia.i52677')
+        WHERE s.corpse_item_instance_id=p_item AND (s.spent_key,s.spent_revision)=(p_key,p_revision)
+          AND c.created_xact_id=s.created_xact_id AND c.recipe='oteryn:skinning.crystal' AND NOT c.consume_source
+          AND game_corpse_skinning_rule(s.before_item->>'definition_production_key',s.spent_key,c.before_item->>'definition_production_key')
           AND stage.source_ordinal=0 AND stage.source_stage=p_stage
           AND (stage.target_family,stage.target_production_key,stage.target_revision)=('Item',p_key,p_revision)
+          AND ((s.transaction_id=p_transaction AND (s.before_item->>'state_revision')::numeric+1=p_state)
+               OR EXISTS (
+                   SELECT 1 FROM game_corpse_skinning_handoffs h
+                   WHERE h.item_instance_id=p_item AND h.result_revision=p_state
+                     AND h.custody_transaction_id=p_transaction AND h.skinning_transaction_id=s.transaction_id
+               ))
     )
 $$;
-REVOKE ALL ON FUNCTION game_ordinary_corpse_skinning_reached(UUID,INTEGER,TEXT,TEXT,NUMERIC,UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION game_ordinary_corpse_skinning_reached(UUID,INTEGER,TEXT,TEXT,NUMERIC,UUID)
+REVOKE ALL ON FUNCTION game_corpse_skinning_rule(TEXT,TEXT,TEXT),game_corpse_skinning_handoff_capture(),
+    game_ordinary_corpse_skinning_reached(UUID,INTEGER,TEXT,TEXT,NUMERIC,UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_corpse_skinning_rule(TEXT,TEXT,TEXT),
+    game_ordinary_corpse_skinning_reached(UUID,INTEGER,TEXT,TEXT,NUMERIC,UUID)
     TO oteryn_game_runtime,oteryn_game_control;
 
 DO $ordinary_corpse_skinning$
 DECLARE
     body TEXT;
     anchor TEXT;
-    terminal CONSTANT TEXT := 'AND final.target_production_key IS NOT NULL';
-    schedule_read CONSTANT TEXT := 'FROM game_spell_field_temporal_schedules t WHERE t.item_instance_id=i.item_instance_id)';
-    final_stage TEXT;
+    f TEXT;
+    final_stage CONSTANT TEXT := '(SELECT max(final.source_stage) FROM game_spell_field_temporal_schedules final
+        WHERE final.item_instance_id=i.item_instance_id AND final.source_ordinal=0 AND final.target_production_key IS NOT NULL)';
 BEGIN
-    EXECUTE format('ALTER FUNCTION game_ordinary_corpse_skinning_reached(UUID,INTEGER,TEXT,TEXT,NUMERIC,UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+    FOREACH f IN ARRAY ARRAY['game_corpse_skinning_rule(text,text,text)','game_corpse_skinning_handoff_capture()',
+        'game_ordinary_corpse_skinning_reached(uuid,integer,text,text,numeric,uuid)',
+        'game_corpse_skinning_temporal_allowed(uuid,text,text)'] LOOP
+        EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
+    END LOOP;
 
-    body := pg_get_functiondef('game_corpse_skinning_temporal_allowed(uuid,text,text)'::regprocedure);
-    -- These proofs enumerate transforms. A carried retirement is separate.
-    IF (length(body)-length(replace(body,schedule_read,'')))/length(schedule_read) <> 2 THEN
-        RAISE EXCEPTION 'Existing corpse skinning schedule proof changed';
-    END IF;
-    body := replace(body,schedule_read,
-        'FROM game_spell_field_temporal_schedules t WHERE t.item_instance_id=i.item_instance_id AND t.target_production_key IS NOT NULL)');
-    anchor := E'\n );';
-    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
-        RAISE EXCEPTION 'Existing corpse skinning predicate changed';
-    END IF;
-    EXECUTE replace(body,anchor,$admit$
-     )
-     OR EXISTS (
-        SELECT 1 FROM game_item_instances i
-        JOIN game_item_mint_receipts m ON m.item_instance_id=i.item_instance_id AND m.transaction_id=i.minted_transaction_id
-        JOIN game_spell_field_temporal_schedules current_stage
-          ON current_stage.item_instance_id=i.item_instance_id AND current_stage.source_transaction_id=m.transaction_id
-        JOIN game_spell_field_temporal_schedules spent_stage
-          ON spent_stage.item_instance_id=i.item_instance_id AND spent_stage.source_transaction_id=m.transaction_id
-        WHERE i.item_instance_id=p_item AND i.lifecycle=1 AND i.quantity=1
-          AND i.definition_family='Item' AND i.definition_revision_ref='definition-r1'
-          AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
-          AND (m.loot_table_family,m.loot_table_revision_ref)=('Item','definition-r1')
-          AND current_stage.source_ordinal=0 AND spent_stage.source_ordinal=0
-          AND current_stage.definition_production_key=i.definition_production_key
-          AND current_stage.definition_family='Item' AND current_stage.definition_revision='definition-r1'
-          AND current_stage.expires_at_unix_ms>floor(extract(epoch FROM clock_timestamp())*1000)::bigint
-          AND spent_stage.source_stage>=current_stage.source_stage
-          AND (spent_stage.target_family,spent_stage.target_production_key,spent_stage.target_revision)=('Item',p_spent,p_revision)
-          AND p_revision='definition-r1'
-          AND (m.loot_table_production_key,i.definition_production_key,p_spent) IN (
-            ('oteryn:item.tibia.i5969','oteryn:item.tibia.i5969','oteryn:item.tibia.i4012'),
-            ('oteryn:item.tibia.i52680','oteryn:item.tibia.i52680','oteryn:item.tibia.i52677'),
-            ('oteryn:item.tibia.i52680','oteryn:item.tibia.i52679','oteryn:item.tibia.i52677'),
-            ('oteryn:item.tibia.i52680','oteryn:item.tibia.i52678','oteryn:item.tibia.i52677'))
-          AND ((current_stage.source_stage=1 AND i.state_revision=1 AND i.last_transaction_id IS NULL)
-               OR EXISTS (SELECT 1 FROM game_spell_field_temporal_receipts r
-                          WHERE r.item_instance_id=i.item_instance_id AND r.source_stage=current_stage.source_stage-1
-                            AND r.transaction_id=i.last_transaction_id AND r.state_revision_before+1=i.state_revision))
-     );$admit$);
-
-    -- The completion trigger also distinguishes timed skinning by tool.
-    -- The admitted Minotaur and Harpy transitions use the original knife.
+    -- Preserve the special rabbit yield guard. Every other timed attempt
+    -- uses the exact tool for its old-to-spent transition.
     body := pg_get_functiondef('game_corpse_skinning_complete()'::regprocedure);
-    anchor := $tool$OR (c.before_item->>'definition_production_key'='oteryn:item.tibia.i5942'$tool$;
+    anchor := $tool$OR (c.before_item->>'definition_production_key'='oteryn:item.tibia.i5942'
+      AND NEW.before_item->>'definition_production_key'<>'oteryn:item.tibia.i4301')$tool$;
     IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
         RAISE EXCEPTION 'Existing corpse skinning completion proof changed';
     END IF;
-    EXECUTE replace(body,anchor,$knife$OR (c.before_item->>'definition_production_key'='oteryn:item.tibia.i5908'
-        AND NEW.spent_key IN ('oteryn:item.tibia.i4012','oteryn:item.tibia.i52677'))
-    $knife$||anchor);
+    EXECUTE replace(body,anchor,$tool$OR (NEW.before_item->>'definition_production_key'<>'oteryn:item.tibia.i4301'
+      AND game_corpse_skinning_rule(NEW.before_item->>'definition_production_key',NEW.spent_key,c.before_item->>'definition_production_key'))$tool$);
 
     body := pg_get_functiondef('game_spell_field_temporal_capture()'::regprocedure);
     anchor := ' THEN RAISE EXCEPTION ''field stage requires exact preceding receipt''';
@@ -425,7 +571,6 @@ BEGIN
         OLD.item_instance_id,r.source_stage-1,OLD.definition_production_key,OLD.definition_revision_ref,
         OLD.state_revision,OLD.last_transaction_id),false)$capture$||anchor);
 
-    final_stage := '(SELECT max(final.source_stage) FROM game_spell_field_temporal_schedules final WHERE final.item_instance_id=i.item_instance_id AND final.source_ordinal=0 '||terminal||')';
     body := pg_get_functiondef('game_corpse_terminal_stage_ready(uuid)'::regprocedure);
     anchor := '(p.target_family,p.target_production_key,p.target_revision))';
     IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
@@ -444,12 +589,21 @@ BEGIN
     END IF;
     EXECUTE replace(body,anchor,$retire$
       AND NOT EXISTS (
-        SELECT 1 FROM game_item_instances i JOIN game_corpse_skinning_records s ON s.corpse_item_instance_id=i.item_instance_id
+        SELECT 1 FROM game_item_instances i
+        JOIN game_corpse_skinning_records s ON s.corpse_item_instance_id=i.item_instance_id
+        LEFT JOIN game_corpse_skinning_handoffs h ON h.item_instance_id=i.item_instance_id
+          AND h.result_revision=i.state_revision-1 AND h.skinning_transaction_id=s.transaction_id
         WHERE i.item_instance_id=NEW.corpse_item_instance_id
-          AND ((NEW.item_instance_id<>i.item_instance_id AND i.lifecycle=1 AND i.quantity=1 AND i.last_transaction_id=s.transaction_id)
-               OR (NEW.item_instance_id=i.item_instance_id AND i.lifecycle=2 AND i.quantity=0 AND i.last_transaction_id=NEW.transaction_id))
-          AND game_ordinary_corpse_skinning_reached(i.item_instance_id,$retire$||final_stage||$retire$,
-              i.definition_production_key,i.definition_revision_ref,
-              i.state_revision-CASE WHEN NEW.item_instance_id=i.item_instance_id THEN 1 ELSE 0 END,s.transaction_id))
+          AND (
+              (NEW.item_instance_id<>i.item_instance_id AND i.lifecycle=1 AND i.quantity=1
+               AND game_ordinary_corpse_skinning_reached(i.item_instance_id,$retire$||final_stage||$retire$,
+                   i.definition_production_key,i.definition_revision_ref,i.state_revision,i.last_transaction_id))
+              OR (NEW.item_instance_id=i.item_instance_id AND i.lifecycle=2 AND i.quantity=0
+                  AND i.last_transaction_id=NEW.transaction_id
+                  AND game_ordinary_corpse_skinning_reached(i.item_instance_id,$retire$||final_stage||$retire$,
+                      i.definition_production_key,i.definition_revision_ref,i.state_revision-1,
+                      coalesce(h.custody_transaction_id,s.transaction_id)))
+          )
+      )
     $retire$||anchor);
 END $ordinary_corpse_skinning$;

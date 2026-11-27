@@ -269,6 +269,19 @@ fn scenario(rabbit: bool) -> TestResult {
                 .await?,
             1
         );
+        drag_skinning_corpse(&owner, &harness, native, &fence, corpse, 6, 80_000_001).await?;
+        advance_corpse_decay(&owner, &harness, corpse, 611_000).await?;
+        let state: String = sqlx::query_scalar(
+            "SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=$1",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(corpse))
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(
+            state, "oteryn:item.tibia.i4013",
+            "drag preserves spent Minotaur lineage"
+        );
+        timed_dragon_skinning(&owner, &harness, native, fence, deps.actor).await?;
         stages(&owner, &harness, native, fence, deps.actor).await?;
         entity_target(&owner, &harness, native, fence, deps.actor).await?;
         refusals(&owner, &harness, native, fence, deps.actor).await?;
@@ -1154,7 +1167,7 @@ async fn exercise_rabbit(
             if text == "You have to wait a bit before you can skin this animal."
     ));
 
-    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
+    advance_corpse_decay(owner, h, corpse, 11_000).await?;
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
     assert_eq!(
         attempt(corpse, command, obsidian_knife)
@@ -1225,6 +1238,7 @@ async fn exercise_rabbit(
             .is_none_or(|outcome| outcome.disposition != UseDisposition::Committed)
     );
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
+    drag_skinning_corpse(owner, h, native, &fence, corpse, 6, 80_000_003).await?;
     let knife = ItemKey::Instance(id(kitchen_knife));
     let body_key = ItemKey::Instance(corpse);
     let mut view =
@@ -1301,8 +1315,9 @@ async fn exercise_rabbit(
         .bind(corpse.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(schedules, [10_000, 310_000, 610_000]);
 
-    // The third stage must accept the real skinning receipt as its predecessor.
-    advance_rabbit_decay(owner, h, corpse, 600_000).await?;
+    drag_skinning_corpse(owner, h, native, &fence, corpse, 7, 80_000_004).await?;
+    // The third stage must accept the skinning receipt through the exact custody handoff.
+    advance_corpse_decay(owner, h, corpse, 600_000).await?;
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4303");
     // With the mission finished, only the active Lucky Loop track admits skinning.
     let mut tx = h.pool.begin().await?;
@@ -1316,7 +1331,7 @@ async fn exercise_rabbit(
     tx.commit().await?;
 
     let corpse = mint_corpse(owner, h, native, 6017, Some(race.clone()), 901).await?;
-    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
+    advance_corpse_decay(owner, h, corpse, 11_000).await?;
     let closed = UseCommand {
         command_id: command_id + 2,
         ..command
@@ -1406,7 +1421,7 @@ async fn exercise_rabbit(
     assert_eq!(feet_count().await?, feet);
 
     let corpse = mint_corpse(owner, h, native, 6017, Some(race), 902).await?;
-    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
+    advance_corpse_decay(owner, h, corpse, 11_000).await?;
     let single_foot = UseCommand {
         command_id: draw_command(
             native,
@@ -1463,7 +1478,8 @@ async fn rabbit_jam_wire(
     let race = native.reward_table().row("oteryn:creature.rabbit").map_err(debug)?.race.clone().ok_or("rabbit race")?;
     let corpse = mint_corpse(owner, h, native, 6017, Some(race), 903).await
         .map_err(|error| format!("wire rabbit mint: {error}"))?;
-    advance_rabbit_decay(owner, h, corpse, 11_000).await
+    advance_corpse_decay(owner, h, corpse, 11_000)
+        .await
         .map_err(|error| format!("wire rabbit decay: {error}"))?;
     for (command, seed) in [(1, 76), (2, 77)] {
         super::item_look_fixtures::force_seeded_tool_jam(h, admitted.game_session_id, command, seed).await?;
@@ -1557,8 +1573,122 @@ async fn rabbit_jam_wire(
     Ok(())
 }
 
+async fn timed_dragon_skinning(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    actor: crate::foundation::ExactActorRef,
+) -> TestResult {
+    let race = native
+        .reward_table()
+        .row("oteryn:creature.dragon_lord")
+        .map_err(debug)?
+        .race
+        .clone()
+        .ok_or("dragon lord race")?;
+    let corpse = mint_corpse(owner, h, native, 5984, Some(race), 980).await?;
+    advance_corpse_decay(owner, h, corpse, 11_000).await?;
+    drag_skinning_corpse(owner, h, native, &fence, corpse, 6, 80_000_002).await?;
+    let command = UseCommand {
+        game_session_id: fence.game_session_id,
+        command_id: 80_000_005,
+        item_fence: Some(fence),
+    };
+    assert_eq!(
+        owner
+            .use_cooking_conversion(
+                actor,
+                command,
+                skinning_intent()?,
+                Some(ItemKey::Instance(id(71))),
+                Some(ItemKey::Instance(corpse)),
+            )
+            .await
+            .ok_or("dragged Dragon Lord skinning outcome")?
+            .disposition,
+        UseDisposition::Committed,
+    );
+    let (spent, elapsed): (String, Vec<i64>) = sqlx::query_as(
+        "SELECT i.definition_production_key,ARRAY(
+            SELECT p.expires_at_unix_ms-m.materialized_at
+            FROM game_spell_field_temporal_schedules p
+            WHERE p.item_instance_id=i.item_instance_id ORDER BY p.source_stage)
+         FROM game_item_instances i JOIN game_item_mint_receipts m USING(item_instance_id)
+         WHERE i.item_instance_id=$1",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(corpse))
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(spent, "oteryn:item.tibia.i4063");
+    assert_eq!(elapsed, [10_000, 310_000, 610_000]);
+    Ok(())
+}
+
+async fn drag_skinning_corpse(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    corpse: [u8; 16],
+    target_x: u16,
+    command: u64,
+) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
+    use crate::durability::map_item_mint_audit::map_item_spatial_position;
+    use crate::foundation::{CommandId, CommandRef};
+
+    let (source, map_revision, content_revision, placement_context) =
+        sqlx::query_as::<_, (Vec<u8>, String, String, Vec<u8>)>(
+            "SELECT spatial_position,map_revision,content_revision,native_room_placement_context
+             FROM game_item_ground_locations WHERE item_instance_id=$1",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(corpse))
+        .fetch_one(&h.pool)
+        .await?;
+    let destination = map_item_spatial_position(target_x, 0, -7);
+    assert_ne!(source, destination);
+    let permit = owner.spell_lane_permit().await.ok_or("corpse drag lane")?;
+    owner
+        .root
+        .commit_item_loop_move(
+            &permit,
+            owner.character,
+            owner.holder,
+            fence,
+            CommandRef::new(
+                fence.game_session_id,
+                CommandId::new(command).map_err(debug)?,
+            ),
+            &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+            LoopMoveRequest {
+                item: corpse,
+                count: None,
+                pickup_cell: Some(source),
+                destination: LoopDestination::Ground(LoopGround {
+                    spatial_position: destination,
+                    map_revision,
+                    content_revision,
+                    placement_context,
+                }),
+            },
+        )
+        .await
+        .map_err(debug)?
+        .map_err(|error| format!("corpse drag {error:?}"))?;
+    let moved: bool = sqlx::query_scalar("SELECT game_ordinary_corpse_loop_ground($1)")
+        .bind(sqlx::types::Uuid::from_bytes(corpse))
+        .fetch_one(&h.pool)
+        .await?;
+    assert!(
+        moved,
+        "a genuine Item loop receipt names the current Ground custody"
+    );
+    Ok(())
+}
+
 /// Move the fixture's original clock, leaving the real deadline worker to produce receipts.
-async fn advance_rabbit_decay(
+async fn advance_corpse_decay(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
     corpse: [u8; 16],

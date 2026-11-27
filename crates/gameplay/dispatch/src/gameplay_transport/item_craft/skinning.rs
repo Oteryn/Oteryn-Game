@@ -68,6 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             corpse: [0; 16],
             actor_position: [0; 3],
+            actor_map_revision_digest: [0; 32],
         };
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         if let Some(result) = self
@@ -193,11 +194,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| ())?
                 .position();
             request.actor_position = [position.x, position.y, i32::from(position.floor)];
+            request.actor_map_revision_digest = runtime.content_pin().map_revision_digest();
         }
-        let cell = ground.position();
+        let cell = ground
+            .corpse_action_cell(&request.actor_map_revision_digest)
+            .map_err(|_| ())?;
         let reached = request.actor_position[0].abs_diff(cell.x) <= 1
             && request.actor_position[1].abs_diff(cell.y) <= 1
-            && request.actor_position[2] == i32::from(cell.floor);
+            && request.actor_position[2] == cell.z;
         if fresh_rabbit {
             if reached {
                 self.states.chat.push_quest_feedback(

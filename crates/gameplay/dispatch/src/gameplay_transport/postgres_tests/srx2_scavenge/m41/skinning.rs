@@ -142,5 +142,29 @@ pub(super) async fn skin(
             assert_eq!(merged.operation, 2, "real beak stack merge");
         }
     }
+    if case == 0 {
+        drag_skinning_corpse(owner, h, native, &fence, corpse, 6, 80_000_006).await?;
+        let (terminal_ready, elapsed): (bool, i64) = sqlx::query_as(
+            "SELECT game_corpse_terminal_stage_ready(item_instance_id),
+                    game_corpse_retirement_deadline(item_instance_id)-materialized_at
+             FROM game_item_mint_receipts WHERE item_instance_id=$1",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(corpse))
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(terminal_ready, "dragged spent Harpy retains terminal proof");
+        advance_corpse_decay(owner, h, corpse, elapsed + 1_000).await?;
+        owner.drain_corpse_deadlines().await;
+        let retired: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_item_decay_retire_receipts WHERE item_instance_id=$1)",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(corpse))
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(
+            retired,
+            "the corpse owner retires the dragged Harpy at its original deadline"
+        );
+    }
     Ok(command)
 }

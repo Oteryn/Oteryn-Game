@@ -27,6 +27,16 @@ impl GroundActionSource {
     pub fn position(&self) -> MovementLocalPosition {
         self.position
     }
+    pub fn corpse_action_cell(
+        &self,
+        native_map_digest: &[u8; 32],
+    ) -> Result<crate::content::LogicalCell, &'static str> {
+        super::native_world_items::decode_corpse_action_cell(
+            &self.target.spatial_position,
+            &self.target.map_revision,
+            native_map_digest,
+        )
+    }
     /// Read-only operand for the quest participant, which rereads custody and
     /// corpse provenance inside its own fenced transaction before any mutation.
     pub fn quest_corpse_operand(&self) -> crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
