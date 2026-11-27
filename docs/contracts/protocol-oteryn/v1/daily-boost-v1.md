@@ -28,6 +28,33 @@ With the capability selected, a rejected command result carries a one-byte
 `DailyBoostRefusal`. The server logs the reason with the command ID and result
 sequence. A rejected query has no post-command presentation refresh.
 
+| Code | Reason |
+|---:|---|
+| 1 | `MissingFence` |
+| 2 | `SessionMismatch` |
+| 3 | `ConnectionGenerationMismatch` |
+| 4 | `InvalidCommandId` |
+| 5 | `WrongCommand` |
+| 6 | `CapabilityNotSelected` |
+| 7 | `MalformedQuery` |
+| 8 | `RuntimeBusy` |
+| 9 | `OwnerUnavailable` |
+| 10 | `ScopeMismatch` |
+| 11 | `ScopeGenerationMismatch` |
+| 12 | `WorldMismatch` |
+| 13 | `ChannelMismatch` |
+| 14 | `MissingActor` |
+| 15 | `ActorNotCurrent` |
+| 16 | `ControlLost` |
+| 17 | `HolderBusy` |
+| 18 | `DeadlineExceeded` |
+| 19 | `SelectionUnavailable` |
+| 20 | `SelectionMissing` |
+| 21 | `ViewEncoding` |
+| 22 | `Unavailable` |
+| 23 | `InputUnavailable` |
+| 24 | `InputGuardDeferred` |
+
 ## View
 
 An accepted command result contains:
