@@ -38,12 +38,15 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         return Err("P19 requires Platform-issued admission for its Premium fixture".into());
     }
     character_prep::declare_seeded("P19.client", "knight,premium", "Forge combat and rewards");
-    let mut client = character_prep::Seeded {
-        profile: "knight",
-        reason: "Forge combat qualification",
+    let mut client = connect_character(clients, 0x19, 1).await?;
+    let preparation = client.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(preparation.as_bytes()), "--profile", "knight".into()).await?;
+    require_logout(&mut client, clients).await?;
+    drop(client);
+    let mut client = connect_character(clients, 0x19, 1).await?;
+    if client.join_snapshot().game_session_id == preparation {
+        return Err("P19 preparation reused the original session".into());
     }
-    .connect(clients, 0x19, 1)
-    .await?;
     let index = provisioning::item_index()?;
     let axe = provisioning::item_reference(&index, 3276)?;
     equip_fixture_axe(&mut client, axe).await?;
@@ -206,7 +209,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         move_first_attempt(&mut client, world, retreat).await?;
         let rest_position = client.world_spatial().actor_position;
         let previous = client.join_snapshot().game_session_id;
-        require_logout(&mut client).await?;
+        require_logout(&mut client, clients).await?;
         drop(client);
         client = connect_character(clients, 0x19, 1).await?;
         if client.join_snapshot().game_session_id == previous
@@ -224,6 +227,10 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let approach = route(world, tile(rest_position)?, |at| at == combat_tile)
             .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile after live-marker relog")?;
         move_first_attempt(&mut client, world, approach).await?;
+        let pre_attack = rewards(&mut client).await?;
+        if pre_attack != before {
+            return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
+        }
         let corpse = kill_and_observe_clear(&mut client, exact).await?;
         let stopped = client.session_mut().attack_target(None).await?;
         require_mechanic_acceptance(stopped.status, "P19 stop attack")?;
@@ -260,7 +267,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         move_first_attempt(&mut client, world, retreat).await?;
         let at = client.world_spatial().actor_position;
         let previous = client.join_snapshot().game_session_id;
-        require_logout(&mut client).await?;
+        require_logout(&mut client, clients).await?;
         drop(client);
         client = connect_character(clients, 0x19, 1).await?;
         if client.join_snapshot().game_session_id == previous
@@ -322,10 +329,26 @@ async fn equip_fixture_axe(client: &mut DevClientSession, axe: NonZeroU32) -> Te
     .await?
 }
 
-async fn require_logout(client: &mut DevClientSession) -> TestResult {
+async fn require_logout(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("P19 first logout refused: {reply:?}").into());
+    }
+    // Check before dropping the transport or entering the general fixture release wait.
+    let released = tokio::time::timeout(Duration::from_secs(5), async {
+        let mut db = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_scalar::<_, bool>(
+            "SELECT session_state=3 AND control_loss_epoch IS NULL
+             FROM game_durability_reconnect_sessions WHERE game_session_id=$1::uuid",
+        )
+        .bind(&session)
+        .fetch_one(&mut db)
+        .await
+    })
+    .await??;
+    if !released {
+        return Err(format!("P19 accepted logout did not durably release session {session} without control loss").into());
     }
     Ok(())
 }
@@ -557,7 +580,7 @@ async fn kill_and_observe_clear(
     tokio::time::timeout(Duration::from_secs(55), async {
         let mut left = false;
         let mut cleared = None;
-        let mut observed_corpse = false;
+
         loop {
             for event in client.wait_for_events(Duration::from_secs(55)).await? {
                 match event {
@@ -580,34 +603,18 @@ async fn kill_and_observe_clear(
                     }
                     SessionEvent::WorldSpatialEntities(delta) => {
                         if delta.value.leave.contains(&target) {
+                            if !delta.value.enter.iter().any(|entity| {
+                                entity.kind == EntityKind::Corpse
+                                    && entity.entity.identity == expected_corpse
+                                    && matches!(
+                                        entity.detail,
+                                        EntityDetail::Object { item_handle: Some(_), .. }
+                                            | EntityDetail::ObjectWithAppearance { item_handle: Some(_), .. }
+                                    )
+                            }) {
+                                return Err(format!("P19 target left without the exact corpse entering in delta {}", delta.server_sequence).into());
+                            }
                             left = true;
-                            evidence(&format!(
-                                "P19 target-left entity={target:?} sequence={}",
-                                delta.server_sequence
-                            ));
-                        }
-                        if !observed_corpse
-                            && delta
-                                .value
-                                .enter
-                                .iter()
-                                .chain(&delta.value.update)
-                                .any(|entity| {
-                                    entity.kind == EntityKind::Corpse
-                                        && entity.entity.identity == expected_corpse
-                                        && matches!(
-                                            entity.detail,
-                                            EntityDetail::Object {
-                                                item_handle: Some(_),
-                                                ..
-                                            } | EntityDetail::ObjectWithAppearance {
-                                                item_handle: Some(_),
-                                                ..
-                                            }
-                                        )
-                                })
-                        {
-                            observed_corpse = true;
                             evidence(&format!(
                                 "P19 exact corpse={corpse} sequence={}",
                                 delta.server_sequence
@@ -617,7 +624,7 @@ async fn kill_and_observe_clear(
                     _ => {}
                 }
             }
-            if left && cleared.is_some() && observed_corpse {
+            if left && cleared.is_some() {
                 return TestResult::Ok(expected_corpse);
             }
         }
@@ -700,7 +707,9 @@ async fn corpse_contents(
                     continue;
                 };
                 let container = delta.value;
-                if container.container_handle != Some(handle) {
+                if delta.server_sequence <= use_result.result_server_sequence
+                    || container.container_handle != Some(handle)
+                {
                     continue;
                 }
                 let quantity = container
