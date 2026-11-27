@@ -104,6 +104,20 @@ where
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
         // committed release keeps this a logout end.
+        if matches!(dispatch, Dispatch::Logout(LogoutResult::Accepted))
+            && std::env::var("OTERYN_QUALIFICATION_LOGOUT_ACK").as_deref() == Ok("1")
+            && let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+        {
+            let session_id = crate::gameplay_transport::format_connection_trace(
+                *session.admitted.game_session_id.as_bytes(),
+            );
+            operator_event(&format!(
+                "event=qualification_logout_ack_write session_id={session_id} command_id={} server_sequence={} unix_us={}",
+                command.command_id,
+                session.sequence,
+                now.as_micros(),
+            ));
+        }
         if write_frame(stream, &result).await.is_ok()
             && (!outcome.second_logout
                 || send_error(

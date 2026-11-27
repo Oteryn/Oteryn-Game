@@ -1211,8 +1211,13 @@ pub(super) async fn journeys(
         )
         .into());
     }
+    const P04_CLIENT_ROW_INDEX: usize = 159;
     let (result, logout, attempts, busy_timed_out) =
-        fixture_logout_retrying_busy(&mut client).await?;
+        if groups.runs("rows") && e2e_row_selected(P04_CLIENT_ROW_INDEX) {
+            logout_once(&mut client).await?
+        } else {
+            fixture_logout_retrying_busy(&mut client).await?
+        };
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }

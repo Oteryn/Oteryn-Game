@@ -284,18 +284,47 @@ async fn logout_released(
     if before != ACTIVE {
         return Err(format!("P04 logout did not start with an active lease: {before:?}").into());
     }
-    if client.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
-        return Err("P04 first logout was refused".into());
+    let ack = client.session_mut().logout().await?;
+    if ack.result != Some(LogoutResult::Accepted) {
+        return Err(format!("P04 first logout was refused: {ack:?}").into());
     }
-    let acknowledged_at = i64::try_from(
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_micros(),
+    let log = std::fs::read_to_string(required("NODE_BOOT_LOGOUT_ACK_LOG")?)?;
+    let acknowledged_at = logout_ack_write_time(
+        &log,
+        &uuid_text(session.as_bytes()),
+        ack.command_id,
+        ack.result_server_sequence,
     )?;
-    // Read once before dropping the transport or issuing a grant. The committing
-    // transaction also cleared both guards. Its time must precede wire acceptance.
     let after = release_snapshot(database, session.as_bytes(), &receipt_key).await?;
     verify_release(after, acknowledged_at)
+}
+
+fn logout_ack_write_time(
+    log: &str,
+    session_id: &str,
+    command_id: u64,
+    sequence: u64,
+) -> TestResult<i64> {
+    let binding = format!(
+        "event=qualification_logout_ack_write session_id={session_id} command_id={command_id} server_sequence={sequence} unix_us="
+    );
+    let mut matches = log.lines().filter_map(|line| {
+        // The structured logger may insert a connection trace after the event name.
+        let (_, fields) = line.split_once(" event=qualification_logout_ack_write ")?;
+        let fields = fields
+            .strip_prefix("trace=")
+            .and_then(|rest| rest.split_once(' '))
+            .map_or(fields, |(_, fields)| fields);
+        let expected = binding.strip_prefix("event=qualification_logout_ack_write ")?;
+        fields.strip_prefix(expected)?.split_whitespace().next()
+    });
+    let at = matches
+        .next()
+        .ok_or("P04 missing bound server logout acknowledgement write marker")?;
+    if matches.next().is_some() {
+        return Err("P04 duplicate server logout acknowledgement write marker".into());
+    }
+    Ok(at.parse()?)
 }
 
 fn verify_release(after: Release, acknowledged_at: i64) -> TestResult {
@@ -771,6 +800,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 mod tests {
     use super::*;
     use task_board::task_board::full::{DeliveryTask, KillTask};
+
+    #[test]
+    fn p04_logout_proof_rejects_commit_after_server_write_and_wrong_binding() -> TestResult {
+        let log = "oteryn-game-server event=qualification_logout_ack_write trace=trace session_id=session command_id=2 server_sequence=9 unix_us=100";
+        let at = logout_ack_write_time(log, "session", 2, 9)?;
+        assert!(logout_ack_write_time(log, "session", 2, 8).is_err());
+        assert!(logout_ack_write_time(log, "other", 2, 9).is_err());
+        assert!(logout_ack_write_time(&format!("{log}\n{log}"), "session", 2, 9).is_err());
+        verify_release((3, false, true, Some(99), false, false), at)?;
+        assert!(verify_release((3, false, true, Some(101), false, false), at).is_err());
+        Ok(())
+    }
 
     #[test]
     fn p04_delivery_requires_items_omitted_by_the_projection() -> TestResult {

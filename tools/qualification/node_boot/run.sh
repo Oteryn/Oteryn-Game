@@ -620,6 +620,7 @@ fi
 p04_track_commit=off
 if [[ "${NODE_BOOT_P04_CAPTURE_PENDING:-0}" == 1 ]]; then
   p04_track_commit=on
+  NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_LOGOUT_ACK=1")
 fi
 docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
@@ -1619,6 +1620,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PVP_DATABASE_URL=${ADMIN_URL%/*}/$PVP_DATABASE" "NODE_BOOT_PVP_WORLD_ID=$PVP_WORLD_ID"
       "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
       "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
+  fi
+  if [[ "${NODE_BOOT_P04_CAPTURE_PENDING:-0}" == 1 ]]; then
+    test_env+=("NODE_BOOT_LOGOUT_ACK_LOG=$node_log")
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob

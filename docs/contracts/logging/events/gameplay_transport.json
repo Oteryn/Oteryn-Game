@@ -322,6 +322,14 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "qualification_logout_ack_write",
+      "level": "warn",
+      "span": false,
+      "fields": ["session_id", "command_id", "server_sequence", "unix_us"],
+      "codes": [],
+      "note": "Disposable qualification evidence sampled before the accepted logout result is written."
+    },
+    {
       "event": "logout_busy",
       "level": "info",
       "span": false,
