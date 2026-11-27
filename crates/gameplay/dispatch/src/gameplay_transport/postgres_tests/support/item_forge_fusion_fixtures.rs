@@ -113,6 +113,12 @@ pub(super) async fn chest_case(
         seed_items(h, &[(103, EXALTED_CORE_KEY, 1, 0)]).await?;
         return transfer(operation, h, owner, admitted).await;
     }
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[4, 6, 12, 14, 28, 152],
+        )
+        .ok_or("Forge chest and Look capabilities")?;
     seed_bank(h).await?;
     seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
     let mut action = pair(Operation::Fusion, 120, 101, 102);
