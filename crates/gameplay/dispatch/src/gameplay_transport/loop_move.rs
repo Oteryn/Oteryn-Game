@@ -1603,16 +1603,9 @@ pub(super) async fn observe_container_with_house_capacity(
 }
 
 #[cfg(test)]
-#[derive(Default)]
-pub(super) struct CarriedUseReadBarrier {
-    pub(super) ready: tokio::sync::Notify,
-    pub(super) held: tokio::sync::Notify,
-    pub(super) refused: tokio::sync::Notify,
-}
-
-#[cfg(test)]
 tokio::task_local! {
-    pub(super) static CARRIED_USE_READ_BARRIER: std::sync::Arc<CarriedUseReadBarrier>;
+    pub(super) static CONTAINER_USE_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
 }
 
 pub(super) async fn observe_container_for_use(
@@ -1716,13 +1709,13 @@ async fn observe_container_with_house_capacity_inner(
         None
     } else if let Some(budget) = budget {
         #[cfg(test)]
-        let barrier = CARRIED_USE_READ_BARRIER
-            .try_with(std::sync::Arc::clone)
-            .ok();
+        let probe = CONTAINER_USE_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
         #[cfg(test)]
-        if let Some(barrier) = &barrier {
-            barrier.ready.notify_one();
-            barrier.held.notified().await;
+        if let Some(probe) = &probe {
+            probe.pause().await;
         }
         budget
             .retry_command_guard(async || {
@@ -1738,9 +1731,9 @@ async fn observe_container_with_house_capacity_inner(
                     .await;
                 #[cfg(test)]
                 if matches!(result, Err(DurabilityError::RootUnavailable))
-                    && let Some(barrier) = &barrier
+                    && let Some(probe) = &probe
                 {
-                    barrier.refused.notify_one();
+                    probe.blocked();
                 }
                 result
             })

@@ -180,15 +180,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return true;
         }
-        // Serialize this cold-start lookup with the other connections' owner
-        // work before borrowing Root; a busy cohort must queue, not starve a
-        // peer's bounded callback-recovery read.
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_command_guard(async || {
+                self.root
+                    .grizzly_boss_entry_exists_for_session(session, budget.deadline)
+                    .await
+            })
+            .await
+        {
+            Ok(false) => return self.remember_grizzly_session(session),
+            Ok(true) => {}
+            Err(error) => {
+                crate::gameplay_transport::operator_event(&format!(
+                    "event=session_durability_failed stage=grizzly_input_probe kind={error:?}"
+                ));
+                return false;
+            }
+        }
+        // Reconcile an actual visit on the owner lane and re-read it under the recovery fence.
         let Some(lookup_permit) = self.spell_lane_permit().await else {
             return false;
         };
-        // Concurrent sessions share the non-blocking holder. Its being busy is
-        // not evidence of an unresolved visit; retry only that transient failure.
-        let entry = match AdmissionRetryBudget::for_command(self.root)
+        let entry = match budget
             .retry_unavailable(async || {
                 self.root
                     .pending_grizzly_boss_entry_for_session(self.character, session)
