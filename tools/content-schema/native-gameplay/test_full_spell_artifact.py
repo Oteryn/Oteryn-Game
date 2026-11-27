@@ -330,7 +330,8 @@ class LootTablesTests(unittest.TestCase):
         tables = {row['identity']['key'] for row in document['tables']}
         self.assertEqual({ref['key'] for ref in bindings.values() if ref}, tables)
         items = {row['item']['key']: row for row in document['items']}
-        self.assertEqual(16, items['oteryn:item.tibia.i5964']['container_capacity'])
+        # Canary items.xml:16141-16146 gives the live Rat corpse 10 slots.
+        self.assertEqual(10, items['oteryn:item.tibia.i5964']['container_capacity'])
         self.assertTrue(items['oteryn:item.tibia.i3031']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i3607']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i37109']['materializable'])

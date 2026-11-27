@@ -94,15 +94,49 @@ def canonical_definitions(root):
             for row in json.loads(path.read_bytes())["records"]]
 
 
+def item_decay_witnesses(root, selected, definitions, bindings):
+    """Reuse the pinned Item-owner proof for decay containers outside WorldObject."""
+    if not selected:
+        return {}
+    client = (root / quest.custody.CLIENT).read_bytes()
+    if (len(client) != quest.custody.CLIENT_BYTES
+            or hashlib.sha256(client).hexdigest() != quest.custody.CLIENT_SHA):
+        raise ValueError("VERIFIED_LOOT_CORPSE_CLIENT_PIN")
+    xml = (root / quest.XML).read_bytes()
+    nodes = grizzly.source.xml_index(xml)
+    appearances = grizzly.source.engine_items.load_appearance_objects(client)
+    policies = {row["server_item_id"]: row for row in grizzly.source.policies(client, xml, selected)}
+    witnesses = {}
+    for number in selected & nodes.keys() & appearances.keys() & policies.keys():
+        item = definitions.get(key(number))
+        if item is None:
+            continue
+        try:
+            record = quest.qualify(number, item, None, nodes[number], appearances[number],
+                                   policies[number], bindings, False)
+        except ValueError:
+            continue
+        witnesses[number] = ({"identity": item["identity"], "semantics": record["semantics"]},
+                             record["production_binding"], record["attributes"])
+    return witnesses
+
+
 def plan(root, definitions, creatures, *, holds=None):
     from primal_corpse_items import corpse_definition
+    from summer_corpse_items import CHAINS
 
     primary, secondary = source_rows(root)
     roots = creature_roots(creatures)
     sources = {number: source_numbers(attributes)
                for number in primary.keys() | secondary.keys()
                if (attributes := selected_source(number, primary, secondary))}
-    candidates = {number for number, value in sources.items() if value is not None}
+    candidates = set()
+    for number in roots:
+        for _ in range(MAX_CHAIN):
+            if not (facts := sources.get(number)):
+                break
+            candidates.add(number)
+            number = facts[2]
     worlds = quest.world_objects(root, candidates)
     definitions = {row["identity"]["key"]: row for row in definitions}
     bindings = grizzly.source.binding_index((root / BINDINGS).read_bytes())
@@ -111,6 +145,7 @@ def plan(root, definitions, creatures, *, holds=None):
     cookbook = read(root, COOKBOOK)
     cooked = {row["item"] for recipe in cookbook["recipes"]
               for row in [*recipe["ingredients"], recipe["reward"]]}
+    summer_terminals = {chain[-1] for chain in CHAINS}
     eligible, rejected = {}, {}
     for number, world in worlds.items():
         item = definitions.get(key(number))
@@ -131,9 +166,28 @@ def plan(root, definitions, creatures, *, holds=None):
         capacity, duration, successor, weight = sources[number]
         observed = corpse_definition(item, capacity, duration, successor, movable["value"], weight)
         semantics = item.get("semantics", {})
+        # Legacy Rat installed a generic 16-slot terminal body. The closed current
+        # Canary row (items.xml:16141–16146) identifies its exact 10-slot decay chain.
+        legacy_rat = (number == 5964 and (capacity, duration, successor) == (10, 10_000, 3994)
+                      and item["materializable"] is True
+                      and semantics.get("container") == grizzly.source.K({"capacity": grizzly.source.K(16)})
+                      and semantics.get("temporal") == grizzly.source.K({
+                          **observed["semantics"]["temporal"]["value"],
+                          "duration": grizzly.source.K(60_000), "decay_target": grizzly.source.NA,
+                      }))
+        # The existing Summer template applies its 30-slot policy to all four
+        # stages. The pinned XML's terminal row has no container and no successor.
+        summer_terminal = (number in summer_terminals and capacity is None and successor is None
+                           and item["materializable"] is True
+                           and semantics.get("container") == grizzly.source.K({"capacity": grizzly.source.K(30)}))
+        groups = set(GROUPS)
+        if legacy_rat or summer_terminal:
+            groups.remove("container")
+        if legacy_rat:
+            groups.remove("temporal")
         if (item["stack_class"] not in ("Unknown", "NonStackable")
                 or any(grizzly.known_conflict(semantics.get(group, grizzly.source.U),
-                                              observed["semantics"][group]) for group in GROUPS)):
+                                              observed["semantics"][group]) for group in groups)):
             rejected[number] = "pinned donor custody facts conflict with a known canonical Item fact"
             continue
         # Preserve known canonical facts beyond the four custody groups.
@@ -159,6 +213,11 @@ def plan(root, definitions, creatures, *, holds=None):
                           blocks_projectile=sight["value"],
                           immovable_block_solid=solid["value"] and not movable["value"])
         eligible[number] = (observed, binding, attributes, successor)
+
+    item_decay_candidates = candidates - (roots | worlds.keys())
+    item_decay_candidates = {number for number in item_decay_candidates if key(number) not in cooked}
+    for number, evidence in item_decay_witnesses(root, item_decay_candidates, definitions, bindings).items():
+        eligible[number] = (*evidence, sources[number][2])
 
     plans = {}
     for number in sorted(roots):

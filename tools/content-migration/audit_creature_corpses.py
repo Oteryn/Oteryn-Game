@@ -9,6 +9,11 @@ import verified_loot_corpses as source
 
 LOOT = "tools/content-schema/native-gameplay/loot-tables.json"
 ITEMS = "content/items/definitions/spell-native-profiles.json"
+ACTIVE_ITEM_PROVIDERS = (
+    ITEMS,
+    "content/items/definitions/srx1-item-updates.json",
+    "content/items/definitions/starting-loadout-profiles.json",
+)
 EXCEPTIONS = "tools/content-schema/native-gameplay/verified-loot-corpse-exceptions.json"
 PLAIN = {
     ("glitterscale", 11589, True),
@@ -51,8 +56,9 @@ def audit(root=source.ROOT):
     creatures = source.read(root, source.quest.CREATURES)["records"]
     loot = source.read(root, LOOT)
     facts = {row["item"]["key"]: row for row in loot["items"]}
-    native = {row["production_definition"]["production_key"]: row
-              for row in source.read(root, ITEMS)["records"]}
+    native = {(definition["family"], definition["production_key"], definition["revision_ref"]): row
+              for path in ACTIVE_ITEM_PROVIDERS for row in source.read(root, path)["records"]
+              for definition in (row["production_definition"],)}
     tables = {row["identity"]["key"]: row for row in loot["tables"]}
     bindings = {row["creature"]["key"]: row["loot"] for row in loot["creature_loot"]}
     primary, secondary = source.source_rows(root)
@@ -60,6 +66,7 @@ def audit(root=source.ROOT):
     source.plan(root, source.canonical_definitions(root), {"records": creatures}, holds=proof_holds)
     exceptions = {"no_body": {}, "held_body": {}}
     held = {}
+    missing_profiles = {}
     reasons = Counter()
     for record in creatures:
         target = record["profile"]["target"]["key"]
@@ -71,8 +78,10 @@ def audit(root=source.ROOT):
         key = ref["key"]
         match = source.ITEM.fullmatch(key)
         number = int(match[1]) if match else None
-        row = native.get(key)
+        row = native.get((ref["family"], key, ref["revision"]))
         private = details.get("system_eligibility", {}).get("reward_boss", False)
+        if row is None:
+            missing_profiles[target] = key
         table = bindings.get(target)
         if ((target.removeprefix("oteryn:creature."), number, private) in PLAIN
                 and row and row["admission"]["materializable"]
@@ -81,6 +90,8 @@ def audit(root=source.ROOT):
         fact = facts.get(key)
         capacity = fact and fact["container_capacity"]
         rejected = []
+        if row is None:
+            rejected.append("missing_active_item_profile")
         if not fact or fact["item"] != ref:
             rejected.append("missing_exact_item_facts")
         if not fact or not fact["materializable"]:
@@ -113,6 +124,7 @@ def audit(root=source.ROOT):
         "declared_corpses": len(creatures) - len(exceptions["no_body"]),
         "held_creatures": len(held),
         "held_item_ids": len({row["item"] for row in held.values()}),
+        "missing_active_profiles": missing_profiles,
         "predicate_counts": dict(reasons),
         "held": held,
         "exceptions": exceptions,

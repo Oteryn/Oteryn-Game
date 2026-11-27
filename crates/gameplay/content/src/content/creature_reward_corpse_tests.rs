@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::BTreeSet;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -16,6 +17,32 @@ fn every_creature_corpse_admits_or_has_an_explicit_source_exception()
     let items = serde_json::from_slice(include_bytes!(
         "../../../../../content/items/definitions/spell-native-profiles.json"
     ))?;
+    let mut active: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for bytes in [
+        include_bytes!("../../../../../content/items/definitions/spell-native-profiles.json")
+            .as_slice(),
+        include_bytes!("../../../../../content/items/definitions/srx1-item-updates.json")
+            .as_slice(),
+        include_bytes!("../../../../../content/items/definitions/starting-loadout-profiles.json")
+            .as_slice(),
+    ] {
+        let document: serde_json::Value = serde_json::from_slice(bytes)?;
+        for row in document["records"]
+            .as_array()
+            .ok_or("active Item profile records")?
+        {
+            let key = row["production_definition"]["production_key"]
+                .as_str()
+                .ok_or("active Item profile key")?;
+            let revision = row["production_definition"]["revision_ref"]
+                .as_str()
+                .ok_or("active Item profile revision")?;
+            active
+                .entry(key.to_owned())
+                .or_default()
+                .insert(revision.to_owned());
+        }
+    }
     let mut exceptions: CorpseExceptions = serde_json::from_slice(include_bytes!(
         "../../../../../tools/content-schema/native-gameplay/verified-loot-corpse-exceptions.json"
     ))?;
@@ -55,7 +82,12 @@ fn every_creature_corpse_admits_or_has_an_explicit_source_exception()
                     failures.push(format!("{key}: absent corpse has no source exception"));
                 }
             }
-            (Some(corpse), Err(NoSettlementReason::CorpseItemInadmissible)) => {
+            (Some(corpse), result)
+                if !active
+                    .get(&corpse.key)
+                    .is_some_and(|revisions| revisions.contains(&corpse.revision))
+                    || result == Err(NoSettlementReason::CorpseItemInadmissible) =>
+            {
                 if !exceptions.held_body.remove(key).is_some_and(|entry| {
                     entry
                         .split_once(": ")
@@ -94,16 +126,19 @@ fn every_creature_corpse_admits_or_has_an_explicit_source_exception()
 }
 
 #[test]
-fn braindeath_and_bug_have_lootable_ground_corpses() -> Result<(), Box<dyn std::error::Error>> {
+fn basic_monsters_have_source_backed_lootable_ground_corpses()
+-> Result<(), Box<dyn std::error::Error>> {
     let (creatures, section) = protected_loot_tests::documents()?;
     let items: crate::content::native_gameplay::ItemProfilesDocument = serde_json::from_slice(
         include_bytes!("../../../../../content/items/definitions/spell-native-profiles.json"),
     )?;
     let rewards =
         CreatureRewardTable::from_pin_with_native_corpses(&creatures, Some(&section), Some(&items));
-    for (creature, key) in [
-        ("oteryn:creature.braindeath", "oteryn:item.tibia.i7256"),
-        ("oteryn:creature.bug", "oteryn:item.tibia.i5990"),
+    for (creature, key, capacity) in [
+        ("oteryn:creature.braindeath", "oteryn:item.tibia.i7256", 10),
+        ("oteryn:creature.bug", "oteryn:item.tibia.i5990", 10),
+        ("oteryn:creature.spider", "oteryn:item.tibia.i5961", 6),
+        ("oteryn:creature.cave_rat", "oteryn:item.tibia.i5964", 10),
     ] {
         let row = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
         assert_eq!(
@@ -119,7 +154,7 @@ fn braindeath_and_bug_have_lootable_ground_corpses() -> Result<(), Box<dyn std::
             .find(|fact| fact.item.key == key)
             .ok_or("corpse facts")?;
         assert!(fact.materializable);
-        assert_eq!(fact.container_capacity, Some(10));
+        assert_eq!(fact.container_capacity, Some(capacity));
         let policy = items
             .records
             .iter()
