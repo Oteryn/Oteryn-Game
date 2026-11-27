@@ -301,6 +301,7 @@ async fn verify(
             if super::lock(&host.view()?.minimap).save_task.is_none()
                 && let Some(saved) = Saved::read_from(&cache_path)?
             {
+                assert_eq!(saved.cells.len(), expected_first_disk.len());
                 assert_eq!(
                     saved.cells.into_iter().collect::<BTreeSet<_>>(),
                     expected_first_disk
@@ -328,6 +329,9 @@ async fn verify(
     };
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
     host.route(create_mark_key()?);
+    host.click_minimap_button("Cancel mark")?;
+    host.open_mark_menu_at_cell([15, 12])?;
+    host.click_minimap_button("Set Mark")?;
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
     assert!(
         Saved::read_from(&cache_path)?
@@ -433,6 +437,7 @@ async fn verify(
         .iter()
         .map(|(&(floor, x, y), &color)| [i32::from(floor), x, y, i32::from(color)])
         .collect();
+    assert_eq!(saved.cells.len(), expected_disk.len());
     assert_eq!(
         saved.cells.into_iter().collect::<BTreeSet<_>>(),
         expected_disk
@@ -666,6 +671,7 @@ fn assert_projected_ground(
             if away_from_own_glyph && !view.entities.iter().any(|entity| entity.position == pos) {
                 let rgba = expected[expected.len() - 1];
                 assert_sidebar_tile(pixels, at, rgba);
+                verified_pixels += 1;
                 if at == [28., 24.] {
                     let origin = map.header.origin;
                     println!(
@@ -674,7 +680,6 @@ fn assert_projected_ground(
                     );
                 }
             }
-            verified_pixels += 1;
         }
     }
     assert!(
