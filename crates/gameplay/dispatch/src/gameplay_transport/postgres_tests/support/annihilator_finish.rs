@@ -45,7 +45,6 @@ pub(super) async fn outer_gate(
         UseDisposition::Committed,
         "native source gate of expertise"
     );
-    step(owner, member, East).await?;
     position(owner, member, 33214, 31671).await?;
     step(owner, member, East).await?;
     position(owner, member, 33215, 31671).await
