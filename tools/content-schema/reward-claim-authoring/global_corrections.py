@@ -13,7 +13,6 @@ evidence in the pinned pilot; only the canonical reward changes.
 | fireaxe1 | Fire Axe Quest/Spoiler rev 855030: the chest holds a Ring of Healing, a Dragon Necklace and 7 Small Diamonds; the Fire Axe is the final reward of the Pile of Bones (fireaxe2) | the bag also holds a Fire Axe (its own comment omits it) | no Fire Axe in the bag |
 | ghostsilver_lantern_quest | Ghostsilver Lantern rev 1148076: the Spider Web at 128.56/123.176/9 (32824,31664,9) gives the lit Ghostsilver Lantern, item 23738; 23734 is the unlit variant | 1 unlit lantern 23734 | 1 lit lantern 23738 |
 | Koshei platinum cache | Koshei the Deathless Quest rev 842829 and the chosen Oteryn recipe | 100 platinum coins | 50 platinum coins |
-| powerring1 | Power Ring Quest rev 683946: the rewards are a Power Ring and a Bronze Amulet (powerring2) | 1 gold coin (its own comment says power ring) | 1 Power Ring |
 
 Written book texts (TEXTS) follow the same rule. The Global text is the TibiaWiki
 book page text as the wiki renders it (`<br>` is a line break; a plain source
@@ -40,8 +39,6 @@ CORRECTIONS = {
            [[3579, 1]], [[3579, 2]]),
     6241: ('canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum',
            {'x': 33261, 'y': 32448, 'z': 12}, [[3035, 100]], [[3035, 50]]),
-    6151: ('canary:reward-claim/kv/powerring1', {'x': 32599, 'y': 31776, 'z': 9},
-           [[3031, 1]], [[3050, 1]]),
     # Crystal 201189f8 chest.lua:2916-2922 gives 23734; actions_lantern.lua:1-4
     # and items.xml:47292-47296 identify 23738 as the lit form.
     6310: ('canary:reward-claim/kv/ghostsilver_lantern_quest', {'x': 32825, 'y': 31664, 'z': 9},

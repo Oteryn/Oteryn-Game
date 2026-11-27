@@ -1859,6 +1859,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Owner-authored quest variants retain admitted attack closures, with no donor identity.
     import engenc_elemental_profiles
 
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
     engenc_elemental_profiles.apply(creatures)
     nrwicked_profiles.admit_creatures(

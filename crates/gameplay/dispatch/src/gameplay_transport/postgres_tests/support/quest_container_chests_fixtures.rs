@@ -27,6 +27,80 @@ pub(super) mod forgemaster;
 
 pub(super) use forgemaster::AccessPolicy as ForgemasterAccessPolicy;
 
+async fn assert_qa_lantern_uses(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    pool: &sqlx::PgPool,
+    mut admitted: super::AdmittedSession,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    item: [u8; 16],
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{UseIntent, UseTarget, encode_item_use_intent};
+
+    deps.runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            deps.actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    super::track(owner, deps)?;
+    admitted.runtime_actor = Some(deps.actor);
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("lantern capabilities")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let index = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("native item index")?;
+    for (from, to) in [
+        ("oteryn:item.tibia.i23738", "oteryn:item.tibia.i23734"),
+        ("oteryn:item.tibia.i23734", "oteryn:item.tibia.i23738"),
+    ] {
+        super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, &admitted).await?;
+        let reference = index
+            .definition_ref("Item", from, "definition-r1")
+            .ok_or("lantern definition")?;
+        let (next, disposition, _) = super::item_craft_fixtures::exchange(
+            owner,
+            admitted,
+            admitted.continuity.next_command_id,
+            &payload,
+            Some(reference),
+        )
+        .await?;
+        assert_eq!(disposition, UseDisposition::Committed, "{from} -> {to}");
+        let current: (String, i64) = sqlx::query_as(
+            "SELECT definition_production_key, quantity::bigint FROM game_item_instances \
+             WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(item.as_slice())
+        .fetch_one(pool)
+        .await?;
+        assert_eq!(current, (to.into(), 1), "minted lantern {from} -> {to}");
+        admitted = next;
+    }
+    Ok(())
+}
+
 #[derive(Clone, Copy)]
 pub(super) enum Case {
     TreasureOccurrence,
@@ -339,7 +413,7 @@ fn scenario_case(
             }
         } else if committed {
             match unique {
-                6038 | 6113 | 6155 => (chest.0, chest.1 + 1),
+                6038 | 6113 | 6155 | 6196 => (chest.0, chest.1 + 1),
                 6171 | 6176 | 6178 => (chest.0 + 1, chest.1),
                 _ => (chest.0 - 1, chest.1),
             }
@@ -1138,9 +1212,15 @@ fn scenario_case(
                     )
                     .await?;
                 }
+                let check_lantern = committed
+                    && cold_replay
+                    && claim == "oteryn:reward-claim.kv.ghostsilver_lantern_quest";
+                let mut connection = admitted;
                 if cold_replay {
                     assert_eq!(
-                        wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
+                        super::quest_callbacks_fixtures::wire_use_targets_retained(
+                            &owner, &mut connection, &[(1, &target)],
+                        ).await?,
                         [(CommandStatus::Accepted, UseDisposition::Committed),]
                     );
                 } else {
@@ -1353,6 +1433,11 @@ fn scenario_case(
                         writes, 0,
                         "authored text must not forge a player rewrite receipt"
                     );
+                }
+                if check_lantern {
+                    assert_qa_lantern_uses(
+                        &owner, &deps, &harness.pool, connection, fence, root.item_instance_id,
+                    ).await?;
                 }
                 phase("receipt_verification");
             }
