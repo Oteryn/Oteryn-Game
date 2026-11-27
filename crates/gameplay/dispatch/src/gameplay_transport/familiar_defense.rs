@@ -1,10 +1,9 @@
-//! Real source familiar self-defense: fenced owner read, physical HP+clock
-//! successor, and source FX in the existing outbox, all in one locked turn.
-use super::super::ComposedFreshAdmission;
-use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
+//! Source familiar self-defense applies HP, its cadence and presentation in one native turn.
+use super::super::{ComposedFreshAdmission, unix_seconds};
+use crate::foundation::{ExactActorRef, GameSessionId};
+
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(in crate::gameplay_transport) async fn tick_familiar_defenses(
+    pub(in crate::gameplay_transport) fn tick_familiar_defenses(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -15,53 +14,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        if active.familiar_defenses().is_none() {
-            return;
-        }
-        // Lock order (§1.2): the lane before any Channel guard.
-        let Some(permit) = self.spell_lane_permit().await else {
+        let (Some(policies), Some(unix)) = (active.familiar_defenses(), unix_seconds()) else {
             return;
         };
-        let permit = &permit;
-        let mut runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
-        if states.has_pending_spell_commit(actor, session)
+        // Defense only changes native combat state. A pending spell install,
+        // control transition or busy runtime defers to the next cadence.
+        let Some(permit) = self.spell_lane.try_acquire_for_local_effect() else {
+            return;
+        };
+        let (Ok(mut runtime), Ok(mut states)) =
+            (self.runtime.try_lock(), self.states.spell_states.try_lock())
+        else {
+            return;
+        };
+        if runtime.owner_fence().is_err()
+            || permit.runtime_scope() != runtime.binding().runtime_scope()
+            || states.has_pending_spell_commit(actor, session)
             || runtime.actor_spell_reserved(actor)
             || active.source_digest() != runtime.content_pin().server_artifact_digest()
+            || runtime.bound_attacker_lease(actor, session).is_err()
             || !runtime
                 .player_control_facts(actor, session)
                 .is_ok_and(|facts| facts.control_loss.is_none())
         {
             return;
         }
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
+        let (Ok(companions), Some(outbox)) = (
+            runtime.owned_companions(actor, session),
+            states.presentations.as_mut(),
+        ) else {
             return;
         };
-        let mut context = (self, &mut *runtime, &mut *states);
-        let _=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
-            let(owner,runtime,states)=ctx;
-            let mut tx=crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder,deadline).await?;
-            let scope=runtime.binding().runtime_scope();
-            let generation=runtime.binding().scope_generation().get();
-            let _authority=crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,scope,generation).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-            let current=FreshAdmissionStore::from_root(owner.root.clone()).current_session_in_transaction(&mut tx,session).await?;
-            if current.session_state()!=GameSessionState::Active||current.current_runtime_scope()!=scope||current.current_scope_generation().get()!=generation{return Err(crate::durability::DurabilityError::Unavailable)}
-            let active=owner.active_generation.and_then(|g|g.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let policies=active.familiar_defenses().ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let now=owner.owner_now().get();let unix:i64=crate::durability::character_familiar::read_familiar_unix_seconds_in_transaction(&mut tx).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-            let companions=runtime.owned_companions(actor,session).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-            for snapshot in companions {
-                let Some(policy)=policies.defense(&snapshot.state.policy.definition_key,&snapshot.state.policy.definition_revision) else{continue};
-                if !runtime.familiar_defense_due(snapshot.actor,policy,now,unix).unwrap_or(false){continue}
-                let Some(outbox)=states.presentations.as_mut() else{continue};
-                let Ok(cue)=outbox.prepare_familiar_defense_before_draw(runtime,active,policy,&snapshot) else{continue};
-                let Some(prepared)=runtime.prepare_familiar_defense(snapshot.actor,policy,now,unix).map_err(|_|crate::durability::DurabilityError::Unavailable)? else{continue};
-                let receipt=runtime.commit_familiar_defense(prepared).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-                outbox.install_familiar_defense_preflighted(cue,&receipt);
+        let now = self.owner_now().get();
+        for snapshot in companions {
+            let Some(policy) = policies.defense(
+                &snapshot.state.policy.definition_key,
+                &snapshot.state.policy.definition_revision,
+            ) else {
+                continue;
+            };
+            if !runtime
+                .familiar_defense_due(snapshot.actor, policy, now, unix)
+                .unwrap_or(false)
+            {
+                continue;
             }
-            tx.rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-            Ok(())
-        })).await;
+            let Ok(cue) =
+                outbox.prepare_familiar_defense_before_draw(&runtime, active, policy, &snapshot)
+            else {
+                continue;
+            };
+            let Ok(Some(prepared)) =
+                runtime.prepare_familiar_defense(snapshot.actor, policy, now, unix)
+            else {
+                continue;
+            };
+            if let Ok(receipt) = runtime.commit_familiar_defense(prepared) {
+                outbox.install_familiar_defense_preflighted(cue, &receipt);
+            }
+        }
     }
 }
 
