@@ -158,6 +158,38 @@ fn normalized_item_weight(
 mod tests {
     use super::*;
     #[test]
+    fn adventurers_stone_passes_character_inventory_admission()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::native_gameplay::ItemProfileRecord;
+
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/items/definitions/spell-native-profiles.json"
+        )))?;
+        let key = "oteryn:item.tibia.i16277";
+        let row = document["records"]
+            .as_array()
+            .ok_or("native Item profiles")?
+            .iter()
+            .find(|row| row["production_definition"]["production_key"] == key)
+            .ok_or("Adventurer's Stone profile")?;
+        let record: ItemProfileRecord = serde_json::from_value(row.clone())?;
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: key.into(),
+            revision_ref: "definition-r1".into(),
+        };
+        let facts = profile_item_facts(
+            &record,
+            &definition,
+            NativeItemDestination::CharacterInventory,
+        )?;
+        assert_eq!(facts.stack, ItemStackClass::NonStackable);
+        assert_eq!(facts.weight, Some(30));
+        Ok(())
+    }
+
+    #[test]
     fn native_amphora_ground_facts_do_not_grant_inventory_or_immovable_admission()
     -> Result<(), Box<dyn std::error::Error>> {
         use oteryn_gameplay_content::content::native_gameplay::ItemProfileRecord;
