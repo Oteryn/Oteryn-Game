@@ -461,14 +461,31 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
                 SessionEvent::Presentation(batch)
                     if batch.server_sequence > result_server_sequence =>
                 {
-                    if let Some(value) = oteryn_dev_client::qualification_scorch_impact(
+                    let impact = oteryn_dev_client::qualification_scorch_impact(
                         &batch.value,
                         here,
                         caster,
                         rat_position,
                         target,
                         spell.get(),
-                    )? && damage.replace((batch.server_sequence, value)).is_some()
+                    );
+                    let impact = match impact {
+                        Ok(impact) => impact,
+                        Err(error) => {
+                            let sequence = batch.server_sequence;
+                            let raw = received_damage_payload(&exchange.inbound, sequence).await;
+                            let wire = raw.as_ref().map(|payload| {
+                                presentation::decode_presentation_batch(payload)
+                            });
+                            evidence(&format!(
+                                "c18a_scorch_rejected command={command_id} reply={result_server_sequence} frame={sequence} expected_origin={here:?} expected_rat={rat_position:?} error={error} raw_payload={raw:?} wire={wire:?} applied={:?}",
+                                batch.value
+                            ));
+                            return Err(error.into());
+                        }
+                    };
+                    if let Some(value) = impact
+                        && damage.replace((batch.server_sequence, value)).is_some()
                     {
                         return Err("C18a observed multiple Scorch decisions for one cast".into());
                     }

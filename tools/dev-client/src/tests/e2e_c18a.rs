@@ -662,7 +662,9 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         ..origin
     };
     let moved_tile = *position;
-    assert!(verify(&moved).is_err());
+    let mismatch = verify(&moved).expect_err("stale Rat position must fail");
+    assert!(mismatch.contains(&format!("position={rat_tile:?}")));
+    assert!(mismatch.contains(&format!("position: {moved_tile:?}")));
     assert_eq!(
         crate::qualification_scorch_impact(&moved, origin, caster, moved_tile, target, spell)?,
         Some(7)

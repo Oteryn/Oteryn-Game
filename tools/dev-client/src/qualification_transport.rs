@@ -222,7 +222,12 @@ pub fn qualification_scorch_impact(
                     | PresentationValueKind::DamageReceived
                     | PresentationValueKind::DamageOthers,
                 ..
-            } => return Err("C18a unexpected effect or damage in Scorch's decision".into()),
+            } => {
+                return Err(format!(
+                    "C18a unexpected Scorch event: decision={} emission={} expected=own_effect_16_or_single_orange_damage(caster={caster:?}, rat={rat:?}, position={rat_position:?}) actual={:?}",
+                    event.decision_ordinal, event.emission_ordinal, event.kind,
+                ));
+            }
             _ => {}
         }
     }
