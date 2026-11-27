@@ -157,9 +157,36 @@ pub fn exact_target(origin: ActorPosition, target: ActorPosition, expected: Acto
 
 /// The level-80 Monk's 23-attack Fists and 10 fist skill put the unscaled
 /// Greater Tiger Clash roll near 26. Five Harmony multiplies it by 2.184.
-/// The guard leaves room for integer rounding and excludes every one-charge roll.
+/// The authored integer roll bounds are 23 and 29 before Harmony at this fixture's stats.
 pub fn five_harmony_damage(roll: u64) -> bool {
-    (45..=70).contains(&roll)
+    const MULTIPLIER_BP: u64 = 21_840;
+    let expected = (23 * MULTIPLIER_BP / 10_000)..=(29 * MULTIPLIER_BP / 10_000);
+    expected.contains(&roll)
+}
+
+pub fn exact_cast_cooldowns(
+    timers: &oteryn_protocol_oteryn::presentation::ActorCooldowns,
+    spell: u32,
+    group: u32,
+    spell_ms: u64,
+) -> bool {
+    use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
+    let expires = |kind, id| {
+        timers
+            .entries
+            .iter()
+            .find(|entry| (entry.kind, entry.id) == (kind, id))
+            .map(|entry| entry.expires_at_ms)
+    };
+    let Some(attack) = expires(ActorCooldownKind::Group, group) else {
+        return false;
+    };
+    matches!(attack.checked_sub(timers.server_now_ms), Some(1..=2000))
+        && spell_ms
+            .checked_sub(2000)
+            .and_then(|delta| attack.checked_add(delta))
+            .zip(expires(ActorCooldownKind::Spell, spell))
+            .is_some_and(|(expected, actual)| expected == actual)
 }
 
 pub fn spent_harmony(before: u32, after: u32) -> bool {
@@ -400,8 +427,39 @@ mod tests {
     }
 
     #[test]
+    fn greater_tiger_requires_both_independent_deadlines() {
+        use oteryn_protocol_oteryn::presentation::{
+            ActorCooldown, ActorCooldownKind, ActorCooldowns,
+        };
+        let mut timers = ActorCooldowns {
+            server_now_ms: 100,
+            rtt_ms: None,
+            entries: vec![
+                ActorCooldown {
+                    kind: ActorCooldownKind::Group,
+                    id: 1,
+                    expires_at_ms: 2100,
+                },
+                ActorCooldown {
+                    kind: ActorCooldownKind::Spell,
+                    id: 25,
+                    expires_at_ms: 8100,
+                },
+            ],
+        };
+        assert!(exact_cast_cooldowns(&timers, 25, 1, 8000));
+        timers.entries[0].expires_at_ms = 8100;
+        assert!(!exact_cast_cooldowns(&timers, 25, 1, 8000));
+        timers.entries[0].expires_at_ms = 2100;
+        timers.entries.pop();
+        assert!(!exact_cast_cooldowns(&timers, 25, 1, 8000));
+    }
+
+    #[test]
     fn five_harmony_rejects_one_charge_damage() {
         assert!(five_harmony_damage(55));
         assert!(!five_harmony_damage(31));
+        assert!(!five_harmony_damage(45));
+        assert!(!five_harmony_damage(70));
     }
 }

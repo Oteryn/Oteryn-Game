@@ -28,11 +28,11 @@ const COMMAND_BUDGET: Duration = Duration::from_secs(8);
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let received = Arc::new(Mutex::new(Vec::new()));
     let result = verdict::indexed_timeout(
-        Duration::from_secs(360),
+        Duration::from_secs(1100),
         verdict::observe(capture(clients, Arc::clone(&received))),
     )
     .await
-    .unwrap_or_else(|_| Err("C12.client capture deadline=360s".into()));
+    .unwrap_or_else(|_| Err("C12.client capture deadline=1100s".into()));
     match result {
         Ok(()) => evidence("e2e_capture scenario=C12.client status=CAPTURED"),
         Err(error) => {
@@ -652,7 +652,13 @@ async fn build_harmony<S: SessionStream>(
     }
     // Swift Jab's authored attack-group cooldown is two seconds.
     session.service_liveness(Duration::from_secs(2)).await?;
-    collect_hits(&session.take_events(), own, target, spell, &mut hits);
+    let trailing = session.take_events();
+    if !(validate_cast_timers(session, &events, spell, 2_000)?
+        || validate_cast_timers(session, &trailing, spell, 2_000)?)
+    {
+        return Err("C12 Swift Jab cooldown projection missing".into());
+    }
+    collect_hits(&trailing, own, target, spell, &mut hits);
     let damage = committed_damage(session, target, reply.command_id, &path, offset, 0)?.committed;
     if !frame_capture::exact_hit(&hits, damage) {
         return Err(format!(
@@ -661,6 +667,109 @@ async fn build_harmony<S: SessionStream>(
         .into());
     }
     Ok(damage)
+}
+
+/// Exercise the original authored hunt before the isolated damage controls.
+pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
+    session: &mut Session<S>,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    let target = loop {
+        let visible = session
+            .world_entities()
+            .ok_or("C12 authored entity projection absent")?;
+        let mut matching = visible.iter().filter(|entry| {
+            entry.kind == EntityKind::Creature
+                && entry.position.x == 32294
+                && entry.position.y == 32333
+                && entry.position.floor == 8
+                && entry.display_name.is_some_and(|name| {
+                    name.as_str()
+                        .is_ok_and(|n| n == full_row_c12::CLIENT_TARGET_NAME)
+                })
+        });
+        if let Some(entry) = matching.next() {
+            if matching.next().is_some() {
+                return Err("C12 authored spawn is ambiguous".into());
+            }
+            break entry.entity;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C12 Tarantula absent at the original authored spawn".into());
+        }
+        session
+            .service_liveness_discarding_events(Duration::from_millis(50))
+            .await?;
+    };
+    let spell = spell_index(session, "exori nia")?;
+    let attack = session.attack_target(Some(&target)).await?;
+    require_mechanic_acceptance(attack.status, "C12 authored Tarantula target")?;
+    if attack.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("C12 authored Tarantula target failed: {attack:?}").into());
+    }
+    let before = *session
+        .actor_vitals()
+        .ok_or("C12 authored cast pre-state missing")?;
+    let outcome = session
+        .cast_spell(spell, SpellTarget::AttackTarget, true)
+        .await?;
+    require_mechanic_acceptance(outcome.status, "C12 authored Tarantula cast")?;
+    let update = outcome
+        .actor_vitals_delta
+        .ok_or("C12 authored cast vitals missing")?;
+    let events = session.take_events();
+    let mana = frame_capture::mana_before_cast(
+        events.iter().filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) => Some((update.server_sequence, update.value.mana)),
+            _ => None,
+        }),
+        before.mana,
+        before.max_mana,
+        update.server_sequence,
+    );
+    if outcome.disposition != SpellCastDisposition::Cast
+        || mana.and_then(|mana| mana.checked_sub(50)) != Some(update.value.mana)
+    {
+        return Err(
+            format!("C12 authored cast did not commit its 50 mana debit: {outcome:?}").into(),
+        );
+    }
+    evidence("C12_CLIENT_AUTHORED_CAST spawn=32294,32333,-8 cast=32295,32334,-8 mana_debit=50");
+    Ok(())
+}
+
+fn validate_cast_timers<S: SessionStream>(
+    session: &Session<S>,
+    events: &[SessionEvent],
+    spell: NonZeroU32,
+    spell_ms: u64,
+) -> TestResult<bool> {
+    let catalog = session
+        .spell_catalog()?
+        .ok_or("C12 cooldown catalogue absent")?;
+    let [group] = catalog
+        .entries
+        .iter()
+        .find(|entry| entry.cast_index == spell.get())
+        .ok_or("C12 cooldown spell is missing")?
+        .cooldown_groups
+        .as_slice()
+    else {
+        return Err("C12 expects exactly one attack group".into());
+    };
+    let timers = events.iter().find_map(|event| match event {
+        SessionEvent::ActorCooldowns(update) => Some(&update.value),
+        _ => None,
+    });
+    match timers {
+        None => Ok(false),
+        Some(timers)
+            if frame_capture::exact_cast_cooldowns(timers, spell.get(), *group, spell_ms) =>
+        {
+            Ok(true)
+        }
+        Some(timers) => Err(format!("C12 incorrect spell or group deadlines: {timers:?}").into()),
+    }
 }
 
 async fn require_cooldown<S: SessionStream>(
@@ -680,7 +789,7 @@ async fn require_cooldown<S: SessionStream>(
     if reply.disposition != SpellCastDisposition::CoolingDown
         || reply.actor_vitals_delta.is_some()
         || after.harmony != before.harmony
-        || after.mana < before.mana
+        || !matches!(after.mana.checked_sub(before.mana), Some(0..=2))
     {
         return Err(format!("C12 CAST during cooldown must refuse without cost: {reply:?}").into());
     }
@@ -771,12 +880,15 @@ async fn cast_checked<S: SessionStream>(
     let mut hits = Vec::new();
     collect_hits(&events, own, target, spell, &mut hits);
     let until = tokio::time::Instant::now() + COMMAND_BUDGET;
-    while hits.is_empty() {
+    let mut timers = validate_cast_timers(session, &events, spell, 8_000)?;
+    while hits.is_empty() || !timers {
         if tokio::time::Instant::now() >= until {
             return Err("C12 attributed damage missing after CAST".into());
         }
         session.service_liveness(Duration::from_millis(25)).await?;
-        collect_hits(&session.take_events(), own, target, spell, &mut hits);
+        let trailing = session.take_events();
+        timers |= validate_cast_timers(session, &trailing, spell, 8_000)?;
+        collect_hits(&trailing, own, target, spell, &mut hits);
     }
     let cast = CheckedCast {
         command: reply.command_id,

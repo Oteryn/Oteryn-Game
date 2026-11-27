@@ -1863,6 +1863,60 @@ pub(super) struct ClientCaptureSetup {
     pub position: TilePos,
 }
 
+pub(super) const CLIENT_TARGET_NAME: &str = "Tarantula";
+const CLIENT_TARGET_KEY: &str = "oteryn:creature.tarantula";
+const CLIENT_TARGET_SPAWN: TilePos = TilePos {
+    x: 32294,
+    y: 32333,
+    floor: -8,
+};
+const CLIENT_CAST_TILE: TilePos = TilePos {
+    x: 32295,
+    y: 32334,
+    floor: -8,
+};
+
+fn authored_client_cast_route(
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    from: TilePos,
+) -> TestResult<Vec<(StepDirection, TilePos)>> {
+    let authored = spawns.sources.iter().any(|source| {
+        source.floor == CLIENT_TARGET_SPAWN.floor
+            && source.points.iter().any(|point| {
+                point.x == CLIENT_TARGET_SPAWN.x
+                    && point.y == CLIENT_TARGET_SPAWN.y
+                    && spawns
+                        .creatures
+                        .get(point.creature as usize)
+                        .is_some_and(|creature| creature.key == CLIENT_TARGET_KEY)
+            })
+    });
+    if !authored || from == CLIENT_CAST_TILE {
+        return Err("C12.client authored hunt spawn or starting position differs".into());
+    }
+    let profiles = creature_profiles()?;
+    if profiles
+        .get(CLIENT_TARGET_KEY)
+        .is_none_or(|profile| profile.health != 225 || profile.display_name != CLIENT_TARGET_NAME)
+    {
+        return Err("C12.client authored Tarantula profile differs".into());
+    }
+    let path = route(world, from, |at| at == CLIENT_CAST_TILE)
+        .ok_or("C12.client no route to the authored Tarantula cast tile")?;
+    let mut at = from;
+    path.into_iter()
+        .map(|direction| {
+            let landed = destination(world, at, direction)
+                .filter(|landed| *landed != at)
+                .ok_or("C12.client planned movement has no changed landing")?;
+            at = landed;
+            Ok((direction, landed))
+        })
+        .collect::<Result<_, &'static str>>()
+        .map_err(Into::into)
+}
+
 fn client_cast_route(
     world: &BundleWorld,
     from: TilePos,
@@ -1887,7 +1941,7 @@ pub(super) async fn prepare_client_capture(
 ) -> TestResult<ClientCaptureSetup> {
     character_prep::declare_seeded(
         "C12.client",
-        "level-80-monk,premium,item-50271,greater-proficiency-catalyst,magma-crystal",
+        "level-80-monk,premium,purchase-gold,adventurers-stone,greater-proficiency-catalyst,tarantula",
         "capture Greater Tiger Clash with the augment equipped",
     );
     let dedicated =
@@ -1904,18 +1958,19 @@ pub(super) async fn prepare_client_capture(
     let mut client = prepare_c12_monk(dedicated_clients).await?;
     character_prep::grant_premium(&client).await?;
     eprintln!("FIXTURE C12 Premium grant applied once for the dedicated Monk");
-    character_prep::grant_item(&client, ITEM_ID, 1).await?;
+    character_prep::grant_item(&client, ADVENTURERS_STONE, 1).await?;
+    let coins = pema_planned_price()?.div_ceil(CRYSTAL_COIN_VALUE);
+    character_prep::grant_item(&client, CRYSTAL_COIN, u32::try_from(coins)?).await?;
     character_prep::grant_item(&client, GREATER_PROFICIENCY_CATALYST, 1).await?;
     eprintln!("FIXTURE C12.client Greater Proficiency Catalyst 51589 granted once");
     client = fresh_c12_admission(client, dedicated_clients).await?;
     verify_seeded_monk(&mut client).await?;
     let definition = item_ref()?;
-    if carried_count(&client, definition) != 1 {
-        return Err("C12.client expected one carried weapon before equip".into());
+    if carried_count(&client, definition) != 0 || equipped_right(&client, definition) {
+        return Err("C12.client purchase requires the Fists to be absent".into());
     }
-    select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
-    equip_right(&mut client, definition).await?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -1923,6 +1978,33 @@ pub(super) async fn prepare_client_capture(
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let portals = guild_portals(&read_json("content/quests/world-callbacks.json")?)?;
+    enter_guild(&mut client, world, dedicated_clients).await?;
+    acquire_pema(&mut client, world, &metadata.npcs, definition, portals).await?;
+    leave_guild(&mut client, world, &metadata.npcs, dedicated_clients).await?;
+    select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
+    equip_right(&mut client, definition).await?;
+
+    let home = tile(client.world_spatial().actor_position)?;
+    let authored = authored_client_cast_route(world, &metadata.spawns, home)?;
+    let path = authored
+        .iter()
+        .map(|(direction, _)| *direction)
+        .collect::<Vec<_>>();
+    walk_exact_route(&mut client, world, &path).await?;
+    if tile(client.world_spatial().actor_position)? != CLIENT_CAST_TILE {
+        return Err("C12.client did not reach the authored cast tile".into());
+    }
+    super::client_row_c12::cast_at_authored_spawn(client.session_mut()).await?;
+    let cleared = client.session_mut().attack_target(None).await?;
+    require_mechanic_acceptance(cleared.status, "C12.client authored target clear")?;
+    if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("C12.client authored target clear refused: {cleared:?}").into());
+    }
+    wait_combat_target(&mut client, None).await?;
+    let back = route(world, CLIENT_CAST_TILE, |at| at == home)
+        .ok_or("C12.client no return route from the authored cast tile")?;
+    walk_exact_route(&mut client, world, &back).await?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
     let route = client_cast_route(world, position)?;
