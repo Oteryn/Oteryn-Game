@@ -639,6 +639,8 @@ async fn prepare_build(
     profile: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    // Keep setup in the foreground across its fenced reads and writes.
+    let _foreground = root.foreground_demand()?;
     let session = crate::foundation::GameSessionId::decode(&session)?;
     // Independently resolve current admission, never synthesize a fence from
     // fixture SQL or expose the node proof to the client process.
@@ -1029,6 +1031,58 @@ mod tests {
         .await;
         assert!(rejected.is_err());
         Ok(())
+    }
+
+    #[test]
+    fn qualification_provision_read_keeps_its_holder_turn()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, debug, runtime};
+        use std::future::{Future, poll_fn};
+        use std::task::Poll;
+
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        runtime().map_err(debug)?.block_on(async {
+            let harness = Harness::create(admin, "provision_holder", false).await?;
+            let root = &harness.root;
+            let result = async {
+                let mut held = root.try_acquire_ready()?;
+                let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+                let mut read = std::pin::pin!(DurabilityRoot::with_holder_owner(
+                    qualification_build::retry_holder(
+                        Some(root),
+                        deadline,
+                        |error| matches!(error, DurabilityError::RootUnavailable),
+                        async || root.try_acquire_ready(),
+                    ),
+                ));
+                poll_fn(|cx| match read.as_mut().poll(cx) {
+                    Poll::Pending => Poll::Ready(Ok(())),
+                    Poll::Ready(_) => Poll::Ready(Err("provisioning did not wait for the holder")),
+                })
+                .await?;
+                use sqlx::pool::PoolConnectionReturnDisposition;
+                assert_eq!(
+                    held.return_to_pool_observed().await,
+                    PoolConnectionReturnDisposition::ReturnedToIdle
+                );
+                let competing =
+                    DurabilityRoot::with_holder_owner(async { root.try_acquire_ready() }).await;
+                if !matches!(competing, Err(DurabilityError::RootUnavailable)) {
+                    return Err("later owner took the holder before provisioning".into());
+                }
+                let mut acquired = read.await?;
+                assert_eq!(
+                    acquired.return_to_pool_observed().await,
+                    PoolConnectionReturnDisposition::ReturnedToIdle
+                );
+                Ok(())
+            }
+            .await;
+            harness.cleanup().await?;
+            result
+        })
     }
 
     #[test]

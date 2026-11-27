@@ -36,6 +36,7 @@ pub(super) async fn retry_holder<T, E>(
     busy: impl Fn(&E) -> bool,
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
+    let mut waiter = None;
     loop {
         let outcome = step().await;
         if !outcome.as_ref().is_err_and(&busy) || tokio::time::Instant::now() >= deadline {
@@ -45,7 +46,10 @@ pub(super) async fn retry_holder<T, E>(
         let latest = (now + std::time::Duration::from_millis(250)).min(deadline);
         let earliest = (now + std::time::Duration::from_millis(50)).min(latest);
         if let Some(root) = root {
-            root.wait_holder_retry(earliest, latest).await;
+            waiter.get_or_insert_with(|| root.holder_waiter());
+            if !root.wait_holder_turn(earliest, latest).await {
+                root.wait_holder_retry(earliest, latest).await;
+            }
         } else {
             tokio::time::sleep_until(earliest).await;
         }

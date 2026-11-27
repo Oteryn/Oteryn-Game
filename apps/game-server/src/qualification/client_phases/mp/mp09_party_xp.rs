@@ -587,7 +587,9 @@ async fn encounter(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<
     database.close().await?;
     let mut hits = [false; 3];
     let mut corpse_identity = [0; 16];
-    for index in 0..bots.len() {
+    // The paladin takes the distance walk. Finish their swings first so training
+    // can settle while the other members contribute and the leader finishes the kill.
+    for index in (0..bots.len()).rev() {
         contribute(bots, index, target, deadline).await?;
         attack_target(&mut bots[index], None).await?;
         let (damage, corpse) = inspect_hunt_damage(bots, index, target).await?;
