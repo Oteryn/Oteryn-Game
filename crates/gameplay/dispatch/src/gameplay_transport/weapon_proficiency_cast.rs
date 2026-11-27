@@ -77,6 +77,16 @@ impl CastPerks {
             } else {
                 scaled(10000)?
             };
+            if kind == K::BaseDamage
+                && let Some(existing) = self
+                    .augments
+                    .iter_mut()
+                    .find(|effect| effect.kind == kind && effect.spell == spell.name)
+            {
+                // Selected proficiency damage percentages describe one base modifier.
+                existing.value = existing.value.checked_add(amount)?;
+                return Some(());
+            }
             self.augments.push(ItemSpellAugment {
                 spell: spell.name.clone(),
                 kind,
@@ -185,6 +195,49 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
 )]
 mod tests {
     use super::*;
+
+    #[test]
+    fn c12_fists_selected_perks_compose_one_base_damage_modifier() {
+        let catalogue = ProductionProficiencyCatalogue::embedded().expect("catalogue");
+        let key = "oteryn:item.tibia.i50271";
+        let data: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+        )).expect("spells");
+        let row = data["bundles"]
+            .as_array()
+            .expect("bundles")
+            .iter()
+            .find(|row| {
+                row["bundle"]["spell"]["identity"]["key"] == "candidate:spell/greater_tiger_clash"
+            })
+            .expect("Greater Tiger Clash");
+        let spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+            &row["bundle"],
+            &row["dependencies"],
+        )
+        .expect("authored spell");
+        let mut track = catalogue.empty_track(key).expect("Fists track");
+        track.progress = track.shape.track_shape().final_progress();
+        for (lv1, lv3, expected) in [
+            (None, None, vec![]),
+            (Some(0), None, vec![400]),
+            (None, Some(0), vec![400]),
+            (Some(0), Some(0), vec![800]),
+        ] {
+            track.selections[0] = lv1;
+            track.selections[2] = lv3;
+            let perks = catalogue
+                .cast_perks(key, &track, Some(&spell))
+                .expect("perks");
+            let bps = perks
+                .augments
+                .iter()
+                .filter(|effect| effect.kind == K::BaseDamage)
+                .map(|effect| effect.value)
+                .collect::<Vec<_>>();
+            assert_eq!(bps, expected);
+        }
+    }
 
     #[test]
     fn c11r_amber_selected_augments_and_skills_use_global_rewards() {

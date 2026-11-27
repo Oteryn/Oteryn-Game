@@ -266,7 +266,7 @@ pub struct PreparedMagnitudeOwner {
         Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
     caster: PlayerSpellState,
     #[cfg(feature = "qualification-cast-evidence")]
-    base_damage_evidence: Vec<(ExactActorRef, i64, i64, bool, &'static str)>,
+    base_damage_evidence: Vec<(ExactActorRef, i64, i64, bool, &'static str, u64)>,
     selected_spell: Option<String>,
     selected_focus_group: bool,
     now_ms: u64,
@@ -534,7 +534,7 @@ impl PreparedMagnitudeOwner {
         Ok(())
     }
     #[cfg(feature = "qualification-cast-evidence")]
-    pub fn base_damage_evidence(&self) -> &[(ExactActorRef, i64, i64, bool, &'static str)] {
+    pub fn base_damage_evidence(&self) -> &[(ExactActorRef, i64, i64, bool, &'static str, u64)] {
         &self.base_damage_evidence
     }
 
@@ -1324,7 +1324,8 @@ impl PreparedMagnitudeOwner {
             && self
                 .selected_spell
                 .as_deref()
-                .is_some_and(|spell| spell.eq_ignore_ascii_case("greater tiger clash"))
+                .is_some_and(|spell| spell.eq_ignore_ascii_case("greater tiger clash")
+                    || spell.eq_ignore_ascii_case("swift jab"))
             && self.base_damage_evidence.len() < MAX_EFFECTS
         {
             self.base_damage_evidence.push((
@@ -1333,6 +1334,9 @@ impl PreparedMagnitudeOwner {
                 value,
                 critical,
                 element_key(element),
+                self.selected_item_augments.iter()
+                    .filter(|augment| augment.kind == oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage)
+                    .map(|augment| u64::from(augment.value)).sum(),
             ));
         }
         if critical {

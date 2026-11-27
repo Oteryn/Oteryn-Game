@@ -86,10 +86,12 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         .await?;
     let item_pin = full_row_c12::item_dictionary_pin(clients)?;
     let item_refs = item_pin.sorted_refs()?;
+    let sent = Arc::new(Mutex::new(Vec::new()));
     let mut session = Session::admit(
         WireCapture {
             stream,
             received: Arc::clone(&received),
+            sent: Arc::clone(&sent),
         },
         Admission {
             appearance_items: Some(oteryn_dev_client::AppearanceItemDictionary {
@@ -159,18 +161,10 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     let attack_id = session.next_command_id() - 1;
     let builder_start = wire_boundary(&received)?;
     let builder_sequence = session.last_server_sequence();
-    build_harmony(&mut session, own, target, position, builder).await?;
+    let builder_damage = build_harmony(&mut session, own, target, position, builder).await?;
     let before_sequence = session.last_server_sequence();
     let before_bytes = wire_boundary(&received)?;
-    let mut cast = cast_checked(
-        &mut session,
-        own,
-        target,
-        position,
-        spell,
-        full_row_c12::content_augment()?,
-    )
-    .await?;
+    let mut cast = cast_checked(&mut session, own, target, position, spell, 0).await?;
     let clear_start = wire_boundary(&received)?;
     let clear_sequence = session.last_server_sequence();
     let (bytes, logout_start, logout_sequence, mut fresh) = verify_post_cast_relog(
@@ -257,7 +251,7 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     let target_identity = hex_bytes(&target.identity);
     let earlier = hex_bytes(previous.as_bytes());
     let expected = format!(
-        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {before_sequence} {before_bytes} {builder} {builder_start} {builder_sequence} {clear_start} {clear_sequence} {logout_start} {logout_sequence} {traveled} {x} {y} {floor}\n",
+        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {before_sequence} {before_bytes} {builder} {builder_damage} {builder_start} {builder_sequence} {clear_start} {clear_sequence} {logout_start} {logout_sequence} {traveled} {x} {y} {floor}\n",
         root.display(),
         target_generation = target.generation,
         health = vitals.health,
@@ -280,6 +274,13 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         &serde_json::to_vec(&item_pin)?,
     )?;
     write_packet(&root, "c12-wire.bin", &bytes)?;
+    let sent = sent
+        .lock()
+        .map_err(|_| "C12 outgoing capture lock unavailable")?;
+    let commands = frame_capture::command_frames(&sent)
+        .map_err(|error| error as Box<dyn std::error::Error>)?
+        .concat();
+    write_packet(&root, "c12-client-wire.bin", &commands)?;
     write_packet(&root, "c12-frames.json", &frames)?;
     write_packet(&root, "c12-expected.txt", expected.as_bytes())?;
     evidence(&format!(
@@ -385,7 +386,7 @@ async fn build_harmony<S: SessionStream>(
     target: EntityRef,
     position: ActorPosition,
     spell: NonZeroU32,
-) -> TestResult {
+) -> TestResult<u64> {
     check_target(session, target, position)?;
     if session
         .actor_vitals()
@@ -395,6 +396,8 @@ async fn build_harmony<S: SessionStream>(
     {
         return Err("C12 Swift Jab requires zero Harmony before cast".into());
     }
+    let path = PathBuf::from(required("NODE_BOOT_CAST_EVIDENCE_LOG")?);
+    let offset = std::fs::metadata(&path)?.len();
     session.take_events();
     let reply = session
         .cast_spell(spell, SpellTarget::AttackTarget, true)
@@ -412,10 +415,14 @@ async fn build_harmony<S: SessionStream>(
     // Swift Jab's authored attack-group cooldown is two seconds.
     session.service_liveness(Duration::from_secs(2)).await?;
     collect_hits(&session.take_events(), own, target, spell, &mut hits);
-    if hits.is_empty() {
-        return Err("C12 Swift Jab did not serve attributed physical damage".into());
+    let damage = committed_damage(session, target, reply.command_id, &path, offset, 0)?;
+    if !frame_capture::exact_hit(&hits, damage) {
+        return Err(format!(
+            "C12 Swift Jab expected one unaugmented hit of {damage}, observed {hits:?}"
+        )
+        .into());
     }
-    Ok(())
+    Ok(damage)
 }
 
 struct CheckedCast {
@@ -464,16 +471,16 @@ async fn cast_checked<S: SessionStream>(
     let delta = reply.actor_vitals_delta.ok_or("C12 cast vitals missing")?;
     let vitals = delta.value;
     let events = session.take_events();
-    let mana_before = events
-        .iter()
-        .filter_map(|event| match event {
-            SessionEvent::ActorVitals(update) if update.server_sequence < delta.server_sequence => {
-                Some(update)
-            }
+    let mana_before = frame_capture::mana_before_cast(
+        events.iter().filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) => Some((update.server_sequence, update.value.mana)),
             _ => None,
-        })
-        .max_by_key(|update| update.server_sequence)
-        .map_or(before.mana, |update| update.value.mana);
+        }),
+        before.mana,
+        before.max_mana,
+        delta.server_sequence,
+    )
+    .ok_or("C12 unexpected mana change before the cast delta")?;
     if reply.disposition != SpellCastDisposition::Cast
         || mana_before.checked_sub(50) != Some(vitals.mana)
         || !frame_capture::spent_harmony(before.harmony, vitals.harmony)
@@ -481,13 +488,7 @@ async fn cast_checked<S: SessionStream>(
     {
         return Err(format!("C12 cast must apply exact mana and Harmony debits: before={before:?} mana_at_cast={mana_before} after={vitals:?}").into());
     }
-    let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
-    let target_id = full_row_c12::hex_bytes(&target.identity);
-    let marker = format!(
-        "SEAM_EVIDENCE c12_base_damage session={id} command={} target={target_id} generation={} ",
-        reply.command_id, target.generation
-    );
-    let damage = full_row_c12::committed_base_damage(&path, offset, &marker, bps)?.committed;
+    let damage = committed_damage(session, target, reply.command_id, &path, offset, bps)?;
     let mut hits = Vec::new();
     collect_hits(&events, own, target, spell, &mut hits);
     let until = tokio::time::Instant::now() + COMMAND_BUDGET;
@@ -509,6 +510,23 @@ async fn cast_checked<S: SessionStream>(
     };
     cast.verify_hits()?;
     Ok(cast)
+}
+
+fn committed_damage<S: SessionStream>(
+    session: &Session<S>,
+    target: EntityRef,
+    command: u64,
+    path: &Path,
+    offset: u64,
+    bps: u64,
+) -> TestResult<u64> {
+    let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
+    let target_id = full_row_c12::hex_bytes(&target.identity);
+    let marker = format!(
+        "SEAM_EVIDENCE c12_base_damage session={id} command={} target={target_id} generation={} ",
+        command, target.generation
+    );
+    Ok(full_row_c12::committed_base_damage(path, offset, &marker, bps)?.committed)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -606,6 +624,7 @@ fn c12_missing_capture_directory_is_an_error() {
 struct WireCapture<S> {
     stream: S,
     received: Arc<Mutex<Vec<u8>>>,
+    sent: Arc<Mutex<Vec<u8>>>,
 }
 
 impl<S: AsyncRead + Unpin> AsyncRead for WireCapture<S> {
@@ -637,7 +656,18 @@ impl<S: AsyncWrite + Unpin> AsyncWrite for WireCapture<S> {
         cx: &mut Context<'_>,
         bytes: &[u8],
     ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut self.stream).poll_write(cx, bytes)
+        let result = Pin::new(&mut self.stream).poll_write(cx, bytes);
+        if let Poll::Ready(Ok(written)) = result {
+            let mut sent = self
+                .sent
+                .lock()
+                .map_err(|_| io::Error::other("C12 outgoing capture lock unavailable"))?;
+            if written > frame_capture::FRAME_LIMIT.saturating_sub(sent.len()) {
+                return Poll::Ready(Err(io::Error::other("C12 outgoing capture exceeds bounds")));
+            }
+            sent.extend_from_slice(&bytes[..written]);
+        }
+        result
     }
 
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {

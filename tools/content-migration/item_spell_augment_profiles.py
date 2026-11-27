@@ -12,6 +12,11 @@ def apply_native(root, generated, path, manifest_path, canonical_bytes):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     facts = module.pinned_item_spell_augments()
+    # Global grants this damage through the level 1 and 3 proficiency perks.
+    facts[50271] = [
+        augment for augment in facts[50271]
+        if (augment["spell"], augment["kind"]) != ("greater tiger clash", "base_damage")
+    ]
     document = json.loads(generated[path])
     for record in document["records"]:
         item_id = int(record["production_binding"]["external_id"])

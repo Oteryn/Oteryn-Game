@@ -190,27 +190,55 @@ fn spell_by_words(client: &mut DevClientSession, words: &str) -> TestResult<NonZ
         .ok_or_else(|| format!("C12 spell {words} has zero served index").into())
 }
 
-/// The base-damage augment (hundredths of a percent) that content binds to this spell on the item.
-pub(super) fn content_augment() -> TestResult<u64> {
+/// The total Greater Tiger Clash damage bonus with both selected Fists perks.
+fn content_augment() -> TestResult<u64> {
     let profiles = read_json("content/items/definitions/spell-native-profiles.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
-    let authored = profiles["records"]
+    let item = profiles["records"]
         .as_array()
-        .ok_or("item profile records absent")?
-        .iter()
-        .find(|record| record["production_definition"]["production_key"] == key)
-        .and_then(|record| record["attributes"]["spell_augments"].as_array())
-        .and_then(|augments| {
-            augments
-                .iter()
-                .find(|a| a["kind"] == "base_damage" && a["spell"] == SPELL_NAME)
+        .and_then(|rows| {
+            rows.iter()
+                .find(|row| row["production_definition"]["production_key"] == key)
         })
-        .and_then(|augment| augment["value"].as_u64())
-        .ok_or_else(|| format!("content binds no base_damage augment of {SPELL_NAME} to {key}"))?;
-    if authored != AUGMENT_BPS {
-        return Err(format!("C12 expected {AUGMENT_BPS} basis points, authored {authored}").into());
+        .ok_or("C12 Fists item profile absent")?;
+    if item["attributes"]["spell_augments"]
+        .as_array()
+        .ok_or("C12 Fists spell augments absent")?
+        .iter()
+        .any(|augment| augment["kind"] == "base_damage" && augment["spell"] == SPELL_NAME)
+    {
+        return Err("C12 Fists must grant Greater Tiger Clash damage through proficiency".into());
     }
-    Ok(authored)
+    let definitions = read_json("content/proficiencies/proficiencies-00300-00442.json")?;
+    let profile = definitions["records"]
+        .as_array()
+        .and_then(|rows| {
+            rows.iter()
+                .find(|row| row["definition"]["identity"]["key"] == "oteryn:proficiency.tibia.p399")
+        })
+        .ok_or("C12 Fists proficiency profile absent")?;
+    let levels = profile["definition"]["levels"]
+        .as_array()
+        .ok_or("C12 Fists levels absent")?;
+    for level in [1, 3] {
+        if !levels.iter().any(|row| {
+            row["level"] == level
+                && row["perks"].as_array().is_some_and(|perks| {
+                    perks.iter().any(|perk| {
+                        perk["kind"] == "spell_augment"
+                            && perk["spell_client_id"] == 292
+                            && perk["augment"] == "base_damage"
+                            && perk["value"] == 0.04
+                    })
+                })
+        }) {
+            return Err(format!(
+                "C12 missing 400-bp Greater Tiger Clash proficiency at level {level}"
+            )
+            .into());
+        }
+    }
+    Ok(AUGMENT_BPS)
 }
 
 struct CreatureProfile {
@@ -503,6 +531,15 @@ fn read_base_damage(
         let (committed, hits) = committed
             .split_once(" committed_hits=")
             .ok_or("C12 committed hit count missing")?;
+        let (hits, observed_bps) = hits
+            .split_once(" augment_bps=")
+            .ok_or("C12 applied augment evidence missing")?;
+        if observed_bps.parse::<u64>()? != bps {
+            return Err(format!(
+                "C12 expected {bps} base-damage basis points, observed {observed_bps}"
+            )
+            .into());
+        }
         if hits.parse::<usize>()? != 1 {
             return Err(format!("C12 cast committed {hits} HP losses instead of one").into());
         }
@@ -1787,7 +1824,7 @@ mod tests {
         let marker =
             "SEAM_EVIDENCE c12_base_damage session=test command=12 target=rat generation=2 ";
         let line = format!(
-            "{marker}before=28 after=30 critical=false element=physical committed=30 committed_hits=1"
+            "{marker}before=28 after=30 critical=false element=physical committed=30 committed_hits=1 augment_bps=800"
         );
         assert!(read_base_damage(line.as_bytes(), marker, AUGMENT_BPS).is_ok());
         let second_target = line.replace("committed_hits=1", "committed_hits=2");
@@ -1801,10 +1838,10 @@ mod tests {
         let marker =
             "SEAM_EVIDENCE c12_base_damage session=test command=11 target=rat generation=2 ";
         let unchanged = format!(
-            "{marker}before=28 after=28 critical=false element=physical committed=28 committed_hits=1"
+            "{marker}before=28 after=28 critical=false element=physical committed=28 committed_hits=1 augment_bps=0"
         );
         let augmented = format!(
-            "{marker}before=28 after=30 critical=false element=physical committed=30 committed_hits=1"
+            "{marker}before=28 after=30 critical=false element=physical committed=30 committed_hits=1 augment_bps=800"
         );
         assert_eq!(
             read_base_damage(unchanged.as_bytes(), marker, 0)?.committed,
@@ -1815,6 +1852,11 @@ mod tests {
             30
         );
         assert!(read_base_damage(augmented.as_bytes(), marker, 0).is_err());
+        // A low Swift Jab roll can round a leaked augment down to zero damage.
+        let leaked = format!(
+            "{marker}before=6 after=6 critical=false element=physical committed=6 committed_hits=1 augment_bps=800"
+        );
+        assert!(read_base_damage(leaked.as_bytes(), marker, 0).is_err());
         Ok(())
     }
 
@@ -1823,7 +1865,7 @@ mod tests {
         const MARKER: &str =
             "SEAM_EVIDENCE c12_base_damage session=test command=1 target=rat generation=2 ";
         let read = |tail: &str, bps| {
-            let log = format!("{MARKER}{tail}");
+            let log = format!("{MARKER}{tail} augment_bps={bps}");
             read_base_damage(log.as_bytes(), MARKER, bps)
         };
         assert_eq!(
@@ -1901,8 +1943,8 @@ mod tests {
             .is_err()
         );
         let duplicate = format!(
-            "{MARKER}before=37 after=40 critical=false element=physical committed=40 committed_hits=1
-{MARKER}before=37 after=40 critical=false element=physical committed=40 committed_hits=1"
+            "{MARKER}before=37 after=40 critical=false element=physical committed=40 committed_hits=1 augment_bps=1000
+{MARKER}before=37 after=40 critical=false element=physical committed=40 committed_hits=1 augment_bps=1000"
         );
         assert!(read_base_damage(duplicate.as_bytes(), MARKER, 1_000).is_err());
         Ok(())

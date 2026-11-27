@@ -968,7 +968,7 @@ impl PreparedNativeCombatCast {
                 Some((effect.target, effect.health?.committed_health_loss()?))
             });
             let committed_hits = losses.clone().count();
-            for &(target, before, after, critical, element) in magnitude.base_damage_evidence() {
+            for &(target, before, after, critical, element, augment_bps) in magnitude.base_damage_evidence() {
                 for (_, committed) in losses.clone().filter(|(actor, _)| *actor == target) {
                     let target_id = target
                         .placement_identity()
@@ -982,7 +982,7 @@ impl PreparedNativeCombatCast {
                         .map(|byte| format!("{byte:02x}"))
                         .collect::<String>();
                     eprintln!(
-                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after} critical={critical} element={element} committed={} committed_hits={committed_hits}",
+                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after} critical={critical} element={element} committed={} committed_hits={committed_hits} augment_bps={augment_bps}",
                         command.command_id().get(),
                         target.actor_local_generation(),
                         committed.get()

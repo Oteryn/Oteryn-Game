@@ -34,6 +34,26 @@ pub struct Envelope {
     status: u32,
 }
 
+/// Keep command frames only. Admission material and liveness traffic never reach disk.
+pub fn command_frames(
+    mut wire: &[u8],
+) -> Result<Vec<&[u8]>, Box<dyn std::error::Error + Send + Sync>> {
+    let mut commands = Vec::new();
+    while !wire.is_empty() {
+        let prefix = wire.get(..4).ok_or("truncated C12 outgoing frame prefix")?;
+        let size = FrameLength::from_prefix(prefix)?.get() as usize + 4;
+        let frame = wire.get(..size).ok_or("truncated C12 outgoing frame")?;
+        if decode_framed_envelope(frame)?.message_type() == MessageType::ClientCommand {
+            commands.push(frame);
+        }
+        wire = &wire[size..];
+    }
+    if commands.is_empty() {
+        return Err("captured C12 command stream was empty".into());
+    }
+    Ok(commands)
+}
+
 pub fn envelopes(
     mut wire: &[u8],
     session: GameSessionId,
@@ -143,6 +163,27 @@ pub fn exact_saved_mana(before_cast: u32, before_logout: u32, saved: u32, reload
     before_logout < before_cast && before_logout == saved && saved == reloaded
 }
 
+pub fn mana_before_cast(
+    events: impl IntoIterator<Item = (u64, u32)>,
+    start: u32,
+    max_mana: u32,
+    cast_sequence: u64,
+) -> Option<u32> {
+    let mut mana = start;
+    for (sequence, update) in events {
+        if sequence >= cast_sequence || update == mana {
+            continue;
+        }
+        // A Monk outside a protection zone can gain one regeneration credit
+        // while this single command is in flight. A debit is never regeneration.
+        if mana != start || update <= mana || update > start.saturating_add(2).min(max_mana) {
+            return None;
+        }
+        mana = update;
+    }
+    Some(mana)
+}
+
 pub fn attributed_hits(
     events: &[PresentationEvent],
     caster: EntityRef,
@@ -152,15 +193,23 @@ pub fn attributed_hits(
 ) {
     for event in events {
         if let PresentationEventKind::ValueText {
-            kind: PresentationValueKind::DamageDealt, target, attacker: Some(attacker),
-            primary, secondary: None, ..
+            kind: PresentationValueKind::DamageDealt,
+            target,
+            attacker,
+            primary,
+            secondary,
+            ..
         } = event.kind
-            && target == victim && attacker == caster && primary.color == PresentationColor::Red
-            && events.iter().any(|part| part.decision_ordinal == event.decision_ordinal
-                && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. }
-                    if source == caster && cue == spell))
+            && target == victim
         {
-            hits.push(primary.value);
+            let attributed = attacker == Some(caster)
+                && primary.color == PresentationColor::Red
+                && secondary.is_none()
+                && events.iter().any(|part| part.decision_ordinal == event.decision_ordinal
+                    && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. }
+                        if source == caster && cue == spell));
+            // Preserve malformed or unattributed popups as failed observations.
+            hits.push(if attributed { primary.value } else { 0 });
         }
     }
 }
@@ -171,6 +220,17 @@ pub fn exact_hit(hits: &[u64], expected: u64) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn c12_rejects_an_early_mana_debit() {
+        use super::mana_before_cast;
+        assert_eq!(mana_before_cast([(3, 790)], 800, 810, 5), None);
+        assert_eq!(
+            mana_before_cast([(3, 802), (5, 752)], 800, 810, 5),
+            Some(802)
+        );
+        assert_eq!(mana_before_cast([(3, 802), (4, 804)], 800, 810, 5), None);
+    }
+
     use super::*;
     use oteryn_protocol_oteryn::item_view::{EquippedItem, ItemEntry};
     use std::num::NonZeroU64;
@@ -298,5 +358,10 @@ mod tests {
         attributed_hits(&late, caster, target, 42, &mut hits);
         assert!(!exact_hit(&hits, 33));
         assert!(!exact_hit(&[11, 22], 33));
+        let mut hits = Vec::new();
+        attributed_hits(&first, caster, target, 42, &mut hits);
+        attributed_hits(&late[1..], caster, target, 42, &mut hits);
+        assert_eq!(hits, [33, 0]);
+        assert!(!exact_hit(&hits, 33));
     }
 }

@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_protocol_oteryn::{FrameLength, MessageType, decode_framed_envelope};
 use std::cell::{Cell, RefCell};
+use std::collections::VecDeque;
 use std::io;
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
@@ -35,6 +36,7 @@ struct Witness {
     before_sequence: u64,
     before_bytes: usize,
     builder: NonZeroU32,
+    builder_damage: u64,
     builder_start: usize,
     builder_sequence: u64,
     clear_start: usize,
@@ -86,6 +88,7 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         before_sequence,
         before_bytes,
         builder,
+        builder_damage,
         builder_start,
         builder_sequence,
         clear_start,
@@ -128,6 +131,7 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         before_sequence: before_sequence.parse()?,
         before_bytes: before_bytes.parse()?,
         builder: builder.parse()?,
+        builder_damage: builder_damage.parse()?,
         builder_start: builder_start.parse()?,
         builder_sequence: builder_sequence.parse()?,
         clear_start: clear_start.parse()?,
@@ -167,6 +171,7 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         || witness.clear_sequence >= witness.logout_sequence
         || witness.vitals.harmony != 0
         || witness.damage == 0
+        || witness.builder_damage == 0
         || witness.mana_before.checked_sub(50) != Some(witness.vitals.mana)
     {
         return Err("C12 fresh-session or cast correlation mismatch".into());
@@ -202,6 +207,24 @@ fn command_result_start(bytes: &[u8], command: u64) -> Result<usize, BoxError> {
     matching.ok_or_else(|| "C12 attack command result absent".into())
 }
 
+fn recorded_commands(bytes: &[u8]) -> Result<VecDeque<Vec<u8>>, BoxError> {
+    let frames = frame_capture::command_frames(bytes)?;
+    if frames.iter().map(|frame| frame.len()).sum::<usize>() != bytes.len() {
+        return Err("C12 stored outgoing trace contains non-command frames".into());
+    }
+    Ok(frames.into_iter().map(<[u8]>::to_vec).collect())
+}
+
+fn verify_recorded_command(commands: &mut VecDeque<Vec<u8>>, frame: &[u8]) -> io::Result<()> {
+    if commands.front().map(Vec::as_slice) != Some(frame) {
+        return Err(io::Error::other(
+            "outgoing C12 command differs from live capture",
+        ));
+    }
+    commands.pop_front();
+    Ok(())
+}
+
 async fn replay(root: &Path) -> Result<(), BoxError> {
     let expected_path = root.join("c12-expected.txt");
     if !(1..=4096).contains(&expected_path.metadata()?.len()) {
@@ -224,6 +247,13 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     if captured != frame_capture::envelopes(&bytes, session)? {
         return Err("C12 #3521 envelopes do not match the original server frames".into());
     }
+    let command_path = root.join("c12-client-wire.bin");
+    if !(1..=frame_capture::FRAME_LIMIT as u64).contains(&command_path.metadata()?.len()) {
+        return Err("C12 outgoing capture size outside bounds".into());
+    }
+    let recorded = Rc::new(RefCell::new(recorded_commands(&std::fs::read(
+        command_path,
+    )?)?));
     let length = bytes.len();
     let before_attack = command_result_start(&bytes, witness.attack_command)?;
     if before_attack >= witness.builder_start || witness.logout_start >= length {
@@ -239,6 +269,7 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         consumed: Rc::clone(&consumed),
         expected_cast: Rc::clone(&expected_cast),
         outbound: Rc::clone(&outbound),
+        recorded: Rc::clone(&recorded),
     };
     let dictionary = root.join("c12-item-dictionary.json");
     if !(1..=4096).contains(&dictionary.metadata()?.len()) {
@@ -382,7 +413,24 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
             .harmony,
         1
     );
-    drain_boundary(&mut session, &consumed, witness.before_bytes).await?;
+    let builder_events = drain_boundary(&mut session, &consumed, witness.before_bytes).await?;
+    let mut builder_hits = Vec::new();
+    for event in builder_events {
+        if let SessionEvent::Presentation(delta) = event {
+            frame_capture::attributed_hits(
+                &delta.value,
+                own,
+                witness.target,
+                witness.builder.get(),
+                &mut builder_hits,
+            );
+        }
+    }
+    assert!(
+        frame_capture::exact_hit(&builder_hits, witness.builder_damage),
+        "C12 Swift Jab expected {}, observed {builder_hits:?}",
+        witness.builder_damage
+    );
     assert_eq!(session.last_server_sequence(), witness.before_sequence);
     check_cast_target(&session, &witness)?;
     let before = *session
@@ -416,16 +464,16 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         delta.value.harmony
     ));
     let mut events = session.take_events();
-    let mana_before = events
-        .iter()
-        .filter_map(|event| match event {
-            SessionEvent::ActorVitals(update) if update.server_sequence < delta.server_sequence => {
-                Some(update)
-            }
+    let mana_before = frame_capture::mana_before_cast(
+        events.iter().filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) => Some((update.server_sequence, update.value.mana)),
             _ => None,
-        })
-        .max_by_key(|update| update.server_sequence)
-        .map_or(before.mana, |update| update.value.mana);
+        }),
+        before.mana,
+        before.max_mana,
+        delta.server_sequence,
+    )
+    .ok_or("unexpected mana change before the replayed cast delta")?;
     assert_eq!(mana_before, witness.mana_before);
     assert_eq!(mana_before.checked_sub(50), Some(delta.value.mana));
 
@@ -481,6 +529,7 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         outbound.borrow().is_empty(),
         "C12 trailing partial outgoing frame"
     );
+    assert!(recorded.borrow().is_empty(), "C12 unconsumed live commands");
     Ok(())
 }
 
@@ -547,7 +596,7 @@ fn c12_capture_provenance_refuses_stale_or_mismatched_fields() -> Result<(), Box
     let prior = "01a218115a6578e2a6913d169380b741";
     let target = "00000000000000000000000000000009";
     let current = format!(
-        "/current-run\n{session} {prior} 8 4 5 6 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 3 26013 41 20000 2 28000 6 30000 9 1234 32295 32334 8\n"
+        "/current-run\n{session} {prior} 8 4 5 6 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 3 26013 41 22 20000 2 28000 6 30000 9 1234 32295 32334 8\n"
     );
     let witness = read_witness(run, &current)?;
     assert_eq!(witness.command, 8);
@@ -589,6 +638,7 @@ struct ReplayWire {
     consumed: Rc<Cell<usize>>,
     expected_cast: Rc<Cell<Option<ExpectedCast>>>,
     outbound: Rc<RefCell<Vec<u8>>>,
+    recorded: Rc<RefCell<VecDeque<Vec<u8>>>>,
 }
 
 impl AsyncRead for ReplayWire {
@@ -626,6 +676,7 @@ impl AsyncWrite for ReplayWire {
             };
             let envelope = decode_framed_envelope(frame).map_err(io::Error::other)?;
             if envelope.message_type() == MessageType::ClientCommand {
+                verify_recorded_command(&mut self.recorded.borrow_mut(), frame)?;
                 if let Some(expected) = self.expected_cast.get() {
                     verify_cast_intent(frame, expected)?;
                     self.expected_cast.set(None);
@@ -743,6 +794,7 @@ fn c12_replay_only_releases_response_for_exact_outgoing_cast() -> Result<(), Box
                 consumed: Rc::new(Cell::new(0)),
                 expected_cast: Rc::clone(&gate),
                 outbound: Rc::new(RefCell::new(Vec::new())),
+                recorded: Rc::new(RefCell::new(VecDeque::new())),
             };
             let payload = actor_spell::encode_spell_cast_intent(&intent);
             let body = encode_client_command(
@@ -754,6 +806,9 @@ fn c12_replay_only_releases_response_for_exact_outgoing_cast() -> Result<(), Box
                 },
             )?;
             let prefix = u32::try_from(body.len())?.to_be_bytes();
+            let mut original = prefix.to_vec();
+            original.extend_from_slice(&body);
+            wire.recorded.borrow_mut().push_back(original);
             wire.write_all(&prefix[..2]).await?;
             wire.write_all(&prefix[2..]).await?;
             assert_eq!(visible.get(), 0);
@@ -763,4 +818,55 @@ fn c12_replay_only_releases_response_for_exact_outgoing_cast() -> Result<(), Box
         }
         Ok::<(), BoxError>(())
     })?
+}
+
+#[test]
+fn c12_rejects_changed_noncast_commands() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
+    use oteryn_protocol_oteryn::{attack, logout, world_spatial};
+    let target = EntityRef {
+        identity: [1; 16],
+        generation: 1,
+    };
+    for (command_type, payload) in [
+        (
+            world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            world_spatial::encode_step_intent(StepDirection::North),
+        ),
+        (
+            attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
+            attack::encode_attack_target_intent(Some(&target)).map_err(|e| format!("{e:?}"))?,
+        ),
+        (
+            attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
+            attack::encode_attack_target_intent(None).map_err(|e| format!("{e:?}"))?,
+        ),
+        (
+            logout::COMMAND_TYPE_LOGOUT_INTENT,
+            logout::encode_logout_intent(),
+        ),
+    ] {
+        let encode = |command_id, payload: &[u8]| -> Result<Vec<u8>, BoxError> {
+            let body = encode_client_command(
+                7,
+                &ClientCommandValue {
+                    command_id,
+                    command_type,
+                    payload,
+                },
+            )?;
+            let mut frame = u32::try_from(body.len())?.to_be_bytes().to_vec();
+            frame.extend(body);
+            Ok(frame)
+        };
+        let matching = encode(11, &payload)?;
+        let mut commands = recorded_commands(&matching)?;
+        let mut changed = payload.clone();
+        changed.push(0);
+        assert!(verify_recorded_command(&mut commands, &encode(11, &changed)?).is_err());
+        assert!(verify_recorded_command(&mut commands, &encode(12, &payload)?).is_err());
+        verify_recorded_command(&mut commands, &matching)?;
+        assert!(commands.is_empty());
+    }
+    Ok(())
 }
