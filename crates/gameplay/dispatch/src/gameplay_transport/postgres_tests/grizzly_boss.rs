@@ -2,7 +2,7 @@
 //! The fixture supplies walkable source coordinates; room qualification is the real
 //! pinned Crystal map evidence, never a test override of the portal's authority.
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use super::grizzly_boss_fixtures::{world};
+use super::grizzly_boss_fixtures::world;
 
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
@@ -16,7 +16,9 @@ use crate::foundation::{
     MovementLocalPosition,
 };
 use crate::gameplay_transport::ComposedFreshAdmission;
-use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome};
+use crate::gameplay_transport::connection::{
+    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
+};
 use crate::gameplay_transport::last_position::AdmissionPosition;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction as Action};
@@ -42,11 +44,87 @@ fn grizzly_boss_committed_expiry_without_reply_retries_online_return() -> TestRe
     postgres_case(1, true)
 }
 
+#[test]
+fn grizzly_input_probe_deadline_reports_join_unavailable() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| blocked_probe().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Grizzly callback admission thread panicked")??;
+    Ok(())
+}
+
+fn blocked_probe() -> TestResult {
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn::{FoundationProtocolError, MessageType, decode_wire_envelope};
+    use std::time::Duration;
+
+    run(async |admin| {
+        reset();
+        let h = Harness::create_with_admission_seed(admin, "grizzly_probe_deadline", false, false)
+            .await?;
+        prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let deps = Dependencies::new()?;
+        let owner = deps.owner(&h, &authority);
+        deps.initialize(&owner).await;
+        let admitted = deps.admitted;
+        let mut blocker = h.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_character_grizzly_boss_entries IN ACCESS EXCLUSIVE MODE")
+            .execute(&mut *blocker)
+            .await?;
+        let (mut server, mut client) = tokio::io::duplex(4096);
+        let serving = async {
+            let end = tokio::time::timeout(
+                Duration::from_secs(15),
+                serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS),
+            )
+            .await?;
+            assert!(
+                matches!(
+                    end,
+                    ConnectionEnd::AdmittedThenClosed(
+                        _,
+                        FoundationProtocolError::SessionJoinUnavailable
+                    )
+                ),
+                "Grizzly deadline must yield a typed join refusal, got {end:?}"
+            );
+            Ok::<(), Box<dyn std::error::Error>>(())
+        };
+        let observing = async {
+            let first = waiting_grizzly_probe(&h.pool, 0).await?;
+            waiting_grizzly_probe(&h.pool, first).await
+        };
+        // Keep the lock held for the entire join window, after proving the
+        // second query really reached PostgreSQL.
+        tokio::try_join!(serving, observing)?;
+        let frame = super::item_look_fixtures::read_frame(&mut client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+        let error = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())
+            .map_err(debug)?;
+        assert_eq!(
+            error.error_code,
+            FoundationProtocolError::SessionJoinUnavailable.code()
+        );
+        blocker.rollback().await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
 fn postgres_case(boss: u8, unknown_expiry: bool) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         eprintln!("GRIZZLY_BOSS_POSTGRES_CASE_SKIPPED no_admin_url");
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(boss, unknown_expiry, None).map_err(|error| error.to_string()))?
@@ -357,8 +435,11 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
             owner.admit_quest_session(&admitted).await;
             assert!(owner.track_restored(admitted.game_session_id, deps.actor, &decided, current));
             assert_position(&owner, deps.actor, local(boss.player_position)).await?;
-            assert!(owner.reconcile_grizzly_boss(admitted.game_session_id).await);
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = Some(current.item_fence());
+            resume_after_probe_deadline(&owner, &h, &mut admitted).await?;
             assert_position(&owner, deps.actor, origin).await?;
+            assert!(owner.reconcile_grizzly_boss(admitted.game_session_id).await);
             assert!(
                 h.root
                     .pending_grizzly_boss_entry(&authority, current.character_id)
@@ -403,6 +484,53 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn resume_after_probe_deadline(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query("LOCK TABLE game_character_grizzly_boss_entries IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *blocker)
+        .await?;
+    let resume = async {
+        let _ = owner.prepare_quest_callback_resume(admitted).await;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let release_after_retry = async {
+        let first = waiting_grizzly_probe(&h.pool, 0).await?;
+        // The first SELECT cannot succeed with this lock held. A new backend
+        // waiting on the same table proves dispatch retried after its deadline.
+        waiting_grizzly_probe(&h.pool, first).await?;
+        blocker.rollback().await?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    tokio::try_join!(resume, release_after_retry)?;
+    Ok(())
+}
+
+async fn waiting_grizzly_probe(pool: &sqlx::PgPool, exclude_pid: i32) -> TestResult<i32> {
+    tokio::time::timeout(std::time::Duration::from_secs(4), async {
+        loop {
+            if let Some(pid) = sqlx::query_scalar(
+                "SELECT pid FROM pg_locks
+                 WHERE relation='game_character_grizzly_boss_entries'::regclass
+                   AND NOT granted AND mode='AccessShareLock' AND pid <> $1
+                 ORDER BY waitstart LIMIT 1",
+            )
+            .bind(exclude_pid)
+            .fetch_optional(pool)
+            .await?
+            {
+                return Ok(pid);
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .map_err(|_| format!("Grizzly admission did not queue a probe after backend {exclude_pid}"))?
 }
 
 async fn unacknowledged_expiry(

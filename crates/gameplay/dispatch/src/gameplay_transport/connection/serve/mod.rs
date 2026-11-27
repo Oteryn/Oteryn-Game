@@ -278,8 +278,14 @@ where
         if !authority.remember_activity_connection(admitted) {
             return ServeEnd::Disconnected.finish(admitted);
         }
-        if !authority.prepare_quest_callback_resume(&mut admitted).await {
-            return ServeEnd::Disconnected.finish(admitted);
+        if authority
+            .prepare_quest_callback_resume(&mut admitted)
+            .await
+            .is_err()
+        {
+            send_join_unavailable(stream, admitted.continuity.connection_generation).await;
+            return ServeEnd::Closed(FoundationProtocolError::SessionJoinUnavailable)
+                .finish_with_phase(admitted, Some("quest_callback_resume"));
         }
         if admitted.item_fence.is_some_and(|fence| {
             matches!(

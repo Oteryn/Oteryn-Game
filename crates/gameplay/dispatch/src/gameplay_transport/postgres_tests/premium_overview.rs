@@ -195,3 +195,112 @@ fn scenario() -> TestResult {
         Ok(())
     })
 }
+
+#[allow(dead_code, reason = "the shared mTLS fixture serves other Premium cases")]
+#[path = "../../../../social/src/premium/test_producer.rs"]
+mod premium_test_producer;
+
+#[test]
+fn first_overview_uses_active_snapshot_after_fresh_admission() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| cold_overview().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Cold Premium overview thread panicked")??;
+    Ok(())
+}
+
+fn cold_overview() -> TestResult {
+    use crate::premium::{
+        client::{PremiumClientConfig, PremiumSnapshotClient},
+        refresh::PremiumRefresher,
+    };
+    use premium_test_producer::{Reply, TestPki, TestProducer, snapshot};
+    use std::time::Duration;
+    use tokio::sync::Notify;
+
+    run(async |admin| {
+        super::reset();
+        let h = Harness::create_with_admission_seed(admin, "premium_overview_cold", true, false)
+            .await?;
+        prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let deps = Dependencies::new()?;
+        let mut owner = deps.owner(&h, &authority);
+        let current = FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(deps.admitted.game_session_id)
+            .await?
+            .0;
+        let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
+        {
+            let mut runtime = deps.runtime.lock().await;
+            runtime.initialize_first_entry_position(deps.actor).map_err(debug)?;
+            runtime.bind_attacker_lease(
+                deps.actor,
+                deps.admitted.game_session_id,
+                current.current_character_lease(),
+            ).map_err(debug)?;
+        }
+        deps.initialize(&owner).await;
+        let mut session = deps.admitted;
+        session.item_fence = Some(fence);
+        session.first_entry = FirstEntryOutcome::Positioned;
+        session.continuity.selected_capabilities =
+            SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &[97])
+                .ok_or("character info capability")?;
+
+        // Platform receives the real mTLS pull but cannot answer while the old
+        // query would return the empty observation. Then let its exact response in.
+        let requested = Arc::new(Notify::new());
+        let respond = Arc::new(Notify::new());
+        let pki = TestPki::new();
+        let producer = TestProducer::start(&pki, {
+            let requested = requested.clone();
+            let respond = respond.clone();
+            move |request| {
+                requested.notify_one();
+                Reply::json(snapshot(request, 7, &[])).after_notification(respond.clone())
+            }
+        })
+        .await;
+        let client = PremiumSnapshotClient::new(&PremiumClientConfig {
+            origin: producer.origin.clone(),
+            identity_pem: pki.client_identity_pem.into_bytes(),
+            platform_ca_pem: pki.ca_pem.into_bytes(),
+        })?;
+        let consumer = Arc::new(PremiumConsumer::default());
+        let issued = 1_790_769_600_000_000;
+        let coordinator = SpellPremiumCoordinator::new(
+            consumer.clone(),
+            Some(Arc::new(Clock(Mutex::new(TrustedNow::new(issued + 60_000_000, 0))))),
+            Some(PremiumActivation {
+                activation_id: "cold-premium-overview".into(),
+                switch_over_us: issued,
+            }),
+            Some(h.root.clone()),
+        );
+        owner.premium = PremiumRefresher::new(consumer, h.root.clone(), Some(client));
+        owner.premium_coordinator = Some(&coordinator);
+        owner.admit_premium(id(40), session.game_session_id);
+        tokio::time::timeout(Duration::from_secs(3), requested.notified()).await?;
+        eprintln!("POSTGRES_STARTED first_overview_uses_active_snapshot_after_fresh_admission");
+        let mut overview = std::pin::pin!(wire(&owner, &mut session, 1));
+        if let Ok(early) = tokio::time::timeout(Duration::from_secs(1), &mut overview).await {
+            let early = early?;
+            return Err(format!("First Premium overview completed before Platform answered: {early:?}").into());
+        }
+        respond.notify_one();
+        let paid = tokio::time::timeout(Duration::from_secs(8), overview).await??;
+        assert_eq!(paid.state, State::Active);
+        assert_eq!(paid.authority_revision, 7);
+        assert!(paid.valid_for_us > 0);
+        assert!(paid.features.iter().all(|feature| feature.enabled));
+        assert_eq!(producer.requests().len(), 1);
+        h.pool.close().await;
+        Ok(())
+    })
+}

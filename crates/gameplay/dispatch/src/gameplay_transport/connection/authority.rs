@@ -645,8 +645,8 @@ pub trait FreshAdmissionAuthority {
     fn prepare_quest_callback_resume(
         &self,
         _admitted: &mut AdmittedSession,
-    ) -> impl Future<Output = bool> {
-        async { true }
+    ) -> impl Future<Output = Result<(), AdmissionRefusal>> {
+        async { Ok(()) }
     }
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,

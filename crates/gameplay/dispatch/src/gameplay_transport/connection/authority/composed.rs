@@ -1589,57 +1589,42 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.has_pending_quest_callback(session) || self.states.dawnport_departures.held(session)
     }
 
-    async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
-        let started = tokio::time::Instant::now();
-        if let Some(actor) = admitted.runtime_actor
-            && !self
-                .resume_dawnport_departure(actor, admitted.game_session_id)
-                .await
-        {
-            record_entry_decision("unplayable", 1, started.elapsed(), "callback_dawnport");
-            return false;
+    async fn prepare_quest_callback_resume(
+        &self,
+        admitted: &mut AdmittedSession,
+    ) -> Result<(), AdmissionRefusal> {
+        // All recovery stages share the existing pre-snapshot callback bound.
+        // Advance only after the current owner proves its stage complete.
+        let mut budget = AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+        budget.deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        if let Some(actor) = admitted.runtime_actor {
+            retry_callback_resume_phase(&budget, "callback_dawnport", async || {
+                self.resume_dawnport_departure(actor, admitted.game_session_id)
+                    .await
+            })
+            .await?;
         }
-        record_entry_decision("playable", 1, started.elapsed(), "callback_dawnport");
-        let mut phase = "grizzly_resume";
-        let mut started = tokio::time::Instant::now();
-        if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            if !self.prepare_grizzly_npc_resume(admitted).await {
-                return false;
-            }
-            record_entry_decision("playable", 1, started.elapsed(), phase);
-            phase = "quest_callbacks";
-            started = tokio::time::Instant::now();
+        retry_callback_resume_phase(&budget, "grizzly_resume", async || {
+            self.prepare_grizzly_npc_resume(admitted).await
+        })
+        .await?;
+        retry_callback_resume_phase(&budget, "quest_callbacks", async || {
             self.reconcile_quest_callbacks(admitted.game_session_id)
                 .await
         })
+        .await?;
+        retry_callback_resume_phase(&budget, "hireling_ingress", async || {
+            crate::gameplay_transport::hireling::recover_pending_lamp_ingress(self, admitted).await
+        })
+        .await?;
+        retry_callback_resume_phase(&budget, "trade_continuity", async || {
+            self.states
+                .command_ingress
+                .recover_trade_continuity(admitted)
+                .is_some()
+                || admitted.continuity.next_command_id == 1
+        })
         .await
-        .unwrap_or(false)
-        {
-            record_entry_decision("unplayable", 1, started.elapsed(), phase);
-            return false;
-        }
-        record_entry_decision("playable", 1, started.elapsed(), phase);
-        let started = tokio::time::Instant::now();
-        if !crate::gameplay_transport::hireling::recover_pending_lamp_ingress(self, admitted).await
-        {
-            record_entry_decision("unplayable", 1, started.elapsed(), "hireling_ingress");
-            return false;
-        }
-        record_entry_decision("playable", 1, started.elapsed(), "hireling_ingress");
-        let started = tokio::time::Instant::now();
-        let recovered = self
-            .states
-            .command_ingress
-            .recover_trade_continuity(admitted)
-            .is_some()
-            || admitted.continuity.next_command_id == 1;
-        record_entry_decision(
-            if recovered { "playable" } else { "unplayable" },
-            1,
-            started.elapsed(),
-            "trade_continuity",
-        );
-        recovered
     }
 
     async fn use_event_world_object(
@@ -2164,4 +2149,34 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         result
     }
+}
+
+/// Each phase either reads or reconciles retained work through its original fenced owner.
+async fn retry_callback_resume_phase(
+    budget: &AdmissionRetryBudget<'_>,
+    phase: &'static str,
+    mut step: impl AsyncFnMut() -> bool,
+) -> Result<(), AdmissionRefusal> {
+    let started = tokio::time::Instant::now();
+    let mut attempts = 0;
+    let recovered = tokio::time::timeout_at(
+        budget.deadline,
+        budget.retry_until(async || {
+            attempts += 1;
+            step().await
+        }),
+    )
+    .await
+    .unwrap_or(false);
+    record_entry_decision(
+        if recovered {
+            "playable"
+        } else {
+            "retries_exhausted"
+        },
+        attempts,
+        started.elapsed(),
+        phase,
+    );
+    recovered.then_some(()).ok_or(AdmissionRefusal::Unavailable)
 }
