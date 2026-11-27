@@ -740,7 +740,18 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     let outcome = session
         .cast_spell(spell, SpellTarget::AttackTarget, true)
         .await?;
-    require_mechanic_acceptance(outcome.status, "C12 authored Tarantula cast")?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.disposition != SpellCastDisposition::Cast
+    {
+        let target_position = session
+            .world_entities()
+            .and_then(|entities| entities.get(&target))
+            .map(|entry| entry.position);
+        return Err(format!(
+            "C12 authored Tarantula cast failed: {outcome:?}; target={target:?} projected_position={target_position:?} before={before:?}"
+        )
+        .into());
+    }
     let update = outcome
         .actor_vitals_delta
         .as_ref()
@@ -755,9 +766,7 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
         before.max_mana,
         update.server_sequence,
     );
-    if outcome.disposition != SpellCastDisposition::Cast
-        || mana.and_then(|mana| mana.checked_sub(50)) != Some(update.value.mana)
-    {
+    if mana.and_then(|mana| mana.checked_sub(50)) != Some(update.value.mana) {
         return Err(
             format!("C12 authored cast did not commit its 50 mana debit: {outcome:?}").into(),
         );
