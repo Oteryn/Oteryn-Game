@@ -816,12 +816,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let charm_index = usize::try_from(charm.get() - 1)?;
     expected_unlocked.outcome = CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked);
     expected_unlocked.charms.charm_points_available = 5;
+    expected_unlocked.charms.minor_charm_echoes_available = expected_mastery
+        .charms
+        .minor_charm_echoes_available
+        .checked_add(50)
+        .ok_or("minor charm echo balance overflow")?;
     expected_unlocked.charms.charms[charm_index].unlocked_stage = 1;
     expected_unlocked.charms.charms[charm_index].next_stage_cost = 600;
     if cost != 400 || unlocked != expected_unlocked {
         return Err(format!("UNLOCK reply/delta mismatch: {unlocked:?}").into());
     }
-    evidence("P01_CHECK unlock-stage PASS stage=0->1 points=405->5");
+    evidence("P01_CHECK unlock-stage PASS stage=0->1 points=405->5 minor_echoes_delta=50");
 
     row.at("assign-incomplete-refusal");
     let index = full_row_p05::canonical_races()?

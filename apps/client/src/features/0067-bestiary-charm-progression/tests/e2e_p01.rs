@@ -446,6 +446,11 @@ fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
             }
             "unlocked" => {
                 state.charms.charm_points_available = 5;
+                state.charms.minor_charm_echoes_available = state
+                    .charms
+                    .minor_charm_echoes_available
+                    .checked_add(50)
+                    .ok_or("minor charm echo balance overflow")?;
                 let entry = state
                     .charms
                     .charms
