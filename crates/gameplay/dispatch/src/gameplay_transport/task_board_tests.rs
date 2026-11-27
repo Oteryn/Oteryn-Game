@@ -195,11 +195,12 @@ fn finished_weekly_results_require_negotiation_and_do_not_change_balances() {
 }
 
 #[test]
-fn weekly_master_candidates_match_the_global_source_set() -> Result<(), Box<dyn std::error::Error>> {
+fn weekly_master_candidates_match_the_global_source_set() -> Result<(), Box<dyn std::error::Error>>
+{
     use std::collections::BTreeSet;
 
-    let world = oteryn_protocol_oteryn::WorldId::decode(&[42; 16])
-        .map_err(|error| format!("{error:?}"))?;
+    let world =
+        oteryn_protocol_oteryn::WorldId::decode(&[42; 16]).map_err(|error| format!("{error:?}"))?;
     let (controller, _) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let generation = controller.active().ok_or("activated generation")?;
@@ -245,15 +246,28 @@ fn weekly_master_candidates_match_the_global_source_set() -> Result<(), Box<dyn 
         )
         .map_err(|error| format!("Master draw {index}: {error:?}"))?;
         let board = data.weekly.ok_or("started Master board")?;
-        observed.insert(board.kills.into_iter().next().ok_or("first kill task")?.race);
+        observed.insert(
+            board
+                .kills
+                .into_iter()
+                .next()
+                .ok_or("first kill task")?
+                .race,
+        );
         index += 1;
         if Some(index) == first_draw_width {
             break;
         }
     }
     let actual: BTreeSet<_> = observed.iter().map(String::as_str).collect();
-    assert!(actual.contains("oteryn:creature.cliff_strider"), "Cliff Strider");
-    assert!(!actual.contains("oteryn:creature.moonspawn_juggernaut"), "Moonspawn Juggernaut");
+    assert!(
+        actual.contains("oteryn:creature.cliff_strider"),
+        "Cliff Strider"
+    );
+    assert!(
+        !actual.contains("oteryn:creature.moonspawn_juggernaut"),
+        "Moonspawn Juggernaut"
+    );
     assert_eq!(actual, expected);
     Ok(())
 }
