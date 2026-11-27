@@ -136,6 +136,7 @@ struct PreparedThink {
 pub struct ProfileScheduleState {
     actor: ExactActorRef,
     attack_ticks_ms: u64,
+    last_native_attack_think_us: Option<u64>,
     defence_ticks_ms: u64,
     extra_melee_attack: bool,
     last_extra_melee_us: Option<u64>,
@@ -147,6 +148,7 @@ impl ProfileScheduleState {
         Self {
             actor,
             attack_ticks_ms: 0,
+            last_native_attack_think_us: None,
             defence_ticks_ms: 0,
             extra_melee_attack: false,
             last_extra_melee_us: None,
@@ -238,6 +240,7 @@ impl ProfileScheduleState {
 
     pub(super) fn native_target_disappeared(&mut self) {
         self.attack_ticks_ms = 0;
+        self.last_native_attack_think_us = None;
         self.extra_melee_attack = true;
     }
 
@@ -319,6 +322,10 @@ impl ProfileScheduleState {
         let result = self.plan(input, summon_facts, attack_facts, movement_retry);
         if let Ok(plan) = &result {
             self.attack_ticks_ms = plan.attack_ticks_after_ms;
+            if !movement_retry {
+                self.last_native_attack_think_us =
+                    attack_facts.zip(target).map(|(facts, _)| facts.now_us);
+            }
             self.defence_ticks_ms = plan.defence_ticks_after_ms;
             self.extra_melee_attack = plan.extra_melee_after;
             self.last_extra_melee_us = plan.last_extra_melee_us_after;
@@ -366,6 +373,23 @@ impl ProfileScheduleState {
         } else {
             CREATURE_THINK_INTERVAL_MILLIS
         };
+        // A late think still gets one chance per entry. Credit time elapsed while a
+        // melee-only profile held a target without fast-forwarding shared spell phases.
+        let attack_interval_ms = attack_facts
+            .filter(|facts| {
+                !movement_retry
+                    && !facts.target_disappeared
+                    && behavior.attacks.iter().all(|entry| {
+                        abilities
+                            .get(&entry.ability)
+                            .and_then(|ability| ability.details.as_deref())
+                            .is_some_and(|details| details.kind == ProjectV2AbilityKind::Melee)
+                    })
+            })
+            .zip(self.last_native_attack_think_us)
+            .map_or(interval_ms, |(facts, last)| {
+                interval_ms.max(facts.now_us.saturating_sub(last) / 1_000)
+            });
         let attack_ticks = if movement_retry {
             self.attack_ticks_ms
         } else if native && target.is_none() {
@@ -376,7 +400,7 @@ impl ProfileScheduleState {
             } else {
                 self.attack_ticks_ms
             }
-            .checked_add(CREATURE_THINK_INTERVAL_MILLIS)
+            .checked_add(attack_interval_ms)
             .ok_or(ScheduleError::TickOverflow)?
         };
         let defence_ticks = self
@@ -396,9 +420,19 @@ impl ProfileScheduleState {
                 || attack_facts.is_some_and(|facts| facts.target_disappeared),
             last_extra_melee_us_after: self.last_extra_melee_us,
         };
-        for (list, entries, ticks) in [
-            (ScheduleList::Attack, &behavior.attacks, attack_ticks),
-            (ScheduleList::Defence, &behavior.defenses, defence_ticks),
+        for (list, entries, ticks, window_ms) in [
+            (
+                ScheduleList::Attack,
+                &behavior.attacks,
+                attack_ticks,
+                attack_interval_ms,
+            ),
+            (
+                ScheduleList::Defence,
+                &behavior.defenses,
+                defence_ticks,
+                interval_ms,
+            ),
         ] {
             if movement_retry && list == ScheduleList::Defence {
                 continue;
@@ -451,7 +485,7 @@ impl ProfileScheduleState {
                         waits = true;
                         continue;
                     }
-                    if ticks % entry.interval_ms >= interval_ms {
+                    if ticks % entry.interval_ms >= window_ms {
                         continue;
                     }
                 }

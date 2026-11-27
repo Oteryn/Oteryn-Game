@@ -66,14 +66,24 @@ impl MonsterMeleeOwner {
         actor: ExactActorRef,
         index: u16,
     ) -> Option<AppliedBite> {
+        match self.last_native_melee_for_test(actor, index)?.1 {
+            Dispatch::Bite(Ok(receipt)) => Some(receipt),
+            _ => None,
+        }
+    }
+
+    /// Read the last actual drain outcome and its native source sequence.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn last_native_melee_for_test(
+        &self,
+        actor: ExactActorRef,
+        index: u16,
+    ) -> Option<(u64, Dispatch)> {
         let entries = self.entries.get(&actor.actor_local_id())?;
         if entries.actor != actor {
             return None;
         }
-        match entries.native.get(&index)?.last?.1 {
-            Dispatch::Bite(Ok(receipt)) => Some(receipt),
-            _ => None,
-        }
+        entries.native.get(&index)?.last
     }
     /// One scheduled owner think, at most one existing typed bite. The selected
     /// player id resolves to current actor/session facts supplied by the owner;

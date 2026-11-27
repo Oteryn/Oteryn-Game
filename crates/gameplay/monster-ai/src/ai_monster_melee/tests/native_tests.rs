@@ -273,6 +273,33 @@ fn native_short_interval_uses_the_shared_think_without_a_second_1500ms_cooldown(
 }
 
 #[test]
+fn retained_adjacent_rat_commits_each_due_melee_after_a_late_think() -> Result<(), String> {
+    let mut fixture = NativeFixture::new(2000, 1, 8)?;
+    for (now_us, expected_hits, due) in [
+        (0, 0, false),
+        (1_000_000, 1, true),
+        // A late owner turn skips the intervening think at 2 s.
+        (3_250_000, 2, true),
+        (4_250_000, 2, false),
+        (5_250_000, 3, true),
+        (7_250_000, 4, true),
+    ] {
+        fixture.think(now_us, true)?;
+        let recipient = fixture
+            .owner
+            .creature_ai
+            .native_melee_selection(fixture.issuer, 0)
+            .ok_or("native attack entry")?
+            .target;
+        assert_eq!(recipient, due.then_some(fixture.target), "at {now_us}");
+        let swing = fixture.swing(0, 100 + now_us, now_us)?;
+        assert_eq!(matches!(swing, Dispatch::Bite(Ok(_))), due, "at {now_us}");
+        assert_eq!(fixture.vitals.health, 100 - 8 * expected_hits);
+    }
+    Ok(())
+}
+
+#[test]
 fn disappearance_extra_reaches_vitals_before_the_previous_authored_interval_expires()
 -> Result<(), String> {
     let mut fixture = NativeFixture::new(4000, 1, 8)?;
