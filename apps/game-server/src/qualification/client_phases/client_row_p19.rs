@@ -235,12 +235,19 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             corpse_contents(&mut client, corpse, sliver).await?;
         quick_loot_corpse(&mut client, corpse, expected_items).await?;
         let after = rewards(&mut client).await?;
-        let source = client
-            .open_container()
-            .filter(|view| view.container_handle == Some(corpse_handle))
-            .ok_or("P19 exact corpse container missing after Quick Loot")?;
-        if !source.entries.is_empty() {
-            return Err(format!("P19 Quick Loot left {} stacks in exact corpse {corpse:?}", source.entries.len()).into());
+        let view_id = client.session_mut().container_views()
+            .and_then(|views| views.views.iter().find(|view| view.container_handle == corpse_handle))
+            .map(|view| view.view_id)
+            .ok_or("P19 exact corpse view missing after Quick Loot")?;
+        let closed = client.session_mut().container_view(
+            oteryn_protocol_oteryn::container_tree::ContainerViewIntent::Close { view_id },
+        ).await?;
+        if closed != Some(oteryn_protocol_oteryn::container_tree::ContainerViewOutcome::Closed) {
+            return Err(format!("P19 post-loot corpse close refused: {closed:?}").into());
+        }
+        let (_, remaining_items, _) = corpse_contents(&mut client, corpse, sliver).await?;
+        if remaining_items != 0 {
+            return Err(format!("P19 Quick Loot left {remaining_items} stacks in exact corpse {corpse:?}").into());
         }
         evidence(&format!("P19 Quick Loot source depleted corpse={corpse:?} before={expected_items} after=0"));
         let looted = after
