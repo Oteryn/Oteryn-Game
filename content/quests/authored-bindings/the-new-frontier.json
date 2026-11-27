@@ -1755,7 +1755,7 @@
                 "farmine"
               ],
               "topic": 0,
-              "next_topic": 6,
+              "next_topic": 1,
               "storage": [
                 {
                   "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
@@ -1801,7 +1801,7 @@
                   "farmine"
                 ],
                 "topic": 0,
-                "next_topic": 6,
+                "next_topic": 1,
                 "storage": [
                   {
                     "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
@@ -2117,7 +2117,7 @@
                 "impress",
                 "reason"
               ],
-              "topic": 6,
+              "topic": 1,
               "next_topic": 0,
               "storage": [
                 {
@@ -2165,7 +2165,7 @@
                   "bluff",
                   "plea"
                 ],
-                "topic": 6,
+                "topic": 1,
                 "next_topic": 0,
                 "storage": [
                   {
