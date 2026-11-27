@@ -647,7 +647,15 @@ fn assert_projected_ground(
             let away_from_own_glyph =
                 (pos.x - map.header.origin.x).abs() > 1 || (pos.y - map.header.origin.y).abs() > 1;
             if away_from_own_glyph && !view.entities.iter().any(|entity| entity.position == pos) {
-                assert_sidebar_tile(pixels, at, expected[expected.len() - 1]);
+                let rgba = expected[expected.len() - 1];
+                assert_sidebar_tile(pixels, at, rgba);
+                if at == [28., 24.] {
+                    let origin = map.header.origin;
+                    println!(
+                        "N07d sidebar pixel (28,24) origin=({},{},{}) tile={key:?} rgba={rgba:?}",
+                        origin.x, origin.y, origin.floor
+                    );
+                }
             }
             verified_pixels += 1;
         }
