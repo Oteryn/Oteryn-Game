@@ -268,7 +268,7 @@ pub(super) async fn serve_admitted_actor_for_join<S, A>(
     mut admitted: AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
-    acceptance: &mut Option<Vec<u8>>,
+    acceptance: &mut Option<PendingJoin>,
 ) -> ConnectionEnd
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -287,17 +287,34 @@ where
     let mut require_session_binding = false;
     let mut handoff_effect_start = None;
     loop {
+        let deadline = acceptance.as_ref().map(|pending| pending.deadline);
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
-        match authority.resolve_native_scope(admitted).await {
-            Ok(Some(next)) => scoped_authority = Some(next),
-            Ok(None) => {}
-            Err(()) if acceptance.is_some() => return refuse_pending_join(stream, admitted).await,
-            Err(()) => return ServeEnd::Disconnected.finish(admitted),
+        match admission_stage(
+            deadline,
+            "readiness",
+            "runtime_scope_lock",
+            authority.resolve_native_scope(admitted),
+        )
+        .await
+        {
+            Ok(Ok(Some(next))) => scoped_authority = Some(next),
+            Ok(Ok(None)) => {}
+            _ if acceptance.is_some() => return refuse_pending_join(stream, admitted).await,
+            _ => return ServeEnd::Disconnected.finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         // Resolve the admitted scope before checking its actor, including a
         // reconnect whose actor already belongs to an activity Instance.
-        if !Box::pin(authority.staff_refresh(admitted)).await {
+        if !matches!(
+            admission_stage(
+                deadline,
+                "staff_refresh",
+                "runtime_lock_durability_holder",
+                Box::pin(authority.staff_refresh(admitted))
+            )
+            .await,
+            Ok(true)
+        ) {
             if acceptance.is_some() {
                 return refuse_pending_join(stream, admitted).await;
             }
@@ -309,7 +326,32 @@ where
             }
             return ServeEnd::Disconnected.finish(admitted);
         }
-        if !authority.prepare_quest_callback_resume(&mut admitted).await {
+        let reconciled = {
+            let mut recovery =
+                std::pin::pin!(authority.prepare_quest_callback_resume(&mut admitted));
+            match admission_stage(
+                deadline,
+                "callback_recovery",
+                "durability_holder_pg_runtime",
+                recovery.as_mut(),
+            )
+            .await
+            {
+                Ok(reconciled) => Some(reconciled),
+                Err(_) => {
+                    send_join_unavailable(stream, 0).await;
+                    // Recovery can own an idempotent durable write. Let it settle before
+                    // handing the unpublished controller to the existing loss lifecycle.
+                    let _ = recovery.await;
+                    None
+                }
+            }
+        };
+        if reconciled.is_none() {
+            return ServeEnd::Closed(FoundationProtocolError::SessionJoinUnavailable)
+                .finish(admitted);
+        }
+        if reconciled == Some(false) {
             if acceptance.is_some() {
                 return refuse_pending_join(stream, admitted).await;
             }
@@ -363,7 +405,14 @@ where
             return hold_refused(stream, admitted, policy).await;
         };
         record_join_progress("baseline", admitted.first_entry);
-        let Some(baseline) = authority.observe(actor).await else {
+        let Ok(Some(baseline)) = admission_stage(
+            deadline,
+            "snapshot_baseline",
+            "runtime_lock",
+            authority.observe(actor),
+        )
+        .await
+        else {
             if acceptance.is_some() {
                 return refuse_pending_join(stream, admitted).await;
             }

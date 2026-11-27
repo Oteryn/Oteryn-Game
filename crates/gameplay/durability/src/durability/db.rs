@@ -1627,13 +1627,22 @@ impl DurabilityRoot {
     where
         T: Send + Unpin + for<'r> sqlx::Decode<'r, Postgres> + sqlx::Type<Postgres>,
     {
+        self.read_gameplay_scalar_observed(query, deadline, None).await
+    }
+
+    pub(super) async fn read_gameplay_scalar_observed<T>(
+        &self,
+        query: sqlx::query::QueryScalar<'_, Postgres, T, sqlx::postgres::PgArguments>,
+        deadline: TokioInstant,
+        operation: Option<&'static str>,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send + Unpin + for<'r> sqlx::Decode<'r, Postgres> + sqlx::Type<Postgres>,
+    {
         let pool = self.retained_receipt_publisher_pool()?;
-        let mut connection = tokio::time::timeout_at(deadline, pool.acquire())
-            .await
-            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
-        match tokio::time::timeout_at(deadline, query.fetch_one(&mut *connection))
-        .await
-        {
+        let acquired = observe_receipt_probe(operation, "pg_pool", deadline, pool.acquire()).await;
+        let mut connection = acquired.map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+        match observe_receipt_probe(operation, "pg_query", deadline, query.fetch_one(&mut *connection)).await {
             Ok(result) => result.map_err(Into::into),
             Err(_) => {
                 connection.close_on_drop();
@@ -2140,6 +2149,31 @@ impl DurabilityRoot {
             owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
         })
     }
+}
+
+async fn observe_receipt_probe<T>(
+    operation: Option<&'static str>,
+    wait_on: &'static str,
+    deadline: TokioInstant,
+    work: impl std::future::Future<Output = Result<T, sqlx::Error>>,
+) -> Result<Result<T, sqlx::Error>, tokio::time::error::Elapsed> {
+    let started = TokioInstant::now();
+    let result = tokio::time::timeout_at(deadline, work).await;
+    if let Some(operation) = operation {
+        use oteryn_error_codes::{FieldValue, Level, Line};
+        let outcome = match &result {
+            Ok(Ok(_)) => "completed",
+            Ok(Err(sqlx::Error::PoolTimedOut)) | Err(_) => "deadline",
+            Ok(Err(_)) => "unavailable",
+        };
+        let line = Line::new(Level::Info, "durability", "receipt_probe_wait")
+            .field("operation", FieldValue::Token(operation))
+            .field("wait_on", FieldValue::Token(wait_on))
+            .field("outcome", FieldValue::Token(outcome))
+            .field("elapsed_ms", FieldValue::U64(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX)));
+        oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
+    }
+    result
 }
 
 /// The earlier of the ordinary pass deadline from `now` and an outer `budget`.

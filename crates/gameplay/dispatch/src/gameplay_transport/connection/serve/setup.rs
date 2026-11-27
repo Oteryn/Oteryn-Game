@@ -28,7 +28,7 @@ impl From<ServeEnd> for JoinFailure {
 pub(super) struct JoinProjection<'a> {
     pub(super) actor: ExactActorRef,
     pub(super) baseline: WorldSpatialObservation,
-    pub(super) acceptance: &'a mut Option<Vec<u8>>,
+    pub(super) acceptance: &'a mut Option<PendingJoin>,
 }
 
 /// A join that could not be prepared reports `SESSION_JOIN_UNAVAILABLE` before the same end;
@@ -111,6 +111,65 @@ where
         baseline,
         acceptance,
     } = projection;
+    let generation = admitted.continuity.connection_generation;
+    let revision = admitted.continuity.spatial_revision;
+    let deadline = acceptance.as_ref().map(|pending| pending.deadline);
+    let (snapshot, trade_revision, setup) = admission_stage(
+        deadline,
+        "join_snapshot",
+        "runtime_lock_durability_holder",
+        prepare_snapshot(admitted, authority, actor, baseline, integrity),
+    )
+    .await
+    .map_err(|_| ServeEnd::Disconnected)??;
+    if deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
+        return Err(ServeEnd::Disconnected.into());
+    }
+    record_join_progress("snapshot_write", admitted.first_entry);
+    if let Some(pending) = acceptance.take()
+        && write_frame(stream, &pending.frame).await.is_err()
+    {
+        return Err(JoinFailure::Transport);
+    }
+    for frame in &snapshot {
+        if write_frame(stream, frame).await.is_err() {
+            return Err(JoinFailure::Transport);
+        }
+    }
+    record_join_progress("snapshot_flushed", admitted.first_entry);
+    zones_nologout_transport::delivered(admitted);
+    if let Some(revision) = trade_revision {
+        admitted.continuity.player_trade_revision = revision;
+        authority.player_trade_delivered(admitted.game_session_id, revision);
+    }
+    // r4122508665: only a fully, successfully transmitted snapshot (every frame, including
+    // `SnapshotCommit`, above) may update continuity. The overlay is Channel-global (unlike
+    // `spatial_revision`, this actor's own counter), so the reconnect fence (`resume.rs`,
+    // r4122215795) must record what was actually confirmed delivered, never a value written
+    // before transmission could still fail partway through.
+    admitted.continuity.overlay_revision = setup.initial.overlay_revision;
+    if let Some((vitals_revision, _)) = &setup.initial.vitals {
+        admitted.continuity.vitals_revision = *vitals_revision;
+    }
+    if let Some((revision, state)) = &setup.sessions.combat_sent {
+        admitted.continuity.combat.snapshot_sent(*revision, *state);
+    }
+    live(
+        authority, admitted, policy, actor, generation, revision, setup,
+    )
+    .await
+    .map_err(JoinFailure::Delivered)
+}
+
+type PreparedSnapshot = (Vec<Vec<u8>>, Option<u64>, LiveSetup);
+
+async fn prepare_snapshot<A: FreshAdmissionAuthority>(
+    admitted: &mut AdmittedSession,
+    authority: &A,
+    actor: ExactActorRef,
+    baseline: WorldSpatialObservation,
+    integrity: integrity::Integrity,
+) -> Result<PreparedSnapshot, JoinFailure> {
     let generation = admitted.continuity.connection_generation;
     let revision = admitted.continuity.spatial_revision;
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
@@ -271,49 +330,15 @@ where
             .any(|domain| domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW),
         baseline.actor_position.floor,
     ));
-    let snapshot = encode_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
-    let Ok(snapshot) = snapshot else {
-        return Err(ServeEnd::Disconnected.into());
-    };
-    record_join_progress("snapshot_write", admitted.first_entry);
-    if let Some(frame) = acceptance.take()
-        && write_frame(stream, &frame).await.is_err()
-    {
-        return Err(JoinFailure::Transport);
-    }
-    for frame in &snapshot {
-        if write_frame(stream, frame).await.is_err() {
-            return Err(JoinFailure::Transport);
-        }
-    }
-    record_join_progress("snapshot_flushed", admitted.first_entry);
-    zones_nologout_transport::delivered(admitted);
-    if let Some(trade) = payloads
+    let snapshot = encode_snapshot(generation, 1, admitted.continuity.server_sequence, &domains)
+        .map_err(|_| ServeEnd::Disconnected)?;
+    let trade_revision = payloads
         .iter()
         .find(|p| p.domain_id == oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE)
-    {
-        admitted.continuity.player_trade_revision = trade.revision;
-        authority.player_trade_delivered(admitted.game_session_id, trade.revision);
-    }
-    // r4122508665: only a fully, successfully transmitted snapshot (every frame, including
-    // `SnapshotCommit`, above) may update continuity. The overlay is Channel-global (unlike
-    // `spatial_revision`, this actor's own counter), so the reconnect fence (`resume.rs`,
-    // r4122215795) must record what was actually confirmed delivered, never a value written
-    // before transmission could still fail partway through.
-    admitted.continuity.overlay_revision = initial.overlay_revision;
-    if let Some((vitals_revision, _)) = &initial.vitals {
-        admitted.continuity.vitals_revision = *vitals_revision;
-    }
-    if let Some((revision, state)) = &sessions.combat_sent {
-        admitted.continuity.combat.snapshot_sent(*revision, *state);
-    }
-    live(
-        authority,
-        admitted,
-        policy,
-        actor,
-        generation,
-        revision,
+        .map(|trade| trade.revision);
+    Ok((
+        snapshot,
+        trade_revision,
         LiveSetup {
             cooldowns,
             integrity,
@@ -322,9 +347,7 @@ where
             sessions,
             world,
         },
-    )
-    .await
-    .map_err(JoinFailure::Delivered)
+    ))
 }
 
 /// Logs the failed join phase with the code the client is sent.

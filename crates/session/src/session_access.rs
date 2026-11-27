@@ -74,13 +74,27 @@ impl<S: SessionStream> Session<S> {
         accepted_envelope.validate(Direction::ServerToClient, false)?;
         if accepted_envelope.message_type() == MessageType::ProtocolError
             && let Ok(refusal) = decode_protocol_error(accepted_envelope.payload())
-            && ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
+            && (ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
+                || refusal.error_code == FoundationProtocolError::SessionJoinUnavailable.code())
             // N8 fixes the refusal shape; any other disposition or correlation fails closed below.
             && refusal.disposition == ProtocolDisposition::TransportFatal
             && refusal.related_command_id == 0
             && refusal.expected_command_id == 0
             && refusal.expected_server_sequence == 0
         {
+            if refusal.error_code == FoundationProtocolError::SessionJoinUnavailable.code() {
+                if refusal.connection_trace.is_some()
+                    && !admission.supported_capabilities.contains(
+                        &oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
+                    )
+                {
+                    return Err(FoundationProtocolError::MalformedEnvelope.into());
+                }
+                return Err(SessionError::ServerProtocolError {
+                    code: refusal.error_code,
+                    connection_trace: refusal.connection_trace,
+                });
+            }
             let capacity = admission_queue::decode_capacity(accepted_envelope.payload())?;
             if matches!(
                 capacity,
