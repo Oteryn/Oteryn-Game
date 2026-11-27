@@ -1,4 +1,4 @@
-//! W09 exercises the real USE owner with two seeded Kooldown Aids and one Drome Cube.
+//! W09 exercises the real USE owner with two seeded Kooldown Aids and four Drome Cubes.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_gameplay_items::concoctions::Concoction;
@@ -10,6 +10,25 @@ use std::collections::BTreeMap;
 use std::num::NonZeroU32;
 
 const RESET_NOTICE: &str = "Your spells are no longer on cooldown.";
+
+async fn gift_remaining_ms(client: &mut DevClientSession) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::wheel_presentation as wheel;
+
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wheel::CAPABILITY_WHEEL_PRESENTATION_V1,
+            wheel::COMMAND_TYPE_WHEEL_GIFT_OF_LIFE_STATUS,
+            &[],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.payload.len() != wheel::GIFT_OF_LIFE_STATUS_BYTES
+    {
+        return Err(format!("W09 Gift of Life status refused or malformed: {reply:?}").into());
+    }
+    Ok(u64::from_le_bytes(reply.payload[1..].try_into()?))
+}
 
 fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<NonZeroU32, u64>> {
     let mut quantities = BTreeMap::new();
@@ -127,7 +146,11 @@ async fn wait_inventory(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while quantities(client)? != *expected {
         if tokio::time::Instant::now() >= deadline {
-            return Err("W09 first cast did not conjure exactly one wand".into());
+            return Err(format!(
+                "W09 inventory mismatch: expected {expected:?}, observed {:?}",
+                quantities(client)?
+            )
+            .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
@@ -365,13 +388,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let preparation_session = client.join_snapshot().game_session_id;
     character_prep::declare_seeded(
         "W09.full",
-        "level-41 Premium sorcerer, four Drome Cubes and two Kooldown Aids",
+        "level-50 Premium sorcerer, active Gift of Life timer, four Drome Cubes and two Kooldown Aids",
         "ordinary leveling exceeds the row budget and the inputs have no authored acquisition route",
     );
     request_fixture_control(
         uuid_text(preparation_session.as_bytes()),
         "--profile",
-        "w09-kooldown".into(),
+        "w09-aid-audit".into(),
     )
     .await?;
     use_item(
@@ -394,9 +417,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::grant_premium(&client).await?;
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
-    if (level, vitals.max_health, vitals.max_mana) != (41, 350, 1080) {
+    if (level, vitals.max_health, vitals.max_mana) != (50, 395, 1350) {
         return Err(format!(
-            "W09 expected level-41 vitals 350/1080: level={level} vitals={vitals:?}"
+            "W09 expected level-50 vitals 395/1350: level={level} vitals={vitals:?}"
         )
         .into());
     }
@@ -453,6 +476,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     };
     let mut reset_prestate = [cooldowns[0], stance_spell, support, stance_group];
     reset_prestate.sort_by_key(|entry| (entry.kind, entry.id));
+    let gift_before_sent = tokio::time::Instant::now();
+    let gift_before = gift_remaining_ms(&mut client).await?;
+    let gift_before_received = tokio::time::Instant::now();
+    if !(3_300_000..=3_600_000).contains(&gift_before) {
+        return Err(
+            format!("W09 Gift of Life fixture timer is not active: {gift_before} ms").into(),
+        );
+    }
     let used_at = tokio::time::Instant::now();
     use_item(&mut client, aid, committed).await?;
     let committed_at = tokio::time::Instant::now();
@@ -501,27 +532,52 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
+    expected.insert(aid, 1);
+    wait_inventory(&mut client, &expected).await?;
+    let gift_after_sent = tokio::time::Instant::now();
+    let gift_after = gift_remaining_ms(&mut client).await?;
+    let min_elapsed = u64::try_from((gift_after_sent - gift_before_received).as_millis())?;
+    let max_elapsed = u64::try_from(gift_before_sent.elapsed().as_millis())?.saturating_add(1);
+    if gift_after == 0
+        || gift_after >= gift_before
+        || !(gift_before.saturating_sub(max_elapsed)..=gift_before.saturating_sub(min_elapsed))
+            .contains(&gift_after)
+    {
+        return Err(format!("W09 Aid changed the Gift of Life deadline: before={gift_before} ms after={gift_after} ms elapsed={min_elapsed}..={max_elapsed} ms").into());
+    }
+
+    let stance_recast = tokio::time::Instant::now();
+    cast_paid(&mut client, stance, 400).await?;
+    let [new_stance, _] =
+        assert_cast_cooldowns(&mut client, stance, stance_recast, 30_000, true).await?;
+    if stance_cast.elapsed() >= Duration::from_secs(30) {
+        return Err("W09 Master of Thunder recast did not precede natural Stance expiry".into());
+    }
+    let support_end = tokio::time::Instant::now() + Duration::from_secs(2);
+    while tokio::time::Instant::now() < support_end {
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
     let second_cast = tokio::time::Instant::now();
     cast_paid(&mut client, spell, 250).await?;
-    let durable_cooldowns =
+    let [new_conjure, new_support] =
         assert_cast_cooldowns(&mut client, spell, second_cast, 1_800_000, false).await?;
+    let mut durable_cooldowns = [
+        new_conjure,
+        new_stance,
+        new_support,
+        ActorCooldown {
+            expires_at_ms: new_stance.expires_at_ms,
+            ..stance_group
+        },
+    ];
+    durable_cooldowns.sort_by_key(|entry| (entry.kind, entry.id));
     if first_cast.elapsed() >= natural_cooldown {
         return Err(
             "W09 Conjure Wand of Darkness recast did not precede natural cooldown expiry".into(),
         );
     }
-    expected.insert(aid, 1);
     *expected.entry(wand).or_default() += 1;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        if quantities(&client)? == expected {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("W09 Kooldown Aid did not emit the reset notice and exact debit".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
+    wait_inventory(&mut client, &expected).await?;
     for (offset, reward) in expected_draws.into_iter().enumerate() {
         use_item(&mut client, cube, committed).await?;
         let remaining = 3 - u64::try_from(offset)?;
@@ -640,8 +696,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             "W09 full relog changed the active deadlines sequence={sequence} expected={active:?} frame={cooldowns:?}"
         ).into());
     }
-    evidence("FIXTURE row=W09.full input=premium purpose=post-relog-cast");
-    character_prep::grant_premium(&verified).await?;
     assert_cooling_down(&mut verified, spell, &settled).await?;
     logout(&mut verified).await?;
     evidence(
