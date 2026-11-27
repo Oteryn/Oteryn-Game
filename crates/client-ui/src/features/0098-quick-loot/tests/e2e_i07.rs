@@ -24,7 +24,7 @@ use std::path::Path;
 
 type Error = Box<dyn std::error::Error>;
 
-const FIXTURE_SESSION: &str = "00000000-0000-4000-8000-000000000007";
+const FIXTURE_SESSION: &str = "00000000-0000-7000-8000-000000000007";
 const FIXTURE_POUCH: [u8; 16] = [0x5a; 16];
 
 struct Probe {
@@ -44,6 +44,7 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+/// A hyphenated UUIDv7 with the RFC variant, as the production `GameSessionId` decoder requires.
 fn is_uuid(value: &str) -> bool {
     let parts = value.split('-').collect::<Vec<_>>();
     parts.len() == 5
@@ -51,6 +52,64 @@ fn is_uuid(value: &str) -> bool {
             .iter()
             .zip([8, 4, 4, 4, 12])
             .all(|(part, width)| part.len() == width && part.bytes().all(|b| b.is_ascii_hexdigit()))
+        && parts[2].starts_with('7')
+        && parts[3].starts_with(['8', '9', 'a', 'b', 'A', 'B'])
+}
+
+/// Envelope keys the capture writer emits, sorted.
+const ENVELOPE_KEYS: [&str; 5] = [
+    "command_id",
+    "game_session_id",
+    "payload",
+    "server_sequence",
+    "status",
+];
+
+/// Names of the top-level object's keys in `text`, in order and with repeats:
+/// `serde_json::Value` keeps only the last of repeated keys, so a repeated `status` or session
+/// would otherwise mask the first. Call only on text that already parsed as JSON.
+fn top_level_keys(text: &str) -> Result<Vec<String>, Error> {
+    let mut keys = Vec::new();
+    let mut depth = 0usize;
+    let mut chars = text.char_indices();
+    while let Some((start, c)) = chars.next() {
+        match c {
+            '{' | '[' => depth += 1,
+            '}' | ']' => depth = depth.saturating_sub(1),
+            '"' => {
+                let mut end = start;
+                let mut escaped = false;
+                for (index, c) in chars.by_ref() {
+                    if escaped {
+                        escaped = false;
+                    } else if c == '\\' {
+                        escaped = true;
+                    } else if c == '"' {
+                        end = index;
+                        break;
+                    }
+                }
+                if depth == 1 && text[end + 1..].trim_start().starts_with(':') {
+                    keys.push(serde_json::from_str(&text[start..=end])?);
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(keys)
+}
+
+/// Parses one reply envelope and fails closed unless it has exactly the writer's keys, once each.
+fn envelope_value(raw: &[u8], name: &str) -> Result<serde_json::Value, Error> {
+    let value: serde_json::Value = serde_json::from_slice(raw)?;
+    let mut keys = top_level_keys(std::str::from_utf8(raw)?)?;
+    keys.sort();
+    if keys != ENVELOPE_KEYS {
+        return Err(
+            format!("{name}: envelope keys {keys:?} are not exactly {ENVELOPE_KEYS:?}").into(),
+        );
+    }
+    Ok(value)
 }
 
 fn status(code: u64) -> Option<CommandStatus> {
@@ -122,8 +181,10 @@ fn fixture(skip: u32, accept: u32) -> Result<Capture, Error> {
 
 fn read_probe(path: &Path, key: usize) -> Result<Probe, Error> {
     let request = std::fs::read(path.join(format!("i07-{key}-request.bin")))?;
-    let value: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(path.join(format!("i07-{key}.json")))?)?;
+    let value = envelope_value(
+        &std::fs::read(path.join(format!("i07-{key}.json")))?,
+        &format!("I07 probe {key}"),
+    )?;
     let positive = |field: &str| -> Result<u64, Error> {
         value[field]
             .as_u64()
@@ -274,6 +335,11 @@ fn replay(capture: &Capture) -> Result<(), Error> {
         let command = request(&mut panel, action)
             .ok_or_else(|| format!("I07 probe {key}: client did not queue request"))?;
         assert_eq!(command.payload, probe.request, "I07 probe {key}");
+        assert_eq!(
+            probe.response.status,
+            CommandStatus::Accepted,
+            "I07 probe {key}"
+        );
         let looted = apply_result(&mut panel, &probe.response);
         assert_eq!(panel.pending, None, "I07 probe {key}");
         assert_eq!(panel.feedback, "Confirmed by the server", "I07 probe {key}");
@@ -385,14 +451,20 @@ fn replays_i07_capture_with_same_run_filter_definitions() -> Result<(), Error> {
 #[test]
 fn i07_capture_without_current_run_provenance_fails_closed() -> Result<(), Error> {
     type Mutation = fn(&mut Capture);
-    let cases: [(&str, Mutation); 6] = [
+    let cases: [(&str, Mutation); 7] = [
         ("refused pouch", |c| {
             c.probes[2].response.status = CommandStatus::Rejected
         }),
         ("foreign session", |c| {
-            c.probes[3].session = "00000000-0000-4000-8000-000000000008".into()
+            c.probes[3].session = "00000000-0000-7000-8000-000000000008".into()
         }),
         ("non-UUID session", |c| c.session = "run-7".into()),
+        ("UUIDv4 session", |c| {
+            c.session = "00000000-0000-4000-8000-000000000007".into();
+            for probe in &mut c.probes {
+                probe.session = c.session.clone();
+            }
+        }),
         ("repeated command_id", |c| {
             c.probes[1].response.command_id = c.probes[0].response.command_id
         }),
@@ -408,7 +480,22 @@ fn i07_capture_without_current_run_provenance_fails_closed() -> Result<(), Error
         assert!(read_capture(root.path()).is_err(), "{case} was accepted");
     }
     let root = write_capture(&fixture(4097, 4098)?)?;
-    std::fs::remove_file(root.path().join("i07-3.json"))?;
+    let path = root.path().join("i07-3.json");
+    let valid = std::fs::read_to_string(&path)?;
+    for (case, edited) in [
+        ("repeated status", valid.replacen('{', r#"{"status":2,"#, 1)),
+        (
+            "repeated session",
+            valid.replacen('{', r#"{"game_session_id":"x","#, 1),
+        ),
+        ("unknown key", valid.replacen('{', r#"{"note":1,"#, 1)),
+    ] {
+        std::fs::write(&path, edited)?;
+        assert!(read_capture(root.path()).is_err(), "{case} was accepted");
+    }
+    std::fs::write(&path, valid)?;
+    read_capture(root.path())?;
+    std::fs::remove_file(&path)?;
     assert!(
         read_capture(root.path()).is_err(),
         "missing envelope was accepted"
