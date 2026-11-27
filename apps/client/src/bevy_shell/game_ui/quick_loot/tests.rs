@@ -138,6 +138,7 @@ pub(crate) fn prepare_filter_picker(
 }
 
 pub(crate) fn add_filter_item(app: &mut App, skip: bool, handle: usize) -> TestResult {
+    app.update();
     let mode = if skip { "skip" } else { "accept" };
     let add = named(app, &format!("quick_loot.add.{mode}"))?;
     click(app, add);
