@@ -478,6 +478,36 @@ fn p04_master_rejects_identically_wrong_start_and_relog_renders() -> Result<(), 
     Ok(())
 }
 
+fn verify_unstarted_weekly(text: &str) -> Result<(), Error> {
+    let expected = [
+        "Weekly: started false, difficulty 0, expanded false, multiplier 1",
+        "Kill XP: 0  Delivery XP: 0  Pending points: 0  Pending soulseals: 0",
+    ];
+    if !text
+        .lines()
+        .filter(|line| {
+            line.starts_with("Weekly:")
+                || line.starts_with("Kill ")
+                || line.starts_with("Delivery ")
+        })
+        .eq(expected)
+    {
+        return Err("P04 level-399 rendered weekly state differs from the unstarted board".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn p04_unstarted_render_rejects_started_and_phantom_tasks() -> Result<(), Error> {
+    let mut panel = TaskBoardPanel::default();
+    apply_full_result(&mut panel, &fixture()?.query);
+    let text = panel_text(&panel);
+    verify_unstarted_weekly(&text)?;
+    assert!(verify_unstarted_weekly(&text.replace("started false", "started true")).is_err());
+    assert!(verify_unstarted_weekly(&format!("{text}\nKill 1. rat: 0/10")).is_err());
+    Ok(())
+}
+
 fn verify_replay(captured: Captured) -> Result<(), Error> {
     let e = captured.expected.as_str();
     let mut panel = TaskBoardPanel {
@@ -523,6 +553,7 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     );
     assert_eq!(weekly.shop.len().to_string(), value(e, "shop_count")?);
     verify_rendered_shop(&text, &weekly)?;
+    verify_unstarted_weekly(&text)?;
 
     // StartWeekly above the character’s level is refused and the weekly state stays the same.
     let start = full_request(&mut panel, FullIntent::StartWeekly(3)).ok_or("start request")?;
@@ -541,7 +572,9 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     let mut unchanged = refused.clone();
     unchanged.refusal = 0;
     assert_eq!(unchanged, weekly);
-    assert!(panel_text(&panel).ends_with("The server refused: level too low for this difficulty"));
+    let refused_text = panel_text(&panel);
+    verify_unstarted_weekly(&refused_text)?;
+    assert!(refused_text.ends_with("The server refused: level too low for this difficulty"));
 
     let mut fresh = TaskBoardPanel {
         selected: true,
@@ -558,6 +591,7 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert!(!fresh.pending);
     assert_eq!(fresh.feedback, None);
     assert_eq!(fresh.weekly.as_ref(), Some(&weekly));
+    verify_unstarted_weekly(&panel_text(&fresh))?;
 
     if let Some((master, assignments)) = captured.master {
         verify_master_replay(master, &weekly, &assignments)?;

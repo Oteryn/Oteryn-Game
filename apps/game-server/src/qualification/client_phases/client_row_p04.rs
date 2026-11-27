@@ -528,6 +528,19 @@ fn verify_experience(before: i64, after: i64) -> TestResult {
     Ok(())
 }
 
+fn durable_delivery_amounts(custody: &Custody) -> TestResult<std::collections::BTreeMap<u32, u32>> {
+    let mut amounts = std::collections::BTreeMap::<u32, u32>::new();
+    for (_, _, _, key, _, quantity, _) in custody {
+        if let Some(id) = key.strip_prefix("oteryn:item.tibia.i") {
+            let total = amounts.entry(id.parse()?).or_default();
+            *total = total
+                .checked_add(u32::try_from(*quantity)?)
+                .ok_or("P04 durable inventory quantity overflow")?;
+        }
+    }
+    Ok(amounts)
+}
+
 fn seeded_carried(client: &DevClientSession) -> TestResult<std::collections::BTreeMap<u32, u32>> {
     let inventory = client.inventory().ok_or("P04 seed inventory absent")?;
     let index = provisioning::item_index()?;
@@ -610,9 +623,10 @@ async fn verify_boundary(
     {
         return Err("P04 authored delivery oracle requires legacy Task Board identifiers".into());
     }
-    let available = seeded_carried(&client)?;
+    let projected_before = seeded_carried(&client)?;
     let character = &clients.characters[0];
     let durable_before = durable_carried(database, character).await?;
+    let available = durable_delivery_amounts(&durable_before)?;
     let experience_before = durable_experience(database, character).await?;
     let catalogue = (case.level == 400)
         .then(MasterCatalogue::load)
@@ -631,7 +645,7 @@ async fn verify_boundary(
         )
         .await?;
     }
-    if seeded_carried(&client)? != available {
+    if seeded_carried(&client)? != projected_before {
         return Err("P04 StartWeekly changed the delivery inventory".into());
     }
     verify_durable_carried(
@@ -757,6 +771,31 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 mod tests {
     use super::*;
     use task_board::task_board::full::{DeliveryTask, KillTask};
+
+    #[test]
+    fn p04_delivery_requires_items_omitted_by_the_projection() -> TestResult {
+        let custody = vec![(
+            "item".into(),
+            Some("backpack".into()),
+            "1".into(),
+            "oteryn:item.tibia.i28568".into(),
+            "definition-r1".into(),
+            7,
+            1,
+        )];
+        let available = durable_delivery_amounts(&custody)?;
+        let catalogue = MasterCatalogue::load()?;
+        let mut week = fresh_weekly();
+        week.deliveries.push(DeliveryTask {
+            item: 28568,
+            required: 250,
+            current: 0,
+            delivered: false,
+        });
+        assert!(catalogue.verify(&week, &available).is_err());
+        week.deliveries[0].current = 7;
+        catalogue.verify(&week, &available)
+    }
 
     #[test]
     fn p04_pool_rejects_the_audited_inkwell_and_basalt_omissions() -> TestResult {
