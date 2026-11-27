@@ -149,6 +149,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         .ok_or("C17b pre-cast vitals absent")?
         .mana;
     let spell = full_row_c17b::spell_index(&book)?;
+    let cast_sent = tokio::time::Instant::now();
     let (cast, frames) = oteryn_session::test_support::capture_command_results(caster.cast_spell(
         spell,
         SpellTarget::None,
@@ -170,41 +171,26 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     full_row_c17b::verify_recast(&cooldown, paid.value, paid.server_sequence, caster.actor_vitals().copied(), &events, started.elapsed())?;
     use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-    let cooldown_ms = loop {
+    let support = support_group_ordinal()?;
+    loop {
         events.extend(caster.take_events());
-        if let Some(remaining) = events.drain(..).find_map(|event| {
-            let SessionEvent::ActorCooldowns(delta) = event else {
-                return None;
-            };
-            let cooldown =
-                delta.value.entries.iter().find(|entry| {
-                    entry.kind == ActorCooldownKind::Spell && entry.id == spell.get()
-                })?;
-            cooldown
-                .expires_at_ms
-                .checked_sub(delta.value.server_now_ms)
+        if let Some(projection) = events.drain(..).find_map(|event| match event {
+            SessionEvent::ActorCooldowns(delta) if delta.server_sequence > cast.result_server_sequence
+                && delta.value.entries.iter().any(|entry| entry.kind == ActorCooldownKind::Spell && entry.id == spell.get()) => Some(delta.value),
+            _ => None,
         }) {
-            break remaining;
+            verify_cooldown_projection(&projection, spell.get(), support, cast_sent.elapsed())?;
+            break;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("C17b missing Invisible spell cooldown projection".into());
         }
         caster.service_liveness(Duration::from_millis(25)).await?;
-    };
-    if !(1500..=2000).contains(&cooldown_ms) {
-        return Err(format!(
-            "C17b Invisible cooldown projection {cooldown_ms}ms outside Global range"
-        )
-        .into());
     }
     let initial = full_row_c17b::invisibility_remaining(&mut caster)
         .await?
         .ok_or("C17b cast did not install Invisible")?;
-    if !(195_000..=200_000).contains(&initial) {
-        return Err(
-            format!("C17b initial invisibility duration {initial}ms outside Global range").into(),
-        );
-    }
+    verify_timer("Invisible", u64::try_from(initial)?, 200_000, 195_000, cast_sent.elapsed())?;
     full_row_c17b::require_rat_stops(&mut caster, rat).await?;
     capture
         .observe(observer.service_liveness(Duration::from_millis(100)))
@@ -338,6 +324,46 @@ fn envelope(
         "payload": payload, "server_sequence": sequence, "status": status})
 }
 
+fn support_group_ordinal() -> TestResult<u32> {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tools/content-schema/spell-authoring/cooldown-groups.json"
+    ))?;
+    let index = document["groups"].as_array()
+        .and_then(|groups| groups.iter().position(|group| group["key"] == "support"))
+        .ok_or("C17b Support cooldown group missing from the wire catalogue")?;
+    Ok(u32::try_from(index + 1)?)
+}
+
+fn verify_cooldown_projection(
+    projection: &oteryn_protocol_oteryn::presentation::ActorCooldowns,
+    spell: u32,
+    support: u32,
+    elapsed: std::time::Duration,
+) -> TestResult {
+    use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
+    let expiry = |kind, id| projection.entries.iter()
+        .find(|entry| entry.kind == kind && entry.id == id)
+        .map(|entry| entry.expires_at_ms)
+        .ok_or("C17b spell or Support cooldown projection missing");
+    let spell_expiry = expiry(ActorCooldownKind::Spell, spell)?;
+    let support_expiry = expiry(ActorCooldownKind::Group, support)?;
+    if spell_expiry != support_expiry {
+        return Err(format!("C17b spell and Support deadlines differ: {spell_expiry} != {support_expiry}").into());
+    }
+    let remaining = spell_expiry.checked_sub(projection.server_now_ms)
+        .ok_or("C17b expired cooldown projection")?;
+    verify_timer("spell and Support cooldown", remaining, 2_000, 1_500, elapsed)
+}
+
+fn verify_timer(label: &str, remaining: u64, duration: u64, floor: u64, elapsed: std::time::Duration) -> TestResult {
+    let elapsed_ms = u64::try_from(elapsed.as_micros().div_ceil(1_000))?;
+    let min = floor.max(duration.saturating_sub(elapsed_ms));
+    if !(min..=duration).contains(&remaining) {
+        return Err(format!("C17b {label} remaining={remaining}ms expected={min}..={duration}ms cast_elapsed={elapsed_ms}ms").into());
+    }
+    Ok(())
+}
+
 fn verify_condition_pause(
     before: i64,
     after: i64,
@@ -365,6 +391,24 @@ fn verify_condition_pause(
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn initial_timers_reject_shortened_lifetimes_and_missing_support() -> TestResult {
+        use oteryn_protocol_oteryn::presentation::{ActorCooldown, ActorCooldownKind, ActorCooldowns};
+        let elapsed = Duration::from_millis(50);
+        let mut observation = ActorCooldowns {
+            server_now_ms: 1_000, rtt_ms: None,
+            entries: vec![ActorCooldown { kind: ActorCooldownKind::Spell, id: 1, expires_at_ms: 2_980 }],
+        };
+        assert!(verify_cooldown_projection(&observation, 1, 3, elapsed).is_err());
+        observation.entries.push(ActorCooldown { kind: ActorCooldownKind::Group, id: 3, expires_at_ms: 2_980 });
+        verify_cooldown_projection(&observation, 1, 3, elapsed)?;
+        observation.entries[1].expires_at_ms = 2_979;
+        assert!(verify_cooldown_projection(&observation, 1, 3, elapsed).is_err());
+        assert!(verify_timer("Invisible", 196_000, 200_000, 195_000, elapsed).is_err());
+        assert!(verify_timer("cooldown", 1_500, 2_000, 1_500, elapsed).is_err());
+        Ok(())
+    }
 
     #[test]
     fn condition_pause_rejects_offline_decay_and_a_reset() -> TestResult {
