@@ -123,7 +123,7 @@ async fn scenario(
     }
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
-    owner.rooms = SeamRooms::new(Some(room), Some(room));
+    owner.rooms = SeamRooms::new(Some(room.clone()), Some(room.clone()));
     let formula = native.training_formula().ok_or("training formula")?;
     let build = convert_vocation(
         formula,
