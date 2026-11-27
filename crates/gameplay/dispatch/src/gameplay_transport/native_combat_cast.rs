@@ -2976,8 +2976,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
-                    let mut runtime=owner.runtime.lock().await;
-                    let mut states=owner.states.spell_states.lock().await;
+                    let mut runtime=owner.runtime.try_lock().map_err(|_| DurabilityError::Unavailable)?;
+                    let mut states=owner.states.spell_states.try_lock().map_err(|_| DurabilityError::Unavailable)?;
                     if let Some(companion)=attempt.prepared.direct_companion.as_ref(){
                         companion.reservation.rollback_physical(&mut runtime).map_err(|_|DurabilityError::Unavailable)?;
                     }
@@ -3116,8 +3116,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let current_read=super::super::spell_access_facts::read_owned_cast_facts_in_transaction(&mut fresh,owner.root,
                 owner.character,owner.holder,&item_fence,command,active).await.map_err(|_|DurabilityError::Unavailable)?;
             drop(fresh);
-            let mut runtime=owner.runtime.lock().await;
-            let mut states=owner.states.spell_states.lock().await;
+            let mut runtime=owner.runtime.try_lock().map_err(|_| DurabilityError::Unavailable)?;
+            let mut states=owner.states.spell_states.try_lock().map_err(|_| DurabilityError::Unavailable)?;
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let state=states.get(&runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
@@ -3127,9 +3127,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 window.attempt().prepared.check_commit(&runtime,&states,&current_owned,receipt,committed.companion(),
                     committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?
             };
-            // Kill recording's only await comes before the window gives up the attempt, so a
-            // cancellation here still parks it and the resolver installs and records again.
-            let mut attack=owner.states.attack.lock().await;
+            // A busy attack owner defers before the window gives up the attempt.
+            // The resolver can install and record from the same receipt.
+            let mut attack=owner.states.attack.try_lock().map_err(|_| DurabilityError::Unavailable)?;
             // Prepare hit metadata before the physical install; this last fallible span
             // still borrows the retained original attempt, including the exact Rune use.
             let (attempt,batch)={

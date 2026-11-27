@@ -152,7 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ).await.map_err(|_| refuse())?;
                     let read = plan.read(&mut tx, &authority).await.ok_or_else(refuse)?;
                     {
-                        let mut runtime = owner.runtime.lock().await;
+                        let mut runtime = owner.runtime.try_lock().map_err(|_| refuse())?;
                         let mut states = owner.states.spell_states.try_lock().map_err(|_| refuse())?;
                         let objects = owner.door.try_lock().map_err(|_| refuse())?;
                         if runtime.next_source_creature_death().map_err(|_| refuse())?.as_ref() != notice.as_ref()

@@ -342,7 +342,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let read = map_plan.read(&mut tx, &authority).await
                         .ok_or(crate::durability::DurabilityError::Unavailable)?;
                     {
-                        let mut runtime = owner.runtime.lock().await;
+                        let mut runtime = owner.runtime.try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                         let mut states = owner.states.spell_states.try_lock()
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                         let objects = owner.door.try_lock()
