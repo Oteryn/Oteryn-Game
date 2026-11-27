@@ -1224,11 +1224,18 @@ mod e2ef1 {
         let reference = provisioning::item_reference(&index, 3003)?;
         let rope = client.inventory().and_then(|i| i.entries.iter().find(|entry| entry.item_definition_ref == reference)).copied().ok_or("FAIL: ordinarily acquired rope content:oteryn:item.tibia.i3003 absent; starter_grant.rs grants only a backpack; fixture provisioning forbidden for full evidence")?;
         checks.pass("carried-rope", rope);
+        // The eastern Global rope spot has a walking route to Thais from every
+        // upstairs landing. The western spot's south landing exits via a choke point.
+        let rope_spot = TilePos {
+            x: 32306,
+            y: 32345,
+            floor: -8,
+        };
         let object = approach(
             client,
             world,
             objects,
-            |o| o.kind == ObjectKind::Rope,
+            |o| o.kind == ObjectKind::Rope && o.at == rope_spot,
             1,
             |_, o| {
                 DIRS.into_iter().any(|direction| {
