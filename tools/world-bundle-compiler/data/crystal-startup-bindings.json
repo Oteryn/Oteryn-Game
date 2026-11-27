@@ -94,7 +94,7 @@
     {"category": "key", "position": [32658, 31645, 9], "item": 6194, "attribute": "action", "value": 3033, "source_line": 227, "source_path": "data-global/startup/tables/door_key.lua"},
     {"category": "key", "position": [32450, 32044, 8], "item": 6248, "attribute": "action", "value": 3142, "source_line": 202, "source_path": "data-global/startup/tables/door_key.lua"},
     {"category": "key", "position": [32393, 32136, 14], "item": 6251, "attribute": "action", "value": 3620, "source_line": 86, "source_path": "data-global/startup/tables/door_key.lua"},
-    {"category": "key", "position": [32620, 32199, 10], "item": 6251, "attribute": "action", "value": 3303, "source_line": 50, "source_path": "tools/content-schema/world-authoring/samples/quest-chest-bindings/outlaw-camp.json"},
+    {"category": "key", "position": [32620, 32199, 10], "item": 6251, "attribute": "action", "value": 3304, "source_line": 218, "source_path": "data-global/startup/tables/door_key.lua"},
     {"category": "key", "position": [33363, 31360, 3], "item": 6251, "attribute": "action", "value": 808, "source_line": 177, "source_path": "data-global/startup/tables/door_key.lua"},
     {"category": "key", "position": [33908, 31107, 9], "item": 6251, "attribute": "action", "value": 26001, "source_line": 242, "source_path": "data-global/startup/tables/door_key.lua"},
     {"category": "key", "position": [33934, 31097, 9], "item": 6251, "attribute": "action", "value": 26001, "source_line": 242, "source_path": "data-global/startup/tables/door_key.lua"},
