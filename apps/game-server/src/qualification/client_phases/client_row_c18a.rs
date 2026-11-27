@@ -3,6 +3,7 @@
 //! `crates/client-runtime/src/features/local-spell-action-bar/protocol.rs::run_cast`.
 
 use super::*;
+use crate::qualification_wild_spawn::{C18A_RAT_FIXTURE, C18A_RAT_POSITION};
 use oteryn_dev_client::client_runtime::combat::{CombatCommand, CombatReport, run_combat};
 use oteryn_dev_client::client_runtime::spell::SpellFeedback;
 use oteryn_dev_client::{EntityDetail, SessionEvent};
@@ -21,9 +22,9 @@ const CAST_TILE: TilePos = TilePos {
     floor: -7,
 };
 const RAT_TILE: TilePos = TilePos {
-    x: 32491,
-    y: 32169,
-    floor: -7,
+    x: C18A_RAT_POSITION.x as u16,
+    y: C18A_RAT_POSITION.y as u16,
+    floor: C18A_RAT_POSITION.floor as i8,
 };
 const WORDS: &str = "exevo infir flam hur";
 
@@ -188,37 +189,39 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .session_mut()
         .gated_snapshot(world_clock::STATE_DOMAIN_WORLD_CLOCK)
         .map(|snapshot| (snapshot.revision, snapshot.payload.clone()));
-    walk_once(
+    let path = fixed_cast_route(&client, world, &spawn_cells, CAST_TILE)?;
+    let (&last_step, approach) = path
+        .split_last()
+        .ok_or("C18a cast route has no final step")?;
+    let approach_goal = approach
+        .iter()
+        .try_fold(TOWN, |at, &step| destination(world, at, step))
+        .ok_or("C18a cast approach has an invalid landing")?;
+    walk_path(
         &mut client,
         world,
-        &spawn_cells,
+        approach,
+        approach_goal,
+        None,
+        clock_before.as_mut(),
+    )
+    .await?;
+    let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
+    walk_path(
+        &mut client,
+        world,
+        &[last_step],
         CAST_TILE,
+        None,
         clock_before.as_mut(),
     )
     .await?;
     let here = client.world_spatial().actor_position;
-    let rat = {
-        let mut rats = client
-            .world_entities()
-            .ok_or("C18a capture has no entity projection")?
-            .iter()
-            .filter(|entry| {
-                entry.kind == oteryn_dev_client::EntityKind::Creature
-                    && tile(entry.position).ok() == Some(RAT_TILE)
-                    && entry.display_name.is_some_and(|name| {
-                        name.as_str()
-                            .is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
-                    })
-            });
-        let rat = *rats
-            .next()
-            .ok_or("C18a capture has no Rat at the fixed two-tile distance")?;
-        if rats.next().is_some() {
-            return Err("C18a capture has multiple Rats at the fixed target tile".into());
-        }
-        rat
-    };
-    let target = rat.entity;
+    let rat = *client
+        .world_entities()
+        .and_then(|view| view.get(&target))
+        .filter(|entity| tile(entity.position).ok() == Some(RAT_TILE))
+        .ok_or("C18a_exact_rat_left_fixed_tile_before_cast")?;
     let initial_combat = *client
         .session_mut()
         .combat_state()
@@ -381,6 +384,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             break (sequence, remaining, damage_sequence, value);
         }
         if tokio::time::Instant::now() >= deadline {
+            log_damage_diagnostic(&mut client, target, result_server_sequence, damage).await;
             return Err(format!(
                 "C18a missing correlated Scorch damage: command={} reply_sequence={} target={target:?} before={health_before} health={health:?} damage={damage:?}",
                 command_id, result_server_sequence
@@ -707,6 +711,102 @@ async fn received_cast_payload(
     Err("C18a original cast reply absent from inbound capture".into())
 }
 
+#[derive(Debug)]
+enum RatPlacementRefusal {
+    Fixture(String),
+    InvalidReceipt,
+    ProjectionDeadline,
+}
+
+impl std::fmt::Display for RatPlacementRefusal {
+    fn fmt(&self, format: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Fixture(reason) => {
+                write!(format, "C18a_exact_rat_placement_refused reason={reason}")
+            }
+            Self::InvalidReceipt => format.write_str("C18a_exact_rat_placement_invalid_receipt"),
+            Self::ProjectionDeadline => {
+                format.write_str("C18a_exact_rat_placement_projection_deadline")
+            }
+        }
+    }
+}
+
+impl std::error::Error for RatPlacementRefusal {}
+
+async fn place_exact_rat(
+    client: &mut oteryn_dev_client::DevClientSession,
+    mut clock: Option<&mut (u64, Vec<u8>)>,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let receipt = request_spawn(session, C18A_RAT_FIXTURE.into())
+        .await
+        .map_err(RatPlacementRefusal::Fixture)?;
+    let target = parse_spawned_entity(&receipt).map_err(|_| RatPlacementRefusal::InvalidReceipt)?;
+    let fields = oteryn_protocol_oteryn::world_spatial_entities::EntityFields::selected(
+        client.selected_capabilities(),
+    );
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    loop {
+        let at_fixed_tile = client
+            .world_entities()
+            .and_then(|view| view.get(&target))
+            .is_some_and(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Creature
+                    && tile(entity.position).ok() == Some(RAT_TILE)
+                    && entity.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
+                    })
+            });
+        if at_fixed_tile {
+            use oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_sidecar;
+            let frame = client
+                .session_mut()
+                .raw_world_entity_deltas()
+                .iter()
+                .rev()
+                .find(|frame| {
+                    decode_world_spatial_entities_delta_with_sidecar(&frame.payload, fields)
+                        .is_ok_and(|(delta, _, _)| {
+                            delta.enter.iter().chain(&delta.update).any(|entity| {
+                                entity.entity == target
+                                    && tile(entity.position).ok() == Some(RAT_TILE)
+                            })
+                        })
+                });
+            if let Some(frame) = frame {
+                evidence(&format!(
+                    "SEAM_EVIDENCE c18a_rat_placement target={target:?} frame_sequence={}",
+                    frame.server_sequence
+                ));
+                return Ok(target);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(RatPlacementRefusal::ProjectionDeadline.into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+        collect_events(client, None, clock.as_deref_mut())?;
+    }
+}
+
+fn fixed_cast_route(
+    client: &oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawn_cells: &std::collections::BTreeSet<TilePos>,
+    goal: TilePos,
+) -> TestResult<Vec<StepDirection>> {
+    let start = tile(client.world_spatial().actor_position)?;
+    route_avoiding(
+        world,
+        start,
+        |at| at == goal,
+        |at| !spawn_cells.contains(&at),
+    )
+    .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}").into())
+}
+
 async fn walk_once(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -714,15 +814,7 @@ async fn walk_once(
     goal: TilePos,
     clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
-    let start = tile(client.world_spatial().actor_position)?;
-    // Plan once from the pinned map. Spawn cells are occupied by design.
-    let path = route_avoiding(
-        world,
-        start,
-        |at| at == goal,
-        |at| !spawn_cells.contains(&at),
-    )
-    .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}"))?;
+    let path = fixed_cast_route(client, world, spawn_cells, goal)?;
     walk_path(client, world, &path, goal, None, clock).await
 }
 
@@ -789,6 +881,53 @@ async fn sent_cast_payload(mut outbound: &[u8], command_id: u64) -> TestResult<V
         }
     }
     intent.ok_or_else(|| "C18a original outbound cast intent absent".into())
+}
+
+async fn log_damage_diagnostic(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: oteryn_dev_client::EntityRef,
+    after_sequence: u64,
+    damage: Option<(u64, u64)>,
+) {
+    use oteryn_protocol_oteryn::world_spatial_entities as wire;
+    let fields = wire::EntityFields::selected(client.selected_capabilities());
+    for frame in client.session_mut().raw_world_entity_deltas() {
+        if frame.server_sequence <= after_sequence {
+            continue;
+        }
+        let decoded =
+            wire::decode_world_spatial_entities_delta_with_sidecar(&frame.payload, fields);
+        let detail = decoded.as_ref().ok().and_then(|(delta, _, _)| {
+            delta
+                .enter
+                .iter()
+                .chain(&delta.update)
+                .find(|entity| entity.entity == target)
+        });
+        evidence(&format!(
+            "SEAM_EVIDENCE c18a_health_frame sequence={} target={detail:?} decoded={}",
+            frame.server_sequence,
+            decoded.is_ok()
+        ));
+    }
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let identity: String = target
+        .identity
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let authority = tokio::time::timeout(
+        Duration::from_secs(2),
+        request_fixture_control(
+            session,
+            "--inspect-damage",
+            format!("{identity} {}", target.generation),
+        ),
+    )
+    .await;
+    evidence(&format!(
+        "SEAM_EVIDENCE c18a_damage_diagnostic presentation={damage:?} server={authority:?}"
+    ));
 }
 
 async fn received_damage_payload(mut inbound: &[u8], sequence: u64) -> TestResult<Vec<u8>> {
