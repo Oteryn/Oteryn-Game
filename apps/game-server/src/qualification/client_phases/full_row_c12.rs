@@ -26,9 +26,33 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
     reason: "C12 requires a roll large enough that the authored eight percent changes integer damage.",
 };
 const ITEM_ID: u32 = 50_271;
+const ADVENTURERS_STONE: u32 = 16_277;
+const GREATER_PROFICIENCY_CATALYST: u32 = 51_589;
+const THAIS: u32 = 8;
+const STONE_ARRIVAL: TilePos = TilePos {
+    x: 32210,
+    y: 32300,
+    floor: -6,
+};
+// Action 4253 on the eastern Guild exit and the tile immediately south of it.
+const GUILD_EXIT_STEP: TilePos = TilePos {
+    x: 32210,
+    y: 32293,
+    floor: -6,
+};
+const GUILD_EAST_EXIT: TilePos = TilePos {
+    x: 32210,
+    y: 32292,
+    floor: -6,
+};
+const GUILD_WEST_EXIT: TilePos = TilePos {
+    x: 32209,
+    y: 32292,
+    floor: -6,
+};
 const AUGMENT_BPS: u64 = 800;
 const PEMA_PRICE: u64 = 20_000;
-const PREREQUISITES: &str = "level-80-monk,premium,purchase-gold,mana-potions,magma-crystal";
+const PREREQUISITES: &str = "level-80-monk,premium,purchase-gold,mana-potions,magma-crystal,adventurers-stone,greater-proficiency-catalyst";
 const FIXTURE_TARGET: &str = "oteryn:creature.magma_crystal";
 const CRYSTAL_COIN: u32 = 3043;
 const CRYSTAL_COIN_VALUE: u64 = 10_000;
@@ -1085,6 +1109,225 @@ async fn use_blue_valley_portal(
     Ok(())
 }
 
+fn thais_temple(world: &BundleWorld) -> TestResult<TilePos> {
+    let temple = world
+        .base()
+        .subareas
+        .town(THAIS)
+        .and_then(|area| area.temple)
+        .ok_or("C12 authored Thais temple absent")?;
+    Ok(TilePos {
+        x: temple.x,
+        y: temple.y,
+        floor: temple.floor,
+    })
+}
+
+async fn stone_origin(clients: &SeamClients<'_>) -> TestResult<Option<i64>> {
+    use sqlx::Connection;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    Ok(sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks
+          WHERE character_id=encode($1,'hex')::uuid
+            AND track_key='oteryn:quest-progress/storage/52130'
+            AND quest_key='oteryn:quest.adventurers_guild.stone'",
+    )
+    .bind(clients.characters[1].as_slice())
+    .fetch_optional(&mut db)
+    .await?)
+}
+
+async fn enter_guild(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    clients: &SeamClients<'_>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let temple = thais_temple(world)?;
+    if world
+        .base()
+        .tile(STONE_ARRIVAL.x, STONE_ARRIVAL.y, STONE_ARRIVAL.floor)
+        .is_none_or(|cell| !cell.walkable())
+    {
+        return Err("C12 authored Stone arrival is missing or unwalkable".into());
+    }
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == temple
+    })
+    .ok_or("C12 cannot walk to the authored Thais temple")?;
+    walk_exact_route(client, world, &path).await?;
+    if world
+        .base()
+        .tile(temple.x, temple.y, temple.floor)
+        .is_none_or(|cell| !cell.protection_zone())
+        || tile(client.world_spatial().actor_position)? != temple
+        || stone_origin(clients).await?.is_some()
+    {
+        return Err("C12 Stone requires the Thais temple and no remembered origin".into());
+    }
+    let definition = provisioning::item_reference(&provisioning::item_index()?, ADVENTURERS_STONE)?;
+    let handle = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == definition)
+        })
+        .ok_or("C12 carried Stone absent")?
+        .handle;
+    if carried_count(client, definition) != 1 {
+        return Err("C12 requires exactly one carried Stone".into());
+    }
+    let used = client.use_item(handle).await?;
+    require_mechanic_acceptance(used.status, "C12 Adventurer's Stone USE")?;
+    let landed = tile(client.world_spatial().actor_position)?;
+    let origin = stone_origin(clients).await?;
+    if used.disposition != UseDisposition::Committed
+        || landed != STONE_ARRIVAL
+        || origin != Some(i64::from(THAIS))
+        || carried_count(client, definition) != 1
+    {
+        return Err(format!("C12 Stone USE expected {STONE_ARRIVAL:?} and recorded Thais, got {used:?} at {landed:?} origin={origin:?}").into());
+    }
+    evidence(&format!(
+        "C12_STONE temple={temple:?} landing={landed:?} origin={THAIS}"
+    ));
+    Ok(())
+}
+
+async fn leave_guild(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    clients: &SeamClients<'_>,
+) -> TestResult {
+    let origin = stone_origin(clients).await?;
+    if origin != Some(i64::from(THAIS)) {
+        return Err(format!("C12 Guild exit expected recorded Thais, got {origin:?}").into());
+    }
+    let path = route_avoiding(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        |at| at == GUILD_EXIT_STEP,
+        |at| at != GUILD_EAST_EXIT && at != GUILD_WEST_EXIT,
+    )
+    .ok_or("C12 cannot walk to the eastern Adventurers' Guild exit")?;
+    walk_exact_route(client, world, &path).await?;
+    let step = client.step(StepDirection::North).await?;
+    require_mechanic_acceptance(step.status, "C12 Guild exit STEP")?;
+    let landing = tile(client.world_spatial().actor_position)?;
+    let temple = thais_temple(world)?;
+    let consumed = stone_origin(clients).await?;
+    if step.disposition != StepDisposition::Moved
+        || step.world_spatial_delta.is_none()
+        || landing != temple
+        || consumed != Some(-1)
+    {
+        return Err(format!("C12 Guild exit expected {temple:?} and consumed origin, got {step:?} at {landing:?} origin={consumed:?}").into());
+    }
+    evidence(&format!(
+        "C12_GUILD_EXIT source={GUILD_EAST_EXIT:?} landing={landing:?} consumed_origin={THAIS}"
+    ));
+    client
+        .session_mut()
+        .service_liveness_discarding_events(Duration::from_millis(u64::from(step.step_wait_ms)))
+        .await?;
+    Ok(())
+}
+
+async fn fists_proficiency(
+    clients: &SeamClients<'_>,
+) -> TestResult<Option<(i64, Vec<Option<i16>>)>> {
+    use sqlx::Connection;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    Ok(sqlx::query_as(
+        "SELECT progress, selections FROM game_character_proficiency
+          WHERE character_id=encode($1,'hex')::uuid AND item_key='oteryn:item.tibia.i50271'",
+    )
+    .bind(clients.characters[1].as_slice())
+    .fetch_optional(&mut db)
+    .await?)
+}
+
+async fn select_fists_damage_perks(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    weapon: NonZeroU32,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{weapon_proficiency as perks, world_object as wire};
+    let catalyst =
+        provisioning::item_reference(&provisioning::item_index()?, GREATER_PROFICIENCY_CATALYST)?;
+    if carried_count(client, catalyst) != 1 || fists_proficiency(clients).await?.is_some() {
+        return Err("C12 requires one catalyst and a fresh Fists proficiency track".into());
+    }
+    let inventory = client
+        .inventory()
+        .ok_or("C12 proficiency inventory absent")?;
+    let handle = |definition| {
+        inventory
+            .entries
+            .iter()
+            .find(|entry| entry.item_definition_ref == definition)
+            .map(|entry| entry.handle)
+            .ok_or("C12 exact proficiency item handle missing")
+    };
+    let intent = wire::encode_item_use_intent(&wire::UseIntent {
+        target: wire::UseTarget::Item(handle(catalyst)?),
+        use_with: None,
+        use_with_map_item: Some(wire::MapUseTarget::Item(handle(weapon)?)),
+        use_with_position: None,
+    })
+    .map_err(|error| format!("C12 catalyst USE encode: {error:?}"))?;
+    let reply = client.session_mut().world_context_use(&intent).await?;
+    require_mechanic_acceptance(reply.status, "C12 Greater Proficiency Catalyst USE")?;
+    let (disposition, _) = wire::decode_use_result_with_gate(&reply.payload)
+        .map_err(|error| format!("C12 catalyst USE decode: {error:?}"))?;
+    if disposition != wire::UseDisposition::Committed {
+        return Err(format!("C12 catalyst USE: {disposition:?}").into());
+    }
+    wait_inventory(
+        client,
+        "Greater Proficiency Catalyst consumption",
+        |client| carried_count(client, catalyst) == 0,
+    )
+    .await?;
+    let mut selected: [Option<u8>; 4] = [None; 4];
+    let progress = 100_000;
+    if fists_proficiency(clients).await?
+        != Some((progress, selected.map(|perk| perk.map(i16::from)).to_vec()))
+    {
+        return Err("C12 catalyst did not unlock exactly 100000 XP without selections".into());
+    }
+    for level in [0_u8, 2] {
+        let request = perks::SelectPerkRequest {
+            definition: weapon,
+            level,
+            perk: Some(0),
+        };
+        let reply = client
+            .session_mut()
+            .gated_command(
+                perks::CAPABILITY_WEAPON_PROFICIENCY_V1,
+                perks::COMMAND_TYPE_PROFICIENCY_SELECT_PERK,
+                &request.encode(),
+            )
+            .await?;
+        require_mechanic_acceptance(reply.status, "C12 select Fists damage perk")?;
+        let reply = perks::SelectPerkReply::decode(&reply.payload)
+            .ok_or("C12 malformed Select Perk result")?;
+        selected[usize::from(level)] = Some(0);
+        if reply.result != perks::SelectPerkResult::Accepted
+            || reply.selections != selected
+            || fists_proficiency(clients).await?
+                != Some((progress, selected.map(|perk| perk.map(i16::from)).to_vec()))
+        {
+            return Err(format!("C12 Fists perk {} did not commit: {reply:?}", level + 1).into());
+        }
+    }
+    evidence("C12_PROFICIENCY xp=100000 selected_levels=1,3");
+    Ok(())
+}
+
 async fn acquire_pema(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -1683,10 +1926,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     character_prep::grant_premium(&client).await?;
     eprintln!("FIXTURE C12 Premium grant applied once for the dedicated Monk");
     character_prep::grant_item(&client, MANA_POTION, 12).await?;
+    character_prep::grant_item(&client, ADVENTURERS_STONE, 1).await?;
+    eprintln!("FIXTURE C12 Adventurer's Stone 16277 granted once");
+    character_prep::grant_item(&client, GREATER_PROFICIENCY_CATALYST, 1).await?;
+    eprintln!("FIXTURE C12 Greater Proficiency Catalyst 51589 granted once");
     let coins = pema_planned_price()?.div_ceil(CRYSTAL_COIN_VALUE);
     character_prep::grant_item(&client, CRYSTAL_COIN, u32::try_from(coins)?).await?;
     client = fresh_c12_admission(client, clients).await?;
     verify_seeded_monk(&mut client).await?;
+    enter_guild(&mut client, world, clients).await?;
     let purchase_balance =
         acquire_pema(&mut client, world, &metadata.npcs, definition, portals).await?;
     let acquired = carried_count(&client, definition);
@@ -1696,6 +1944,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    leave_guild(&mut client, world, clients).await?;
+    select_fists_damage_perks(&mut client, clients, definition).await?;
     row.pass("acquire-50271", (acquired, purchase_balance));
 
     require_current_premium(client.session_mut()).await?;
@@ -1759,6 +2009,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     drop(client);
     let durable_mana = saved_mana(clients).await?;
     let mut fresh = connect_c12_character(clients).await?;
+    let expected_perks = vec![Some(0), None, Some(0), None];
+    if fists_proficiency(clients).await? != Some((100_000, expected_perks)) {
+        return Err("C12 selected damage perks did not survive relog".into());
+    }
     let fresh_vitals = fresh.actor_vitals().ok_or("C12 post-relog vitals absent")?;
     if !mana_survived(
         pre_logout_mana,

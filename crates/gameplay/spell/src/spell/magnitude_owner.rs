@@ -1321,11 +1321,10 @@ impl PreparedMagnitudeOwner {
         }
         #[cfg(feature = "qualification-cast-evidence")]
         if element != Element::Healing
-            && self
-                .selected_spell
-                .as_deref()
-                .is_some_and(|spell| spell.eq_ignore_ascii_case("greater tiger clash")
-                    || spell.eq_ignore_ascii_case("swift jab"))
+            && self.selected_spell.as_deref().is_some_and(|spell| {
+                spell.eq_ignore_ascii_case("greater tiger clash")
+                    || spell.eq_ignore_ascii_case("swift jab")
+            })
             && self.base_damage_evidence.len() < MAX_EFFECTS
         {
             self.base_damage_evidence.push((

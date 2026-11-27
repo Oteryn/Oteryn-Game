@@ -979,7 +979,9 @@ impl PreparedNativeCombatCast {
                 Some((effect.target, effect.health?.committed_health_loss()?))
             });
             let committed_hits = losses.clone().count();
-            for &(target, before, after, critical, element, augment_bps) in magnitude.base_damage_evidence() {
+            for &(target, before, after, critical, element, augment_bps) in
+                magnitude.base_damage_evidence()
+            {
                 for (_, committed) in losses.clone().filter(|(actor, _)| *actor == target) {
                     let target_id = target
                         .placement_identity()
