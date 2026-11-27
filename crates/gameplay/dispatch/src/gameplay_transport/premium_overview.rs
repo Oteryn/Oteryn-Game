@@ -1,10 +1,14 @@
 //! T165: observe the authenticated actor's existing Premium fence and live gate.
 use super::spell_premium_coordinator::RegisteredSpellAccessOwner;
 use super::{
-    ComposedFreshAdmission, character_info::CharacterInfoReply, connection::AdmittedSession,
+    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission,
+    character_info::CharacterInfoReply, connection::AdmittedSession,
 };
-use crate::durability::premium_fence::EntitlementState;
-use crate::premium::PremiumClass;
+use crate::durability::{
+    DurabilityError, character_authority::CharacterAuthorityError,
+    item_transfer::CurrentCharacterItemFence, premium_fence::EntitlementState,
+};
+use crate::premium::{PremiumClass, refresh::SnapshotWaitFailure};
 use oteryn_protocol_oteryn::premium_overview::{Feature, Overview, State};
 
 pub(super) async fn query(
@@ -24,11 +28,7 @@ async fn observe(
     if !super::battle_instinct_status::actor_is_current(&*owner.runtime.lock().await, admitted) {
         return None;
     }
-    let account = owner
-        .root
-        .premium_overview_account(owner.character, owner.holder, fence)
-        .await
-        .ok()?;
+    let account = current_account(owner, fence).await?;
     let mut result = Overview {
         state: State::Unavailable,
         authority_revision: 0,
@@ -38,14 +38,9 @@ async fn observe(
         features: features(false),
     };
     let snapshot = owner.premium.wait_for_snapshot(account).await;
-    let projection = populate(owner, account, &mut result).await;
+    let projection = populate(owner, account, snapshot, &mut result).await;
     // An ownership/lease takeover during the observation cannot return a predecessor's account.
-    if owner
-        .root
-        .premium_overview_account(owner.character, owner.holder, fence)
-        .await
-        .ok()?
-        != account
+    if current_account(owner, fence).await? != account
         || !super::battle_instinct_status::actor_is_current(&*owner.runtime.lock().await, admitted)
     {
         return None;
@@ -59,6 +54,28 @@ async fn observe(
     }
     Some(result)
 }
+async fn current_account(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: CurrentCharacterItemFence,
+) -> Option<[u8; 16]> {
+    AdmissionRetryBudget::for_command(owner.root)
+        .retry_unavailable(async || {
+            owner
+                .root
+                .premium_overview_account(owner.character, owner.holder, fence)
+                .await
+                .map_err(|error| match error {
+                    CharacterAuthorityError::Unavailable(
+                        DurabilityError::RootUnavailable
+                        | DurabilityError::RootPassDeadlineExceeded,
+                    ) => AdmissionRefusal::Unavailable,
+                    _ => AdmissionRefusal::Rejected,
+                })
+        })
+        .await
+        .ok()
+}
+
 #[derive(Debug)]
 enum OverviewUnavailable {
     CoordinatorUnavailable,
@@ -81,6 +98,7 @@ impl OverviewUnavailable {
 async fn populate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     account: [u8; 16],
+    snapshot: Result<(), SnapshotWaitFailure>,
     result: &mut Overview,
 ) -> Result<(), OverviewUnavailable> {
     use OverviewUnavailable as Unavailable;
@@ -95,7 +113,7 @@ async fn populate(
     else {
         return Err(Unavailable::ClockUnavailable);
     };
-    let record = super::AdmissionRetryBudget::for_command(owner.root)
+    let record = AdmissionRetryBudget::for_command(owner.root)
         .retry_command_guard(async || owner.root.load_premium_fence(account).await)
         .await
         .map_err(|_| Unavailable::FenceUnavailable)?;
@@ -132,7 +150,9 @@ async fn populate(
                 .map_err(|_| Unavailable::ClockUnavailable)?;
             } else {
                 let class = consumer.class(account, Some(now));
-                if class != PremiumClass::StaleWithinBound {
+                if class != PremiumClass::StaleWithinBound
+                    || matches!(snapshot, Err(SnapshotWaitFailure::AuthorityUnavailable))
+                {
                     return Err(Unavailable::Consumer(class));
                 }
                 // Keep historical expiry visible while its feature lease is closed.

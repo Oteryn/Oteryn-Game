@@ -300,6 +300,7 @@ fn cold_overview() -> TestResult {
         assert!(paid.valid_for_us > 0);
         assert!(paid.features.iter().all(|feature| feature.enabled));
         assert_eq!(producer.requests().len(), 1);
+        eprintln!("POSTGRES_EXECUTED first_overview_uses_active_snapshot_after_fresh_admission");
         h.pool.close().await;
         Ok(())
     })
