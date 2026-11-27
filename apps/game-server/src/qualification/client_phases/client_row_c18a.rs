@@ -115,7 +115,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     .connect(clients, 0xca, 0)
     .await?;
     let settled = client.actor_vitals().ok_or("C18a seeded vitals absent")?;
-    if (settled.max_health, settled.max_mana, settled.soul) != (220, 475, 100) {
+    if (settled.max_health, settled.max_mana, settled.soul) != (220, 300, 100) {
         return Err(format!("C18a expected level-15 Sorcerer stats: {settled:?}").into());
     }
     character_prep::grant_item(&client, 3147, 1).await?;
