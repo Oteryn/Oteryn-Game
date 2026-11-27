@@ -545,6 +545,48 @@ pub fn decode_quick_loot_view_request(
     Ok(result)
 }
 
+/// Payload of a Rejected Quick Loot command (114, 6376 or 6377).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum QuickLootRefusal {
+    Stale = 1,
+    NoBackpack = 2,
+    NoRoom = 3,
+    Blocked = 4,
+    NotSupported = 5,
+    Overweight = 6,
+    WeightUnknown = 7,
+    Rejected = 8,
+    Busy = 9,
+    Unavailable = 10,
+    InvalidRequest = 11,
+    PremiumRequired = 12,
+}
+
+pub fn encode_quick_loot_refusal(reason: QuickLootRefusal) -> Vec<u8> {
+    // Field 1 is a one-byte varint, as all reason codes are below 128.
+    vec![0x08, reason as u8]
+}
+
+pub fn decode_quick_loot_refusal(payload: &[u8]) -> WireResult<QuickLootRefusal> {
+    use QuickLootRefusal as Reason;
+    match payload {
+        [0x08, 1] => Ok(Reason::Stale),
+        [0x08, 2] => Ok(Reason::NoBackpack),
+        [0x08, 3] => Ok(Reason::NoRoom),
+        [0x08, 4] => Ok(Reason::Blocked),
+        [0x08, 5] => Ok(Reason::NotSupported),
+        [0x08, 6] => Ok(Reason::Overweight),
+        [0x08, 7] => Ok(Reason::WeightUnknown),
+        [0x08, 8] => Ok(Reason::Rejected),
+        [0x08, 9] => Ok(Reason::Busy),
+        [0x08, 10] => Ok(Reason::Unavailable),
+        [0x08, 11] => Ok(Reason::InvalidRequest),
+        [0x08, 12] => Ok(Reason::PremiumRequired),
+        _ => malformed(),
+    }
+}
+
 pub fn encode_quick_loot_result(result: &QuickLootResult) -> WireResult<Vec<u8>> {
     if result.items.len() > MAX_QUICK_LOOT_RESULTS {
         return Err(QuickLootWireError::LimitExceeded);

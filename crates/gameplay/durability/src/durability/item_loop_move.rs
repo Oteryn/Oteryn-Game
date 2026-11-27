@@ -101,7 +101,7 @@ const KIND_INBOX: i16 = 6;
 const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
-pub use quick_loot::{QuickLootCommand, QuickLootInput, is_loot_coin};
+pub use quick_loot::{QuickLootCommand, QuickLootCommitRefusal, QuickLootInput, is_loot_coin};
 pub(super) use quick_loot::pouch_weight;
 #[path = "depot_move.rs"]
 mod depot_move;
