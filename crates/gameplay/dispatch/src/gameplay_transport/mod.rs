@@ -1550,6 +1550,13 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// Leave time for the acquired pass to finish within one liveness interval.
+    fn holder_wait_window() -> Duration {
+        connection::IDLE_LIVENESS
+            .interval
+            .saturating_sub(crate::durability::DB_PASS_DEADLINE)
+    }
+
     /// [`Self::new`] whose retries wait for `root`'s holder instead of sleeping blind
     /// (NODEBOOT-1).
     fn for_root(game_session_id: &GameSessionId, root: &'r DurabilityRoot) -> Self {
@@ -1685,6 +1692,47 @@ impl<'r> AdmissionRetryBudget<'r> {
                 result => return result,
             }
         }
+    }
+
+    /// Retry a known checkout miss with the identity of the competing holder.
+    async fn retry_logged_holder<T, E>(
+        &self,
+        purpose: &'static str,
+        mut step: impl AsyncFnMut() -> Result<T, E>,
+        busy: impl Fn(&E) -> bool,
+    ) -> Result<T, E> {
+        let mut wait = None;
+        let result = self
+            .retry_holder(
+                async || {
+                    let result = step().await;
+                    if result.as_ref().is_err_and(&busy) && wait.is_none() {
+                        wait = Some((
+                            tokio::time::Instant::now(),
+                            self.root
+                                .and_then(DurabilityRoot::checked_out_semantic_pass),
+                        ));
+                    }
+                    result
+                },
+                &busy,
+            )
+            .await;
+        if let Some((started, observed)) = wait {
+            let (owner, held_ms) = observed.map_or(("none".to_owned(), 0), |(site, held)| {
+                (site.to_string(), held.as_millis())
+            });
+            let waited_ms = started.elapsed().as_millis();
+            let outcome = if result.as_ref().is_err_and(&busy) {
+                "holder_busy"
+            } else {
+                "retry_finished"
+            };
+            operator_event(&format!(
+                "event=session_holder_wait purpose={purpose} owner={owner} held_ms={held_ms} waited_ms={waited_ms} outcome={outcome}"
+            ));
+        }
+        result
     }
 
     /// Retry only transient pre-dispatch holder failures, retaining the exact

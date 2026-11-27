@@ -1983,6 +1983,14 @@ impl DurabilityRoot {
             .ok_or(DurabilityError::RootUnavailable)
     }
 
+    /// Diagnostic call site and elapsed time for a competing checked-out semantic pass.
+    pub fn checked_out_semantic_pass(&self) -> Option<(&'static std::panic::Location<'static>, Duration)> {
+        self.holder_owner
+            .lock()
+            .ok()
+            .and_then(|owner| owner.map(|(caller, issued, _)| (caller, issued.elapsed())))
+    }
+
     #[track_caller]
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
@@ -2307,6 +2315,20 @@ pub async fn commit_semantic_transaction(
     deadline: Instant,
 ) -> Result<(), DurabilityError> {
     commit_semantic_transaction_by(deadline, || transaction.commit()).await
+}
+
+/// Finish a read that did not mutate durable state. A lost COMMIT acknowledgement
+/// can be retried because the transaction only observed state.
+pub(super) async fn commit_semantic_read(
+    transaction: Transaction<'_, Postgres>,
+    deadline: Instant,
+) -> Result<(), DurabilityError> {
+    match commit_semantic_transaction(transaction, deadline).await {
+        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::CommitTransactionTimeout) => {
+            Err(DurabilityError::RootUnavailable)
+        }
+        result => result,
+    }
 }
 
 async fn commit_semantic_transaction_by<F, Fut>(

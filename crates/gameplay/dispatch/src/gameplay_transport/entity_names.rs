@@ -38,10 +38,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (mut channel, sources) = Box::pin(self.named_entity_sources(observer, forecasts))
             .await
             .ok_or(AdmissionRefusal::Rejected)?;
-        // Durable reads run after dropping the runtime guard. Exhausting this shared budget is
-        // contention during periodic observation, even when the cached name is still absent.
-        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
-            .map_err(|_| AdmissionRefusal::Rejected)?;
+        // Resolve missing names outside the runtime guard using one budget for the interest set.
+        let retry = super::AdmissionRetryBudget::for_command(self.root);
         for (entity, source) in sources {
             let name = match source {
                 Source::Name(name) => name,
@@ -49,9 +47,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let name = match self.states.chat.speaker_name(session) {
                         Some(name) => name,
                         None => {
-                            Box::pin(self.chat_speaker_name_with_budget(session, &retry))
-                                .await?
-                                .0
+                            match Box::pin(self.chat_speaker_name_with_budget(session, &retry))
+                                .await
+                            {
+                                Ok((name, _, _)) => name,
+                                // The negotiated wire format requires a label for spatial
+                                // actors. This placeholder never enters the chat roster.
+                                Err(_) => "Unknown".to_owned(),
+                            }
                         }
                     };
                     EntityDisplayName::new(&name).map_err(|_| AdmissionRefusal::Rejected)?
