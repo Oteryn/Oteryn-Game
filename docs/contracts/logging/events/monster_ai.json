@@ -9,6 +9,22 @@
       "fields": ["units", "budget", "count"],
       "codes": [],
       "note": "Power-of-two sample of counted AI evaluation budget refusals."
+    },
+    {
+      "event": "melee_drain",
+      "level": "debug",
+      "span": false,
+      "fields": ["monster", "outcome", "reason"],
+      "codes": [],
+      "note": "Outcome of a creature's melee attempt or a visible creature's skipped permit turn."
+    },
+    {
+      "event": "target_decision",
+      "level": "debug",
+      "span": false,
+      "fields": ["monster", "target", "reason"],
+      "codes": [],
+      "note": "Creature identity, scope-local target slot and generation or none, and the reason for the think decision."
     }
   ]
 }

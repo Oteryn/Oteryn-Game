@@ -1235,6 +1235,16 @@ pub(super) fn qualified_protection_zone(
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,
 ) -> Option<bool> {
+    let position = runtime.borrow_movement_position().read(actor).ok()?;
+    qualified_protection_zone_at(runtime, cells, position)
+}
+
+/// The pinned zone flag at a position read under this runtime owner's guard.
+pub(super) fn qualified_protection_zone_at(
+    runtime: &ChannelRuntimeV1,
+    cells: &crate::content::NativeEntryMovementCells,
+    position: crate::foundation::MovementPositionSnapshot,
+) -> Option<bool> {
     let scope = cells.scope();
     if scope.world_id != runtime.binding().world_id()
         || scope.world_id != runtime.content_pin().world_id()
@@ -1242,7 +1252,6 @@ pub(super) fn qualified_protection_zone(
     {
         return None;
     }
-    let position = runtime.borrow_movement_position().read(actor).ok()?;
     if position.context() != runtime.pinned_movement_context() {
         return None;
     }
