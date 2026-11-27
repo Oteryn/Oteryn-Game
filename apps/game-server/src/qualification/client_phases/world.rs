@@ -1069,7 +1069,8 @@ pub(super) async fn journeys(
     let groups = verdict::Groups::from_env()?;
     // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
-    let entered_at = tile(client.world_spatial().actor_position)?;
+    let town_position = client.world_spatial().actor_position;
+    let entered_at = tile(town_position)?;
     evidence(&format!(
         "world_fixture role=core phase=first_entry position={entered_at:?}"
     ));
@@ -3244,7 +3245,7 @@ pub(super) async fn journeys(
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
     }
-    reset_core_fixture_position(clients).await?;
+    reset_core_fixture_position(clients, town_position).await?;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -3436,7 +3437,10 @@ async fn connect_world(
 
 /// The movement journey uses this same fixture. Its last save is incidental to
 /// the inventory rows, which always start at the configured town entrance.
-async fn reset_core_fixture_position(clients: &SeamClients<'_>) -> TestResult {
+async fn reset_core_fixture_position(
+    clients: &SeamClients<'_>,
+    town_position: ActorPosition,
+) -> TestResult {
     let index = 1;
     wait_character_released(clients, index).await?;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
@@ -3457,9 +3461,9 @@ async fn reset_core_fixture_position(clients: &SeamClients<'_>) -> TestResult {
     )
     .bind(clients.characters[index].as_slice())
     .bind(clients.world.as_slice())
-    .bind(i32::from(TOWN.x))
-    .bind(i32::from(TOWN.y))
-    .bind(i16::from(TOWN.floor))
+    .bind(town_position.x)
+    .bind(town_position.y)
+    .bind(town_position.floor)
     .fetch_optional(&mut database)
     .await?;
     database.close().await?;
