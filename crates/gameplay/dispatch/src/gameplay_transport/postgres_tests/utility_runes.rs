@@ -116,14 +116,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         Case::Animate | Case::AnimateRat | Case::AnimateBlackSkull | Case::NonCorpse
     );
     let committed = matches!(case, Case::Convince | Case::Animate | Case::AnimateRat);
-    let harness = Harness::create_with_admission_seed(admin, "utility_runes", true, false).await?;
-    prepare_current_session(&harness).await?;
-    let seal = harness.recovery.seal_current().map_err(debug)?;
-    let authority = harness
-        .root
-        .open_character_authority(&seal)
-        .await
-        .map_err(debug)?;
+    let harness =
+        Harness::create_with_admission_seed(admin, "utility_runes", case != Case::AnimateRat, false)
+            .await?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, pin) = production_generation_with_source(
         world,
@@ -134,6 +129,43 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     )?;
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
+    let level = if case == Case::AnimateRat { 27 } else { 50 };
+    if case == Case::AnimateRat {
+        // The native cast reads both the durable progression and live spell state.
+        let progression = native
+            .progression()
+            .ok_or("progression")?
+            .policy_for("profile-1", "ruleset-1", "content-1")
+            .map_err(debug)?;
+        let xp = progression
+            .thresholds
+            .iter()
+            .find(|row| row.level == level)
+            .ok_or("Animate Dead level threshold")?
+            .minimum_experience
+            .get();
+        sqlx::query(
+            "INSERT INTO game_character_progression_state VALUES
+             (encode($1,'hex')::uuid,1,$2,$3,'profile-1','ruleset-1','content-1',$4,$5,$6,$7,$8)",
+        )
+        .bind(id(41).as_slice())
+        .bind(i32::try_from(level)?)
+        .bind(xp)
+        .bind(&progression.context.simulation)
+        .bind(&progression.context.evidence)
+        .bind(&progression.context.declaration)
+        .bind(&progression.policy_revision)
+        .bind(&progression.reward_revision)
+        .execute(&harness.pool)
+        .await?;
+    }
+    prepare_current_session(&harness).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let entry_room = pin.qualified_room();
     let map = crate::map::spell_tiles::tests::movement_arena::world();
     let cells = map
@@ -343,7 +375,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                     actor,
                     session,
                     CharacterCastFacts {
-                        level: if case == Case::AnimateRat { 27 } else { 50 },
+                        level,
                         max_mana: if case == Case::AnimateRat { 642 } else { 2000 },
                         magic_level: u32::from(magic_level),
                         ..crate::gameplay_transport::actor_spell::tests::FACTS

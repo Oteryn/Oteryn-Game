@@ -2,7 +2,8 @@
 use super::TestResult;
 use super::fixture::{Harness, debug, id};
 use super::house_transfer_fixtures::{
-    RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, initialize_transfer_source_for_owner,
+    RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, create_other_house_owner,
+    initialize_transfer_source_for_owner,
     prepare_owned_session, prepare_transfer_scene,
 };
 use crate::foundation::{GameSessionId, MessageType, decode_wire_envelope};
@@ -59,30 +60,17 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
+    let house_owner = if is_owner {
+        id(41)
+    } else {
+        create_other_house_owner(h, &authority, &evidence.evidence).await?
+    };
     let (controller, cells, deps) = prepare_transfer_scene(h).await?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = controller.active();
     owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     // An owned house with no ACL grant for this character exercises the real access read.
-    let house_owner = if is_owner {
-        id(41)
-    } else {
-        sqlx::query(
-            "INSERT INTO game_character_roots (character_id, account_id, world_id, lifecycle,
-              character_revision, profile_revision, ruleset_revision, content_revision,
-              starter_template_revision, name, sex, creation_vocation)
-             SELECT encode($1,'hex')::uuid, account_id, world_id, lifecycle, character_revision,
-               profile_revision, ruleset_revision, content_revision, starter_template_revision,
-               'Other First Entry Owner', sex, creation_vocation
-             FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid",
-        )
-        .bind(id(90).as_slice())
-        .bind(id(41).as_slice())
-        .execute(&h.pool)
-        .await?;
-        id(90)
-    };
     let mut admitted = initialize_transfer_source_for_owner(
         h,
         &owner,

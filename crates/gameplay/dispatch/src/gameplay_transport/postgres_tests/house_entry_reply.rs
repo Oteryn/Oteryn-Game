@@ -2,7 +2,8 @@
 use super::TestResult;
 use super::fixture::{Harness, debug, id};
 use super::house_transfer_fixtures::{
-    RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, initialize_transfer_source_for_owner,
+    RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, create_other_house_owner,
+    initialize_transfer_source_for_owner,
     prepare_owned_session, prepare_transfer_scene,
 };
 use crate::foundation::{GameSessionId, MessageType, decode_wire_envelope};
@@ -47,31 +48,17 @@ fn scenario(admin: String, is_owner: bool) -> TestResult {
 async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
-    let house_owner = if is_owner {
-        id(41)
-    } else {
-        let other = id(90);
-        sqlx::query(
-            "INSERT INTO game_character_roots (character_id, account_id, world_id, lifecycle,
-             character_revision, profile_revision, ruleset_revision, content_revision,
-             starter_template_revision, name, sex, creation_vocation)
-             SELECT encode($1,'hex')::uuid, account_id, world_id, lifecycle, character_revision,
-             profile_revision, ruleset_revision, content_revision, starter_template_revision,
-             'Other House Owner', sex, creation_vocation FROM game_character_roots
-             WHERE character_id=encode($2,'hex')::uuid",
-        )
-        .bind(other.as_slice())
-        .bind(id(41).as_slice())
-        .execute(&h.pool)
-        .await?;
-        other
-    };
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
+    let house_owner = if is_owner {
+        id(41)
+    } else {
+        create_other_house_owner(h, &authority, &evidence.evidence).await?
+    };
     let (controller, cells, deps) = prepare_transfer_scene(h).await?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = controller.active();
