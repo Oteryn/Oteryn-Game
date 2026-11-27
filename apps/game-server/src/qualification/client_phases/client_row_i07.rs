@@ -403,6 +403,45 @@ async fn capture_journey(clients: &SeamClients<'_>) -> TestResult {
     journey(clients, Path::new(&directory), false).await
 }
 
+async fn capture_restore(
+    client: &mut oteryn_dev_client::DevClientSession,
+    directory: &Path,
+    tag: &str,
+) -> TestResult<(u64, u64)> {
+    let session = client.join_snapshot().game_session_id;
+    let restore_request = encode_quick_loot_request(
+        &oteryn_protocol_oteryn::quick_loot::quick_loot_filter_review_request(),
+    )
+    .map_err(|error| format!("I07 restore request: {error:?}"))?;
+    let restore_reply = client
+        .session_mut()
+        .gated_command(
+            oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            &restore_request,
+        )
+        .await?;
+    if restore_reply.status != CommandStatus::Accepted {
+        return Err(format!("I07 {tag} restore refused: {restore_reply:?}").into());
+    }
+    write_capture(
+        &directory.join(format!("i07-{tag}-request.bin")),
+        &restore_request,
+    )?;
+    write_capture(
+        &directory.join(format!("i07-{tag}.json")),
+        &capture_envelope(
+            session.as_bytes(),
+            restore_reply.command_id,
+            restore_reply.server_sequence,
+            restore_reply.status,
+            &restore_reply.payload,
+        )?,
+    )?;
+
+    Ok((restore_reply.command_id, restore_reply.server_sequence))
+}
+
 pub(super) async fn journey(
     clients: &SeamClients<'_>,
     capture_dir: &Path,
@@ -787,7 +826,7 @@ pub(super) async fn journey(
         &expected_backpack,
     )
     .await?;
-    capture.previous = (0, 0);
+    capture.previous = capture_restore(&mut fresh, capture_dir, "relog-restore").await?;
     capture
         .probe(
             &mut fresh,
@@ -1171,36 +1210,7 @@ pub(super) async fn journey(
     require_routes(&mut database, character, &pouch, false, false, full, true).await?;
     require_retired_donor(&mut database, &other.item).await?;
     evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true");
-    let restore_request = encode_quick_loot_request(
-        &oteryn_protocol_oteryn::quick_loot::quick_loot_filter_review_request(),
-    )
-    .map_err(|error| format!("I07 restore request: {error:?}"))?;
-    let restore_reply = readback
-        .session_mut()
-        .gated_command(
-            oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
-            oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
-            &restore_request,
-        )
-        .await?;
-    if restore_reply.status != CommandStatus::Accepted {
-        return Err(format!("I07 final restore refused: {restore_reply:?}").into());
-    }
-    write_capture(
-        &capture_dir.join("i07-restore-request.bin"),
-        &restore_request,
-    )?;
-    write_capture(
-        &capture_dir.join("i07-restore.json"),
-        &capture_envelope(
-            readback_session.as_bytes(),
-            restore_reply.command_id,
-            restore_reply.server_sequence,
-            restore_reply.status,
-            &restore_reply.payload,
-        )?,
-    )?;
-
+    capture_restore(&mut readback, capture_dir, "restore").await?;
     let inventory = readback
         .inventory()
         .ok_or("I07 fresh client inventory snapshot absent")?;

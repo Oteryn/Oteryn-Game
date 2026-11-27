@@ -917,15 +917,54 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     probes.push((24, (gold_pouch.clone(), &[][..], None)));
     for (key, (action, expected_items, notice)) in probes {
         let session_index = usize::from(key >= 12);
-        if key == 12 {
-            outbox.discovery_initialize(&Selected(true));
-            previous = (0, 0);
-            let panel = ui::link(&app)?.discovery_panel().loot;
-            assert!(panel.confirmed.is_empty() && panel.destinations.is_empty());
-            ui::open(&mut app)?;
-        }
         let reply: Reply =
             serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{key}.json")))?)?;
+        if key == 12 {
+            let restore: Reply = serde_json::from_slice(
+                &std::fs::read(directory.join("i07-relog-restore.json")).map_err(|error| {
+                    format!("I07 probe 12 requires the live relog restore capture: {error}")
+                })?,
+            )?;
+            assert_eq!(restore.game_session_id, reply.game_session_id);
+            assert_ne!(restore.game_session_id, sessions[0]);
+            assert_eq!(restore.status, CommandStatus::Accepted as u32);
+            previous = (restore.command_id, restore.server_sequence);
+            let panel = peer::restore_capture(
+                peer::Exchange {
+                    command: oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
+                        capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+                        command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+                        payload: std::fs::read(directory.join("i07-relog-restore-request.bin"))?,
+                    },
+                    payload: restore.payload,
+                    status: CommandStatus::Accepted,
+                },
+                previous,
+            )?;
+            assert_eq!(panel.filter_mode, Some(accept));
+            assert_eq!(panel.skipped, [expected.skip].into_iter().collect());
+            assert_eq!(
+                panel.accepted,
+                [expected.gold, expected.accept].into_iter().collect()
+            );
+            assert_eq!(
+                panel.destinations,
+                [
+                    route(None, QuickLootRecipient::MainContainer, None, true),
+                    route(
+                        Some(QuickLootCategory::Gold),
+                        QuickLootRecipient::MainContainer,
+                        None,
+                        true
+                    ),
+                    armor(true),
+                ]
+            );
+            crate::play::mailbox::lock(&ui::link(&app)?.mailbox)
+                .discovery
+                .loot = panel;
+            ui::open(&mut app)?;
+        }
         let status = if matches!(key, 19 | 20) {
             CommandStatus::Rejected
         } else {
@@ -958,7 +997,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                         ..
                     }
             ) {
-            ui::click_action(&mut app, action)?;
+            let control = format!("{action:?}");
+            ui::click_action(&mut app, action)
+                .map_err(|error| format!("I07 probe {key} control {control}: {error}"))?;
             true
         } else {
             let link = ui::link(&app)?;
