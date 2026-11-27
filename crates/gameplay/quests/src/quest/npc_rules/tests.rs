@@ -987,7 +987,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     // M04 adds seven -1 defaults: three per Djinn faction and one monastery diary.
     // Paradox adds three source-backed Riddler tracks, also starting absent at -1.
     // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 55)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 222), (0, 102)]));
     let postman = runtime
         .program("oteryn:quest.the_postman_missions_quest")
         .ok_or("Postman programme")?;
@@ -1294,6 +1294,12 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
                     Some("oteryn:quest-npc-program.postman")
                 }
                 "oteryn:quest.tibia_tales" => Some("oteryn:quest-npc-program.hidden_threats"),
+                "oteryn:quest.killing_in_the_name_of_quest" => {
+                    Some("oteryn:quest-npc-program.hunting-tasks")
+                }
+                "oteryn:quest.wrath_of_the_emperor_quest" => {
+                    Some("oteryn:quest-npc-program.wrath-city")
+                }
                 _ => None,
             };
             (quest, program)
@@ -1308,6 +1314,10 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         (
             questpc2_gnomus_source::QUEST,
             Some(questpc2_gnomus_source::PROGRAM),
+        ),
+        (
+            questpc2_gnomus_source::QUEST,
+            Some("oteryn:quest-npc-program.dangerous-depths-subterranean-life"),
         ),
     ]);
     let programmes: Vec<_> = runtime
@@ -1373,7 +1383,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 55)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 222), (0, 102)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
