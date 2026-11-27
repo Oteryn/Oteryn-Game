@@ -12,6 +12,21 @@ from boss_corpse_profiles import complete_source_top_order
 
 CAPTURE = "imports/crystalserver/ordinary-corpses"
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
+# Native goal/Bank Robbery owns the two late Elf stages. Quest corpse policy
+# owns the three butterfly roots and their terminal remains.
+PUBLISHED_GROUND_PICKUP = {
+    4162: False,
+    4163: False,
+    4378: True,
+    4991: True,
+    4992: True,
+    4993: True,
+}
+GROUND_CORPSE_ADMISSION = {
+    "materializable": True,
+    "stack_class": "NonStackable",
+    "legal_destinations": ["Ground"],
+}
 
 
 def read(root, name):
@@ -54,7 +69,55 @@ def bind_creatures(root, creatures):
         details["corpse_item"] = body
 
 
-def admit(root, generated, path, manifest_path, order, canonical):
+def preserve_projected_capacity(record, prior, capacity_projections):
+    from quest_corpse_profiles import CORPSE_CAPACITY_MAX
+
+    key = record["production_definition"]["production_key"]
+    if key not in capacity_projections:
+        return False
+
+    known = items.source.K
+    source = known({"capacity": known(capacity_projections[key])})
+    published = known({"capacity": known(CORPSE_CAPACITY_MAX)})
+    if (
+        record["semantics"]["container"] != source
+        or prior is None
+        or prior["semantics"]["container"] != published
+    ):
+        raise ValueError(f"Crystal corpse capacity projection differs from its owner: {key}")
+    record["semantics"]["container"] = published
+    return True
+
+
+def preserve_published_ground_custody(item, prior, record):
+    if item not in PUBLISHED_GROUND_PICKUP:
+        return
+
+    portable = {
+        **GROUND_CORPSE_ADMISSION,
+        "legal_destinations": ["CharacterInventory", "Ground"],
+    }
+    known = items.source.K
+    physical = record["semantics"]["physical"]
+    if (
+        prior is None
+        or prior["admission"] != GROUND_CORPSE_ADMISSION
+        or record["admission"] != portable
+    ):
+        raise ValueError(f"Crystal corpse Ground custody differs from its owner: {item}")
+    if (
+        physical["state"] != "KNOWN"
+        or physical["value"]["movable"] != known(True)
+        or physical["value"]["pickupable"] != known(True)
+        or prior["semantics"]["physical"]
+        != known({**physical["value"], "pickupable": known(PUBLISHED_GROUND_PICKUP[item])})
+    ):
+        raise ValueError(f"Crystal corpse physical custody differs from its owner: {item}")
+    record["admission"] = copy.deepcopy(GROUND_CORPSE_ADMISSION)
+    record["semantics"]["physical"] = prior["semantics"]["physical"]
+
+
+def admit(root, generated, path, manifest_path, order, canonical, capacity_projections):
     source = items.source
     raw = (root / CAPTURE / "items.xml").read_bytes()
     appearances = (root / items.CLIENT).read_bytes()
@@ -128,13 +191,24 @@ def admit(root, generated, path, manifest_path, order, canonical):
             item, node, objects[item], physical[item], targets, None
         )
         complete_source_top_order(record, objects[item])
+        record["production_binding"] = binding
+        record["production_binding_qualification"] = None
+        record["production_definition"] = {
+            "family": "Item",
+            "production_key": identity["key"],
+            "revision_ref": identity["revision"],
+        }
         # Keep the capacity of a body already materializable in the canonical
         # Item tree. This overlay contributes its source physics and decay.
         definition_row = definitions[identity["key"]]
         canonical_container = definition_row.get("semantics", {}).get("container", {})
         canonical_capacity = canonical_container.get("value", {}).get("capacity", {})
+        owns_capacity = preserve_projected_capacity(
+            record, current.get(str(item)), capacity_projections
+        )
         if (
-            definition_row["materializable"]
+            not owns_capacity
+            and definition_row["materializable"]
             and canonical_container.get("state") == "KNOWN"
             and canonical_capacity.get("state") == "KNOWN"
         ):
@@ -146,13 +220,7 @@ def admit(root, generated, path, manifest_path, order, canonical):
             raise ValueError(f"Crystal corpse is not a single Item: {item}")
         if unresolved:
             record["semantics"]["temporal"] = source.U
-        record["production_binding"] = binding
-        record["production_binding_qualification"] = None
-        record["production_definition"] = {
-            "family": "Item",
-            "production_key": identity["key"],
-            "revision_ref": identity["revision"],
-        }
+        preserve_published_ground_custody(item, current.get(str(item)), record)
         if item in mandatory_yields and str(item) in current:
             prior = copy.deepcopy(current[str(item)])
             if (
@@ -198,7 +266,8 @@ def inherited_portable_stage_ids(root):
     return [
         item
         for item in sorted(stages)
-        if (facts := cohort["items"].get(str(item)))
+        if item not in PUBLISHED_GROUND_PICKUP
+        and (facts := cohort["items"].get(str(item)))
         and facts["movable"]
         and facts["pickupable"]
     ]
@@ -208,6 +277,14 @@ def qualify_inherited_portable_stages(root, records):
     active = {
         record["production_definition"]["production_key"]: record for record in records
     }
+    for item, pickupable in PUBLISHED_GROUND_PICKUP.items():
+        record = active[item_ref(item)["key"]]
+        if (
+            record["admission"] != GROUND_CORPSE_ADMISSION
+            or record["semantics"]["physical"]["value"]["pickupable"]
+            != items.source.K(pickupable)
+        ):
+            raise ValueError(f"Published Ground corpse custody changed: {item}")
     for item in inherited_portable_stage_ids(root):
         record = active[item_ref(item)["key"]]
         admission = record["admission"]

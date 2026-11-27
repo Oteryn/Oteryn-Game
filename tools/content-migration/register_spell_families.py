@@ -1540,7 +1540,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     import quest_corpse_profiles
 
-    quest_corpse_profiles.admit(
+    quest_corpse_qualification = quest_corpse_profiles.admit(
         root,
         generated,
         spell_import.PROVIDER_DESTINATIONS["item_profiles"],
@@ -1806,9 +1806,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         spell_import.canonical_bytes,
     )
     import ordinary_corpse_profiles
+    corpse_capacity_projections = quest_corpse_qualification.projected_source_capacities
     ordinary_corpse_profiles.admit(
         root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes,
+        corpse_capacity_projections)
     corpse_creatures = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     corpse_document = json.loads(generated[corpse_creatures])
     ordinary_corpse_profiles.bind_creatures(root, corpse_document)
@@ -1990,7 +1992,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     ordinary_corpse_slice2.admit_items(root, items, provider_order, ordinary_ids)
     ordinary_ids.update(int(record['production_binding']['external_id'])
                         for record in ordinary_corpse_slice2.capture(root)['records'])
-    fourth_quarter_corpses.apply_items(root, items, provider_order, ordinary_ids)
+    fourth_quarter_corpses.apply_items(
+        root, items, provider_order, ordinary_ids, corpse_capacity_projections
+    )
     import forge_item_profiles
 
     # Preserve Forge eligibility from the independently admitted loot cohort.

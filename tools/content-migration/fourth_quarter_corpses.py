@@ -56,9 +56,10 @@ def extend_item_references(root, items):
             existing[identity["key"]] = definition
 
 
-def apply_items(root, items, provider_order, shared_ids):
+def apply_items(root, items, provider_order, shared_ids, capacity_projections):
     from ordinary_corpse_profiles import (
         movable_stage_profiles,
+        preserve_projected_capacity,
         qualify_inherited_portable_stages,
         qualify_native_decay_edges,
     )
@@ -153,6 +154,7 @@ def apply_items(root, items, provider_order, shared_ids):
     apply_top_order(records, json.loads((root / PROFILES).read_bytes()))
     for record in records:
         key = record["production_definition"]["production_key"]
+        preserve_projected_capacity(record, existing.get(key), capacity_projections)
         if key in existing:
             merge_shared_item(existing[key], record)
         else:
