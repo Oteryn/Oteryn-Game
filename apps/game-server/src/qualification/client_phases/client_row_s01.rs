@@ -201,11 +201,25 @@ fn check_notice(
     Ok(())
 }
 
+// Fresh admissions start at generation 1. The handle is scoped to the receiving
+// session and to the character named by the notice.
+fn expected_member_handle(client: &DevClientSession, subject: [u8; 16]) -> u64 {
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn.party.handle.v1");
+    hash.update(client.join_snapshot().game_session_id.as_bytes());
+    hash.update(1_u64.to_be_bytes());
+    hash.update([1]);
+    hash.update(subject);
+    let digest = hash.finalize();
+    u64::from_be_bytes(core::array::from_fn(|index| digest[index]))
+}
+
 async fn expect_notices(
     client: &mut DevClientSession,
     actor: &str,
     watermark: u64,
-    expected: &[runtime::party::PartyMembershipChange],
+    expected: &[(runtime::party::PartyMembershipChange, [u8; 16])],
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     let mut remaining = expected;
@@ -215,7 +229,14 @@ async fn expect_notices(
         for event in events {
             domains.insert(event.domain_id());
             if let oteryn_dev_client::SessionEvent::PartyMembershipNotice(delta) = event {
-                check_notice(watermark, delta.server_sequence, delta.value.change, remaining.first())?;
+                check_notice(watermark, delta.server_sequence, delta.value.change, remaining.first().map(|(change, _)| change))?;
+                let handle = expected_member_handle(client, remaining[0].1);
+                if delta.value.member_handle != handle {
+                    return Err(format!(
+                        "S01 notice names the wrong character: actor={actor} change={:?} sequence={} expected_handle={handle} actual_handle={}",
+                        delta.value.change, delta.server_sequence, delta.value.member_handle
+                    ).into());
+                }
                 remaining = &remaining[1..];
                 evidence(&format!(
                     "S01_NOTICE actor={actor} change={:?} sequence={} watermark={watermark}",
@@ -264,7 +285,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     let peer_before_invite = peer.last_server_sequence();
     send(&mut leader, Some(PartyIntent::Invite(own(&peer)?))).await?;
-    expect_notices(&mut peer, "peer", peer_before_invite, &[Invited]).await?;
+    expect_notices(&mut peer, "peer", peer_before_invite, &[(Invited, clients.characters[0])]).await?;
     let invited = send(&mut peer, None).await?;
     check_state(&invited, &[], Some("Packet One"))?;
     let invitation = &invited.result.invitations[0];
@@ -272,8 +293,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let leader_before_join = leader.last_server_sequence();
     let peer_before_join = peer.last_server_sequence();
     let joined = send(&mut peer, Some(PartyIntent::Accept(invitation.handle))).await?;
-    expect_notices(&mut leader, "leader", leader_before_join, &[Joined]).await?;
-    expect_notices(&mut peer, "peer", peer_before_join, &[Joined]).await?;
+    expect_notices(&mut leader, "leader", leader_before_join, &[(Joined, clients.characters[1])]).await?;
+    expect_notices(&mut peer, "peer", peer_before_join, &[(Joined, clients.characters[1])]).await?;
     let before_pass = [("Packet One", true), ("Packet Two", false)];
     check_state(&joined, &before_pass, None)?;
 
@@ -315,8 +336,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &[],
         None,
     )?;
-    expect_notices(&mut leader, "leader", leader_before_leave, &[Left, Disbanded]).await?;
-    expect_notices(&mut peer, "peer", peer_before_leave, &[Left, Disbanded]).await?;
+    expect_notices(&mut leader, "leader", leader_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
+    expect_notices(&mut peer, "peer", peer_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
     check_state(&send(&mut peer, None).await?, &[], None)?;
     for client in [&mut leader, &mut peer] {
         let logout = client.session_mut().logout().await?;

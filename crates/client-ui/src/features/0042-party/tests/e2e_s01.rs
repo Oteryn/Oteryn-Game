@@ -11,10 +11,10 @@ struct Replay {
     joined_op: Vec<u8>,
     joined_view: Vec<u8>,
     leader_transfer: Option<[Vec<u8>; 5]>,
+    toggle_binding: Option<(u64, u64)>,
     passed_view: Vec<u8>,
     expected: String,
     statuses: [CommandStatus; 3],
-    live: bool,
 }
 
 fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, Error> {
@@ -66,7 +66,7 @@ fn load_group<const N: usize>(
     root: &std::path::Path,
     expected: &str,
     labels: [&str; N],
-) -> Result<(String, [Vec<u8>; N]), Error> {
+) -> Result<(String, [(u64, u64, Vec<u8>); N]), Error> {
     let mut previous = (0, 0);
     let mut replay_session = None;
     let mut payloads = Vec::new();
@@ -91,7 +91,11 @@ fn load_group<const N: usize>(
         }
         previous = (command, sequence);
         replay_session = Some(session.to_owned());
-        payloads.push(serde_json::from_value::<Vec<u8>>(json["payload"].clone())?);
+        payloads.push((
+            command,
+            sequence,
+            serde_json::from_value::<Vec<u8>>(json["payload"].clone())?,
+        ));
     }
     Ok((
         replay_session.ok_or("empty S01 envelope group")?,
@@ -105,12 +109,14 @@ fn load() -> Result<Replay, Error> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
         let expected = std::fs::read_to_string(root.join("s01-expected.txt"))?;
-        let (peer, [invitations, joined_op, joined_view, passed_view]) = load_group(
+        let (peer, peer_replies) = load_group(
             root,
             &expected,
             ["invitation", "join", "join_view", "leadership"],
         )?;
-        let (leader, leader_transfer) = load_group(
+        let [invitations, joined_op, joined_view, passed_view] =
+            peer_replies.map(|(_, _, payload)| payload);
+        let (leader, leader_replies) = load_group(
             root,
             &expected,
             [
@@ -126,12 +132,12 @@ fn load() -> Result<Replay, Error> {
         }
         return Ok(Replay {
             statuses: [CommandStatus::Accepted; 3],
-            live: true,
             invitation_view: invitations.clone(),
             invitations,
             joined_op,
             joined_view,
-            leader_transfer: Some(leader_transfer),
+            toggle_binding: Some((leader_replies[1].0, leader_replies[1].1)),
+            leader_transfer: Some(leader_replies.map(|(_, _, payload)| payload)),
             passed_view,
             expected,
         });
@@ -147,12 +153,12 @@ fn load() -> Result<Replay, Error> {
     let invitations = encode(vec![], vec![entry(9, "Aurelia", false, 1_900_000_000)])?;
     Ok(Replay {
         statuses: [CommandStatus::Accepted; 3],
-        live: false,
         invitation_view: invitations.clone(),
         invitations,
         joined_op: joined.clone(),
         joined_view: joined,
         leader_transfer: None,
+        toggle_binding: None,
         passed_view: passed,
         expected:
             "inviter=Aurelia\njoiner=Berenike\nmembers=2\nshared_xp=false\nnew_leader=Berenike\n"
@@ -247,7 +253,7 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
     assert!(has_line(&text, &format!("Member: {joiner}")));
     assert!(!text.contains("Invitation:"));
 
-    if !replay.live {
+    {
         let before = panel.state.clone();
         assert!(request(&mut panel, Intent::Refresh).is_some());
         assert!(!apply_result(
@@ -296,16 +302,27 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
             PartyCommand::shared_experience(true)
                 .map_err(|error| format!("S01 shared XP wire: {error:?}"))?
         );
-        // ChatIntentResultV1 encodes Ok as field 1 = 1 and omits the zero wait.
-        assert_eq!(toggle_receipt, [8, 1]);
+        let receipt = oteryn_protocol_oteryn::chat::decode_chat_intent_result(&toggle_receipt)
+            .map_err(|error| format!("S01 toggle receipt: {error:?}"))?;
+        assert_eq!(receipt.disposition, oteryn_session::ChatDisposition::Ok);
+        assert_eq!(receipt.wait_seconds, 0);
+        let (command_id, result_server_sequence) =
+            replay.toggle_binding.ok_or("toggle binding missing")?;
+        let outcome = oteryn_session::ChatOutcome {
+            command_id,
+            result_server_sequence,
+            status: CommandStatus::Accepted,
+            disposition: receipt.disposition,
+            wait_seconds: receipt.wait_seconds,
+        };
         assert!(apply_result(
             &mut leader_panel,
-            &response(
-                CommandStatus::Accepted,
-                &encode(vec![], vec![])?,
-                Some(&shared_view)
-            ),
+            &oteryn_client_runtime::party::shared_response(&outcome, Some(shared_view)),
         ));
+        assert_eq!(
+            leader_panel.feedback,
+            Some("The server confirmed the party request")
+        );
         assert!(
             leader_panel
                 .state
@@ -341,6 +358,25 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
             Some("The server confirmed the party request")
         );
         assert!(!leader_panel.is_leader());
+        let state = leader_panel
+            .state
+            .as_ref()
+            .ok_or("former leader state missing")?;
+        assert_eq!(state.members.len(), 2);
+        assert!(state.invitations.is_empty());
+        assert!(state.shared_xp_enabled);
+        assert!(
+            state
+                .members
+                .iter()
+                .any(|entry| entry.name == joiner && entry.leader)
+        );
+        assert!(
+            state
+                .members
+                .iter()
+                .any(|entry| entry.name == inviter && !entry.leader)
+        );
     }
     assert!(request(&mut panel, Intent::Refresh).is_some());
     assert!(apply_result(

@@ -83,11 +83,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> Result<Vec<PartyIcon>, DurabilityError> {
         let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let mut attempt = 0;
         // Each failed attempt drops its spell and runtime guards before waiting.
         budget
             .retry_command_guard(async || {
-                self.observe_party_skull_once(admitted, Some(budget.deadline))
-                    .await
+                attempt += 1;
+                let result = self
+                    .observe_party_skull_once(admitted, Some(budget.deadline))
+                    .await;
+                if result.as_ref().is_err_and(super::root_holder_busy) {
+                    super::operator_event(&format!(
+                        "event=party_skull_holder_busy attempt={attempt}"
+                    ));
+                }
+                result
             })
             .await
     }
