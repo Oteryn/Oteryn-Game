@@ -1269,6 +1269,7 @@ pub(super) async fn journey(
             skip_reference,
             provisioning::item_reference(&index, 3585)?.get(),
         ],
+        capture.previous.1,
     )
     .await?;
     capture.visible_top = Some(visible_top);
@@ -1497,7 +1498,13 @@ pub(super) async fn journey(
         )
         .await?;
     require_routes(&mut database, character, &pouch, false, false, full, true).await?;
-    let foreign_view = open_foreign_corpse(&mut fresh, visible_top, &[skip_reference]).await?;
+    let foreign_view = open_foreign_corpse(
+        &mut fresh,
+        visible_top,
+        &[skip_reference],
+        capture.previous.1,
+    )
+    .await?;
     let foreign = foreign_view.value.entries[0].handle;
     if foreign == selected || foreign == sibling {
         return Err("I07 foreign item aliases the primary corpse item".into());
@@ -1841,13 +1848,17 @@ fn matching_corpse_delta(
     client: &mut oteryn_dev_client::DevClientSession,
     corpse: oteryn_dev_client::ItemHandle,
 ) -> TestResult<Option<CorpseDelta>> {
-    let mut matching = client
-        .take_events()
-        .into_iter()
-        .filter_map(|event| match event {
-            oteryn_dev_client::SessionEvent::OpenContainer(delta) => Some(delta),
-            _ => None,
-        });
+    matching_corpse_events(client.take_events(), corpse)
+}
+
+fn matching_corpse_events(
+    events: Vec<oteryn_dev_client::SessionEvent>,
+    corpse: oteryn_dev_client::ItemHandle,
+) -> TestResult<Option<CorpseDelta>> {
+    let mut matching = events.into_iter().filter_map(|event| match event {
+        oteryn_dev_client::SessionEvent::OpenContainer(delta) => Some(delta),
+        _ => None,
+    });
     let first = matching.next();
     if matching.next().is_some()
         || first
@@ -1859,10 +1870,90 @@ fn matching_corpse_delta(
     Ok(first)
 }
 
+fn observe_foreign_open(
+    events: Vec<oteryn_dev_client::SessionEvent>,
+    corpse: oteryn_dev_client::ItemHandle,
+    (prior_reply, use_reply): (u64, u64),
+    prior: &mut Option<CorpseDelta>,
+) -> TestResult<Option<CorpseDelta>> {
+    use oteryn_dev_client::SessionEvent;
+    let mut fresh = None;
+    for event in events {
+        let SessionEvent::OpenContainer(delta) = event else {
+            continue;
+        };
+        if delta.value.container_handle != Some(corpse) {
+            return Err(
+                format!("I07 foreign USE received a wrong-container delta: {delta:?}").into(),
+            );
+        }
+        if delta.server_sequence <= prior_reply {
+            if prior.replace(delta).is_some() {
+                return Err("I07 foreign USE received multiple prior container deltas".into());
+            }
+        } else if delta.server_sequence <= use_reply || fresh.replace(delta).is_some() {
+            return Err("I07 foreign USE received an unexpected container delta".into());
+        }
+    }
+    if let (Some(previous), Some(opened)) = (prior.as_ref(), fresh.as_ref()) {
+        if previous.value != opened.value || previous.new_revision != opened.base_revision {
+            return Err(format!("I07 prior container projection differs from the fresh USE: prior={previous:?} fresh={opened:?}").into());
+        }
+        evidence(&format!(
+            "I07_FOREIGN_OPEN_PRIOR prior_sequence={} prior_reply={prior_reply} use_reply={use_reply} fresh_sequence={} handle={corpse}",
+            previous.server_sequence, opened.server_sequence,
+        ));
+    }
+    Ok(fresh)
+}
+
+#[test]
+fn i07_foreign_open_requires_its_own_delta() -> TestResult {
+    use oteryn_dev_client::SessionEvent;
+    let corpse = oteryn_dev_client::ItemHandle::new(17).ok_or("fixture handle")?;
+    let event = |server_sequence, base_revision| {
+        SessionEvent::OpenContainer(CorpseDelta {
+            server_sequence,
+            base_revision,
+            new_revision: base_revision + 1,
+            value: oteryn_dev_client::OpenContainer {
+                container_handle: Some(corpse),
+                entries: Vec::new(),
+            },
+        })
+    };
+    let mut prior = None;
+    assert!(observe_foreign_open(vec![event(33, 4)], corpse, (34, 35), &mut prior)?.is_none());
+    let fresh = observe_foreign_open(vec![event(36, 5)], corpse, (34, 35), &mut prior)?
+        .ok_or("missing fresh USE delta")?;
+    assert_eq!(fresh.server_sequence, 36);
+    assert!(observe_foreign_open(vec![event(35, 5)], corpse, (34, 35), &mut None).is_err());
+    assert!(
+        observe_foreign_open(
+            vec![event(36, 5), event(37, 6)],
+            corpse,
+            (34, 35),
+            &mut None
+        )
+        .is_err()
+    );
+    assert!(
+        observe_foreign_open(
+            vec![event(33, 3), event(36, 5)],
+            corpse,
+            (34, 35),
+            &mut None
+        )
+        .is_err()
+    );
+    Ok(())
+}
+
 async fn open_foreign_corpse(
     client: &mut oteryn_dev_client::DevClientSession,
     identity: [u8; 16],
     item_definitions: &[u32],
+    prior_reply: u64,
 ) -> TestResult<CorpseDelta> {
     use oteryn_protocol_oteryn::world_spatial_entities::{EntityDetail, EntityKind};
     let corpse = client
@@ -1883,8 +1974,14 @@ async fn open_foreign_corpse(
         return Err(format!("I07 foreign corpse open refused: {reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    let mut prior = None;
     loop {
-        if let Some(delta) = matching_corpse_delta(client, corpse)? {
+        if let Some(delta) = observe_foreign_open(
+            client.take_events(),
+            corpse,
+            (prior_reply, reply.result_server_sequence),
+            &mut prior,
+        )? {
             if !delta
                 .value
                 .entries
