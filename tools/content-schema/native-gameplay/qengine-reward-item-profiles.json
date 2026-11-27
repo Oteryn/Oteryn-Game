@@ -19289,6 +19289,9 @@
           "family": "Item",
           "key": "candidate:item/10218",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -19453,6 +19456,9 @@
           "family": "Item",
           "key": "candidate:item/10247",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -25206,6 +25212,9 @@
           "family": "Item",
           "key": "candidate:item/15703",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -25351,6 +25360,9 @@
           "family": "Item",
           "key": "candidate:item/15801",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -25496,6 +25508,9 @@
           "family": "Item",
           "key": "candidate:item/15802",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -25641,6 +25656,9 @@
           "family": "Item",
           "key": "candidate:item/16094",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Extra Slot"
         }
       },
       "semantics": {
@@ -25835,6 +25853,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i16099",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Containers"
         }
       },
       "semantics": {
@@ -26009,13 +26030,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -26050,6 +26071,9 @@
           "family": "Item",
           "key": "candidate:item/16101",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Liquids"
         }
       },
       "semantics": {
@@ -26386,10 +26410,17 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
         "item": {
           "family": "Item",
           "key": "oteryn:item.tibia.i16104",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Helmets"
         }
       },
       "semantics": {
@@ -26599,13 +26630,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -26636,10 +26667,17 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
         "item": {
           "family": "Item",
           "key": "oteryn:item.tibia.i16105",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Armors"
         }
       },
       "semantics": {
@@ -26849,13 +26887,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -26886,10 +26924,17 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
         "item": {
           "family": "Item",
           "key": "oteryn:item.tibia.i16106",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Legs"
         }
       },
       "semantics": {
@@ -27099,13 +27144,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -27140,6 +27185,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i16107",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Spellbooks"
         }
       },
       "semantics": {
@@ -27250,7 +27298,7 @@
             },
             "defense": {
               "state": "KNOWN",
-              "value": 20
+              "value": 32
             },
             "extra_defense": {
               "state": "KNOWN",
@@ -27385,13 +27433,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -27422,10 +27470,17 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
         "item": {
           "family": "Item",
           "key": "oteryn:item.tibia.i16109",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Helmets"
         }
       },
       "semantics": {
@@ -27624,13 +27679,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -27661,10 +27716,17 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
         "item": {
           "family": "Item",
           "key": "oteryn:item.tibia.i16110",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Armors"
         }
       },
       "semantics": {
@@ -27907,13 +27969,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 15,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -27944,10 +28006,17 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
         "item": {
           "family": "Item",
           "key": "oteryn:item.tibia.i16111",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Legs"
         }
       },
       "semantics": {
@@ -28146,13 +28215,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -28183,10 +28252,17 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
         "item": {
           "family": "Item",
           "key": "oteryn:item.tibia.i16112",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Boots"
         }
       },
       "semantics": {
@@ -28408,13 +28484,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 15,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -28449,6 +28525,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i16116",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Shields"
         }
       },
       "semantics": {
@@ -28558,7 +28637,7 @@
             },
             "defense": {
               "state": "KNOWN",
-              "value": 37
+              "value": 49
             },
             "extra_defense": {
               "state": "KNOWN",
@@ -28683,13 +28762,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -29058,6 +29137,9 @@
           "family": "Item",
           "key": "candidate:item/16153",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -29221,6 +29303,9 @@
           "family": "Item",
           "key": "candidate:item/16154",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -37753,6 +37838,9 @@
           "family": "Item",
           "key": "candidate:item/19204",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -37898,6 +37986,9 @@
           "family": "Item",
           "key": "candidate:item/19207",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -38043,6 +38134,9 @@
           "family": "Item",
           "key": "candidate:item/19214",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -38188,6 +38282,9 @@
           "family": "Item",
           "key": "candidate:item/19216",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -38333,6 +38430,9 @@
           "family": "Item",
           "key": "candidate:item/19218",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -48164,7 +48264,8 @@
               "state": "UNKNOWN"
             },
             "weapon_type": {
-              "state": "UNKNOWN"
+              "state": "KNOWN",
+              "value": "SHIELD"
             }
           }
         },
@@ -48269,6 +48370,9 @@
           "family": "Item",
           "key": "candidate:item/27307",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -48414,6 +48518,9 @@
           "family": "Item",
           "key": "candidate:item/27308",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -49935,6 +50042,9 @@
           "family": "Item",
           "key": "candidate:item/29428",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -50133,6 +50243,9 @@
           "family": "Item",
           "key": "candidate:item/29429",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -50663,6 +50776,9 @@
           "family": "Item",
           "key": "candidate:item/30342",
           "revision": "cloot3-crystal-201189f"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -50939,13 +51055,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -50980,6 +51096,9 @@
           "family": "Item",
           "key": "candidate:item/30344",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -51256,13 +51375,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -51297,6 +51416,9 @@
           "family": "Item",
           "key": "candidate:item/30401",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -51455,13 +51577,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -51496,6 +51618,9 @@
           "family": "Item",
           "key": "candidate:item/30403",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -51773,13 +51898,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -52549,6 +52674,9 @@
           "family": "Item",
           "key": "candidate:item/31557",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -52792,13 +52920,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -52833,6 +52961,9 @@
           "family": "Item",
           "key": "candidate:item/31621",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -52988,13 +53119,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -54906,6 +55037,9 @@
           "family": "Item",
           "key": "candidate:item/32621",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -55159,13 +55293,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -55200,6 +55334,9 @@
           "family": "Item",
           "key": "candidate:item/32636",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -57134,6 +57271,9 @@
           "family": "Item",
           "key": "candidate:item/39179",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -57345,13 +57485,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -57386,6 +57526,9 @@
           "family": "Item",
           "key": "candidate:item/39182",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -57613,13 +57756,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -57654,6 +57797,9 @@
           "family": "Item",
           "key": "candidate:item/39185",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -57900,13 +58046,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -57941,6 +58087,9 @@
           "family": "Item",
           "key": "candidate:item/39187",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -58325,6 +58474,9 @@
           "family": "Item",
           "key": "candidate:item/39188",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -58552,13 +58704,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -58593,6 +58745,9 @@
           "family": "Item",
           "key": "candidate:item/39233",
           "revision": "cloot3-crystal-201189f"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -58907,13 +59062,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -58948,6 +59103,9 @@
           "family": "Item",
           "key": "candidate:item/39235",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
