@@ -5,7 +5,6 @@ use oteryn_dev_client::native_session::{Admission, Session};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::item_view::EquipmentSlot;
-use oteryn_protocol_oteryn::world_spatial_entities::EntityKind;
 use std::io::{self, Write};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
@@ -141,7 +140,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .await?;
     }
     let position = session.world_spatial().actor_position;
-    let target = visible_hunt_target(&mut session).await?;
+    let target = full_row_c12::client_fixture_target(&mut session).await?;
     let entities = session
         .world_entities()
         .ok_or("C12 fresh entity projection absent")?;
@@ -290,7 +289,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     );
     let bytes = received
         .lock()
-        .map_err(|_| "C12 capture lock unavailable")?;
+        .map_err(|_| "C12 capture lock unavailable")?
+        .clone();
+    verify_post_cast_relog(session, clients, id, before).await?;
     let frames = frame_capture::envelopes(&bytes, id)
         .map_err(|error| error as Box<dyn std::error::Error>)?;
     let frames = serde_json::to_vec(&frames)?;
@@ -299,6 +300,59 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     write_packet(&root, "c12-expected.txt", expected.as_bytes())?;
     evidence(&format!(
         "C12_CAPTURE session={session_id} command={command} result_sequence={result_sequence} delta_sequence={sequence}"
+    ));
+    Ok(())
+}
+
+async fn verify_post_cast_relog<S: oteryn_dev_client::native_session::SessionStream>(
+    mut session: Session<S>,
+    clients: &SeamClients<'_>,
+    old_id: oteryn_protocol_oteryn::GameSessionId,
+    mana_before_cast: u32,
+) -> TestResult {
+    let clear = session.attack_target(None).await?;
+    require_mechanic_acceptance(clear.status, "C12.client clear attack")?;
+    if clear.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("C12.client clear attack refused: {clear:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
+    loop {
+        let combat = session
+            .combat_state()
+            .ok_or("C12.client post-cast combat state absent")?;
+        if combat.target.is_none() && !combat.in_fight {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C12.client post-cast combat lock did not expire".into());
+        }
+        session
+            .service_liveness_discarding_events(Duration::from_millis(250))
+            .await?;
+    }
+    let mana = session
+        .actor_vitals()
+        .ok_or("C12.client pre-logout vitals absent")?
+        .mana;
+    if mana >= mana_before_cast {
+        return Err(format!("C12.client post-cast mana no longer distinguishes pre-state: {mana_before_cast}->{mana}").into());
+    }
+    let logout = session.logout().await?;
+    require_mechanic_acceptance(logout.status, "C12.client LOGOUT")?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C12.client logout refused on first attempt: {logout:?}").into());
+    }
+    drop(session);
+    let fresh = connect_character(clients, 0xc3, 1).await?;
+    let durable_mana = fresh
+        .actor_vitals()
+        .ok_or("C12.client post-relog vitals absent")?
+        .mana;
+    if fresh.join_snapshot().game_session_id == old_id || durable_mana != mana {
+        return Err(format!("C12.client relog did not retain exact post-cast mana: expected={mana} observed={durable_mana}").into());
+    }
+    evidence(&format!(
+        "C12_CLIENT_RELOG mana_before_cast={mana_before_cast} durable_mana={durable_mana} fresh_session=true"
     ));
     Ok(())
 }
@@ -323,46 +377,6 @@ async fn inspect_damage(
             .parse()
             .map_err(|error| format!("C12 damage inspection total: {error}")),
         _ => Err(format!("C12 damage inspection response: {answer}")),
-    }
-}
-
-async fn visible_hunt_target<S: oteryn_dev_client::native_session::SessionStream>(
-    session: &mut Session<S>,
-) -> TestResult<oteryn_dev_client::EntityRef> {
-    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
-    loop {
-        {
-            let at = session.world_spatial().actor_position;
-            let entities = session
-                .world_entities()
-                .ok_or("C12 client hunt entity projection absent")?;
-            let mut matching = entities.iter().filter(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.position.floor == at.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(at.x)
-                        .max(entry.position.y.abs_diff(at.y))
-                        == 1
-                    && entry.display_name.is_some_and(|name| {
-                        name.as_str()
-                            .is_ok_and(|name| name == full_row_c12::CLIENT_TARGET_NAME)
-                    })
-            });
-            if let Some(entry) = matching.next() {
-                if matching.next().is_some() {
-                    return Err("C12 client hunt saw multiple adjacent Tarantulas".into());
-                }
-                return Ok(entry.entity);
-            }
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("C12 client hunt did not see the authored Tarantula".into());
-        }
-        session
-            .service_liveness_discarding_events(Duration::from_millis(50))
-            .await?;
     }
 }
 

@@ -3,7 +3,7 @@
 //! effect is measured, never inferred from a mana debit or a slot.
 //!
 //! 1. `acquire-50271`: purchase the Fists of Enlightenment (50271) from Enpa-Deia Pema.
-//! 2. `baseline-cast`: place one authored Training Machine through the node fixture, attack it,
+//! 2. `baseline-cast`: place one authored Magma Crystal through the node fixture, attack it,
 //!    and CAST Greater Tiger Clash repeatedly without
 //!    the item; require `Cast` and a mana debit each time and record the spell damage the server
 //!    attributes to the cast (the presentation events sharing the cast's decision ordinal).
@@ -28,8 +28,8 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
 const ITEM_ID: u32 = 50_271;
 const AUGMENT_BPS: u64 = 800;
 const PEMA_PRICE: u64 = 20_000;
-const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions,training-machine";
-const FIXTURE_TARGET: &str = "oteryn:creature.training_machine";
+const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions,magma-crystal";
+const FIXTURE_TARGET: &str = "oteryn:creature.magma_crystal";
 const CRYSTAL_COIN: u32 = 3043;
 const CRYSTAL_COIN_VALUE: u64 = 10_000;
 const MANA_POTION: u32 = 268;
@@ -210,6 +210,7 @@ pub(super) fn content_augment() -> TestResult<u64> {
 struct CreatureProfile {
     health: u64,
     display_name: String,
+    neutral_physical_target: bool,
 }
 
 fn creature_profiles() -> TestResult<std::collections::BTreeMap<String, CreatureProfile>> {
@@ -236,6 +237,15 @@ fn creature_profiles() -> TestResult<std::collections::BTreeMap<String, Creature
                     CreatureProfile {
                         health,
                         display_name: name.to_owned(),
+                        neutral_physical_target: profile["armor"].as_u64() == Some(0)
+                            && profile["mitigation"]["numerator"].as_i64() == Some(0)
+                            && profile["speed"].as_u64() == Some(0)
+                            && profile["resistances"].as_array().is_none_or(|resistances| {
+                                !resistances.iter().any(|resistance| {
+                                    resistance["damage_type"].as_str() == Some("physical")
+                                        && resistance["percent"]["numerator"].as_i64() != Some(0)
+                                })
+                            }),
                     },
                 );
             }
@@ -303,46 +313,11 @@ struct Hunt {
 }
 
 impl Hunt {
-    async fn wait_visible_target(&self, client: &mut DevClientSession) -> TestResult {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-        loop {
-            let at = client.world_spatial().actor_position;
-            if let Some(entry) = client
-                .world_entities()
-                .and_then(|entities| entities.get(&self.entity))
-            {
-                if entry.kind != EntityKind::Creature
-                    || entry.display_name.is_none_or(|name| {
-                        name.as_str().ok() != Some(self.profile.display_name.as_str())
-                    })
-                    || entry.position.floor != at.floor
-                    || entry
-                        .position
-                        .x
-                        .abs_diff(at.x)
-                        .max(entry.position.y.abs_diff(at.y))
-                        != 1
-                {
-                    return Err(format!(
-                        "C12 fixture target differs or is out of range: {entry:?} at={at:?}"
-                    )
-                    .into());
-                }
-                return Ok(());
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(format!("C12 fixture target never appeared: {:?}", self.entity).into());
-            }
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
-        }
-    }
-
     async fn target(
         &self,
         client: &mut DevClientSession,
     ) -> TestResult<oteryn_dev_client::EntityRef> {
-        self.wait_visible_target(client).await?;
+        wait_fixture_target(client.session_mut(), self.entity, &self.profile).await?;
         let entity = self.entity;
         if combat_target(client)? != Some(entity) {
             let sequence = client.last_server_sequence();
@@ -1026,17 +1001,33 @@ async fn acquire_pema(
     Ok(gold_after)
 }
 
-async fn prepare_fixture_hunt(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-) -> TestResult<Hunt> {
+fn fixture_target_profile() -> TestResult<CreatureProfile> {
     let mut profiles = creature_profiles()?;
     let profile = profiles
         .remove(FIXTURE_TARGET)
-        .ok_or("C12 fixture Training Machine absent from authored profiles")?;
-    if profile.health != 1_000_000 || profile.display_name != "Training Machine" {
-        return Err("C12 fixture Training Machine authored profile differs".into());
+        .ok_or("C12 fixture Magma Crystal absent from authored profiles")?;
+    if profile.health != 22_000
+        || profile.display_name != "Magma Crystal"
+        || !profile.neutral_physical_target
+    {
+        return Err("C12 fixture Magma Crystal authored profile differs".into());
     }
+    Ok(profile)
+}
+
+#[test]
+fn c12_fixture_target_has_no_physical_reduction_or_movement() -> TestResult {
+    let profile = fixture_target_profile()?;
+    assert!(profile.neutral_physical_target);
+    assert_eq!(profile.health, 22_000);
+    Ok(())
+}
+
+fn fixture_combat_route(
+    world: &BundleWorld,
+    from: TilePos,
+    move_before_cast: bool,
+) -> TestResult<Vec<StepDirection>> {
     let combat_tile = |at: TilePos| {
         world
             .base()
@@ -1044,9 +1035,9 @@ async fn prepare_fixture_hunt(
             .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
             && world.enterable(at)
     };
-    let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
-        combat_tile(at)
+    route(world, from, |at| {
+        (!move_before_cast || at != from)
+            && combat_tile(at)
             && [(0, -1), (1, 0), (0, 1), (-1, 0)]
                 .into_iter()
                 .any(|(dx, dy)| {
@@ -1061,20 +1052,83 @@ async fn prepare_fixture_hunt(
                         })
                 })
     })
-    .ok_or("C12 fixture has no reachable combat tile")?;
+    .ok_or_else(|| "C12 fixture has no reachable combat tile".into())
+}
+
+async fn prepare_fixture_hunt(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<Hunt> {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = fixture_combat_route(world, from, false)?;
     walk_exact_route(client, world, &path).await?;
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, FIXTURE_TARGET.into())
-        .await
-        .map_err(|reason| format!("C12 fixture spawn refused: {reason}"))?;
-    let hunt = Hunt {
-        entity: parse_spawned_entity(&answer)?,
+    let profile = fixture_target_profile()?;
+    let entity = spawn_and_wait_fixture_target(client.session_mut(), &profile).await?;
+    Ok(Hunt {
+        entity,
         profile,
         cast_evidence_log: required("NODE_BOOT_CAST_EVIDENCE_LOG")?.into(),
-    };
-    hunt.wait_visible_target(client).await?;
+    })
+}
+
+pub(super) async fn client_fixture_target<S: oteryn_dev_client::native_session::SessionStream>(
+    session: &mut oteryn_dev_client::native_session::Session<S>,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    spawn_and_wait_fixture_target(session, &fixture_target_profile()?).await
+}
+
+async fn spawn_and_wait_fixture_target<S: oteryn_dev_client::native_session::SessionStream>(
+    session: &mut oteryn_dev_client::native_session::Session<S>,
+    profile: &CreatureProfile,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let id = uuid_text(session.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(id, FIXTURE_TARGET.into())
+        .await
+        .map_err(|reason| format!("C12 fixture spawn refused: {reason}"))?;
+    let entity = parse_spawned_entity(&answer)?;
+    wait_fixture_target(session, entity, profile).await?;
     eprintln!("FIXTURE C12 target={FIXTURE_TARGET} {answer}");
-    Ok(hunt)
+    Ok(entity)
+}
+
+async fn wait_fixture_target<S: oteryn_dev_client::native_session::SessionStream>(
+    session: &mut oteryn_dev_client::native_session::Session<S>,
+    entity: oteryn_dev_client::EntityRef,
+    profile: &CreatureProfile,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    loop {
+        let at = session.world_spatial().actor_position;
+        if let Some(entry) = session
+            .world_entities()
+            .and_then(|entities| entities.get(&entity))
+        {
+            if entry.kind != EntityKind::Creature
+                || entry
+                    .display_name
+                    .is_none_or(|name| name.as_str().ok() != Some(profile.display_name.as_str()))
+                || entry.position.floor != at.floor
+                || entry
+                    .position
+                    .x
+                    .abs_diff(at.x)
+                    .max(entry.position.y.abs_diff(at.y))
+                    != 1
+            {
+                return Err(format!(
+                    "C12 fixture target differs or is out of range: {entry:?} at={at:?}"
+                )
+                .into());
+            }
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C12 fixture target never appeared: {entity:?}").into());
+        }
+        session
+            .service_liveness_discarding_events(Duration::from_millis(100))
+            .await?;
+    }
 }
 
 async fn fresh_c12_admission(
@@ -1155,47 +1209,11 @@ pub(super) struct ClientCaptureSetup {
     pub position: TilePos,
 }
 
-pub(super) const CLIENT_TARGET_NAME: &str = "Tarantula";
-const CLIENT_TARGET_KEY: &str = "oteryn:creature.tarantula";
-const CLIENT_TARGET_SPAWN: TilePos = TilePos {
-    x: 32294,
-    y: 32333,
-    floor: -8,
-};
-const CLIENT_CAST_TILE: TilePos = TilePos {
-    x: 32295,
-    y: 32334,
-    floor: -8,
-};
-
 fn client_cast_route(
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
     from: TilePos,
 ) -> TestResult<Vec<(StepDirection, TilePos)>> {
-    let authored = spawns.sources.iter().any(|source| {
-        source.floor == CLIENT_TARGET_SPAWN.floor
-            && source.points.iter().any(|point| {
-                point.x == CLIENT_TARGET_SPAWN.x
-                    && point.y == CLIENT_TARGET_SPAWN.y
-                    && spawns
-                        .creatures
-                        .get(point.creature as usize)
-                        .is_some_and(|creature| creature.key == CLIENT_TARGET_KEY)
-            })
-    });
-    if !authored || from == CLIENT_CAST_TILE {
-        return Err("C12.client authored hunt spawn or starting position differs".into());
-    }
-    let profiles = creature_profiles()?;
-    if profiles
-        .get(CLIENT_TARGET_KEY)
-        .is_none_or(|profile| profile.health != 225 || profile.display_name != CLIENT_TARGET_NAME)
-    {
-        return Err("C12.client authored Tarantula profile differs".into());
-    }
-    let path = route(world, from, |at| at == CLIENT_CAST_TILE)
-        .ok_or("C12.client no route to the authored Tarantula cast tile")?;
+    let path = fixture_combat_route(world, from, true)?;
     let mut at = from;
     path.into_iter()
         .map(|direction| {
@@ -1215,7 +1233,7 @@ pub(super) async fn prepare_client_capture(
 ) -> TestResult<ClientCaptureSetup> {
     character_prep::declare_seeded(
         "C12.client",
-        "level-20-monk,premium,item-50271",
+        "level-20-monk,premium,item-50271,magma-crystal",
         "capture Greater Tiger Clash with the augment equipped",
     );
     let dedicated =
@@ -1241,7 +1259,6 @@ pub(super) async fn prepare_client_capture(
     }
     equip_right(&mut client, definition).await?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -1251,9 +1268,10 @@ pub(super) async fn prepare_client_capture(
     )?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
-    let route = client_cast_route(world, &metadata.spawns, position)?;
+    let route = client_cast_route(world, position)?;
     evidence(&format!(
-        "C12_CLIENT_HUNT spawn={CLIENT_TARGET_SPAWN:?} stand={CLIENT_CAST_TILE:?} steps={}",
+        "C12_CLIENT_HUNT fixture={FIXTURE_TARGET} stand={:?} steps={}",
+        route.last().map(|(_, at)| at),
         route.len()
     ));
     logout(&mut client).await?;
