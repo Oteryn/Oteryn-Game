@@ -41,7 +41,7 @@ fn request(epoch: u64, transaction: u8) -> TestResult<DailyRewardClaimRequest> {
 
 // Migration-owner fixtures provide committed history, never a runtime epoch producer.
 async fn reset(h: &Harness, epoch: u64, timestamp: &str) -> TestResult {
-    sqlx::query("INSERT INTO public.game_world_reset_history(world_id,reset_epoch,reset_day,reset_at_unix_ms,committed_at_unix_ms) SELECT encode($1,'hex')::uuid,$2::text::numeric(20,0),((t AT TIME ZONE 'Europe/Berlin')-INTERVAL '6 hours')::date-DATE '1970-01-01',floor(extract(epoch FROM t)*1000)::bigint,floor(extract(epoch FROM t)*1000)::bigint FROM (SELECT $3::text::timestamptz t) x")
+    sqlx::query("INSERT INTO public.game_world_reset_history(world_id,reset_epoch,reset_day,reset_at_unix_ms,committed_at_unix_ms) SELECT encode($1,'hex')::uuid,$2::text::numeric(20,0),game_server_save_day(t)-DATE '1970-01-01',floor(extract(epoch FROM t)*1000)::bigint,floor(extract(epoch FROM t)*1000)::bigint FROM (SELECT $3::text::timestamptz t) x")
         .bind(id(WORLD).as_slice()).bind(epoch.to_string()).bind(timestamp).execute(&h.pool).await?;
     Ok(())
 }
@@ -302,14 +302,14 @@ fn daily_reward_postgres_schema_constraints_privileges_and_dst() -> TestResult {
         // PostgreSQL's timezone database resolves both DST transitions before
         // the pure civil-day rule runs. The UTC reset hour changes with Berlin.
         for (timestamp, delta) in [
-            ("2026-03-28T04:59:59.999Z", -1_i64),
-            ("2026-03-28T05:00:00Z", 0),
-            ("2026-03-29T03:59:59.999Z", -1),
-            ("2026-03-29T04:00:00Z", 0),
-            ("2026-10-24T03:59:59.999Z", -1),
-            ("2026-10-24T04:00:00Z", 0),
-            ("2026-10-25T04:59:59.999Z", -1),
-            ("2026-10-25T05:00:00Z", 0),
+            ("2026-03-28T08:59:59.999Z", -1_i64),
+            ("2026-03-28T09:00:00Z", 0),
+            ("2026-03-29T07:59:59.999Z", -1),
+            ("2026-03-29T08:00:00Z", 0),
+            ("2026-10-24T07:59:59.999Z", -1),
+            ("2026-10-24T08:00:00Z", 0),
+            ("2026-10-25T08:59:59.999Z", -1),
+            ("2026-10-25T09:00:00Z", 0),
         ] {
             let (day, seconds): (i64, i64) = sqlx::query_as("SELECT (t::date-DATE '1970-01-01')::bigint,floor(extract(epoch FROM t::time))::bigint FROM (SELECT $1::text::timestamptz AT TIME ZONE 'Europe/Berlin' t) x")
                 .bind(timestamp).fetch_one(&h.pool).await?;

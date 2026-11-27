@@ -21,6 +21,16 @@ pub fn roll(
     reset_epoch: u64,
     unix_ms: i64,
 ) -> Result<DailyWorldChanges, DurabilityError> {
+    let (month, day) = utc_month_day(unix_ms);
+    roll_for_day(world, reset_epoch, month, day)
+}
+
+fn roll_for_day(
+    world: WorldId,
+    reset_epoch: u64,
+    month: u8,
+    day: u8,
+) -> Result<DailyWorldChanges, DurabilityError> {
     let candidates = authored_candidates()?;
     let mut hash = Sha256::new();
     hash.update(b"oteryn.world_change.daily.v1\0");
@@ -28,7 +38,6 @@ pub fn roll(
     let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
     let mut occurrence = [0; 16];
     occurrence[8..].copy_from_slice(&reset_epoch.to_be_bytes());
-    let (month, day) = utc_month_day(unix_ms);
     Ok(DailyWorldChanges::select(
         reset_epoch,
         month,
@@ -190,9 +199,20 @@ pub(super) async fn record(
         counters::project(tx, world, &mut day).await?;
         return Ok(day);
     }
-    let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
-    let mut selected = roll(world, epoch, timestamp)?;
+    let (timestamp, month, day): (i64, i16, i16) = sqlx::query_as(
+        "SELECT floor(extract(epoch FROM activated_at)*1000)::bigint,
+                extract(month FROM save_day)::smallint,extract(day FROM save_day)::smallint
+         FROM game_world_reset_epochs e
+         CROSS JOIN LATERAL (
+             SELECT CASE WHEN e.legacy_six_am THEN (e.activated_at AT TIME ZONE 'UTC')::date
+                         ELSE game_server_save_day(e.activated_at) END AS save_day
+         ) calendar
+         WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric",
+    )
+    .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
+    let month = u8::try_from(month).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let day = u8::try_from(day).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let mut selected = roll_for_day(world, epoch, month, day)?;
     counters::at_reset(
         tx,
         world,

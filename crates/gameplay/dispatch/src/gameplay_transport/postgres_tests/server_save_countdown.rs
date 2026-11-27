@@ -42,11 +42,11 @@ fn scenario() -> TestResult {
         assert!(ahead > 0 && ahead <= 25 * 3_600_000, "{planned:?}");
         let berlin: String = sqlx::query_scalar("SELECT to_char(to_timestamp($1::double precision/1000) AT TIME ZONE 'Europe/Berlin','HH24:MI:SS.MS')")
             .bind(planned.reset_at_unix_ms).fetch_one(&harness.pool).await?;
-        assert_eq!(berlin, "06:00:00.000");
-        let dst_instants: Vec<String> = sqlx::query_scalar("SELECT to_char(((date_trunc('day', local_day::timestamp) + interval '6 hours') AT TIME ZONE 'Europe/Berlin') AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') FROM unnest(ARRAY[DATE '2026-01-15', DATE '2026-07-15']) local_day ORDER BY local_day")
+        assert_eq!(berlin, "10:00:00.000");
+        let dst_instants: Vec<String> = sqlx::query_scalar("SELECT to_char(game_server_save_at(local_day) AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') FROM unnest(ARRAY[DATE '2026-01-15', DATE '2026-07-15']) local_day ORDER BY local_day")
             .fetch_all(&harness.pool)
             .await?;
-        assert_eq!(dst_instants, ["2026-01-15 05:00", "2026-07-15 04:00"]);
+        assert_eq!(dst_instants, ["2026-01-15 09:00", "2026-07-15 08:00"]);
         // Crystal global_server_save.lua:22-34,42-51: each minute 5/4/3/2/1.
         for minutes in 1..=5 {
             let due = crate::durability::world_reset::PlannedWorldReset {

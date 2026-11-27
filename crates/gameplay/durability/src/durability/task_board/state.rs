@@ -101,10 +101,11 @@ pub(super) async fn daily_reset(
 ) -> Result<Option<DailyReset>, DurabilityError> {
     let row: Option<(i64, i64, i64)> = sqlx::query_as(
         "SELECT (day - DATE '1970-01-01')::bigint,
-                extract(epoch FROM ((day + time '06:00') AT TIME ZONE 'Europe/Berlin'))::bigint,
-                extract(epoch FROM (((day + 1) + time '06:00') AT TIME ZONE 'Europe/Berlin'))::bigint
-           FROM (SELECT game_task_board_reset_day(encode($1,'hex')::uuid) AS day) d
-          WHERE day IS NOT NULL",
+                extract(epoch FROM game_server_save_at(day, e.legacy_six_am))::bigint,
+                extract(epoch FROM game_server_save_at(day + 1))::bigint
+           FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch)
+           CROSS JOIN LATERAL (SELECT game_task_board_reset_day(a.world_id) AS day) d
+          WHERE a.world_id=encode($1,'hex')::uuid AND day IS NOT NULL",
     )
     .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
     .fetch_optional(tx)
