@@ -82,7 +82,7 @@ async fn scenario(admin: String, exhaust: bool) -> TestResult {
         .map_err(debug)?;
     admitted.item_fence = Some(item_fence_of(current).ok_or("first-entry item fence")?);
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        &BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
         &[CAPABILITY_LOGOUT_V1, CAPABILITY_BOSS_ENCOUNTER_V1],
     )
     .ok_or("logout and activity capabilities")?;
