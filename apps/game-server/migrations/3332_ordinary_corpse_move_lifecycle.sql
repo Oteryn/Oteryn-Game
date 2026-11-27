@@ -570,6 +570,28 @@ BEGIN
         EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
     END LOOP;
 
+    -- First pickup from original Ground custody can follow a skinning action
+    -- that reached the portable scheduled stage without a decay receipt.
+    body := pg_get_functiondef('game_item_plain_corpse_source(uuid)'::regprocedure);
+    anchor := 'm.loot_table_production_key=i.definition_production_key OR (';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Portable spent corpse provenance predecessor changed';
+    END IF;
+    EXECUTE replace(body,anchor,$pickup$
+        m.loot_table_production_key=i.definition_production_key OR (
+            game_ordinary_corpse_portable_key(i.definition_production_key)
+            AND EXISTS (
+                SELECT 1 FROM game_spell_field_temporal_schedules p
+                WHERE p.item_instance_id=i.item_instance_id AND p.source_transaction_id=m.transaction_id
+                  AND p.source_ordinal=0
+                  AND (p.target_family,p.target_production_key,p.target_revision)=
+                      (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+                  AND game_ordinary_corpse_skinning_reached(
+                      i.item_instance_id,p.source_stage,i.definition_production_key,
+                      i.definition_revision_ref,i.state_revision,i.last_transaction_id)
+            )
+        ) OR ($pickup$);
+
     -- Preserve the special rabbit yield guard. Every other timed attempt
     -- uses the exact tool for its old-to-spent transition.
     body := pg_get_functiondef('game_corpse_skinning_complete()'::regprocedure);

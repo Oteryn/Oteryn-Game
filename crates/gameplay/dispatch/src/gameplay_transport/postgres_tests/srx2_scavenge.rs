@@ -283,7 +283,15 @@ fn scenario(rabbit: bool) -> TestResult {
         );
         timed_dragon_skinning(&owner, &harness, native, fence, deps.actor).await?;
         stages(&owner, &harness, native, fence, deps.actor).await?;
-        entity_target(&owner, &harness, native, fence, deps.actor).await?;
+        for (creature, spent_key) in [
+            ("minotaur", "oteryn:item.tibia.i4012"),
+            ("minotaur_mage", "oteryn:item.tibia.i4048"),
+        ] {
+            entity_target(
+                &owner, &harness, native, fence, deps.actor, creature, spent_key,
+            )
+            .await?;
+        }
         refusals(&owner, &harness, native, fence, deps.actor).await?;
         Ok(())
     })
@@ -867,8 +875,12 @@ async fn entity_target(
     native: &crate::content::native_gameplay::NativeGameplayState,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     player: crate::foundation::ExactActorRef,
+    creature: &str,
+    spent_key: &str,
 ) -> TestResult {
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    let creature_key = format!("oteryn:creature.{creature}");
+    let pickup = creature == "minotaur_mage";
     let position = MovementLocalPosition {
         x: 7,
         y: 0,
@@ -892,7 +904,7 @@ async fn entity_target(
             .map_err(debug)?;
         let pin = runtime.content_pin().clone();
         let creature = runtime
-            .realize_native_qualification_spawn(pin, "oteryn:creature.minotaur", position)
+            .realize_native_qualification_spawn(pin, &creature_key, position)
             .map_err(debug)?;
         let health = runtime
             .companion_snapshot(creature.actor)
@@ -911,15 +923,12 @@ async fn entity_target(
             projection.position(),
         )
     };
-    let row = native
-        .reward_table()
-        .row("oteryn:creature.minotaur")
-        .map_err(debug)?;
-    let race = row.race.clone().ok_or("canonical minotaur race")?;
-    let corpse = row
-        .corpse_item
-        .as_ref()
-        .ok_or("canonical minotaur corpse")?;
+    let row = native.reward_table().row(&creature_key).map_err(debug)?;
+    let race = row.race.clone().ok_or("canonical source race")?;
+    let corpse = row.corpse_item.as_ref().ok_or("canonical source corpse")?;
+    if pickup {
+        assert_eq!(corpse.production_key, "oteryn:item.tibia.i5981");
+    }
     seed_scavenge(h, 3, race.key()).await?;
     let definition = TypedDefinitionRef {
         family: corpse.family.clone(),
@@ -951,7 +960,7 @@ async fn entity_target(
                             position.y.try_into()?,
                             (-position.floor).try_into()?,
                         ),
-                    corpse_ref: actor.corpse_identity().to_vec(),
+                    corpse_ref: crate::durability::party_kill_xp::encode_death_key(death),
                     map_revision: "map-1".into(),
                     content_revision: "content-1".into(),
                     native_room_placement_context: vec![6; 16],
@@ -992,7 +1001,7 @@ async fn entity_target(
         corpse,
         0,
         10_000_000,
-        40_000_100,
+        if pickup { 45_000_100 } else { 40_000_100 },
     )?;
     let command = UseCommand {
         game_session_id: fence.game_session_id,
@@ -1018,7 +1027,7 @@ async fn entity_target(
         .bound_corpse(actor.corpse_identity())
         .ok_or("transformed native corpse stays visible")?;
     assert_eq!(
-        visible.item.production_key, "oteryn:item.tibia.i4012",
+        visible.item.production_key, spent_key,
         "the actual native Entity projection must update to the spent appearance"
     );
     let before = full_footprint(h).await?;
@@ -1028,6 +1037,63 @@ async fn entity_target(
         .ok_or("native Entity replay")?;
     assert_eq!(replay.disposition, UseDisposition::Committed);
     assert_eq!(full_footprint(h).await?, before);
+    if pickup {
+        use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+        use crate::foundation::{CommandId, CommandRef};
+
+        let (source, was_dropped, has_decay): (Vec<u8>, bool, bool) = sqlx::query_as(
+            "SELECT g.spatial_position,game_item_loop_drop_ref(g.corpse_ref),
+                    EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts r
+                           WHERE r.item_instance_id=g.item_instance_id)
+             FROM game_item_ground_locations g WHERE g.item_instance_id=$1",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(corpse))
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(
+            !was_dropped && !has_decay,
+            "the spent item retains its original Ground custody"
+        );
+        let permit = owner
+            .spell_lane_permit()
+            .await
+            .ok_or("corpse pickup lane")?;
+        let receipt = owner
+            .root
+            .commit_item_loop_move(
+                &permit,
+                owner.character,
+                owner.holder,
+                &fence,
+                CommandRef::new(
+                    fence.game_session_id,
+                    CommandId::new(45_000_001).map_err(debug)?,
+                ),
+                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                LoopMoveRequest {
+                    item: corpse,
+                    count: None,
+                    pickup_cell: Some(source),
+                    destination: LoopDestination::MainBackpack,
+                },
+            )
+            .await
+            .map_err(debug)?
+            .map_err(|error| format!("direct spent-corpse pickup: {error:?}"))?;
+        assert_eq!(receipt.operation, 5);
+        let carried: String = sqlx::query_scalar(
+            "SELECT i.definition_production_key FROM game_item_instances i
+             JOIN game_item_container_entries e USING(item_instance_id)
+             WHERE i.item_instance_id=$1 AND e.character_id=$2",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(corpse))
+        .bind(sqlx::types::Uuid::from_bytes(
+            *fence.character_id.as_bytes(),
+        ))
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(carried, spent_key);
+    }
     Ok(())
 }
 
