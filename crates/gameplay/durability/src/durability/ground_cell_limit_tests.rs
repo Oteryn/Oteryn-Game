@@ -2002,6 +2002,49 @@ mod postgres {
         })
     }
     #[test]
+    fn corpse_mint_refuses_full_bundle_encoded_tile() -> TestResult {
+        run("ground_mixed_encoding", async |h| {
+            use crate::durability::item_mint::{CORPSE_MATERIALIZATION_PURPOSE_KEY, ItemMintError};
+            use sha2::{Digest, Sha256};
+
+            let mut bundle = target();
+            bundle.map_revision = crate::durability::map_item_mint_audit::map_revision_of(&[1; 32]);
+            mint(h, 1, 64, &bundle).await?;
+            let mut native = bundle.clone();
+            native.spatial_position[8..].copy_from_slice(&1_i16.to_be_bytes());
+            native.map_revision = crate::durability::map_item_mint_audit::map_revision_of(
+                Sha256::digest(bundle.map_revision.as_bytes()).as_slice(),
+            );
+            let before = mint_footprint(h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut candidate =
+                frozen_mint(h, 65, &native, CORPSE_MATERIALIZATION_PURPOSE_KEY).await?;
+            let permit = candidate.fresh_death_lane_permit().await;
+            let result = h
+                .root
+                .commit_corpse_mint(
+                    &permit,
+                    &recovery,
+                    &h.node,
+                    &mut candidate,
+                    id(harness::CHARACTER),
+                )
+                .await;
+            assert!(
+                matches!(result, Err(ItemMintError::CapacityExceeded)),
+                "{result:?}"
+            );
+            assert_eq!(mint_footprint(h).await?, before);
+            Ok(())
+        })
+    }
+
+    #[test]
     fn native_writer_refuses_65th_without_creating_unread_occupancy() -> TestResult {
         run("ground_read_bound", async |h| {
             // Previously this fixture created501 roots through unguarded MINT.

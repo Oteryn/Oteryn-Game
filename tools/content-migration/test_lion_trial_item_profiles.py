@@ -331,6 +331,7 @@ class LionTrialItemProfiles(unittest.TestCase):
         import house_decoration_actions as house
         import quest_callback_profiles as provider
         import quick_loot_item_profiles as quick_loot
+        from native_profile_composition import compact_item_profile
         from qualification_inputs import appearance_input_scope
         from srx1_profile_updates import compact_item_record
 

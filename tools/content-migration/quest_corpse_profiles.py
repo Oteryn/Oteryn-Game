@@ -483,10 +483,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 raise ValueError("QUEST_CORPSE_EXISTING_NATIVE_CONFLICT")
             # Complete only UNKNOWN classification facts from this exact pinned
             # XML/DAT corpse closure. All other existing policy/attributes remain.
-            prior["semantics"]["classification"] = grizzly.accepted_first(
-                prior["semantics"]["classification"],
-                record["semantics"]["classification"],
-            )
+            prior_class = prior['semantics']['classification']
+            classification = grizzly.accepted_first(
+                prior_class, record['semantics']['classification'])
+            if (prior_class['state'] == 'KNOWN'
+                    and 'capabilities' not in prior_class['value']
+                    and classification['value'].get('capabilities') == grizzly.source.U):
+                del classification['value']['capabilities']
+            prior['semantics']['classification'] = classification
             continue
         document["records"].append(record)
     document["records"].sort(key=order)

@@ -107,22 +107,17 @@ pub(super) async fn qualify(
         vec![corpse.clone()]
     );
 
-    // Move only the fixture's durable clock anchor, using the same maintenance technique as
-    // corpse_decay_postgres_cases. The production deadline checks and writer stay enabled.
     let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role = replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("UPDATE game_item_mint_receipts SET materialized_at = floor(extract(epoch FROM clock_timestamp())*1000)::bigint - 61000 WHERE item_instance_id = encode($1,'hex')::uuid")
-        .bind(corpse.item.item_instance_id.as_slice())
-        .execute(&mut *tx).await?;
+    let aged_at = age_past_corpse_retirement(&mut tx, corpse.item.item_instance_id).await?;
     // Ordinary Ground has no materialization deadline column: age its creation receipt only.
-    sqlx::query("UPDATE game_item_mint_receipts SET occurred_at = floor(extract(epoch FROM clock_timestamp())*1000)::bigint - 61000 WHERE item_instance_id = encode($1,'hex')::uuid")
+    sqlx::query("UPDATE game_item_mint_receipts SET occurred_at = $2 WHERE item_instance_id = encode($1,'hex')::uuid")
         .bind(ground.as_slice())
+        .bind(aged_at)
         .execute(&mut *tx).await?;
     tx.commit().await?;
 
     if reconcile {
+        owner.drain_source_item_deadlines().await;
         let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
         h.root
             .retire_decayed_corpse(
@@ -205,6 +200,75 @@ pub(super) async fn qualify(
     owner.tick_timed_items().await;
     assert_eq!(retire_count(h).await?, children + 1);
     Ok(())
+}
+
+pub(super) async fn retire_hunted_corpse(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    corpse: [u8; 16],
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    age_past_corpse_retirement(&mut tx, corpse).await?;
+    tx.commit().await?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    // The scoped owner retires one due corpse per pass. An earlier
+    // boss corpse can become due while this hunt is in progress.
+    let mut retired = false;
+    for _ in 0..crate::durability::item_decay_retire::COMBAT01_CORPSES_PER_SCOPE {
+        owner.drain_corpse_deadlines().await;
+        retired = sqlx::query_scalar(
+            "SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(corpse.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        if retired {
+            break;
+        }
+    }
+    assert!(retired, "the real decay owner must retire the hunted corpse");
+    Ok(())
+}
+
+/// Shift the fixture's MINT anchor and stage deadlines by the same amount.
+/// The authored durations, stage proofs and retirement guards stay in force.
+pub(super) async fn age_past_corpse_retirement(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    item: [u8; 16],
+) -> TestResult<i64> {
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut **tx)
+        .await?;
+    let shift: i64 = sqlx::query_scalar(
+        "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint - 1000 \
+             - game_corpse_retirement_deadline(encode($1,'hex')::uuid)",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    let aged_at = sqlx::query_scalar(
+        "UPDATE game_item_mint_receipts SET materialized_at = materialized_at + $2 \
+         WHERE item_instance_id = encode($1,'hex')::uuid RETURNING materialized_at",
+    )
+    .bind(item.as_slice())
+    .bind(shift)
+    .fetch_one(&mut **tx)
+    .await?;
+    sqlx::query(
+        "UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms = expires_at_unix_ms + $2 \
+         WHERE item_instance_id = encode($1,'hex')::uuid",
+    )
+    .bind(item.as_slice())
+    .bind(shift)
+    .execute(&mut **tx)
+    .await?;
+    Ok(aged_at)
 }
 
 async fn retire_count(h: &Harness) -> TestResult<i64> {

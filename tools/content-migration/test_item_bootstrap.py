@@ -14,9 +14,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import boss_conditional_item_reference as conditional
+import fourth_quarter_corpses as fourth_quarter
 import item_tree_index
+import ordinary_corpse_cohort as third_quarter
+import ordinary_corpse_profiles as first_quarter
+import ordinary_corpse_slice2 as second_quarter
 import ranged_item_profiles as ranged
 from dispenser_item_profiles import APPEARANCES
+from qengine_reward_item_profiles import CLIENT
 
 TOOL = Path(__file__).with_name("world_project_v2_to_tree.py")
 spec = importlib.util.spec_from_file_location("item_bootstrap_converter", TOOL)
@@ -75,6 +80,26 @@ def fixture(root):
     for relative in (APPEARANCES, "imports/tibiawiki/facts/items-stats.json"):
         (root / relative).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(TOOL.parents[2] / relative, root / relative)
+    # Exercise the real corpse providers with the same sealed inputs as the
+    # production writer.
+    repo = TOOL.parents[2]
+    membership = Path("imports/official/appearance-membership")
+    admitted = membership / "admitted.json"
+    selections = json.loads((repo / admitted).read_bytes())["files"]
+    client = next(
+        row["manifest"] for row in selections if row["label"] == "client-15.30"
+    )
+    for relative in (
+        fourth_quarter.SOURCE,
+        f"{first_quarter.CAPTURE}/creature-bindings.json",
+        second_quarter.CAPTURE,
+        third_quarter.PACKET,
+        CLIENT,
+        admitted,
+        membership / client,
+    ):
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(repo / relative, root / relative)
     records = [
         {"kind": "Item", "identity": target, "materializable": False}
         for target in identities
@@ -178,6 +203,7 @@ def input_helpers(root, *, real_conditional=False):
         ("engclaim_item_profiles", "apply_admissions"),
     ):
         modules[name] = SimpleNamespace(**{function: admission(name)})
+    modules["boss_conditional_item_reference"].definition = conditional.definition
     if real_conditional:
         modules["boss_conditional_item_reference"] = conditional
     modules["primal_reference_overlay"] = SimpleNamespace(
@@ -252,7 +278,9 @@ class ItemBootstrapTests(unittest.TestCase):
                 self.assertEqual(converter.cli(["--items-only"]), 0)
                 ranged_call.assert_called_once_with(root)
             index = json.loads((root / "content/items/index.json").read_bytes())
-            expected_identities = [row["identity"] for row in reference["records"]] + [identity(8748)]
+            expected_identities = [row["identity"] for row in reference["records"]] + [
+                identity(number) for number in (8748, 35136, 35686, 48109, 49120, 48340, 48401, 48396)
+            ]
             count = len(expected_identities)
             expected_shards = [
                 f"content/items/definitions/items-{start:05d}-{min(start + 1, count - 1):05d}.json"

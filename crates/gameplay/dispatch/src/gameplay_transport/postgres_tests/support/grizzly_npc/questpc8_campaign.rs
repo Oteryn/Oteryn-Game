@@ -75,6 +75,7 @@ pub(super) async fn exercise(
                 command,
                 None,
                 HunterRefresh::OncePerHunt,
+                Some(h),
             )
             .await?;
             assert_eq!(
@@ -171,15 +172,24 @@ pub(super) async fn exercise(
     )
     .fetch_all(&h.pool)
     .await?;
-    assert_eq!(
-        achievements,
-        [
-            "oteryn:achievement/blood_red_snapper",
-            "oteryn:achievement/huntsman",
-            "oteryn:achievement/one_less",
-            "oteryn:achievement/rootless_behaviour"
-        ]
-    );
+    // The three crocodile repetitions also complete their Bestiary entry.
+    let crocodile = quest::task(1).ok_or("crocodile task")?;
+    let (_, difficulty) = crate::content::canonical_bestiary_difficulties(
+        super::super::character_title_sources_fixtures::source_limits(),
+    )?
+    .into_iter()
+    .find(|(race, _)| race.key() == crocodile.creatures[0].key)
+    .ok_or("crocodile Bestiary entry")?;
+    let mut expected = vec![
+        "oteryn:achievement/blood_red_snapper",
+        "oteryn:achievement/one_less",
+        "oteryn:achievement/rootless_behaviour",
+    ];
+    expected.extend(oteryn_gameplay_progression::bestiary_achievement::completion_keys([
+        difficulty.as_str(),
+    ]));
+    expected.sort_unstable();
+    assert_eq!(achievements, expected);
     let before_campaign_xp = experience(h).await?;
     eprintln!("QUESTPC8_CAMPAIGN POSTGRES_FINAL_PAYOUT_CHECK");
     command += 1;
@@ -399,23 +409,9 @@ async fn hunt_with_decay(
         };
         if let Some(h) = decay_fixture {
             let corpse = corpse.ok_or("hunted native corpse")?;
-            // COMBAT01 admits 64 live corpses per scope. This accelerated hunt
-            // must also drive their normal D135 retirement. Age only the fixture
-            // clock anchor, as corpse_decay.rs does; keep all writer guards live.
-            let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-61000 WHERE item_instance_id=encode($1,'hex')::uuid")
-                .bind(corpse.as_slice()).execute(&mut *tx).await?;
-            tx.commit().await?;
-            owner.drain_corpse_deadlines().await;
-            let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
-                .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
-            assert_eq!(
-                live, 0,
-                "the real decay owner must retire the hunted corpse"
-            );
+            // COMBAT01 admits 64 live corpses per scope. Drive the real stage
+            // and retirement owners between these accelerated fixture kills.
+            super::super::corpse_decay_fixtures::retire_hunted_corpse(owner, h, corpse).await?;
         }
     }
     Ok(())

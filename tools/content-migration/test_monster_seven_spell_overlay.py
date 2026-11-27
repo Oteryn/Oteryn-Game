@@ -14,6 +14,7 @@ import item_detail_source_facts as item_details
 import monster_seven_spell_overlay as overlay
 import pegasus_feather_item_profile
 import qengine_reward_item_profiles as qengine
+from native_profile_composition import compact_item_profile
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
 from srx1_profile_updates import compact_item_record

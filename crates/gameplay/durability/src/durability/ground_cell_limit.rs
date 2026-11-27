@@ -137,9 +137,7 @@ pub async fn check_ground_cell_root_insert_with_recovery(
     check_ground_cell_root_insert_in_transaction(tx, &authority, ground, item_instance_id).await
 }
 
-/// A genuine Player/Creature physical writer already holds its sealed scope
-/// and native Channel lock. Read the actual post-removal census immediately
-/// before its fresh root. Ground placement and identity are data, not grants.
+/// Admit a new root against the locked census of both map encodings.
 pub async fn check_ground_cell_root_insert_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -153,16 +151,21 @@ pub async fn check_ground_cell_root_insert_in_transaction(
         content_revision: ground.content_revision.clone(),
         placement_context: ground.native_room_placement_context.clone(),
     };
-    let remaining =
-        check_ground_cell_root_admission_in_transaction(tx, authority, &target, &[]).await?;
+    decode_ground_cell(&ground.spatial_position)
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let rows = locked_tile_rows_for_scope(tx, authority, &target).await?;
+    let world = WorldId::decode(&authority.world_bytes())
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let remaining = native_roots(rows, authority, world)?;
     if remaining.len() >= GROUND_CELL_ROOT_LIMIT {
         return Err(GroundCellAdmissionError::Limit(
             GroundCellLimitError::NotEnoughRoom,
         ));
     }
+    let mut seen = std::collections::BTreeSet::from([*item_instance_id]);
     if remaining
         .iter()
-        .any(|item| &item.item_instance_id == item_instance_id)
+        .any(|item| !seen.insert(item.item_instance_id))
     {
         return Err(GroundCellAdmissionError::Limit(
             GroundCellLimitError::IncompatibleInput,

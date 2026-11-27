@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import quest_corpse_profiles as corpse
+from native_profile_composition import compact_item_profile
 
 UNKNOWN_CLASSIFICATION_ITEMS = {
     f"oteryn:item.tibia.i{number}"

@@ -294,7 +294,7 @@ pub struct LoopGroundOverlay {
     facts: HashMap<[u8; 16], EntryFacts>,
     ordinals: HashMap<[u8; 16], u64>,
     native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
-    source_plain_corpses: HashSet<[u8; 16]>,
+    ground_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
@@ -349,7 +349,7 @@ impl LoopGroundOverlay {
         let mut facts = HashMap::new();
         let mut ordinals = HashMap::new();
         let mut native_pickup_cells = HashMap::new();
-        let mut source_plain_corpses = HashSet::new();
+        let mut ground_corpses = HashSet::new();
         for entry in items {
             let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
@@ -465,8 +465,8 @@ impl LoopGroundOverlay {
                 overlay.add_ground(item)
             };
             if added.is_ok() {
-                if entry.source_plain_corpse {
-                    source_plain_corpses.insert(id);
+                if committed_corpse || entry.source_plain_corpse {
+                    ground_corpses.insert(id);
                 }
                 facts.insert(id, entry_facts);
                 ordinals.insert(id, ordinal);
@@ -480,7 +480,7 @@ impl LoopGroundOverlay {
             facts,
             ordinals,
             native_pickup_cells,
-            source_plain_corpses,
+            ground_corpses,
             field_pin,
             taken_sources: Default::default(),
             ground_push_definition,
@@ -689,7 +689,7 @@ impl LoopGroundCache {
 
     /// The complete scoped corpse read also reconciles an ambiguous retirement.
     /// Only representation metadata is compared; Ground custody stays in Items.
-    pub(super) fn reconcile_plain_corpses(
+    pub(super) fn reconcile_ground_corpses(
         &self,
         scope: crate::foundation::RuntimeScopeRefV1,
         live: &[[u8; 16]],
@@ -698,7 +698,7 @@ impl LoopGroundCache {
             && state.current.as_ref().is_some_and(|current| {
                 current.overlay.runtime_scope() == scope
                     && current
-                        .source_plain_corpses
+                        .ground_corpses
                         .iter()
                         .any(|item| !live.contains(item))
             })
@@ -985,11 +985,15 @@ pub(super) async fn committed_loop_move(
     };
     let command_id = CommandId::new(command.command_id).ok()?;
     let command = CommandRef::new(command.game_session_id, command_id);
-    let replay = super::AdmissionRetryBudget::for_command(admission.root)
+    let (replay, corpse) = super::AdmissionRetryBudget::for_command(admission.root)
         .retry_command_guard(async || {
             admission
                 .root
-                .read_item_loop_move_receipt(admission.character, fence.character_id, command)
+                .read_item_loop_move_receipt_with_corpse(
+                    admission.character,
+                    fence.character_id,
+                    command,
+                )
                 .await
         })
         .await
@@ -1000,7 +1004,56 @@ pub(super) async fn committed_loop_move(
     {
         return None;
     }
+    if let Some(item) = corpse {
+        let _permit = admission.spell_lane_permit().await?;
+        publish_current_corpse_custody(admission, fence, item).await?;
+    }
     Some(replay)
+}
+
+/// Reconcile under the item lane. A later command may have changed custody
+/// since this receipt committed, so project only the current scoped Ground row.
+async fn publish_current_corpse_custody(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: CurrentCharacterItemFence,
+    item: [u8; 16],
+) -> Option<()> {
+    let schedule = admission
+        .root
+        .read_scoped_corpse_decay_schedule(admission.character, fence.runtime_scope)
+        .await
+        .ok()?;
+    let current = schedule
+        .corpses
+        .iter()
+        .find(|corpse| corpse.corpse_item_instance_id == item);
+    let mut runtime = admission.runtime.lock().await;
+    if runtime.binding().runtime_scope() != fence.runtime_scope
+        || runtime.owner_fence().ok()?.generation() != fence.scope_ownership_generation
+    {
+        return None;
+    }
+    match current {
+        Some(corpse) => {
+            if let Some(bytes) = &corpse.loop_ground_spatial_position {
+                let cell = crate::durability::spell_items_abi::decode_ground_cell(bytes).ok()?;
+                let floor = i16::try_from(-cell.z).ok()?;
+                runtime
+                    .relocate_corpse_item(
+                        item,
+                        crate::foundation::MovementLocalPosition {
+                            x: cell.x,
+                            y: cell.y,
+                            floor,
+                        },
+                    )
+                    .ok()?;
+            }
+        }
+        None => runtime.set_corpse_item_ground_position(item, None).ok()?,
+    }
+    admission.states.loop_ground.invalidate();
+    Some(())
 }
 
 /// The 10-byte Ground cell codec of the item owner (x i32 BE, y i32 BE, floor i16 BE).
@@ -1243,6 +1296,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     } else {
         None
     };
+    let mut ground_change = GroundChange(touches_ground.then_some(&admission.states.loop_ground));
     let elemental_result = admission
         .commit_elemental_arrival(
             &mut permit,
@@ -1253,6 +1307,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             ground.as_deref(),
         )
         .await;
+    let ordinary_move = elemental_result.is_none();
     let mut ring_opened = false;
     let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
         (true, Some(prepared)) => {
@@ -1386,9 +1441,62 @@ pub(super) async fn move_loop_item_with_house_capacity(
         map.facts
             .emit_movement_effect(TilePos { x, y, floor }, effect);
     }
+    if let Ok(Ok(receipt)) = &committed
+        && !receipt.replayed
+        && ordinary_move
+        && touches_ground
+    {
+        let mut runtime = admission.runtime.lock().await;
+        if runtime.binding().runtime_scope() == fence.runtime_scope
+            && runtime
+                .owner_fence()
+                .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
+        {
+            match request.target {
+                LoopTarget::Ground(to) => {
+                    if let Some(floor) = to.floor.checked_neg() {
+                        let _ = runtime.set_corpse_item_ground_position(
+                            item,
+                            Some(crate::foundation::MovementLocalPosition {
+                                x: to.x,
+                                y: to.y,
+                                floor,
+                            }),
+                        );
+                    }
+                }
+                LoopTarget::MainBackpack | LoopTarget::Container(_) => {
+                    let _ = runtime.set_corpse_item_ground_position(item, None);
+                }
+            }
+        }
+    }
+    if let Ok(Ok(receipt)) = &committed
+        && receipt.replayed
+        && touches_ground
+    {
+        let Ok((LoopMoveReplay::Moved, corpse)) = admission
+            .root
+            .read_item_loop_move_receipt_with_corpse(
+                admission.character,
+                fence.character_id,
+                command_ref,
+            )
+            .await
+        else {
+            return LoopMoveResult::Unknown;
+        };
+        if let Some(item) = corpse
+            && publish_current_corpse_custody(admission, fence, item)
+                .await
+                .is_none()
+        {
+            return LoopMoveResult::Unknown;
+        }
+    }
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
-    if touches_ground && matches!(committed, Ok(Ok(_))) {
+    if touches_ground && matches!(&committed, Ok(Ok(receipt)) if !receipt.replayed) {
         let destination = match request.target {
             LoopTarget::Ground(to) => Some(to),
             _ => None,
@@ -1398,9 +1506,10 @@ pub(super) async fn move_loop_item_with_house_capacity(
             .browse_fields
             .committed_move(request.item, destination);
     }
-    if touches_ground && !matches!(committed, Ok(Err(_))) {
-        admission.states.loop_ground.invalidate();
+    if matches!(committed, Ok(Err(_))) {
+        ground_change.0 = None;
     }
+    drop(ground_change);
     drop(permit);
     if touches_ground && matches!(committed, Ok(Ok(_))) {
         admission.refresh_terrain_tools().await;
@@ -1991,7 +2100,7 @@ mod tests {
             project(moved.clone()).overlay().has_added_item(tile),
             "an ordinary ground move keeps the same corpse visible in map coordinates"
         );
-        let moved_view = project(moved.clone());
+        let moved_view = Arc::new(project(moved.clone()));
         assert_eq!(moved_view.pickup_cell(&id(3)), Some(ground_cell(1, 0, -7)));
         assert!(
             !moved_view
@@ -1999,6 +2108,15 @@ mod tests {
                 .get(&id(3))
                 .ok_or("moved corpse facts")?
                 .pickupable
+        );
+        let cache = LoopGroundCache::default();
+        cache.store(cache.cached().0, &moved_view);
+        cache.reconcile_ground_corpses(scope, &[id(3)]);
+        assert!(cache.cached().1.is_some());
+        cache.reconcile_ground_corpses(scope, &[]);
+        assert!(
+            cache.cached().1.is_none(),
+            "the timer removes a stale relocated corpse"
         );
         moved.item.ground.native_room_placement_context = vec![9; 32];
         assert!(!project(moved).overlay().has_added_item(tile));

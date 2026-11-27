@@ -17,6 +17,7 @@ from pathlib import Path
 import first_dragon_item_profiles
 import m01c_key_door_equipment_pin
 import qengine_reward_equipment_pin
+from native_profile_composition import compact_item_profile
 import qready1_clock_equipment_pin
 import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin

@@ -781,16 +781,57 @@ fn source_soul_war_corpse_pair(
         })
 }
 
-fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u32> {
+fn source_exact_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u32> {
     if corpse.family != "Item" || corpse.revision != "definition-r1" {
         return None;
     }
     match (creature, corpse.key.as_str()) {
-        ("oteryn:creature.hydra", "oteryn:item.tibia.i6048") => Some(36),
         ("oteryn:creature.glooth_golem", "oteryn:item.tibia.i20972") => Some(38),
+        ("oteryn:creature.hydra", "oteryn:item.tibia.i6048") => Some(36),
+        ("oteryn:creature.lost_berserker", "oteryn:item.tibia.i16071") => Some(50),
+        ("oteryn:creature.lucifuga_aranea", "oteryn:item.tibia.i7344") => Some(52),
+        ("oteryn:creature.madareth", "oteryn:item.tibia.i7893") => Some(60),
+        ("oteryn:creature.magma_crawler", "oteryn:item.tibia.i15991") => Some(50),
+        ("oteryn:creature.memory_of_a_fungus", "oteryn:item.tibia.i15872") => Some(50),
+        ("oteryn:creature.memory_of_a_hero", "oteryn:item.tibia.i18134") => Some(60),
+        ("oteryn:creature.memory_of_a_pirate", "oteryn:item.tibia.i18190") => Some(50),
+        ("oteryn:creature.moohtant", "oteryn:item.tibia.i20996") => Some(50),
+        ("oteryn:creature.orewalker", "oteryn:item.tibia.i15911") => Some(50),
+        ("oteryn:creature.pirate_buccaneer", "oteryn:item.tibia.i18190") => Some(50),
+        ("oteryn:creature.pirate_corsair", "oteryn:item.tibia.i18194") => Some(50),
+        ("oteryn:creature.pirate_cutthroat", "oteryn:item.tibia.i18198") => Some(50),
+        ("oteryn:creature.pirate_marauder", "oteryn:item.tibia.i18202") => Some(50),
+        ("oteryn:creature.priestess", "oteryn:item.tibia.i18210") => Some(50),
+        ("oteryn:creature.reflection_of_mawhawk", "oteryn:item.tibia.i21004") => Some(50),
         ("oteryn:creature.werehyaena", "oteryn:item.tibia.i33821") => Some(48),
         _ => None,
     }
+}
+
+static FOURTH_QUARTER_PLAIN_CORPSES: LazyLock<BTreeMap<String, String>> = LazyLock::new(|| {
+    #[derive(Deserialize)]
+    struct Source {
+        plain: BTreeMap<String, u32>,
+    }
+    serde_json::from_str::<Source>(super::native_gameplay::FOURTH_QUARTER_CORPSE_SOURCE)
+        .map(|source| {
+            source
+                .plain
+                .into_iter()
+                .map(|(creature, item)| (creature, format!("oteryn:item.tibia.i{item}")))
+                .collect()
+        })
+        .unwrap_or_default()
+});
+
+fn crystal_plain_corpses() -> &'static [(String, u32)] {
+    static CORPSES: LazyLock<Vec<(String, u32)>> = LazyLock::new(|| {
+        serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/ordinary-corpses/plain.json"
+        ))
+        .unwrap_or_default()
+    });
+    &CORPSES
 }
 
 const SOURCE_PLAIN_CORPSES: &[(&str, &str)] = &[
@@ -799,6 +840,26 @@ const SOURCE_PLAIN_CORPSES: &[(&str, &str)] = &[
         "oteryn:item.tibia.i33949",
     ),
     ("oteryn:creature.blue_butterfly", "oteryn:item.tibia.i4993"),
+    ("oteryn:creature.frostfur", "oteryn:item.tibia.i7349"),
+    ("oteryn:creature.gnorre_chyllson", "oteryn:item.tibia.i7349"),
+    (
+        "oteryn:creature.grimgor_guteater",
+        "oteryn:item.tibia.i7349",
+    ),
+    ("oteryn:creature.insect_swarm", "oteryn:item.tibia.i10403"),
+    (
+        "oteryn:creature.kreebosh_the_exile",
+        "oteryn:item.tibia.i7349",
+    ),
+    ("oteryn:creature.lovely_snake", "oteryn:item.tibia.i3998"),
+    (
+        "oteryn:creature.norgle_glacierbeard",
+        "oteryn:item.tibia.i7349",
+    ),
+    ("oteryn:creature.orcus_the_cruel", "oteryn:item.tibia.i7349"),
+    ("oteryn:creature.pink_butterfly", "oteryn:item.tibia.i4378"),
+    ("oteryn:creature.raging_fire", "oteryn:item.tibia.i21815"),
+    ("oteryn:creature.rocky", "oteryn:item.tibia.i7349"),
     ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793"),
     (
         "oteryn:creature.necromantic_focus",
@@ -817,6 +878,10 @@ const SOURCE_PLAIN_CORPSES: &[(&str, &str)] = &[
     ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876"),
 ];
 
+fn crystal_plain_body_id(key: &str) -> Option<u32> {
+    key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
+}
+
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef, private_reward: bool) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
@@ -825,6 +890,16 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef, private_reward:
                 == ("oteryn:creature.glitterscale", "oteryn:item.tibia.i11589")
         } else {
             SOURCE_PLAIN_CORPSES.contains(&(creature, corpse.key.as_str()))
+                || FOURTH_QUARTER_PLAIN_CORPSES.get(creature) == Some(&corpse.key)
+                || creature
+                    .strip_prefix("oteryn:creature.")
+                    .is_some_and(|name| {
+                        crystal_plain_body_id(&corpse.key).is_some_and(|id| {
+                            crystal_plain_corpses()
+                                .iter()
+                                .any(|(creature, body)| creature == name && *body == id)
+                        })
+                    })
         }
 }
 
@@ -859,9 +934,16 @@ fn verified_source_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
-        let source_plain = (SOURCE_PLAIN_CORPSES.iter().any(|(_, key)| *key == definition.production_key)
+        let ordinary_plain = crystal_plain_body_id(&definition.production_key)
+            .is_some_and(|id| crystal_plain_corpses().iter().any(|(_, body)| *body == id));
+        let source_plain = (ordinary_plain || SOURCE_PLAIN_CORPSES.iter().any(|(_, key)| *key == definition.production_key)
             || definition.production_key == "oteryn:item.tibia.i11589")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
+            && record.semantics.container == F::NotApplicable;
+        let source_quarter_plain = FOURTH_QUARTER_PLAIN_CORPSES.values().any(|key| key == &definition.production_key)
+            && record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
+            && matches!(&record.semantics.physical, F::Known(value) if value.pickupable == F::Known(false))
             && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
             "oteryn:item.tibia.i6048" => Some(36),
@@ -875,7 +957,32 @@ fn verified_source_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
-        source_48 || source_plain || source_questpc7
+        // Crystal items.xml records larger physical containers for these roots.
+        // The independent reward work and view limits remain at 48 entries.
+        let ordinary_capacity = match definition.production_key.as_str() {
+            "oteryn:item.tibia.i7344" => Some((52, false)),
+            "oteryn:item.tibia.i7893" => Some((60, false)),
+            "oteryn:item.tibia.i15872" => Some((50, false)),
+            "oteryn:item.tibia.i15911" => Some((50, true)),
+            "oteryn:item.tibia.i15991" => Some((50, false)),
+            "oteryn:item.tibia.i16071" => Some((50, false)),
+            "oteryn:item.tibia.i18134" => Some((60, true)),
+            "oteryn:item.tibia.i18190" => Some((50, true)),
+            "oteryn:item.tibia.i18194" => Some((50, true)),
+            "oteryn:item.tibia.i18198" => Some((50, true)),
+            "oteryn:item.tibia.i18202" => Some((50, true)),
+            "oteryn:item.tibia.i18210" => Some((50, true)),
+            "oteryn:item.tibia.i20996" => Some((50, false)),
+            "oteryn:item.tibia.i21004" => Some((50, false)),
+            _ => None,
+        };
+        let source_ordinary = ordinary_capacity.is_some_and(|(capacity, movable)|
+            record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::Known(ReferenceItemType::Container))
+            && matches!(&record.semantics.physical, F::Known(value)
+                if value.weight == F::Known(0) && value.movable == F::Known(movable) && value.pickupable == F::Known(false))
+            && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
+        source_48 || source_plain || source_quarter_plain || source_questpc7 || source_ordinary
     }).map(|record| record.production_definition.production_key.clone()).collect()
 }
 
@@ -982,7 +1089,7 @@ fn row(
                         && verified_source_corpses.contains(&corpse.key)
                         && source_soul_war_corpse_pair(creature, profile, &corpse))
                     || (verified_source_corpses.contains(&corpse.key)
-                        && source_questpc7_corpse_capacity(creature, &corpse) == Some(*capacity))
+                        && source_exact_corpse_capacity(creature, &corpse) == Some(*capacity))
             })
             .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     }
@@ -1526,6 +1633,71 @@ mod protected_loot_tests {
             "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
         ))?;
         Ok((creatures, loot))
+    }
+
+    #[test]
+    fn fourth_quarter_source_corpses_load_from_pin() -> Result<(), Box<dyn std::error::Error>> {
+        let (_, loot) = documents()?;
+        let world = crate::content::production::test_source(1)?.world_id;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("qualified native generation")?;
+        let table = native.reward_table();
+        #[derive(Deserialize)]
+        struct Expected {
+            admitted: BTreeMap<String, u32>,
+        }
+        let source: Expected =
+            serde_json::from_str(super::super::native_gameplay::FOURTH_QUARTER_CORPSE_SOURCE)?;
+        assert_eq!(source.admitted.len(), 298);
+        let mut protected_loot_refusals = Vec::new();
+        for (creature, item) in source.admitted {
+            let expected = format!("oteryn:item.tibia.i{item}");
+            let outcome = table
+                .reward_boss_corpse(&creature)
+                .map_or_else(|| table.row(&creature), Ok);
+            match outcome {
+                Ok(row) => assert_eq!(
+                    row.corpse_item
+                        .as_ref()
+                        .map(|body| body.production_key.as_str()),
+                    Some(expected.as_str()),
+                    "{creature}"
+                ),
+                Err(NoSettlementReason::LootItemInadmissible) => {
+                    // The body qualified. Existing protected-yield admission still
+                    // refuses the entire settlement when any required yield is absent.
+                    assert!(
+                        loot.items.iter().any(|facts| {
+                            facts.item.key == expected
+                                && facts.materializable
+                                && facts.container_capacity.is_some()
+                        }),
+                        "{creature} has no admitted container"
+                    );
+                    protected_loot_refusals.push(creature);
+                }
+                Err(reason) => return Err(format!("{creature}: {}", reason.as_str()).into()),
+            }
+        }
+        // Other package cohorts qualify additional required loot. Keep the
+        // exact refusal set for bodies whose protected yields still lack proof.
+        assert_eq!(
+            protected_loot_refusals,
+            [
+                "oteryn:creature.sir_leonard",
+                "oteryn:creature.sir_leopold",
+                "oteryn:creature.the_flaming_orchid",
+                "oteryn:creature.ushuriel",
+                "oteryn:creature.varg",
+                "oteryn:creature.vladrukh",
+                "oteryn:creature.zorvorax",
+            ]
+        );
+        Ok(())
     }
 
     #[test]
@@ -2202,6 +2374,165 @@ mod protected_loot_sweep {
             }
         }
         assert!(missing.is_empty(), "protected loot pruned: {missing:?}");
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod ordinary_corpse_slice2_tests {
+    use super::*;
+    use std::error::Error;
+
+    const SOURCE: &[u8] = include_bytes!(
+        "../../../../../tools/content-schema/native-gameplay/ordinary-corpse-slice2.json"
+    );
+
+    fn pinned_rewards() -> Result<(CreatureRewardTable, LootTablesSection), Box<dyn Error>> {
+        let profiles = serde_json::from_slice(include_bytes!(
+            "../../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &profiles,
+        )?;
+        let items = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        Ok((
+            CreatureRewardTable::from_pin_with_native_corpses(&profiles, Some(&loot), Some(&items)),
+            loot,
+        ))
+    }
+
+    #[test]
+    fn slice2_declared_corpses_pass_pinned_admission() -> Result<(), Box<dyn Error>> {
+        use super::super::ReferenceItemField as F;
+        use super::super::native_gameplay::ItemProfileRecord;
+
+        #[derive(Deserialize)]
+        struct SourceAdmission {
+            admissions: BTreeMap<String, u32>,
+            records: Vec<ItemProfileRecord>,
+        }
+
+        let (rewards, loot) = pinned_rewards()?;
+        let source: SourceAdmission = serde_json::from_slice(SOURCE)?;
+        assert_eq!(source.admissions.len(), 283);
+        for (creature, id) in source.admissions {
+            let captured_key = format!("oteryn:item.tibia.i{id}");
+            let record = source
+                .records
+                .iter()
+                .find(|record| record.production_definition.production_key == captured_key)
+                .ok_or("source Item record")?;
+            let key = if creature == "oteryn:creature.koshei_the_deathless" {
+                // The quest uses the fresh seven-slot body from the same source chain.
+                assert_eq!(id, 7538);
+                "oteryn:item.tibia.i7535".to_owned()
+            } else {
+                captured_key
+            };
+            let plain = match &record.semantics.container {
+                F::Known(container) => {
+                    let facts = loot.items.iter().find(|facts| facts.item.key == key);
+                    let F::Known(expected) = &container.capacity else {
+                        return Err(format!("{creature}: missing source corpse capacity").into());
+                    };
+                    assert_eq!(
+                        facts
+                            .filter(|facts| facts.materializable)
+                            .and_then(|facts| facts.container_capacity),
+                        Some(u32::from(*expected)),
+                        "{creature} must have exact materializable corpse facts for {key}"
+                    );
+                    false
+                }
+                F::NotApplicable => true,
+                _ => {
+                    return Err(format!("{creature}: missing source corpse container facts").into());
+                }
+            };
+            match rewards.row(&creature) {
+                Ok(reward) => {
+                    assert_eq!(
+                        reward
+                            .corpse_item
+                            .as_ref()
+                            .map(|item| item.production_key.as_str()),
+                        Some(key.as_str()),
+                        "{creature}"
+                    );
+                    if plain {
+                        assert!(reward.loot_table.entries.is_empty(), "{creature}");
+                    }
+                }
+                // Missing protected loot keeps its independent refusal.
+                Err(NoSettlementReason::LootItemInadmissible) if !plain => (),
+                Err(reason) => return Err(format!("{creature}: {reason:?}").into()),
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn slice2_missing_bindings_resolve_exact_donor_corpses() -> Result<(), Box<dyn Error>> {
+        let (rewards, _) = pinned_rewards()?;
+        for (creature, id) in [
+            ("rootthing_amber_shaper", 48401),
+            ("rootthing_nutshell", 48396),
+            ("tentacle", 35136),
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            let row = rewards
+                .row(&key)
+                .map_err(|reason| format!("{key}: {reason:?}"))?;
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(format!("oteryn:item.tibia.i{id}").as_str()),
+                "{creature}"
+            );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod crystal_corpse_tests {
+    #[test]
+    fn crystal_corpse_admissions_reach_the_native_reward_loader()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = super::super::production::test_source(1)?.world_id;
+        let (controller, _) =
+            super::super::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let generation = controller.active().ok_or("active Crystal corpse fixture")?;
+        let native = generation
+            .native_gameplay()
+            .ok_or("native Crystal corpse fixture")?;
+        let expected: Vec<(String, u32)> = serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/ordinary-corpses/admissions.json"
+        ))?;
+        assert_eq!(expected.len(), 299);
+        let mut failures = Vec::new();
+        for (name, item) in expected {
+            let creature = format!("oteryn:creature.{name}");
+            let body = format!("oteryn:item.tibia.i{item}");
+            let row = native.reward_table().row(&creature).or_else(|reason| {
+                native
+                    .reward_table()
+                    .reward_boss_corpse(&creature)
+                    .ok_or(reason)
+            });
+            match row {
+                Ok(row)
+                    if row.corpse_item.as_ref().is_some_and(|corpse| {
+                        corpse.production_key == body && corpse.revision_ref == "definition-r1"
+                    }) && native.item_policy(&body, "definition-r1").is_some() => {}
+                other => failures.push(format!("{creature} / {body}: {other:?}")),
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
         Ok(())
     }
 }

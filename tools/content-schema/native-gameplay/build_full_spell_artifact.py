@@ -25,7 +25,7 @@ FORMAL = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 VOCATIONS = ('druid', 'knight', 'monk', 'paladin', 'sorcerer')
 LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'creature_profiles': 8 * 1024**2, 'presentation_profiles': 8 * 1024**2,
-          # Match existing production MAX_ITEM_PROFILES (native_gameplay.rs:73).
+          # Match production MAX_ITEM_PROFILES in native_gameplay.rs.
           'item_profiles': 16 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
@@ -576,7 +576,8 @@ def native_item_semantics(ref: dict, profile: dict, destinations: set[str]) -> d
     return semantics
 
 
-def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = False) -> int | None:
+def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = False,
+                           source_capacity: int | None = None) -> int | None:
     """Ground-container admission applies only to canonical corpse mint purposes."""
     semantics = native_item_semantics(ref, profile, {'Ground'})
     if semantics is None:
@@ -612,6 +613,9 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
     # Reward-boss loot stays in personal entitlements; the physical corpse retains
     # its source capacity. Ordinary corpse contents keep GAMEITEM01's 48-entry cap
     # (CORPSE48, owner 2026-11-17), matching CreatureRewardTable's per-creature admission rule.
+    if (source_capacity is not None and capacity == source_capacity
+            and profile['admission']['legal_destinations'] == ['Ground']):
+        return capacity
     maximum = 0xffffffff if reward_boss else 48
     return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 
@@ -701,6 +705,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     quest_yields = set()
     slice_creatures = set()
     cloot3_creatures = set()
+    source_capacities = {}
+    source_private_corpses = {}
     # Repository-authored Quest rules bind the complete canonical dataset.
     canonical_inputs = (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
             and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
@@ -709,6 +715,16 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         migration_tools = str(ROOT / 'tools/content-migration')
         if migration_tools not in sys.path:
             sys.path.insert(0, migration_tools)
+        import ordinary_corpse_cohort
+        cohort = ordinary_corpse_cohort.packet(ROOT)
+        source_capacities = {ordinary_corpse_cohort.PREFIX + str(number):
+                             cohort['items'][str(number)]['capacity']
+                             for number in cohort['large'].values()}
+        source_private_corpses = {
+            ordinary_corpse_cohort.CREATURE_PREFIX + creature:
+            (ordinary_corpse_cohort.item_ref(number), cohort['items'][str(number)]['capacity'])
+            for creature, number in cohort['private_admissions'].items()
+        }
         import quest_corpse_profiles
         quest_corpse_profiles.apply_loot_facts(facts, ROOT, creatures)
         import protected_loot_yields
@@ -757,6 +773,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     # The final composition explicitly qualifies the same closure as a disk read.
     if qualify_carried_yields is None:
         qualify_carried_yields = native_item_profiles is None
+    source_private_capacities = {}
     profile_path = item_definitions / 'spell-native-profiles.json'
     if native_item_profiles is None:
         updates = profile_path.with_name('srx1-item-updates.json')
@@ -800,10 +817,15 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             if definition['identity'] != target:
                 raise ValueError(f"Creature profile differs from its definition: {target['key']}")
             corpse = record['profile']['data']['profile']['details'].get('corpse_item')
+            private = record['profile']['data']['profile']['details'].get('system_eligibility', {}).get('reward_boss') is True
+            if source_private := source_private_corpses.get(target['key']):
+                if not private or corpse != source_private[0]:
+                    raise ValueError(f"Private Creature source corpse changed: {target['key']}")
+                source_private_capacities[corpse['key']] = source_private[1]
             if corpse is not None:
                 name(corpse)
                 corpse_refs[corpse['key']] = corpse
-                if record['profile']['data']['profile']['details'].get('system_eligibility', {}).get('reward_boss') is True:
+                if private:
                     reward_boss_corpses.add(corpse['key'])
             loot = definition['loot']
             if loot is not None:
@@ -828,12 +850,21 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         profiles = native_by_key.get(key, [])
         if key in yield_keys or len(profiles) != 1:
             continue
-        capacity = native_corpse_capacity(ref, profiles[0], reward_boss=key in reward_boss_corpses)
+        capacity = native_corpse_capacity(ref, profiles[0], reward_boss=key in reward_boss_corpses,
+                                         source_capacity=source_capacities.get(key))
         if capacity is not None:
             facts[key]['materializable'] = True
             facts[key]['container_capacity'] = capacity
+            if capacity == source_private_capacities.get(key):
+                # An exact private-reward body also serves an existing ordinary quest rule.
+                facts[key].pop('ordinary_corpse_only', None)
             if not facts[key].get('ordinary_corpse_only'):
                 qualified_corpses.add(key)
+            if key == 'oteryn:item.tibia.i6046':
+                # Both crocodile and the Snapper use this body. Keep their
+                # established Grizzly quest-only settlement while retaining
+                # the physical profile and qualification of their loot yields.
+                facts[key].update(materializable=False, container_capacity=None)
     # These exact quest yields already have admitted native pickup and carried
     # profiles. Keep source tables and rates as authored.
     quest_yields = quest_yields | {f'oteryn:item.tibia.i{i}' for i in (

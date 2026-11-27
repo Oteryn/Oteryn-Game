@@ -143,14 +143,14 @@ pub struct CorpseDecayDeadline {
     pub corpse_item_instance_id: [u8; 16],
     pub definition: super::item_mint::TypedDefinitionRef,
     pub materialized_at_unix_ms: i64,
-    /// None is the source's undecaying terminal, still counted as a live corpse.
+    /// None is a source chain without a terminal removal deadline.
     pub decay_at_unix_ms: Option<i64>,
+    /// Ground relocation uses the Item loop's map coordinates.
+    pub loop_ground_spatial_position: Option<Vec<u8>>,
 }
 
-/// The recovery query's result: every live corpse of the scope (at most
-/// `COMBAT01-CORPSES-PER-SCOPE`), oldest first, with the database clock read
-/// in the same statement so the owner can map each deadline onto its own
-/// monotonic timer clock.
+/// The recovery query's result: live Ground corpses and permanent remains,
+/// oldest first, with the database clock from the same snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CorpseDecaySchedule {
     pub database_now_unix_ms: i64,

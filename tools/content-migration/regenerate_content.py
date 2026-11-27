@@ -210,6 +210,7 @@ CHECKS = (
         "--available",
         "--check",
     ],
+    ["python3", "tools/content-migration/ordinary_corpse_profiles.py", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
     ["python3", "tools/content-migration/test_prey_difficulty.py"],
     [

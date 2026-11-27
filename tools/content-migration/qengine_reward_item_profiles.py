@@ -698,6 +698,11 @@ def reconcile(existing, observed):
     for key in identity_fields:
         if existing.get(key) != observed.get(key):
             raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + key)
+    from native_profile_composition import compact_item_profile
+
+    # Requalifying a compact provider must preserve its existing encoding.
+    if compact_item_profile(merged) == compact_item_profile(existing):
+        return dict(existing)
     return merged
 
 

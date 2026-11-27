@@ -571,14 +571,7 @@ pub(super) async fn hunt_loot(
         }
         // Long material hunts run against the real corpse budget. Advance
         // only the fixture clock anchor and let the decay owner free the body.
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-61000 WHERE item_instance_id=encode($1,'hex')::uuid")
-            .bind(corpse.as_slice()).execute(&mut *tx).await?;
-        tx.commit().await?;
-        owner.drain_corpse_deadlines().await;
+        super::corpse_decay_fixtures::retire_hunted_corpse(owner, h, corpse).await?;
     }
     Err(format!("source hunt did not deliver {count} units of {item}").into())
 }

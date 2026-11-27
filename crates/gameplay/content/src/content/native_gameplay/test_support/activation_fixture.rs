@@ -663,6 +663,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
+    for creature in ["oteryn:creature.crocodile", "oteryn:creature.the_snapper"] {
+        assert_eq!(
+            source.reward_table().row(creature).err(),
+            Some(NoSettlementReason::CorpseItemInadmissible)
+        );
+    }
     admitted.sort_unstable();
     assert_eq!(
         missing + inadmissible + inadmissible_loot + admitted.len(),

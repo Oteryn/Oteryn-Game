@@ -295,6 +295,11 @@ fn loop_error(error: LoopError) -> std::result::Result<LoopMoveRefusal, Durabili
     match error {
         LoopError::Refused(refusal) => Ok(refusal),
         LoopError::Database(sqlx::Error::Database(database))
+            if database.constraint() == Some("game_corpse_ground_cap") =>
+        {
+            Ok(LoopMoveRefusal::Blocked)
+        }
+        LoopError::Database(sqlx::Error::Database(database))
             if database.code().is_some_and(|code| code.starts_with("23")) =>
         {
             Ok(LoopMoveRefusal::Rejected)
@@ -829,6 +834,15 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             let Some((parent_definition, _, _)) = lock_live_item(tx, parent, world).await? else {
                 return refuse(LoopMoveRefusal::Stale);
             };
+            let decaying_corpse: bool = sqlx::query_scalar(
+                "SELECT game_corpse_retirement_deadline(encode($1,'hex')::uuid) IS NOT NULL",
+            )
+            .bind(parent.as_slice())
+            .fetch_one(&mut **tx)
+            .await?;
+            if decaying_corpse {
+                return refuse(LoopMoveRefusal::NotSupported);
+            }
             let Some(mut capacity) = content
                 .loop_facts(&parent_definition)
                 .and_then(|facts| facts.container_capacity)
@@ -1125,6 +1139,10 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
     let scope = fence.runtime_scope;
     let world = *scope.world_id().as_bytes();
     let (scope_kind, channel, instance) = ground_scope_columns(scope);
+    // Match MINT's lock order before the later native Ground owner lock.
+    if request.pickup_cell.is_none() && matches!(request.destination, LoopDestination::Ground(_)) {
+        super::item_mint::lock_corpse_cap(tx, scope).await?;
+    }
     let digest = content.loop_content_digest();
     match scope {
         RuntimeScopeRefV1::Channel { .. } => {
@@ -1165,7 +1183,8 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
                 g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.runtime_scope_ownership_generation::text AS ground_generation, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
-                EXISTS(SELECT 1 FROM game_item_mint_receipts cm WHERE cm.item_instance_id=i.item_instance_id AND cm.loot_purpose_key='CORPSE_MATERIALIZATION') AS native_corpse, \
+                game_ordinary_corpse_drag_source(i.item_instance_id) AS source_corpse_drag, \
+                EXISTS (SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=i.item_instance_id) AS corpse_has_loot, \
                 game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 i.definition_production_key=$2 AND game_item_loop_map_mint_source(i.item_instance_id) AS fixed_map_cask, \
@@ -1268,19 +1287,26 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
             return refuse(LoopMoveRefusal::NotSupported);
         }
         let native_corpse = row.try_get::<bool, _>("native_corpse")?;
-        if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
-            return refuse(LoopMoveRefusal::NotSupported);
-        }
-        if !row.try_get::<bool, _>("loop_pickup")?
-            && !native_corpse
-            && !row.try_get::<bool, _>("altar_corpse_source")?
+        if !matches!(request.destination, LoopDestination::Ground(_))
+            && (native_corpse || row.try_get::<bool, _>("corpse_has_loot")?)
         {
             return refuse(LoopMoveRefusal::NotSupported);
         }
+        let source_corpse_drag = matches!(request.destination, LoopDestination::Ground(_))
+            && row.try_get::<bool, _>("source_corpse_drag")?;
+        if !row.try_get::<bool, _>("loop_pickup")?
+            && !native_corpse && !source_corpse_drag
+            && !row.try_get::<bool, _>("altar_corpse_source")? {
+            return refuse(LoopMoveRefusal::NotSupported);
+        }
         let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
-        if source_plain_corpse
+        // Current authority is already fenced above. A plain corpse keeps its
+        // original Ground generation as part of the lethal MINT proof.
+        if (source_plain_corpse || source_corpse_drag)
             && row.try_get::<String, _>("ground_generation")?
-                != fence.scope_ownership_generation.get().to_string()
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+                > fence.scope_ownership_generation.get()
         {
             return refuse(LoopMoveRefusal::Stale);
         }
@@ -1293,7 +1319,8 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
             // A corpse MINT binds the native pin's revision-string digest.
             // Its first loop drop binds the underlying bundle revision instead.
             let native_map = (native_corpse && !loop_drop)
-                || source_plain_corpse
+                || (source_plain_corpse || source_corpse_drag)
+                    && !loop_drop
                     && source_map
                         == format!(
                             "sha256:{}",
@@ -1310,12 +1337,13 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
             let retained_drop = source_scene
                 && !native_corpse
                 && !source_plain_corpse
+                && !source_corpse_drag
                 && source_map == to.map_revision
                 && source_content != to.content_revision;
             if (source_map != to.map_revision && !native_map)
                 || (!retained_drop
                     && (source_content != to.content_revision
-                        || ((loop_drop || native_corpse || source_plain_corpse)
+                        || ((loop_drop || native_corpse || source_plain_corpse || source_corpse_drag)
                             && source_context != to.placement_context)))
             {
                 return refuse(LoopMoveRefusal::Stale);
@@ -2100,6 +2128,19 @@ impl DurabilityRoot {
         character_id: CharacterId,
         command: CommandRef,
     ) -> std::result::Result<LoopMoveReplay, DurabilityError> {
+        self.read_item_loop_move_receipt_with_corpse(recovery, character_id, command)
+            .await
+            .map(|(replay, _)| replay)
+    }
+
+    /// A committed move can also identify the materialized corpse whose current
+    /// custody its owner must publish before acknowledging a retry.
+    pub async fn read_item_loop_move_receipt_with_corpse(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+    ) -> std::result::Result<(LoopMoveReplay, Option<[u8; 16]>), DurabilityError> {
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -2111,22 +2152,36 @@ impl DurabilityRoot {
                     // An attempt in flight holds this lock, so `Absent` proves none is.
                     lock_loop_command(&mut tx, command).await?;
                     let row = sqlx::query(
-                        "SELECT character_id::text FROM game_item_loop_move_receipts \
-                          WHERE quick_loot_ordinal = 0 AND game_session_id = encode($1,'hex')::uuid \
-                            AND command_id = $2::text::numeric(20,0)",
+                        "SELECT r.character_id::text, (
+                            SELECT l.item_instance_id::text
+                              FROM game_item_loop_move_lines l
+                              JOIN game_item_instances i USING(item_instance_id)
+                              JOIN game_item_mint_receipts m ON m.item_instance_id=i.item_instance_id
+                                AND m.transaction_id=i.minted_transaction_id
+                             WHERE l.transaction_id=r.transaction_id AND l.created_xact_id=r.created_xact_id
+                               AND (l.from_kind=3 OR l.to_kind=3)
+                               AND l.quantity_before=1 AND l.quantity_after=1
+                               AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+                               AND m.materialized_at IS NOT NULL
+                             ORDER BY l.line_ordinal LIMIT 1
+                        ) AS corpse_item_instance_id
+                          FROM game_item_loop_move_receipts r
+                         WHERE r.quick_loot_ordinal=0 AND r.game_session_id=encode($1,'hex')::uuid
+                           AND r.command_id=$2::text::numeric(20,0)",
                     )
                     .bind(command.game_session_id().as_bytes().as_slice())
                     .bind(command.command_id().get().to_string())
                     .fetch_optional(&mut *tx)
                     .await?;
                     let replay = match row {
-                        None => LoopMoveReplay::Absent,
+                        None => (LoopMoveReplay::Absent, None),
                         Some(row) => {
                             if uuid_text(row.try_get("character_id")?)? == *character_id.as_bytes()
                             {
-                                LoopMoveReplay::Moved
+                                let corpse = row.try_get::<Option<String>, _>("corpse_item_instance_id")?;
+                                (LoopMoveReplay::Moved, corpse.as_deref().map(uuid_text).transpose()?)
                             } else {
-                                LoopMoveReplay::Conflicting
+                                (LoopMoveReplay::Conflicting, None)
                             }
                         }
                     };
@@ -2416,110 +2471,134 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    if synchronize_sculpture {
-                        super::spell_item_transaction::lock_ground_scope(&mut tx, scope)
+                    let mut tx = if synchronize_sculpture {
+                        let mut tx = super::db::begin_locking_observation_transaction(holder, deadline)
                             .await?;
-                    }
+                        super::spell_item_transaction::lock_ground_scope(&mut tx, scope).await?;
+                        tx
+                    } else {
+                        super::db::begin_observation_transaction(holder, deadline).await?
+                    };
                     // MINT provenance remains historical after a fresh owner's
                     // fenced Ground drag updates the location's generation.
                     // Current mutation authority is checked by the move owner.
-                    let rows = sqlx::query(
-                        "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, g.scope_kind, g.instance_id::text, \
-                                i.definition_family, i.definition_production_key, \
-                                i.definition_revision_ref, i.quantity, \
-                                i.minted_transaction_id::text, \
-                                g.runtime_scope_ownership_generation::text, g.spatial_position, \
-                                g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
-                                CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
-                                CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
-                           FROM game_item_ground_locations g \
-                           JOIN game_item_instances i USING (item_instance_id, world_id) \
-                           LEFT JOIN game_item_mint_receipts cr ON cr.item_instance_id=i.item_instance_id AND cr.transaction_id=i.minted_transaction_id \
-                             AND cr.loot_purpose_key='CORPSE_MATERIALIZATION' AND cr.draw_ordinal=0 AND cr.materialized_at IS NOT NULL \
-                             AND cr.death_world_id=g.world_id AND cr.death_channel_id IS NOT DISTINCT FROM g.channel_id AND cr.death_instance_id IS NOT DISTINCT FROM g.instance_id \
-                             AND EXISTS(SELECT 1 FROM game_item_audit_outbox ca WHERE ca.event_id=cr.event_id AND ca.transaction_id=cr.transaction_id AND ca.item_instance_id=cr.item_instance_id AND ca.envelope_sha256=cr.envelope_sha256 AND ca.occurred_at=cr.occurred_at) \
-                             AND EXISTS(SELECT 1 FROM game_item_mint_reservations cv WHERE cv.transaction_id=cr.transaction_id AND cv.item_instance_id=cr.item_instance_id AND cv.event_id=cr.event_id AND cv.intent_binding=cr.intent_binding AND sha256(cv.envelope)=cr.envelope_sha256) \
-                           LEFT JOIN game_elemental_energy_field_receipts ef ON ef.item_instance_id=i.item_instance_id AND game_elemental_energy_field_source(i.item_instance_id) \
-                           LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
-                           LEFT JOIN game_spell_item_receipts sr ON sr.transaction_id=fl.transaction_id AND sr.cause_kind IN(1,2,3,4) \
-                            AND sr.world_id=g.world_id AND sr.runtime_scope_kind=g.scope_kind AND sr.ownership_generation=g.runtime_scope_ownership_generation \
-                            AND sr.channel_id IS NOT DISTINCT FROM g.channel_id AND sr.instance_id IS NOT DISTINCT FROM g.instance_id \
-                            AND fl.world_id=g.world_id AND fl.runtime_scope_kind=g.scope_kind \
-                            AND fl.channel_id IS NOT DISTINCT FROM g.channel_id AND fl.instance_id IS NOT DISTINCT FROM g.instance_id \
-                            AND fl.created_xact_id=sr.created_xact_id AND sr.binding=sha256(sr.intent) \
-                           LEFT JOIN game_spell_item_audit_outbox sa ON sa.transaction_id=sr.transaction_id \
-                            AND sa.event_id=sr.event_id AND sa.envelope=sr.intent AND sa.envelope_sha256=sr.binding AND sa.created_xact_id=sr.created_xact_id \
-                           LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
-                          WHERE g.world_id = encode($1,'hex')::uuid \
-                            AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
-                            AND (ef.transaction_id IS NOT NULL OR cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \
-                                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) \
-                                 OR sa.transaction_id IS NOT NULL \
-                                 OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref))))) \
-                          ORDER BY g.stack_ordinal, i.item_instance_id \
-                          LIMIT $3",
-                    )
-                    .bind(world.as_bytes().as_slice())
-                    .bind(channel.map(|id| id.to_vec()))
-                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX + 1)
-                    .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
-                    // Decode before collecting: retaining every raw PgRow also retains its
-                    // WP3 wire and column-offset reservations until the root budget is full.
-                    .map(|row| -> Result<LoopGroundItem, DurabilityError> {
-                        let invalid = |_| DurabilityError::InvalidStoredState;
-                        let stack_ordinal = row
-                            .try_get::<Option<i64>, _>("stack_ordinal")?
-                            .and_then(|ordinal| u64::try_from(ordinal).ok())
-                            .ok_or(DurabilityError::InvalidStoredState)?;
-                        Ok(LoopGroundItem {
-                            native_corpse: row.try_get("native_corpse")?,
-                            source_native_ground: row.try_get("source_native_ground")?,
-                            source_plain_corpse: row.try_get("source_plain_corpse")?,
-                            field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
-                            stack_ordinal,
-                            item: GroundItemInstance {
-                                item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
-                                world_id: WorldId::decode(&uuid_text(row.try_get("world_id")?)?)
-                                    .map_err(invalid)?,
-                                runtime_scope: decode_ground_scope(&row)?,
-                                definition: TypedDefinitionRef {
-                                    family: row.try_get("definition_family")?,
-                                    production_key: row.try_get("definition_production_key")?,
-                                    revision_ref: row.try_get("definition_revision_ref")?,
+                    // The existing combined cap applies to ordinary drops, fields, and
+                    // active corpses. Read uncapped remains in the same consistent snapshot.
+                    let bound = ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX;
+                    let mut bounded_rows = 0;
+                    let mut items = Vec::new();
+                    let mut after: Option<(i64, String)> = None;
+                    loop {
+                        let rows = sqlx::query(
+                            "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, g.scope_kind, g.instance_id::text, \
+                                    i.definition_family, i.definition_production_key, \
+                                    i.definition_revision_ref, i.quantity, \
+                                    i.minted_transaction_id::text, \
+                                    g.runtime_scope_ownership_generation::text, g.spatial_position, \
+                                    g.corpse_ref, g.map_revision, g.content_revision, \
+                                    g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
+                                    CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
+                                    CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile, \
+                                    cr.item_instance_id IS NOT NULL AND NOT game_corpse_counts_toward_mint_cap(i.item_instance_id) AS permanent_corpse \
+                               FROM game_item_ground_locations g \
+                               JOIN game_item_instances i USING (item_instance_id, world_id) \
+                               LEFT JOIN game_item_mint_receipts cr ON cr.item_instance_id=i.item_instance_id AND cr.transaction_id=i.minted_transaction_id \
+                                 AND cr.loot_purpose_key='CORPSE_MATERIALIZATION' AND cr.draw_ordinal=0 AND cr.materialized_at IS NOT NULL \
+                                 AND cr.death_world_id=g.world_id AND cr.death_channel_id IS NOT DISTINCT FROM g.channel_id AND cr.death_instance_id IS NOT DISTINCT FROM g.instance_id \
+                                 AND EXISTS(SELECT 1 FROM game_item_audit_outbox ca WHERE ca.event_id=cr.event_id AND ca.transaction_id=cr.transaction_id AND ca.item_instance_id=cr.item_instance_id AND ca.envelope_sha256=cr.envelope_sha256 AND ca.occurred_at=cr.occurred_at) \
+                                 AND EXISTS(SELECT 1 FROM game_item_mint_reservations cv WHERE cv.transaction_id=cr.transaction_id AND cv.item_instance_id=cr.item_instance_id AND cv.event_id=cr.event_id AND cv.intent_binding=cr.intent_binding AND sha256(cv.envelope)=cr.envelope_sha256) \
+                               LEFT JOIN game_elemental_energy_field_receipts ef ON ef.item_instance_id=i.item_instance_id AND game_elemental_energy_field_source(i.item_instance_id) \
+                               LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
+                               LEFT JOIN game_spell_item_receipts sr ON sr.transaction_id=fl.transaction_id AND sr.cause_kind IN(1,2,3,4) \
+                                AND sr.world_id=g.world_id AND sr.runtime_scope_kind=g.scope_kind AND sr.ownership_generation=g.runtime_scope_ownership_generation \
+                                AND sr.channel_id IS NOT DISTINCT FROM g.channel_id AND sr.instance_id IS NOT DISTINCT FROM g.instance_id \
+                                AND fl.world_id=g.world_id AND fl.runtime_scope_kind=g.scope_kind \
+                                AND fl.channel_id IS NOT DISTINCT FROM g.channel_id AND fl.instance_id IS NOT DISTINCT FROM g.instance_id \
+                                AND fl.created_xact_id=sr.created_xact_id AND sr.binding=sha256(sr.intent) \
+                               LEFT JOIN game_spell_item_audit_outbox sa ON sa.transaction_id=sr.transaction_id \
+                                AND sa.event_id=sr.event_id AND sa.envelope=sr.intent AND sa.envelope_sha256=sr.binding AND sa.created_xact_id=sr.created_xact_id \
+                               LEFT JOIN game_spell_field_temporal_schedules fc ON cr.item_instance_id IS NULL AND fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
+                              WHERE g.world_id = encode($1,'hex')::uuid \
+                                AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
+                                AND (ef.transaction_id IS NOT NULL OR cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \
+                                     OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) \
+                                     OR sa.transaction_id IS NOT NULL \
+                                     OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref))))) \
+                              AND ($6::bigint IS NULL OR (g.stack_ordinal,i.item_instance_id) > ($6,$7::uuid)) \
+                              ORDER BY g.stack_ordinal, i.item_instance_id \
+                              LIMIT $3",
+                        )
+                        .bind(world.as_bytes().as_slice())
+                        .bind(channel.map(|id| id.to_vec()))
+                        .bind(bound + 1)
+                        .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
+                        .bind(after.as_ref().map(|(ordinal, _)| *ordinal))
+                        .bind(after.as_ref().map(|(_, item)| item.as_str()))
+                        // Decode before collecting: retaining every raw PgRow also retains its
+                        // WP3 wire and column-offset reservations until the root budget is full.
+                        .map(|row| -> Result<_, DurabilityError> {
+                            let invalid = |_| DurabilityError::InvalidStoredState;
+                            let stack_ordinal = row
+                                .try_get::<Option<i64>, _>("stack_ordinal")?
+                                .and_then(|ordinal| u64::try_from(ordinal).ok())
+                                .ok_or(DurabilityError::InvalidStoredState)?;
+                            let item_id: String = row.try_get("item_instance_id")?;
+                            let item_instance_id = uuid_text(&item_id)?;
+                            let permanent: bool = row.try_get("permanent_corpse")?;
+                            Ok((permanent, item_id, LoopGroundItem {
+                                native_corpse: row.try_get("native_corpse")?,
+                                source_native_ground: row.try_get("source_native_ground")?,
+                                source_plain_corpse: row.try_get("source_plain_corpse")?,
+                                field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
+                                stack_ordinal,
+                                item: GroundItemInstance {
+                                    item_instance_id,
+                                    world_id: WorldId::decode(&uuid_text(row.try_get("world_id")?)?)
+                                        .map_err(invalid)?,
+                                    runtime_scope: decode_ground_scope(&row)?,
+                                    definition: TypedDefinitionRef {
+                                        family: row.try_get("definition_family")?,
+                                        production_key: row.try_get("definition_production_key")?,
+                                        revision_ref: row.try_get("definition_revision_ref")?,
+                                    },
+                                    quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
+                                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                    runtime_scope_ownership_generation: row
+                                        .try_get::<String, _>("runtime_scope_ownership_generation")?
+                                        .parse()
+                                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                    ground: GroundPlacement {
+                                        spatial_position: row.try_get("spatial_position")?,
+                                        corpse_ref: row.try_get("corpse_ref")?,
+                                        map_revision: row.try_get("map_revision")?,
+                                        content_revision: row.try_get("content_revision")?,
+                                        native_room_placement_context: row
+                                            .try_get("native_room_placement_context")?,
+                                    },
+                                    minted_transaction_id: uuid_text(
+                                        row.try_get("minted_transaction_id")?,
+                                    )?,
                                 },
-                                quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
-                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-                                runtime_scope_ownership_generation: row
-                                    .try_get::<String, _>("runtime_scope_ownership_generation")?
-                                    .parse()
-                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-                                ground: GroundPlacement {
-                                    spatial_position: row.try_get("spatial_position")?,
-                                    corpse_ref: row.try_get("corpse_ref")?,
-                                    map_revision: row.try_get("map_revision")?,
-                                    content_revision: row.try_get("content_revision")?,
-                                    native_room_placement_context: row
-                                        .try_get("native_room_placement_context")?,
-                                },
-                                minted_transaction_id: uuid_text(
-                                    row.try_get("minted_transaction_id")?,
-                                )?,
-                            },
+                            }))
                         })
-                    })
-                    .fetch_all(&mut *tx)
-                    .await?;
-                    // Keep the bounded Ground read fail-closed, including pending map pickups.
-                    // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
-                    // never substitute the base placement ordinal or invent a missing one.
-                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    if rows.len() > bound {
-                        return Err(DurabilityError::InvalidStoredState);
+                        .fetch_all(&mut *tx)
+                        .await?;
+                        let full_page = i64::try_from(rows.len()) == Ok(bound + 1);
+                        for row in rows {
+                            let (permanent, item_id, item) = row?;
+                            bounded_rows += i64::from(!permanent);
+                            if bounded_rows > bound {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            let ordinal = i64::try_from(item.stack_ordinal)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            after = Some((ordinal, item_id));
+                            items.push(item);
+                        }
+                        if !full_page {
+                            break;
+                        }
                     }
-                    let items = rows.into_iter().collect::<Result<Vec<_>, _>>()?;
                     super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(items)
                 })

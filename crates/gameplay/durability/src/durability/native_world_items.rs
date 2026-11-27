@@ -339,7 +339,17 @@ fn qualify_field_class(
 }
 impl DurableCorpseReservation {
     pub fn cell(&self) -> Result<crate::content::LogicalCell, &'static str> {
-        decode_ground_cell(&self.placement.spatial_position)
+        let mut cell = decode_ground_cell(&self.placement.spatial_position)?;
+        let loop_drop = self
+            .placement
+            .corpse_ref
+            .strip_prefix(super::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX);
+        if loop_drop.is_some_and(|receipt| receipt.len() == 16) {
+            // Animate Dead spawns in runtime coordinates even when its exact
+            // removal reservation retains Command 9's bundle position.
+            cell.z = -cell.z;
+        }
+        Ok(cell)
     }
 }
 pub fn decode_ground_cell(bytes: &[u8]) -> Result<crate::content::LogicalCell, &'static str> {

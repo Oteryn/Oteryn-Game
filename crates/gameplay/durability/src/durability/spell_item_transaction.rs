@@ -1351,7 +1351,7 @@ pub fn decoded_placement(row: &sqlx::postgres::PgRow) -> Result<GroundPlacement>
 // mutable ItemInstances without requiring UPDATE on immutable locations.
 // WP3 permits at most 32 result columns, including for an empty tile.
 // Pack the four current corpse scope values together; keep every proof below.
-const TILE_ROWS: &str = "SELECT ARRAY[r.world_id::text,r.channel_id::text,r.creature_actor_generation::text,r.creature_definition_key,r.creature_definition_revision,r.spell_production_key,r.spell_revision,r.character_id::text,r.game_session_id::text,r.command_id::text,r.ownership_generation::text,r.caster_lease_generation::text] AS origin_text,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,g.runtime_scope_ownership_generation::text AS ground_scope_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,ARRAY[COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement,CASE WHEN ef.transaction_id IS NOT NULL THEN false END),COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile,CASE WHEN ef.transaction_id IS NOT NULL THEN false END),COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid,CASE WHEN ef.transaction_id IS NOT NULL THEN false END),(nm.transaction_id IS NOT NULL),(ef.transaction_id IS NOT NULL)] AS collision_flags,cm.envelope AS corpse_mint_envelope,ARRAY[g.world_id::text,g.channel_id::text,g.instance_id::text,g.scope_kind::text] AS corpse_current_scope,l.expires_at_unix_ms,l.definition_production_key AS origin_item_key,r.cause_kind AS origin_cause_kind,r.creature_placement AS creature_origin_placement,r.creature_occurrence AS creature_origin_occurrence,r.creature_map_digest AS creature_origin_map,r.creature_frame_digest AS creature_origin_frame,r.creature_source_body_digest AS creature_origin_body,r.creature_cast_digest AS creature_origin_cast,r.occurred_at_unix_ms AS origin_created_unix_ms,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN LATERAL (SELECT v.envelope FROM game_item_mint_receipts m JOIN game_item_mint_reservations v ON v.transaction_id=m.transaction_id AND v.item_instance_id=m.item_instance_id AND v.event_id=m.event_id AND v.intent_binding=m.intent_binding AND sha256(v.envelope)=m.envelope_sha256 JOIN game_item_audit_outbox a ON a.transaction_id=m.transaction_id AND a.item_instance_id=m.item_instance_id AND a.event_id=m.event_id AND a.envelope=v.envelope AND a.envelope_sha256=m.envelope_sha256 AND a.occurred_at=m.occurred_at WHERE m.item_instance_id=i.item_instance_id AND m.transaction_id=i.minted_transaction_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0 AND m.materialized_at IS NOT NULL AND m.loot_table_family='Item' AND i.quantity=1 AND i.world_id=g.world_id AND m.death_world_id=g.world_id AND m.death_scope_kind=g.scope_kind AND m.death_channel_id IS NOT DISTINCT FROM g.channel_id AND m.death_instance_id IS NOT DISTINCT FROM g.instance_id AND m.death_scope_ownership_generation<=g.runtime_scope_ownership_generation) cm ON true LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 AND l.transaction_id=i.minted_transaction_id LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_elemental_energy_field_receipts ef ON ef.item_instance_id=i.item_instance_id AND game_elemental_energy_field_source(i.item_instance_id) LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND nm.reset_epoch=coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=g.world_id),0) AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
+const TILE_ROWS: &str = "SELECT ARRAY[r.world_id::text,r.channel_id::text,r.creature_actor_generation::text,r.creature_definition_key,r.creature_definition_revision,r.spell_production_key,r.spell_revision,r.character_id::text,r.game_session_id::text,r.command_id::text,r.ownership_generation::text,r.caster_lease_generation::text] AS origin_text,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,(g.runtime_scope_ownership_generation=$11::text::numeric OR CASE WHEN $9 IS NOT NULL AND g.runtime_scope_ownership_generation<$11::text::numeric THEN game_ordinary_corpse_drag_source(g.item_instance_id) ELSE false END) AS ground_scope_admitted,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,ARRAY[COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement,CASE WHEN ef.transaction_id IS NOT NULL THEN false END),COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile,CASE WHEN ef.transaction_id IS NOT NULL THEN false END),COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid,CASE WHEN ef.transaction_id IS NOT NULL THEN false END),(nm.transaction_id IS NOT NULL),(ef.transaction_id IS NOT NULL),COALESCE(game_item_loop_drop_ref(g.corpse_ref),false)] AS collision_flags,cm.envelope AS corpse_mint_envelope,ARRAY[g.world_id::text,g.channel_id::text,g.instance_id::text,g.scope_kind::text] AS corpse_current_scope,l.expires_at_unix_ms,l.definition_production_key AS origin_item_key,r.cause_kind AS origin_cause_kind,r.creature_placement AS creature_origin_placement,r.creature_occurrence AS creature_origin_occurrence,r.creature_map_digest AS creature_origin_map,r.creature_frame_digest AS creature_origin_frame,r.creature_source_body_digest AS creature_origin_body,r.creature_cast_digest AS creature_origin_cast,r.occurred_at_unix_ms AS origin_created_unix_ms,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN LATERAL (SELECT v.envelope FROM game_item_mint_receipts m JOIN game_item_mint_reservations v ON v.transaction_id=m.transaction_id AND v.item_instance_id=m.item_instance_id AND v.event_id=m.event_id AND v.intent_binding=m.intent_binding AND sha256(v.envelope)=m.envelope_sha256 JOIN game_item_audit_outbox a ON a.transaction_id=m.transaction_id AND a.item_instance_id=m.item_instance_id AND a.event_id=m.event_id AND a.envelope=v.envelope AND a.envelope_sha256=m.envelope_sha256 AND a.occurred_at=m.occurred_at WHERE m.item_instance_id=i.item_instance_id AND m.transaction_id=i.minted_transaction_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0 AND m.materialized_at IS NOT NULL AND m.loot_table_family='Item' AND i.quantity=1 AND i.world_id=g.world_id AND m.death_world_id=g.world_id AND m.death_scope_kind=g.scope_kind AND m.death_channel_id IS NOT DISTINCT FROM g.channel_id AND m.death_instance_id IS NOT DISTINCT FROM g.instance_id AND m.death_scope_ownership_generation<=g.runtime_scope_ownership_generation) cm ON true LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 AND l.transaction_id=i.minted_transaction_id LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_elemental_energy_field_receipts ef ON ef.item_instance_id=i.item_instance_id AND game_elemental_energy_field_source(i.item_instance_id) LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND nm.reset_epoch=coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=g.world_id),0) AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND ((g.spatial_position=$3 AND g.map_revision=$4) OR (g.spatial_position=$9 AND (g.map_revision=$10 OR $4='sha256:'||encode(sha256(convert_to(g.map_revision,'UTF8')),'hex')))) AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
 
 async fn locked_tile_rows(
     tx: &mut Transaction<'_, Postgres>,
@@ -1369,11 +1369,36 @@ async fn locked_tile_rows(
     locked_tile_rows_for_scope(tx, &scope, target).await
 }
 
+fn opposite_ground_floor(position: &[u8]) -> Option<Vec<u8>> {
+    let cell = decode_ground_cell(position).ok()?;
+    let floor = i16::try_from(-cell.z).ok()?;
+    let mut opposite = position.to_vec();
+    opposite[8..].copy_from_slice(&floor.to_be_bytes());
+    Some(opposite)
+}
+
+fn alternate_ground_cell(target: &SpellGroundTarget) -> Option<(Vec<u8>, String)> {
+    let position = opposite_ground_floor(&target.spatial_position)?;
+    // Native writers hash the bundle revision string and invert the floor.
+    // The shared census also tests the reverse revision relation in SQL.
+    let revision = super::map_item_mint_audit::map_revision_of(
+        Sha256::digest(target.map_revision.as_bytes()).as_slice(),
+    );
+    Some((position, revision))
+}
+
+/// Native readers and Ground admission share the physical order across both
+/// encodings. An ordinary drop can sit above a corpse on the same tile.
 pub async fn locked_tile_rows_for_scope(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     target: &SpellGroundTarget,
 ) -> Result<Vec<sqlx::postgres::PgRow>> {
+    let alternate = alternate_ground_cell(target);
+    let (other_cell, other_map) = alternate
+        .as_ref()
+        .map(|(cell, map)| (cell.as_slice(), map.as_str()))
+        .unzip();
     let current: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
         .fetch_one(&mut **tx)
         .await?;
@@ -1384,8 +1409,12 @@ pub async fn locked_tile_rows_for_scope(
     }
     let (scope_kind, channel, instance) =
         super::item_mint::ground_scope_columns(authority.runtime_scope());
-    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=$3 AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6))))")
-        .bind(authority.world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).bind(scope_kind).bind(instance.map(|id| id.to_vec())).fetch_one(&mut **tx).await?;
+    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR ((g.spatial_position=$3 OR g.spatial_position=$9) AND CASE
+        WHEN g.map_revision=$4 THEN g.spatial_position=$3 AND (g.content_revision<>$5 OR g.native_room_placement_context<>$6)
+        WHEN $9 IS NOT NULL AND (g.map_revision=$10 OR $4='sha256:'||encode(sha256(convert_to(g.map_revision,'UTF8')),'hex'))
+            THEN g.spatial_position=$9 AND (g.content_revision<>$5 OR g.native_room_placement_context<>$6)
+        ELSE true END)))")
+        .bind(authority.world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).bind(scope_kind).bind(instance.map(|id| id.to_vec())).bind(other_cell).bind(other_map).fetch_one(&mut **tx).await?;
     if unknown {
         return Err(SpellItemError::Rejected(
             "unreconciled opaque or incompatible Ground placement",
@@ -1400,6 +1429,9 @@ pub async fn locked_tile_rows_for_scope(
         .bind(&target.placement_context)
         .bind(scope_kind)
         .bind(instance.map(|id| id.to_vec()))
+        .bind(other_cell)
+        .bind(other_map)
+        .bind(authority.ownership_generation.to_string())
         .fetch_all(&mut **tx)
         .await?;
     if rows.len() > 500 {
@@ -1408,7 +1440,7 @@ pub async fn locked_tile_rows_for_scope(
         ));
     }
     for row in &rows {
-        if integer(row.try_get("ground_scope_generation")?)? != authority.ownership_generation {
+        if !row.try_get::<bool, _>("ground_scope_admitted")? {
             return Err(SpellItemError::Rejected(
                 "Ground custody belongs to an unreconciled scope generation",
             ));
@@ -1622,11 +1654,17 @@ pub fn decode_tile_rows(
             .try_into()
             .map_err(|_| SpellItemError::Rejected("field origin text width"))?;
         // Keep all collision and provenance facts within the bounded SQL wire projection.
-        let mut flags: [Option<bool>; 5] = row
+        let mut flags: [Option<bool>; 6] = row
             .try_get::<Vec<Option<bool>>, _>("collision_flags")?
             .try_into()
             .map_err(|_| SpellItemError::Rejected("tile collision flags width"))?;
-        corpse_projection::project_current_corpse_flags(&row, ownership_generation, target, &mut flags)?;
+        corpse_projection::project_current_corpse_flags(&row, ownership_generation, target, &mut flags[..3])?;
+        if flags[5] == Some(true)
+            && !row.try_get::<bool, _>("corpse")?
+            && flags[..3].contains(&None)
+        {
+            corpse_projection::project_loop_drop_flags(&row, target, &mut flags[..3])?;
+        }
         let blocks_movement = flags[0].ok_or(SpellItemError::Rejected(
             "item has no qualified current movement flags",
         ))?;
@@ -3834,18 +3872,38 @@ pub async fn read_creature_empty_tiles_in_transaction(
     // An opaque live placement invalidates emptiness everywhere, just as in
     // locked_tile_rows_for_scope. With <=256 distinct requested addresses,
     // LIMIT 257 cannot hide an opaque address behind requested cells.
+    let loop_positions: Vec<_> = positions
+        .iter()
+        .map(|position| opposite_ground_floor(position))
+        .collect();
     // Plan for the actual scope. A cached generic plan can scan both tables
     // when channel and instance populations are uneven.
-    Ok(sqlx::query_scalar("WITH occupied AS MATERIALIZED (SELECT DISTINCT g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid
-                  AND (($4=1 AND g.scope_kind=1 AND g.channel_id=encode($2,'hex')::uuid AND g.instance_id IS NULL)
-                    OR ($4=2 AND g.scope_kind=2 AND g.instance_id=encode($5,'hex')::uuid AND g.channel_id IS NULL))
-                  AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3::bytea[])) LIMIT 257) SELECT p FROM unnest($3::bytea[]) AS requested(p) WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE octet_length(spatial_position)<>10 OR spatial_position=p)")
+    Ok(sqlx::query_scalar("WITH requested AS MATERIALIZED (
+        SELECT * FROM unnest($3::bytea[], $6::bytea[]) AS addresses(native, loop)
+    ), occupied AS MATERIALIZED (
+        SELECT DISTINCT p.native
+        FROM game_item_ground_locations g
+        JOIN game_item_instances i USING(item_instance_id)
+        LEFT JOIN requested p ON g.spatial_position=p.native
+            OR (g.spatial_position=p.loop AND game_item_loop_drop_ref(g.corpse_ref))
+        WHERE g.world_id=encode($1,'hex')::uuid
+          AND (($4=1 AND g.scope_kind=1 AND g.channel_id=encode($2,'hex')::uuid AND g.instance_id IS NULL)
+            OR ($4=2 AND g.scope_kind=2 AND g.instance_id=encode($5,'hex')::uuid AND g.channel_id IS NULL))
+          AND i.lifecycle=1
+          AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3)
+               OR g.spatial_position=ANY($6))
+          AND (p.native IS NOT NULL OR octet_length(g.spatial_position)<>10)
+        LIMIT 257
+    )
+    SELECT p.native FROM requested p
+    WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE native IS NULL OR native=p.native)")
         .persistent(false)
         .bind(authority.world.as_slice())
         .bind(channel.map(|id| id.to_vec()))
         .bind(positions)
         .bind(scope_kind)
         .bind(instance.map(|id| id.to_vec()))
+        .bind(loop_positions)
         .fetch_all(&mut **tx)
         .await?)
 }

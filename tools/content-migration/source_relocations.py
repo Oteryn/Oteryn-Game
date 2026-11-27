@@ -217,12 +217,13 @@ RELOCATIONS = {
         "69bf44d0e7aea723e634f2fba199bdd39b2e5c80a3a64a3d74597d68aafe95aa",
     ),
     # RewardClaim validator gains the bounded multi-item form; Item qualifiers stay unchanged.
+    # Native Item profiles may omit classification capabilities that decode as Unknown.
     (
         "crates/gameplay/content/src/content/reference_playable.rs",
         "f090002566f663b57fae0d37ab0a35e4db1117d8871d8aa021488ad8b90261c2",
     ): (
         "crates/gameplay/content/src/content/reference_playable.rs",
-        "e559f5bdff432d83198bfa4e4d447ec993abcad9ad928a4d86403b8793162593",
+        "b3679f5c39bf3ba56efbd3dd9c1f2bfd85d3b0dbcdd0a0309fd17067ebd2820a",
     ),
     # QMINT3: exact merged geometry footprints and compatibility-only producer
     # changes. Frozen record scopes and current ownership checks remain enforced.

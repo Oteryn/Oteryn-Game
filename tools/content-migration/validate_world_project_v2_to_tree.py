@@ -37,6 +37,8 @@ def source_qualified_item_references(reference, root):
     conditional(records, root)
     movement(records, root)
     terminal(records, root)
+    from fourth_quarter_corpses import extend_item_references as extend_fourth_quarter_references
+    extend_fourth_quarter_references(root, records)
     from qready1_cradle_item_profiles import extend_records as cradle
 
     cradle(records, root)
@@ -52,6 +54,12 @@ def source_qualified_item_references(reference, root):
     from crystal_ordinary_items import extend_references as doors
 
     doors(records, root)
+    from ordinary_corpse_profiles import extend_definitions as crystal_corpse_references
+    crystal_corpse_references(root, records)
+    from ordinary_corpse_slice2 import extend_references as ordinary_corpses
+    ordinary_corpses(records, root)
+    from ordinary_corpse_cohort import extend_item_references as extend_third_quarter_references
+    extend_third_quarter_references(records, root)
     return records
 
 

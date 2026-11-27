@@ -25,7 +25,8 @@ use super::model::ContentError;
 use super::production::CompiledFirstProductionContent;
 use super::project::{
     ProjectV2AppearanceSelection, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData,
-    ProjectV2DefinitionRef, ProjectV2Family,
+    ProjectV2DefinitionRef, ProjectV2Family, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition,
 };
 use super::spell_data::{SpellBook, executable_catalog};
 use crate::content::creature_policy::{CompiledCreaturePolicies, CompiledCreaturePolicy};
@@ -69,6 +70,10 @@ pub const MAGIC_V8: &[u8; 8] = b"OTNGP08\0";
 /// V8 plus the thirteenth permanent-cosmetics section (D1093). This is a binary layout
 /// prerequisite, not a gameplay dependency between cosmetics and loot.
 pub const MAGIC_V9: &[u8; 8] = b"OTNGP09\0";
+pub(super) const FOURTH_QUARTER_CORPSE_SOURCE: &str = include_str!(
+    "../../../../../tools/content-schema/native-gameplay/fourth-quarter-corpse-source.json"
+);
+
 pub const MAX_ARTIFACT_BYTES: usize = 88 * 1024 * 1024;
 pub fn is_envelope(bytes: &[u8]) -> bool {
     bytes.starts_with(MAGIC)
@@ -84,18 +89,14 @@ pub fn is_envelope(bytes: &[u8]) -> bool {
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
 const MAX_PROFILES: usize = 8 * 1024 * 1024;
-/// The item-profile section alone: the production file passed 8 MiB once the Soulpit
-/// (#2786) and Task Board records were both present (2210 records, 8_742_152 bytes).
-/// MAX_ITEM_RECORDS separately bounds the Item record count.
+/// The Item profile section and composed Item supplements share this byte bound.
 const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 // W01c: the measured 1,863 canonical attack closures add ~19 MiB to the ~7 MiB
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
-/// The merged loot and equipment providers have 8,272 base Items and 8,285
-/// after the starter and SRX updates. The Item byte and other record bounds
-/// still apply independently.
-const MAX_ITEM_RECORDS: usize = 8_384;
+/// The combined Item providers include the registered movable Crystal corpse stages.
+const MAX_ITEM_RECORDS: usize = 9_216;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -431,7 +432,7 @@ pub struct ItemProfilesDocument {
     pub schema: String,
     pub records: Vec<ItemProfileRecord>,
 }
-/// A borrowed member of the actual active artifact; caller JSON is never directly a policy.
+
 #[derive(Debug, Clone, Copy)]
 pub struct QualifiedItemPolicy<'a> {
     digest: [u8; 32],
@@ -1469,6 +1470,62 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("Arbaziloth fire identity collision"));
         }
+        #[derive(Deserialize)]
+        struct CorpseSource {
+            source_revision: String,
+            new_item_bindings: Vec<u32>,
+        }
+        let corpse_source: CorpseSource = serde_json::from_str(FOURTH_QUARTER_CORPSE_SOURCE)
+            .map_err(|_| invalid("fourth-quarter corpse binding facts"))?;
+        for item in corpse_source.new_item_bindings {
+            let binding = ProjectV2SourceIdentityBinding {
+                source_key: "oteryn:source.crystalserver".to_owned(),
+                source_revision: corpse_source.source_revision.clone(),
+                identity_namespace: "ots/item_server_id".to_owned(),
+                external_id: item.to_string(),
+                target: ProjectV2DefinitionRef {
+                    family: ProjectV2Family::Item,
+                    key: format!("oteryn:item.tibia.i{item}"),
+                    revision: "definition-r1".to_owned(),
+                },
+                disposition: ProjectV2SourceIdentityDisposition::Exact,
+            };
+            if admitted.insert(item.to_string(), binding).is_some() {
+                return Err(invalid("fourth-quarter corpse binding collision"));
+            }
+        }
+        // These exact bodies lack a historical XML binding. Their Crystal
+        // appearance and the current client object agree on the server Item id.
+        #[derive(Deserialize)]
+        struct CorrectedCorpseBindings {
+            crystal_revision: String,
+            binding_corrections: BTreeMap<String, [u32; 2]>,
+        }
+        let corrected: CorrectedCorpseBindings = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/native-gameplay/ordinary-corpse-cohort.json"
+        ))
+        .map_err(|_| invalid("ordinary corpse binding corrections"))?;
+        let mut extra = BTreeSet::from([35384, 35388, 35846, 36929, 44667, 44671, 48406]);
+        extra.extend(
+            corrected
+                .binding_corrections
+                .into_values()
+                .map(|[_, item]| item)
+                .filter(|item| !admitted.contains_key(&item.to_string())),
+        );
+        for external_id in extra {
+            let binding = serde_json::from_value(serde_json::json!({
+                "source_key": "oteryn:source.crystalserver",
+                "source_revision": corrected.crystal_revision,
+                "identity_namespace": "ots/item_server_id",
+                "external_id": external_id.to_string(),
+                "target": {"family": "Item", "key": format!("oteryn:item.tibia.i{external_id}"), "revision": "definition-r1"},
+                "disposition": "EXACT"
+            })).map_err(|_| invalid("ordinary corpse exact Item identity"))?;
+            if admitted.insert(external_id.to_string(), binding).is_some() {
+                return Err(invalid("ordinary corpse Item identity collision"));
+            }
+        }
         // The first and third loot slices independently qualify Spirited Soil.
         // Register it once above and require the two exact bindings to agree.
         let spirited_soil: super::project::ProjectV2SourceIdentityBinding =
@@ -1530,6 +1587,19 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay candidate Item binding conflict"));
             }
         }
+        let corpse_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../imports/crystalserver/ordinary-corpses/bindings.json"
+            ))
+            .map_err(|_| invalid("native Crystal corpse Item bindings"))?;
+        for binding in corpse_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("native Crystal corpse Item binding conflict"));
+            }
+        }
         authored_items::admit(&items, sections[5], &mut admitted)?;
         let mut source_reward_items = boss_reward_bindings::qualified_records()?;
         for record in &source_reward_items {
@@ -1562,6 +1632,39 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         let galthen_source = galthen_loot::qualified_records()?;
         let galthen_global = galthen_loot::qualified_global_records(&galthen_source)?;
         source_reward_items.extend(galthen_source);
+        // Exact Crystal 201189f8 corpse bodies missing from the older identity index.
+        // The active profile still has to match the captured Ground custody.
+        #[derive(Deserialize)]
+        struct OrdinaryCorpseCapture {
+            new_item_bindings: Vec<super::project::ProjectV2SourceIdentityBinding>,
+            records: Vec<ItemProfileRecord>,
+        }
+        let ordinary_corpses: OrdinaryCorpseCapture = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/ordinary-corpse-slice2.json"
+        ))
+        .map_err(|_| invalid("native ordinary corpse source records"))?;
+        for binding in ordinary_corpses.new_item_bindings {
+            let record = ordinary_corpses
+                .records
+                .iter()
+                .find(|record| record.production_binding == binding)
+                .ok_or_else(|| invalid("native ordinary corpse source binding"))?;
+            let mut expected = record.clone();
+            if binding.external_id == "35136" {
+                // The fourth-quarter capture establishes that the shared
+                // Tentacle body has no temporal policy.
+                if admitted.get(&binding.external_id) != Some(&binding) {
+                    return Err(invalid("native Tentacle corpse exact binding conflict"));
+                }
+                expected.semantics.temporal = super::ReferenceItemField::NotApplicable;
+            } else if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("native ordinary corpse exact binding conflict"));
+            }
+            source_reward_items.push(expected);
+        }
         let legacy_galthen_robes = galthen_loot::legacy_robes()?;
         let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"
@@ -2948,6 +3051,118 @@ mod tests {
             assert!(matches!(&worn.temporal, F::Known(temporal) if
                 temporal.consumption_mode == F::Known(crate::content::ReferenceTemporalMode::AuthoritativeActiveTimeBudget) &&
                 temporal.duration == F::Known(crate::content::ReferenceMilliseconds(duration))));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn third_quarter_corpse_admissions_reach_the_pinned_reward_loader()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = test_source(1)?.world_id;
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
+        )?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|_| invalid("corpse production activation"))?;
+        let active = controller.active().ok_or("active content")?;
+        let native = active.native_gameplay().ok_or("native content")?;
+        let mut failures = Vec::new();
+        for (creature, id) in [
+            ("orc", 5966),
+            ("nomad", 18185),
+            ("necromancer", 18174),
+            ("tentacle10", 35136),
+            ("tentacle2", 35136),
+            ("tentacle3", 35136),
+            ("tentacle4", 35136),
+            ("tentacle5", 35136),
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            let expected = format!("oteryn:item.tibia.i{id}");
+            match native.reward_table().row(&key) {
+                Ok(row)
+                    if row
+                        .corpse_item
+                        .as_ref()
+                        .is_some_and(|corpse| corpse.production_key == expected)
+                        && native.item_policy(&expected, "definition-r1").is_some() => {}
+                other => failures.push(format!("{key}, expected {expected}: {other:?}")),
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+        Ok(())
+    }
+
+    #[test]
+    fn third_quarter_pinned_corpse_facts_match_the_source_cohort()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let cohort: Value = serde_json::from_slice(&std::fs::read(
+            path.join("tools/content-schema/native-gameplay/ordinary-corpse-cohort.json"),
+        )?)?;
+        let world = test_source(1)?.world_id;
+        let supplied =
+            NativeGameplayInput::from_manifest(&path.join("content/spells.manifest.json"))?;
+        let loot: LootTablesSection =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().ok_or("pinned loot")?.bytes)?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|_| invalid("corpse production activation"))?;
+        let active = controller.active().ok_or("active content")?;
+        let native = active.native_gameplay().ok_or("native content")?;
+        let admissions = cohort["admissions"]
+            .as_object()
+            .ok_or("source admissions")?;
+        assert_eq!(admissions.len(), 306);
+        for (creature, source) in admissions {
+            let key = format!("oteryn:creature.{creature}");
+            let source = source.as_u64().ok_or("source Item id")?;
+            let item = format!("oteryn:item.tibia.i{source}");
+            let policy = native
+                .item_policy(&item, "definition-r1")
+                .ok_or_else(|| format!("{creature} is missing the {item} Item policy"))?;
+            assert!(policy.record().admission.materializable, "{key}");
+            let section = loot
+                .items
+                .iter()
+                .find(|facts| facts.item.key == item)
+                .ok_or("corpse fact")?;
+            let capacity = cohort["items"][source.to_string()]["capacity"].as_u64();
+            if let Some(capacity) = capacity {
+                assert!(section.materializable, "{key}");
+                assert_eq!(
+                    section.container_capacity,
+                    Some(u32::try_from(capacity)?),
+                    "{key}"
+                );
+            }
+            match native.reward_table().row(&key) {
+                Ok(row) => {
+                    assert_eq!(
+                        row.corpse_item
+                            .as_ref()
+                            .ok_or("physical corpse")?
+                            .production_key,
+                        item
+                    );
+                }
+                // A coupled loot table independently refuses unavailable yields
+                // after the body's own source fact has qualified.
+                Err(NoSettlementReason::LootItemInadmissible) if capacity.is_some() => {}
+                Err(error) => return Err(format!("{key}: {error:?}").into()),
+            }
+        }
+        let chains = cohort["chains"].as_object().ok_or("source chains")?;
+        assert_eq!(chains.len(), 260);
+        for stages in chains.values() {
+            for stage in stages.as_array().ok_or("source chain")? {
+                let id = stage[0].as_u64().ok_or("stage Item id")?;
+                let item = format!("oteryn:item.tibia.i{id}");
+                let record = native
+                    .item_policy(&item, "definition-r1")
+                    .ok_or_else(|| format!("{item} has no native decay stage policy"))?;
+                assert!(record.record().admission.materializable, "{item}");
+            }
         }
         Ok(())
     }
