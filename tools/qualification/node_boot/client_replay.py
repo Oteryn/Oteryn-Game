@@ -134,7 +134,7 @@ def replay_targets():
     return targets
 
 
-def replay_cause(row, package, test, names, captures, server, log):
+def replay_cause(row, package, test, names, captures, server, log, *, full=False):
     # Some replays construct filenames from a prefix. Those replays check the
     # individual reads themselves, but still need at least one row-owned file.
     files = {path.name for path in captures.glob(f"{row.lower()}[-_.]*")
@@ -147,7 +147,8 @@ def replay_cause(row, package, test, names, captures, server, log):
     command = [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package]
     env = os.environ.copy()
     if row == "P11":
-        if server != [("e2e_capture", "CAPTURED")]:
+        expected = ("e2e_all", "PASS") if full else ("e2e_capture", "CAPTURED")
+        if server != [expected]:
             return "server-failed"
         anchors = re.findall(r"^SEAM_EVIDENCE P11_CAPTURE provenance=(.+)$",
                              log.read_text(errors="replace"), re.MULTILINE)
@@ -193,18 +194,24 @@ def main(log, batch, validate=False):
     if validate:
         return validate_rows(selected, registered, server_rows)
 
-    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    rows = sorted(
+        scenario for scenario in selected
+        if scenario.endswith(".client") or scenario == "P11.full"
+    )
     if not rows:
         return 0
     captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
     targets = replay_targets()
     failed = False
     for scenario in rows:
-        row = scenario.removesuffix(".client")
+        row, suffix = scenario.rsplit(".", 1)
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())
-        cause = replay_cause(row, package, test, names, captures, server_rows.get(scenario), log)
+        cause = replay_cause(
+            row, package, test, names, captures, server_rows.get(scenario), log,
+            full=suffix == "full",
+        )
         verdict = f"FAIL cause={cause}" if cause else "PASS"
         print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
         failed |= cause is not None

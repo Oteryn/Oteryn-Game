@@ -340,6 +340,29 @@ async fn read_wire_frame(stream: &mut (impl AsyncRead + Unpin)) -> TestResult<Ve
     Ok(bytes)
 }
 
+fn reject_earned_wire(payload: &[u8]) -> TestResult {
+    let delta = oteryn_protocol_oteryn::decode_state_delta(payload)?;
+    if delta.domain_id
+        == oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES
+    {
+        return Err("P11 emitted an achievement notice before the grant".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn p11_rejects_a_premature_notice_in_the_raw_wire_probe() -> TestResult {
+    use oteryn_protocol_oteryn::{achievement_notices, encode_state_delta};
+    let ordinary = encode_state_delta(1, 1, 1, 0, 1, 1, &[8, 1])?;
+    let premature = encode_state_delta(
+        1, 1, achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
+        0, 1, achievement_notices::DELTA_TYPE_ACHIEVEMENT_EARNED_V1, &[8, 1],
+    )?;
+    reject_earned_wire(decode_wire_envelope(&ordinary)?.payload())?;
+    assert!(reject_earned_wire(decode_wire_envelope(&premature)?.payload()).is_err());
+    Ok(())
+}
+
 pub(super) async fn malformed_live(
     clients: &SeamClients<'_>,
     index: usize,
@@ -415,7 +438,10 @@ pub(super) async fn malformed_live(
             let frame = read_wire_frame(&mut stream).await?;
             let envelope = decode_wire_envelope(&frame)?;
             match envelope.message_type() {
-                MessageType::StateDelta => continue,
+                MessageType::StateDelta => {
+                    reject_earned_wire(envelope.payload())?;
+                    continue;
+                }
                 MessageType::CommandResult => {}
                 actual => {
                     return Err(
@@ -484,6 +510,15 @@ async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResul
     let index = 1;
     let malformed = malformed_live(clients, index).await?;
     let proof = full_row_p11::earn_and_logout(clients, core, &std::cell::Cell::new(None)).await?;
+    capture_relog(clients, proof, malformed).await
+}
+
+pub(super) async fn capture_relog(
+    clients: &SeamClients<'_>,
+    proof: full_row_p11::GrantProof,
+    malformed: Vec<u8>,
+) -> TestResult<String> {
+    let index = 1;
     let token = fresh_token(clients, index).await?;
     let admission = Admission {
         appearance_items: None,
