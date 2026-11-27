@@ -168,6 +168,7 @@ fn provenance(
     live: &Observation,
     character: &[u8; 16],
     envelopes: &[CapturedCommandResult],
+    malformed: &[u8],
 ) -> TestResult<String> {
     use sha2::{Digest, Sha256};
     let results: Vec<_> = envelopes
@@ -183,6 +184,7 @@ fn provenance(
     }
     Ok(serde_json::json!({
         "frames_sha256": Sha256::digest(transcript).as_slice(),
+        "malformed_sha256": Sha256::digest(malformed).as_slice(),
         "character": character,
         "session": uuid_text(&live.session),
         "results": results,
@@ -239,9 +241,13 @@ fn e2e_p11_original_frame_replay() -> TestResult {
     let metadata: serde_json::Value = serde_json::from_str(&expected)?;
     let character: [u8; 16] = serde_json::from_value(metadata["character"].clone())?;
     let transcript = std::fs::read(directory.join("p11-frames.bin"))?;
+    let malformed = std::fs::read(directory.join("p11-malformed-frames.bin"))?;
     let envelopes: Vec<CapturedCommandResult> =
         serde_json::from_slice(&std::fs::read(directory.join("p11-envelopes.json"))?)?;
-    if transcript.is_empty() || transcript.len() > MAX_CAPTURE_BYTES {
+    if [&transcript, &malformed]
+        .iter()
+        .any(|bytes| bytes.is_empty() || bytes.len() > MAX_CAPTURE_BYTES)
+    {
         return Err("P11 capture has invalid length".into());
     }
     tokio::runtime::Builder::new_current_thread()
@@ -259,15 +265,41 @@ fn e2e_p11_original_frame_replay() -> TestResult {
                 supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
                 deadline: Duration::from_secs(20),
             };
-            let mut session = Session::admit(stream, admission).await?;
+            let mut session = Session::admit(stream, admission.clone()).await?;
             let replay = observe(&mut session).await?;
             if command_envelopes(&transcript, replay.session)? != envelopes
-                || provenance(&transcript, &replay, &character, &envelopes)? != expected
+                || provenance(&transcript, &replay, &character, &envelopes, &malformed)? != expected
             {
                 return Err(
                     "P11 replay did not match live session, commands, sequences or full page"
                         .into(),
                 );
+            }
+            let negative_stream = || tokio::io::join(Cursor::new(malformed.as_slice()), tokio::io::sink());
+            let mut refusal = Session::admit(negative_stream(), admission.clone()).await?;
+            use oteryn_dev_client::client_runtime::account_achievements::Response;
+            use oteryn_dev_client::SessionError;
+            let empty = Response::Page(wire::AccountAchievementsResult::default());
+            if refusal.join_snapshot().game_session_id == session.join_snapshot().game_session_id
+                || refusal.account_achievements(0).await? != empty
+                || refusal.account_achievements(0).await? != Response::Refused
+                || refusal.account_achievements(0).await? != empty
+            {
+                return Err("P11 original server refusal did not preserve typed page access".into());
+            }
+
+            // Ask for page 1 while the original server reply still names page 0.
+            let mut wrong_page = Session::admit(negative_stream(), admission).await?;
+            if !matches!(
+                wrong_page.account_achievements(1).await,
+                Err(SessionError::Protocol(
+                    oteryn_protocol_oteryn::FoundationProtocolError::MalformedFrame
+                ))
+            ) || !matches!(
+                wrong_page.account_achievements(0).await,
+                Err(SessionError::SessionUnusable)
+            ) {
+                return Err("P11 accepted a mismatched page or left its session usable".into());
             }
             Ok(())
         })
@@ -308,19 +340,24 @@ async fn read_wire_frame(stream: &mut (impl AsyncRead + Unpin)) -> TestResult<Ve
     Ok(bytes)
 }
 
-pub(super) async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> TestResult {
+pub(super) async fn malformed_live(
+    clients: &SeamClients<'_>,
+    index: usize,
+) -> TestResult<Vec<u8>> {
     use oteryn_protocol_oteryn::{
         MessageType, decode_command_result, decode_server_accepted, logout,
     };
     use tokio::io::AsyncWriteExt;
     let token = fresh_token(clients, index).await?;
     let tcp = tokio::net::TcpStream::connect(clients.address).await?;
-    let mut stream = connector(clients.certificate, &EXACT)?
+    let stream = connector(clients.certificate, &EXACT)?
         .connect(
             tokio_rustls::rustls::pki_types::ServerName::try_from("localhost")?,
             tcp,
         )
         .await?;
+    let bytes = Mutex::new(Vec::new());
+    let mut stream = Recording { stream, bytes: &bytes };
     stream
         .write_all(&framed(&bootstrap_supporting(
             1,
@@ -439,12 +476,13 @@ pub(super) async fn malformed_live(clients: &SeamClients<'_>, index: usize) -> T
     {
         return Err(format!("P11 malformed test changed the pre-grant page: {pages:?}").into());
     }
-    Ok(())
+    drop(stream);
+    bytes.into_inner().map_err(|_| "P11 malformed capture lock poisoned".into())
 }
 
 async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResult<String> {
     let index = 1;
-    malformed_live(clients, index).await?;
+    let malformed = malformed_live(clients, index).await?;
     let proof = full_row_p11::earn_and_logout(clients, core, &std::cell::Cell::new(None)).await?;
     let token = fresh_token(clients, index).await?;
     let admission = Admission {
@@ -472,6 +510,9 @@ async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResul
         admission,
     )
     .await?;
+    if full_row_p11::inventory_count(client.inventory(), proof.reward) != Some(1) {
+        return Err("P11 relog inventory did not contain exactly one Demon Armor".into());
+    }
     let live = observe(&mut client).await?;
     if live.session == proof.session || live.page != proof.page {
         return Err("P11 new session did not load the exact earned achievement".into());
@@ -484,11 +525,12 @@ async fn journey(clients: &SeamClients<'_>, core: &SeamClients<'_>) -> TestResul
         .into_inner()
         .map_err(|_| "P11 capture lock poisoned")?;
     let envelopes = command_envelopes(&transcript, live.session)?;
-    let metadata = provenance(&transcript, &live, &clients.characters[index], &envelopes)?;
+    let metadata = provenance(&transcript, &live, &clients.characters[index], &envelopes, &malformed)?;
     let envelopes_json = serde_json::to_vec(&envelopes)?;
     use std::io::Write;
     for (name, data) in [
         ("p11-frames.bin", transcript.as_slice()),
+        ("p11-malformed-frames.bin", malformed.as_slice()),
         ("p11-envelopes.json", envelopes_json.as_slice()),
         ("p11-provenance.json", metadata.as_bytes()),
     ] {

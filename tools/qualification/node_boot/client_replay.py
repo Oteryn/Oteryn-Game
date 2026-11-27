@@ -129,7 +129,7 @@ def replay_targets():
     )]
     targets["e2e_p11"] = [(
         "oteryn-game-server", "e2e_p11_original_frame_replay",
-        {"p11-frames.bin", "p11-provenance.json", "p11-envelopes.json"},
+        {"p11-frames.bin", "p11-provenance.json", "p11-envelopes.json", "p11-malformed-frames.bin"},
     )]
     return targets
 

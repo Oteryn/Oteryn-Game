@@ -142,15 +142,10 @@ async fn wait_for_lever_arrival(
         let mut arrived = false;
         for event in events {
             evidence(&format!("P11_LEVER_FRAME member_x={} {event:?}", staged.x));
-            let (sequence, position) = match event {
-                SessionEvent::WorldSpatial(delta) => {
-                    (delta.server_sequence, delta.value.actor_position)
-                }
-                SessionEvent::WorldSpatialEntities(delta) => {
-                    (delta.server_sequence, delta.value.actor_position)
-                }
-                _ => continue,
+            let SessionEvent::WorldSpatialEntities(delta) = event else {
+                continue;
             };
+            let (sequence, position) = (delta.server_sequence, delta.value.actor_position);
             if sequence <= after_sequence {
                 continue;
             }
@@ -188,9 +183,15 @@ const POTION_ID: u32 = 7643;
 const REWARD_ID: u32 = 3388;
 
 fn bag_count(client: &DevClientSession, definition: std::num::NonZeroU32) -> Option<u32> {
+    inventory_count(client.inventory(), definition)
+}
+
+pub(super) fn inventory_count(
+    inventory: Option<&oteryn_protocol_oteryn::item_view::CharacterInventory>,
+    definition: std::num::NonZeroU32,
+) -> Option<u32> {
     Some(
-        client
-            .inventory()?
+        inventory?
             .entries
             .iter()
             .filter(|item| item.item_definition_ref == definition)
@@ -264,7 +265,6 @@ async fn corridor_step(
                         .min(Duration::from_millis(100)),
                 )
                 .await?;
-            client.take_events();
         }
     }
     Ok(())
@@ -277,6 +277,32 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
     let entities = client
         .world_entities()
         .ok_or("P11 corridor entity snapshot absent")?;
+    let mut room_demons: Vec<_> = entities
+        .iter()
+        .filter(|entity| {
+            entity.kind == EntityKind::Creature
+                && entity.position.floor == 13
+                && (33219..=33224).contains(&entity.position.x)
+                && (31657..=31661).contains(&entity.position.y)
+                && entity
+                    .display_name
+                    .is_some_and(|name| name.as_str() == Ok("Angry Demon"))
+        })
+        .map(|entity| (entity.position.x, entity.position.y))
+        .collect();
+    room_demons.sort_unstable();
+    if room_demons
+        != [
+            (33219, 31657),
+            (33220, 31661),
+            (33221, 31657),
+            (33222, 31661),
+            (33223, 31659),
+            (33224, 31659),
+        ]
+    {
+        return Err(format!("P11 expected all six authored Angry Demons: {room_demons:?}").into());
+    }
     for x in [33223, 33224] {
         let mut found = entities.iter().filter(|entity| {
             entity.kind == EntityKind::Creature
@@ -762,7 +788,7 @@ async fn prepare_knight(clients: &SeamClients<'_>, index: usize, leader: bool) -
             ));
         }
     }
-    let (result, detail, _, _) = fixture_logout_retrying_busy(&mut initial).await?;
+    let (result, detail, _, _) = logout_once(&mut initial).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err(format!("P11 fixture logout refused: {detail}").into());
     }
@@ -963,14 +989,14 @@ pub(super) async fn earn_and_logout(
     // The Server may defer notice delivery to its next liveness refresh.
     let notice_deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let earned = loop {
-        if let Some(earned) = client
-            .take_events()
-            .into_iter()
-            .find_map(|event| match event {
-                SessionEvent::AchievementEarned(delta) => Some(delta.value),
-                _ => None,
-            })
-        {
+        let mut notices = client.take_events().into_iter().filter_map(|event| match event {
+            SessionEvent::AchievementEarned(delta) => Some(delta.value),
+            _ => None,
+        });
+        if let Some(earned) = notices.next() {
+            if notices.next().is_some() {
+                return Err("P11 chest emitted multiple earned notices".into());
+            }
             break earned;
         }
         let remaining = notice_deadline.saturating_duration_since(tokio::time::Instant::now());
@@ -999,16 +1025,14 @@ pub(super) async fn earn_and_logout(
         return Err(format!("step=granter delta/query mismatch: {earned:?} {granted:?}").into());
     }
 
-    client.take_events();
+    reject_earned_notices(&mut client)?;
     let duplicate_reply = client.session_mut().use_object(&placement, 0).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
+    let unchanged = page(&mut client, 0).await?;
+    reject_earned_notices(&mut client)?;
     if duplicate_reply.disposition
         != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
-        || client
-            .take_events()
-            .iter()
-            .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
-        || page(&mut client, 0).await? != granted
+        || unchanged != granted
         || bag_count(&client, reward) != Some(1)
     {
         return Err(
@@ -1016,6 +1040,7 @@ pub(super) async fn earn_and_logout(
         );
     }
     leave_reward_room(&mut client, world).await?;
+    reject_earned_notices(&mut client)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
     while client
         .session_mut()
@@ -1030,15 +1055,27 @@ pub(super) async fn earn_and_logout(
         client
             .service_liveness(remaining.min(Duration::from_millis(200)))
             .await?;
-        client.take_events();
+        reject_earned_notices(&mut client)?;
     }
     logout(&mut client).await?;
+    reject_earned_notices(&mut client)?;
     drop(client);
     Ok(GrantProof {
         page: granted,
         session,
         reward,
     })
+}
+
+fn reject_earned_notices(client: &mut DevClientSession) -> TestResult {
+    if client
+        .take_events()
+        .iter()
+        .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
+    {
+        return Err("P11 emitted a duplicate earned notice".into());
+    }
+    Ok(())
 }
 
 async fn journey(
