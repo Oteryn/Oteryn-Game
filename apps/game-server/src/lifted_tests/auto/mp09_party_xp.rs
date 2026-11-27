@@ -165,6 +165,7 @@ fn mp09_counts_only_fresh_committed_melee_damage() -> TestResult {
         value: vec![AttributedFact {
             fact: damage,
             attacker: None,
+            charm: None,
         }],
     });
     assert!(committed_swing(&event, 20));

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0625-analyser-charm-source",
+  "kind": "panels",
+  "id": "0625-analyser-charm-source-server-log",
+  "status": "supported",
+  "entry": "protocol.rs::damage_line"
+}

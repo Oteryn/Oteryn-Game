@@ -2985,14 +2985,16 @@ impl ChannelSpellStates {
             .ok()??;
         for ((source, _), result) in reflections.iter().zip(reflected) {
             if result.applied {
-                self.analyser.impact_amount(
+                self.analyser.charm_impact(
+                    runtime,
                     target,
                     session,
-                    u64::try_from(result.health_before.saturating_sub(result.health_after))
-                        .unwrap_or(0),
-                    Some(super::analyser::charm_element(
-                        oteryn_gameplay_progression::charm_effects::CharmElement::Physical,
-                    )),
+                    super::analyser::CharmImpact {
+                        target: *source,
+                        result,
+                        element: oteryn_gameplay_progression::charm_effects::CharmElement::Physical,
+                        key: super::attack::charm_combat::PARRY_KEY,
+                    },
                 );
                 if result.health_after == 0
                     && let Some(principal) = &principal

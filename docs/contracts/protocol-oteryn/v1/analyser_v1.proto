@@ -53,6 +53,10 @@ message AnalyserImpactV1 {
   AnalyserImpactKind kind = 1;
   uint32 value = 2;           // final applied value, non-zero
   oteryn.protocol.v1.damage_element.DamageElement element = 3; // required for DAMAGE, absent for HEALING
+  // Capability 625 ANALYSER_CHARM_SOURCE_V1 only. Both fields are present together
+  // on committed outgoing charm DAMAGE. Without selection, neither is emitted.
+  optional string charm_key = 4; // canonical production key, UTF-8, 1..=120 bytes, no control characters
+  optional oteryn.protocol.v1.world_spatial.EntityRefV1 target = 5; // exact creature, nonzero generation
 }
 
 message AnalyserDamageInputV1 {

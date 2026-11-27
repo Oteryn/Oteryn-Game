@@ -533,6 +533,7 @@ fn hit_attribution_carries_the_attacker_only_when_selected_and_attributable() {
         Ok(AttributedFact {
             fact: hit.clone(),
             attacker: Some(attacker),
+            charm: None,
         })
     );
     assert_eq!(
@@ -540,6 +541,7 @@ fn hit_attribution_carries_the_attacker_only_when_selected_and_attributable() {
         Ok(AttributedFact {
             fact: hit.clone(),
             attacker: None,
+            charm: None,
         })
     );
     let player = AnalyserFact::DamageInput {
@@ -597,4 +599,58 @@ fn hit_attribution_carries_the_attacker_only_when_selected_and_attributable() {
             .collect::<Vec<_>>(),
         [Some(attacker), None]
     );
+}
+
+#[test]
+fn analyser_charm_source_round_trips_only_when_selected() -> WireResult<()> {
+    let impact = AnalyserFact::Impact(AnalyserImpact::Damage {
+        value: nz(40),
+        element: DamageElement::Fire,
+    });
+    let charm = AnalyserCharmSource {
+        charm_key: "oteryn:charm.enflame".into(),
+        target: EntityRef {
+            identity: [0x47; 16],
+            generation: 167,
+        },
+    };
+    let mut queue = AnalyserPendingQueue::default();
+    queue.push_charm_impact(&impact, &charm)?;
+    let batch = queue.take_batch().ok_or(AnalyserWireError::Malformed)?;
+    assert_eq!(
+        decode_enriched_analyser_facts(&batch, false, true)?,
+        [AttributedFact {
+            fact: impact.clone(),
+            attacker: None,
+            charm: Some(charm.clone()),
+        }]
+    );
+    assert!(decode_attributed_analyser_facts(&batch).is_err());
+    assert!(decode_analyser_facts(&batch).is_err());
+
+    let mut missing_target = Vec::new();
+    let partial = extend_fact(&impact, |inner| {
+        push_message_field(inner, 4, charm.charm_key.as_bytes())
+    })?;
+    push_message_field(&mut missing_target, 1, &partial);
+    assert!(decode_enriched_analyser_facts(&missing_target, false, true).is_err());
+    queue.push(&impact)?;
+    assert_eq!(
+        queue.take_batch().as_deref(),
+        Some(
+            &[
+                0x0a,
+                0x08,
+                0x22,
+                0x06,
+                0x08,
+                1,
+                0x10,
+                40,
+                0x18,
+                DamageElement::Fire.wire() as u8
+            ][..]
+        )
+    );
+    Ok(())
 }

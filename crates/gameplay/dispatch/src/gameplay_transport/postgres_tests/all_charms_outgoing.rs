@@ -103,11 +103,6 @@ damage_cases!(
         "curse"
     ),
     (
-        all_charms_outgoing_ordinary_enflame,
-        all_charms_outgoing_native_enflame,
-        "enflame"
-    ),
-    (
         all_charms_outgoing_ordinary_divine_wrath,
         all_charms_outgoing_native_divine_wrath,
         "divine_wrath"
@@ -133,6 +128,18 @@ damage_cases!(
         "fatal_hold"
     ),
 );
+#[test]
+fn all_charms_outgoing_native_enflame_625_impact_names_exact_target_and_logs_damage() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    enflame_wire_case(admin, true)
+}
+
+#[test]
+fn all_charms_outgoing_ordinary_enflame_legacy_impact_is_byte_identical_and_logs_damage() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    enflame_wire_case(admin, false)
+}
+
 fn scenario(native_path: bool, charm: &'static str, stage: u8) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -140,18 +147,40 @@ fn scenario(native_path: bool, charm: &'static str, stage: u8) -> TestResult {
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario_inner(admin, native_path, charm, stage).await)
+            run(async move |admin| scenario_inner(admin, native_path, charm, stage, None).await)
                 .map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "outgoing charm thread panicked")?
         .map_err(Into::into)
 }
-async fn scenario_inner(admin: String, native_path: bool, charm: &str, stage: u8) -> TestResult {
+fn enflame_wire_case(admin: String, selected: bool) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())?;
+            runtime.block_on(Box::pin(scenario_inner(admin, selected, "enflame", 3, Some(selected))))
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Enflame wire scenario panicked")?
+        .map_err(Into::into)
+}
+
+async fn scenario_inner(
+    admin: String,
+    native_path: bool,
+    charm: &str,
+    stage: u8,
+    wire_charm_source: Option<bool>,
+) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "all_charms_outgoing", false, false).await?;
     // Release this mechanic's temporary database even when an assertion unwinds.
     let result = {
-        let mut scenario = std::pin::pin!(scenario_with_harness(&h, native_path, charm, stage));
+        let mut scenario = std::pin::pin!(scenario_with_harness(&h, native_path, charm, stage, wire_charm_source));
         std::future::poll_fn(|context| {
             match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 std::future::Future::poll(scenario.as_mut(), context)
@@ -175,6 +204,7 @@ async fn scenario_with_harness(
     native_path: bool,
     charm: &str,
     stage: u8,
+    wire_charm_source: Option<bool>,
 ) -> TestResult {
     let race = match charm {
         "immune" | "cripple_immune" => "oteryn:creature.dragon",
@@ -514,6 +544,22 @@ async fn scenario_with_harness(
         };
         assert!(states.install_charm_state(&runtime, actor, session, selected));
     }
+    if let Some(selected) = wire_charm_source {
+        use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
+        use oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_CHARM_SOURCE_V1;
+        let mut supported = vec![6, 7, 10, 617];
+        if selected {
+            supported.push(CAPABILITY_ANALYSER_CHARM_SOURCE_V1);
+        }
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &supported)
+                .ok_or("analyser negotiation")?;
+        assert_eq!(admitted.continuity.selected_capabilities.contains(CAPABILITY_ANALYSER_CHARM_SOURCE_V1), selected);
+        assert!(admitted.continuity.selected_capabilities.contains(617));
+        owner.chat_open(session).await;
+        assert!(owner.states.chat.knows(session));
+        assert_eq!(owner.analyser_snapshot(admitted).await, Some(false));
+    }
     let spell = (1..=deps.spells.source_len())
         .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
         .find(|i| {
@@ -606,6 +652,7 @@ async fn scenario_with_harness(
         .ok_or("cast pending")?;
     assert_eq!(outcome.disposition, actor_spell::SpellCastDisposition::Cast);
     let mut primary_damage = 0;
+    let mut expected_charms = Vec::new();
     let mut runtime = deps.runtime.lock().await;
     let target_facts = runtime
         .companion_snapshot_including_dead(target)
@@ -707,6 +754,14 @@ async fn scenario_with_harness(
             .iter()
             .filter(|effect| effect.sub_ordinal >= 256)
             .collect();
+        if wire_charm_source.is_some() {
+            for child in &children {
+                let loss = child.health.and_then(|health| {
+                    u32::try_from(health.health_before - health.health_after).ok()
+                }).and_then(std::num::NonZeroU32::new).ok_or("committed charm removed HP")?;
+                expected_charms.push((child.target, loss));
+            }
+        }
         if matches!(charm, "wrong_species" | "immune") {
             assert!(
                 children.is_empty(),
@@ -800,6 +855,9 @@ async fn scenario_with_harness(
         .map_err(debug)?
         .health;
     drop(runtime);
+    if let Some(selected) = wire_charm_source {
+        assert_enflame_wire(&owner, admitted, selected, &expected_charms).await?;
+    }
     {
         let runtime = deps.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
@@ -1325,4 +1383,60 @@ fn condition_snapshot_including_dead(
         runtime.set_test_creature_health(target, 0).map_err(debug)?;
     }
     result.map_err(debug)
+}
+
+async fn assert_enflame_wire(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    selected: bool,
+    expected: &[(crate::foundation::ExactActorRef, std::num::NonZeroU32)],
+) -> TestResult {
+    use oteryn_protocol_oteryn::{
+        analyser::{AnalyserFact, AnalyserImpact, AnalyserPendingQueue, decode_analyser_facts, decode_enriched_analyser_facts},
+        chat::ChatLine,
+        damage_element::DamageElement,
+    };
+    assert!(!expected.is_empty());
+    let bytes = owner.analyser_next(admitted).await.ok_or("committed impact delta")?;
+    if selected {
+        let facts = decode_enriched_analyser_facts(&bytes, false, true).map_err(debug)?;
+        let impacts: Vec<_> = facts.into_iter().filter_map(|entry|
+            entry.charm.map(|charm| (charm, entry.fact))
+        ).collect();
+        assert_eq!(impacts.len(), expected.len());
+        for ((charm, fact), (target, value)) in impacts.into_iter().zip(expected) {
+            assert_eq!(charm.charm_key, "oteryn:charm.enflame");
+            assert_eq!(charm.target.identity, target.placement_identity());
+            assert_eq!(charm.target.generation, target.actor_local_generation());
+            assert_eq!(fact, AnalyserFact::Impact(AnalyserImpact::Damage { value: *value, element: DamageElement::Fire }));
+        }
+    } else {
+        let facts = decode_analyser_facts(&bytes).map_err(debug)?;
+        let mut old_queue = AnalyserPendingQueue::default();
+        for fact in &facts {
+            old_queue.push(fact).map_err(debug)?;
+        }
+        assert_eq!(old_queue.take_batch().as_deref(), Some(bytes.as_slice()));
+        let [(_, value)] = expected else { return Err("expected one ordinary spell proc".into()) };
+        assert_eq!(facts.iter().filter(|fact| **fact == AnalyserFact::Impact(
+            AnalyserImpact::Damage { value: *value, element: DamageElement::Fire }
+        )).count(), 1);
+    }
+    let session = admitted.game_session_id;
+    let mut reader_budget = crate::chat::EGRESS_MAX_LINES;
+    let mut lines = Vec::new();
+    while let Some(line) = owner.chat_next_bound(admitted, &mut reader_budget).await {
+        if let ChatLine::System { text } = &line
+            && text.ends_with(" (enflame charm)")
+        {
+            lines.push(text.clone());
+        }
+        owner.chat_delivered(session).await;
+    }
+    let expected_lines: Vec<_> = expected.iter().map(|(_, damage)| {
+        let points = if damage.get() == 1 { "hitpoint" } else { "hitpoints" };
+        format!("A cyclops loses {damage} {points} due to your attack. (enflame charm)")
+    }).collect();
+    assert_eq!(lines, expected_lines);
+    Ok(())
 }

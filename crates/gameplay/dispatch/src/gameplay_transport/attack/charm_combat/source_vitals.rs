@@ -331,16 +331,26 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
                 } else {
                     index == 1
                 };
-            self.states.analyser.impact_amount(
-                target,
-                session,
-                removed,
-                Some(if is_parry {
-                    super::super::super::analyser::charm_element(CharmElement::Physical)
-                } else {
-                    oteryn_protocol_oteryn::damage_element::DamageElement::Untyped
-                }),
-            );
+            if is_parry {
+                self.states.analyser.charm_impact(
+                    runtime,
+                    target,
+                    session,
+                    super::super::super::analyser::CharmImpact {
+                        target: source,
+                        result: *result,
+                        element: CharmElement::Physical,
+                        key: PARRY_KEY,
+                    },
+                );
+            } else {
+                self.states.analyser.impact_amount(
+                    target,
+                    session,
+                    removed,
+                    Some(oteryn_protocol_oteryn::damage_element::DamageElement::Untyped),
+                );
+            }
             if result.health_after == 0
                 && let Some(principal) = principal
             {

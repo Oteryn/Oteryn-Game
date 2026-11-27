@@ -1327,14 +1327,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             now.get(),
                         ) {
                             if child.applied {
-                                states.analyser.impact_amount(
+                                states.analyser.charm_impact(
+                                    &runtime,
                                     entry.actor,
                                     entry.session,
-                                    u64::try_from(
-                                        child.health_before.saturating_sub(child.health_after),
-                                    )
-                                    .unwrap_or(0),
-                                    Some(super::super::analyser::charm_element(damage.element)),
+                                    super::super::analyser::CharmImpact {
+                                        target,
+                                        result: child,
+                                        element: damage.element,
+                                        key: &outcome.charm_key,
+                                    },
                                 );
                             }
                             record_hit_activity(
@@ -1441,14 +1443,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     entry.actor,
                                     entry.session,
                                 );
-                                states.analyser.impact_amount(
+                                states.analyser.charm_impact(
+                                    &runtime,
                                     entry.actor,
                                     entry.session,
-                                    u64::try_from(
-                                        child.health_before.saturating_sub(child.health_after),
-                                    )
-                                    .unwrap_or(0),
-                                    Some(super::super::analyser::charm_element(damage.element)),
+                                    super::super::analyser::CharmImpact {
+                                        target: neighbour,
+                                        result: child,
+                                        element: damage.element,
+                                        key: &outcome.charm_key,
+                                    },
                                 );
                                 record_hit_activity(
                                     entry,

@@ -347,7 +347,8 @@ pub(super) async fn hunt_exact_creature(
     verify_principal: Option<&SeamClients<'_>>,
 ) -> TestResult<full_row_p05::KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
-    use oteryn_protocol_oteryn::analyser::AnalyserFact;
+    use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact};
+    use oteryn_protocol_oteryn::damage_element::DamageElement;
     let old_corpses: Vec<_> = client
         .world_entities()
         .into_iter()
@@ -389,30 +390,29 @@ pub(super) async fn hunt_exact_creature(
                 }
                 SessionEvent::AnalyserFacts(delta) => delta.value,
                 SessionEvent::AnalyserAttributedFacts(delta) => {
-                    delta.value.into_iter().map(|fact| fact.fact).collect()
+                    for entry in &delta.value {
+                        let Some(source) = &entry.charm else { continue };
+                        if source.charm_key != "oteryn:charm.enflame" || source.target != target.entity {
+                            return Err(format!("unexpected charm source in unarmed hunt: {source:?}").into());
+                        }
+                        let AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Fire, value }) = entry.fact else {
+                            return Err(format!("non-fire Enflame impact: {entry:?}").into());
+                        };
+                        if key == "oteryn:creature.troll" && value.get() != 1 {
+                            return Err(format!("Enflame Troll impact expected 1, got {value}").into());
+                        }
+                        evidence(&format!("P01_CHECK enflame-impact PASS charm={} damage={value} target={:?}", source.charm_key, source.target));
+                        fire_damage = true;
+                    }
+                    delta.value.into_iter().map(|entry| entry.fact).collect()
                 }
                 _ => continue,
             };
             for fact in facts {
                 match fact {
                     AnalyserFact::Kill { race } => kills.push(race),
-                    AnalyserFact::Impact(
-                        oteryn_protocol_oteryn::analyser::AnalyserImpact::Damage {
-                            element: oteryn_protocol_oteryn::damage_element::DamageElement::Fire,
-                            value,
-                        },
-                    ) => {
-                        evidence(&format!(
-                            "P01_CHECK fire-impact key={key} value={value} target={:?}",
-                            target.entity
-                        ));
-                        if key == "oteryn:creature.troll" && value.get() != 1 {
-                            return Err(
-                                format!("Enflame Troll impact expected 1, got {value}").into()
-                            );
-                        }
-                        fire_damage = true;
-                    }
+                    AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Fire, .. })
+                        if key == "oteryn:creature.rat" => fire_damage = true,
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
                     _ => {}
                 }
@@ -896,28 +896,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }) {
         return Err("step=charm-proc need=unarmed-physical-baseline-to-isolate-Enflame".into());
     }
-    let (troll_spawn, troll) = authored_target(
-        &mut client,
-        world,
-        &metadata.spawns,
-        troll_key,
-        "Troll",
-        None,
-        false,
-    )
-    .await?;
-    let kill = hunt_exact_creature(
-        &mut client,
-        troll,
-        troll_key,
-        race,
-        troll_corpse,
-        None,
-        None,
-    )
-    .await?;
-    if kill.race != race || kill.raw_xp != 20 {
-        return Err(format!("incorrect Troll kill credit: {kill:?}").into());
+    row.at("enflame-attribution");
+    let capability = oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_CHARM_SOURCE_V1;
+    if !client.selected_capabilities().contains(&capability) {
+        return Err("step=enflame-attribution missing negotiated capability 625".into());
+    }
+    let mut last_spawn = None;
+    let mut attributed = false;
+    for _ in 0..12 {
+        let (spawn, troll) = authored_target(
+            &mut client, world, &metadata.spawns, troll_key, "Troll", last_spawn, false,
+        ).await?;
+        let kill = hunt_exact_creature(
+            &mut client, troll, troll_key, race, troll_corpse, None, None,
+        ).await?;
+        if kill.race != race || kill.raw_xp != 20 {
+            return Err(format!("incorrect Troll kill credit: {kill:?}").into());
+        }
+        retreat_from_spawn(&mut client, world, spawn).await?;
+        last_spawn = Some(spawn);
+        if kill.fire_damage {
+            attributed = true;
+            break;
+        }
+    }
+    if !attributed {
+        return Err("step=enflame-attribution no committed attributed proc during 12 Troll hunts".into());
     }
     let after_hook = query(&mut client, "p01-full-after-hook.json", &mut frames).await?;
     let mut expected_durable = expected_assigned;
@@ -928,15 +932,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         );
     }
     evidence("P01_CHECK assigned-race-kill PASS analyser-credit-and-active-assignment");
-
-    const ENFLAME_CONTRACT_BLOCKER: &str = "BLOCKED-CONTRACT AnalyserImpactV1 requires optional target and charm_key for Enflame hit attribution";
-    evidence(&format!(
-        "P01_CHECK enflame-attribution {ENFLAME_CONTRACT_BLOCKER} target={:?} unscoped_fire_impact={}",
-        troll.entity, kill.fire_damage,
-    ));
-
-    row.at("leave-troll-spawn");
-    retreat_from_spawn(&mut client, world, troll_spawn).await?;
 
     row.at("wait-for-logout-block-and-relog");
     let old_session = client.join_snapshot().game_session_id;
@@ -965,8 +960,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     writeln!(frames, "charm={charm}")?;
     client_row_p01::capture("p01-full-expected.txt", frames.as_bytes())?;
     close_relog_fixture(&mut fresh).await?;
-    row.at("enflame-attribution");
-    Err(ENFLAME_CONTRACT_BLOCKER.into())
+    Ok(())
 }
 
 #[cfg(test)]

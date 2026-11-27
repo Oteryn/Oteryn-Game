@@ -917,6 +917,7 @@ impl PreparedNativeCombatCast {
         if result.applied {
             if let Some(charms) = &self.outgoing_charms {
                 charms.install_fatal_holds(states);
+                states.analyser_spell_charms(runtime, &self.batch, &result, &charms.damage);
             }
             if let Some(companion) = self.direct_companion.take() {
                 companion

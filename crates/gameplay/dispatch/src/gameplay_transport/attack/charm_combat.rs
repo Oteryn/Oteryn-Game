@@ -2,6 +2,8 @@
 use super::*;
 use sha2::{Digest, Sha256};
 pub(in crate::gameplay_transport) mod source_vitals;
+
+pub(in crate::gameplay_transport) const PARRY_KEY: &str = "oteryn:charm.parry";
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use oteryn_gameplay_progression::charm_effects::{
     CharmCatalogueRead, CharmDamageKind, CharmEffectOutcome, CharmElement, CharmHookEvent,

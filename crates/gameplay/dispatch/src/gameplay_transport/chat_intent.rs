@@ -88,7 +88,7 @@ struct ChatSession {
 /// await and is always taken after the runtime and spell-state locks.
 #[derive(Default)]
 pub struct ChatRuntime {
-    sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
+    sessions: Arc<Mutex<HashMap<GameSessionId, ChatSession>>>,
     pub(super) guild: super::guild_chat::GuildChatRuntime,
     pub(super) party: super::guild_chat::GuildChatRuntime,
     pub(super) typing: super::player_typing::TypingRuntime,
@@ -100,6 +100,30 @@ pub struct ChatRuntime {
     relay: OnceLock<Arc<ChatRelay>>,
     /// The last customer queue position handed out.
     joins: AtomicU64,
+}
+
+/// A leaf publisher for committed feedback to sessions owned by this chat runtime.
+#[derive(Debug)]
+pub(super) struct ChatFeedback(std::sync::Weak<Mutex<HashMap<GameSessionId, ChatSession>>>);
+
+impl ChatFeedback {
+    pub(super) fn push(&self, session: GameSessionId, text: &str) {
+        if let Some(sessions) = self.0.upgrade() {
+            push_system_feedback(&sessions, session, text);
+        }
+    }
+}
+
+fn push_system_feedback(
+    sessions: &Mutex<HashMap<GameSessionId, ChatSession>>,
+    session: GameSessionId,
+    text: &str,
+) {
+    if let Ok(mut sessions) = sessions.lock()
+        && let Some(entry) = sessions.get_mut(&session)
+    {
+        entry.egress.push(ChatLine::System { text: text.into() });
+    }
 }
 
 impl ChatRuntime {
@@ -225,11 +249,11 @@ impl ChatRuntime {
 
     /// A local Game feedback line, subject to the ordinary CHAT egress bound.
     pub(super) fn push_party_spell_feedback(&self, session: GameSessionId, text: &str) {
-        if let Ok(mut sessions) = self.sessions.lock()
-            && let Some(entry) = sessions.get_mut(&session)
-        {
-            entry.egress.push(ChatLine::System { text: text.into() });
-        }
+        push_system_feedback(&self.sessions, session, text);
+    }
+
+    pub(super) fn feedback(&self) -> ChatFeedback {
+        ChatFeedback(Arc::downgrade(&self.sessions))
     }
 
     pub(super) fn push_quest_feedback(&self, session: GameSessionId, text: &str) {
@@ -1113,6 +1137,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.states.chat.admit_level(session, level);
         } else if self.states.chat.knows(session) {
             self.states.chat.refresh(session);
+        }
+        if self.states.chat.knows(session) {
+            self.states.analyser.bind_chat(
+                &self.states.chat,
+                self.active_generation
+                    .and_then(|active| active.native_gameplay()),
+            );
+            self.states.spell_states.lock().await.analyser = Arc::clone(&self.states.analyser);
         }
         self.states.chat.show_rooms(session)
     }

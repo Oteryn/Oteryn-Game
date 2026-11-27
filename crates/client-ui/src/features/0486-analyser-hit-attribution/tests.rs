@@ -7,7 +7,11 @@ fn hit(attacker: Option<EntityRef>) -> Result<AttributedFact, &'static str> {
     let facts = decode_analyser_facts(&[10, 8, 42, 6, 8, 20, 16, 2, 24, 2])
         .map_err(|_| "damage input wire")?;
     let fact = facts.into_iter().next().ok_or("one fact")?;
-    Ok(AttributedFact { fact, attacker })
+    Ok(AttributedFact {
+        fact,
+        attacker,
+        charm: None,
+    })
 }
 
 fn attacker() -> EntityRef {
@@ -42,6 +46,7 @@ fn c0486_one_attributed_hit_among_other_facts_flashes_and_facts_stay_plain()
     let kill = AttributedFact {
         fact: AnalyserFact::Kill { race: None },
         attacker: None,
+        charm: None,
     };
     let batch = [kill.clone(), hit(Some(attacker()))?];
     assert!(own_hit_flash(&batch, true));

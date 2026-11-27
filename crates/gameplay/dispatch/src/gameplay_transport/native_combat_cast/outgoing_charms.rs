@@ -4,6 +4,7 @@ use super::*;
 use crate::foundation::runtime_actor_spell_types::{
     MAX_EFFECTS, OwnerCombatChange, OwnerCombatEffect,
 };
+use crate::spell::delayed_execution::SpellCharmDamage;
 use oteryn_gameplay_entities::carrier::runtime_actor_spell::SpellCharmChild;
 use oteryn_gameplay_progression::charm_effects::{
     CharmAttackerFacts, CharmDamageKind, CharmEffectOutcome, CharmElement, CharmHitSource,
@@ -16,6 +17,7 @@ use sha2::{Digest, Sha256};
 pub(super) struct PreparedOutgoingCharms {
     pub(super) batch: OwnerCombatBatch,
     fatal_holds: Vec<(ExactActorRef, u64)>,
+    pub(super) damage: Vec<SpellCharmDamage>,
     pub(super) children:
         Option<oteryn_gameplay_entities::carrier::runtime_actor_spell::QualifiedSpellChildren>,
 }
@@ -99,6 +101,7 @@ impl PreparedOutgoingCharms {
         let mut joined = PreparedOutgoingCharms {
             batch: batch.clone(),
             fatal_holds: Vec::new(),
+            damage: Vec::new(),
             children: None,
         };
         let mut children = Vec::new();
@@ -145,8 +148,7 @@ impl PreparedOutgoingCharms {
                             runtime,
                             &mut children,
                             receipt.target,
-                            damage,
-                            amount,
+                            (outcome.charm_key.as_str(), damage, amount),
                             &root,
                             occurrence,
                             talisman,
@@ -233,8 +235,7 @@ impl PreparedOutgoingCharms {
                                     runtime,
                                     &mut children,
                                     candidate.actor,
-                                    damage,
-                                    amount,
+                                    (outcome.charm_key.as_str(), damage, amount),
                                     &root,
                                     child_occurrence,
                                     talisman,
@@ -278,12 +279,12 @@ impl PreparedOutgoingCharms {
         runtime: &ChannelRuntimeV1,
         children: &mut Vec<SpellCharmChild>,
         target: ExactActorRef,
-        damage: CharmDamageKind,
-        amount: u64,
+        proc: (&str, CharmDamageKind, u64),
         root: &GameplayDecisionRoot,
         occurrence: DecisionOccurrenceId,
         talisman: &crate::durability::task_board::BountyTalismanSnapshot,
     ) -> Result<(), Error> {
+        let (key, damage, amount) = proc;
         // Ask the actual staged physical owner, including every prior child and
         // native HP callback. There is no parallel HP simulation or mutable runtime.
         self.set_children(runtime, children.clone())?;
@@ -348,15 +349,22 @@ impl PreparedOutgoingCharms {
         if children.len() >= MAX_EFFECTS {
             return Err(Error::TooManyEffects);
         }
+        let sub_ordinal =
+            u16::try_from(MAX_EFFECTS + children.len()).map_err(|_| Error::TooManyEffects)?;
         children.push(SpellCharmChild::Damage(OwnerCombatEffect {
             target,
-            sub_ordinal: u16::try_from(MAX_EFFECTS + children.len())
-                .map_err(|_| Error::TooManyEffects)?,
+            sub_ordinal,
             change: OwnerCombatChange::Damage {
                 target_atom: runtime.creature_spell_target_atom(target)?,
                 magnitude: i64::from(amount),
             },
         }));
+        self.damage.push(SpellCharmDamage {
+            target,
+            sub_ordinal,
+            element: damage.element,
+            key: key.to_owned(),
+        });
         Ok(())
     }
 
@@ -493,6 +501,7 @@ pub(in crate::gameplay_transport) fn prepare_due_children(
         crate::spell::delayed_execution::DueSpellChildren {
             proof: prepared.children,
             fatal_holds: prepared.fatal_holds,
+            damage: prepared.damage,
         }
     }))
 }

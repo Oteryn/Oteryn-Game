@@ -10,7 +10,8 @@
       "id": 1,
       "name": "ANALYSER_FACTS_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/analyser_v1.proto#AnalyserFactsV1",
-      "max_payload_bytes": 4096
+      "max_payload_bytes": 4096,
+      "notes": "With capability 625 selected, outgoing charm damage carries impact fields 4 charm_key and 5 target. Both are absent for all other impacts and when 625 is unselected."
     }
   ],
   "snapshot_types": [

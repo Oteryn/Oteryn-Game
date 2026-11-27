@@ -37,7 +37,7 @@ class CheckDispatchPgShardsTests(unittest.TestCase):
     def test_inventory_counts_macro_generated_cases(self):
         postgres = DISPATCH / "src/gameplay_transport/postgres_tests"
         for module, count in (
-            ("all_charms_outgoing", 37),  # 9 literal tests and 14 pairs
+            ("all_charms_outgoing", 37),  # 11 literal tests and 13 pairs
             ("source_quest_rewards", 28),
             ("srvenc_source_deaths", 14),
         ):

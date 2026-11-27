@@ -51,11 +51,15 @@ pub(super) fn apply<S: SessionStream>(
         .ok_or(SessionError::MissingDomain(STATE_DOMAIN_ACTOR_ANALYSER))?;
     check_delta(&delta, DELTA_TYPE_ANALYSER_FACTS_V1, row.1)?;
     let malformed = |_| SessionError::Protocol(FoundationProtocolError::MalformedFrame);
-    if session
+    let hit_attribution = session
         .selected_capabilities
-        .contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
-    {
-        let value = decode_attributed_analyser_facts(delta.payload).map_err(malformed)?;
+        .contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1);
+    let charm_source = session
+        .selected_capabilities
+        .contains(&CAPABILITY_ANALYSER_CHARM_SOURCE_V1);
+    if hit_attribution || charm_source {
+        let value = decode_enriched_analyser_facts(delta.payload, hit_attribution, charm_source)
+            .map_err(malformed)?;
         row.1 = delta.new_revision;
         return Ok(SessionEvent::AnalyserAttributedFacts(AppliedDelta {
             server_sequence: sequence,
