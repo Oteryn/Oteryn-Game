@@ -774,6 +774,14 @@ pub(super) struct GrantProof {
 const ACHIEVEMENT: &str = "oteryn:achievement/annihilator";
 const DESCRIPTION: &str = "You've daringly jumped into the infamous Annihilator and survived - taking home fame, glory and your reward.";
 
+fn achievement_clock_ms() -> TestResult<i64> {
+    Ok(i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_millis(),
+    )?)
+}
+
 fn expected_grant(page: &AccountAchievementsResult, earliest: i64, latest: i64) -> bool {
     page.page == 0
         && page.total_points == 5
@@ -880,7 +888,7 @@ pub(super) async fn earn_and_logout(
             format!("P11 expected the authored Annihilator claim, got {achievement}").into(),
         );
     }
-    let earliest = i64::try_from(now_seconds()?)?;
+    let earliest = achievement_clock_ms()?;
     client.take_events();
     let use_reply = client.session_mut().use_object(&placement, 0).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
@@ -917,7 +925,7 @@ pub(super) async fn earn_and_logout(
     })
     .await?;
     let granted = page(&mut client, 0).await?;
-    let latest = i64::try_from(now_seconds()?)?;
+    let latest = achievement_clock_ms()?;
     if earned.key != ACHIEVEMENT
         || earned.name != "Annihilator"
         || earned.watermark.fact_count != 1
