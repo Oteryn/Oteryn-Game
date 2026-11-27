@@ -164,12 +164,21 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
 #[derive(Clone, Copy)]
 enum CorpseDecayCheck {
     FirstTransform,
+    RatChain { busy: bool },
     Retirement(bool),
 }
 
 pub(super) fn scenario_with_rat_transform() -> TestResult {
+    rat_decay_scenario(CorpseDecayCheck::FirstTransform)
+}
+
+pub(super) fn scenario_with_rat_chain(busy: bool) -> TestResult {
+    rat_decay_scenario(CorpseDecayCheck::RatChain { busy })
+}
+
+fn rat_decay_scenario(check: CorpseDecayCheck) -> TestResult {
     scenario_with_creature_observed(
-        Some(CorpseDecayCheck::FirstTransform),
+        Some(check),
         false,
         None,
         false,
@@ -1684,6 +1693,9 @@ fn scenario_with_creature_observed(
         let decay = match decay_check.filter(|_| !settle_radiant) {
             Some(CorpseDecayCheck::FirstTransform) => {
                 super::corpse_decay_fixtures::qualify_first_transform(&mut owner, &harness).await
+            }
+            Some(CorpseDecayCheck::RatChain { busy }) => {
+                super::corpse_decay_fixtures::qualify_rat_chain(&mut owner, &harness, busy).await
             }
             Some(CorpseDecayCheck::Retirement(reconcile)) => {
                 super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, reconcile)

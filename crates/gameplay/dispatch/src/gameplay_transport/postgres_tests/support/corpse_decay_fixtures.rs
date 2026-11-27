@@ -411,3 +411,102 @@ async fn transform_count(h: &Harness, item: [u8; 16]) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_spell_field_temporal_receipts WHERE item_instance_id = encode($1,'hex')::uuid")
         .bind(item.as_slice()).fetch_one(&h.pool).await?)
 }
+
+pub(super) async fn qualify_rat_chain(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    busy: bool,
+) -> TestResult {
+    use std::sync::atomic::Ordering;
+
+    let corpse = owner
+        .runtime
+        .lock()
+        .await
+        .visible_corpses()
+        .into_iter()
+        .next()
+        .ok_or("committed Rat corpse")?;
+    let item = corpse.item.item_instance_id;
+    let fresh = "oteryn:item.tibia.i5964";
+    assert_eq!(corpse.item.production_key, fresh);
+    let durations: Vec<i64> = sqlx::query_scalar("SELECT game_source_corpse_durations_v1($1)")
+        .bind(fresh)
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(durations.len(), 4);
+    super::journal_inventory::runtime_role(owner.root).await?;
+
+    let mut age = Duration::ZERO;
+    for (index, (&duration, expected)) in durations
+        .iter()
+        .zip([
+            "oteryn:item.tibia.i3994",
+            "oteryn:item.tibia.i3995",
+            "oteryn:item.tibia.i3996",
+        ])
+        .enumerate()
+    {
+        // The scheduler uses owner time for its cadence and PostgreSQL time for
+        // durable deadlines. Advance the former and rebase only this fixture's
+        // SQL clock anchor by the same amount. SQL runs with Tokio resumed so
+        // auto-advance cannot consume its I/O timeout.
+        tokio::time::pause();
+        let before = tokio::time::Instant::now();
+        tokio::time::advance(Duration::from_millis(duration.try_into()?)).await;
+        age += before.elapsed();
+        tokio::time::resume();
+        owner.states.test_owner_time.store(
+            u64::try_from(age.as_micros())? + 1,
+            Ordering::Relaxed,
+        );
+        set_corpse_age(h, item, age.as_millis().try_into()?).await?;
+
+        if busy && index == 0 {
+            run_with_busy_holder(owner, owner.drain_source_item_deadlines()).await?;
+            assert_eq!(
+                current_definition(h, item).await?,
+                expected,
+                "the transform commits without a second timer turn"
+            );
+            run_with_busy_holder(owner, owner.drain_corpse_deadlines()).await?;
+        } else {
+            owner_sweep(owner).await?;
+        }
+        assert_eq!(current_definition(h, item).await?, expected);
+        assert_eq!(transform_count(h, item).await?, i64::try_from(index + 1)?);
+        assert!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .visible_corpses()
+                .iter()
+                .any(|corpse| corpse.item.item_instance_id == item
+                    && corpse.item.production_key == expected),
+            "the scheduler publishes {expected} on the same Rat corpse"
+        );
+    }
+    eprintln!("RAT_CORPSE_CHAIN_REACHED busy={busy} transforms=3");
+    Ok(())
+}
+
+async fn run_with_busy_holder<T>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    drain: impl Future<Output = T>,
+) -> TestResult<T> {
+    use std::future::poll_fn;
+    use std::task::Poll;
+
+    let held = owner.root.try_issue_semantic_pass()?;
+    let drain = tokio::task::unconstrained(DurabilityRoot::with_background_holder(
+        owner.root.with_background_operation(drain),
+    ));
+    let mut drain = std::pin::pin!(drain);
+    assert!(
+        poll_fn(|cx| Poll::Ready(drain.as_mut().poll(cx).is_pending())).await,
+        "a missed checkout must keep corpse decay pending within this scheduler turn"
+    );
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    Ok(tokio::time::timeout(Duration::from_millis(500), drain).await?)
+}
