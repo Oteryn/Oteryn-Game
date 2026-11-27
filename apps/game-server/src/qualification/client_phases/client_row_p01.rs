@@ -12,7 +12,7 @@ use std::num::NonZeroU32;
 
 const DEADLINE: Duration = Duration::from_secs(600);
 
-fn capture(name: &str, bytes: &[u8]) -> TestResult {
+pub(super) fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write as _;
 
     let root = required("E2E_ALL_CAPTURE_DIR")?;
@@ -21,7 +21,7 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-async fn send(
+pub(super) async fn send(
     client: &mut DevClientSession,
     action: CharmProgressionAction,
     capture_name: &str,

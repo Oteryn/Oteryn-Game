@@ -325,3 +325,150 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
     }
     Ok(())
 }
+
+#[test]
+fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
+    use wire::CharmProgressionOutcome::{Assign, Query, Unlock};
+    use wire::charm::{CharmAssignDisposition, CharmUnlockDisposition};
+
+    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let path = std::path::PathBuf::from(directory);
+    let manifest = std::fs::read_to_string(path.join("p01-full-expected.txt"))?;
+    let field = |key: &str| -> Result<&str, Error> {
+        manifest
+            .lines()
+            .find_map(|line| line.strip_prefix(&format!("{key}=")))
+            .ok_or_else(|| format!("P01.full capture field {key} absent").into())
+    };
+    let index = |key: &str| -> Result<NonZeroU32, Error> {
+        NonZeroU32::new(field(key)?.parse()?).ok_or_else(|| format!("zero {key}").into())
+    };
+    let session = field("session")?;
+    let durable_session = field("durable_session")?;
+    assert_ne!(session, durable_session);
+    let rat = index("rat")?;
+    let troll = index("troll")?;
+    let incomplete = index("incomplete")?;
+    let charm = index("charm")?;
+    let mut previous = (0, 0);
+    let mut panel = Panel::default();
+    let mut expected = None;
+    for (suffix, intent, selected, outcome) in [
+        ("initial", Intent::Query, rat, Query),
+        ("mastery", Intent::Query, rat, Query),
+        (
+            "locked",
+            Intent::Assign,
+            rat,
+            Assign(CharmAssignDisposition::CharmLocked),
+        ),
+        (
+            "unlocked",
+            Intent::Unlock,
+            rat,
+            Unlock(CharmUnlockDisposition::Unlocked),
+        ),
+        (
+            "incomplete",
+            Intent::Assign,
+            incomplete,
+            Assign(CharmAssignDisposition::RaceStageTooLow),
+        ),
+        (
+            "assigned",
+            Intent::Assign,
+            troll,
+            Assign(CharmAssignDisposition::Assigned),
+        ),
+        ("after-hook", Intent::Query, troll, Query),
+        ("durable", Intent::Query, troll, Query),
+    ] {
+        let filename = format!("p01-full-{suffix}.json");
+        let capture_session = if suffix == "durable" {
+            previous = (0, 0);
+            panel = Panel::default();
+            durable_session
+        } else {
+            session
+        };
+        let original = captured_reply(
+            &path.join(&filename),
+            capture_session,
+            &mut previous,
+            field(&filename)?,
+        )?;
+        panel.fields[0] = charm.to_string();
+        panel.fields[1] = selected.to_string();
+        let (mut target, command) = pending(&panel, intent)?;
+        apply(&mut target, &command, &original);
+        let reply = target
+            .reply
+            .as_ref()
+            .ok_or("client did not apply the original reply")?;
+        assert_eq!(reply.outcome, outcome);
+        assert_eq!(reply.fee_gold, 0);
+        if suffix == "initial" {
+            assert_eq!(reply.charms.charm_points_available, 400);
+            assert!(
+                reply
+                    .bestiary
+                    .iter()
+                    .any(|entry| entry.race == rat && entry.kill_count == 249)
+            );
+            assert!(
+                reply
+                    .bestiary
+                    .iter()
+                    .any(|entry| entry.race == troll && entry.is_complete())
+            );
+            assert!(reply.bestiary.iter().any(|entry| entry.race == incomplete
+                && entry.kill_count == 1
+                && !entry.is_complete()));
+            assert!(reply.charms.charms.iter().any(|entry| entry.charm == charm
+                && entry.unlocked_stage == 0
+                && entry.next_stage_cost == 400
+                && entry.assigned_race.is_none()));
+            expected = Some(reply.clone());
+        }
+        let state = expected.as_mut().ok_or("initial native reply absent")?;
+        state.outcome = outcome;
+        match suffix {
+            "mastery" => {
+                state.charms.charm_points_available = 405;
+                state
+                    .bestiary
+                    .iter_mut()
+                    .find(|entry| entry.race == rat)
+                    .ok_or("Rat entry absent")?
+                    .kill_count = 250;
+            }
+            "unlocked" => {
+                state.charms.charm_points_available = 5;
+                let entry = state
+                    .charms
+                    .charms
+                    .iter_mut()
+                    .find(|entry| entry.charm == charm)
+                    .ok_or("Enflame entry absent")?;
+                entry.unlocked_stage = 1;
+                entry.next_stage_cost = 600;
+            }
+            "assigned" => {
+                let entry = state
+                    .charms
+                    .charms
+                    .iter_mut()
+                    .find(|entry| entry.charm == charm)
+                    .ok_or("Enflame entry absent")?;
+                entry.assigned_race = Some(troll);
+                entry.effect_active = true;
+            }
+            _ => {}
+        }
+        assert_eq!(reply, state, "unexpected state after {suffix}");
+        panel = target;
+    }
+    Ok(())
+}

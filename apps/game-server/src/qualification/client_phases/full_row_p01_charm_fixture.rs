@@ -18,6 +18,7 @@ const COMPLETED: [&str; 15] = [
     "oteryn:creature.dire_penguin",
     "oteryn:creature.troll",
 ];
+pub(super) const INCOMPLETE: &str = "oteryn:creature.wolf";
 const RAT: &str = "oteryn:creature.rat";
 
 pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
@@ -50,7 +51,7 @@ pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
         .await?;
     let mut points = 0;
     let mut offset = 0_i64;
-    for key in COMPLETED.into_iter().chain([RAT]) {
+    for key in COMPLETED.into_iter().chain([RAT, INCOMPLETE]) {
         let (race, award) = races
             .iter()
             .find(|(race, _)| race.key() == key)
@@ -61,6 +62,11 @@ pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
                 return Err("unexpected canonical Rat mastery inputs".into());
             }
             threshold - 1
+        } else if key == INCOMPLETE {
+            if threshold <= 1 {
+                return Err("P01 fixture requires a non-mastered refusal entry".into());
+            }
+            1
         } else {
             points += award;
             threshold

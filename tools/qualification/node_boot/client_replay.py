@@ -130,6 +130,12 @@ def replay_targets():
         {"p01-initial.json", "p01-before.json", "p01-refused.json", "p01-after.json",
          "p01-durable.json", "p01-expected.txt"},
     )]
+    targets["e2e_p01.full"] = [(
+        "oteryn-client", "e2e_p01_full_replays_native_charm_journey",
+        {"p01-full-initial.json", "p01-full-mastery.json", "p01-full-locked.json",
+         "p01-full-unlocked.json", "p01-full-incomplete.json", "p01-full-assigned.json",
+         "p01-full-after-hook.json", "p01-full-durable.json", "p01-full-expected.txt"},
+    )]
     return targets
 
 
@@ -182,7 +188,7 @@ def main(log, batch, validate=False):
     if validate:
         return validate_rows(selected, registered, server_rows)
 
-    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    rows = sorted(scenario for scenario in selected if scenario.endswith(".client") or scenario == "P01.full")
     if not rows:
         return 0
     captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
@@ -193,7 +199,8 @@ def main(log, batch, validate=False):
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())
-        cause = replay_cause(row, package, test, names, captures, server_rows.get(scenario), log)
+        capture_prefix = "p01-full" if scenario == "P01.full" else row
+        cause = replay_cause(capture_prefix, package, test, names, captures, server_rows.get(scenario), log)
         verdict = f"FAIL cause={cause}" if cause else "PASS"
         print(f"SEAM_EVIDENCE e2e_all scenario={scenario} replay={test} status={verdict}")
         failed |= cause is not None

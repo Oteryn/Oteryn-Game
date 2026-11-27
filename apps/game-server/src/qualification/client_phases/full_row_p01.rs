@@ -96,25 +96,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(result);
 }
 
-async fn command(
-    client: &mut DevClientSession,
-    action: CharmProgressionAction,
-) -> TestResult<CharmProgressionReply> {
-    let payload = wire::encode_charm_progression_request(&action)
-        .map_err(|error| format!("encode {action:?}: {error:?}"))?;
-    let response = client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
-            wire::COMMAND_TYPE_CHARM_PROGRESSION,
-            &payload,
-        )
-        .await?;
-    require_mechanic_acceptance(response.status, &format!("CHARM_PROGRESSION {action:?}"))?;
-    wire::decode_charm_progression_reply(&response.payload)
-        .map_err(|error| format!("decode {action:?}: {error:?}").into())
-}
-
 pub(super) async fn logout_when_ready(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     verdict::Harness::global().bounded_wait(deadline, "logout-combat-lock");
@@ -143,8 +124,12 @@ pub(super) async fn close_relog_fixture(client: &mut DevClientSession) -> TestRe
     Ok(())
 }
 
-async fn query(client: &mut DevClientSession) -> TestResult<CharmProgressionReply> {
-    let reply = command(client, CharmProgressionAction::Query).await?;
+async fn query(
+    client: &mut DevClientSession,
+    frame: &str,
+    frames: &mut String,
+) -> TestResult<CharmProgressionReply> {
+    let reply = client_row_p01::send(client, CharmProgressionAction::Query, frame, frames).await?;
     if reply.outcome != CharmProgressionOutcome::Query || reply.charms.charms.is_empty() {
         return Err(format!("query reply missing native views: {reply:?}").into());
     }
@@ -200,6 +185,100 @@ pub(super) async fn prepare_rat_ground(
     )
     .ok_or("no reachable free ground for the Rat fixture")?;
     client_row_p01::walk_rat_route(client, world, &path).await
+}
+
+async fn authored_target(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    key: &str,
+    name: &str,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    use oteryn_dev_client::EntityKind;
+    let from = tile(client.world_spatial().actor_position)?;
+    let mut occupied = client_row_p01::occupied_rat_route_tiles(client);
+    // This landing was reported occupied by the previous live approach.
+    occupied.insert(TilePos {
+        x: 32444,
+        y: 32178,
+        floor: -7,
+    });
+    let mut points = std::collections::BTreeSet::new();
+    for source in &spawns.sources {
+        for point in &source.points {
+            let at = TilePos {
+                x: point.x,
+                y: point.y,
+                floor: source.floor,
+            };
+            occupied.insert(at);
+            if spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|creature| creature.key == key)
+            {
+                points.insert(at);
+            }
+        }
+    }
+    let adjacent = |a: TilePos, b: TilePos| {
+        a.floor == b.floor && a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) == 1
+    };
+    let path = route_avoiding(
+        world,
+        from,
+        |at| {
+            points.iter().any(|&point| adjacent(at, point))
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+        },
+        |at| !occupied.contains(&at),
+    )
+    .ok_or_else(|| format!("no first-attempt route to an authored {key} spawn"))?;
+    let goal = path
+        .iter()
+        .try_fold(from, |at, &direction| destination(world, at, direction))
+        .ok_or("authored spawn route has no landing")?;
+    let point = points
+        .iter()
+        .find(|&&point| adjacent(goal, point))
+        .copied()
+        .ok_or("route does not end adjacent to its authored spawn")?;
+    client_row_p01::walk_rat_route(client, world, &path).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    verdict::Harness::global().bounded_wait(deadline, "authored-creature-visibility");
+    loop {
+        if let Some(target) = client
+            .world_entities()
+            .and_then(|view| {
+                view.iter().find(|entity| {
+                    entity.kind == EntityKind::Creature
+                        && entity
+                            .display_name
+                            .as_ref()
+                            .and_then(|text| text.as_str().ok())
+                            == Some(name)
+                        && tile(entity.position).is_ok_and(|at| at == point)
+                })
+            })
+            .copied()
+        {
+            evidence(&format!(
+                "P01_CHECK authored-spawn PASS key={key} point={point:?} target={:?}",
+                target.entity
+            ));
+            return Ok(target);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                format!("authored {key} is absent from its selected spawn {point:?}").into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
 }
 
 pub(super) async fn place_rat(
@@ -291,6 +370,7 @@ async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
 
 async fn hunt_exact_creature(
     client: &mut DevClientSession,
+    target: oteryn_dev_client::WorldSpatialEntity,
     key: &str,
     race: NonZeroU32,
     corpse_ref: u32,
@@ -298,7 +378,6 @@ async fn hunt_exact_creature(
 ) -> TestResult<full_row_p05::KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
-    let target = place_creature(client, key).await?;
     let old_corpses: Vec<_> = client
         .world_entities()
         .into_iter()
@@ -516,18 +595,31 @@ pub(super) async fn prepare_hunter(
 
     let reason = "ordinary leveling does not fit the timed Bestiary hunts";
     character_prep::declare_seeded(scenario, "level-80-sorcerer", reason);
-    let mut client = character_prep::Seeded {
-        profile: "p01-sorcerer",
-        reason,
-    }
-    .connect(clients, tag, 1)
-    .await?;
-    if scenario == "P01.full" {
-        logout_when_ready(&mut client).await?;
-        drop(client);
+    let mut client = if scenario == "P01.full" {
+        let mut setup = connect_world(clients, tag).await?;
+        let before = setup.join_snapshot().game_session_id;
+        request_fixture_control(
+            uuid_text(before.as_bytes()),
+            "--profile",
+            "p01-sorcerer".to_owned(),
+        )
+        .await?;
+        logout_when_ready(&mut setup).await?;
+        drop(setup);
         charm_fixture::seed(clients).await?;
-        client = connect_world(clients, 0xa4).await?;
-    }
+        let fresh = connect_world(clients, 0xa4).await?;
+        if fresh.join_snapshot().game_session_id == before {
+            return Err("P01.full fixture re-admission reused the setup session".into());
+        }
+        fresh
+    } else {
+        character_prep::Seeded {
+            profile: "p01-sorcerer",
+            reason,
+        }
+        .connect(clients, tag, 1)
+        .await?
+    };
     let reply = client
         .session_mut()
         .gated_command(
@@ -595,6 +687,7 @@ pub(super) async fn prepare_hunter(
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -609,7 +702,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("admission omitted capability 67".into());
     }
-    let initial = query(&mut client).await?;
+    let mut frames = String::new();
+    let initial = query(&mut client, "p01-full-initial.json", &mut frames).await?;
     evidence("P01_CHECK admission-query PASS accepted-native-views");
 
     row.at("player-earned-kill-count");
@@ -633,21 +727,29 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     prepare_unarmed(&mut client).await?;
-    prepare_rat_ground(&mut client, world).await?;
+    let target = authored_target(&mut client, world, &metadata.spawns, rat.key(), "Rat").await?;
     let first_kill = hunt_exact_creature(
         &mut client,
+        target,
         rat.key(),
         race,
         rat_stage.fresh_ref,
         Some(rat_stage),
     )
     .await?;
-    let current = query(&mut client).await?;
+    let current = query(&mut client, "p01-full-mastery.json", &mut frames).await?;
+    let mut expected_mastery = initial.clone();
+    expected_mastery
+        .bestiary
+        .iter_mut()
+        .find(|entry| entry.race == race)
+        .ok_or("missing Rat fixture entry")?
+        .kill_count = 250;
+    expected_mastery.charms.charm_points_available = 405;
     if first_kill.race != race
         || first_kill.raw_xp != 5
         || first_kill.fire_damage
-        || count(&current, race) != 250
-        || current.charms.charm_points_available != 405
+        || current != expected_mastery
     {
         return Err(format!(
             "incorrect Rat kill or mastery award: kill={first_kill:?} kills={} points={}",
@@ -683,8 +785,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("query has no locked charm with a stage cost")?;
 
     row.at("locked-assignment-refusal");
-    let refused = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
+    let refused = client_row_p01::send(
+        &mut client,
+        CharmProgressionAction::Assign { charm, race },
+        "p01-full-locked.json",
+        &mut frames,
+    )
+    .await?;
     if refused.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked)
+        || refused.fee_gold != 0
         || refused.charms != current.charms
         || refused.bestiary != current.bestiary
     {
@@ -693,32 +802,61 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
     row.at("unlock-stage");
-    let unlocked = command(
+    let unlocked = client_row_p01::send(
         &mut client,
         CharmProgressionAction::Unlock {
             charm,
             expected_stage: stage,
         },
+        "p01-full-unlocked.json",
+        &mut frames,
     )
     .await?;
-    let unlocked_state = unlocked
-        .charms
-        .charms
-        .get(usize::try_from(charm.get() - 1)?)
-        .ok_or("unlocked charm vanished")?;
-    if unlocked.outcome != CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked)
-        || cost != 400
-        || unlocked_state.unlocked_stage != stage + 1
-        || unlocked.charms.charm_points_available + cost != current.charms.charm_points_available
-    {
+    let mut expected_unlocked = expected_mastery.clone();
+    let charm_index = usize::try_from(charm.get() - 1)?;
+    expected_unlocked.outcome = CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked);
+    expected_unlocked.charms.charm_points_available = 5;
+    expected_unlocked.charms.charms[charm_index].unlocked_stage = 1;
+    expected_unlocked.charms.charms[charm_index].next_stage_cost = 600;
+    if cost != 400 || unlocked != expected_unlocked {
         return Err(format!("UNLOCK reply/delta mismatch: {unlocked:?}").into());
     }
-    evidence("P01_CHECK unlock-stage PASS stage-and-balance-delta");
+    evidence("P01_CHECK unlock-stage PASS stage=0->1 points=405->5");
+
+    row.at("assign-incomplete-refusal");
+    let index = full_row_p05::canonical_races()?
+        .iter()
+        .position(|(definition, _)| definition.key() == charm_fixture::INCOMPLETE)
+        .ok_or("fixture refusal race missing from catalogue")?;
+    let incomplete = NonZeroU32::new(u32::try_from(index)? + 1).ok_or("incomplete race index")?;
+    if !unlocked
+        .bestiary
+        .iter()
+        .any(|entry| entry.race == incomplete && entry.kill_count == 1 && !entry.is_complete())
+    {
+        return Err("P01 expected a known, incomplete Bestiary entry".into());
+    }
+    let mut expected_incomplete = expected_unlocked.clone();
+    expected_incomplete.outcome =
+        CharmProgressionOutcome::Assign(CharmAssignDisposition::RaceStageTooLow);
+    let incomplete_reply = client_row_p01::send(
+        &mut client,
+        CharmProgressionAction::Assign {
+            charm,
+            race: incomplete,
+        },
+        "p01-full-incomplete.json",
+        &mut frames,
+    )
+    .await?;
+    if incomplete_reply != expected_incomplete {
+        return Err(format!("incomplete ASSIGN reply/delta mismatch: {incomplete_reply:?}").into());
+    }
+    evidence(
+        "P01_CHECK assign-incomplete-refusal PASS disposition=RaceStageTooLow state=unchanged",
+    );
 
     row.at("assign-unlocked");
-    if unlocked_state.assigned_race.is_some() {
-        return Err(format!("UNLOCK unexpectedly assigned the charm: {unlocked_state:?}").into());
-    }
     // Rat's one-point Enflame base damage truncates to zero under mitigation.
     // Troll is the mastered fixture race for the positive fire-damage assertion.
     let troll_key = "oteryn:creature.troll";
@@ -732,18 +870,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("Troll fixture must be mastered before the Enflame assignment".into());
     }
     let troll_corpse = provisioning::item_reference(&provisioning::item_index()?, 5960)?.get();
-    let assigned = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
-    let assigned_state = &assigned.charms.charms[usize::try_from(charm.get() - 1)?];
-    if assigned.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::Assigned)
-        || assigned_state.assigned_race != Some(race)
-        || !assigned_state.effect_active
-    {
+    let assigned = client_row_p01::send(
+        &mut client,
+        CharmProgressionAction::Assign { charm, race },
+        "p01-full-assigned.json",
+        &mut frames,
+    )
+    .await?;
+    let mut expected_assigned = expected_unlocked.clone();
+    expected_assigned.outcome = CharmProgressionOutcome::Assign(CharmAssignDisposition::Assigned);
+    expected_assigned.charms.charms[charm_index].assigned_race = Some(race);
+    expected_assigned.charms.charms[charm_index].effect_active = true;
+    if assigned != expected_assigned {
         return Err(format!("ASSIGN reply/delta mismatch: {assigned:?}").into());
     }
     evidence("P01_CHECK assign-unlocked PASS assignment-and-active-hook");
 
     row.at("assigned-combat-hook");
-    let before_hook = count(&assigned, race);
     if client.inventory().is_none_or(|inventory| {
         inventory.equipment.iter().any(|item| {
             matches!(
@@ -755,28 +898,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }) {
         return Err("step=charm-proc need=unarmed-physical-baseline-to-isolate-Enflame".into());
     }
-    let mut observed_proc = false;
-    for _ in 0..12 {
-        let kill = hunt_exact_creature(&mut client, troll_key, race, troll_corpse, None).await?;
-        if kill.race != race || kill.raw_xp != 20 {
-            return Err(format!(
-                "step=assigned-combat expected-race={race} credited-race={}",
-                kill.race
-            )
-            .into());
-        }
-        if kill.fire_damage {
-            observed_proc = true;
-            break;
-        }
+    let troll = authored_target(&mut client, world, &metadata.spawns, troll_key, "Troll").await?;
+    let kill = hunt_exact_creature(&mut client, troll, troll_key, race, troll_corpse, None).await?;
+    if kill.race != race || kill.raw_xp != 20 {
+        return Err(format!("incorrect Troll kill credit: {kill:?}").into());
     }
-    let after_hook = query(&mut client).await?;
-    let after_state = &after_hook.charms.charms[usize::try_from(charm.get() - 1)?];
-    if count(&after_hook, race) != before_hook
-        || after_state.assigned_race != Some(race)
-        || !after_state.effect_active
-    {
-        return Err(format!("assigned combat hook lost durable state: {after_hook:?}").into());
+    let after_hook = query(&mut client, "p01-full-after-hook.json", &mut frames).await?;
+    let mut expected_durable = expected_assigned;
+    expected_durable.outcome = CharmProgressionOutcome::Query;
+    if after_hook != expected_durable {
+        return Err(
+            format!("assigned combat hook changed unexpected state: {after_hook:?}").into(),
+        );
     }
     evidence("P01_CHECK assigned-race-kill PASS analyser-credit-and-active-assignment");
 
@@ -788,17 +921,28 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == old_session {
         return Err("fresh admission reused the old game session".into());
     }
-    let durable = query(&mut fresh).await?;
-    if durable.bestiary != after_hook.bestiary || durable.charms != after_hook.charms {
+    let durable = query(&mut fresh, "p01-full-durable.json", &mut frames).await?;
+    if durable != expected_durable {
         return Err(format!("fresh QUERY lost durable state: {durable:?}").into());
     }
     evidence("P01_CHECK logout-fresh-admission PASS exact-durable-views");
-    if !observed_proc {
-        return Err(
-            "step=charm-proc no Enflame fire damage observed during bounded unarmed hunts".into(),
-        );
-    }
-    close_relog_fixture(&mut fresh).await
+    use std::fmt::Write as _;
+    writeln!(frames, "session={}", uuid_text(old_session.as_bytes()))?;
+    writeln!(
+        frames,
+        "durable_session={}",
+        uuid_text(fresh.join_snapshot().game_session_id.as_bytes())
+    )?;
+    writeln!(frames, "rat={}", first_kill.race)?;
+    writeln!(frames, "troll={race}")?;
+    writeln!(frames, "incomplete={incomplete}")?;
+    writeln!(frames, "charm={charm}")?;
+    client_row_p01::capture("p01-full-expected.txt", frames.as_bytes())?;
+    close_relog_fixture(&mut fresh).await?;
+    Err(format!(
+        "BLOCKED-SERVER Enflame lacks target-and-charm attribution on wire: target={:?} unscoped_fire_impact={}",
+        troll.entity, kill.fire_damage,
+    ).into())
 }
 
 #[cfg(test)]
