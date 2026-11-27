@@ -197,7 +197,7 @@ pub(super) async fn fixture_stackable_deliveries(
         }
         selected.push(WeeklyDeliveryTask {
             item_id: item.item_id,
-            required: item.amount,
+            required: *item.quantity.start(),
             delivered: false,
         });
         if selected.len() == 2 {
