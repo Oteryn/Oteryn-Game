@@ -570,7 +570,21 @@ pub(super) async fn journey(
     };
     let clients = &scoped;
     let mut client = connect_world(clients, 0x07).await?;
-    for id in [3577, 3031, 3357] {
+    let initial_inventory = client.inventory().ok_or("I07 starter inventory missing")?;
+    let missing: Vec<_> = [
+        (3577, skip_reference),
+        (3031, gold_reference),
+        (3357, accept_reference),
+    ]
+    .into_iter()
+    .filter(|(_, definition)| {
+        !initial_inventory
+            .entries
+            .iter()
+            .any(|item| item.item_definition_ref.get() == *definition)
+    })
+    .collect();
+    for &(id, _) in &missing {
         character_prep::grant_item(&client, id, 1).await?;
     }
     let picker_seed_session = client.join_snapshot().game_session_id;
@@ -720,7 +734,8 @@ pub(super) async fn journey(
     let picker_inventory = client
         .inventory()
         .ok_or("I07 admitted picker inventory missing")?;
-    let picker_handles = [skip_reference, gold_reference, accept_reference].map(|definition| {
+    let mut picker_handles = Vec::new();
+    for definition in [skip_reference, gold_reference, accept_reference] {
         let mut entries = picker_inventory
             .entries
             .iter()
@@ -728,13 +743,16 @@ pub(super) async fn journey(
         let entry = entries
             .next()
             .ok_or("I07 live backpack lacks a filter picker item")?;
-        if entry.count.get() != 1 || entries.next().is_some() {
-            return Err("I07 fixture must supply a single distinct picker item");
+        if missing.iter().any(|&(_, granted)| granted == definition) {
+            if entry.count.get() != 1 || entries.next().is_some() {
+                return Err(format!(
+                    "I07 picker fixture produced ambiguous definition {definition}"
+                )
+                .into());
+            }
+            picker_handles.push(entry.handle);
         }
-        Ok(entry.handle)
-    });
-    let [skip_picker, gold_picker, armor_picker] = picker_handles;
-    let picker_handles = [skip_picker?, gold_picker?, armor_picker?];
+    }
     write_capture(
         &capture_dir.join("i07-picker-inventory.bin"),
         &oteryn_protocol_oteryn::item_view::encode_character_inventory_with_appearances(
@@ -747,15 +765,14 @@ pub(super) async fn journey(
     let mut expected_backpack =
         placements(&mut database, Storage::Backpack, character, &backpack).await?;
     require_placements(&mut database, Storage::InboxPouch, character, &pouch, &[]).await?;
-    let picker_keys = [
-        "oteryn:item.tibia.i3577",
-        "oteryn:item.tibia.i3031",
-        "oteryn:item.tibia.i3357",
-    ];
+    let picker_keys: Vec<_> = missing
+        .iter()
+        .map(|(id, _)| format!("oteryn:item.tibia.i{id}"))
+        .collect();
     let seeded_count = expected_backpack.len();
-    expected_backpack.retain(|item| !picker_keys.contains(&item.key.as_str()));
+    expected_backpack.retain(|item| !picker_keys.contains(&item.key));
     if expected_backpack.len() + picker_keys.len() != seeded_count {
-        return Err("I07 picker fixture custody must add exactly three items".into());
+        return Err("I07 picker fixture custody differs from granted inputs".into());
     }
     let mut bag_armor = armor.clone();
     bag_armor.slot = expected_backpack.last().map_or(1, |item| item.slot + 1);
