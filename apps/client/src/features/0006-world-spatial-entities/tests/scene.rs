@@ -167,6 +167,35 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
 }
 
 #[test]
+fn p19_exact_nameplate_rejects_displacement_duplicates_and_stale_draws() -> Result<(), BatchError> {
+    let mut scene = Scene::centered_on(
+        Arc::new(World::builtin()?),
+        None,
+        TileCoord::new(100, 200),
+        StepDir::South,
+        &[],
+    )?;
+    let entry = forge_rat_presentation("Rat", Some(3))?;
+    let target = entry.entity.entity;
+    let tile = TileCoord::new(101, 200);
+    let expected = Some((tile, "[Influenced 3] Rat", 100));
+    scene.set_presentations_from(&[entry], 0, None)?;
+    assert!(scene.exact_nameplate(target, expected));
+    scene.names[0].0 = TileCoord::new(102, 200);
+    assert!(!scene.exact_nameplate(target, expected));
+    scene.names[0].0 = tile;
+    scene.names.push(scene.names[0].clone());
+    scene.name_entities.push(target);
+    assert!(!scene.exact_nameplate(target, expected));
+    scene.names.pop();
+    scene.name_entities.pop();
+    assert!(!scene.exact_nameplate(target, None));
+    scene.set_presentations_from(&[], 0, None)?;
+    assert!(scene.exact_nameplate(target, None));
+    Ok(())
+}
+
+#[test]
 fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(), BatchError> {
     let tile = TileCoord::new(100, 200);
     let mut scene =

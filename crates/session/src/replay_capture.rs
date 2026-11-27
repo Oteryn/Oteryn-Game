@@ -115,6 +115,24 @@ impl<S: SessionStream> Session<S> {
         self.replay_files(P19_FILES, creature, stacks, true)
     }
 
+    /// Preserve the original snapshot and the exact departure's retained wire deltas.
+    pub fn p19_departure_capture_files(
+        &self,
+        creature: EntityRef,
+        stacks: u8,
+    ) -> Option<[(&'static str, Vec<u8>); 3]> {
+        let fields = world_spatial_entities::EntityFields::selected(self.selected_capabilities());
+        if self.world_entities()?.get(&creature).is_some()
+            || !self.raw_world_entity_deltas().iter().any(|delta| {
+                decode_world_spatial_entities_delta_with_sidecar(&delta.payload, fields)
+                    .is_ok_and(|(value, _, _)| value.leave.contains(&creature))
+            })
+        {
+            return None;
+        }
+        self.replay_files(P19_FILES, creature, stacks, true)
+    }
+
     fn replay_files(
         &self,
         names: [&'static str; 3],

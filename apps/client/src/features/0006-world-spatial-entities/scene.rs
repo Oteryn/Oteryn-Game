@@ -76,12 +76,37 @@ impl Scene {
             .unwrap_or_default()
     }
     #[cfg(test)]
-    pub(crate) fn has_nameplate(&mut self, entity: oteryn_session::EntityRef, label: &str) -> bool {
-        let expected = self.cache.name(label, 100);
-        self.name_entities
+    pub(crate) fn exact_nameplate(
+        &mut self,
+        entity: oteryn_session::EntityRef,
+        expected: Option<(TileCoord, &str, u8)>,
+    ) -> bool {
+        if self.name_entities.len() != self.names.len() {
+            return false;
+        }
+        let expected = expected.map(|(tile, label, health)| {
+            (
+                tile,
+                self.cache
+                    .actor_name(label, self.actor_covered(tile), health),
+            )
+        });
+        let mut draws = self
+            .name_entities
             .iter()
             .zip(&self.names)
-            .any(|(key, (_, actual))| *key == entity && *actual == expected)
+            .filter_map(|(key, entry)| (*key == entity).then_some(entry));
+        if draws.clone().eq(expected.iter()) {
+            true
+        } else {
+            eprintln!(
+                "P19 nameplate draw tiles {:?}, expected tile {:?}, {} rendered labels",
+                draws.by_ref().map(|draw| draw.0).collect::<Vec<_>>(),
+                expected.as_ref().map(|draw| draw.0),
+                self.names.len()
+            );
+            false
+        }
     }
 
     pub fn name_count(&self) -> usize {

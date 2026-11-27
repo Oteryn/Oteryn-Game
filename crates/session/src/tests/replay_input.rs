@@ -19,11 +19,15 @@ fn uuid_v7(marker: u8) -> [u8; 16] {
 }
 
 #[cfg(feature = "test-support")]
-pub async fn p19_session(path: &Path) -> Result<(Session<DuplexStream>, EntityRef), BoxError> {
+pub async fn p19_session(
+    path: &Path,
+    mut observe: impl FnMut(&mut Session<DuplexStream>, EntityRef, bool) -> Result<(), BoxError>,
+) -> Result<(), BoxError> {
     let input = ReplayInput::read(path, super::replay_capture::P19_FILES, APPEARANCE)?;
     let mut session = input.admit().await?;
+    observe(&mut session, input.entity, false)?;
     input.apply(&mut session)?;
-    Ok((session, input.entity))
+    observe(&mut session, input.entity, true)
 }
 use std::path::Path;
 use world_spatial_entities::EntityRef;

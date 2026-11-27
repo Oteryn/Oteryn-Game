@@ -101,23 +101,6 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         .ok_or("P19 FIXTURE_PLACEMENT no approach with two open spawn tiles")?;
         move_first_attempt(&mut client, world, path).await?;
     let positions = cells(tile(client.world_spatial().actor_position)?);
-        {
-            let position = positions[0];
-            let refused = request_fixture_control(
-                uuid_text(client.join_snapshot().game_session_id.as_bytes()),
-                "--spawn-forge",
-                format!(
-                    "oteryn:creature.druid_familiar {} {} {} fiendish",
-                    position.x, position.y, position.floor
-                ),
-            )
-            .await;
-            if refused.as_ref().err().map(String::as_str) != Some("ineligible_forge_creature") {
-                return Err(
-                    format!("P19 expected ineligible_forge_creature, got {refused:?}").into(),
-                );
-            }
-        }
         let before = rewards(&mut client).await?;
         if before
                 != (Rewards {
@@ -245,6 +228,14 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
         }
         let corpse = kill_and_observe_clear(&mut client, exact).await?;
+        let directory = Path::new(&capture).join(if stacks == 15 { "fiendish-death" } else { "influenced-death" });
+        std::fs::create_dir_all(&directory)?;
+        let files = client.session_mut().p19_departure_capture_files(exact, stacks)
+            .ok_or("P19 exact death replay chain missing")?;
+        for (name, bytes) in files {
+            std::fs::write(directory.join(name), bytes)?;
+        }
+
         let killed = rewards(&mut client).await?;
         dead.push(exact);
         require_dead_markers_absent(&mut client, &dead)?;

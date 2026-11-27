@@ -655,26 +655,46 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
         .enable_all()
         .build()?
         .block_on(async {
-            for (folder, label) in [("", "[Influenced 3] Rat"), ("fiendish", "[Fiendish] Rat")] {
-                let (mut session, target) =
-                    oteryn_session::test_support::p19_session(&root.join(folder))
-                        .await
-                        .map_err(|error| error.to_string())?;
+            for (folder, label, death) in [
+                ("", "[Influenced 3] Rat", false),
+                ("fiendish", "[Fiendish] Rat", false),
+                ("influenced-death", "[Influenced 3] Rat", true),
+                ("fiendish-death", "[Fiendish] Rat", true),
+            ] {
                 let (link, _, outbox) = play_channel();
-                let position = session.world_spatial().actor_position;
-                let mut view = super::PlayView::new(
-                    oteryn_renderer::TileCoord::new(position.x, position.y),
-                    position.floor,
-                    &[],
-                )?;
-                view.tick(&link).map_err(|error| format!("{error:?}"))?;
-                assert!(!view.scene.has_nameplate(target, label));
-                super::super::session_stepper::publish(&mut session, &outbox, &mut Vec::new());
-                view.tick(&link).map_err(|error| format!("{error:?}"))?;
-                assert!(
-                    view.scene.has_nameplate(target, label),
-                    "missing exact nameplate {label}"
-                );
+                let mut view = None;
+                let mut held = Vec::new();
+                oteryn_session::test_support::p19_session(&root.join(folder), |session, target, final_state| {
+                    if !death && !final_state {
+                        return Ok(());
+                    }
+                    let own = session.world_spatial().actor_position;
+                    let view = match &mut view {
+                        Some(view) => view,
+                        slot @ None => slot.insert(super::PlayView::new(
+                            oteryn_renderer::TileCoord::new(own.x, own.y), own.floor, &[],
+                        )?),
+                    };
+                    let expected = if death && final_state {
+                        assert!(session.world_entities().and_then(|entities| entities.get(&target)).is_none(),
+                            "{folder}: exact creature never departed");
+                        None
+                    } else {
+                        let entity = session.world_entities().and_then(|entities| entities.get(&target))
+                            .ok_or("missing exact live creature in P19 replay")?;
+                        let health = match entity.detail {
+                            oteryn_session::EntityDetail::Actor { health_percent, .. }
+                            | oteryn_session::EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
+                            _ => return Err("P19 nameplate target is not an actor".into()),
+                        };
+                        Some((oteryn_renderer::TileCoord::new(entity.position.x, entity.position.y), label, health))
+                    };
+                    super::super::session_stepper::publish(session, &outbox, &mut held);
+                    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+                    assert!(view.scene.exact_nameplate(target, expected),
+                        "{folder}: wrong count, position, marker, or removal for {target:?}, expected {expected:?}, own={own:?} view floor={}", view.floor());
+                    Ok(())
+                }).await.map_err(|error| error.to_string())?;
             }
             Ok(())
         })
