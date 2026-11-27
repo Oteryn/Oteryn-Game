@@ -52,6 +52,19 @@ pub(crate) fn open(app: &mut App) -> TestResult {
     app.update();
     Ok(())
 }
+pub(crate) fn nearby_hotkey(app: &mut App) -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    app.world_mut().non_send_mut::<HostOwner>().route_input(
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::new(20)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Alt),
+            repeat: false,
+        }],
+        false,
+    );
+    Ok(())
+}
 pub(crate) fn click_corpse_tile(
     app: &mut App,
     actor: oteryn_renderer::TileCoord,
@@ -130,6 +143,28 @@ pub(crate) fn add_filter_item(
     click(app, add);
     let pick = named(app, &format!("quick_loot.pick.{handle}"))?;
     click(app, pick);
+    Ok(())
+}
+pub(crate) fn require_pouch_not_offered(app: &mut App, backpack: [u8; 16]) -> TestResult {
+    app.update();
+    let offered = app
+        .world_mut()
+        .query::<&Control>()
+        .iter(app.world())
+        .any(|control| {
+            matches!(
+                &control.kind,
+                Kind::Request(oteryn_client_ui::quick_loot::Action::Destination {
+                    recipient: oteryn_client_ui::quick_loot::QuickLootRecipient::GoldPouch,
+                    id: Some(id),
+                    ..
+                }) if *id == backpack
+            )
+        });
+    assert!(
+        !offered,
+        "I07 destination picker offered the backpack as a Gold Pouch"
+    );
     Ok(())
 }
 fn control(app: &mut App, kind: Kind) -> Result<Entity, Box<dyn std::error::Error>> {

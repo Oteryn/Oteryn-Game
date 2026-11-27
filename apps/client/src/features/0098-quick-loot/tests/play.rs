@@ -543,6 +543,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         opened: ContainerDelta,
         after_click: ContainerDelta,
         coin: [u8; 16],
+        diagonal_coin: [u8; 16],
+        top_food: [u8; 16],
+        bottom_food: [u8; 16],
         armor: [u8; 16],
         filtered: [u8; 16],
         spare: [u8; 16],
@@ -570,7 +573,14 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         id,
         fallback,
     };
-    let east_outcomes = |move_food| [(expected.listed, false), (expected.other, move_food)];
+    let east_outcomes = |moved| {
+        [
+            (expected.listed, false),
+            (expected.top_food, moved),
+            (expected.other, moved),
+            (expected.bottom_food, moved),
+        ]
+    };
     let east_refused = east_outcomes(false);
     let east_moved = east_outcomes(true);
     let gold = route(
@@ -691,53 +701,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         after_click,
     )]);
     menu_app.update();
-    let foreign_view = expected.foreign_view.decode()?;
-    let [foreign_item] = foreign_view.value.entries.as_slice() else {
-        return Err("I07 foreign corpse capture must expose its live item".into());
-    };
-    let foreign = read_reply(25)?;
-    let last_assignment = read_reply(24)?;
-    assert_eq!(foreign.game_session_id, relog.game_session_id);
-    assert!(foreign.command_id > last_assignment.command_id);
-    assert!(last_assignment.server_sequence < foreign_view.server_sequence);
-    assert!(foreign_view.server_sequence < foreign.server_sequence);
-    assert_eq!(foreign.status, CommandStatus::Rejected as u32);
-    assert_ne!(foreign_view.value.container_handle, Some(container));
-    assert_ne!(foreign_item.handle, selected);
-    assert_ne!(foreign_item.handle, sibling);
-    assert_eq!(foreign_item.item_definition_ref.get(), expected.skip);
-    assert!(
-        menu::corpse_menu_link(&menu_app)?.quick_loot_action(Action::CorpseItem {
-            corpse: expected.corpse,
-            item: foreign_item.handle,
-        })
-    );
-    let crate::combat_input::PlayCommand::ServerMechanic(command) = menu_commands.try_recv()?
-    else {
-        return Err("I07 foreign-handle replay dispatched a different command".into());
-    };
-    assert_eq!((command.capability, command.command_type), (98, 114));
-    assert_eq!(
-        command.payload,
-        std::fs::read(directory.join("i07-25-request.bin"))?
-    );
-    crate::play::session_loop::route_server_mechanic_reply(
-        &menu_outbox,
-        &command,
-        &GatedCommandResult {
-            command_id: foreign.command_id,
-            server_sequence: foreign.server_sequence,
-            status: CommandStatus::Rejected,
-            payload: foreign.payload,
-        },
-    );
-    assert_eq!(
-        menu::corpse_menu_link(&menu_app)?
-            .corpse_loot_view()
-            .feedback,
-        Some("Item is no longer available")
-    );
-    assert_eq!(menu::rendered_corpse_items(&mut menu_app), vec![sibling]);
     assert!(!menu::corpse_menu_link(&menu_app)?.quick_loot_corpse_item(
         container,
         expected.corpse,
@@ -774,6 +737,70 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     );
     menu_app.update();
     assert_eq!(menu::rendered_corpse_items(&mut menu_app), vec![sibling]);
+    let foreign_view = expected.foreign_view.decode()?;
+    let [foreign_item] = foreign_view.value.entries.as_slice() else {
+        return Err("I07 foreign corpse capture must expose its live item".into());
+    };
+    let foreign = read_reply(25)?;
+    let last_assignment = read_reply(24)?;
+    assert_eq!(foreign.game_session_id, relog.game_session_id);
+    assert!(foreign.command_id > last_assignment.command_id);
+    assert!(last_assignment.server_sequence < foreign_view.server_sequence);
+    assert!(foreign_view.server_sequence < foreign.server_sequence);
+    assert_eq!(foreign.status, CommandStatus::Rejected as u32);
+    assert_ne!(foreign_view.value.container_handle, Some(container));
+    assert!(
+        stale.server_sequence < foreign_view.server_sequence
+            && stale.command_id < foreign.command_id
+    );
+    let foreign_handle = foreign_item.handle;
+    assert_eq!(foreign_item.item_definition_ref.get(), expected.skip);
+    menu_outbox.push(vec![oteryn_session::SessionEvent::OpenContainer(
+        foreign_view,
+    )]);
+    menu_app.update();
+    assert_eq!(
+        menu::rendered_corpse_items(&mut menu_app),
+        vec![foreign_handle]
+    );
+    assert_ne!(foreign_handle, selected);
+    assert_ne!(foreign_handle, sibling);
+    assert!(
+        menu::corpse_menu_link(&menu_app)?.quick_loot_action(Action::CorpseItem {
+            corpse: expected.corpse,
+            item: foreign_handle,
+        })
+    );
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = menu_commands.try_recv()?
+    else {
+        return Err("I07 foreign-handle replay dispatched a different command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (98, 114));
+    assert_eq!(
+        command.payload,
+        std::fs::read(directory.join("i07-25-request.bin"))?
+    );
+    crate::play::session_loop::route_server_mechanic_reply(
+        &menu_outbox,
+        &command,
+        &GatedCommandResult {
+            command_id: foreign.command_id,
+            server_sequence: foreign.server_sequence,
+            status: CommandStatus::Rejected,
+            payload: foreign.payload,
+        },
+    );
+    assert_eq!(
+        menu::corpse_menu_link(&menu_app)?
+            .corpse_loot_view()
+            .feedback,
+        Some("Item is no longer available")
+    );
+    menu_app.update();
+    assert_eq!(
+        menu::rendered_corpse_items(&mut menu_app),
+        vec![foreign_handle]
+    );
     assert!(menu_commands.try_recv().is_err());
     let skip = QuickLootFilterMode::Skip;
     let accept = QuickLootFilterMode::Accept;
@@ -814,13 +841,16 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             Action::LootAll,
             &[
                 (expected.coin, true),
+                (expected.diagonal_coin, true),
                 (expected.armor, false),
                 (expected.filtered, false),
                 (expected.spare, false),
                 (expected.listed, false),
                 (expected.other, false),
+                (expected.top_food, false),
+                (expected.bottom_food, false),
             ],
-            Some("Looted 1 of 6 items"),
+            Some("Looted 2 of 9 items"),
         ),
         (gold_main.clone(), &[], None),
         (armor(false), &[], None),
@@ -867,7 +897,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
-        (Action::LootAll, &east_refused, Some("Looted 0 of 2 items")),
+        (Action::LootAll, &east_refused, Some("Looted 0 of 4 items")),
         (
             if full {
                 route(
@@ -882,7 +912,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
-        (Action::LootAll, &east_moved, Some("Looted 1 of 2 items")),
+        (Action::LootAll, &east_moved, Some("Looted 3 of 4 items")),
         (
             route(
                 None,
@@ -903,49 +933,79 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         .game_window
         .loot_messages = true;
     outbox.discovery_initialize(&Selected(true));
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct PickerInventory {
+        game_session_id: String,
+        payload: Vec<u8>,
+    }
+    let picker: PickerInventory =
+        serde_json::from_slice(&std::fs::read(directory.join("i07-picker-inventory.json"))?)?;
+    assert_eq!(
+        picker.game_session_id, first.game_session_id,
+        "I07 filter picker inventory session"
+    );
     let picker_inventory = oteryn_session::item_view::decode_character_inventory_with_appearances(
-        &std::fs::read(directory.join("i07-picker-inventory.bin"))?,
+        &picker.payload,
         true,
         true,
     )
     .map_err(|error| format!("I07 captured picker inventory: {error:?}"))?;
     ui::prepare_filter_picker(&mut app, &outbox, picker_inventory.clone());
     ui::open(&mut app)?;
-    use oteryn_client_runtime::cui3::store as store_wire;
-    outbox.bevy_store_initialize();
-    ui::click_inbox_refresh(&mut app)?;
-    let crate::combat_input::PlayCommand::ServerMechanic(inbox_command) = commands.try_recv()?
-    else {
-        return Err("I07 client queued the wrong Store Inbox command".into());
+    let replay_inbox = |app: &mut bevy::app::App,
+                        commands: &mut tokio::sync::mpsc::UnboundedReceiver<
+        crate::combat_input::PlayCommand,
+    >,
+                        label,
+                        session: &str|
+     -> Result<(u64, u64), Box<dyn std::error::Error>> {
+        use oteryn_client_runtime::cui3::store as store_wire;
+        outbox.bevy_store_initialize();
+        assert_eq!(
+            ui::link(app)?.quick_loot_inbox().0,
+            None,
+            "I07 stale Inbox after admission"
+        );
+        app.update();
+        ui::click_inbox_refresh(app)?;
+        let crate::combat_input::PlayCommand::ServerMechanic(inbox_command) =
+            commands.try_recv()?
+        else {
+            return Err("I07 client queued the wrong Store Inbox command".into());
+        };
+        assert_eq!(inbox_command.capability, store_wire::CAPABILITY_STORE_V1);
+        assert_eq!(
+            inbox_command.command_type,
+            store_wire::COMMAND_TYPE_STORE_INBOX_CLAIM
+        );
+        assert_eq!(
+            inbox_command.payload,
+            std::fs::read(directory.join(format!("i07-{label}-request.bin")))?
+        );
+        let inbox: Reply =
+            serde_json::from_slice(&std::fs::read(directory.join(format!("i07-{label}.json")))?)?;
+        assert_eq!(inbox.game_session_id, session);
+        assert_eq!(inbox.status, CommandStatus::Accepted as u32);
+        crate::play::session_loop::route_server_mechanic_reply(
+            &outbox,
+            &inbox_command,
+            &GatedCommandResult {
+                command_id: inbox.command_id,
+                server_sequence: inbox.server_sequence,
+                status: CommandStatus::Accepted,
+                payload: inbox.payload,
+            },
+        );
+        assert_eq!(
+            ui::link(app)?.quick_loot_inbox().0,
+            Some(expected.fulfilment)
+        );
+        Ok((inbox.command_id, inbox.server_sequence))
     };
-    assert_eq!(inbox_command.capability, store_wire::CAPABILITY_STORE_V1);
-    assert_eq!(
-        inbox_command.command_type,
-        store_wire::COMMAND_TYPE_STORE_INBOX_CLAIM
-    );
-    assert_eq!(
-        inbox_command.payload,
-        std::fs::read(directory.join("i07-inbox-request.bin"))?
-    );
-    let inbox: Reply = serde_json::from_slice(&std::fs::read(directory.join("i07-inbox.json"))?)?;
-    assert_eq!(inbox.game_session_id, first.game_session_id);
-    assert_eq!(inbox.status, CommandStatus::Accepted as u32);
-    crate::play::session_loop::route_server_mechanic_reply(
-        &outbox,
-        &inbox_command,
-        &GatedCommandResult {
-            command_id: inbox.command_id,
-            server_sequence: inbox.server_sequence,
-            status: CommandStatus::Accepted,
-            payload: inbox.payload,
-        },
-    );
-    assert_eq!(
-        ui::link(&app)?.quick_loot_inbox().0,
-        Some(expected.fulfilment)
-    );
+    let first_inbox = replay_inbox(&mut app, &mut commands, "inbox", &first.game_session_id)?;
     let mut sessions = [String::new(), String::new()];
-    let mut previous = (inbox.command_id, inbox.server_sequence);
+    let mut previous = first_inbox;
     let mut probes: Vec<_> = (1..=20).zip(steps).collect();
     if full {
         probes.splice(
@@ -969,7 +1029,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     (
                         Action::LootAll,
                         &east_refused[..],
-                        Some("Looted 0 of 2 items"),
+                        Some("Looted 0 of 4 items"),
                     ),
                 ),
                 (23, (main.clone(), &[][..], None)),
@@ -986,7 +1046,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         x: i32,
         y: i32,
         floor: i16,
-        corpses: Vec<(i32, [u8; 16], u64)>,
+        corpses: Vec<(i32, i32, [u8; 16], u64)>,
     }
     let gold_pouch = route(
         Some(QuickLootCategory::Gold),
@@ -1020,9 +1080,17 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             assert_eq!(restore.game_session_id, reply.game_session_id);
             assert_ne!(restore.game_session_id, sessions[0]);
             assert_eq!(restore.status, CommandStatus::Accepted as u32);
+            let inbox = replay_inbox(
+                &mut app,
+                &mut commands,
+                "relog-inbox",
+                &reply.game_session_id,
+            )?;
+            assert!(inbox.0 < restore.command_id && inbox.1 < restore.server_sequence);
             previous = (restore.command_id, restore.server_sequence);
             peer::restore_active_capture(
                 &outbox,
+                ui::link(&app)?,
                 peer::Exchange {
                     command: oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
                         capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
@@ -1078,7 +1146,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             continue;
         }
         let dispatched = if key == 6 {
-            ui::click_action(&mut app, Action::LootAll)?;
+            ui::nearby_hotkey(&mut app)?;
             true
         } else if action == Action::LootAll {
             let tile: LootTile = serde_json::from_slice(
@@ -1087,7 +1155,10 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 )?,
             )?;
             assert_eq!(
-                tile.corpses.iter().filter(|(x, _, _)| *x == tile.x).count(),
+                tile.corpses
+                    .iter()
+                    .filter(|(x, y, _, _)| *x == tile.x && *y == tile.y)
+                    .count(),
                 if key >= 15 { 2 } else { 1 },
                 "I07 probe {key}"
             );
@@ -1102,17 +1173,17 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             );
             assert_eq!(
                 tile.corpses.len(),
-                3,
+                4,
                 "I07 probe {key} competing corpse omitted"
             );
             if key >= 15 {
                 let top = tile
                     .corpses
                     .iter()
-                    .rfind(|(x, _, _)| *x == tile.x)
+                    .rfind(|(x, y, _, _)| *x == tile.x && *y == tile.y)
                     .ok_or("I07 missing east top corpse")?;
                 assert_eq!(
-                    top.1, expected.east_top,
+                    top.2, expected.east_top,
                     "I07 probe {key} visible top corpse"
                 );
             }
@@ -1120,7 +1191,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 tile.corpses
                     .into_iter()
                     .map(
-                        |(x, identity, generation)| oteryn_session::WorldSpatialEntity {
+                        |(x, y, identity, generation)| oteryn_session::WorldSpatialEntity {
                             motion: None,
                             display_name: None,
                             kind: oteryn_session::EntityKind::Corpse,
@@ -1130,7 +1201,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                             },
                             position: oteryn_session::ActorPosition {
                                 x,
-                                y: tile.y,
+                                y,
                                 floor: tile.floor,
                             },
                             detail: oteryn_session::EntityDetail::Object {
@@ -1152,7 +1223,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 .map_err(|error| format!("I07 probe {key} control {control}: {error}"))?;
             true
         } else {
-            let link = ui::link(&app)?;
             match action {
                 Action::Add { mode, definition } => {
                     let handle = picker_inventory
@@ -1170,6 +1240,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     id,
                     fallback,
                 } => {
+                    assert_eq!(key, 19, "only the invalid wire probe bypasses the picker");
+                    ui::require_pouch_not_offered(&mut app, expected.backpack)?;
                     let id = id
                         .map(|id| {
                             id.iter()
@@ -1177,7 +1249,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                                 .collect::<String>()
                         })
                         .unwrap_or_default();
-                    link.discovery_action(
+                    ui::link(&app)?.discovery_action(
                         98,
                         6,
                         &[

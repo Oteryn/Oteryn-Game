@@ -229,6 +229,7 @@ fn scenario_with_startup(
 #[cfg(bevy_shell)]
 pub(super) fn restore_active_capture(
     outbox: &crate::play::Outbox,
+    link: &crate::play::PlayLink,
     exchange: Exchange,
     response_identity: (u64, u64),
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -240,6 +241,20 @@ pub(super) fn restore_active_capture(
         entities: vec![],
     };
     outbox.discovery_initialize(&peer);
+    {
+        let panel = link.discovery_panel().loot;
+        assert!(
+            panel.confirmed.is_empty()
+                && panel.destinations.is_empty()
+                && panel.filter_mode.is_none()
+                && panel.skipped.is_empty()
+                && panel.accepted.is_empty()
+                && panel.pending.is_none()
+                && panel.result.is_none(),
+            "I07 relog panel retained pre-restore state: {panel:?}"
+        );
+    }
+
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
