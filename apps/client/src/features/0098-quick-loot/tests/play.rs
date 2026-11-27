@@ -491,6 +491,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         selected_handle: u64,
         corpse: [u8; 16],
         corpse_generation: u64,
+        corpse_kind: u8,
         corpse_position: [i32; 3],
         corpse_definition: u32,
         opened: ContainerDelta,
@@ -582,6 +583,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let (menu_link, mut menu_commands, menu_outbox) = crate::play::play_channel();
     menu_outbox.bevy_quick_loot_selected(true);
     let [x, y, floor] = expected.corpse_position;
+    assert_eq!(expected.corpse_kind, oteryn_session::EntityKind::Corpse as u8);
     menu_outbox.bevy_quick_loot_corpse(oteryn_session::WorldSpatialEntity {
         motion: None,
         display_name: None,
@@ -648,6 +650,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     else {
         return Err("I07 stale replay dispatched a different command".into());
     };
+    assert_eq!((command.capability, command.command_type), (98, 114));
     assert_eq!(
         command.payload,
         std::fs::read(directory.join("i07-20-request.bin"))?

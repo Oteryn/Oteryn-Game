@@ -909,6 +909,26 @@ pub(super) async fn journey(
         unassigned_pouch
     };
     capture.probe(&mut fresh, 15, late_pouch, &[]).await?;
+    if full {
+        let food: (bool, Option<Vec<u8>>) = sqlx::query_as(
+            "SELECT gold_pouch, uuid_send(container_id)
+             FROM game_character_quick_loot_categories
+             WHERE character_id=encode($1,'hex')::uuid AND category=10",
+        )
+        .bind(character.as_slice())
+        .fetch_one(&mut database)
+        .await?;
+        let unassigned_to_pouch: bool = sqlx::query_scalar(
+            "SELECT unassigned_gold_pouch FROM game_character_quick_loot_settings
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character.as_slice())
+        .fetch_one(&mut database)
+        .await?;
+        if food != (true, Some(pouch.to_vec())) || unassigned_to_pouch {
+            return Err("I07 full expected a Food-only route to the exact Gold Pouch".into());
+        }
+    }
     capture
         .probe(
             &mut fresh,
@@ -1123,6 +1143,7 @@ pub(super) async fn journey(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
                 "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "fulfilment": fulfilment, "selected_handle": selected.get(),
+                "corpse_kind": corpse_entity.kind as u8,
                 "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
                 "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
                 "corpse_definition": provisioning::item_reference(&index, 5973)?.get(),
@@ -1366,6 +1387,9 @@ async fn open_primary_corpse(
             format!("I07 expected one published corpse at the admitted tile: {corpses:?}").into(),
         );
     };
+    if entity.kind != oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Corpse {
+        return Err(format!("I07 published the loot target as {:?}", entity.kind).into());
+    }
     let reply = client.use_item(*corpse).await?;
     if reply.status != CommandStatus::Accepted || reply.disposition != UseDisposition::Committed {
         return Err(format!("I07 first corpse open refused: {reply:?}").into());
