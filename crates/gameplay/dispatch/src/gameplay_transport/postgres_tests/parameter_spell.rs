@@ -30,5 +30,13 @@ fn parameter_spell_action_bar_named_target_real_session_postgres() -> TestResult
     scenario(255)
 }
 
+#[test]
+fn spell_cast_with_active_cooldown_releases_on_one_logout_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::parameter_spell_fixtures::logout_with_cooldown(admin)
+}
+
 #[path = "parameter_spell/exiva_settings.rs"]
 mod exiva_settings;

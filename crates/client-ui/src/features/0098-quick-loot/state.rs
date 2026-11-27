@@ -13,11 +13,12 @@ pub struct Panel {
     pub open: bool,
     pub pending: Option<Action>,
     pub feedback: String,
-    /// Only confirmed edits from this session; the existing wire has no settings query.
+    /// Confirmed edits made during this session.
     pub confirmed: Vec<Action>,
-    /// Current destinations confirmed in this session, at most one per category.
+    /// Saved destinations, at most one per category.
     pub destinations: Vec<Action>,
     pub managed: bool,
+    pub filter_mode: Option<QuickLootFilterMode>,
     pub skipped: std::collections::BTreeSet<u32>,
     pub accepted: std::collections::BTreeSet<u32>,
     pub result: Option<QuickLootResult>,

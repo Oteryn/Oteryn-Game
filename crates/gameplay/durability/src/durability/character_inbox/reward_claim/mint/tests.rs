@@ -108,6 +108,44 @@ fn mint_spec_and_full_plan_bind_every_admitted_output_fact_and_source_revision()
 }
 
 #[test]
+fn mint_spec_binds_capacity_only_for_the_canonical_gold_pouch() {
+    let mut pouch = request();
+    pouch.outputs[0].quantity = 1;
+    let item = &mut pouch.outputs[0].item;
+    item.definition.production_key = "oteryn:item.tibia.i23721".into();
+    item.definition.revision_ref = "definition-r1".into();
+    item.stack = ItemStackClass::NonStackable;
+    item.container_capacity = Some(20);
+
+    let spec = mint_spec(&pouch).expect("the canonical Gold Pouch can be minted into the Inbox");
+    let mut decoded: serde_json::Value = serde_json::from_slice(&spec).unwrap();
+    assert_eq!(decoded["outputs"][0]["container_capacity"], 20);
+    decoded["outputs"][0]["container_capacity"] = serde_json::Value::Null;
+    let without_capacity = serde_json::to_vec(&decoded).unwrap();
+    assert_ne!(
+        bound_plan(&plan(), &spec).binding(),
+        bound_plan(&plan(), &without_capacity).binding()
+    );
+
+    for (family, key, revision, capacity, equip_pattern) in [
+        ("Item", "fixture:other-container", "definition-r1", 20, false),
+        ("Item", "oteryn:item.tibia.i23721", "definition-r2", 20, false),
+        ("Other", "oteryn:item.tibia.i23721", "definition-r1", 20, false),
+        ("Item", "oteryn:item.tibia.i23721", "definition-r1", 21, false),
+        ("Item", "oteryn:item.tibia.i23721", "definition-r1", 20, true),
+    ] {
+        let mut changed = pouch.clone();
+        let item = &mut changed.outputs[0].item;
+        item.definition.family = family.into();
+        item.definition.production_key = key.into();
+        item.definition.revision_ref = revision.into();
+        item.container_capacity = Some(capacity);
+        item.container_slot_equip_pattern = equip_pattern;
+        assert!(matches!(mint_spec(&changed), Err(RewardClaimInboxError::InvalidPlan)));
+    }
+}
+
+#[test]
 fn mint_outputs_refuse_unknown_stacks_overflow_containers_and_invalid_keys() {
     type Mutation = Box<dyn Fn(&mut RewardClaimInboxMintRequest)>;
     for mutate in [

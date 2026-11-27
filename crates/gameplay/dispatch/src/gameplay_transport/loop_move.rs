@@ -113,6 +113,12 @@ impl ItemLoopContent for NativeItemWeights<'_> {
             revision_ref: revision.into(),
         })
     }
+    fn loop_definition_ref(&self, key: &str) -> Option<u32> {
+        let index = self.0.item_index()?;
+        index
+            .definition_ref("Item", key, index.revision(key)?)
+            .map(NonZeroU32::get)
+    }
     fn is_quiver(&self, definition: &TypedDefinitionRef) -> bool {
         definition.family == "Item"
             && matches!(
