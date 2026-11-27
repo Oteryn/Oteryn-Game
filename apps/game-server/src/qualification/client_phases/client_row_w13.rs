@@ -71,17 +71,43 @@ fn provenance(frames: &[Envelope; 3]) -> String {
     )
 }
 
-async fn query(
-    client: &mut oteryn_dev_client::DevClientSession,
-    payload: &[u8],
-) -> TestResult<Reply> {
-    Ok(client
-        .session_mut()
-        .gated_command(
+fn require_query_command(capability: u32, kind: u32, payload: &[u8]) -> TestResult {
+    if (capability, kind, payload)
+        != (
             wire::CAPABILITY_DAILY_BOOST_V1,
             wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
-            payload,
+            &[][..],
         )
+    {
+        return Err(format!("wrong daily boost panel command: capability={capability} kind={kind} payload={payload:?}").into());
+    }
+    Ok(())
+}
+
+fn panel_query(
+    panel: &mut DailyBoostPanel,
+) -> TestResult<oteryn_dev_client::client_runtime::raw_feature::FeatureCommand> {
+    let command = daily_boost::request(
+        panel,
+        daily_boost::Intent {
+            command: wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
+            payload: Vec::new(),
+        },
+    )
+    .ok_or("daily boost panel did not emit a query")?;
+    require_query_command(command.capability, command.kind, &command.payload)?;
+    Ok(command)
+}
+
+async fn query(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<Reply> {
+    let mut panel = DailyBoostPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let command = panel_query(&mut panel)?;
+    Ok(client
+        .session_mut()
+        .gated_command(command.capability, command.kind, &command.payload)
         .await?)
 }
 
@@ -137,10 +163,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let session = client.join_snapshot().game_session_id;
     let expected = persisted(clients).await?;
-    let reply = query(&mut client, &[]).await?;
+    let reply = query(&mut client).await?;
     require_reply(&reply, CommandStatus::Accepted)?;
     require_unchanged(&expected, &persisted(clients).await?, "initial query")?;
-    let refused = query(&mut client, &[0]).await?;
+    let refused = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_DAILY_BOOST_V1,
+            wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
+            &[0],
+        )
+        .await?;
     require_reply(&refused, CommandStatus::Rejected)?;
     require_unchanged(&expected, &persisted(clients).await?, "malformed query")?;
     if client.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
@@ -154,7 +187,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("daily boost readmission failed to retain the persisted selection".into());
     }
     require_unchanged(&expected, &persisted(clients).await?, "readmission")?;
-    let readmitted = query(&mut fresh, &[]).await?;
+    let readmitted = query(&mut fresh).await?;
     require_reply(&readmitted, CommandStatus::Accepted)?;
     require_unchanged(&expected, &persisted(clients).await?, "post-relog query")?;
     if fresh.session_mut().logout().await?.result != Some(LogoutResult::Accepted) {
@@ -174,39 +207,45 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     Ok(provenance(&observed))
 }
 
-fn expected_name(key: &str) -> String {
-    // The display contract title-cases the underscore-separated leaf of a content key.
-    let leaf = key.rsplit(['.', ':']).next().unwrap_or(key);
-    let mut name = String::new();
-    let mut starts_word = true;
-    for letter in leaf.chars() {
-        if letter == '_' {
-            name.push(' ');
-            starts_word = true;
-        } else if starts_word {
-            name.extend(letter.to_uppercase());
-            starts_word = false;
-        } else {
-            name.push(letter);
+fn expected_names(expected: &Selection) -> TestResult<[String; 2]> {
+    let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../content/creatures/definitions/spell-native-profiles.json");
+    let profiles: serde_json::Value = serde_json::from_reader(std::fs::File::open(source)?)?;
+    let records = profiles["records"]
+        .as_array()
+        .ok_or("creature profile records missing")?;
+    let canonical = |key: &str| -> TestResult<String> {
+        // TibiaData's boostable boss list supplies this exact display spelling.
+        if key == "oteryn:creature.timira_the_many_headed" {
+            return Ok("Timira The Many-Headed".into());
         }
-    }
-    name
+        records
+            .iter()
+            .find(|record| record["profile"]["target"]["key"].as_str() == Some(key))
+            .and_then(|record| {
+                record["profile"]["data"]["profile"]["details"]["display_name"].as_str()
+            })
+            .filter(|name| !name.is_empty())
+            .map(str::to_owned)
+            .ok_or_else(|| format!("missing authored daily boost display name for {key}").into())
+    };
+    Ok([canonical(&expected.1)?, canonical(&expected.2)?])
 }
 
 fn require_card_projection(
     cards: &[daily_boost::SpotlightCard],
     expected: &Selection,
+    names: &[String; 2],
 ) -> TestResult<String> {
     let (epoch, creature, boss) = expected;
     let epoch_value = epoch.parse::<u64>()?;
-    let creature_name = expected_name(creature);
-    let boss_name = expected_name(boss);
+    let [creature_name, boss_name] = names;
     let [creature_card, boss_card] = cards else {
         return Err(format!("expected two spotlight cards, observed {cards:?}").into());
     };
     for (card, key, name, kind) in [
-        (creature_card, creature, &creature_name, "Boosted creature"),
-        (boss_card, boss, &boss_name, "Boosted boss"),
+        (creature_card, creature, creature_name, "Boosted creature"),
+        (boss_card, boss, boss_name, "Boosted boss"),
     ] {
         if (&card.key, &card.name, card.kind, card.reset_epoch) != (key, name, kind, epoch_value) {
             return Err(format!(
@@ -255,14 +294,65 @@ fn w13_audit_checks_reject_mutated_selection_and_cards() -> TestResult {
             reset_epoch: 42,
         },
     ];
-    require_card_projection(&cards, &expected)?;
+    let names = expected_names(&expected)?;
+    require_card_projection(&cards, &expected, &names)?;
     for index in 0..cards.len() {
         let mut wrong_name = cards.clone();
         wrong_name[index].name = "Wrong name".into();
-        assert!(require_card_projection(&wrong_name, &expected).is_err());
+        assert!(require_card_projection(&wrong_name, &expected, &names).is_err());
         let mut wrong_epoch = cards.clone();
         wrong_epoch[index].reset_epoch = 41;
-        assert!(require_card_projection(&wrong_epoch, &expected).is_err());
+        assert!(require_card_projection(&wrong_epoch, &expected, &names).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn w13_audit_rejects_title_cased_boss_names_and_wrong_commands() -> TestResult {
+    for (key, canonical, wrong) in [
+        (
+            "oteryn:creature.goshnar_s_cruelty",
+            "Goshnar's Cruelty",
+            "Goshnar S Cruelty",
+        ),
+        (
+            "oteryn:creature.timira_the_many_headed",
+            "Timira The Many-Headed",
+            "Timira The Many Headed",
+        ),
+    ] {
+        let selection = ("42".into(), "oteryn:creature.braindeath".into(), key.into());
+        let names = expected_names(&selection)?;
+        assert_eq!(names[1], canonical);
+        let mut cards = [
+            daily_boost::SpotlightCard {
+                kind: "Boosted creature",
+                key: selection.1.clone(),
+                name: names[0].clone(),
+                reset_epoch: 42,
+            },
+            daily_boost::SpotlightCard {
+                kind: "Boosted boss",
+                key: selection.2.clone(),
+                name: canonical.into(),
+                reset_epoch: 42,
+            },
+        ];
+        require_card_projection(&cards, &selection, &names)?;
+        cards[1].name = wrong.into();
+        assert!(require_card_projection(&cards, &selection, &names).is_err());
+    }
+    let mut panel = DailyBoostPanel {
+        selected: true,
+        ..Default::default()
+    };
+    panel_query(&mut panel)?;
+    for (capability, kind, payload) in [
+        (150, 177, &[][..]),
+        (151, 176, &[][..]),
+        (151, 177, &[0][..]),
+    ] {
+        assert!(require_query_command(capability, kind, payload).is_err());
     }
     Ok(())
 }
@@ -270,7 +360,7 @@ fn w13_audit_checks_reject_mutated_selection_and_cards() -> TestResult {
 #[test]
 #[ignore = "requires a fresh W13 live capture"]
 fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
-    use daily_boost::{Intent, apply_result, panel_text, request, spotlight_cards};
+    use daily_boost::{apply_result, panel_text, spotlight_cards};
 
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory missing")?;
     let root = Path::new(&root);
@@ -296,6 +386,7 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
     assert!(accepted.server_sequence < refused.server_sequence);
     let expected: Selection =
         serde_json::from_slice(&std::fs::read(root.join("w13-expected.json"))?)?;
+    let names = expected_names(&expected)?;
     let (epoch, creature, boss) = &expected;
     let mut panel = DailyBoostPanel {
         selected: true,
@@ -312,14 +403,7 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
         assert_ne!(reply.server_sequence, 0);
         require_reply(&reply, status)?;
         let before = panel.boost.clone();
-        request(
-            &mut panel,
-            Intent {
-                command: wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
-                payload: Vec::new(),
-            },
-        )
-        .ok_or("query request")?;
+        panel_query(&mut panel)?;
         assert_eq!(panel_text(&panel), "Loading daily boost...");
         apply_result(&mut panel, &reply);
         assert!(!panel.pending);
@@ -348,7 +432,7 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> TestResult {
         assert_eq!(panel.feedback, None);
         assert_eq!(
             panel_text(&panel),
-            require_card_projection(&spotlight_cards(&panel), &expected)?
+            require_card_projection(&spotlight_cards(&panel), &expected, &names)?
         );
     }
     Ok(())
