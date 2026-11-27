@@ -26,6 +26,7 @@ pub(super) struct Item {
     pub location: Value,
     pub plain: bool,
     pub imbued: bool,
+    pub scheduled: bool,
     pub quantity: u32,
 }
 
@@ -40,7 +41,7 @@ impl Item {
         let record = policy.record();
         let profile = record.authoring.forge?;
         let slot = forge_slot(&record.semantics.equipment)?;
-        (self.quantity == 1 && !self.imbued).then_some(ForgeItem {
+        (self.quantity == 1 && !self.imbued && !self.scheduled).then_some(ForgeItem {
             instance: self.id,
             definition: &self.facts,
             profile: ProjectV2ItemForgeProfile {
@@ -96,7 +97,7 @@ pub(super) async fn read(
     let Ok(bag_facts) = generation_item_facts(native, &bag_definition) else {
         return Ok(None);
     };
-    let rows = sqlx::query("WITH RECURSIVE carried(item_instance_id,parent,ordinal,depth,kind) AS (SELECT e.item_instance_id,e.parent_item_instance_id,e.placement_ordinal,1,1 FROM game_item_container_entries e WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid AND e.parent_item_instance_id=$3::uuid UNION ALL SELECT n.item_instance_id,n.parent_item_instance_id,n.placement_ordinal,c.depth+1,2 FROM carried c JOIN game_item_nested_entries n ON n.parent_item_instance_id=c.item_instance_id AND n.world_id=encode($2,'hex')::uuid WHERE c.depth<8) SELECT i.item_instance_id::text,to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,COALESCE(t.tier,0)::smallint AS tier,jsonb_build_object('kind',c.kind,'parent',c.parent,'ordinal',c.ordinal::text,'depth',c.depth) AS location,EXISTS(SELECT 1 FROM game_item_imbuements m WHERE m.item_instance_id=i.item_instance_id) AS imbued,NOT EXISTS(SELECT 1 FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_texts x WHERE x.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states d WHERE d.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_imbuements m WHERE m.item_instance_id=i.item_instance_id) AND t.item_instance_id IS NULL AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.parent_item_instance_id=i.item_instance_id) AS plain FROM carried c JOIN game_item_instances i USING(item_instance_id) LEFT JOIN game_item_tiers t USING(item_instance_id) WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let rows = sqlx::query("WITH RECURSIVE carried(item_instance_id,parent,ordinal,depth,kind) AS (SELECT e.item_instance_id,e.parent_item_instance_id,e.placement_ordinal,1,1 FROM game_item_container_entries e WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid AND e.parent_item_instance_id=$3::uuid UNION ALL SELECT n.item_instance_id,n.parent_item_instance_id,n.placement_ordinal,c.depth+1,2 FROM carried c JOIN game_item_nested_entries n ON n.parent_item_instance_id=c.item_instance_id AND n.world_id=encode($2,'hex')::uuid WHERE c.depth<8) SELECT i.item_instance_id::text,to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,COALESCE(t.tier,0)::smallint AS tier,jsonb_build_object('kind',c.kind,'parent',c.parent,'ordinal',c.ordinal::text,'depth',c.depth) AS location,EXISTS(SELECT 1 FROM game_item_imbuements m WHERE m.item_instance_id=i.item_instance_id) AS imbued,EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id UNION ALL SELECT 1 FROM game_spell_item_temporal_schedules WHERE item_instance_id=i.item_instance_id UNION ALL SELECT 1 FROM game_spell_field_temporal_schedules WHERE item_instance_id=i.item_instance_id) AS scheduled,NOT EXISTS(SELECT 1 FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_texts x WHERE x.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states d WHERE d.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_imbuements m WHERE m.item_instance_id=i.item_instance_id) AND t.item_instance_id IS NULL AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.parent_item_instance_id=i.item_instance_id) AS plain FROM carried c JOIN game_item_instances i USING(item_instance_id) LEFT JOIN game_item_tiers t USING(item_instance_id) WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&bag_identity)
         .fetch_all(&mut **tx).await?;
     if rows.len() > 500 {
@@ -122,6 +123,7 @@ pub(super) async fn read(
             location: row.try_get("location")?,
             plain: row.try_get("plain")?,
             imbued: row.try_get("imbued")?,
+            scheduled: row.try_get("scheduled")?,
             quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         });

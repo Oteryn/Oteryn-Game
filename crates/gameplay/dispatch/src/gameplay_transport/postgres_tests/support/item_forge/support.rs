@@ -57,6 +57,7 @@ pub(in super::super) enum Case {
     Integrity,
     Chest(Operation),
     ChestFull,
+    ChestScheduledInputs,
     ChestGuards(Operation),
     CoreRefusal,
     MixedFee,
@@ -136,7 +137,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         let (dust, limit) = match case {
             Case::Preview => (300, 300),
-            Case::Items(_) | Case::Chest(_) | Case::ChestFull | Case::ChestGuards(_)
+            Case::Items(_) | Case::Chest(_) | Case::ChestFull | Case::ChestScheduledInputs | Case::ChestGuards(_)
             | Case::Integrity | Case::CoreRefusal | Case::MixedFee => (1000, 1000),
             Case::Refusals | Case::BusyHolder => (59, 100),
             Case::DustProgression(limit) => (i64::from(limit), limit),
@@ -339,6 +340,14 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             Case::ChestFull => {
                 super::super::item_forge_fusion_fixtures::full_inventory(&h, &owner, &mut admitted)
                     .await?
+            }
+            Case::ChestScheduledInputs => {
+                super::super::item_forge_fusion_fixtures::scheduled_inputs(
+                    &h,
+                    &owner,
+                    &mut admitted,
+                )
+                .await?
             }
             Case::ChestGuards(operation) => {
                 super::super::item_forge_integrity_fixtures::chest_guards(&h, &admitted, operation)

@@ -2,13 +2,13 @@ use super::TestResult;
 
 use super::fixture::{Harness, debug, id};
 
-use super::item_forge_fixtures::pair_wire::{PairSelection, exchange_pair};
+use super::item_forge_fixtures::pair_wire::{PairSelection, exchange_pair, extract_chest_item};
 
 use super::item_forge_fixtures::support::{self, cooldown_elapsed, exchange, request, seed_items};
 
 use crate::gameplay_transport::ComposedFreshAdmission;
 
-use crate::gameplay_transport::connection::AdmittedSession;
+use crate::gameplay_transport::connection::{AdmittedSession, FreshAdmissionAuthority};
 
 use oteryn_gameplay_items::forge::{EXALTED_CORE_KEY, FORGE_SLIVER_KEY};
 
@@ -116,6 +116,7 @@ pub(super) async fn chest_case(
     seed_bank(h).await?;
     seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
     let mut action = pair(Operation::Fusion, 120, 101, 102);
+    action.selection.chest_items = Some(2);
     action.request.occurrence = occurrence_for(h, 120, |rolls| {
         rolls[0] < 50 && (9550..9950).contains(&rolls[2])
     })
@@ -132,7 +133,85 @@ pub(super) async fn chest_case(
             cost: (100, 0, 25_000),
         },
     )
-    .await
+    .await?;
+    let world = admitted
+        .item_fence
+        .ok_or("Forge item fence")?
+        .runtime_scope
+        .world_id();
+    let metadata = owner
+        .root
+        .read_inspection_metadata(owner.character, world, id(101))
+        .await?
+        .ok_or("upgraded item's inspection metadata")?;
+    assert_eq!(metadata.definition.production_key, SWORD);
+    assert_eq!(metadata.tier, 1);
+    let non_container_custody: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid UNION ALL SELECT 1 FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid UNION ALL SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)")
+        .bind(id(101).as_slice()).fetch_one(&h.pool).await?;
+    assert!(
+        !non_container_custody,
+        "a chest item has no direct bag, equipment or position address"
+    );
+    extract_chest_item(owner, admitted).await?;
+    let moved: (Vec<u8>, i16) = sqlx::query_as("SELECT uuid_send(e.item_instance_id),t.tier::smallint FROM game_item_container_entries e JOIN game_item_tiers t USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid")
+        .bind(id(70).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(moved, (id(101).to_vec(), 1));
+    Ok(())
+}
+
+pub(super) async fn scheduled_inputs(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    seed_bank(h).await?;
+    seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
+    let schedules = [
+        (
+            "game_item_timed_states",
+            "INSERT INTO game_item_timed_states(item_instance_id,remaining_ms,deadline_at,state_revision) VALUES(encode($1,'hex')::uuid,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,1)",
+        ),
+        (
+            "game_spell_item_temporal_schedules",
+            "INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea))",
+        ),
+        (
+            "game_spell_field_temporal_schedules",
+            "INSERT INTO game_spell_field_temporal_schedules(item_instance_id,source_stage,blocks_movement,blocks_projectile,immovable_block_solid,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,1,false,false,false,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea))",
+        ),
+    ];
+    for (offset, (table, insert)) in schedules.into_iter().enumerate() {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(insert)
+            .bind(id(101).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        let snapshot = format!(
+            "SELECT to_jsonb(s) FROM {table} s WHERE item_instance_id=encode($1,'hex')::uuid"
+        );
+        let before: Value = sqlx::query_scalar(&snapshot)
+            .bind(id(101).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+        let occurrence = 120 + u8::try_from(offset)?;
+        let mut action = pair(Operation::Fusion, occurrence, 101, 102);
+        action.request.occurrence =
+            occurrence_for(h, occurrence, |rolls| rolls[0] < 50 && rolls[2] < 7400).await?;
+        refused(h, owner, admitted, action, "WRONG_ITEMS").await?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let after: Value = sqlx::query_scalar(&format!("DELETE FROM {table} s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)"))
+            .bind(id(101).as_slice()).fetch_one(&mut *tx).await?;
+        assert_eq!(after, before);
+        tx.commit().await?;
+    }
+    Ok(())
 }
 
 pub(super) async fn full_inventory(
@@ -237,6 +316,7 @@ async fn committed(
     expected: Expected,
 ) -> TestResult {
     cooldown_elapsed(h).await?;
+    let prove_chest_readers = action.selection.chest_items.is_some();
     let before = support::balances(h).await?;
     let gold = bank(h).await?;
     let native = action.native;
@@ -300,6 +380,17 @@ async fn committed(
         exchange(owner, admitted, action).await?,
         (CommandStatus::Accepted, reply.clone())
     );
+    if prove_chest_readers {
+        let mut stale = *admitted;
+        stale.continuity.connection_generation += 1;
+        assert_eq!(
+            owner
+                .item_forge(stale, admitted.continuity.next_command_id, action, None)
+                .await,
+            Some(Vec::new()),
+            "an incorrect connection generation cannot replay a chest receipt"
+        );
+    }
     assert_eq!(
         assets(h).await?,
         after,
