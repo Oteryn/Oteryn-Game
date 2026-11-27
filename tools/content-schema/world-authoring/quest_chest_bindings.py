@@ -253,6 +253,7 @@ def supported_claim(definition):
 
 
 OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
+OUTLAW_TREASURE_DOOR = ((32620, 32199, 10), 6251, 3304)
 
 
 def source_key_claim(definition):
@@ -741,9 +742,12 @@ def selections(root=ROOT):
                 or terminal["position"] != [32620, 32198, 10]
                 or terminal["appearance"] != 2472
                 or terminal["unique"] != 14091
-                or passage["position"] != [32620, 32199, 10]
-                or passage["appearance"] != 6251
-                or passage["action"] != 3303
+                or (
+                    tuple(passage["position"]),
+                    passage["appearance"],
+                    passage["action"],
+                )
+                != OUTLAW_TREASURE_DOOR
             ):
                 raise ValueError("OUTLAW_CAMP_SOURCE_SELECTOR_DRIFT")
             for rows, row in ((bindings, terminal), (doors, passage)):
@@ -1048,6 +1052,7 @@ def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=N
     if not selected:
         return raw, 0, 0
     sectors, found, added = {}, set(), 0
+    updated = False
     for local, offset, length in table:
         payload = codec.zstandard.ZstdDecompressor().decompress(
             raw[offset : offset + length], max_output_size=codec.MAX_SECTOR_BYTES
@@ -1095,24 +1100,31 @@ def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=N
             slot = slots[0]
             index, depth, attrs = items[slot]
             previous = (attrs or {}).get(attribute)
-            if previous is not None and previous != row[attribute]:
+            # Earlier Outlaw authoring put the mine key on the treasure door.
+            replacing_outlaw_lock = (
+                attribute == "action"
+                and previous == 3303
+                and (position, row["appearance"], row["action"]) == OUTLAW_TREASURE_DOOR
+            )
+            if previous not in (None, row[attribute]) and not replacing_outlaw_lock:
                 raise ValueError(f"QUEST_CHEST_UID_CONFLICT: {position}")
-            if previous is None:
+            if previous != row[attribute]:
                 items[slot] = (
                     index,
                     depth,
                     {**(attrs or {}), attribute: row[attribute]},
                 )
-                added += 1
+                added += previous is None
                 changed = True
             found.add(position)
         sectors[local] = (
             codec.encode_sector_tiles(sx, sy, tiles) if changed else payload
         )
+        updated |= changed
     if found != set(selected):
         raise ValueError(f"QUEST_CHEST_TILE_MISSING: {sorted(set(selected) - found)}")
     return (
-        (codec.encode_region(z, rx, ry, sectors) if added else raw),
+        (codec.encode_region(z, rx, ry, sectors) if updated else raw),
         len(found),
         added,
     )

@@ -47,7 +47,7 @@
     "passage": {
       "position": [32620, 32199, 10],
       "appearance": 6251,
-      "action": 3303,
+      "action": 3304,
       "source": "data-global/startup/tables/door_key.lua:218-221"
     }
   }

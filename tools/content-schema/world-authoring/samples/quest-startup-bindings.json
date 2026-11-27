@@ -300,6 +300,30 @@
     },
     {
       "position": [
+        32602,
+        31975,
+        14
+      ],
+      "item": 7714,
+      "attribute": "action",
+      "action": 3802,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 130
+    },
+    {
+      "position": [
+        32614,
+        32175,
+        9
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "action": 3303,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 214
+    },
+    {
+      "position": [
         32774,
         32289,
         10
