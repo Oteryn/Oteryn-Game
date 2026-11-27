@@ -117,12 +117,13 @@ fn shifted_loot_click_names_only_the_pointed_corpse() -> Result<(), Box<dyn std:
     let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
         return Err("loot command".into());
     };
+    let request = oteryn_client_ui::quick_loot::decode_quick_loot_request(&command.payload)
+        .map_err(|error| format!("{error:?}"))?;
     assert_eq!(
-        oteryn_client_ui::quick_loot::decode_quick_loot_request(&command.payload)
-            .map_err(|e| format!("{e:?}"))?
-            .corpse,
-        Some(id)
+        request.action,
+        oteryn_client_ui::quick_loot::QuickLootAction::LootAll
     );
+    assert_eq!(request.corpse, Some(id));
     // A second click while the server handles the first still belongs to looting.
     assert!(play.loot_click(
         &link,

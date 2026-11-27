@@ -82,7 +82,7 @@ impl PlayView {
         if entity.kind != oteryn_session::EntityKind::Corpse {
             return false;
         }
-        link.quick_loot_action(oteryn_client_ui::quick_loot::Action::Corpse(
+        link.quick_loot_action(oteryn_client_ui::quick_loot::Action::LootAllFrom(
             entity.entity.identity,
         ));
         true

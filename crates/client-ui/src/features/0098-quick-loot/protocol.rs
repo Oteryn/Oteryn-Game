@@ -5,6 +5,7 @@ use oteryn_client_runtime::server_mechanic::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     LootAll,
+    LootAllFrom([u8; 16]),
     Corpse([u8; 16]),
     CorpseItem {
         corpse: [u8; 16],
@@ -45,6 +46,7 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     };
     match &action {
         Action::LootAll => {}
+        Action::LootAllFrom(id) => wire.corpse = Some(*id),
         Action::Corpse(id) => {
             wire.action = QuickLootAction::Click;
             wire.corpse = Some(*id);
@@ -134,8 +136,11 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         return false;
     }
     if can_confirm && let Ok(result) = decode_quick_loot_result(&response.payload) {
-        let looted = matches!(action, Action::LootAll | Action::Corpse(_));
-        if !matches!(action, Action::LootAll | Action::Corpse(_)) {
+        let looted = matches!(
+            action,
+            Action::LootAll | Action::LootAllFrom(_) | Action::Corpse(_)
+        );
+        if !looted {
             if panel.confirmed.len() == 100 {
                 panel.confirmed.remove(0);
             }

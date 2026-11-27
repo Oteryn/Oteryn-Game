@@ -764,10 +764,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.armor, false),
                 (expected.filtered, false),
                 (expected.spare, false),
-                (expected.other, false),
-                (expected.listed, false),
             ],
-            Some("Looted 1 of 6 items"),
+            Some("Looted 1 of 4 items"),
         ),
         (gold_main.clone(), &[], None),
         (armor(false), &[], None),
@@ -785,10 +783,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.armor, false),
                 (expected.filtered, false),
                 (expected.spare, false),
-                (expected.other, false),
-                (expected.listed, false),
             ],
-            Some("Looted 0 of 5 items"),
+            Some("Looted 0 of 3 items"),
         ),
         (armor(true), &[], None),
         (
@@ -797,10 +793,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.armor, true),
                 (expected.filtered, false),
                 (expected.spare, false),
-                (expected.other, false),
-                (expected.listed, false),
             ],
-            Some("Looted 1 of 5 items"),
+            Some("Looted 1 of 3 items"),
         ),
         (click.clone(), &[], None),
         (Action::Select(skip), &[], None),
@@ -820,12 +814,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (
             Action::LootAll,
-            &[
-                (expected.other, false),
-                (expected.listed, false),
-                (expected.spare, false),
-            ],
-            Some("Looted 0 of 3 items"),
+            &[(expected.other, false), (expected.listed, false)],
+            Some("Looted 0 of 2 items"),
         ),
         (
             if full {
@@ -843,12 +833,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (
             Action::LootAll,
-            &[
-                (expected.other, true),
-                (expected.listed, false),
-                (expected.spare, false),
-            ],
-            Some("Looted 1 of 3 items"),
+            &[(expected.other, true), (expected.listed, false)],
+            Some("Looted 1 of 2 items"),
         ),
         (
             route(
@@ -874,11 +860,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let mut sessions = [String::new(), String::new()];
     let mut previous = (0, 0);
     let mut probes: Vec<_> = (1..=20).zip(steps).collect();
-    let unassigned_items = [
-        (expected.other, false),
-        (expected.listed, false),
-        (expected.spare, false),
-    ];
+    let unassigned_items = [(expected.other, false), (expected.listed, false)];
     if full {
         probes.splice(
             14..14,
@@ -901,12 +883,20 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     (
                         Action::LootAll,
                         &unassigned_items[..],
-                        Some("Looted 0 of 3 items"),
+                        Some("Looted 0 of 2 items"),
                     ),
                 ),
                 (23, (main.clone(), &[][..], None)),
             ],
         );
+    }
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct LootTile {
+        x: i32,
+        y: i32,
+        floor: i16,
+        corpses: Vec<([u8; 16], u64)>,
     }
     let gold_pouch = route(
         Some(QuickLootCategory::Gold),
@@ -987,16 +977,63 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             continue;
         }
         let mode = |mode| (mode as u8).to_string();
-        let dispatched = if matches!(key, 4 | 5 | 7 | 24)
+        let dispatched = if action == Action::LootAll {
+            let tile: LootTile = serde_json::from_slice(
+                &std::fs::read(directory.join(format!("i07-{key}-tile.json"))).map_err(
+                    |error| format!("I07 probe {key} requires the live clicked tile: {error}"),
+                )?,
+            )?;
+            assert_eq!(
+                tile.corpses.len(),
+                if key >= 15 { 2 } else { 1 },
+                "I07 probe {key}"
+            );
+            let position = oteryn_session::ActorPosition {
+                x: tile.x,
+                y: tile.y,
+                floor: tile.floor,
+            };
+            outbox.entities(
+                tile.corpses
+                    .into_iter()
+                    .map(
+                        |(identity, generation)| oteryn_session::WorldSpatialEntity {
+                            motion: None,
+                            display_name: None,
+                            kind: oteryn_session::EntityKind::Corpse,
+                            entity: oteryn_session::EntityRef {
+                                identity,
+                                generation,
+                            },
+                            position,
+                            detail: oteryn_session::EntityDetail::Object {
+                                item_definition_ref: expected.corpse_definition,
+                                quantity: 1,
+                                item_handle: None,
+                            },
+                        },
+                    )
+                    .collect(),
+            );
+            let click = oteryn_renderer::TileCoord::new(tile.x, tile.y);
+            let mut view = crate::play::PlayView::new(click, tile.floor, &[])?;
+            let mut preferences = view.preferences().clone();
+            preferences.gameplay.loot_click = 1;
+            view.set_preferences(preferences)?;
+            let link = ui::link(&app)?;
+            view.tick(link)
+                .map_err(|error| format!("I07 probe {key} ground click view: {error:?}"))?;
+            view.loot_click(link, click, true, None)
+        } else if matches!(key, 4 | 5 | 7 | 24)
             || matches!(
                 &action,
-                Action::LootAll
-                    | Action::Select(_)
+                Action::Select(_)
                     | Action::Destination {
                         recipient: QuickLootRecipient::MainContainer,
                         ..
                     }
-            ) {
+            )
+        {
             let control = format!("{action:?}");
             ui::click_action(&mut app, action)
                 .map_err(|error| format!("I07 probe {key} control {control}: {error}"))?;

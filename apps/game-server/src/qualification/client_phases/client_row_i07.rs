@@ -292,6 +292,60 @@ struct Capture<'a> {
 }
 
 impl Capture<'_> {
+    async fn loot_all(
+        &mut self,
+        client: &mut oteryn_dev_client::DevClientSession,
+        key: usize,
+        east_stack: bool,
+        expected: &[(&Placement, bool)],
+    ) -> TestResult {
+        use oteryn_protocol_oteryn::world_spatial_entities::EntityKind;
+        let actor = client.world_spatial().actor_position;
+        let x = actor
+            .x
+            .checked_add(i32::from(east_stack))
+            .ok_or("I07 corpse tile overflow")?;
+        let corpses: Vec<_> = client
+            .world_entities()
+            .ok_or("I07 live corpse view missing")?
+            .others()
+            .filter(|entity| {
+                entity.kind == EntityKind::Corpse
+                    && entity.position.x == x
+                    && entity.position.y == actor.y
+                    && entity.position.floor == actor.floor
+            })
+            .collect();
+        if corpses.len() != if east_stack { 2 } else { 1 } {
+            return Err(format!("I07 probe {key} expected the exact corpse tile stack").into());
+        }
+        let anchor = corpses
+            .last()
+            .ok_or("I07 missing selected corpse")?
+            .entity
+            .identity;
+        let entities: Vec<_> = corpses
+            .iter()
+            .map(|entry| (entry.entity.identity, entry.entity.generation))
+            .collect();
+        write_capture(
+            &self.directory.join(format!("i07-{key}-tile.json")),
+            &serde_json::to_vec(&serde_json::json!({
+                "x": x, "y": actor.y, "floor": actor.floor, "corpses": entities,
+            }))?,
+        )?;
+        self.probe(
+            client,
+            key,
+            QuickLootRequest {
+                corpse: Some(anchor),
+                ..request(QuickLootAction::LootAll)
+            },
+            expected,
+        )
+        .await
+    }
+
     async fn probe(
         &mut self,
         client: &mut oteryn_dev_client::DevClientSession,
@@ -690,17 +744,15 @@ pub(super) async fn journey(
     // Restore a distinct Unassigned route before testing Gold transfer.
     capture.probe(&mut client, 5, unassigned, &[]).await?;
     capture
-        .probe(
+        .loot_all(
             &mut client,
             6,
-            request(QuickLootAction::LootAll),
+            false,
             &[
                 (coin, true),
                 (armor, false),
                 (filtered, false),
                 (spare, false),
-                (other, false),
-                (listed, false),
             ],
         )
         .await?;
@@ -729,17 +781,11 @@ pub(super) async fn journey(
     require_filters(&mut database, character, true, &expected_filters).await?;
     require_routes(&mut database, character, &pouch, false, true, full, false).await?;
     capture
-        .probe(
+        .loot_all(
             &mut client,
             10,
-            request(QuickLootAction::LootAll),
-            &[
-                (armor, false),
-                (filtered, false),
-                (spare, false),
-                (other, false),
-                (listed, false),
-            ],
+            false,
+            &[(armor, false), (filtered, false), (spare, false)],
         )
         .await?;
     let remaining = [armor.clone(), filtered.clone(), spare.clone()];
@@ -828,17 +874,11 @@ pub(super) async fn journey(
     .await?;
     capture.previous = capture_restore(&mut fresh, capture_dir, "relog-restore").await?;
     capture
-        .probe(
+        .loot_all(
             &mut fresh,
             12,
-            request(QuickLootAction::LootAll),
-            &[
-                (armor, true),
-                (filtered, false),
-                (spare, false),
-                (other, false),
-                (listed, false),
-            ],
+            false,
+            &[(armor, true), (filtered, false), (spare, false)],
         )
         .await?;
     expected_backpack.push(bag_armor);
@@ -959,12 +999,7 @@ pub(super) async fn journey(
             return Err("I07 expected Unassigned to resolve to the exact Inbox pouch".into());
         }
         capture
-            .probe(
-                &mut fresh,
-                22,
-                request(QuickLootAction::LootAll),
-                &[(other, false), (listed, false), (spare, false)],
-            )
+            .loot_all(&mut fresh, 22, true, &[(other, false), (listed, false)])
             .await?;
         require_placements(
             &mut database,
@@ -1024,12 +1059,7 @@ pub(super) async fn journey(
         }
     }
     capture
-        .probe(
-            &mut fresh,
-            16,
-            request(QuickLootAction::LootAll),
-            &[(other, false), (listed, false), (spare, false)],
-        )
+        .loot_all(&mut fresh, 16, true, &[(other, false), (listed, false)])
         .await?;
     require_placements(
         &mut database,
@@ -1059,12 +1089,7 @@ pub(super) async fn journey(
     };
     capture.probe(&mut fresh, 17, late_main, &[]).await?;
     capture
-        .probe(
-            &mut fresh,
-            18,
-            request(QuickLootAction::LootAll),
-            &[(other, true), (listed, false), (spare, false)],
-        )
+        .loot_all(&mut fresh, 18, true, &[(other, true), (listed, false)])
         .await?;
     // The starter backpack already contains one of this food. The transfer merges
     // into that existing identity and slot rather than placing the corpse identity.
