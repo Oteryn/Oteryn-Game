@@ -58,6 +58,11 @@ BEGIN
     OR ((l->>'quantity_after')::bigint=0 AND (l->>'tier_after')::int<>0)
     OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=i.item_instance_id)
   THEN RAISE EXCEPTION 'Forge input changed custody, state or tier' USING ERRCODE='23514'; END IF;
+  -- Timed owners retain custody of scheduled instances until their own settlement.
+  IF EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
+    OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules WHERE item_instance_id=i.item_instance_id)
+    OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules WHERE item_instance_id=i.item_instance_id)
+  THEN RAISE EXCEPTION 'Forge input is owned by an item timer' USING ERRCODE='23514'; END IF;
   IF NEW.operation BETWEEN 1 AND 4 AND n<=2 THEN
    IF i.quantity<>1 OR (l->>'quantity_after')::bigint NOT IN(0,1)
       OR (n=1 AND i.item_instance_id IS DISTINCT FROM r.first_item_instance_id)
@@ -72,9 +77,6 @@ BEGIN
       OR (NEW.operation BETWEEN 1 AND 4 AND (l->>'quantity_after')::bigint>=i.quantity)
       OR EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=i.item_instance_id)
       OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=i.item_instance_id)
-      OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
-      OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules WHERE item_instance_id=i.item_instance_id)
-      OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules WHERE item_instance_id=i.item_instance_id)
       OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)
    THEN RAISE EXCEPTION 'Forge material requires plain native resource units' USING ERRCODE='23514'; END IF;
   END IF;

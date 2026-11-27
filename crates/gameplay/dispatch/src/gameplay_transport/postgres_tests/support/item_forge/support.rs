@@ -54,6 +54,7 @@ pub(in super::super) enum Case {
     Integrity,
     Chest(Operation),
     ChestFull,
+    ChestScheduledInputs,
     ChestGuards(Operation),
     CoreRefusal,
     MixedFee,
@@ -135,6 +136,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             | Case::Items(_)
             | Case::Chest(_)
             | Case::ChestFull
+            | Case::ChestScheduledInputs
             | Case::ChestGuards(_)
             | Case::Integrity
             | Case::CoreRefusal
@@ -314,6 +316,14 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             Case::ChestFull => {
                 super::super::item_forge_fusion_fixtures::full_inventory(&h, &owner, &mut admitted)
                     .await?
+            }
+            Case::ChestScheduledInputs => {
+                super::super::item_forge_fusion_fixtures::scheduled_inputs(
+                    &h,
+                    &owner,
+                    &mut admitted,
+                )
+                .await?
             }
             Case::ChestGuards(operation) => {
                 super::super::item_forge_integrity_fixtures::chest_guards(&h, &admitted, operation)
