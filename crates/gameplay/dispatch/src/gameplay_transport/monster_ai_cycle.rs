@@ -884,7 +884,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             continue;
                         };
                         if selected.target.is_none() {
-                            record_melee_outcome(*actor, "missed", "no_native_target");
+                            // The legacy swing pass also scans native profiles. A source
+                            // entry without a selection has no swing to resolve this turn.
                             continue;
                         }
                         Some(selected)
@@ -930,12 +931,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .iter()
                             .map(|index| (targets[*index].0, targets[*index].2)),
                     );
-                    // CREATURE-AI-1 §2.1: the swing goes only at the target the think decided.
+                    // Native melee keeps the exact recipient of this source occurrence.
+                    // The legacy swing uses the creature's current think target.
                     let perceived = think_target_only(
-                        melee_owner
-                            .creature_ai
-                            .state(*actor)
-                            .and_then(|state| state.target()),
+                        native_selection.map_or_else(
+                            || {
+                                melee_owner
+                                    .creature_ai
+                                    .state(*actor)
+                                    .and_then(|state| state.target())
+                            },
+                            |selected| selected.target,
+                        ),
                         indices.iter().map(|index| {
                             (
                                 targets[*index].0,

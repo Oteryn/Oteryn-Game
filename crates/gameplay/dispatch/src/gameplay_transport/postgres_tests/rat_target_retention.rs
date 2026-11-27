@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id};
 use super::loop_monster_fixtures::fixture::run_case;
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::ai_monster_melee::Dispatch;
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::ComposedFreshAdmission;
@@ -199,6 +200,7 @@ async fn scenario(harness: &Harness) -> TestResult {
             .interval_ms
             * 1_000
     };
+    assert_eq!(interval_us, 2_000_000, "pinned Rat melee interval");
     // The authored range includes zero. Allow one further attack interval for a zero roll.
     let deadline = now.get() + 2 * interval_us;
     while now.get() < deadline {
@@ -223,7 +225,7 @@ async fn scenario(harness: &Harness) -> TestResult {
                         )
                 })
             {
-                return Ok(());
+                return assert_retained_cadence(&owner, &mut now, rat, caster.0, interval_us).await;
             }
         }
     }
@@ -231,6 +233,48 @@ async fn scenario(harness: &Harness) -> TestResult {
         format!("Rat {exact:?} landed no attributed melee within two authored attack intervals")
             .into(),
     )
+}
+
+async fn assert_retained_cadence(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: &mut SemanticTimeMicros,
+    rat: ExactActorRef,
+    caster: ExactActorRef,
+    interval_us: u64,
+) -> TestResult {
+    // Skip the intermediate think on purpose. Each authored melee deadline
+    // must resolve a new source occurrence against the still-adjacent caster.
+    let mut previous = None;
+    for _ in 0..3 {
+        advance_by(owner, now, Duration::from_micros(interval_us)).await?;
+        let states = owner.states.spell_states.lock().await;
+        let ai = &states.monster_melee.creature_ai;
+        assert_eq!(ai.state(rat).and_then(|state| state.target()), Some(caster));
+        let selected = ai
+            .native_melee_selection(rat, 0)
+            .ok_or("native attack entry")?;
+        assert_eq!(
+            selected.target,
+            Some(caster),
+            "due Rat swing at {}",
+            now.get()
+        );
+        assert_ne!(Some(selected.occurrence), previous, "new source occurrence");
+        previous = Some(selected.occurrence);
+        let (sequence, outcome) = states
+            .monster_melee
+            .last_native_melee_for_test(rat, 0)
+            .ok_or("due Rat swing reached the melee owner")?;
+        assert_eq!(sequence, selected.occurrence.sequence);
+        // A committed bite includes complete mitigation. The authored Rat can
+        // also roll zero, which the owner records before mitigation.
+        assert!(
+            matches!(outcome, Dispatch::Bite(Ok(_)) | Dispatch::ZeroDamage),
+            "due Rat swing at {}: {outcome:?}",
+            now.get()
+        );
+    }
+    Ok(())
 }
 
 fn player(runtime: &mut ChannelRuntimeV1, session: GameSessionId) -> TestResult<Player> {
@@ -292,7 +336,19 @@ async fn advance(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     now: &mut SemanticTimeMicros,
 ) -> TestResult {
-    let interval = Duration::from_millis(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS);
+    advance_by(
+        owner,
+        now,
+        Duration::from_millis(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS),
+    )
+    .await
+}
+
+async fn advance_by(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    now: &mut SemanticTimeMicros,
+    interval: Duration,
+) -> TestResult {
     // SQL deadlines retain the real clock. Advance only the owner time between turns.
     tokio::time::pause();
     let start = tokio::time::Instant::now();
