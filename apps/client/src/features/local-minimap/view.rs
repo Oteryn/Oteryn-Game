@@ -56,7 +56,6 @@ impl MinimapMemory {
                 == self.tiles.len()
             && self.marks.iter().all(|m| {
                 (0..=15).contains(&m.floor)
-                    && !m.label.is_empty()
                     && m.label.len() <= 64
                     && !m.label.chars().any(char::is_control)
             })
@@ -69,7 +68,7 @@ impl MinimapMemory {
         next.marks.push(mark);
         if !next.valid() {
             return Err(io::Error::other(
-                "Invalid marker: use a label of 1–64 bytes and a valid floor",
+                "Invalid marker: use a label of up to 64 bytes and a valid floor",
             ));
         }
         *self = next;

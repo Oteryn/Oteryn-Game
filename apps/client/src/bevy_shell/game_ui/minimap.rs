@@ -50,6 +50,7 @@ struct State {
 struct MiniImage(u64);
 pub(super) fn install(app: &mut App) {
     markers::install(app);
+    mouse::install(app);
     app.add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (project, shortcuts, camera_label).chain());
 }
@@ -149,7 +150,7 @@ fn project(
             },
         ))
         .observe(click)
-        .observe(markers::click)
+        .observe(mouse::secondary_click)
         .observe(mouse::press)
         .observe(mouse::drag)
         .observe(mouse::scroll)

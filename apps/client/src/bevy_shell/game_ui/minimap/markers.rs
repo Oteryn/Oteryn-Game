@@ -5,7 +5,7 @@ use bevy::{
     text::EditableText,
     ui_widgets::{Activate, TextInput},
 };
-type MarkerKey = (u64, (i32, i32, i16), u64);
+pub(super) type MarkerKey = (u64, (i32, i32, i16), u64);
 #[derive(Resource, Default)]
 pub(super) struct Editor {
     at: Option<MarkerKey>,
@@ -37,49 +37,8 @@ pub(super) fn install(app: &mut App) {
                 .before(bevy::ui::UiSystems::Stack),
         );
 }
-pub(super) fn click(
-    event: On<PointerClick>,
-    nodes: Query<(&MiniImage, &RelativeCursorPosition)>,
-    owner: NonSend<HostOwner>,
-    guard: super::super::modal::ModalGuard,
-    mut editor: ResMut<Editor>,
-) {
-    if event.button != bevy::picking::pointer::PointerButton::Secondary
-        || owner.modal_active()
-        || !guard.allows(event.entity)
-    {
-        return;
-    }
-    let Ok((node, cursor)) = nodes.get(event.entity) else {
-        return;
-    };
-    let Some(point) = image_position(cursor) else {
-        return;
-    };
-    let Some(play) = &owner.play else {
-        return;
-    };
-    if node.0 != owner.generation() || play.view.gameplay_input_blocked(&play.link) {
-        return;
-    }
-    let (x, y, floor, zoom, _) = play.view.minimap_camera();
-    let (Some(x), Some(y)) = (
-        x.checked_add(((point.x * 31.) as i32 - 15) * zoom),
-        y.checked_add(((point.y * 25.) as i32 - 12) * zoom),
-    ) else {
-        return;
-    };
-    if !(0..=65535).contains(&x) || !(0..=65535).contains(&y) {
-        return;
-    }
-    editor.open((
-        owner.generation(),
-        (x, y, floor),
-        play.view.minimap_binding_generation(),
-    ));
-}
 impl Editor {
-    fn open(&mut self, key: MarkerKey) {
+    pub(super) fn open(&mut self, key: MarkerKey) {
         self.at = Some(key);
     }
 
@@ -164,7 +123,7 @@ fn project(
             label.clone_from(&mark.label);
         }
     }
-    if label.is_empty() {
+    if !existing {
         label = "Mark".into();
     }
     let icons = commands
@@ -381,7 +340,7 @@ fn finish(
         let mut preferences = owner.settings.preferences.clone();
         preferences.minimap.marks[index].label = label;
         if !preferences.minimap.valid() {
-            owner.status = "Invalid marker: use a label of 1–64 bytes and a valid floor".into();
+            owner.status = "Invalid marker: use a label of up to 64 bytes and a valid floor".into();
             return;
         }
         owner

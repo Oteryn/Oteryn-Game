@@ -379,6 +379,26 @@ mod foreground_click {
 }
 
 fn open_marker_editor(app: &mut App) -> TestResult {
+    secondary_click(app, Vec2::ZERO)?;
+    select_set_mark(app)
+}
+
+fn select_set_mark(app: &mut App) -> TestResult {
+    assert_no_mark_editor(app);
+    activate(app, "Set Mark")
+}
+
+fn assert_no_mark_editor(app: &mut App) {
+    assert_eq!(
+        app.world_mut()
+            .query::<&bevy::text::EditableText>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+}
+
+fn secondary_click(app: &mut App, normalized: Vec2) -> TestResult {
     use bevy::picking::{
         backend::HitData,
         events::Pointer,
@@ -388,10 +408,14 @@ fn open_marker_editor(app: &mut App) -> TestResult {
         .world_mut()
         .query_filtered::<Entity, With<MiniImage>>()
         .single(app.world())?;
+    let camera = app
+        .world_mut()
+        .query_filtered::<Entity, With<IsDefaultUiCamera>>()
+        .single(app.world())?;
     app.world_mut()
         .entity_mut(image)
         .insert(RelativeCursorPosition {
-            normalized: Some(Vec2::ZERO),
+            normalized: Some(normalized),
             ..default()
         });
     app.world_mut().trigger(PointerClick {
@@ -407,7 +431,7 @@ fn open_marker_editor(app: &mut App) -> TestResult {
             },
         ),
         button: PointerButton::Secondary,
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        hit: HitData::new(camera, 0., Some(normalized.extend(0.)), None),
         duration: std::time::Duration::ZERO,
         count: 1,
     });

@@ -667,8 +667,8 @@ impl N07dHost {
         super::game_ui::minimap::replay::activate(&mut self.0, name)
     }
 
-    pub(crate) fn edit_mark_at_cell(&mut self, cell: [i32; 2]) -> Result<(), String> {
-        super::game_ui::minimap::replay::edit(&mut self.0, cell)
+    pub(crate) fn open_mark_menu_at_cell(&mut self, cell: [i32; 2]) -> Result<(), String> {
+        super::game_ui::minimap::replay::open_menu(&mut self.0, cell)
     }
 
     pub(crate) fn enter_mark_description(&mut self, label: &str) -> Result<(), String> {

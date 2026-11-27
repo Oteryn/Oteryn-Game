@@ -1,9 +1,15 @@
 //! Pointer gestures share the camera and marker state used by the minimap projection.
-use super::*;
+use super::{
+    super::{hud_panes::context_menu, modal::ModalGuard},
+    markers::{Editor, MarkerKey},
+    *,
+};
+use crate::bevy_shell::gameplay_dialogs::popup;
 use bevy::picking::{
     events::{PointerDrag, PointerScroll},
     pointer::PointerButton,
 };
+use bevy::ui_widgets::Activate;
 
 #[derive(Component, Default)]
 pub(super) struct DragState {
@@ -102,4 +108,141 @@ pub(super) fn scroll(
 }
 pub(super) fn was_dragged(state: &mut DragState) -> bool {
     std::mem::take(&mut state.dragged)
+}
+
+#[derive(Resource, Default)]
+pub(super) struct MarkMenu(Option<(Entity, MarkerKey)>);
+
+pub(super) fn install(app: &mut App) {
+    app.init_resource::<MarkMenu>()
+        .add_systems(Update, close_stale_menu);
+}
+
+pub(super) fn secondary_click(
+    event: On<PointerClick>,
+    nodes: Query<&MiniImage>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    (skins, scale): (Res<Skins>, Option<Res<UiScale>>),
+    mut menu: ResMut<MarkMenu>,
+    mut commands: Commands,
+) {
+    if event.button != PointerButton::Secondary
+        || menu.0.is_some()
+        || owner.modal_active()
+        || !guard.allows(event.entity)
+    {
+        return;
+    }
+    let Ok(node) = nodes.get(event.entity) else {
+        return;
+    };
+    // Bevy UI picking reports coordinates centred on the entire image, including its crop.
+    let Some(hit) = event.hit.position else {
+        return;
+    };
+    let point = hit.truncate() + Vec2::splat(0.5);
+    if !(0.0..1.0).contains(&point.x) || !(0.0..1.0).contains(&point.y) {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if node.0 != owner.generation() || play.view.gameplay_input_blocked(&play.link) {
+        return;
+    }
+    let (x, y, floor, zoom, _) = play.view.minimap_camera();
+    let (Some(x), Some(y)) = (
+        x.checked_add(((point.x * 31.) as i32 - 15) * zoom),
+        y.checked_add(((point.y * 25.) as i32 - 12) * zoom),
+    ) else {
+        return;
+    };
+    if !(0..=65535).contains(&x) || !(0..=65535).contains(&y) {
+        return;
+    }
+
+    let look = popup::Look {
+        font: skins.font.clone(),
+        frame: skins.frame.clone(),
+        checked: None,
+        unchecked: None,
+    };
+    let (opened, layer) = context_menu::spawn(
+        &mut commands,
+        &look,
+        event.pointer.location().position,
+        scale.as_deref(),
+        &[popup::Item::entry("Set Mark")],
+    );
+    commands.entity(opened.scrim).observe(dismiss_menu);
+    for entry in opened.entries {
+        commands
+            .entity(entry)
+            .insert(Name::new("Set Mark"))
+            .observe(set_mark);
+    }
+    let key = (
+        node.0,
+        (x, y, floor),
+        play.view.minimap_binding_generation(),
+    );
+    menu.0 = Some((layer, key));
+}
+
+impl MarkMenu {
+    fn close(&mut self, commands: &mut Commands) -> Option<MarkerKey> {
+        let (layer, key) = self.0.take()?;
+        commands.entity(layer).despawn();
+        Some(key)
+    }
+}
+
+fn menu_target_is_current(owner: &HostOwner, key: MarkerKey) -> bool {
+    key.0 == owner.generation()
+        && !owner.modal_active()
+        && owner.play.as_ref().is_some_and(|play| {
+            key.2 == play.view.minimap_binding_generation()
+                && !play.view.gameplay_input_blocked(&play.link)
+        })
+}
+
+fn close_stale_menu(
+    owner: NonSend<HostOwner>,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut menu: ResMut<MarkMenu>,
+    mut commands: Commands,
+) {
+    if let Some((_, key)) = menu.0
+        && (keys.just_pressed(KeyCode::Escape) || !menu_target_is_current(&owner, key))
+    {
+        menu.close(&mut commands);
+    }
+}
+
+fn dismiss_menu(
+    event: On<PointerClick>,
+    guard: ModalGuard,
+    mut menu: ResMut<MarkMenu>,
+    mut commands: Commands,
+) {
+    if guard.allows(event.entity) {
+        menu.close(&mut commands);
+    }
+}
+
+fn set_mark(
+    event: On<Activate>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut menu: ResMut<MarkMenu>,
+    mut editor: ResMut<Editor>,
+    mut commands: Commands,
+) {
+    if guard.allows(event.entity)
+        && let Some(key) = menu.close(&mut commands)
+        && menu_target_is_current(&owner, key)
+    {
+        editor.open(key);
+    }
 }

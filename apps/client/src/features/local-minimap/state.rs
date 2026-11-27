@@ -16,6 +16,12 @@ mod transfer;
 #[path = "state/viewport.rs"]
 mod viewport;
 
+fn valid_marker_description(label: &str) -> bool {
+    label.len() <= 128
+        && (label.is_empty() || !label.trim().is_empty())
+        && !label.chars().any(char::is_control)
+}
+
 pub type SharedMinimap = std::sync::Arc<std::sync::Mutex<Minimap>>;
 pub fn lock(shared: &SharedMinimap) -> std::sync::MutexGuard<'_, Minimap> {
     shared

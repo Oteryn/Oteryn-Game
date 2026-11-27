@@ -197,9 +197,7 @@ impl Saved {
                     || !(0..=65535).contains(&m.y)
                     || !(0..=15).contains(&m.floor)
                     || m.color > 3
-                    || m.label.trim().is_empty()
-                    || m.label.len() > 128
-                    || m.label.chars().any(char::is_control)
+                    || !valid_marker_description(&m.label)
             })
         {
             return Err(io::Error::other(tr!("Invalid minimap file")));
