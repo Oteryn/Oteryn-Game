@@ -510,6 +510,7 @@ pub(super) async fn prepare_with_current_restrictions(
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
     current: &AcquisitionOwnerFacts,
+    read: &mut RuneReadEvidence,
 ) -> Result<PreparedCorpseCompanion, SpellCastDisposition> {
     if !applicable(spell)
         || book.indexed(intent.spell) != Some(spell)
@@ -531,6 +532,11 @@ pub(super) async fn prepare_with_current_restrictions(
         || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
     {
+        read.log(
+            command.command_id().get(),
+            "corpse_authority",
+            RuneReadReason::GenerationMismatch,
+        );
         return reject();
     }
     let group = crate::durability::spell_familiar_group::read_current_group_in_transaction(
@@ -563,9 +569,14 @@ pub(super) async fn prepare_with_current_restrictions(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    let position = runtime
-        .read_actor_position(b.actor)
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+    let position = runtime.read_actor_position(b.actor).map_err(|_| {
+        read.log(
+            command.command_id().get(),
+            "corpse_caster_position",
+            RuneReadReason::PositionMismatch,
+        );
+        SpellCastDisposition::Rejected
+    })?;
     let origin = tile(position.position());
     let target = match intent.target {
         SpellTarget::Position(p) => TilePosition {
@@ -578,7 +589,15 @@ pub(super) async fn prepare_with_current_restrictions(
     let mut tiles = BTreeMap::new();
     tiles.insert(
         origin,
-        read_tile(tx, authority, room, runtime, objects, origin).await?,
+        read_tile(tx, authority, room, runtime, objects, origin)
+            .await
+            .inspect_err(|_| {
+                read.log(
+                    command.command_id().get(),
+                    "corpse_origin_tile",
+                    RuneReadReason::TileRead,
+                )
+            })?,
     );
     // The corpse must be a real existing placed map cell, with the current
     // initialized map/door owners checked independently of the Item receipt.
@@ -591,7 +610,20 @@ pub(super) async fn prepare_with_current_restrictions(
         cell(target),
     )
     .await
-    .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    .map_err(|error| {
+        use crate::spell::world_execution::WorldRelocationError;
+        let reason = match &error {
+            WorldRelocationError::Items(error) => RuneReadReason::corpse(error),
+            WorldRelocationError::AuthorityMismatch
+            | WorldRelocationError::GroundAddress("native tile read generation mismatch") => {
+                RuneReadReason::GenerationMismatch
+            }
+            WorldRelocationError::GroundAddress(_) => RuneReadReason::PositionMismatch,
+            _ => RuneReadReason::TileRead,
+        };
+        read.log(command.command_id().get(), "corpse_target_tile", reason);
+        SpellCastDisposition::NotAvailable
+    })?;
     let target_flags = TileFlags {
         projectile: target_fact.block_projectile(),
         solid: target_fact.block_solid(),
@@ -600,13 +632,26 @@ pub(super) async fn prepare_with_current_restrictions(
         present: target_fact.ground_present(),
     };
     if !target_flags.present {
+        read.log(
+            command.command_id().get(),
+            "corpse_target_tile",
+            RuneReadReason::PositionMismatch,
+        );
         return Err(SpellCastDisposition::TargetIllegal);
     }
     for (p, exempt) in sight_steps(origin, target)? {
         if !exempt && p != target && !tiles.contains_key(&p) {
             tiles.insert(
                 p,
-                read_tile(tx, authority, room, runtime, objects, p).await?,
+                read_tile(tx, authority, room, runtime, objects, p)
+                    .await
+                    .inspect_err(|_| {
+                        read.log(
+                            command.command_id().get(),
+                            "corpse_sight_tile",
+                            RuneReadReason::TileRead,
+                        )
+                    })?,
             );
         }
     }
@@ -636,20 +681,44 @@ pub(super) async fn prepare_with_current_restrictions(
         now,
         &caster,
     )?;
-    let address = SpellGroundTarget::for_native_tile_read(room, runtime, cell(target))
-        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    let address =
+        SpellGroundTarget::for_native_tile_read(room, runtime, cell(target)).map_err(|error| {
+            let reason = if error == "native tile read generation mismatch" {
+                RuneReadReason::GenerationMismatch
+            } else {
+                RuneReadReason::PositionMismatch
+            };
+            read.log(command.command_id().get(), "corpse_address", reason);
+            SpellCastDisposition::NotAvailable
+        })?;
     let reference = item_tx::current_top_corpse_definition_in_transaction(tx, authority, &address)
         .await
-        .map_err(|_| SpellCastDisposition::TargetIllegal)?;
+        .map_err(|error| {
+            read.log(
+                command.command_id().get(),
+                "corpse_top",
+                RuneReadReason::corpse(&error),
+            );
+            SpellCastDisposition::TargetIllegal
+        })?;
     let policy = content
         .item_policy(&reference.production_key, &reference.revision_ref)
         .ok_or(SpellCastDisposition::NotAvailable)?;
+    read.corpse_stage = Some(policy.record().production_binding.external_id.clone());
     let definition =
         oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)
             .map_err(|_| SpellCastDisposition::NotAvailable)?;
     let corpse = item_tx::prepare_corpse_in_transaction(tx, authority, &address, &definition)
         .await
-        .map_err(|_| SpellCastDisposition::TargetIllegal)?;
+        .map_err(|error| {
+            read.log(
+                command.command_id().get(),
+                "corpse_reservation",
+                RuneReadReason::corpse(&error),
+            );
+            SpellCastDisposition::TargetIllegal
+        })?;
+    read.corpse_item = Some(corpse.item_instance_id);
     let spawn = crate::spell::companion_lifecycle::prepare_animate_dead(
         runtime,
         room.movement_cells(),
@@ -665,13 +734,8 @@ pub(super) async fn prepare_with_current_restrictions(
     if !spawn.consume_rune_charge() {
         return reject();
     }
-    let mut operations = corpse
-        .contents
-        .iter()
-        .cloned()
-        .map(SpellItemOperation::RetireContained)
-        .collect::<Vec<_>>();
-    operations.push(SpellItemOperation::ConsumeCorpse(corpse));
+    // The Item writer expands this reservation into deepest-first retirements.
+    let operations = vec![SpellItemOperation::ConsumeCorpse(corpse)];
     let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_corpse_operations":format!("{operations:?}"),"source_prepared_spawn":format!("{spawn:?}"),"source_current_acquisition_restrictions":format!("{current:?}"),"source_current_group_revision":group.revision()})).map_err(|_|SpellCastDisposition::Rejected)?};
     let mut cues = Vec::new();
     if let Some(p) = spell
@@ -805,7 +869,7 @@ pub(super) async fn prepare(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
-    _draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
+    read: &mut RuneReadEvidence,
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     let restrictions =
         read_current_restrictions(tx, root, authority, runtime, states, owned, now).await?;
@@ -833,6 +897,7 @@ pub(super) async fn prepare(
         now,
         rune,
         &restrictions,
+        read,
     )
     .await?;
     cast.corpse_companion = Some(PreparedCorpseCompanionState {

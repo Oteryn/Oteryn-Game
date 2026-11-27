@@ -8,6 +8,7 @@ use std::num::NonZeroU32;
 struct InventoryAuthority {
     looted: Cell<bool>,
     trade_read_failed: bool,
+    trade_reads: RefCell<Vec<u64>>,
     backpack: ViewItem,
     sliver: ViewItem,
 }
@@ -26,6 +27,7 @@ impl InventoryAuthority {
         Ok(Self {
             looted: Cell::new(false),
             trade_read_failed,
+            trade_reads: RefCell::new(Vec::new()),
             backpack: item(60, 1988)?,
             sliver: item(61, 37109)?,
         })
@@ -61,6 +63,14 @@ impl FreshAdmissionAuthority for InventoryAuthority {
         })
     }
 
+    async fn observe_character_equipment(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
+        Some(Vec::new())
+    }
+
     async fn observe_container(
         &self,
         _: ExactActorRef,
@@ -83,9 +93,10 @@ impl FreshAdmissionAuthority for InventoryAuthority {
     async fn player_trade_item_available(
         &self,
         _: ExactActorRef,
-        _: UseCommand,
+        command: UseCommand,
         _: Option<ItemKey>,
     ) -> Option<bool> {
+        self.trade_reads.borrow_mut().push(command.command_id);
         (!self.trade_read_failed).then_some(true)
     }
 
@@ -152,8 +163,22 @@ fn quick_loot_click_publishes_the_open_backpack_after_its_command_result()
     on_connection_stack(|| {
         run(async {
             let authority = InventoryAuthority::new(false)?;
-            let mut view = SessionItemView::resume(Default::default()).with_container_tree();
-            let admitted = capabilities(&[4, 6, 14, loot::CAPABILITY_QUICK_LOOT_V1])?;
+            let mut view = SessionItemView::resume(Default::default())
+                .with_container_tree()
+                .with_equip_drop();
+            let admitted = capabilities(&[
+                4,
+                6,
+                oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_EQUIP_DROP_V1,
+                bags::CAPABILITY_CONTAINER_TREE_V1,
+                loot::CAPABILITY_QUICK_LOOT_V1,
+            ])?;
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .command_selected(bags::COMMAND_TYPE_CONTAINER_VIEW_INTENT,)
+            );
             let inventory = authority
                 .observe_character_inventory(
                     admitted.runtime_actor.ok_or("actor")?,
@@ -251,7 +276,20 @@ fn rune_use_read_failure_returns_correlated_refusals_without_disconnect()
     on_connection_stack(|| {
         run(async {
             let authority = InventoryAuthority::new(true)?;
-            let admitted = capabilities(&[4, 6, 11, 15, 18, 22, 30])?;
+            // This authority has an inventory but no bundle map snapshot. Positional
+            // Rune USE only needs the item view and the item/Rune USE extensions.
+            let admitted = capabilities(&[
+                4,
+                6,
+                use_wire::CAPABILITY_ITEM_USE_V1,
+                use_wire::CAPABILITY_RUNE_USE_V1,
+            ])?;
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(use_wire::CAPABILITY_RUNE_USE_V1)
+            );
             let payload = use_wire::encode_item_use_intent(&UseIntent {
                 target: UseTarget::Item(oteryn_protocol_oteryn::item_view::ItemHandle::MIN),
                 use_with: None,
@@ -287,6 +325,7 @@ fn rune_use_read_failure_returns_correlated_refusals_without_disconnect()
                 }
             }
             assert_eq!(refused, [1, 2], "each command must receive a typed refusal");
+            assert_eq!(*authority.trade_reads.borrow(), [1, 2]);
             Ok(())
         })
     })

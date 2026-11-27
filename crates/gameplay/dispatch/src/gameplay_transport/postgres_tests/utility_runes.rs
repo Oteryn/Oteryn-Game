@@ -59,6 +59,8 @@ enum Case {
     NotConvinceable,
     SummonLimit,
     Animate,
+    AnimateRat,
+    AnimateRatWithLoot,
     AnimateBusy,
     AnimateBeforeCommit,
     AnimateAfterCommit,
@@ -84,6 +86,26 @@ fn utility_runes_convince_real_dispatch_refuses_summon_limit() -> TestResult {
 fn utility_runes_animate_real_dispatch_owns_skeleton_and_consumes_corpse() -> TestResult {
     scenario(Case::Animate)
 }
+#[test]
+fn utility_runes_fresh_rat_corpse_raises_skeleton_with_correlated_acceptance() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |_| {
+        run_case(admin, Case::AnimateRat).await
+    })
+}
+
+#[test]
+fn utility_runes_fresh_rat_corpse_with_loot_retires_each_item_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |_| {
+        run_case(admin, Case::AnimateRatWithLoot).await
+    })
+}
+
 #[test]
 fn utility_runes_animate_waits_for_busy_holder_and_keeps_connection() -> TestResult {
     scenario(Case::AnimateBusy)
@@ -161,6 +183,8 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     let animate = matches!(
         case,
         Case::Animate
+            | Case::AnimateRat
+            | Case::AnimateRatWithLoot
             | Case::AnimateBusy
             | Case::AnimateBeforeCommit
             | Case::AnimateAfterCommit
@@ -173,6 +197,8 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         case,
         Case::Convince
             | Case::Animate
+            | Case::AnimateRat
+            | Case::AnimateRatWithLoot
             | Case::AnimateBusy
             | Case::AnimateBeforeCommit
             | Case::AnimateAfterCommit
@@ -381,8 +407,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?,
         BuildCommitOutcome::Committed(_)
     ));
+    let magic_level = if matches!(case, Case::AnimateRat | Case::AnimateRatWithLoot) { 4 } else { 10 };
     let trained =
-        DurableBuildState::new(druid.vocation(), (10, 0), druid.skills()).map_err(debug)?;
+        DurableBuildState::new(druid.vocation(), (magic_level, 0), druid.skills()).map_err(debug)?;
     harness
         .root
         .commit_character_build(
@@ -412,7 +439,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                     CharacterCastFacts {
                         level: 50,
                         max_mana: 2000,
-                        magic_level: 10,
+                        magic_level: u32::from(magic_level),
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -499,7 +526,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             )
             .map_err(debug)?;
         drop(runtime);
-        seed_target(&harness, native, &address, case != Case::NonCorpse).await?;
+        seed_target(&harness, native, &address, case).await?;
     }
     let before = {
         let runtime = owner.runtime.lock().await;
@@ -586,6 +613,11 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             drop(runtime);
             drop(door);
             holder_busy.await?;
+            // Use virtual time to keep this owner past the old one-second bound
+            // and return it before the ordinary durability pass expires.
+            tokio::time::pause();
+            tokio::time::advance(std::time::Duration::from_millis(1_200)).await;
+            tokio::time::resume();
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         }
         loop {
@@ -734,6 +766,16 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         .await?;
         assert_eq!(receipts, i64::from(committed));
     }
+    if case == Case::AnimateRatWithLoot {
+        let loot: (i16, i64, bool, i64) = sqlx::query_as(
+            "SELECT lifecycle, quantity, EXISTS(SELECT 1 FROM game_item_corpse_container_entries
+              WHERE item_instance_id=i.item_instance_id),
+              (SELECT count(*) FROM game_spell_item_lines WHERE item_instance_id=i.item_instance_id AND operation_kind=6)
+             FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(184).as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(loot, (2, 0, false, 1), "the contained Gold Coin retires exactly once");
+    }
     drop(owner);
     drop(authority);
     drop(seal);
@@ -744,26 +786,31 @@ async fn seed_target(
     h: &Harness,
     native: &crate::content::native_gameplay::NativeGameplayState,
     target: &crate::durability::native_world_items::SpellGroundTarget,
-    corpse: bool,
+    case: Case,
 ) -> TestResult {
-    let creature = native
-        .creature_profiles()
-        .records
-        .iter()
-        .find(|r| r.profile.target.key == "oteryn:creature.goldhanded_cultist")
-        .ok_or("qualified corpse creature")?;
-    let crate::content::ProjectV2AuthoringProfileData::Creature(profile) = &creature.profile.data
-    else {
-        return Err("creature profile".into());
+    let rat = matches!(case, Case::AnimateRat | Case::AnimateRatWithLoot);
+    let policy = if rat {
+        // The production Rat's initial i5964 stage becomes i3994 after its first transform.
+        native.item_policy_for_source_id(3994).ok_or("first transformed Rat corpse policy")?
+    } else {
+        let creature = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|r| r.profile.target.key == "oteryn:creature.goldhanded_cultist")
+            .ok_or("qualified corpse creature")?;
+        let crate::content::ProjectV2AuthoringProfileData::Creature(profile) = &creature.profile.data
+        else {
+            return Err("creature profile".into());
+        };
+        let corpse_ref = profile
+            .details
+            .as_ref()
+            .and_then(|d| d.corpse_item.as_ref())
+            .ok_or("creature corpse")?;
+        native.item_policy(&corpse_ref.key, &corpse_ref.revision)
+            .ok_or("movable creature corpse policy")?
     };
-    let corpse_ref = profile
-        .details
-        .as_ref()
-        .and_then(|d| d.corpse_item.as_ref())
-        .ok_or("creature corpse")?;
-    let policy = native
-        .item_policy(&corpse_ref.key, &corpse_ref.revision)
-        .ok_or("movable creature corpse policy")?;
     let definition = &policy.record().production_definition;
     let qualified =
         crate::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)
@@ -773,13 +820,22 @@ async fn seed_target(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$4,$5,1,1,encode($3,'hex')::uuid)")
-        .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(181).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id,state_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$4,$5,1,1,encode($3,'hex')::uuid,$6::text::numeric)")
+        .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(181).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).bind(if rat { "2" } else { "1" }).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,$7,$8,100)")
         .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(&target.spatial_position).bind(id(182).as_slice()).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).execute(&mut *tx).await?;
-    if corpse {
+    if case != Case::NonCorpse {
         sqlx::query("INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(1,game_item_death_scope_key(encode($1,'hex')::uuid,1::smallint,encode($2,'hex')::uuid,NULL),encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable','fixture:cultist','r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,1)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(vec![1_u8;33]).bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(180).as_slice()).bind(vec![1_u8;32]).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    }
+    if case == Case::AnimateRatWithLoot {
+        let gold = native.item_policy_for_source_id(3031).ok_or("Gold Coin policy")?;
+        let gold = &gold.record().production_definition;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
+            .bind(id(184).as_slice()).bind(id(42).as_slice()).bind(&gold.production_key).bind(&gold.revision_ref)
+            .bind(id(185).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,parent_item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+            .bind(id(184).as_slice()).bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(185).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

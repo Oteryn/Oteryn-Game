@@ -395,9 +395,9 @@
       "event": "rune_use_read_refused",
       "level": "warn",
       "span": false,
-      "fields": ["stage", "command_id"],
+      "fields": ["stage", "command_id", "reason", "holder", "corpse_item_id", "corpse_stage", "generation"],
       "codes": [],
-      "note": "A Rune command read that could not be completed. No raw database errors or player data."
+      "note": "Typed Rune owner refusal. Holder call site, corpse identity and source stage, and scope generation when known; no raw database errors."
     },
     {
       "event": "serve_command_end",
