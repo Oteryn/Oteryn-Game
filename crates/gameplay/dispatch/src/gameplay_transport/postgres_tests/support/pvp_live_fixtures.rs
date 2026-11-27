@@ -41,6 +41,41 @@ mod expert_cases;
 
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
+const SPLASH_SECOND_MEMBER: u8 = 2;
+const SPLASH_SECOND_SHOOTER: u8 = 100 + SPLASH_SECOND_MEMBER;
+const SPLASH_SECOND_SESSION: u8 = 112;
+
+async fn admit_splash_shooter(h: &Harness) -> TestResult {
+    let account = id(120 + SPLASH_SECOND_MEMBER);
+    sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
+        .bind(account.as_slice())
+        .execute(&h.pool)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_roots
+           (character_id, account_id, world_id, lifecycle, character_revision, profile_revision,
+            ruleset_revision, content_revision, starter_template_revision, name, sex, creation_vocation)
+         SELECT encode($1,'hex')::uuid, encode($2,'hex')::uuid, world_id, lifecycle, 1,
+                profile_revision, ruleset_revision, content_revision, starter_template_revision,
+                'Fixture Splash Shooter', 2, 'knight'
+         FROM game_character_roots WHERE character_id=encode($3,'hex')::uuid",
+    )
+    .bind(id(SPLASH_SECOND_SHOOTER).as_slice())
+    .bind(account.as_slice())
+    .bind(id(101).as_slice())
+    .execute(&h.pool)
+    .await?;
+    super::boss_rewards_fixtures::privacy::seed_peer_creation(h, SPLASH_SECOND_MEMBER).await?;
+    observer::admit_peer(
+        h,
+        SPLASH_SECOND_SHOOTER,
+        SPLASH_SECOND_SESSION,
+        SPLASH_SECOND_SESSION,
+        Some([SPLASH_SECOND_SESSION; 32]),
+    )
+    .await
+}
+
 async fn command(
     client: &mut DuplexStream,
     id: u64,
@@ -131,20 +166,41 @@ async fn settle_death_when_ready(
     .await?)
 }
 
+pub(super) async fn wait_for_login_protection_to_expire(
+    pool: &sqlx::PgPool,
+    session: GameSessionId,
+) -> TestResult {
+    // Wait on the same PostgreSQL clock used by the PvP legality read. The original
+    // admission decision time is validated against the committed admission evidence.
+    sqlx::query(
+        "SELECT pg_sleep(GREATEST(0, r.authorization_decided_at + 10
+                                    - extract(epoch FROM clock_timestamp()))::double precision)
+         FROM game_durability_reconnect_sessions s
+         JOIN game_durability_fresh_admission_receipts r
+           ON r.replay_key = COALESCE(s.fresh_replay_key, s.initial_fresh_replay_key)
+         WHERE s.game_session_id = encode($1, 'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice())
+    .fetch_one(pool)
+    .await?;
+    Ok(())
+}
+
 async fn paid_splash(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     (actor, session): (crate::foundation::ExactActorRef, GameSessionId),
     (victim, victim_session): (crate::foundation::ExactActorRef, GameSessionId),
+    (second_shooter, second_session): (crate::foundation::ExactActorRef, GameSessionId),
     content: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult {
     use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
 
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-    sqlx::query("UPDATE game_durability_fresh_admission_receipts SET authorization_decided_at=authorization_decided_at-11")
-        .execute(&mut *tx).await?;
-    for (character, weapon, projectile, ammo) in [(41, 70, 71, 3449), (101, 72, 73, 3447)] {
+    for (character, weapon, projectile, ammo) in
+        [(41, 70, 71, 3449), (SPLASH_SECOND_SHOOTER, 72, 73, 3447)]
+    {
         for (seed, item, count, slot) in [(weapon, 3350, 1, 6_i16), (projectile, ammo, 10, 10)] {
             sqlx::raw_sql(sqlx::AssertSqlSafe(
                 crate::durability::item_fee_burn::test_support::item(
@@ -173,7 +229,7 @@ async fn paid_splash(
         runtime.set_test_creature_health(rat.actor, 10_000).map_err(debug)?;
         EntityRef { identity: rat.actor.placement_identity(), generation: rat.generation }
     };
-    for (source, source_session) in [(actor, session), (victim, victim_session)] {
+    for (source, source_session) in [(actor, session), (second_shooter, second_session)] {
         assert_eq!(owner.select_attack_target(source, source_session, 2, Some(rat)).await,
             attack::AttackIntentDisposition::Ok);
         owner.refresh_attack_weapon(source, source_session).await;
@@ -184,7 +240,7 @@ async fn paid_splash(
     };
     let before = health(owner, victim).await?;
     let now = owner.owner_now();
-    crate::gameplay_transport::attack::ranged::lose_shot_ack_for(victim_session);
+    crate::gameplay_transport::attack::ranged::lose_shot_ack_for(second_session);
     owner.drain_auto_attacks_at(now).await;
     assert_eq!((count(71).await?, count(73).await?), (9, 9), "both shots committed");
     assert_eq!(health(owner, victim).await?, before, "the later payment fenced the pending splash");
@@ -269,6 +325,9 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         prepare_current_session(&h).await?;
         h.seed_pvp_target().await?;
         observer::admit(&h).await?;
+        if mode == 16 {
+            admit_splash_shooter(&h).await?;
+        }
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -279,14 +338,15 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         let source = include_bytes!(
             "../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
         );
+        let bundle_fixture = matches!(mode, 5 | 6 | 15);
         let (controller, pin) = production_generation_with_source(
             world,
             "content-1",
-            (mode != 5 && mode != 6).then_some(source.as_slice()),
+            (!bundle_fixture).then_some(source.as_slice()),
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let bundle = if mode == 5 || mode == 6 {
+        let bundle = if bundle_fixture {
             Some(bundle_fixture::world(world, mode == 5)?)
         } else {
             None
@@ -299,7 +359,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     .map_err(debug)
             })
             .transpose()?;
-        let floor = if mode == 5 || mode == 6 { 7 } else { -7 };
+        let floor = if bundle_fixture { 7 } else { -7 };
         let room = match (&bundle, &cells) {
             (Some(bundle), Some(cells)) => pin
                 .qualified_room()
@@ -321,8 +381,17 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             room.map_revision_digest(),
             (2, if mode == 4 { 0 } else { 11 }, floor),
         );
-        let mut deps =
-            Dependencies::with_content(cp.clone(), room.clone(), native.spell_book().clone())?;
+        let mut deps = if mode == 16 {
+            // Two shooters, an unarmoured victim, a rat and spawn admission headroom.
+            Dependencies::with_content_and_capacity(
+                cp.clone(),
+                room.clone(),
+                native.spell_book().clone(),
+                7,
+            )?
+        } else {
+            Dependencies::with_content(cp.clone(), room.clone(), native.spell_book().clone())?
+        };
         if mode == 13 {
             let mut runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
                 world,
@@ -350,6 +419,18 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         owner.active_generation = Some(active);
         if let Some(cells) = cells.as_ref() {
             owner.movement_cells = (cells).into();
+        }
+        if mode == 15 {
+            // Player-origin ticks use the fenced field owner and its bundle capability floor.
+            owner.required_capabilities =
+                crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                    &[11, 30],
+                    crate::foundation::RuntimeScopeRefV1::channel(world, deps.admitted.channel_id),
+                    1,
+                    "policy-1",
+                    owner.offered_capabilities(),
+                )
+                .map_err(debug)?;
         }
         let mut admitted = deps.admitted;
         let actor = deps.actor;
@@ -467,6 +548,8 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             owner.offered_capabilities(),
             if mode == 9 {
                 &[6, 17, 21][..]
+            } else if mode == 15 {
+                &[4, 6, 11, 15, 17, 18, 21, 30, 87][..]
             } else {
                 &[6, 17, 21, 87][..]
             },
@@ -485,8 +568,23 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 generation: p.generation,
             }
         };
+        if matches!(mode, 15 | 16) {
+            wait_for_login_protection_to_expire(&h.pool, session).await?;
+        }
         if mode == 16 {
-            paid_splash(&h, &owner, (actor, session), (target, target_session), native).await?;
+            let second_shooter =
+                observer::initialize_peer(&deps, &owner, SPLASH_SECOND_SHOOTER, SPLASH_SECOND_SESSION)
+                    .await?;
+            let second_session = GameSessionId::decode(&id(SPLASH_SECOND_SESSION)).map_err(debug)?;
+            paid_splash(
+                &h,
+                &owner,
+                (actor, session),
+                (target, target_session),
+                (second_shooter, second_session),
+                native,
+            )
+            .await?;
             drop(owner);
             drop(authority);
             drop(seal);

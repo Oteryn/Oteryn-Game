@@ -10,16 +10,26 @@ use crate::foundation::admission_authority_publication::{
 pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit(
     harness: &Harness,
 ) -> TestResult {
+    admit_peer(harness, 101, 110, 8, None).await
+}
+
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit_peer(
+    harness: &Harness,
+    character: u8,
+    session: u8,
+    transport: u8,
+    nonce: Option<[u8; 32]>,
+) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
             .await?;
-    let (account, character): (String, String) = sqlx::query_as("SELECT account_id::text, character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(101).as_slice()).fetch_one(&harness.pool).await?;
+    let (account, character_text): (String, String) = sqlx::query_as("SELECT account_id::text, character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(character).as_slice()).fetch_one(&harness.pool).await?;
     let mut source = fresh_fixture::fresh::Source::appearance_observer(
         now,
         account,
-        crate::foundation::CharacterId::decode(&id(101)).map_err(debug)?,
+        crate::foundation::CharacterId::decode(&id(character)).map_err(debug)?,
     )?;
     let guards = crate::durability::admission_authority_guards::AdmissionGuardStore::from_root(
         harness.root.clone(),
@@ -88,7 +98,13 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
             .await?;
-    let request = source.appearance_observer_request(&character, issued_at)?;
+    let request = source.request_with_nonce(
+        GameSessionId::decode(&id(session)).map_err(debug)?,
+        crate::foundation::AuthenticatedTransportRefV1::decode(&[transport; 16]).map_err(debug)?,
+        Some((&source.current.account_id, &character_text)),
+        issued_at,
+        nonce,
+    )?;
     let store =
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(harness.root.clone());
     let outcome = store.commit(&request).await.map_err(debug)?;
@@ -105,7 +121,16 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn initialize
     dependencies: &Dependencies,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult<ExactActorRef> {
-    let session = GameSessionId::decode(&id(110)).map_err(debug)?;
+    initialize_peer(dependencies, owner, 101, 110).await
+}
+
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn initialize_peer(
+    dependencies: &Dependencies,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    character: u8,
+    session: u8,
+) -> TestResult<ExactActorRef> {
+    let session = GameSessionId::decode(&id(session)).map_err(debug)?;
     let actor = {
         let mut runtime = dependencies.runtime.lock().await;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
@@ -118,7 +143,7 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn initialize
                 actor,
                 session,
                 crate::foundation::CharacterLease::new(
-                    crate::foundation::CharacterId::decode(&id(101)).map_err(debug)?,
+                    crate::foundation::CharacterId::decode(&id(character)).map_err(debug)?,
                     2,
                 )
                 .map_err(debug)?,

@@ -748,7 +748,8 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 Case::GrenadeBlocked => (wire_position(blocked), None),
                 Case::GrenadeHeld { position_cast: true } => {
                     let aimed = crate::foundation::MovementLocalPosition {
-                        x: position.x - 1,
+                        // Aim within Divine Grenade's four-tile range, with the rat still held at six.
+                        x: caster.x + 4,
                         ..position
                     };
                     (wire_position(aimed), Some(aimed))
