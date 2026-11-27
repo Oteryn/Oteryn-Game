@@ -2,15 +2,6 @@
   "schema": "OTERYN_QUESTS3_WORLD_INDEX/v1",
   "sources": [
     {
-      "path": "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json",
-      "keys": [
-        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2",
-        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3",
-        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4",
-        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5"
-      ]
-    },
-    {
       "path": "content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json",
       "keys": [
         "oteryn:quest-callback/pirates-tail-cheesy-exit"
@@ -34,7 +25,12 @@
     },
     {
       "path": "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json",
-      "keys": []
+      "keys": [
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2",
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3",
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4",
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5"
+      ]
     },
     {
       "path": "content/quests/world-callbacks/batch3-b-a_pirates_tail_quest.json",

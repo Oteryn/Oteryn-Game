@@ -104,14 +104,19 @@ def main():
         held = [row for row in document["callbacks"] if row["key"] in held_keys]
         targets = [(HERE / "world" / f"{quest}.json", document),
                    (REPO / "content/quests/world-callbacks" / f"batch3-a-{quest}.json", active)]
+        held_path = REPO / "content/quests/world-callbacks-held" / f"batch3-a-{quest}.json"
         if held:
-            targets.append((REPO / "content/quests/world-callbacks-held" / f"batch3-a-{quest}.json", {
+            targets.append((held_path, {
                 "schema": 1, "runtime_enabled": False, "callbacks": held,
                 "reason": "Complete source parameters retained; no unapproved shared-contract change or invented map binding is published.",
                 "holds": [{"callback": key, "reasons": value} for key, value in reasons.items() if value],
                 "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
                 "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
             }))
+        elif held_path.exists():
+            if args.check:
+                raise ValueError(f"Stale held world callbacks: {held_path}")
+            held_path.unlink()
         for path, value in targets:
             payload = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
             if args.check:

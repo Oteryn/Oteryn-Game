@@ -8,13 +8,14 @@ def document():
     rows = []
     # Global returns this sphere to the Guild. Use the authored Stone arrival.
     guild_arrival = (32210, 32300, 6)
-    for line, origin, destination in [
-        (2, (33605, 31468, 7), guild_arrival),
-        (3, (33601, 31468, 7), (32456, 32291, 7)),
-        (4, (32456, 32290, 7), (33614, 31494, 7)),
-        (5, (32203, 32303, 6), (33614, 31494, 7)),
+    for line, origin, appearance, destination in [
+        (2, (33605, 31468, 7), 50227, guild_arrival),
+        (3, (33601, 31468, 7), 49948, (32456, 32291, 7)),
+        (4, (32456, 32290, 7), 49948, (33614, 31494, 7)),
+        (5, (32203, 32303, 6), 50310, (33614, 31494, 7)),
     ]:
-        rows.append(callback(quest, f"blue-valley-{line}", "use", {"position": position(*origin)},
+        rows.append(callback(quest, f"blue-valley-{line}", "use",
+                             {"position": position(*origin), "appearance": appearance},
                              position(*destination), [], "actions_blue_valley_teleports.lua", line))
     rows[0]["sources"].extend([
         "https://tibia.fandom.com/wiki/Guarded_Crystal_Sphere",

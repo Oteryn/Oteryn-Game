@@ -1227,6 +1227,9 @@ def build(
         import qh_jimmy_stub
 
         qh_jimmy_stub.overlay_outputs(out, ROOT)
+        import guarded_crystal_sphere
+
+        guarded_crystal_sphere.overlay_outputs(out, ROOT)
     import m01c_key_doors
 
     m01c_key_doors.overlay_outputs(
