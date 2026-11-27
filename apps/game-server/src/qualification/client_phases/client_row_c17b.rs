@@ -146,7 +146,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     }
     let vitals_before = *caster.actor_vitals().ok_or("C17b pre-cast vitals absent")?;
     let spell = full_row_c17b::spell_index(&book)?;
-    let light = super::spell_journey::spell_index(&book, "utevo lux")?;
+    let light = super::client_spell_journey::spell_index(&book, "utevo lux")?;
     if vitals_before.mana < 460 {
         return Err("C17b lacks mana for both Invisibility and the 20-mana Support probe".into());
     }
