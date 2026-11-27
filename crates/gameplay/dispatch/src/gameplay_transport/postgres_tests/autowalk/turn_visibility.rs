@@ -6,7 +6,9 @@ use super::super::kill_reward_e2e_fixtures::scenario_thread;
 use super::super::target_move::{sees, turn, update_in};
 use super::{Scenario, scenario};
 use crate::durability::DurabilityRoot;
-use crate::foundation::{ExactActorRef, GameSessionId, MovementFacing, MovementLocalPosition};
+use crate::foundation::{
+    ExactActorRef, GameSessionId, MovementFacing, MovementLocalPosition, NpcPlacement,
+};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -36,7 +38,7 @@ pub(super) async fn qualify(
     let caster = admitted.runtime_actor.ok_or("caster")?;
     let observer_session = GameSessionId::decode(&id(77)).map_err(debug)?;
     let cell = at(1, 1);
-    let observer = {
+    let (observer, npc) = {
         let mut runtime = owner.runtime.lock().await;
         let reservation = runtime
             .reserve_fresh_session(observer_session)
@@ -50,7 +52,18 @@ pub(super) async fn qualify(
         movement
             .commit_turn(start, MovementFacing::East)
             .map_err(debug)?;
-        observer
+        let npc = runtime
+            .place_dynamic_npc(
+                "oteryn:npc.cipfried",
+                NpcPlacement {
+                    floor: -7,
+                    x: 2,
+                    y: 4,
+                    direction: MovementFacing::East,
+                },
+            )
+            .map_err(debug)?;
+        (observer, npc)
     };
     let mut peer = AdmittedSession {
         game_session_id: observer_session,
@@ -78,17 +91,18 @@ pub(super) async fn qualify(
                 StepDirection::West,
             )
             .await?;
-            tokio::time::timeout(Duration::from_secs(10), async {
-                loop {
-                    let frame = read(&mut observer_client).await?;
-                    let envelope = decode_wire_envelope(&frame)?;
-                    if update_in(&envelope, caster, cell, StepDirection::West)? {
-                        return Ok::<_, Box<dyn std::error::Error>>(());
-                    }
-                }
-            })
-            .await??;
+            observe_update(&mut observer_client, caster, cell, StepDirection::West).await?;
         }
+        // NPC steps also write facing in the Movement owner. Its exact actor must
+        // reach the same visibility stream, including the new cardinal direction.
+        let npc_cell = at(2, 3);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let before = movement.read(npc).map_err(debug)?;
+            movement.commit_cardinal(before, npc_cell).map_err(debug)?;
+        }
+        observe_update(&mut observer_client, npc, npc_cell, StepDirection::North).await?;
         caster_client.shutdown().await?;
         observer_client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
@@ -117,6 +131,24 @@ pub(super) async fn qualify(
     }
     eprintln!("POSTGRES_CASE_EXECUTED c18a_turn_publishes_before_receipt_and_reaches_observer");
     Ok(())
+}
+
+async fn observe_update(
+    client: &mut DuplexStream,
+    actor: ExactActorRef,
+    cell: MovementLocalPosition,
+    facing: StepDirection,
+) -> TestResult {
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            let frame = read(client).await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            if update_in(&envelope, actor, cell, facing)? {
+                return Ok(());
+            }
+        }
+    })
+    .await?
 }
 
 async fn snapshot(

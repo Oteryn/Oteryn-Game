@@ -189,7 +189,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .unwrap_or(100)
                 }),
             direction: match runtime
-                .read_actor_position(entry.actor)
+                .read_movement_actor_position(entry.actor)
                 .ok()
                 .and_then(|at| at.facing())
             {
