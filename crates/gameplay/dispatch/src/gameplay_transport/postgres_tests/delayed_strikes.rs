@@ -43,7 +43,7 @@ enum Case {
     Outburst(u8),
     Logout,
     DepartedTarget,
-    Lethal,
+    Lethal { retire_slot_before_mint: bool },
     QueuedOrder,
 }
 
@@ -131,7 +131,25 @@ fn delayed_strikes_postgres_lethal_damage_precedes_removal_and_corpse() -> TestR
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
         spells: &[("candidate:spell/death_echo", 120, 150)],
-        case: Case::Lethal,
+        case: Case::Lethal { retire_slot_before_mint: false },
+    })
+}
+
+#[test]
+fn delayed_strikes_postgres_lethal_keeps_retired_actor_visible_until_corpse_mint() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        scenario_inner(admin, Plan {
+            tag: "delayed_lethal_retired",
+            vocation: "sorcerer",
+            experience: 30_000_000,
+            weapon: "oteryn:item.tibia.i3277",
+            spells: &[("candidate:spell/death_echo", 120, 150)],
+            case: Case::Lethal { retire_slot_before_mint: true },
+        }).await
     })
 }
 
@@ -208,7 +226,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 },
             )
             .ok_or("PZ room")?
-    } else if plan.case == Case::Lethal {
+    } else if matches!(plan.case, Case::Lethal { .. }) {
         let map = crate::map::spell_tiles::tests::movement_arena::world();
         let cells = map.movement_cells(entry.movement_cells()).map_err(debug)?;
         entry.bundle_view(
@@ -221,7 +239,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         entry
     };
     // Reuse crosshair_spells' open combat tile; the imported entry is a PZ.
-    let start = if matches!(plan.case, Case::Pz | Case::Lethal) {
+    let start = if matches!(plan.case, Case::Pz | Case::Lethal { .. }) {
         room.entry_start()
     } else {
         crate::content::NativeEntryStart {
@@ -239,7 +257,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
-    let frame_digest = if plan.case == Case::Lethal {
+    let frame_digest = if matches!(plan.case, Case::Lethal { .. }) {
         room.frame_binding().digest()
     } else {
         pin.frame_binding().digest()
@@ -484,7 +502,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
-    if plan.case == Case::Lethal {
+    if matches!(plan.case, Case::Lethal { .. }) {
         super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         owner.states.test_owner_time.store(owner.owner_now().get() + 1, std::sync::atomic::Ordering::Relaxed);
     }
@@ -852,13 +870,24 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             *mana,
             "{key} exact one-time cast payment before the delayed hit"
         );
-        if plan.case == Case::Lethal {
+        if let Case::Lethal { retire_slot_before_mint } = plan.case {
             deps.runtime
                 .lock()
                 .await
                 .set_test_creature_health(target, 1)
                 .map_err(debug)?;
-            lethal_wire(&owner, admitted, target, position).await?;
+            lethal_wire(&owner, admitted, target, position, retire_slot_before_mint).await?;
+            if retire_slot_before_mint {
+                let item = owner.runtime.lock().await
+                    .bound_corpse(target.corpse_identity()).ok_or("published corpse")?
+                    .item.item_instance_id;
+                let mints: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_item_mint_receipts
+                      WHERE item_instance_id=encode($1,'hex')::uuid
+                        AND loot_purpose_key='CORPSE_MATERIALIZATION' AND materialized_at IS NOT NULL",
+                ).bind(item.as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(mints, 1, "the wire corpse is backed by exactly one durable mint");
+            }
             continue;
         }
         let expected_echo = if plan.case == Case::Echo {
@@ -1009,6 +1038,7 @@ async fn lethal_wire(
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,
     target: crate::foundation::ExactActorRef,
     position: crate::foundation::MovementLocalPosition,
+    retire_slot_before_mint: bool,
 ) -> TestResult {
     use super::fixture::join_two;
     use super::item_look_fixtures::read_frame;
@@ -1071,6 +1101,20 @@ async fn lethal_wire(
                     .health
                     .is_some_and(|health| health.health_before == 1 && health.health_after == 0)
         }));
+        if retire_slot_before_mint {
+            {
+                let mut runtime = owner.runtime.lock().await;
+                assert!(runtime.bound_corpse(corpse_identity).is_none());
+                runtime.remove_test_actor(target).map_err(debug)?;
+                assert!(runtime.read_actor_position(target).is_err());
+            }
+            let frame = owner.observe_channel_entities(admitted.runtime_actor.ok_or("caster")?)
+                .await.ok_or("pending death frame")?;
+            assert!(frame.entities.iter().any(|entity| {
+                entity.identity == target_ref.identity && entity.position == at
+                    && entity.kind == crate::gameplay_transport::world_spatial::VisibleKind::PendingDeath
+            }), "the exact Rat must stay in the frame while its corpse is unminted");
+        }
         assert_eq!(
             owner.drain_kill_rewards(admitted.game_session_id).await,
             crate::gameplay_transport::kill_reward::DrainOutcome::Drained

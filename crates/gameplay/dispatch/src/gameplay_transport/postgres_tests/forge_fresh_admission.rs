@@ -10,11 +10,13 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::{
     FreshAdmissionAttempt,
+    capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
     connection::{FirstEntryOutcome, FreshAdmissionAuthority},
     kill_reward::DrainOutcome,
     spell_premium_coordinator::{
         PremiumActivation, RegisteredPremiumClock, SpellPremiumCoordinator, clock_registration,
     },
+    world_required_capabilities::BoundRequiredCapabilities,
     world_spatial::VisibleKind,
 };
 use crate::premium::{
@@ -25,6 +27,7 @@ use crate::premium::{
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, FightMode, FightModes};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use sha2::{Digest, Sha256};
 use std::sync::{Arc, atomic::Ordering};
 
 #[allow(
@@ -69,7 +72,7 @@ async fn hunt(admin: String, kind: ForgeCreature) -> TestResult {
     } else {
         "fresh_influenced"
     };
-    let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
+    let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
     let result: TestResult = async {
         let source = RecoverySource::start(&h).await?;
         let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -87,12 +90,19 @@ async fn hunt(admin: String, kind: ForgeCreature) -> TestResult {
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let loot = (!fiendish).then(super::forge_creature_fixtures::rat_loot_that_misses).transpose()?;
-        let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_custom_loot_tables(
-                world,
-                Some(include_bytes!("../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json")),
-                loot.as_deref(),
-            );
+        let mut supplied = super::death_ml_loss_composed_fixtures::production_input_with_source(
+            "content-1",
+            Some(include_bytes!("../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json")),
+        )?;
+        if let Some(bytes) = loot {
+            supplied.loot_tables = Some(crate::content::native_gameplay::PinnedGameplayBytes {
+                sha256: Sha256::digest(&bytes).iter().map(|byte| format!("{byte:02x}")).collect(),
+                bytes,
+            });
+        }
+        let (controller, pin) = crate::content::native_gameplay::test_support::try_activate_input(
+            world, &supplied,
+        ).map_err(debug)?;
         let active = controller.active().ok_or("active generation")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
         let room = pin.qualified_room().clone();
@@ -116,6 +126,13 @@ async fn hunt(admin: String, kind: ForgeCreature) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.evidence = &source.evidence;
         owner.active_generation = Some(active);
+        let scope = crate::foundation::RuntimeScopeRefV1::channel(world, owner.channel_id);
+        owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
+            &[], scope, 1, "policy-1", BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        ).map_err(debug)?;
+        let supported = oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
+        let selected = owner.required_capabilities.authenticate_support(supported).map_err(debug)?.selected();
+        assert!(selected.contains(oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1));
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -142,29 +159,52 @@ async fn hunt(admin: String, kind: ForgeCreature) -> TestResult {
         );
         owner.premium = PremiumRefresher::new(consumer, h.root.clone(), Some(client));
         owner.premium_coordinator = Some(&coordinator);
-        let session = GameSessionId::decode(&id(91)).map_err(debug)?;
-        let token = RecoverySource::fresh_token(91)?;
-        let admitted = owner.admit(FreshAdmissionAttempt {
-            character_id: CharacterId::decode(&id(41)).map_err(debug)?,
-            admission_material: token.as_bytes(),
-            game_session_id: session,
-            transport: AuthenticatedTransportRefV1::decode(&[91; 16]).map_err(debug)?,
-            supported_capabilities: &[
-                4, 6, 12, 14, oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1,
-            ],
-        }).await.map_err(debug)?;
-        assert_eq!(admitted.game_session_id, session);
+        let admit = async |nonce| -> TestResult<_> {
+            let session = GameSessionId::decode(&id(nonce)).map_err(debug)?;
+            let token = RecoverySource::fresh_token(nonce)?;
+            let mut admitted = owner.admit(FreshAdmissionAttempt {
+                character_id: CharacterId::decode(&id(41)).map_err(debug)?,
+                admission_material: token.as_bytes(),
+                game_session_id: session,
+                transport: AuthenticatedTransportRefV1::decode(&[nonce; 16]).map_err(debug)?,
+                supported_capabilities: supported,
+            }).await.map_err(debug)?;
+            assert_eq!(admitted.game_session_id, session);
+            // The connection installs the negotiated capabilities after admit().
+            admitted.continuity.selected_capabilities = selected;
+            Ok(admitted)
+        };
+        let mut admitted = admit(91).await?;
+        if fiendish {
+            use crate::gameplay_transport::connection::LogoutReply;
+            use oteryn_protocol_oteryn::logout::LogoutResult;
+            assert!(matches!(admitted.first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled),
+                "first admission before relog: {:?}", admitted.first_entry);
+            let first = h.root.load_premium_fence(id(40)).await?.fence.ok_or("first Premium snapshot")?;
+            assert_eq!(first.latest.authority_revision, 7);
+            assert_eq!(owner.logout_session(admitted).await, LogoutReply::Result(LogoutResult::Accepted));
+            producer.script(|request| Reply::json(snapshot(request, 8, &[])));
+            admitted = admit(92).await?;
+            let pulls = producer.requests();
+            assert!(pulls.len() >= 2 && pulls[0].nonce != pulls[pulls.len() - 1].nonce,
+                "relogin must obtain its own snapshot from the configured authority");
+        }
+        let session = admitted.game_session_id;
         assert!(matches!(admitted.first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled),
             "fresh hunter must be playable: {:?}", admitted.first_entry);
+        assert!(owner.progression_binding(session).is_some(), "fresh Hunter progression must be bound for kill settlement");
+        let trained: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_training_markers
+              WHERE game_session_id=encode($1,'hex')::uuid AND cause='offline_settlement')",
+        ).bind(session.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert!(trained, "first entry must settle offline training under the admitted session");
         let actor = admitted.runtime_actor.ok_or("fresh hunter")?;
         let target = {
             let mut runtime = owner.runtime.lock().await;
             assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), start);
-            if fiendish {
             assert!(owner.states.spell_states.lock().await.get(&runtime, actor, session)
                 .is_some_and(|state| state.hunting_premium_current(owner.owner_now().get())),
                 "the admitted hunter must have Premium before any gameplay tick");
-            }
             native.install_companion_policies(&mut runtime).map_err(debug)?;
             let target = runtime.realize_native_qualification_spawn(
                 channel_pin, "oteryn:creature.rat", death_tile,
@@ -184,7 +224,7 @@ async fn hunt(admin: String, kind: ForgeCreature) -> TestResult {
         if fiendish {
         let premium = h.root.load_premium_fence(id(40)).await?.fence.ok_or("durable Premium")?;
         assert_eq!(premium.latest.state, crate::durability::premium_fence::EntitlementState::Active);
-        assert_eq!(premium.latest.authority_revision, 7);
+        assert_eq!(premium.latest.authority_revision, 8);
         }
 
         let balance = async |command_id| -> TestResult<i64> {
@@ -213,11 +253,10 @@ async fn hunt(admin: String, kind: ForgeCreature) -> TestResult {
         assert_eq!(drained, DrainOutcome::Drained);
 
         let credits = super::forge_creature_fixtures::ledger(&h.pool).await?;
-        if fiendish {
         assert_eq!(credits.len(), 1, "one durable dust credit for this kill");
-        assert!(credits[0].4 > 0);
+        let expected_dust = if fiendish { 15..=45 } else { 3..=9 };
+        assert!(expected_dust.contains(&credits[0].4), "unexpected Global Forge dust credit: {}", credits[0].4);
         assert_eq!(balance(101).await?, credits[0].4);
-        }
 
         let corpse_identity = target.corpse_identity();
         let at = {
