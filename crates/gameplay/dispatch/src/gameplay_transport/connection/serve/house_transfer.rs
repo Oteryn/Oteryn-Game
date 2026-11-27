@@ -336,11 +336,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             } else {
                 authority.enter_input(admitted.game_session_id).await
             };
-            let guard_deferred = permit.is_some()
-                && !super::command::guards(authority, &mut admitted, command).await?;
-            if guard_deferred {
+            let deferred_guard = if permit.is_some() {
+                super::command::guards(authority, &mut admitted, command).await?
+            } else {
+                None
+            };
+            let house_guard_deferred = deferred_guard == Some(super::command::InputGuard::House);
+            if deferred_guard.is_some() {
                 drop(permit.take());
-                if command.command_type == COMMAND_PROJECTION
+                if house_guard_deferred
+                    && command.command_type == COMMAND_PROJECTION
                     && selected.command_selected(command.command_type)
                 {
                     let _ = commands.cancel_undispatched(
@@ -393,7 +398,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     Some(Dispatch::Reply(status, payload)) => (None, payload, status),
                     _ => return Err(ServeEnd::Disconnected),
                 }
-            } else if permit.is_some() || (guard_deferred && podium_query) {
+            } else if permit.is_some() || (house_guard_deferred && podium_query) {
                 let dispatch = if command.command_type == COMMAND_TYPE_LOGOUT_INTENT
                     && selected.command_selected(command.command_type)
                 {
@@ -434,7 +439,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         )
                         .await);
                     };
-                    let approach = if guard_deferred {
+                    let approach = if house_guard_deferred {
                         Approach::Unavailable
                     } else {
                         authority.house_podium_approach(admitted, item).await
@@ -473,6 +478,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 integrity.observe(&dispatch);
                 let (status, payload) = house_hireling::result(selected, &dispatch)?;
                 effects = Some(dispatch);
+                (None, payload, status)
+            } else if deferred_guard.is_some() {
+                let refusal = super::command::guard_refusal(selected, command)?;
+                let (status, payload) = house_hireling::result(selected, &refusal)?;
                 (None, payload, status)
             } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
                 let (status, payload) =

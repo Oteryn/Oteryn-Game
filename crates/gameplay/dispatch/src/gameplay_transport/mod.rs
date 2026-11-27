@@ -1548,6 +1548,13 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// Leave time for the acquired pass to finish within one liveness interval.
+    fn holder_wait_window() -> Duration {
+        connection::IDLE_LIVENESS
+            .interval
+            .saturating_sub(crate::durability::DB_PASS_DEADLINE)
+    }
+
     /// [`Self::new`] whose retries wait for `root`'s holder instead of sleeping blind
     /// (NODEBOOT-1).
     fn for_root(game_session_id: &GameSessionId, root: &'r DurabilityRoot) -> Self {

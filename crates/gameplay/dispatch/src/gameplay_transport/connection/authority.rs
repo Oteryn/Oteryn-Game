@@ -207,6 +207,7 @@ pub trait FreshAdmissionAuthority {
     fn activity_transfer_input(
         &self,
         _admitted: AdmittedSession,
+        _command_id: u64,
     ) -> impl Future<Output = Result<(), crate::durability::DurabilityError>> {
         async { Ok(()) }
     }

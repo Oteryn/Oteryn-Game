@@ -23,7 +23,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn note_activity_input(
         &self,
         admitted: AdmittedSession,
+        command_id: u64,
     ) -> Result<(), crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError;
         if !admitted
             .continuity
             .selected_capabilities
@@ -36,12 +38,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Re-prove the same transport/fences on every idempotent attempt, retaining
         // the distinction between a transient holder failure and a lost fence.
-        let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
+        let budget = super::AdmissionRetryBudget::for_holder_window(
+            self.root,
+            super::AdmissionRetryBudget::holder_wait_window(),
+        );
+        let mut attempt = 0;
         budget
             .retry_command_guard(async || {
-                ActivityHandoffOwner::new(self.root.clone())
+                attempt += 1;
+                let decision = ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
-                    .await
+                    .await;
+                if attempt > 1 || decision.is_err() {
+                    let holder = match &decision {
+                        Ok(()) => "available",
+                        Err(DurabilityError::RootUnavailable) => "busy",
+                        Err(DurabilityError::RootPassDeadlineExceeded) => "deadline",
+                        Err(_) => "failed",
+                    };
+                    let owner = if holder == "busy" {
+                        self.root
+                            .checked_out_semantic_caller()
+                            .map_or_else(|| "none".to_owned(), |caller| caller.to_string())
+                    } else {
+                        "none".to_owned()
+                    };
+                    super::operator_event(&format!(
+                        "event=activity_input_holder_attempt command_id={command_id} attempt={attempt} holder={holder} owner={owner}",
+                    ));
+                }
+                #[cfg(test)]
+                if matches!(&decision, Err(DurabilityError::RootUnavailable)) {
+                    let _ = ACTIVITY_INPUT_HOLDER_BUSY.try_with(|busy| busy.notify_one());
+                }
+                decision
             })
             .await
     }
@@ -177,4 +207,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .map(Some)
         .map_err(|_| ())
     }
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static ACTIVITY_INPUT_HOLDER_BUSY: std::sync::Arc<tokio::sync::Notify>;
 }

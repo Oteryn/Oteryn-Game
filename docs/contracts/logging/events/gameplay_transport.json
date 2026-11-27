@@ -3,6 +3,19 @@
   "owner": "crates",
   "events": [
     {
+      "event": "activity_input_holder_attempt",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "attempt",
+        "holder",
+        "owner"
+      ],
+      "codes": [],
+      "note": "Activity input checkout failure or retry and the holder's source location when available. A successful first attempt is omitted. No player identifiers or command payloads."
+    },
+    {
       "event": "admission_entry_decision",
       "level": "info",
       "span": false,

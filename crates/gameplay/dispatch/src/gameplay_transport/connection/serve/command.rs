@@ -145,8 +145,10 @@ where
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
-    let guard_deferred =
-        input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
+    let guard_deferred = input_permit.is_some()
+        && guards(authority, &mut session.admitted, command)
+            .await?
+            .is_some();
     if guard_deferred && !session.reconcile_original_bank {
         drop(input_permit.take());
     }
@@ -405,34 +407,9 @@ where
     }
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
-    // Encode a typed refusal without running STEP or CHAT post-dispatch effects.
-    let result = if guard_deferred
-        && matches!(dispatch, Dispatch::Unregistered)
-        && session
-            .selected_capabilities
-            .command_selected(command.command_type)
-    {
-        let mut refusal = match command.command_type {
-            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => Dispatch::Step(StepOutcome::rejected(), 0),
-            COMMAND_TYPE_CHAT_INTENT => Dispatch::Chat(
-                ChatIntentResult {
-                    disposition: ChatDisposition::Rejected,
-                    wait_seconds: 0,
-                },
-                None,
-            ),
-            oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT => {
-                Dispatch::Attack(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
-            }
-            oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
-            | oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY => {
-                Dispatch::Reply(
-                    crate::foundation::CommandStatus::Rejected,
-                    oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
-                )
-            }
-            _ => Dispatch::Unregistered,
-        };
+    // The refusal is a command receipt only. It must never emit owner effects.
+    let result = if guard_deferred && matches!(dispatch, Dispatch::Unregistered) {
+        let mut refusal = guard_refusal(session.selected_capabilities, command)?;
         result::encode(session, command, &mut refusal)?
     } else {
         result::encode(session, command, &mut dispatch)?
@@ -453,6 +430,96 @@ where
         .ok_or(ServeEnd::Disconnected)?;
     }
     Ok(())
+}
+
+pub(super) fn guard_refusal(
+    selected: SelectedCapabilities,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<Dispatch, ServeEnd> {
+    use oteryn_protocol_oteryn::{
+        COMMAND_BUSY_REFUSAL,
+        account_achievements::COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY,
+        actor_spell::{
+            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, SpellCastDisposition,
+            encode_spell_cast_result,
+        },
+        actor_spell_v2::{
+            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2, ParameterSpellCastResult,
+            encode_parameter_spell_cast_result,
+        },
+        appearance::{COMMAND_TYPE_APPEARANCE_CHANGE, ChangeResult},
+        attack::{
+            AttackIntentDisposition, COMMAND_TYPE_ATTACK_TARGET_INTENT,
+            COMMAND_TYPE_FIGHT_MODES_INTENT, encode_attack_intent_result,
+        },
+        capability_tables::GATED,
+        chat::encode_chat_intent_result,
+        item_view::{COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveOutcome},
+        logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_intent},
+        pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+        world_object::COMMAND_TYPE_USE_INTENT,
+    };
+    let command_type = command.command_type;
+    if !selected.command_selected(command_type) {
+        return Ok(Dispatch::Unregistered);
+    }
+    let rejected = crate::foundation::CommandStatus::Rejected;
+    Ok(match command_type {
+        COMMAND_TYPE_LOGOUT_INTENT => {
+            if decode_logout_intent(command.payload).is_ok() {
+                Dispatch::Logout(LogoutResult::Busy)
+            } else {
+                Dispatch::Unregistered
+            }
+        }
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => Dispatch::Step(StepOutcome::rejected(), 0),
+        COMMAND_TYPE_USE_INTENT => Dispatch::Use(UseOutcome::rejected()),
+        COMMAND_TYPE_ITEM_MOVE_INTENT => {
+            Dispatch::ItemMove(ItemMoveOutcome::Rejected, Vec::new(), None)
+        }
+        COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => Dispatch::Reply(
+            rejected,
+            encode_spell_cast_result(SpellCastDisposition::Rejected),
+        ),
+        COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2 => Dispatch::Reply(
+            rejected,
+            encode_parameter_spell_cast_result(&ParameterSpellCastResult {
+                disposition: SpellCastDisposition::Rejected,
+                feedback: None,
+                editor: None,
+            })
+            .map_err(|_| ServeEnd::Disconnected)?,
+        ),
+        COMMAND_TYPE_CHAT_INTENT => Dispatch::Reply(
+            rejected,
+            encode_chat_intent_result(&ChatIntentResult {
+                disposition: ChatDisposition::Rejected,
+                wait_seconds: 0,
+            })
+            .map_err(|_| ServeEnd::Disconnected)?,
+        ),
+        COMMAND_TYPE_ATTACK_TARGET_INTENT
+        | COMMAND_TYPE_FIGHT_MODES_INTENT
+        | COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT => Dispatch::Reply(
+            rejected,
+            encode_attack_intent_result(AttackIntentDisposition::Rejected),
+        ),
+        COMMAND_TYPE_APPEARANCE_CHANGE => {
+            let (status, payload) =
+                appearance_change::result(ChangeResult::Rejected).ok_or(ServeEnd::Disconnected)?;
+            Dispatch::Reply(status, payload)
+        }
+        COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY => {
+            Dispatch::Reply(rejected, COMMAND_BUSY_REFUSAL.to_vec())
+        }
+        _ if GATED
+            .iter()
+            .any(|(_, commands, _)| commands.contains(&command_type)) =>
+        {
+            Dispatch::Reply(rejected, COMMAND_BUSY_REFUSAL.to_vec())
+        }
+        _ => Dispatch::Unregistered,
+    })
 }
 
 async fn bank_inventory<A>(
@@ -494,11 +561,26 @@ where
 }
 
 /// Keep holder contention distinct from lost authority in both command loops.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum InputGuard {
+    House,
+    Activity,
+}
+
+impl InputGuard {
+    fn name(self) -> &'static str {
+        match self {
+            Self::House => "house_transfer_input",
+            Self::Activity => "activity_transfer_input",
+        }
+    }
+}
+
 pub(super) async fn guards<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &mut AdmittedSession,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
-) -> Result<bool, ServeEnd> {
+) -> Result<Option<InputGuard>, ServeEnd> {
     let house_input = match admitted.continuity.house_input_pending {
         Some(false) => Ok(()),
         pending => {
@@ -510,30 +592,34 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
         }
     };
     let failure = match house_input {
-        Err(error) => Some(("house_transfer_input", error)),
+        Err(error) => Some((InputGuard::House, error)),
         Ok(()) => authority
-            .activity_transfer_input(*admitted)
+            .activity_transfer_input(*admitted, command.command_id)
             .await
             .err()
-            .map(|error| ("activity_transfer_input", error)),
+            .map(|error| (InputGuard::Activity, error)),
     };
     let Some((guard, error)) = failure else {
-        return Ok(true);
+        return Ok(None);
     };
     let kind = match error {
         crate::durability::DurabilityError::RootUnavailable => "holder_busy",
         crate::durability::DurabilityError::RootPassDeadlineExceeded => "deadline",
         _ => {
             operator_event(&format!(
-                "event=command_guard_failed guard={guard} command_type={} command_id={}",
-                command.command_type, command.command_id,
+                "event=command_guard_failed guard={} command_type={} command_id={}",
+                guard.name(),
+                command.command_type,
+                command.command_id,
             ));
             return Err(ServeEnd::Disconnected);
         }
     };
     operator_event(&format!(
-        "event=command_guard_deferred guard={guard} kind={kind} command_type={} command_id={}",
-        command.command_type, command.command_id,
+        "event=command_guard_deferred guard={} kind={kind} command_type={} command_id={}",
+        guard.name(),
+        command.command_type,
+        command.command_id,
     ));
-    Ok(false)
+    Ok(Some(guard))
 }
