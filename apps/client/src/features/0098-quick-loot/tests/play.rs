@@ -528,10 +528,11 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         skip: u32,
         gold: u32,
         listed: [u8; 16],
-        food_corpse_first: bool,
         backpack: [u8; 16],
         accept: u32,
         pouch: [u8; 16],
+        east_top: [u8; 16],
+        foreign_view: ContainerDelta,
         fulfilment: [u8; 16],
         selected_handle: u64,
         corpse: [u8; 16],
@@ -569,13 +570,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         id,
         fallback,
     };
-    let east_outcomes = |move_food| {
-        let mut items = [(expected.other, move_food), (expected.listed, false)];
-        if !expected.food_corpse_first {
-            items.reverse();
-        }
-        items
-    };
+    let east_outcomes = |move_food| [(expected.listed, false), (expected.other, move_food)];
     let east_refused = east_outcomes(false);
     let east_moved = east_outcomes(true);
     let gold = route(
@@ -676,8 +671,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         command.payload,
         std::fs::read(directory.join("i07-13-request.bin"))?
     );
-    menu_outbox.discovery_result(
-        98,
+    crate::play::session_loop::route_server_mechanic_reply(
+        &menu_outbox,
+        &command,
         &GatedCommandResult {
             command_id: moved.command_id,
             server_sequence: moved.server_sequence,
@@ -695,6 +691,52 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         after_click,
     )]);
     menu_app.update();
+    let foreign_view = expected.foreign_view.decode()?;
+    let [foreign_item] = foreign_view.value.entries.as_slice() else {
+        return Err("I07 foreign corpse capture must expose its live item".into());
+    };
+    let foreign = read_reply(25)?;
+    let last_assignment = read_reply(24)?;
+    assert_eq!(foreign.game_session_id, relog.game_session_id);
+    assert!(foreign.command_id > last_assignment.command_id);
+    assert!(last_assignment.server_sequence < foreign_view.server_sequence);
+    assert!(foreign_view.server_sequence < foreign.server_sequence);
+    assert_eq!(foreign.status, CommandStatus::Rejected as u32);
+    assert_ne!(foreign_view.value.container_handle, Some(container));
+    assert_ne!(foreign_item.handle, selected);
+    assert_ne!(foreign_item.handle, sibling);
+    assert_eq!(foreign_item.item_definition_ref.get(), expected.skip);
+    assert!(
+        menu::corpse_menu_link(&menu_app)?.quick_loot_action(Action::CorpseItem {
+            corpse: expected.corpse,
+            item: foreign_item.handle,
+        })
+    );
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = menu_commands.try_recv()?
+    else {
+        return Err("I07 foreign-handle replay dispatched a different command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (98, 114));
+    assert_eq!(
+        command.payload,
+        std::fs::read(directory.join("i07-25-request.bin"))?
+    );
+    crate::play::session_loop::route_server_mechanic_reply(
+        &menu_outbox,
+        &command,
+        &GatedCommandResult {
+            command_id: foreign.command_id,
+            server_sequence: foreign.server_sequence,
+            status: CommandStatus::Rejected,
+            payload: foreign.payload,
+        },
+    );
+    assert_eq!(
+        menu::corpse_menu_link(&menu_app)?
+            .corpse_loot_view()
+            .feedback,
+        Some("Item is no longer available")
+    );
     assert_eq!(menu::rendered_corpse_items(&mut menu_app), vec![sibling]);
     assert!(!menu::corpse_menu_link(&menu_app)?.quick_loot_corpse_item(
         container,
@@ -714,8 +756,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         command.payload,
         std::fs::read(directory.join("i07-20-request.bin"))?
     );
-    menu_outbox.discovery_result(
-        98,
+    crate::play::session_loop::route_server_mechanic_reply(
+        &menu_outbox,
+        &command,
         &GatedCommandResult {
             command_id: stale.command_id,
             server_sequence: stale.server_sequence,
@@ -774,8 +817,10 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (expected.armor, false),
                 (expected.filtered, false),
                 (expected.spare, false),
+                (expected.listed, false),
+                (expected.other, false),
             ],
-            Some("Looted 1 of 4 items"),
+            Some("Looted 1 of 6 items"),
         ),
         (gold_main.clone(), &[], None),
         (armor(false), &[], None),
@@ -858,11 +903,13 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         .game_window
         .loot_messages = true;
     outbox.discovery_initialize(&Selected(true));
-    ui::prepare_filter_picker(
-        &mut app,
-        &outbox,
-        [expected.skip, expected.gold, expected.accept],
-    )?;
+    let picker_inventory = oteryn_session::item_view::decode_character_inventory_with_appearances(
+        &std::fs::read(directory.join("i07-picker-inventory.bin"))?,
+        true,
+        true,
+    )
+    .map_err(|error| format!("I07 captured picker inventory: {error:?}"))?;
+    ui::prepare_filter_picker(&mut app, &outbox, picker_inventory.clone());
     ui::open(&mut app)?;
     use oteryn_client_runtime::cui3::store as store_wire;
     outbox.bevy_store_initialize();
@@ -974,7 +1021,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             assert_ne!(restore.game_session_id, sessions[0]);
             assert_eq!(restore.status, CommandStatus::Accepted as u32);
             previous = (restore.command_id, restore.server_sequence);
-            let panel = peer::restore_capture(
+            peer::restore_active_capture(
+                &outbox,
                 peer::Exchange {
                     command: oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
                         capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
@@ -986,6 +1034,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 },
                 previous,
             )?;
+            let panel = ui::link(&app)?.quick_loot_panel();
             assert_eq!(panel.filter_mode, Some(accept));
             assert_eq!(panel.skipped, [expected.skip].into_iter().collect());
             assert_eq!(
@@ -1005,9 +1054,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     armor_route(expected.pouch, true),
                 ]
             );
-            crate::play::mailbox::lock(&ui::link(&app)?.mailbox)
-                .discovery
-                .loot = panel;
             ui::open(&mut app)?;
         }
         let status = if matches!(key, 19 | 20) {
@@ -1031,7 +1077,10 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         if matches!(key, 13 | 20) {
             continue;
         }
-        let dispatched = if action == Action::LootAll {
+        let dispatched = if key == 6 {
+            ui::click_action(&mut app, Action::LootAll)?;
+            true
+        } else if action == Action::LootAll {
             let tile: LootTile = serde_json::from_slice(
                 &std::fs::read(directory.join(format!("i07-{key}-tile.json"))).map_err(
                     |error| format!("I07 probe {key} requires the live clicked tile: {error}"),
@@ -1056,6 +1105,17 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 3,
                 "I07 probe {key} competing corpse omitted"
             );
+            if key >= 15 {
+                let top = tile
+                    .corpses
+                    .iter()
+                    .rfind(|(x, _, _)| *x == tile.x)
+                    .ok_or("I07 missing east top corpse")?;
+                assert_eq!(
+                    top.1, expected.east_top,
+                    "I07 probe {key} visible top corpse"
+                );
+            }
             outbox.entities(
                 tile.corpses
                     .into_iter()
@@ -1095,11 +1155,12 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             let link = ui::link(&app)?;
             match action {
                 Action::Add { mode, definition } => {
-                    let handle = [expected.skip, expected.gold, expected.accept]
+                    let handle = picker_inventory
+                        .entries
                         .iter()
-                        .position(|item| *item == definition)
-                        .ok_or("I07 filter definition omitted from picker inventory")?
-                        + 1;
+                        .find(|item| item.item_definition_ref.get() == definition)
+                        .ok_or("I07 filter definition omitted from captured picker inventory")?
+                        .handle;
                     ui::add_filter_item(&mut app, mode == skip, handle)?;
                     true
                 }
@@ -1193,14 +1254,16 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             .ok_or("I07 client omitted the loot result")?
             .items;
         assert_eq!(items.len(), expected_items.len());
-        assert_eq!(
-            items
-                .iter()
-                .map(|item| (item.item, item.accepted))
-                .collect::<Vec<_>>(),
-            expected_items,
-            "I07 probe {key}"
-        );
+        let mut actual: Vec<_> = items
+            .iter()
+            .map(|item| (item.item, item.accepted))
+            .collect();
+        let mut expected_items = expected_items.to_vec();
+        if key == 6 {
+            actual.sort_unstable();
+            expected_items.sort_unstable();
+        }
+        assert_eq!(actual, expected_items, "I07 probe {key}");
         let after = notices();
         assert_eq!(
             after.matches("[Loot]").count(),

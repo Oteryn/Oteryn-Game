@@ -309,6 +309,7 @@ async fn require_routes(
 struct Capture<'a> {
     directory: &'a Path,
     full: bool,
+    visible_top: [u8; 16],
     previous: (u64, u64),
 }
 
@@ -355,6 +356,11 @@ impl Capture<'_> {
             );
         }
         let anchor = clicked.last().ok_or("I07 missing selected corpse")?.1;
+        if east_stack && anchor != self.visible_top {
+            return Err(
+                "I07 the last published corpse must be the visible top of the east stack".into(),
+            );
+        }
         self.probe(
             client,
             key,
@@ -400,7 +406,7 @@ impl Capture<'_> {
             .session_mut()
             .gated_command(capability, command, &payload)
             .await?;
-        let expected_status = if matches!(key, 19 | 20) {
+        let expected_status = if matches!(key, 19 | 20 | 25) {
             CommandStatus::Rejected
         } else {
             CommandStatus::Accepted
@@ -436,15 +442,19 @@ impl Capture<'_> {
         } else {
             let result =
                 decode_quick_loot_result(&reply.payload).map_err(|error| format!("{error:?}"))?;
-            let actual: Vec<_> = result
+            let mut actual: Vec<_> = result
                 .items
                 .iter()
                 .map(|item| (item.item.as_slice(), item.accepted))
                 .collect();
-            let expected: Vec<_> = expected
+            let mut expected: Vec<_> = expected
                 .iter()
                 .map(|(item, accepted)| (item.item.as_slice(), *accepted))
                 .collect();
+            if request.action == QuickLootAction::LootAll && request.corpse.is_none() {
+                actual.sort_unstable();
+                expected.sort_unstable();
+            }
             if actual != expected {
                 return Err(format!(
                     "I07 probe {key} outcomes differ: expected={expected:?} actual={actual:?}"
@@ -634,9 +644,7 @@ pub(super) async fn journey(
            AND loot_table_production_key='oteryn:qualification.i07.loot'
            AND loot_purpose_key='CORPSE_MATERIALIZATION' AND draw_ordinal=0
            AND g.spatial_position=ANY($5)
-         ORDER BY (SELECT count(*) FROM game_item_corpse_container_entries e
-                   WHERE e.parent_item_instance_id=r.item_instance_id) DESC,
-                  g.stack_ordinal DESC NULLS FIRST, r.item_instance_id
+         ORDER BY g.spatial_position, r.item_instance_id
          LIMIT 4",
     )
     .bind(clients.world.as_slice())
@@ -696,15 +704,38 @@ pub(super) async fn journey(
     {
         return Err("I07 fixture item definition, count or slot differs".into());
     }
-    // The fixture query orders the east corpses top first. Their distinct
-    // items distinguish traversal even when one or both are refused.
-    let east_outcomes = |move_food| {
-        if stacked == adjacent_a {
-            [(other, move_food), (listed, false)]
-        } else {
-            [(listed, false), (other, move_food)]
+    // The fixture publishes the Skip-listed corpse after the food corpse.
+    // The most recently published corpse must be traversed first.
+    let east_outcomes = |move_food| [(listed, false), (other, move_food)];
+    for id in [3577, 3031, 3357] {
+        character_prep::grant_item(&client, id, 1).await?;
+    }
+    let picker_refs = [skip_reference, gold_reference, accept_reference];
+    let started = tokio::time::Instant::now();
+    let picker_inventory = loop {
+        if let Some(view) = client.inventory()
+            && picker_refs.iter().all(|definition| {
+                view.entries
+                    .iter()
+                    .any(|entry| entry.item_definition_ref.get() == *definition)
+            })
+        {
+            break view.clone();
         }
+        if started.elapsed() >= Duration::from_secs(2) {
+            return Err("I07 live backpack lacks a filter picker input".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
     };
+    write_capture(
+        &capture_dir.join("i07-picker-inventory.bin"),
+        &oteryn_protocol_oteryn::item_view::encode_character_inventory_with_appearances(
+            &picker_inventory,
+            true,
+            true,
+        )
+        .map_err(|error| format!("I07 picker inventory: {error:?}"))?,
+    )?;
     let mut expected_backpack =
         placements(&mut database, Storage::Backpack, character, &backpack).await?;
     require_placements(&mut database, Storage::InboxPouch, character, &pouch, &[]).await?;
@@ -752,6 +783,7 @@ pub(super) async fn journey(
     let mut capture = Capture {
         directory: capture_dir,
         full,
+        visible_top: listed_corpse.as_slice().try_into()?,
         previous: (inbox_reply.command_id, inbox_reply.server_sequence),
     };
     let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
@@ -818,16 +850,31 @@ pub(super) async fn journey(
     evidence("I07_POUCH_ASSIGNMENT wire=fulfilment_id stored=exact_item_instance");
     // Restore a distinct Unassigned route before testing Gold transfer.
     capture.probe(&mut client, 5, unassigned, &[]).await?;
+    let unassigned_state: (bool, bool, Option<Vec<u8>>) = sqlx::query_as(
+        "SELECT fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
+         FROM game_character_quick_loot_settings WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    if unassigned_state != (false, false, None) {
+        return Err(
+            "I07 Gold isolation: Unassigned still points at a container before transfer".into(),
+        );
+    }
+    evidence("I07_GOLD_ISOLATION unassigned=main fallback=off before_transfer=true");
     capture
-        .loot_all(
+        .probe(
             &mut client,
             6,
-            false,
+            request(QuickLootAction::LootAll),
             &[
                 (coin, true),
                 (armor, false),
                 (filtered, false),
                 (spare, false),
+                (listed, false),
+                (other, false),
             ],
         )
         .await?;
@@ -1258,6 +1305,52 @@ pub(super) async fn journey(
         )
         .await?;
     require_routes(&mut database, character, &pouch, false, false, full, true).await?;
+    let foreign_view = open_foreign_corpse(
+        &mut fresh,
+        listed_corpse.as_slice().try_into()?,
+        skip_reference,
+    )
+    .await?;
+    let foreign = foreign_view.value.entries[0].handle;
+    if foreign == selected || foreign == sibling {
+        return Err("I07 foreign item aliases the primary corpse item".into());
+    }
+    capture
+        .probe(
+            &mut fresh,
+            25,
+            QuickLootRequest {
+                selected_item: Some(foreign),
+                ..click
+            },
+            &[],
+        )
+        .await?;
+    fresh.service_liveness(Duration::from_millis(250)).await?;
+    if fresh
+        .take_events()
+        .into_iter()
+        .any(|event| matches!(event, oteryn_dev_client::SessionEvent::OpenContainer(_)))
+    {
+        return Err("I07 a live foreign handle changed a container".into());
+    }
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        listed_corpse,
+        std::slice::from_ref(listed),
+    )
+    .await?;
+    require_placements(
+        &mut database,
+        Storage::Corpse,
+        character,
+        corpse,
+        std::slice::from_ref(spare),
+    )
+    .await?;
+    evidence("I07_FOREIGN_CLICK refusal=stale live_item=foreign_corpse custody=unchanged");
     require_logout(&mut fresh).await?;
     drop(fresh);
     let mut readback = connect_world(clients, 0x07).await?;
@@ -1363,7 +1456,7 @@ pub(super) async fn journey(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
                 "final_session": uuid_text(readback_session.as_bytes()),
-                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "food_corpse_first": stacked == adjacent_a, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "fulfilment": fulfilment, "selected_handle": selected.get(),
+                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "east_top": listed_corpse, "foreign_view": captured_container(foreign_view)?, "fulfilment": fulfilment, "selected_handle": selected.get(),
                 "corpse_kind": corpse_entity.kind as u8,
                 "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
                 "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
@@ -1570,6 +1663,47 @@ fn matching_corpse_delta(
         return Err("I07 command emitted an extra or wrong-container delta".into());
     }
     Ok(first)
+}
+
+async fn open_foreign_corpse(
+    client: &mut oteryn_dev_client::DevClientSession,
+    identity: [u8; 16],
+    item_definition: u32,
+) -> TestResult<CorpseDelta> {
+    use oteryn_protocol_oteryn::world_spatial_entities::{EntityDetail, EntityKind};
+    let corpse = client
+        .world_entities()
+        .ok_or("I07 foreign corpse view unavailable")?
+        .others()
+        .find(|entity| entity.kind == EntityKind::Corpse && entity.entity.identity == identity)
+        .and_then(|entity| match entity.detail {
+            EntityDetail::Object { item_handle, .. }
+            | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+            _ => None,
+        })
+        .ok_or("I07 foreign corpse handle unavailable")?;
+    let reply = client.use_item(corpse).await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("I07 foreign corpse open refused: {reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    loop {
+        if let Some(delta) = matching_corpse_delta(client, corpse)? {
+            let [entry] = delta.value.entries.as_slice() else {
+                return Err("I07 foreign corpse must expose its one live item".into());
+            };
+            if entry.item_definition_ref.get() != item_definition || entry.count.get() != 1 {
+                return Err("I07 foreign corpse item differs".into());
+            }
+            return Ok(delta);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("I07 foreign corpse omitted its container view".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }
 
 async fn open_primary_corpse(

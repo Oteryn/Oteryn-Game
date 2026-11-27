@@ -227,6 +227,33 @@ fn scenario_with_startup(
 }
 
 #[cfg(bevy_shell)]
+pub(super) fn restore_active_capture(
+    outbox: &crate::play::Outbox,
+    exchange: Exchange,
+    response_identity: (u64, u64),
+) -> Result<(), Box<dyn std::error::Error>> {
+    let queue = Arc::new(Mutex::new(Exchanges::from([(exchange, vec![])])));
+    let mut peer = Peer {
+        response_identity,
+        exchanges: queue.clone(),
+        events: vec![],
+        entities: vec![],
+    };
+    outbox.discovery_initialize(&peer);
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(outbox.restore_quick_loot(&mut peer))?;
+    assert!(
+        queue
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_empty()
+    );
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
 pub(super) fn restore_capture(
     exchange: Exchange,
     response_identity: (u64, u64),

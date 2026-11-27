@@ -106,38 +106,24 @@ pub(crate) fn click_corpse_tile(
 pub(crate) fn prepare_filter_picker(
     app: &mut App,
     outbox: &Outbox,
-    definitions: [u32; 3],
-) -> TestResult {
-    let entries = definitions
-        .into_iter()
-        .enumerate()
-        .map(|(index, definition)| {
-            Ok(oteryn_session::ItemEntry {
-                appearance_id: 0,
-                handle: u64::try_from(index + 1)?.try_into()?,
-                item_definition_ref: definition.try_into()?,
-                count: 1.try_into()?,
-                sub_type: 0,
-            })
-        })
-        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+    inventory: oteryn_session::CharacterInventory,
+) {
     outbox.push(vec![oteryn_session::SessionEvent::Inventory(
         oteryn_session::AppliedDelta {
             server_sequence: 1,
             base_revision: 0,
             new_revision: 1,
-            value: oteryn_session::CharacterInventory {
-                main_backpack: None,
-                equipment: vec![],
-                entries,
-            },
+            value: inventory,
         },
     )]);
     super::super::install::install_scroll_memory(app);
-    Ok(())
 }
 
-pub(crate) fn add_filter_item(app: &mut App, skip: bool, handle: usize) -> TestResult {
+pub(crate) fn add_filter_item(
+    app: &mut App,
+    skip: bool,
+    handle: oteryn_session::ItemHandle,
+) -> TestResult {
     app.update();
     let mode = if skip { "skip" } else { "accept" };
     let add = named(app, &format!("quick_loot.add.{mode}"))?;
