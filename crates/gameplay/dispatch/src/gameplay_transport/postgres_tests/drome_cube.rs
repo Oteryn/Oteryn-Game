@@ -96,7 +96,10 @@ fn drome_cube_first_logout_waits_for_checked_out_pass_postgres() -> TestResult {
 
 struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
-    async fn logout(&self, admitted: AdmittedSession) -> crate::gameplay_transport::logout::LogoutReply {
+    async fn logout(
+        &self,
+        admitted: AdmittedSession,
+    ) -> crate::gameplay_transport::logout::LogoutReply {
         self.0.logout_session(admitted).await
     }
 
