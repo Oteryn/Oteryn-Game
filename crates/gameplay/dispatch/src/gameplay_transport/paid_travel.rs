@@ -1,9 +1,14 @@
 //! Ship/carpet confirmations feed the same travel hold and relocation used by Newhaven.
 use super::*;
 use crate::content::npc_catalogue::travel::TravelRoute;
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
+use npc_command::{
+    NpcReadRefusal, npc_read_attempt, progression_read_error, read_npc_backpack,
+    read_npc_quest_fence,
+};
 use oteryn_protocol_oteryn::npc_service::{NpcConversation, NpcConversationState};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
@@ -54,6 +59,30 @@ fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalk
         TravelRefusal::InsufficientFunds => "You don't have enough money.",
     };
     npc_command::NpcConversations::bank_reply(intent, line.into())
+}
+
+enum TravelPreparationError {
+    Read(NpcReadRefusal),
+    Route(TravelRefusal),
+}
+
+impl From<NpcReadRefusal> for TravelPreparationError {
+    fn from(error: NpcReadRefusal) -> Self {
+        Self::Read(error)
+    }
+}
+
+impl TravelPreparationError {
+    fn reply(
+        self,
+        intent: &NpcTalkIntent,
+        command: connection::UseCommand,
+    ) -> npc_command::NpcTalkOutcome {
+        match self {
+            Self::Read(error) => error.reply(intent, command, "paid_travel_prepare"),
+            Self::Route(cause) => refusal(intent, cause),
+        }
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -206,9 +235,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (context, entry.travel_routes.clone(), previous)
         };
-        let Some(fence) = command.item_fence else {
-            return ordinary;
-        };
         if previous.as_ref().is_some_and(|prompt| {
             prompt.route.crystal_callback
                 && prompt.npc == intent.npc_actor
@@ -229,7 +255,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 text == route.keyword || text == trigger
             }
         });
-        let prompt = if text == "yes" || (route.is_none() && callback_confirmation) {
+        let confirming = text == "yes" || (route.is_none() && callback_confirmation);
+        let Some(fence) = command.item_fence else {
+            return if route.is_some() || (confirming && previous.is_some()) {
+                NpcReadRefusal::Stale.reply(intent, command, "paid_travel_prepare")
+            } else {
+                ordinary
+            };
+        };
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let prompt = if confirming {
             let Some(mut prompt) = previous else {
                 return ordinary;
             };
@@ -265,38 +300,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     wreck_route.route.premium = true;
                     let destination = &mut wreck_route.route.destination;
                     (destination.x, destination.y, destination.floor) = (32161, 32558, 6);
-                    let Ok(Some(current)) = self.current_quest_fence(session).await else {
-                        return refusal(intent, TravelRefusal::StaleQuote);
-                    };
-                    if current.item_fence() != fence {
-                        return refusal(intent, TravelRefusal::StaleQuote);
-                    }
                     match self
-                        .root
-                        .quote_npc_travel(
-                            self.character,
-                            self.holder,
-                            current,
-                            wreck_route.clone(),
-                            &self.premium_coordinator,
-                        )
+                        .travel_fare(command, wreck_route.clone(), &budget)
                         .await
                     {
-                        Ok(Ok(_)) => prompt.route = wreck_route,
-                        Ok(Err(
+                        Ok(_) => prompt.route = wreck_route,
+                        Err(TravelPreparationError::Route(
                             TravelRefusal::UnavailableRoute | TravelRefusal::PremiumRequired,
                         )) => {}
-                        Ok(Err(cause)) => return refusal(intent, cause),
-                        Err(_) => {
-                            if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock()
-                            {
-                                prompts.insert(session, prompt);
-                            }
-                            return npc_command::NpcTalkOutcome {
-                                unknown: true,
-                                ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
-                            };
-                        }
+                        Err(error) => return error.reply(intent, command),
                     }
                 }
             }
@@ -305,31 +317,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(route) = route else {
                 return ordinary;
             };
-            let Ok(Some(current)) = self.current_quest_fence(session).await else {
-                return ordinary;
-            };
-            if current.item_fence() != fence {
-                return ordinary;
-            }
-            let fare = match self
-                .root
-                .quote_npc_travel(
-                    self.character,
-                    self.holder,
-                    current,
-                    route.clone(),
-                    &self.premium_coordinator,
-                )
-                .await
-            {
-                Ok(Ok(fare)) => fare,
-                Ok(Err(cause)) => return refusal(intent, cause),
-                Err(_) => {
-                    return npc_command::NpcTalkOutcome {
-                        unknown: true,
-                        ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
-                    };
-                }
+            let fare = match self.travel_fare(command, route.clone(), &budget).await {
+                Ok(fare) => fare,
+                Err(error) => return error.reply(intent, command),
             };
             let line = format!(
                 "Do you seek a passage to {} for {fare} gold?",
@@ -366,11 +356,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 NpcConversationState::Confirming,
             );
         };
-        let Some(request) = self
-            .paid_travel_request(actor, command, intent, &prompt)
+        let request = match self
+            .paid_travel_request(actor, command, intent, &prompt, &budget)
             .await
-        else {
-            return refusal(intent, TravelRefusal::UnavailableRoute);
+        {
+            Ok(request) => request,
+            Err(error) => return error.reply(intent, command),
         };
         let frozen = FrozenTravel {
             command: request.command,
@@ -393,10 +384,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || states.has_pending_spell_commit(actor, session) {
-                return ordinary;
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
             }
             let Ok(position) = runtime.read_actor_position(actor) else {
-                return ordinary;
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
             };
             let capture = TravelCapture {
                 session: fence,
@@ -404,10 +395,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 position_revision: position.revision(),
             };
             let Ok(work) = runtime.issue_owner_work() else {
-                return ordinary;
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
             };
             let Ok(owner) = runtime.owner_fence() else {
-                return ordinary;
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
             };
             let mut slot = TravelHoldSlot::default();
             if slot
@@ -420,10 +411,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .is_err()
             {
-                return ordinary;
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
             }
             let Ok(mut holds) = self.states.newhaven_travel.holds.lock() else {
-                return ordinary;
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
             };
             holds.insert(
                 session,
@@ -469,28 +460,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    async fn travel_fare(
+        &self,
+        command: connection::UseCommand,
+        route: TravelRoute,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> Result<u64, TravelPreparationError> {
+        let current = read_npc_quest_fence(self, command, budget).await?;
+        if Some(current.item_fence()) != command.item_fence {
+            return Err(NpcReadRefusal::Stale.into());
+        }
+        budget
+            .retry_command_guard(async || {
+                npc_read_attempt(
+                    self.root
+                        .quote_npc_travel(
+                            self.character,
+                            self.holder,
+                            current,
+                            route.clone(),
+                            &self.premium_coordinator,
+                        )
+                        .await,
+                    progression_read_error,
+                )
+            })
+            .await
+            .map_err(|error| NpcReadRefusal::from_durability(&error))?
+            .map_err(|error| match error {
+                CharacterProgressionError::AuthorityRejected
+                | CharacterProgressionError::CharacterRevisionMismatch => NpcReadRefusal::Stale,
+                _ => NpcReadRefusal::Unavailable,
+            })?
+            .map_err(TravelPreparationError::Route)
+    }
+
     async fn paid_travel_request(
         &self,
         actor: ExactActorRef,
         command: connection::UseCommand,
         intent: &NpcTalkIntent,
         prompt: &Prompt,
-    ) -> Option<PaidTravelRequest> {
-        let current = self
-            .current_quest_fence(command.game_session_id)
-            .await
-            .ok()??;
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> Result<PaidTravelRequest, TravelPreparationError> {
+        let current = read_npc_quest_fence(self, command, budget).await?;
         if current.item_fence() != prompt.fence {
-            return None;
+            return Err(NpcReadRefusal::Stale.into());
         }
         let runtime = self.runtime.lock().await;
-        self.states.npc_conversations.current_npc(
-            &self.states.chat,
-            &runtime,
-            actor,
-            command.game_session_id,
-            intent,
-        )?;
+        self.states
+            .npc_conversations
+            .current_npc(
+                &self.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                intent,
+            )
+            .ok_or(NpcReadRefusal::Stale)?;
         let destination = &prompt.route.route.destination;
         let cell = crate::foundation::MovementLocalPosition {
             x: destination.x,
@@ -512,23 +539,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
         }) {
-            return None;
+            return Err(TravelPreparationError::Route(
+                TravelRefusal::UnavailableRoute,
+            ));
         }
-        let (gold, platinum, crystal) = npc_command::bank_coin_definitions(self, &runtime)?;
+        let (gold, platinum, crystal) = npc_command::bank_coin_definitions(self, &runtime)
+            .ok_or(NpcReadRefusal::Unavailable)?;
         let index =
-            super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+            super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                .ok_or(NpcReadRefusal::Unavailable)?;
         let backpack = crate::durability::item_mint::TypedDefinitionRef {
             family: "Item".into(),
             production_key: "oteryn:item.tibia.i2854".into(),
-            revision_ref: index.revision("oteryn:item.tibia.i2854")?.into(),
+            revision_ref: index
+                .revision("oteryn:item.tibia.i2854")
+                .ok_or(NpcReadRefusal::Unavailable)?
+                .into(),
         };
         drop(runtime);
-        let native = self.active_generation?.native_gameplay()?;
-        let stored = self
-            .root
-            .read_character_backpack(self.character, current.character_id)
-            .await
-            .ok()?;
+        let native = self
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or(NpcReadRefusal::Unavailable)?;
+        let stored = read_npc_backpack(self, current.character_id, budget).await?;
         let backpack = super::super::item_ref_admission::generation_item_facts(
             native,
             stored
@@ -536,7 +569,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map(|stored| &stored.backpack.definition)
                 .unwrap_or(&backpack),
         )
-        .ok()?;
+        .map_err(|_| NpcReadRefusal::Unavailable)?;
         let derive = |slot: u8| {
             super::super::npc_trade_command::derived(
                 format!("oteryn:npc-travel:v1:{slot}").as_bytes(),
@@ -544,12 +577,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command.command_id,
             )
         };
-        let occurrence = TravelOccurrence::from_bytes(derive(0)).ok()?;
+        let occurrence =
+            TravelOccurrence::from_bytes(derive(0)).map_err(|_| NpcReadRefusal::Unavailable)?;
         let destination = &prompt.route.route.destination;
-        Some(PaidTravelRequest {
+        Ok(PaidTravelRequest {
             command: crate::foundation::CommandRef::new(
                 command.game_session_id,
-                crate::foundation::CommandId::new(command.command_id).ok()?,
+                crate::foundation::CommandId::new(command.command_id)
+                    .map_err(|_| NpcReadRefusal::Stale)?,
             ),
             arrival: PendingArrival {
                 occurrence,

@@ -64,47 +64,58 @@ pub(super) async fn inventory(
     actor: ExactActorRef,
     command: UseCommand,
     intent: &NpcTalkIntent,
-) -> Option<npc_program::NpcProgramInventory> {
+) -> Result<Option<npc_program::NpcProgramInventory>, NpcReadRefusal> {
     let npc = {
         let runtime = admission.runtime.lock().await;
-        let npc =
-            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        let source = NpcRuleCatalog::runtime()
-            .ok()?
-            .admitted_for_npc(&npc.key, admission.quest_catalogue.as_ref()?)
-            .ok()??;
+        let Some(npc) =
+            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)
+        else {
+            return Ok(None);
+        };
+        let Some(catalogue) = admission.quest_catalogue.as_ref() else {
+            return Ok(None);
+        };
+        let Some(source) = NpcRuleCatalog::runtime()
+            .map_err(|_| NpcReadRefusal::Unavailable)?
+            .admitted_for_npc(&npc.key, catalogue)
+            .map_err(|_| NpcReadRefusal::Unavailable)?
+        else {
+            return Ok(None);
+        };
         if !npc_program::inventory_prefetch_required(&npc.key, &source) {
-            return None;
+            return Ok(None);
         }
         npc.key.clone()
     };
-    let expected = command.item_fence?;
-    let fence = admission
-        .current_quest_fence(command.game_session_id)
-        .await
-        .ok()??;
-    if fence.item_fence() != expected {
-        return None;
+    let budget = super::super::AdmissionRetryBudget::for_command(admission.root);
+    let fence = read_npc_quest_fence(admission, command, &budget).await?;
+    if Some(fence.item_fence()) != command.item_fence {
+        return Err(NpcReadRefusal::Stale);
     }
-    let catalogue = admission.quest_catalogue.as_ref()?;
-    let native = admission.active_generation?.native_gameplay()?;
-    admission
-        .root
-        .read_current_npc_program_inventory(
-            admission.character,
-            admission.holder,
-            fence,
-            CommandRef::new(
-                command.game_session_id,
-                CommandId::new(command.command_id).ok()?,
-            ),
-            &npc,
-            catalogue,
-            &super::super::item_ref_admission::NativeItemWeights(native)
-                .with_wheel(admission.premium_coordinator),
-        )
-        .await
-        .ok()
+    let catalogue = admission
+        .quest_catalogue
+        .as_ref()
+        .ok_or(NpcReadRefusal::Unavailable)?;
+    let native = admission
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or(NpcReadRefusal::Unavailable)?;
+    let reference = CommandRef::new(
+        command.game_session_id,
+        CommandId::new(command.command_id).map_err(|_| NpcReadRefusal::Stale)?,
+    );
+    let weights = super::super::item_ref_admission::NativeItemWeights(native)
+        .with_wheel(admission.premium_coordinator);
+    budget.retry_command_guard(async || {
+        npc_read_attempt(admission.root.read_current_npc_program_inventory(
+            admission.character, admission.holder, fence, reference, &npc, catalogue, &weights,
+        ).await, progression_read_error)
+    }).await.map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map(Some).map_err(|error| match error {
+            crate::durability::character_progression::CharacterProgressionError::AuthorityRejected =>
+                NpcReadRefusal::Stale,
+            _ => NpcReadRefusal::Unavailable,
+        })
 }
 
 pub(super) async fn appearance(
@@ -112,16 +123,20 @@ pub(super) async fn appearance(
     actor: ExactActorRef,
     command: UseCommand,
     intent: &NpcTalkIntent,
-) -> Option<(std::collections::BTreeMap<u16, u8>, u8)> {
+) -> Result<Option<(std::collections::BTreeMap<u16, u8>, u8)>, NpcReadRefusal> {
     use crate::domain::appearance::{AppearanceContent, Sex};
+    use crate::durability::character_appearance::AppearanceWriteError;
     let needs = {
         let runtime = admission.runtime.lock().await;
         // A greeting establishes engagement later in talk_in. This prefetch is
         // read-only; prepare rechecks the engaged NPC before using the snapshot.
-        let npc =
-            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
+        let Some(npc) =
+            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)
+        else {
+            return Ok(None);
+        };
         NpcRuleCatalog::runtime()
-            .ok()?
+            .map_err(|_| NpcReadRefusal::Unavailable)?
             .programs()
             .iter()
             .flat_map(|program| &program.document.rules)
@@ -142,29 +157,59 @@ pub(super) async fn appearance(
             })
     };
     if !needs {
-        return Some((Default::default(), 0));
+        return Ok(Some((Default::default(), 0)));
     }
-    let (_, content) = admission.appearance_context()?;
-    let fence =
-        super::super::character_gameplay_fence::current(admission, command.game_session_id, false)
-            .await?;
-    let state = admission
-        .root
-        .read_current_character_appearance_state(
-            admission.character,
-            admission.holder,
-            fence,
-            content.earned_grant_keys(),
-        )
+    let (_, content) = admission
+        .appearance_context()
+        .ok_or(NpcReadRefusal::Unavailable)?;
+    let budget = super::super::AdmissionRetryBudget::for_command(admission.root);
+    let fence = budget
+        .retry_command_guard(async || {
+            super::super::character_gameplay_fence::current_once(
+                admission,
+                command.game_session_id,
+                false,
+            )
+            .await
+        })
         .await
-        .ok()?;
-    Some((
+        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .ok_or(NpcReadRefusal::Stale)?;
+    if Some(fence.item_fence()) != command.item_fence {
+        return Err(NpcReadRefusal::Stale);
+    }
+    let state = budget
+        .retry_command_guard(async || {
+            npc_read_attempt(
+                admission
+                    .root
+                    .read_current_character_appearance_state(
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        content.earned_grant_keys(),
+                    )
+                    .await,
+                |error| match error {
+                    AppearanceWriteError::Unavailable(error) => Some(error),
+                    AppearanceWriteError::Fence(error) => progression_read_error(error),
+                    _ => None,
+                },
+            )
+        })
+        .await
+        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map_err(|error| match error {
+            AppearanceWriteError::Fence(_) => NpcReadRefusal::Stale,
+            _ => NpcReadRefusal::Unavailable,
+        })?;
+    Ok(Some((
         crate::durability::character_appearance::npc_outfits::snapshot(&content, &state.earned),
         match state.sex {
             Sex::Female => 0,
             Sex::Male => 1,
         },
-    ))
+    )))
 }
 
 #[allow(

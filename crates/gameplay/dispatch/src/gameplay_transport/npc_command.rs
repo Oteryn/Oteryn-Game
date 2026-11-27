@@ -97,7 +97,93 @@ async fn npc_gameplay_fence(
     crate::durability::character_progression::CurrentCharacterGameplayFence,
     NpcIntentDisposition,
 > {
-    match budget
+    read_npc_quest_fence(admission, command, budget)
+        .await
+        .map_err(|refusal| match refusal {
+            NpcReadRefusal::Busy => busy_disposition(command, stage),
+            _ => NpcIntentDisposition::Rejected,
+        })
+}
+
+// Feed only holder errors into the existing command retry. A nested owner error travels
+// through unchanged, including a known authority rejection.
+pub(super) fn npc_read_attempt<T, E>(
+    result: Result<T, E>,
+    durability: impl FnOnce(&E) -> Option<&crate::durability::DurabilityError>,
+) -> Result<Result<T, E>, crate::durability::DurabilityError> {
+    use crate::durability::DurabilityError;
+    match result.as_ref().err().and_then(durability) {
+        Some(DurabilityError::RootUnavailable) => Err(DurabilityError::RootUnavailable),
+        Some(DurabilityError::RootPassDeadlineExceeded) => {
+            Err(DurabilityError::RootPassDeadlineExceeded)
+        }
+        _ => Ok(result),
+    }
+}
+
+pub(super) fn progression_read_error(
+    error: &crate::durability::character_progression::CharacterProgressionError,
+) -> Option<&crate::durability::DurabilityError> {
+    match error {
+        crate::durability::character_progression::CharacterProgressionError::Unavailable(error) => {
+            Some(error)
+        }
+        _ => None,
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) enum NpcReadRefusal {
+    Busy,
+    Stale,
+    Unavailable,
+}
+
+impl NpcReadRefusal {
+    pub(super) fn from_durability(error: &crate::durability::DurabilityError) -> Self {
+        if npc_holder_busy(error) {
+            Self::Busy
+        } else if matches!(error, crate::durability::DurabilityError::CommitRejected) {
+            Self::Stale
+        } else {
+            Self::Unavailable
+        }
+    }
+
+    pub(super) fn reply(
+        self,
+        intent: &NpcTalkIntent,
+        command: super::connection::UseCommand,
+        stage: &'static str,
+    ) -> NpcTalkOutcome {
+        let (disposition, line) = match self {
+            Self::Busy => (
+                busy_disposition(command, stage),
+                "I cannot check your request right now. Please try again.",
+            ),
+            Self::Stale => (
+                NpcIntentDisposition::Stale,
+                "Your request is no longer current. Please ask again.",
+            ),
+            Self::Unavailable => (
+                NpcIntentDisposition::Rejected,
+                "I could not verify your request.",
+            ),
+        };
+        NpcTalkOutcome {
+            disposition,
+            ..NpcConversations::bank_reply(intent, line.into())
+        }
+    }
+}
+
+pub(super) async fn read_npc_quest_fence(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    command: super::connection::UseCommand,
+    budget: &super::AdmissionRetryBudget<'_>,
+) -> Result<crate::durability::character_progression::CurrentCharacterGameplayFence, NpcReadRefusal>
+{
+    budget
         .retry_command_guard(async || {
             let result = admission
                 .current_quest_fence_durable(command.game_session_id)
@@ -109,11 +195,39 @@ async fn npc_gameplay_fence(
             result
         })
         .await
-    {
-        Ok(Some(fence)) => Ok(fence),
-        Err(error) if npc_holder_busy(&error) => Err(busy_disposition(command, stage)),
-        _ => Err(NpcIntentDisposition::Rejected),
-    }
+        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .ok_or(NpcReadRefusal::Stale)
+}
+
+pub(super) async fn read_npc_backpack(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    character: crate::domain::CharacterId,
+    budget: &super::AdmissionRetryBudget<'_>,
+) -> Result<Option<crate::durability::item_transfer::CharacterBackpack>, NpcReadRefusal> {
+    use crate::durability::{DurabilityError, item_transfer::ItemTransferError};
+    budget
+        .retry_command_guard(async || {
+            // This reader already waits for readiness. Keep that wait within the
+            // command window instead of inheriting the longer root recovery window.
+            let result = tokio::time::timeout_at(
+                budget.deadline,
+                admission
+                    .root
+                    .read_character_backpack(admission.character, character),
+            )
+            .await
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+            npc_read_attempt(result, |error| match error {
+                ItemTransferError::Unavailable(error) => Some(error),
+                _ => None,
+            })
+        })
+        .await
+        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map_err(|error| match error {
+            ItemTransferError::AuthorityRejected => NpcReadRefusal::Stale,
+            _ => NpcReadRefusal::Unavailable,
+        })
 }
 
 async fn retry_npc_checkout<T>(
@@ -963,8 +1077,14 @@ pub(super) async fn npc_bank_talk(
         }
         Err(_) => return rejected(),
     };
-    let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
-    let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
+    let source_appearance = match catalogue::appearance(admission, actor, command, &intent).await {
+        Ok(appearance) => appearance,
+        Err(error) => return error.reply(&intent, command, "npc_appearance"),
+    };
+    let source_inventory = match catalogue::inventory(admission, actor, command, &intent).await {
+        Ok(inventory) => inventory,
+        Err(error) => return error.reply(&intent, command, "npc_inventory"),
+    };
     let blank_scroll_available =
         quest_shop::blank_scroll_available(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
@@ -1125,8 +1245,9 @@ pub(super) async fn npc_bank_talk(
             &intent,
         );
         drop(runtime);
-        let Some(facts) = reward_facts::read(admission, command).await else {
-            return rejected();
+        let facts = match reward_facts::read(admission, command).await {
+            Ok(facts) => facts,
+            Err(error) => return error.reply(&intent, command, "npc_reward_facts"),
         };
         runtime = admission.runtime.lock().await;
         if !runtime
