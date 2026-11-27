@@ -296,8 +296,9 @@ async fn reconnect_cooldowns(
         .into_iter()
         .filter(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
         .collect();
+    // FND-04B allows a resume snapshot at the retained sequence when no new frame was sent.
     if resumed_session != session
-        || resumed_sequence <= sequence
+        || resumed_sequence < sequence
         || resumed_next_command != next_command
         || !active
             .iter()
@@ -323,15 +324,20 @@ async fn assert_cooling_down(
         .actor_vitals()
         .copied()
         .ok_or("W09 caster vitals missing")?;
+    let command_id = client.next_command_id();
+    let sequence = client.last_server_sequence();
     let blocked = client.cast_spell(spell, SpellTarget::None, false).await?;
     if blocked.status != CommandStatus::Accepted
         || blocked.disposition != SpellCastDisposition::CoolingDown
+        || blocked.command_id != command_id
+        || blocked.result_server_sequence <= sequence
+        || command_id.checked_add(1) != Some(client.next_command_id())
         || blocked.actor_vitals_delta.is_some()
         || client.actor_vitals().copied() != Some(before)
         || &quantities(client)? != expected
     {
         return Err(format!(
-            "W09 Conjure Wand of Darkness was not a resource-free cooldown refusal: {blocked:?}"
+            "W09 Conjure cooldown refusal failed after command={command_id} sequence={sequence}: {blocked:?}"
         )
         .into());
     }
