@@ -496,6 +496,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     character_prep::grant_item(&client, cube_id, 4).await?;
     character_prep::grant_item(&client, aid_id, 2).await?;
+    character_prep::grant_item(&client, 3043, 2).await?;
     logout(&mut client).await?;
     let mut client = connect_character(&scope, 0xd2, 0).await?;
     if client.join_snapshot().game_session_id == preparation_session {
@@ -512,6 +513,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&scope.world)?, ChannelId::decode(&scope.channel)?)?;
+    let cast_tile = tile(client.world_spatial().actor_position)?;
+    let king = full_row_p20::approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
+    if full_row_p20::talk(&mut client, king, "hi").await?.is_empty()
+        || full_row_p20::talk(&mut client, king, "promotion").await? != ["Do you want to be promoted for 20000 gold coins?"]
+        || full_row_p20::talk(&mut client, king, "yes").await? != ["You are now promoted."]
+    {
+        return Err("W09 Master Sorcerer promotion was refused".into());
+    }
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == cast_tile)
+        .ok_or("W09 no route back to the original cast tile")?;
+    walk(&mut client, world, &path).await?;
     expected.extend([(cube, 4), (aid, 2)]);
     if quantities(&client)? != expected {
         return Err("W09 fresh admission did not serve exactly the seeded items".into());
