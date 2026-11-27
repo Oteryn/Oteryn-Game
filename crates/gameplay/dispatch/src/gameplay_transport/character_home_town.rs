@@ -5,9 +5,9 @@ use crate::map::overlay::TilePos;
 use crate::map::view::{MapFacts, placement_key};
 
 /// Crystal 201189f8 `data-global/scripts/movements/teleport/adventurers_guild.lua:3-20`.
-const ADVENTURERS_GUILD_RETURN_ACTION: u16 = 4253;
+pub(super) const ADVENTURERS_GUILD_RETURN_ACTION: u16 = 4253;
 // Crystal src/utils/utils_definitions.hpp:66, CONST_ME_TELEPORT.
-const TELEPORT_EFFECT: u16 = 11;
+pub(super) const TELEPORT_EFFECT: u16 = 11;
 
 /// Crystal/Canary citizen.lua: these are placement unique ids, not appearance ids.
 fn citizen_town(unique: u16) -> Option<u32> {
@@ -434,7 +434,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime.read_actor_position(actor).unwrap_or(entered)
     }
 
-    /// The Adventurers' Guild exit sends an unattuned player to their citizen temple.
+    /// The Guild exit consumes the Stone's attunement or uses the citizen temple.
     async fn adventurers_guild_return(
         &self,
         actor: ExactActorRef,
@@ -447,13 +447,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.overlay.runtime_scope() != scope {
             return None;
         }
-        let town = self.home_town(session, None).await?;
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let fence = budget
+            .retry_command_guard(async || self.current_quest_fence_durable(session).await)
+            .await
+            .ok()??
+            .item_fence();
+        let origin = budget
+            .retry_command_guard(async || {
+                self.root
+                    .read_guild_stone_origin(self.character, self.holder, fence)
+                    .await
+            })
+            .await
+            .ok()?;
+        let town = match origin {
+            Some(town) => town,
+            None => self.home_town(session, None).await?,
+        };
         let temple = map.overlay.base().subareas.town(town)?.temple?;
         let target = MovementLocalPosition {
             x: i32::from(temple.x),
             y: i32::from(temple.y),
             floor: -i16::from(temple.floor),
         };
+        if origin.is_some() {
+            let id = crate::foundation::CommandId::new(entered.revision()).ok()?;
+            return self.commit_stone_move(map, super::adventurers_stone::StoneMove {
+                actor, fence,
+                command: crate::foundation::CommandRef::new(session, id),
+                expected: entered, destination: target,
+                travel: crate::durability::quest_state::adventurers_stone::GuildStoneTravel::Return { town },
+            }).await;
+        }
         let mut runtime = self.runtime.lock().await;
         if runtime.binding().runtime_scope() != scope {
             return None;
