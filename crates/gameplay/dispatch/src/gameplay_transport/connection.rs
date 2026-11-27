@@ -37,6 +37,7 @@ use routing::Dispatch;
 #[cfg(test)]
 pub(in crate::gameplay_transport) use serve::regression_routed_step;
 use serve::serve_admitted_actor;
+
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
 #[path = "server_save_countdown_transport.rs"]
@@ -1712,3 +1713,39 @@ use oteryn_protocol_oteryn::npc_service::COMMAND_TYPE_NPC_TALK_INTENT;
 
 #[cfg(test)]
 use oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT;
+
+/// Exercise the production USE router and return its corpse view delta.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn regression_routed_corpse_open(
+    authority: &impl FreshAdmissionAuthority,
+    admitted: &mut AdmittedSession,
+    handle: oteryn_protocol_oteryn::item_view::ItemHandle,
+    items: &mut Option<SessionItemView>,
+    visibility: SessionVisibility,
+) -> Result<ItemViewDelta, String> {
+    let actor = admitted.runtime_actor.ok_or("corpse opener")?;
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_item_intent(handle);
+    let command = oteryn_protocol_oteryn::ClientCommandView {
+        command_id: admitted.continuity.next_command_id,
+        command_type: oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
+        payload: &payload,
+    };
+    match routing::use_item::route(
+        authority,
+        actor,
+        admitted,
+        command,
+        items,
+        &mut None,
+        &Some(visibility),
+    )
+    .await
+    {
+        Some(Dispatch::UseItem(OpenDecision::Open, Some(delta))) => Ok(delta),
+        Some(Dispatch::UseItem(decision, _)) => Err(format!("corpse USE returned {decision:?}")),
+        Some(Dispatch::Use(outcome)) => {
+            Err(format!("corpse USE returned {:?}", outcome.disposition))
+        }
+        _ => Err("corpse USE did not open a view".into()),
+    }
+}

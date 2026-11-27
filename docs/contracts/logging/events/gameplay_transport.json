@@ -205,6 +205,19 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "corpse_use_observation_stale",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stage",
+        "actor_scope_generation",
+        "scope_generation",
+        "corpse_revision"
+      ],
+      "codes": [],
+      "note": "Corpse target observation refusal. Records the command actor scope generation, the current scope generation and the corpse projection revision when available. Correlate with item_use_view_stale using the connection trace."
+    },
+    {
       "event": "fresh_admission_pending",
       "level": "warn",
       "span": false,
@@ -224,6 +237,21 @@
       ],
       "codes": [],
       "note": "PR3388: hotkey equip (command 348) rejection with the closed rejection stage that produced the existing Rejected reply; wire reply unchanged. Command_id is the client command id. No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "item_use_view_stale",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stage",
+        "command_id",
+        "server_sequence",
+        "connection_generation",
+        "requested_handle",
+        "last_handle"
+      ],
+      "codes": [],
+      "note": "Plain item USE view refusal. The client command ordinal and last server frame sequence are independent counters. Handles are connection view selectors and carry no generation field."
     },
     {
       "event": "join_prepare_failed",
