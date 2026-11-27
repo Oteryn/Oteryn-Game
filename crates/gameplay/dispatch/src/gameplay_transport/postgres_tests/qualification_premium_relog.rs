@@ -148,6 +148,8 @@ fn scenario() -> TestResult {
             let assignment = QuickLootRequest {
                 action: QuickLootAction::Assign,
                 category: Some(QuickLootCategory::Gold),
+                selected_item: None,
+                review_filters: false,
                 recipient: Some(QuickLootRecipient::MainContainer),
                 corpse: None,
                 recipient_id: None,
