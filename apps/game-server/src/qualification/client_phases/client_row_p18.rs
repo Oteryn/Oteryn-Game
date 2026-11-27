@@ -67,7 +67,36 @@ async fn enter_guild(client: &mut DevClientSession) -> TestResult {
         })
         .ok_or("P18 carried Adventurer's Stone missing")?
         .handle;
-    let reply = client.use_item(handle).await?;
+    let command = client.next_command_id();
+    let frame = client.last_server_sequence();
+    evidence(&format!(
+        "P18_STONE_DISPATCH path=carried_use command_id={command} last_frame={frame}"
+    ));
+    let reply = client.use_item(handle).await.map_err(|error| {
+        use oteryn_dev_client::{DevClientError, SessionError};
+        let mut cause = &error;
+        while let DevClientError::Context { source, .. } = cause {
+            cause = source;
+        }
+        let (side, kind) = match cause {
+            DevClientError::Session(SessionError::ServerProtocolError { .. }) => ("server", "protocol_error"),
+            DevClientError::Io(io) | DevClientError::Session(SessionError::Io(io)) => {
+                match io.kind() {
+                    std::io::ErrorKind::UnexpectedEof => ("peer", "peer_eof"),
+                    std::io::ErrorKind::ConnectionReset => ("unknown", "connection_reset"),
+                    std::io::ErrorKind::TimedOut => ("unknown", "io_deadline"),
+                    _ => ("unknown", "io_error"),
+                }
+            }
+            _ => ("unknown", "command_error"),
+        };
+        evidence(&format!(
+            "P18_STONE_COMMAND_ERROR observed_side={side} kind={kind} last_command={command} last_frame={} error={error}",
+            client.last_server_sequence(),
+        ));
+        error
+    })?;
+    verdict::Harness::global().progress("stone-reply");
     let landing = tile(client.world_spatial().actor_position)?;
     if reply.status != CommandStatus::Accepted
         || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
@@ -119,6 +148,7 @@ pub(super) async fn open_station(
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    verdict::Harness::global().progress("forge-map-loaded");
     let station = world
         .base()
         .tile(FORGE_STATION.x, FORGE_STATION.y, FORGE_STATION.floor)
@@ -165,6 +195,7 @@ pub(super) async fn open_station(
             return Err(format!("P18 Forge step failed at {before:?}: {outcome:?}").into());
         }
         client.take_events();
+        verdict::Harness::global().progress("forge-walk");
     }
     let reply = client
         .use_object(&placement, world.facts().object_revision(key))
@@ -172,6 +203,7 @@ pub(super) async fn open_station(
     if !station_opened(reply.status, reply.disposition) {
         return Err(format!("P18 Forge USE did not open the station: {reply:?}").into());
     }
+    verdict::Harness::global().progress("forge-open");
     evidence(&format!(
         "P18_FORGE_OPEN from={start:?} at={FORGE_APPROACH:?}"
     ));

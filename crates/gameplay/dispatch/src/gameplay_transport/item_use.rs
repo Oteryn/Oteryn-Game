@@ -690,9 +690,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if entry.item.definition.production_key
             == crate::durability::quest_state::adventurers_stone::STONE_KEY
         {
-            return self
+            super::operator_event(&format!(
+                "event=adventurers_stone_dispatch command_id={} path=carried",
+                command.command_id,
+            ));
+            let result = self
                 .use_adventurers_stone(actor, command, fence, source)
                 .await;
+            super::operator_event(&format!(
+                "event=adventurers_stone_outcome command_id={} outcome={result:?}",
+                command.command_id,
+            ));
+            return result;
         }
         if entry.item.definition.production_key
             == crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_KEY

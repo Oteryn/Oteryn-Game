@@ -176,10 +176,16 @@ async fn command(
     }
     .encode()
     .ok_or("P18 request was not canonical")?;
+    let command_id = client.next_command_id();
+    evidence(&format!(
+        "P18_FORGE_DISPATCH operation={operation:?} command_id={command_id} last_frame={}",
+        client.last_server_sequence()
+    ));
     let reply = client
         .session_mut()
         .gated_command(CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE, &payload)
         .await?;
+    verdict::Harness::global().progress("forge-command-reply");
     let body = serde_json::from_slice::<serde_json::Value>(&reply.payload)
         .unwrap_or(serde_json::Value::Null);
     let expect_change = operation.changes_inventory()
@@ -1339,10 +1345,13 @@ async fn quoted_pair(
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    const JOURNEY_BUDGET: Duration = Duration::from_secs(360);
     let started = std::time::Instant::now();
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
-            .await;
+    evidence(&format!(
+        "P18_BUDGET row=P18.full journey_s={}",
+        JOURNEY_BUDGET.as_secs()
+    ));
+    let result = verdict::indexed_timeout(JOURNEY_BUDGET, verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("P18 journey timeout after real native commands".into()),
