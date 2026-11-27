@@ -3,7 +3,7 @@
 //! `apps/client/src/features/0067-bestiary-charm-progression/protocol.rs`.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::charm::CharmAssignDisposition;
+use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmKind};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
@@ -356,17 +356,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     evidence("P01_CHECK client-first-rat-delta PASS absent-to-one exact-views");
-    // The canonical first Major Charm is Enflame (400 points at stage zero).
-    let charm = NonZeroU32::MIN;
+    let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
+    let enflame_index = catalogue
+        .catalogue()
+        .definitions()
+        .position(|entry| entry.key.as_str() == "oteryn:charm.enflame")
+        .ok_or("canonical Enflame is missing")?;
+    let charm = NonZeroU32::new(u32::try_from(enflame_index)? + 1).ok_or("zero charm index")?;
     let locked = before
         .charms
         .charms
         .iter()
         .find(|entry| entry.charm == charm)
         .ok_or("Enflame is missing")?;
-    if locked.unlocked_stage != 0
+    if locked.kind != CharmKind::Major
+        || locked.unlocked_stage != 0
         || locked.assigned_race.is_some()
-        || locked.effect_active
+        || !locked.effect_active
         || locked.next_stage_cost != 400
     {
         return Err(format!("incorrect Enflame refusal baseline: {locked:?}").into());
