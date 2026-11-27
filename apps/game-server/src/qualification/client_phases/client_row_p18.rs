@@ -469,6 +469,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("distinct Fusion daggers did not produce a live pair quote".into());
     };
     if quote.selection != selection
+        || (quote.target_tier, quote.success_percent, quote.protection_percent) != (1, 50, 0)
         || (quote.cost.dust, quote.cost.gold, quote.cost.cores) != (100, 25_000, 0)
         || (quote.resources.dust, quote.resources.carried_gold, quote.resources.bank_gold)
             != (15, 30_050, 0)
