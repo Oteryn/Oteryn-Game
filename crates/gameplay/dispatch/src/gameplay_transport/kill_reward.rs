@@ -2647,7 +2647,7 @@ pub fn record_creature_kill(
         }
     };
     let forge = forge_kind.and_then(|(kind, _difficulty)| {
-        let origin = runtime.read_actor_position(target).ok()?.position();
+        let origin = facts.corpse;
         let census = runtime.positioned_actor_census().ok()?;
         let mut involved = std::collections::BTreeSet::new();
         involved.insert(*principal.character.as_bytes());
@@ -3362,13 +3362,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.drain_native_quest_hits().await {
             return DrainOutcome::Deferred;
         }
+        let mut budget = None;
         for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
             let principal = match self.states.attack.lock().await.kills().ordered_principal() {
                 Ok(Some(principal)) => principal,
                 Ok(None) => return DrainOutcome::Drained,
                 Err(()) => return DrainOutcome::Deferred,
             };
-            let fence = match self.current_quest_fence(principal.0).await {
+            let budget =
+                budget.get_or_insert_with(|| super::AdmissionRetryBudget::for_command(self.root));
+            let current_fence = loop {
+                match self.current_quest_fence_durable(principal.0).await {
+                    Err(crate::durability::DurabilityError::RootUnavailable)
+                        if budget
+                            .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                            .await => {}
+                    result => break result,
+                }
+            };
+            let fence = match current_fence {
                 Ok(Some(fence)) => fence,
                 Ok(None) => {
                     self.states
@@ -3379,7 +3391,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .discard_gone(principal.0, None);
                     continue;
                 }
-                Err(()) => return DrainOutcome::Deferred,
+                Err(_) => return DrainOutcome::Deferred,
             };
             let core_head = match self.states.attack.lock().await.kills().core_head() {
                 Ok(Some(head)) => head,
@@ -4469,6 +4481,40 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         drop(slot);
         drop(other_slots);
         drop(permit);
+        // The corpse and its committed loot are ready to serve before any
+        // secondary kill callbacks that can yield or leave the death queued.
+        if let Ok(outcome) = &outcome {
+            let source_plain_body = row.corpse_item.as_ref().is_some_and(|body| {
+                admission
+                    .active_generation
+                    .and_then(|generation| generation.native_gameplay())
+                    .and_then(|native| native.item_policy(&body.production_key, &body.revision_ref))
+                    .is_some_and(|policy| {
+                        policy.record().semantics.container
+                            == crate::content::ReferenceItemField::NotApplicable
+                    })
+            });
+            if !source_plain_body
+                && let CorpseBind::Refused(error) = bind_settled_corpse(
+                    &mut *admission.runtime.lock().await,
+                    &entry,
+                    &outcome.rewards.loot,
+                )
+            {
+                operator_event(&format!(
+                    "kill_reward_corpse_unbound creature={} reason={error:?}",
+                    entry.creature
+                ));
+            }
+            if source_plain_body
+                || matches!(
+                    outcome.rewards.loot,
+                    Ok(_) | Err(CombatDeathRewardLootError::Mint(_, _))
+                )
+            {
+                admission.states.loop_ground.invalidate();
+            }
+        }
         // Never complete the bounty while this death's Bestiary/loot receipt is unresolved.
         // Crystal creature.cpp:536-590 credits every contributor and enabled shared-XP party.
         if report.verdict == SettleVerdict::Final
@@ -4482,45 +4528,6 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         if outcome.is_ok() {
             admission.credit_weapon_proficiency_kill(&entry).await;
-        }
-        // Crystal boss_lever_death.lua:21-32 keeps the physical corpse in the room.
-        // Refresh ordinary Ground views for both first commits and retained/replayed
-        // corpse receipts, including a resumed settle after commit cancellation.
-        if let Ok(outcome) = &outcome
-            && matches!(
-                outcome.rewards.loot,
-                Ok(_) | Err(CombatDeathRewardLootError::Mint(_, _))
-            )
-        {
-            admission.states.loop_ground.invalidate();
-        }
-        let source_plain_body = entry
-            .row
-            .as_ref()
-            .and_then(|row| row.corpse_item.as_ref())
-            .and_then(|body| {
-                admission
-                    .active_generation?
-                    .native_gameplay()?
-                    .item_policy(&body.production_key, &body.revision_ref)
-            })
-            .is_some_and(|policy| {
-                policy.record().semantics.container
-                    == crate::content::ReferenceItemField::NotApplicable
-            });
-        let mut runtime = admission.runtime.lock().await;
-        if !source_plain_body
-            && let Ok(outcome) = &outcome
-            && let CorpseBind::Refused(error) =
-                bind_settled_corpse(&mut runtime, &entry, &outcome.rewards.loot)
-        {
-            operator_event(&format!(
-                "kill_reward_corpse_unbound creature={} reason={error:?}",
-                entry.creature
-            ));
-        }
-        if source_plain_body && outcome.is_ok() {
-            admission.states.loop_ground.invalidate();
         }
         report
     }

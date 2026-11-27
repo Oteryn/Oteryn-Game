@@ -791,6 +791,16 @@ impl ChannelAttackStates {
         self.index(actor, session).map(|i| &self.entries[i].state)
     }
 
+    #[cfg(test)]
+    pub(super) fn discard_test_attack_entry(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        self.entries
+            .retain(|entry| entry.actor != actor || entry.session != session);
+    }
+
     /// The running in-fight deadline of `actor` (`ATTACK0-RL-03`): a logout is refused and a
     /// closed client stays in the world until it ends.
     pub fn in_fight_until(
