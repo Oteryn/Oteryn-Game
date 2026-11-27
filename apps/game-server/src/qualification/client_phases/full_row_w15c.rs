@@ -4,7 +4,7 @@
 //! 1. Use the Thais dock ladder, take Captain Bluebear to Port Hope and walk to the authored Grizzly Adams placement.
 //!    Say `hi`, then `join`; assert the server's
 //!    reply lines (the durable join) and `points`.
-//! 2. Ask for the lowest-level task by name; assert the exact reply: a start offer (confirmed with
+//! 2. Ask for Apes by name; assert the exact reply: a start offer (confirmed with
 //!    `yes`, then `status` must list it), or the exact level/premium refusal.
 //! 3. Log out, obtain a fresh admission, walk back and say `hi`; the durable join must answer
 //!    `Welcome back`, and an accepted task must still be listed by `status`.
@@ -115,30 +115,11 @@ fn classify(line: &str) -> TaskReply {
     }
 }
 
-/// The catalogue's lowest-level task name; the server matches the typed text case-insensitively.
-fn first_task() -> TestResult<(String, u64)> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let catalogue: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/quests/killing-in-the-name-of.json"),
-    )?)?;
-    let (_, name, required) = catalogue["tasks"]
-        .as_array()
-        .ok_or("step=catalogue observed=no-tasks")?
-        .iter()
-        .filter_map(|task| {
-            Some((
-                task["minimum_level"].as_u64()?,
-                task["name"].as_str()?,
-                task["required"].as_u64(),
-            ))
-        })
-        .min_by_key(|&(level, name, _)| (level, name))
-        .ok_or("step=catalogue observed=empty")?;
-    Ok((
-        name.to_owned(),
-        required.ok_or("step=catalogue observed=missing-task-target")?,
-    ))
-}
+// Global's Apes offer requires 300 kills.
+const NO_TASK: &str = "You have not started any task yet.";
+const TASK_NAME: &str = "Apes";
+const TASK_PROGRESS: &str = "Apes: 0/300";
+const TASK_OFFER: &str = "Hunt 300 Apes. Do you want to start this task? Say yes or no.";
 
 async fn walk_to(
     client: &mut DevClientSession,
@@ -263,7 +244,7 @@ async fn say_with_speaker(
         .into());
     }
     let mut lines = Vec::new();
-    let mut heard_default = false;
+    let mut default_replies = 0;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     loop {
         for event in client.take_events() {
@@ -278,7 +259,7 @@ async fn say_with_speaker(
                         )
                         .into());
                     }
-                    if speaker.is_some() && !delta.value.lines.is_empty() && named != Some(actor) {
+                    if !delta.value.lines.is_empty() && !reply_has_speaker(named, actor) {
                         return Err(
                             format!("step=say-{text} observed=reply-without-npc-speaker").into(),
                         );
@@ -294,20 +275,24 @@ async fn say_with_speaker(
                             text,
                             ..
                         } = delta.value
-                        && speaker_name == name
-                        && text == expected_text
-                        && speaker.identity == actor.identity
-                        && speaker.generation.get() == actor.generation
                     {
-                        heard_default = true;
+                        let exact_actor = speaker.identity == actor.identity
+                            && speaker.generation.get() == actor.generation;
+                        if exact_actor || text == expected_text {
+                            if !exact_actor || speaker_name != name || text != expected_text {
+                                return Err(format!(
+                                    "step=say-{text} observed=wrong-default-reply"
+                                )
+                                .into());
+                            }
+                            default_replies += 1;
+                        }
                     }
                 }
                 _ => {}
             }
         }
-        if (!lines.is_empty() && (speaker.is_none() || heard_default))
-            || tokio::time::Instant::now() >= deadline
-        {
+        if tokio::time::Instant::now() >= deadline {
             break;
         }
         client.service_liveness(Duration::from_millis(50)).await?;
@@ -315,10 +300,16 @@ async fn say_with_speaker(
     if lines.is_empty() {
         return Err(format!("step=say-{text} observed=no-reply-line").into());
     }
-    if speaker.is_some() && !heard_default {
-        return Err(format!("step=say-{text} observed=no-attributed-default-reply").into());
+    if speaker.is_some() && default_replies != 1 {
+        return Err(
+            format!("step=say-{text} observed=default-reply-count-{default_replies}").into(),
+        );
     }
     Ok(lines)
+}
+
+fn reply_has_speaker(named: Option<EntityRef>, expected: EntityRef) -> bool {
+    named == Some(expected)
 }
 
 fn expect(lines: &[String], needle: &str, step: &str) -> TestResult {
@@ -342,14 +333,38 @@ async fn expect_task_status(
     expect(&say(client, actor, "status").await?, expected, step)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    let session_id = client.join_snapshot().game_session_id;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let state = || {
+        sqlx::query_as::<_, (i16, bool, bool)>(
+            "SELECT session_state, current_transport_ref IS NOT NULL,
+                    control_loss_epoch IS NOT NULL OR original_grace_deadline IS NOT NULL
+             FROM game_durability_reconnect_sessions
+             WHERE game_session_id = encode($1, 'hex')::uuid",
+        )
+        .bind(session_id.as_bytes().as_slice())
+    };
+    let before = state().fetch_one(&mut db).await?;
+    if before != (1, true, false) {
+        return Err(format!("step=logout-prestate observed={before:?}").into());
+    }
     let reply = client.session_mut().logout().await?;
     if reply.status != CommandStatus::Accepted
         || reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err(format!("step=logout observed={reply:?}").into());
     }
+    // Read once before dropping the client. A grace release retains loss evidence.
+    let after = state().fetch_one(&mut db).await?;
+    if !clean_terminal_logout(after) {
+        return Err(format!("step=logout-terminal observed={after:?}").into());
+    }
     Ok(())
+}
+
+fn clean_terminal_logout(state: (i16, bool, bool)) -> bool {
+    state == (3, false, false)
 }
 
 async fn assert_build(client: &mut DevClientSession) -> TestResult {
@@ -541,8 +556,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let (task, target) = first_task()?;
-    let expected_status = format!("{task}: 0/{target}");
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_W15C_ACCOUNT").await?;
     let scoped = identity.clients(clients);
     let mut client = connect_character(&scoped, 0xe5, 0).await?;
@@ -554,7 +567,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     )
     .await?;
     character_prep::grant_item(&client, 3035, 2).await?;
-    logout(&mut client).await?;
+    logout(&mut client, &scoped).await?;
     drop(client);
 
     let mut client = connect_character(&scoped, 0xe5, 0).await?;
@@ -573,7 +586,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     const NONMEMBER: &str = "Would you like to join the Paw and Fur - Hunting Elite?";
     const MEMBER: &str =
         "Welcome back! Ask me about tasks, status, promotion, bosses or special tasks.";
-    const NO_TASK: &str = "You have not started any task yet.";
     expect(
         &say(&mut client, actor, "hi").await?,
         NONMEMBER,
@@ -591,23 +603,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         "points",
     )?;
     expect_task_status(&mut client, actor, NO_TASK, "before-task").await?;
-    let reply = say(&mut client, actor, &task).await?;
+    let reply = say(&mut client, actor, TASK_NAME).await?;
     let line = reply.first().cloned().unwrap_or_default();
     let started = match classify(&line) {
         TaskReply::Offer => {
-            let expected_offer =
-                format!("Hunt {target} {task}. Do you want to start this task? Say yes or no.");
-            if reply.as_slice() != [expected_offer.as_str()] {
-                return Err(
-                    format!("step=task observed={line:?} expected={expected_offer:?}").into(),
-                );
-            }
+            expect(&reply, TASK_OFFER, "task-offer")?;
+            expect_task_status(&mut client, actor, NO_TASK, "before-confirmation").await?;
             expect(
                 &say(&mut client, actor, "yes").await?,
                 "Happy hunting! Return here when your task is complete.",
                 "confirm",
             )?;
-            expect_task_status(&mut client, actor, &expected_status, "status").await?;
+            expect_task_status(&mut client, actor, TASK_PROGRESS, "status").await?;
             true
         }
         TaskReply::Refusal => {
@@ -621,7 +628,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     };
     let played_session = client.join_snapshot().game_session_id;
     let saved_position = client.world_spatial().actor_position;
-    logout(&mut client).await?;
+    logout(&mut client, &scoped).await?;
     drop(client);
     let mut client = connect_character(&scoped, 0xe5, 0).await?;
     if client.join_snapshot().game_session_id == played_session
@@ -643,11 +650,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         MEMBER,
         "durable-join",
     )?;
-    let durable_status = if started { &expected_status } else { NO_TASK };
+    expect(
+        &say(&mut client, actor, "points").await?,
+        "You have 0 Paw and Fur points. Your rank is Member.",
+        "durable-points",
+    )?;
+    let durable_status = if started { TASK_PROGRESS } else { NO_TASK };
     expect_task_status(&mut client, actor, durable_status, "durable-task").await?;
-    logout(&mut client).await?;
+    logout(&mut client, &scoped).await?;
     Ok(if started {
-        Outcome::Started(task)
+        Outcome::Started(TASK_NAME.to_owned())
     } else {
         Outcome::Refused(line)
     })
@@ -669,6 +681,47 @@ mod tests {
             TaskReply::Refusal
         );
         assert_eq!(classify("Welcome"), TaskReply::Other);
+    }
+
+    #[test]
+    fn rejects_catalogue_drift_early_start_and_trailing_reply() {
+        for changed_offer in [
+            "Hunt 300 Crocodiles. Do you want to start this task? Say yes or no.",
+            "Hunt 299 Apes. Do you want to start this task? Say yes or no.",
+        ] {
+            assert!(expect(&[changed_offer.into()], TASK_OFFER, "task-offer").is_err());
+        }
+        assert!(expect(&[TASK_PROGRESS.into()], NO_TASK, "before-confirmation").is_err());
+        assert!(
+            expect(
+                &[TASK_OFFER.into(), "extra".into()],
+                TASK_OFFER,
+                "task-offer"
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_missing_and_wrong_speaker() {
+        let captain = EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        let other = EntityRef {
+            generation: 2,
+            ..captain
+        };
+        assert!(!reply_has_speaker(None, captain));
+        assert!(!reply_has_speaker(Some(other), captain));
+        assert!(reply_has_speaker(Some(captain), captain));
+    }
+
+    #[test]
+    fn rejects_accepted_without_release_and_release_after_loss() {
+        assert!(!clean_terminal_logout((1, true, false)));
+        assert!(!clean_terminal_logout((3, false, true)));
+        assert!(clean_terminal_logout((3, false, false)));
     }
 
     #[test]
