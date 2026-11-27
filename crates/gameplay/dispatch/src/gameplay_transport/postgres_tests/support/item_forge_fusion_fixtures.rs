@@ -142,10 +142,12 @@ pub(super) async fn full_inventory(
 ) -> TestResult {
     seed_bank(h).await?;
     // Every parent that can hold both a chest and its children has a full
-    // stack of slots. Removing the pair only frees slots at maximum depth.
-    let mut items: Vec<_> = (120..139)
+    // stack of slots. The empty quiver cannot accept a chest, and removing
+    // the pair only frees slots at maximum depth.
+    let mut items: Vec<_> = (120..138)
         .map(|seed| (seed, FORGE_SLIVER_KEY, 1, 0))
         .collect();
+    items.push((138, "oteryn:item.tibia.i35562", 1, 0));
     items.push((140, CHEST, 1, 0));
     for depth in 0..6 {
         items.push((141 + depth, CHEST, 1, 0));
@@ -279,9 +281,9 @@ async fn committed(
         assert_eq!(outputs.as_array().map(Vec::len), Some(1));
         let chest = outputs[0]["item"].as_str().ok_or("chest identity")?;
         assert_eq!(outputs[0]["key"], CHEST);
-        let stored: (String, i64, i16) = sqlx::query_as("SELECT definition_production_key,quantity,lifecycle FROM game_item_instances WHERE item_instance_id=$1::uuid")
-            .bind(chest).fetch_one(&h.pool).await?;
-        assert_eq!(stored, (CHEST.into(), 1, 1));
+        let stored: (String, i64, i16, bool) = sqlx::query_as("SELECT definition_production_key,quantity,lifecycle,game_forge_carried(encode($2,'hex')::uuid,world_id,item_instance_id,$3) FROM game_item_instances WHERE item_instance_id=$1::uuid")
+            .bind(chest).bind(id(41).as_slice()).bind(&outputs[0]["location"]).fetch_one(&h.pool).await?;
+        assert_eq!(stored, (CHEST.into(), 1, 1, true));
         let children: Vec<(Vec<u8>, i16)> = sqlx::query_as("SELECT uuid_send(e.item_instance_id),coalesce(t.tier,0)::smallint FROM game_item_nested_entries e LEFT JOIN game_item_tiers t USING(item_instance_id) WHERE e.parent_item_instance_id=$1::uuid ORDER BY e.placement_ordinal")
             .bind(chest).fetch_all(&h.pool).await?;
         let mut wanted = vec![(native.0.to_vec(), i16::from(expected.tiers.0))];
