@@ -38,6 +38,10 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
+    "Encounter.Raid": {
+      "index": "content/encounters/raids/index.json",
+      "records": 240
+    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6129
@@ -367,6 +371,15 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
+    },
+    {
+      "path": "content/encounters/raids/catalogue.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json"
+    },
+    {
+      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/engclaim-native.json"
@@ -720,6 +733,12 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
+      "path": "content/quests/native-reward-callbacks/engclaim.json"
+    },
+    {
+      "path": "content/quests/native-reward-callbacks/nrwicked.json"
+    },
+    {
       "path": "content/services/bank/bank-00000-00001.json"
     },
     {
@@ -971,7 +990,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "ff39ce6d2c475a4c9041678148cdecab29647e46d22658238de30f61636061cd"
+          "sha256": "f8df42f947f329da77869785f4ec8ae8b362d1cf77d0feb5a8f4f6ac87a12e1d"
         },
         {
           "creates_canonical_identities": false,
@@ -1042,7 +1061,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 7495,
+          "record_count": 7490,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1050,7 +1069,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "96de5550a29f4741ce73a9eda7296dae9c160179e670de6fd1d33d45794cc722"
+          "sha256": "77a7f8225ece82ce011a74ee047f724728e5595ab08c8ec4a6f7db34c29221f3"
         },
         {
           "creates_canonical_identities": false,
