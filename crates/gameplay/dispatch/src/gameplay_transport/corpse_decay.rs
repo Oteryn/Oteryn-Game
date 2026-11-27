@@ -69,6 +69,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 Ok(_) => {
                     live.retain(|item| *item != corpse.corpse_item_instance_id);
+                    if corpse.relocated_position.is_some() {
+                        self.states.loop_ground.invalidate();
+                    }
                     if let Ok(mut cursors) = self.states.background_cursors.lock() {
                         cursors.insert("corpse", start + 1);
                     }
@@ -88,9 +91,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             self.states
                 .loop_ground
-                .reconcile_plain_corpses(fence.runtime_scope, &live);
+                .reconcile_retired_corpses(fence.runtime_scope, &live);
             let _ = runtime.retain_live_corpse_items(&live);
             for corpse in &schedule.corpses {
+                if let Some(position) = corpse.relocated_position {
+                    let _ = runtime.relocate_bound_corpse(corpse.corpse_item_instance_id, position);
+                }
                 let _ = runtime.refresh_corpse_item(
                     corpse.corpse_item_instance_id,
                     &corpse.definition.family,
