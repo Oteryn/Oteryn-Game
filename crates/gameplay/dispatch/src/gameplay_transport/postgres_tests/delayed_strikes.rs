@@ -208,11 +208,20 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 },
             )
             .ok_or("PZ room")?
+    } else if plan.case == Case::Lethal {
+        let map = crate::map::spell_tiles::tests::movement_arena::world();
+        let cells = map.movement_cells(entry.movement_cells()).map_err(debug)?;
+        entry.bundle_view(
+            cells,
+            map.frame_binding_digest(world),
+            map.map_revision_digest(),
+            crate::content::NativeEntryStart { x: 100, y: 100, floor: 7 },
+        ).ok_or("lethal strike visibility room")?
     } else {
         entry
     };
     // Reuse crosshair_spells' open combat tile; the imported entry is a PZ.
-    let start = if plan.case == Case::Pz {
+    let start = if matches!(plan.case, Case::Pz | Case::Lethal) {
         room.entry_start()
     } else {
         crate::content::NativeEntryStart {
@@ -230,6 +239,11 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
+    let frame_digest = if plan.case == Case::Lethal {
+        room.frame_binding().digest()
+    } else {
+        pin.frame_binding().digest()
+    };
     let mut deps =
         Dependencies::with_content_and_capacity(cp, room.clone(), native.spell_book().clone(), 3)?;
     deps.combat_room = Some(room);
@@ -455,7 +469,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         tx.commit().await?;
     }
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
-    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
     h.root
         .initialize_familiar_group(&authority, &h.node, current_fence(&owner, session).await?)
         .await
@@ -1002,9 +1016,17 @@ async fn lethal_wire(
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
     use oteryn_protocol_oteryn::{decode_state_delta, presentation, world_spatial_entities as spatial};
 
-    admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 7, 18, presentation::CAPABILITY_PRESENTATION_V1])
-            .ok_or("death observation capabilities")?;
+    let offers = crate::gameplay_transport::native_cue_offer::offered(
+        owner.offered_capabilities(),
+        owner.native_map_cue_source_frame().await.is_some(),
+    );
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        &offers,
+        &[4, 6, 7, 18, presentation::CAPABILITY_PRESENTATION_V1],
+    )
+    .ok_or("death observation capabilities")?;
+    assert!(admitted.continuity.selected_capabilities.contains(presentation::CAPABILITY_PRESENTATION_V1));
+    let corpse_identity = target.corpse_identity();
     let target_ref = spatial::EntityRef {
         identity: target.placement_identity(),
         generation: target.actor_local_generation(),
@@ -1032,7 +1054,7 @@ async fn lethal_wire(
             && effect.health.is_some_and(|health| health.health_before == 1 && health.health_after == 0)));
         assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, crate::gameplay_transport::kill_reward::DrainOutcome::Drained);
         let selected = admitted.continuity.selected_capabilities;
-        let mut damage = false;
+        let mut damage_sequence = None;
         loop {
             let bytes = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
@@ -1045,9 +1067,9 @@ async fn lethal_wire(
                     if let presentation::PresentationEventKind::ValueText { target, position, primary, .. } = event.kind
                         && target == target_ref
                     {
-                        assert!(!damage, "the lethal strike must publish once");
-                        assert_eq!((position, primary.value), (at, 1));
-                        damage = true;
+                        assert!(damage_sequence.is_none(), "the lethal strike must publish once");
+                        assert_eq!((position, primary.value, primary.color), (at, 1, presentation::PresentationColor::DarkRed));
+                        damage_sequence = Some(envelope.server_sequence());
                     }
                 }
             }
@@ -1056,8 +1078,9 @@ async fn lethal_wire(
                 if let spatial::WorldSpatialDeltaView::Entities(change) = spatial
                     && change.leave.contains(&target_ref)
                 {
-                    assert!(damage, "the exact final damage must precede the removal");
-                    assert!(change.enter.iter().any(|entry| entry.kind == spatial::EntityKind::Corpse && entry.position == at),
+                    assert_eq!(damage_sequence.and_then(|sequence| sequence.checked_add(1)), Some(envelope.server_sequence()),
+                        "the exact final damage must immediately precede the removal");
+                    assert!(change.enter.iter().any(|entry| entry.kind == spatial::EntityKind::Corpse && entry.entity.identity == corpse_identity && entry.position == at),
                         "the corpse must enter in the removal delta");
                     break;
                 }

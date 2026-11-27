@@ -78,7 +78,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         forecasts: bool,
     ) -> Option<(ChannelEntities, Vec<(EntityRef, Source)>)> {
         let channel = self
-            .observe_channel_entities_projected(observer, forecasts)
+            .observe_channel_entity_frame(observer, forecasts, true)
             .await?;
         // Use the same interest owner as the session: at most 256 name reads, and none for
         // actors outside this view. Objects have no display name.
@@ -116,17 +116,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     EntityKind::Player => {
                         Source::Player(players.iter().find(|(actor, _)| same(*actor))?.1)
                     }
-                    EntityKind::Creature => {
-                        let actor = visible
-                            .creatures
-                            .iter()
-                            .find(|entry| same(entry.actor))?
-                            .actor;
-                        let creature = runtime.companion_snapshot(actor).ok()?;
-                        Source::Name(
-                            EntityDisplayName::new(&creature.state.policy.display_name).ok()?,
-                        )
-                    }
+                    // Creature names are read in the same turn as their exact
+                    // position. A lethal hit between turns cannot invalidate that view.
+                    EntityKind::Creature => continue,
                     EntityKind::Npc => {
                         let name = if let Some(entry) =
                             hirelings.iter().find(|entry| same(entry.actor))

@@ -1479,6 +1479,39 @@ impl KillSettlementQueue {
 
     /// The killed actor of every queued, parked or in-flight entry: the corpse projections the
     /// queue still binds to (Codex 4248192466).
+    pub(super) fn color_lethal_spell_hits(
+        &self,
+        receipt: &CombatBatchReceipt,
+        element: oteryn_protocol_oteryn::damage_element::DamageElement,
+    ) {
+        use oteryn_protocol_oteryn::damage_element::DamageElement as D;
+        use oteryn_protocol_oteryn::presentation::PresentationColor as C;
+        let color = match element {
+            D::Physical | D::LifeDrain => C::Red,
+            D::Fire => C::Orange,
+            D::Earth => C::LightGreen,
+            D::Energy => C::Purple,
+            D::Ice => C::SkyBlue,
+            D::Holy => C::Yellow,
+            D::Death => C::DarkRed,
+            D::Drowning => C::LightBlue,
+            D::ManaDrain | D::Untyped => return,
+        };
+        let mut state = self.state();
+        for effect in &receipt.effects {
+            if effect
+                .health
+                .is_some_and(|health| health.applied && health.health_after == 0)
+                && let Some((_, hit)) = state
+                    .lethal_hits
+                    .iter_mut()
+                    .find(|(actor, _)| *actor == effect.target)
+            {
+                hit.color = color;
+            }
+        }
+    }
+
     pub(super) fn lethal_hits(&self) -> Vec<(ExactActorRef, super::world_spatial::LethalHit)> {
         self.state().lethal_hits.clone()
     }
@@ -2082,6 +2115,7 @@ pub fn record_creature_kill(
                     target: entity(target),
                     attacker: entity(lethal.actor),
                     value,
+                    color: oteryn_protocol_oteryn::presentation::PresentationColor::Red,
                 },
             ));
         }

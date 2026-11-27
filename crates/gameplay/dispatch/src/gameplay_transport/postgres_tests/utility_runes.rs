@@ -537,6 +537,23 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             );
             break;
         }
+        if case == Case::AnimateBusy {
+            let next = admitted.continuity.next_command_id.checked_add(1).ok_or("second command id")?;
+            let frame = test_command(next, COMMAND_TYPE_USE_INTENT, &payload);
+            client.write_u32(u32::try_from(frame.len())?).await?;
+            client.write_all(&frame).await?;
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() != MessageType::CommandResult {
+                    continue;
+                }
+                let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(result.command_id, next);
+                assert_ne!(decode_use_result(result.payload).map_err(debug)?, UseDisposition::Committed);
+                break;
+            }
+        }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
@@ -547,14 +564,13 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     })
     .await??;
     let runtime = owner.runtime.lock().await;
-    let after = owner
-        .states
-        .spell_states
-        .lock()
-        .await
-        .get(&runtime, actor, session)
-        .ok_or("caster")?
-        .vitals();
+    let after = {
+        let states = owner.states.spell_states.lock().await;
+        if case == Case::AnimateBusy {
+            assert!(!states.has_pending_native(actor, session));
+        }
+        states.get(&runtime, actor, session).ok_or("caster")?.vitals()
+    };
     assert_eq!(
         after.mana,
         before.mana
