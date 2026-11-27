@@ -254,7 +254,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return GraceExpiryResult::Unknown;
                 }
             }
-            if self.save_familiar_at_actor_end(actor, session, None).await
+            if self
+                .save_familiar_at_actor_end(actor, session, None, None)
+                .await
                 == actor_spell::FamiliarLogoutSave::Unknown
             {
                 pending("familiar_save");

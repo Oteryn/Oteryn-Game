@@ -41,8 +41,12 @@ mod premium;
 mod progression;
 mod quest;
 mod release;
+pub(in crate::gameplay_transport) use release::ReleaseProgress;
 #[cfg(test)]
-pub(super) use release::{CONDITION_RELEASE_PROBE, HolderCheckoutProbe};
+pub(super) use release::{
+    CONDITION_RELEASE_PROBE, FAMILIAR_READ_CHECKOUT_PROBE, FAMILIAR_WRITE_CHECKOUT_PROBE,
+    HolderCheckoutProbe,
+};
 mod release_deferred;
 mod resume;
 mod spells;

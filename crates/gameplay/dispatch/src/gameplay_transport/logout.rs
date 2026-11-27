@@ -329,31 +329,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             token
         };
         let mut hold = FenceHold::new(session, token);
-        let mut settled_death = None;
-        let mut kills = None;
         let budget = AdmissionRetryBudget::for_command(self.root);
         // Reserve one normal durability pass within the production idle probe cadence.
         let holder_wait_deadline = tokio::time::Instant::now()
             + super::connection::IDLE_LIVENESS
                 .interval
                 .saturating_sub(crate::durability::DB_PASS_DEADLINE);
+        let familiar_checkout = AdmissionRetryBudget {
+            deadline: holder_wait_deadline,
+            ..AdmissionRetryBudget::for_command(self.root)
+        };
+        let mut progress = super::composed_admission::ReleaseProgress {
+            familiar_checkout: Some(&familiar_checkout),
+            ..Default::default()
+        };
         let mut blocking_pass = None;
         let mut waited_for_pass = false;
         let step = loop {
             let step = self
-                .release_attempt(
-                    &admitted,
-                    &store,
-                    release,
-                    &mut hold,
-                    &mut settled_death,
-                    &mut kills,
-                )
+                .release_attempt(&admitted, &store, release, &mut hold, &mut progress)
                 .await;
             let ReleaseAttempt::Retry(stage) = step else {
                 break step;
             };
             operator_event(&format!("event=logout_release_retry stage={stage}"));
+            if stage == "familiar" {
+                // That owner already waited on checkout misses through the shared bound.
+                // An inconclusive write stays retained for the next reconciliation.
+                break step;
+            }
             if !waited_for_pass {
                 blocking_pass = self
                     .root
