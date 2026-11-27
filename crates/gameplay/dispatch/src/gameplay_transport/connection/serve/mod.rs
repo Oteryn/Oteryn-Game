@@ -36,6 +36,8 @@ mod target_move;
 use command::CommandOutcome;
 mod effects;
 mod native_cues;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use native_cues::CooldownProjection;
 mod outbound;
 use outbound::write_frame;
 mod result;

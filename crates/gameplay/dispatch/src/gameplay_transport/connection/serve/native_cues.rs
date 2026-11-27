@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 
 type CooldownDeadlines = BTreeMap<(cooldown_wire::ActorCooldownKind, u32), u64>;
 
-pub(super) struct CooldownProjection {
+#[derive(Default)]
+pub(in crate::gameplay_transport) struct CooldownProjection {
     revision: u64,
     deadlines: CooldownDeadlines,
 }
@@ -124,12 +125,20 @@ pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAu
     authority: &A,
     session: &mut ServeState,
 ) -> Result<(), ServeEnd> {
-    use cooldown_wire as wire;
     let Some(previous) = session.cooldowns.as_mut() else {
         return Ok(());
     };
+    previous.emit(stream, authority, session.actor, &mut session.admitted, &mut session.sequence).await
+}
+
+impl CooldownProjection {
+    pub(in crate::gameplay_transport) async fn emit<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+        &mut self, stream: &mut S, authority: &A, actor: ExactActorRef, admitted: &mut AdmittedSession, server_sequence: &mut u64,
+    ) -> Result<(), ServeEnd> {
+    use cooldown_wire as wire;
+    let previous = self;
     let Some(mut current) = authority
-        .observe_actor_cooldowns(session.actor, session.admitted.game_session_id)
+        .observe_actor_cooldowns(actor, admitted.game_session_id)
         .await
     else {
         return Ok(());
@@ -161,13 +170,12 @@ pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAu
         .revision
         .checked_add(1)
         .ok_or(ServeEnd::Disconnected)?;
-    let sequence = session
-        .sequence
+    let sequence = (*server_sequence)
         .checked_add(1)
         .ok_or(ServeEnd::Disconnected)?;
     let payload = wire::encode_actor_cooldowns(&current).map_err(|_| ServeEnd::Disconnected)?;
     let frame = encode_state_delta(
-        session.generation,
+        admitted.continuity.connection_generation,
         sequence,
         wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
         previous.revision,
@@ -179,13 +187,15 @@ pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAu
     write_frame(stream, &frame)
         .await
         .map_err(|_| ServeEnd::Disconnected)?;
-    session.sequence = sequence;
-    session.admitted.continuity.server_sequence = sequence;
+    *server_sequence = sequence;
+    admitted.continuity.server_sequence = sequence;
     *previous = CooldownProjection {
         revision,
         deadlines: next,
     };
     Ok(())
+}
+
 }
 
 /// House commands retain their own live loop, but consume the same scoped

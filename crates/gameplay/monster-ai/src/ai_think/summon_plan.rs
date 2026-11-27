@@ -5,6 +5,12 @@ use super::*;
 use crate::foundation::ChannelRuntimeV1;
 
 pub trait MonsterThinkReader {
+    /// Current owner time for timing diagnostics. A detached replay still uses
+    /// its original semantic time for target selection and effects.
+    fn diagnostic_now_us(&self, batch_now: u64) -> u64 {
+        batch_now
+    }
+
     /// Resolve only the selected target under the current Map/Item transaction. Unknown
     /// must return None, which refuses before the defence/summon clock advances.
     fn summon_facts(
@@ -661,11 +667,22 @@ impl CreatureAiTable {
                 revisions,
             };
             let sequence = reserved.occurrence.sequence;
-            if let Ok(report) = entry
+            let actual_us = reader.diagnostic_now_us(now_us);
+            let result = entry
                 .state
                 .think_current(sequence, &facts, runtime, reader, route)
-                .await
-            {
+                .await;
+            crate::observability::record_think_timing(
+                Some(actor),
+                reserved.due_before.unwrap_or(now_us),
+                actual_us,
+                match &result {
+                    Ok(report) if report.over_budget => "evaluation_budget",
+                    Ok(_) => "ran",
+                    Err(_) => "think_refused",
+                },
+            );
+            if let Ok(report) = result {
                 entry.sequence = sequence;
                 entry.due_us = (!report.idle)
                     .then_some(now_us.saturating_add(CREATURE_THINK_INTERVAL_MILLIS * 1000));

@@ -25,6 +25,14 @@
       "fields": ["monster", "target", "reason", "monster_cell", "target_cell", "owner_us"],
       "codes": [],
       "note": "Creature identity, scope-local target slot and generation or none, and the reason for the think decision. The node-boot qualification log profile emits this at info and includes both movement cells (x/y/legacy floor) and the semantic time of the decision in microseconds."
+    },
+    {
+      "event": "think_timing",
+      "level": "debug",
+      "span": false,
+      "fields": ["monster", "scheduled_us", "actual_us", "delay_ms", "reason"],
+      "codes": [],
+      "note": "Semantic think deadline and evaluation time, or an owner-wide deferred turn. The node-boot qualification log profile emits this at info."
     }
   ]
 }

@@ -208,6 +208,9 @@ impl CreatureAiTable {
             }
         }
         let taken = taken.into_sorted_vec();
+        if let Some(due) = rest.filter(|due| *due <= now_us) {
+            crate::observability::record_think_timing(None, due, now_us, "window_budget");
+        }
         self.window_started += taken.len();
         let actors = taken
             .iter()

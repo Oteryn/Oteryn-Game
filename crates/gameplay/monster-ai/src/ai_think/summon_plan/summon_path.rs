@@ -13,6 +13,7 @@ pub struct NativeMonsterThinkRead<'a, 'tx, 'db> {
     native: &'a NativeGameplayState,
     pub budget: &'a mut ChannelPathBudget,
     now: u64,
+    diagnostic_clock: Option<(u64, std::time::Instant)>,
     player_waiting: bool,
     reached: Option<(ExactActorRef, ExactActorRef)>,
 }
@@ -41,6 +42,12 @@ impl PathTileReader for SummonPath<'_, '_, '_> {
     }
 }
 impl MonsterThinkReader for NativeMonsterThinkRead<'_, '_, '_> {
+    fn diagnostic_now_us(&self, batch_now: u64) -> u64 {
+        self.diagnostic_clock.map_or(batch_now, |(now, sampled)| {
+            now.saturating_add(u64::try_from(sampled.elapsed().as_micros()).unwrap_or(u64::MAX))
+        })
+    }
+
     async fn summon_facts(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -153,8 +160,15 @@ impl<'a, 'tx, 'db> NativeMonsterThinkRead<'a, 'tx, 'db> {
             native,
             budget,
             now,
+            diagnostic_clock: None,
             player_waiting,
             reached: None,
+        }
+    }
+
+    pub fn set_diagnostic_clock(&mut self, now_us: u64) {
+        if crate::observability::melee_diagnostics_enabled() {
+            self.diagnostic_clock = Some((now_us, std::time::Instant::now()));
         }
     }
 }
