@@ -305,7 +305,7 @@ impl State {
                 let mut sequence = admitted.continuity.server_sequence;
                 zones_nologout_transport::emit(stream, admitted, &mut sequence, text)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("admitted_owner_unavailable"))?;
             }
             Dispatch::Step(
                 StepOutcome {
@@ -318,11 +318,11 @@ impl State {
                     .continuity
                     .server_sequence
                     .checked_add(1)
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
                 let revision = self
                     .spatial_revision
                     .checked_add(1)
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
                 let payload = encode_world_spatial(&observation);
                 let frame = encode_state_delta(
                     admitted.continuity.connection_generation,
@@ -333,13 +333,13 @@ impl State {
                     DELTA_TYPE_WORLD_SPATIAL_V1,
                     &payload,
                 )
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("admitted_owner_unavailable"))?;
                 self.spatial_revision = revision;
                 admitted.continuity.spatial_revision = revision;
                 admitted.continuity.server_sequence = sequence;
                 write_frame(stream, &frame)
                     .await
-                    .map_err(|_| ServeEnd::Disconnected)?;
+                    .map_err(|_| ServeEnd::server("frame_write_refused"))?;
             }
             Dispatch::Npc(_, update, changed) => {
                 if changed {
@@ -369,14 +369,14 @@ impl State {
                 let revision = self
                     .stash_revision
                     .checked_add(1)
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
                 let sequence = admitted
                     .continuity
                     .server_sequence
                     .checked_add(1)
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
                 let payload = oteryn_protocol_oteryn::stash::encode_stash_reply(&reply)
-                    .map_err(|_| ServeEnd::Disconnected)?;
+                    .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
                 let frame = encode_state_delta(
                     admitted.continuity.connection_generation,
                     sequence,
@@ -386,12 +386,12 @@ impl State {
                     1,
                     &payload,
                 )
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("admitted_owner_unavailable"))?;
                 self.stash_revision = revision;
                 admitted.continuity.server_sequence = sequence;
                 write_frame(stream, &frame)
                     .await
-                    .map_err(|_| ServeEnd::Disconnected)?;
+                    .map_err(|_| ServeEnd::server("frame_write_refused"))?;
                 if reply.outcome == oteryn_protocol_oteryn::stash::StashOutcome::Committed {
                     self.inventory(stream, authority, admitted).await?;
                 }
@@ -412,11 +412,11 @@ impl State {
             admitted.continuity.server_sequence,
             delta,
         )
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("admitted_owner_unavailable"))?;
         admitted.continuity.server_sequence = sequence;
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)
+            .map_err(|_| ServeEnd::server("frame_write_refused"))
     }
 
     pub(super) async fn inventory<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
@@ -447,7 +447,7 @@ impl State {
                 &mut sequence,
             )
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("admitted_owner_unavailable"))?;
         }
         Ok(())
     }
@@ -472,12 +472,12 @@ impl State {
             update,
             &mut self.npc_shown,
         )
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("admitted_owner_unavailable"))?;
         admitted.continuity.server_sequence = sequence;
         for frame in frames {
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         }
         Ok(())
     }
@@ -496,7 +496,7 @@ impl State {
                 admitted.continuity.selected_capabilities,
             )
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("admitted_owner_unavailable"))?;
             let sequence = admitted.continuity.server_sequence;
             let projection = self
                 .appearances
@@ -519,7 +519,7 @@ impl State {
                 {
                     return Ok(());
                 }
-                Err(_) => return Err(ServeEnd::Disconnected),
+                Err(_) => return Err(ServeEnd::server("admitted_owner_unavailable")),
             };
             self.spatial_revision = revision;
             admitted.continuity.spatial_revision = revision;
@@ -575,12 +575,12 @@ impl State {
                 to,
                 &value,
             )
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("admitted_owner_unavailable"))?;
             admitted.continuity.server_sequence = sequence;
             admitted.continuity.vitals_revision = to;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         }
         Ok(())
     }

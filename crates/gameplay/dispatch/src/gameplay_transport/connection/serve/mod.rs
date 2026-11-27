@@ -185,13 +185,61 @@ impl Drop for ServeState {
 
 enum ServeEnd {
     Transferred(Box<AdmittedSession>),
-    Disconnected,
+    Server {
+        cause: &'static str,
+        source: &'static std::panic::Location<'static>,
+    },
+    Transport(TransportEnd),
     ControlLost(&'static str),
     LoggedOut,
     Closed(FoundationProtocolError),
 }
 
+enum TransportEnd {
+    Read(std::io::ErrorKind),
+    Write(std::io::ErrorKind),
+}
+
+impl From<super::super::tcp_tls::FrameFailure> for TransportEnd {
+    fn from(failure: super::super::tcp_tls::FrameFailure) -> Self {
+        use super::super::tcp_tls::FrameFailure;
+        match failure {
+            FrameFailure::Read(kind) => Self::Read(kind),
+            FrameFailure::Write(kind) => Self::Write(kind),
+        }
+    }
+}
+
+impl TransportEnd {
+    fn fields(&self) -> (&'static str, &'static str, std::io::ErrorKind) {
+        use std::io::ErrorKind;
+        let (path, kind) = match *self {
+            Self::Read(kind) => ("read", kind),
+            Self::Write(kind) => ("write", kind),
+        };
+        let reason = match (path, kind) {
+            (_, ErrorKind::ConnectionReset) => "peer_reset",
+            ("read", ErrorKind::UnexpectedEof) => "peer_eof",
+            ("write", ErrorKind::TimedOut) => "io_deadline",
+            ("read", _) => "read_error",
+            _ => "write_error",
+        };
+        (path, reason, kind)
+    }
+}
+
 impl ServeEnd {
+    #[track_caller]
+    fn server(cause: &'static str) -> Self {
+        match super::super::tcp_tls::FrameFailure::take() {
+            Some(io) => Self::Transport(io.into()),
+            None => Self::Server {
+                cause,
+                source: std::panic::Location::caller(),
+            },
+        }
+    }
+
     #[track_caller]
     fn finish(self, admitted: AdmittedSession) -> ConnectionEnd {
         self.finish_with_phase(admitted, None)
@@ -203,27 +251,60 @@ impl ServeEnd {
         admitted: AdmittedSession,
         phase: Option<&'static str>,
     ) -> ConnectionEnd {
-        let reason = match &self {
-            Self::Transferred(_) => "transferred",
-            Self::Disconnected => "disconnected",
-            Self::ControlLost(_) => "control_lost",
-            Self::LoggedOut => "logged_out",
-            Self::Closed(_) => "protocol_error",
-        };
-        let path = match &self {
-            Self::ControlLost(path) => format!(" path={path}"),
-            _ => String::new(),
+        let (reason, detail, source) = match &self {
+            Self::Transferred(_) => (
+                "transferred",
+                " initiator=server".into(),
+                std::panic::Location::caller(),
+            ),
+            Self::Server { cause, source } => (
+                "server_close",
+                format!(" initiator=server cause={cause}"),
+                *source,
+            ),
+            Self::Transport(transport) => {
+                let (path, reason, kind) = transport.fields();
+                let initiator = match reason {
+                    "peer_eof" | "peer_reset" => "peer",
+                    "io_deadline" => "server",
+                    _ => "transport",
+                };
+                (
+                    reason,
+                    format!(" path={path} initiator={initiator} io_kind={kind:?}"),
+                    std::panic::Location::caller(),
+                )
+            }
+            Self::ControlLost(path) => (
+                "control_lost",
+                format!(" path={path} initiator=server"),
+                std::panic::Location::caller(),
+            ),
+            Self::LoggedOut => (
+                "logged_out",
+                " initiator=server".into(),
+                std::panic::Location::caller(),
+            ),
+            Self::Closed(_) => (
+                "protocol_error",
+                " initiator=server".into(),
+                std::panic::Location::caller(),
+            ),
         };
         let phase = phase.map_or_else(String::new, |phase| format!(" phase={phase}"));
+        let code = match &self {
+            Self::Closed(error) => format!(" reason_code={}", error.code()),
+            _ => String::new(),
+        };
         operator_event(&format!(
-            "event=serve_end reason={reason}{path}{phase} source={} next_command_id={} server_sequence={}",
-            std::panic::Location::caller(),
-            admitted.continuity.next_command_id,
-            admitted.continuity.server_sequence,
+            "event=serve_end reason={reason}{detail}{phase}{code} source={source} next_command_id={} server_sequence={}",
+            admitted.continuity.next_command_id, admitted.continuity.server_sequence,
         ));
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
-            Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Self::Server { .. } | Self::Transport(_) => {
+                ConnectionEnd::AdmittedThenDisconnected(admitted)
+            }
             Self::ControlLost(_) => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
             Self::Closed(error) => ConnectionEnd::AdmittedThenClosed(admitted, error),
@@ -267,19 +348,19 @@ where
         match authority.resolve_native_scope(admitted).await {
             Ok(Some(next)) => scoped_authority = Some(next),
             Ok(None) => {}
-            Err(()) => return ServeEnd::Disconnected.finish(admitted),
+            Err(()) => return ServeEnd::server("scope_resolution_failed").finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         // Resolve the admitted scope before checking its actor, including a
         // reconnect whose actor already belongs to an activity Instance.
         if !Box::pin(authority.staff_refresh(admitted)).await {
-            return ServeEnd::Disconnected.finish(admitted);
+            return ServeEnd::server("staff_refresh_failed").finish(admitted);
         }
         if !authority.remember_activity_connection(admitted) {
-            return ServeEnd::Disconnected.finish(admitted);
+            return ServeEnd::server("activity_connection_fence_failed").finish(admitted);
         }
         if !authority.prepare_quest_callback_resume(&mut admitted).await {
-            return ServeEnd::Disconnected.finish(admitted);
+            return ServeEnd::server("quest_resume_unavailable").finish(admitted);
         }
         if admitted.item_fence.is_some_and(|fence| {
             matches!(
@@ -371,13 +452,13 @@ where
                     session.admitted,
                 );
             if server_messages.is_none() {
-                return ServeEnd::Disconnected.finish(session.admitted);
+                return ServeEnd::server("admitted_owner_unavailable").finish(session.admitted);
             }
         }
         let mut live_started = false;
         loop {
             if !authority.remember_activity_connection(session.admitted) {
-                return ServeEnd::Disconnected.finish(session.admitted);
+                return ServeEnd::server("admitted_owner_unavailable").finish(session.admitted);
             }
             match observed(
                 "activity_switch",
@@ -527,19 +608,61 @@ where
                 let error = match &end {
                     ServeEnd::Closed(error) => format!("{error:?}"),
                     ServeEnd::ControlLost(path) => format!("ControlLost({path})"),
-                    ServeEnd::Disconnected => "Disconnected".to_owned(),
+                    ServeEnd::Server { cause, .. } => format!("ServerClose({cause})"),
                     ServeEnd::LoggedOut => "LoggedOut".to_owned(),
                     ServeEnd::Transferred(_) => "Transferred".to_owned(),
+                    ServeEnd::Transport(end) => {
+                        let (path, reason, kind) = end.fields();
+                        format!("Transport({path},{reason},{kind:?})")
+                    }
                 };
                 operator_event(&format!(
                     "event=serve_command_end error={error} next_command_id={}",
                     session.admitted.continuity.next_command_id,
                 ));
                 authority.player_trade_disconnected(session.admitted.game_session_id);
-                return end.finish(authority.current_activity_connection(session.admitted));
+                return end.finish_with_phase(
+                    authority.current_activity_connection(session.admitted),
+                    Some("command"),
+                );
             }
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn serve_end_preserves_reset_io_errors_and_server_cause() -> Result<(), Box<dyn std::error::Error>>
+{
+    use super::super::tcp_tls::{FRAME_FAILURE, FrameFailure};
+    use std::io::ErrorKind;
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    runtime.block_on(FRAME_FAILURE.scope(std::cell::Cell::default(), async {
+        FrameFailure::Read(ErrorKind::ConnectionReset).record();
+        let ServeEnd::Transport(reset) = ServeEnd::server("state_projection_unavailable") else {
+            return Err("the projection dropped the original RST".into());
+        };
+        assert_eq!(
+            reset.fields(),
+            ("read", "peer_reset", ErrorKind::ConnectionReset)
+        );
+        assert_eq!(
+            TransportEnd::Write(ErrorKind::BrokenPipe).fields(),
+            ("write", "write_error", ErrorKind::BrokenPipe)
+        );
+        assert_eq!(
+            TransportEnd::Read(ErrorKind::InvalidData).fields(),
+            ("read", "read_error", ErrorKind::InvalidData)
+        );
+        assert!(matches!(
+            ServeEnd::server("command_outcome_unavailable"),
+            ServeEnd::Server {
+                cause: "command_outcome_unavailable",
+                ..
+            }
+        ));
+        Ok(())
+    }))
 }
 
 /// Drive the actual STEP router with a production admission snapshot in dispatch regressions.

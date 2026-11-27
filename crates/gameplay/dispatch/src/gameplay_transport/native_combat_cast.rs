@@ -909,6 +909,7 @@ impl PreparedNativeCombatCast {
         direct_receipt: Option<
             &crate::durability::spell_item_transaction::CommittedDirectCompanionAcquisition,
         >,
+        published_at: SemanticTimeMicros,
     ) -> CombatBatchReceipt {
         let mut installation = self
             .installation
@@ -918,6 +919,7 @@ impl PreparedNativeCombatCast {
         installation
             .player
             .install_rebind_training(installation.paid);
+        installation.player.start_cast_cooldowns(published_at);
         let result = install_owner_batch(
             runtime,
             states,
@@ -2228,6 +2230,45 @@ fn source_cost_request(
     })
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static NATIVE_CAST_BEFORE_INSTALL: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
+/// Report the cooldown gate separately from resource, target and access checks.
+pub(super) fn cast_cooldown_refused(
+    cooldowns: &crate::spell::Cooldowns,
+    spell: &SpellDefinition,
+    requested: SemanticTimeMicros,
+    command: u64,
+) -> bool {
+    let remaining = |deadline: Option<SemanticTimeMicros>| {
+        deadline.map_or(0, |at| {
+            at.get().saturating_sub(requested.get()).div_ceil(1_000)
+        })
+    };
+    let spell_ms = remaining(cooldowns.spell_ready_at(&spell.key));
+    let mut refused = spell_ms > 0;
+    for group in &spell.groups {
+        refused |= remaining(cooldowns.group_ready_at(&group.key)) > 0;
+    }
+    let decision = if refused { "refused" } else { "allowed" };
+    if spell.groups.is_empty() {
+        super::super::operator_event(&format!(
+            "event=spell_cooldown_decision command={command} spell={} group=none decision={decision} spell_remaining_ms={spell_ms} group_remaining_ms=0",
+            spell.key,
+        ));
+    }
+    for group in &spell.groups {
+        let group_ms = remaining(cooldowns.group_ready_at(&group.key));
+        super::super::operator_event(&format!(
+            "event=spell_cooldown_decision command={command} spell={} group={} decision={decision} spell_remaining_ms={spell_ms} group_remaining_ms={group_ms}",
+            spell.key, group.key,
+        ));
+    }
+    refused
+}
+
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// Retry the retained original before durable control loss removes its current
     /// source authority. Pending keeps the actor and original command outstanding. The lane
@@ -2271,6 +2312,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 access,
                 true,
                 Some(&mut permit),
+                self.owner_now(),
             )
             .await;
         if self
@@ -2318,6 +2360,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 &access,
                 true,
                 Some(permit),
+                self.owner_now(),
             )
             .await;
         let leftover = {
@@ -2342,9 +2385,21 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: &SpellCastIntent,
         access: &A,
+        requested_at: SemanticTimeMicros,
     ) -> NativeCastDispatch {
         self.cast_native_combat_inner(
-            actor, session, command_id, intent, None, None, None, &mut None, access, false, None,
+            actor,
+            session,
+            command_id,
+            intent,
+            None,
+            None,
+            None,
+            &mut None,
+            access,
+            false,
+            None,
+            requested_at,
         )
         .await
     }
@@ -2361,6 +2416,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         legacy: LegacyRuneUse,
         access: &A,
     ) -> NativeCastDispatch {
+        let requested_at = self.owner_now();
         let Some(mut permit) = self.spell_lane_permit().await else {
             return NativeCastDispatch::Pending;
         };
@@ -2386,6 +2442,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             access,
             false,
             Some(&mut permit),
+            requested_at,
         )
         .await
     }
@@ -2413,6 +2470,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 access,
                 false,
                 None,
+                self.owner_now(),
             )
             .await;
         super::parameter_cast::ParameterCastDispatch {
@@ -2439,6 +2497,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         access: &A,
         reconcile_only: bool,
         lane: Option<&mut SpellLanePermit>,
+        requested_at: SemanticTimeMicros,
     ) -> NativeCastDispatch {
         let _ground_change = super::super::loop_move::GroundChange(Some(&self.states.loop_ground));
         use super::super::spell_access_facts::load_owned_cast_facts_in_transaction;
@@ -2511,6 +2570,19 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(_room) = self.rooms().gate_native_combat_cast() else {
             return rejected();
         };
+        // Lock order (§1.2): the lane before any Channel guard.
+        let mut acquired;
+        let permit = match lane {
+            Some(permit) => permit,
+            None => {
+                let Some(permit) = self.spell_lane_permit().await else {
+                    return NativeCastDispatch::Pending;
+                };
+                acquired = permit;
+                &mut acquired
+            }
+        };
+
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(session)
             .await
@@ -2543,18 +2615,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let Ok(command) = CommandId::new(command_id).map(|id| CommandRef::new(session, id)) else {
             return rejected();
-        };
-        // Lock order (§1.2): the lane before any Channel guard.
-        let mut acquired;
-        let permit = match lane {
-            Some(permit) => permit,
-            None => {
-                let Some(permit) = self.spell_lane_permit().await else {
-                    return NativeCastDispatch::Pending;
-                };
-                acquired = permit;
-                &mut acquired
-            }
         };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -2807,7 +2867,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     // source health callbacks; payment/cast routing is unchanged.
                     super::super::soul_war_callbacks::publish_command_source(
                         &mut tx,&authority,active,room,runtime,states,actor,now.get()).await?;
-                    let prepared_result=if native_companion_item_cast::direct_applicable(spell) {
+                    let cooling = cast_cooldown_refused(
+                        &states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?.cooldowns,
+                        spell, requested_at, command_id,
+                    );
+                    let prepared_result=if cooling {
+                        Err(SpellCastDisposition::CoolingDown)
+                    } else if native_companion_item_cast::direct_applicable(spell) {
                         native_companion_item_cast::prepare_direct(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),parameter.as_ref(),attack_target,&mut draw).await
                     } else if let Some(parameter)=parameter.as_ref(){
@@ -3100,6 +3166,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let current_read=super::super::spell_access_facts::read_owned_cast_facts_in_transaction(&mut fresh,owner.root,
                 owner.character,owner.holder,&item_fence,command,active).await.map_err(|_|DurabilityError::Unavailable)?;
             drop(fresh);
+            #[cfg(test)]
+            if let Ok(probe) = NATIVE_CAST_BEFORE_INSTALL.try_with(Clone::clone) {
+                probe.0.notify_one();
+                probe.1.notified().await;
+            }
             let mut runtime=owner.runtime.lock().await;
             let mut states=owner.states.spell_states.lock().await;
             // Phase 1: every fallible check borrows the attempt; nothing moves.
@@ -3133,7 +3204,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 } else {None};
                 // Phase 2: no awaited work, allocation, new random draw or fallible branch.
                 let mut attempt=window.install();
-                let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+                let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,
+                    committed.companion(),committed.direct_companion(),owner.owner_now());
                 if batch.applied && let (Some(hits),Some((target,ordinal,item,creature)))=(&mut hits,&source)
                     && batch.effects.iter().any(|effect|effect.target==*target && effect.sub_ordinal==*ordinal
                         && effect.health.is_some_and(|health|health.committed_health_loss().is_some()))

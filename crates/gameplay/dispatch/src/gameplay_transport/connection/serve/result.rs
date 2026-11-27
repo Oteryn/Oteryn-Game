@@ -31,21 +31,21 @@ pub(super) fn encode(
         Dispatch::ServerModal(
             crate::gameplay_transport::server_modal::ServerModalOutcome::Unavailable,
         ) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("result_unavailable"));
         }
         Dispatch::Vip(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
         Dispatch::Vip(None) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("result_unavailable"));
         }
         Dispatch::House(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
         Dispatch::House(None) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("result_unavailable"));
         }
         Dispatch::Training(result) => {
             let Ok(payload) =
                 oteryn_protocol_oteryn::loop_training::encode_training_result(*result)
             else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_encode_failed"));
             };
             (
                 if result.disposition == 4 {
@@ -58,10 +58,10 @@ pub(super) fn encode(
         }
         Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
             Some(result) => result,
-            None => return Err(ServeEnd::Disconnected),
+            None => return Err(ServeEnd::server("result_unavailable")),
         },
         Dispatch::Appearance(None) => {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("result_unavailable"));
         }
         Dispatch::Step(outcome, step_wait_ms) => (
             if matches!(
@@ -184,20 +184,20 @@ pub(super) fn encode(
         ),
         Dispatch::Stash(reply) => {
             let Ok(payload) = oteryn_protocol_oteryn::stash::encode_stash_reply(reply) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_encode_failed"));
             };
             // Validate the complete native result at its production wire boundary.
             let Ok(decoded) = oteryn_protocol_oteryn::stash::decode_stash_reply(&payload) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_encode_failed"));
             };
             if &decoded != reply {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("result_unavailable"));
             }
             (CommandStatus::Accepted, payload)
         }
         Dispatch::Depot(reply) => {
             let Ok(payload) = oteryn_protocol_oteryn::depot::encode_depot_reply(reply) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_encode_failed"));
             };
             (CommandStatus::Accepted, payload)
         }
@@ -214,7 +214,7 @@ pub(super) fn encode(
                     ..ItemMoveSelection::default()
                 },
             ) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("result_unavailable"));
             };
             (
                 CommandStatus::Accepted,
@@ -227,7 +227,7 @@ pub(super) fn encode(
         }
         Dispatch::Look(result, selection) => {
             let Ok(payload) = encode_item_look_result_for(result, *selection) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_encode_failed"));
             };
             (CommandStatus::Accepted, payload)
         }
@@ -244,7 +244,7 @@ pub(super) fn encode(
         Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
         Dispatch::Chat(result, _) => {
             let Ok(payload) = encode_chat_intent_result(result) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_encode_failed"));
             };
             (
                 if result.disposition == oteryn_protocol_oteryn::chat::ChatDisposition::Rejected {
@@ -273,7 +273,7 @@ pub(super) fn encode(
         ),
         Dispatch::Logout(result) => {
             let Ok(payload) = encode_logout_result(*result) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_encode_failed"));
             };
             (
                 if result.is_rejected() {
@@ -286,7 +286,8 @@ pub(super) fn encode(
         }
         Dispatch::NoLogout => (
             CommandStatus::Rejected,
-            encode_logout_result(LogoutResult::Busy).map_err(|_| ServeEnd::Disconnected)?,
+            encode_logout_result(LogoutResult::Busy)
+                .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
         ),
         Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
             // The page is written once; move it out instead of copying up to 32 KiB.
@@ -321,7 +322,8 @@ pub(super) fn encode(
                 == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT =>
         {
             let disposition = UseDisposition::Rejected;
-            let payload = encode_use_result(disposition).map_err(|_| ServeEnd::Disconnected)?;
+            let payload = encode_use_result(disposition)
+                .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
             (
                 CommandStatus::Rejected,
                 detailed(session, payload, RefusalDetail::of_use(disposition)),
@@ -338,7 +340,7 @@ pub(super) fn encode(
                 oteryn_protocol_oteryn::appearance::ChangeResult::Rejected,
             ) {
                 Some(result) => result,
-                None => return Err(ServeEnd::Disconnected),
+                None => return Err(ServeEnd::server("result_unavailable")),
             }
         }
         Dispatch::Achievements(
@@ -370,7 +372,7 @@ pub(super) fn encode(
         )
     };
     let Ok(result) = result else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("result_unavailable"));
     };
     Ok(result)
 }
@@ -379,5 +381,5 @@ pub(super) fn next_sequence(session: &ServeState) -> Result<u64, ServeEnd> {
     session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)
+        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))
 }

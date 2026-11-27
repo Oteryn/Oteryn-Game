@@ -63,13 +63,16 @@ impl State {
             let inventory =
                 item_move::observe_inventory(authority, actor, admitted.game_session_id, view)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
             payloads.extend(
                 view.snapshot(inventory, None)
-                    .map_err(|_| ServeEnd::Disconnected)?,
+                    .map_err(|_| ServeEnd::server("state_projection_unavailable"))?,
             );
             if selected.contains(CAPABILITY_CONTAINER_TREE_V1) {
-                payloads.push(view.views_snapshot().map_err(|_| ServeEnd::Disconnected)?);
+                payloads.push(
+                    view.views_snapshot()
+                        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?,
+                );
                 let views = ContainerViewState::default();
                 containers = Some(if selected.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2) { views.with_house_container_capacity() } else { views });
             }
@@ -77,11 +80,11 @@ impl State {
                 match authority
                     .observe_house_map(*admitted, map, view)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?
-                    .map_err(|_| ServeEnd::Disconnected)?
+                    .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?
+                    .map_err(|_| ServeEnd::server("state_projection_unavailable"))?
                 {
                     Some(MapUpdate::Snapshot(snapshot)) => payloads.push(snapshot),
-                    _ => return Err(ServeEnd::Disconnected),
+                    _ => return Err(ServeEnd::server("state_projection_unavailable")),
                 }
                 admitted.continuity.world_map_revision = map.revision();
             }
@@ -94,7 +97,7 @@ impl State {
             let entities =
                 crate::gameplay_transport::entity_names::observe(authority, actor, selected)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
             let mut view = SessionVisibility::with_objects(items.is_some())
                 .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1))
                 .with_motion(
@@ -111,10 +114,10 @@ impl State {
                     items.as_mut(),
                 )
                 .await
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
             spatial_revision = spatial_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                 revision: spatial_revision,
@@ -132,10 +135,10 @@ impl State {
             let observation = authority
                 .observe(actor)
                 .await
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
             spatial_revision = spatial_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                 revision: spatial_revision,
@@ -153,26 +156,26 @@ impl State {
                 .npc
                 .conversation_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let window_revision = admitted
                 .continuity
                 .npc
                 .window_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_NPC_CONVERSATION,
                 revision: conversation_revision,
                 snapshot_type: SNAPSHOT_TYPE_NPC_CONVERSATION_V1,
                 payload: encode_npc_conversation(&NpcConversation::default())
-                    .map_err(|_| ServeEnd::Disconnected)?,
+                    .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
             });
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_NPC_TRADE_WINDOW,
                 revision: window_revision,
                 snapshot_type: SNAPSHOT_TYPE_NPC_TRADE_WINDOW_V1,
                 payload: encode_npc_trade_window(&NpcTradeWindow::default())
-                    .map_err(|_| ServeEnd::Disconnected)?,
+                    .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
             });
             admitted.continuity.npc = NpcContinuity {
                 conversation_revision,
@@ -187,7 +190,8 @@ impl State {
                 domain_id: STATE_DOMAIN_ACTOR_VITALS,
                 revision,
                 snapshot_type: SNAPSHOT_TYPE_ACTOR_VITALS_V1,
-                payload: encode_actor_vitals(&vitals).map_err(|_| ServeEnd::Disconnected)?,
+                payload: encode_actor_vitals(&vitals)
+                    .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
             });
             admitted.continuity.vitals_revision = revision;
         }

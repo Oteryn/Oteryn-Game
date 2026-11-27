@@ -24,13 +24,13 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         .house_transfer(session.admitted, command.command_id, command.payload)
         .await
     else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("scope_handoff_unavailable"));
     };
     drop(permit);
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let result = encode_command_result(
         session.generation,
         sequence,
@@ -42,11 +42,11 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         },
         &payload,
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
     session
         .commands
         .terminalize_with(command.command_id, &result, || {})
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;
     session.admitted.continuity.server_sequence = sequence;
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
     session.sequence = sequence;
@@ -55,7 +55,7 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     }
     write_frame(stream, &result)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
     if next.is_some()
         && session
             .selected_capabilities
@@ -90,14 +90,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         let (_, projection) = authority
             .house_scope_ack(admitted)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?
-            .ok_or(ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?
+            .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?;
         let sequence = admitted
             .continuity
             .server_sequence
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
-        let actor = admitted.runtime_actor.ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
+        let actor = admitted
+            .runtime_actor
+            .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?;
         let selected = admitted.continuity.selected_capabilities;
         let (mut services, item_domains) =
             house_hireling::State::prepare(authority, actor, &mut admitted).await?;
@@ -128,11 +130,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             sequence,
             &domains,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
         for frame in snapshot {
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         }
         admitted.continuity.server_sequence = sequence;
         zones_nologout_transport::delivered(&mut admitted);
@@ -148,14 +150,14 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         if server_messages.is_none() {
             *server_messages = Some(
                 ServerMessageConnection::join(root_authority, admitted)
-                    .ok_or(ServeEnd::Disconnected)?,
+                    .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?,
             );
         }
         let mut commands = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
             authority.session_commands(),
             &admitted,
         )
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?;
         let generation = admitted.continuity.connection_generation;
         let mut queue = house_hireling::step::Queue::default();
         let mut podium = None::<PodiumWalk>;
@@ -176,7 +178,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 let mut sequence = admitted.continuity.server_sequence;
                 zones_nologout_transport::drain(stream, authority, &mut admitted, &mut sequence)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?;
                 let mut input = std::pin::pin!(queue.next(
                     stream,
                     generation,
@@ -215,7 +217,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 && tokio::time::Instant::now() >= next_staff_refresh
             {
                 if !authority.staff_refresh(admitted).await {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("scope_handoff_unavailable"));
                 }
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
@@ -236,22 +238,24 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         authority.account_closure_check(admitted),
                     )
                     .await
-                    .map_err(|_| ServeEnd::Disconnected)?
+                    .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?
                     {
-                        return Err(ServeEnd::Disconnected);
+                        return Err(ServeEnd::server("scope_handoff_unavailable"));
                     }
                     let probe = liveness
                         .tick()
                         .map_err(|_| ServeEnd::ControlLost("house_transfer"))?;
                     let frame = encode_liveness_probe(generation, probe)
-                        .map_err(|_| ServeEnd::Disconnected)?;
+                        .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
                     write_frame(stream, &frame)
                         .await
-                        .map_err(|_| ServeEnd::Disconnected)?;
+                        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
                     continue;
                 }
                 house_hireling::step::Event::PodiumWalk => {
-                    let mut walk = podium.take().ok_or(ServeEnd::Disconnected)?;
+                    let mut walk = podium
+                        .take()
+                        .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?;
                     match walk
                         .advance(stream, authority, &mut services, &mut admitted)
                         .await?
@@ -326,7 +330,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     admitted.continuity.server_sequence += 1;
                     write_frame(stream, &frame)
                         .await
-                        .map_err(|_| ServeEnd::Disconnected)?;
+                        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
                     continue;
                 }
                 crate::gameplay_transport::session_ingress::CommandAction::Execute => {}
@@ -354,7 +358,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         admitted.continuity.server_sequence,
                         &[],
                     );
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("scope_handoff_unavailable"));
                 }
             }
             let podium_query = command.command_type == COMMAND_QUERY
@@ -372,7 +376,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 && super::super::gameplay_idle::meaningful(command, selected.as_slice());
             let mut effects = None;
             let mut second_logout = false;
-            let mut lost_while_logging_out = false;
+            let mut lost_while_logging_out = None;
             let (next, payload, status) = if permit.is_some()
                 && command.command_type == COMMAND_TYPE_HOUSE_TRANSFER
                 && admitted
@@ -383,7 +387,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 let (next, payload) = authority
                     .house_transfer(admitted, command.command_id, command.payload)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?;
                 let status = if next.is_some() {
                     CommandStatus::Accepted
                 } else {
@@ -396,7 +400,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             {
                 match routing::house_wrap::route(authority, &admitted, command).await {
                     Some(Dispatch::Reply(status, payload)) => (None, payload, status),
-                    _ => return Err(ServeEnd::Disconnected),
+                    _ => return Err(ServeEnd::server("scope_handoff_unavailable")),
                 }
             } else if permit.is_some() || (house_guard_deferred && podium_query) {
                 let dispatch = if command.command_type == COMMAND_TYPE_LOGOUT_INTENT
@@ -420,7 +424,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         route::StepAction::Wait(due) => {
                             commands
                                 .buffer_step(command)
-                                .ok_or(ServeEnd::Disconnected)?;
+                                .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;
                             integrity.observe(&Dispatch::Step(StepOutcome::too_early(), 0));
                             // The reserved original runs once when due. Release the input
                             // permit while the bounded queue keeps later frames in order.
@@ -448,7 +452,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         Approach::Ready => services
                             .route(authority, &mut admitted, command)
                             .await
-                            .ok_or(ServeEnd::Disconnected)?,
+                            .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?,
                         Approach::Walk(steps) => {
                             podium = Some(PodiumWalk {
                                 command_id: command.command_id,
@@ -466,14 +470,14 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                                 admitted.continuity.server_sequence,
                                 &[],
                             );
-                            return Err(ServeEnd::Disconnected);
+                            return Err(ServeEnd::server("scope_handoff_unavailable"));
                         }
                     }
                 } else {
                     services
                         .route(authority, &mut admitted, command)
                         .await
-                        .ok_or(ServeEnd::Disconnected)?
+                        .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?
                 };
                 integrity.observe(&dispatch);
                 let (status, payload) = house_hireling::result(selected, &dispatch)?;
@@ -495,13 +499,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 .continuity
                 .server_sequence
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let result =
                 encode_command_result(generation, sequence, command.command_id, status, &payload)
-                    .map_err(|_| ServeEnd::Disconnected)?;
+                    .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
             commands
                 .terminalize_with(command.command_id, &result, || {})
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;
             admitted.continuity.server_sequence = sequence;
             admitted.continuity.next_command_id = commands.next_command_id();
             if let Some(next) = next {
@@ -544,7 +548,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             }
             write_frame(stream, &result)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
             if second_logout {
                 return Err(close(
                     stream,
@@ -553,8 +557,8 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 )
                 .await);
             }
-            if lost_while_logging_out {
-                return Err(ServeEnd::Disconnected);
+            if let Some(kind) = lost_while_logging_out {
+                return Err(ServeEnd::Transport(TransportEnd::Read(kind)));
             }
             if routing::store::is_committed_claim(command.command_type, status, &payload) {
                 services.invalidate_capacity();
@@ -640,10 +644,10 @@ impl PodiumWalk {
                     services
                         .route(authority, admitted, command)
                         .await
-                        .ok_or(ServeEnd::Disconnected)?
+                        .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?
                 }
                 Approach::Walk(_) | Approach::NoPath => refused(),
-                Approach::Unavailable => return Err(ServeEnd::Disconnected),
+                Approach::Unavailable => return Err(ServeEnd::server("scope_handoff_unavailable")),
             };
             return Ok(PodiumTurn::Finish(dispatch));
         };
@@ -694,7 +698,7 @@ impl PodiumWalk {
             .continuity
             .server_sequence
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         let frame = encode_command_result(
             admitted.continuity.connection_generation,
             sequence,
@@ -702,14 +706,14 @@ impl PodiumWalk {
             status,
             &payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
         commands
             .terminalize_with(self.command_id, &frame, || {})
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = commands.next_command_id();
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)
+            .map_err(|_| ServeEnd::server("frame_write_refused"))
     }
 }

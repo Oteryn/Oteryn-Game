@@ -4,5 +4,5 @@ transport=guildhall_intent
 [route]
 match routing::guild::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("guildhall_outcome_unavailable")),
 }

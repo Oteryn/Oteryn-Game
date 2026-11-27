@@ -39,7 +39,7 @@ pub(super) fn observation_snapshots(
                 rtt_ms: None,
                 entries: Vec::new(),
             })
-            .map_err(|_| ServeEnd::Disconnected)?,
+            .map_err(|_| ServeEnd::server("state_projection_unavailable"))?,
         });
     }
     Ok(())
@@ -64,16 +64,16 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
         let native = authority
             .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
         let row = domains
             .iter_mut()
             .find(|row| {
                 row.domain_id
                     == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_WORLD_PRESENTATION
             })
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
         if !row.payload.is_empty() || !matches!(row.snapshot_type, 1 | 2) {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         }
         row.snapshot_type = if native {
             oteryn_protocol_oteryn::native_map_cues::SNAPSHOT_TYPE_NATIVE_MAP_CUE_BASIS_V1
@@ -140,17 +140,17 @@ pub(super) async fn refresh_house_effects<S: AsyncWrite + Unpin, A: FreshAdmissi
         } else {
             wire::encode_presentation_batch(&events)
         }
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
         let revision = admitted
             .continuity
             .presentation_revision
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
         let sequence = admitted
             .continuity
             .server_sequence
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
         let frame = encode_state_delta(
             admitted.continuity.connection_generation,
             sequence,
@@ -164,10 +164,10 @@ pub(super) async fn refresh_house_effects<S: AsyncWrite + Unpin, A: FreshAdmissi
             },
             &payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.presentation_revision = revision;
     }
@@ -416,17 +416,17 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
             } else {
                 wire::encode_presentation_batch(&events)
             }
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
             let revision = session
                 .admitted
                 .continuity
                 .presentation_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
             let sequence = session
                 .sequence
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
             let frame = encode_state_delta(
                 session.generation,
                 sequence,
@@ -440,10 +440,10 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
                 },
                 &payload,
             )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             session.admitted.continuity.presentation_revision = revision;
@@ -478,11 +478,11 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
                 )
             };
             let Some((sequence, frame, revision)) = encoded else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("state_projection_unavailable"));
             };
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             session.admitted.continuity.chat_revision = revision;

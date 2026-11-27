@@ -230,7 +230,7 @@ impl Queue {
                     }
                     if reading && let std::task::Poll::Ready(frame) = read.as_mut().poll(cx) {
                         return std::task::Poll::Ready(Ready::Frame(
-                            frame.map_err(|_| ServeEnd::Disconnected),
+                            frame.map_err(|_| ServeEnd::server("serve_state_unavailable")),
                         ));
                     }
                     if podium
@@ -251,11 +251,17 @@ impl Queue {
                     return Ok(Event::PodiumWalk);
                 }
                 Ready::Due => {
-                    let step = self.buffered.take().ok_or(ServeEnd::Disconnected)?;
+                    let step = self
+                        .buffered
+                        .take()
+                        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
                     (step.frame, false, true)
                 }
                 Ready::Held => {
-                    let (frame, behind) = self.held.pop_front().ok_or(ServeEnd::Disconnected)?;
+                    let (frame, behind) = self
+                        .held
+                        .pop_front()
+                        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
                     (frame, behind, false)
                 }
                 Ready::Frame(frame) => {

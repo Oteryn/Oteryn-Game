@@ -21,16 +21,39 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent,
 
 #[test]
 fn a4_invisible_postgres_real_dispatch() -> TestResult {
-    invisibility_case::<false>()
+    invisibility_case::<false, false, false, false>()
 }
 
 #[test]
-fn a4_invisible_postgres_other_player_cannot_see_or_target_caster() -> TestResult {
-    invisibility_case::<true>()
+fn invisible_cast_projects_spell_and_support_cooldowns() -> TestResult {
+    invisibility_case::<false, false, true, false>()
 }
 
-fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+#[test]
+fn invisible_caster_stays_visible_to_players_hidden_from_monsters() -> TestResult {
+    invisibility_case::<true, false, false, false>()
+}
+
+#[test]
+fn invisible_player_swing_publishes_exact_rat_damage() -> TestResult {
+    invisibility_case::<false, true, false, false>()
+}
+
+#[test]
+fn invisible_recast_during_committed_pass_and_after_publication_costs_no_mana() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    invisibility_case::<false, false, false, true>()
+}
+
+fn invisibility_case<
+    const WITH_OBSERVER: bool,
+    const WITH_ATTACK: bool,
+    const WITH_COOLDOWNS: bool,
+    const WITH_RECAST: bool,
+>() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     }
     large_stack(|| {
@@ -230,19 +253,14 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             } else {
                 None
             };
-            let outcome = owner
-                .cast_spell_completion(
-                    actor,
-                    session,
-                    1,
-                    SpellCastIntent {
-                        spell,
-                        target: SpellTarget::None,
-                        aim_at_target: false,
-                    },
-                )
-                .await
-                .ok_or("terminal spell completion")?;
+            let cooldown_clock = (WITH_COOLDOWNS || WITH_RECAST).then(|| owner.freeze_owner_clock_for_test());
+            let intent = SpellCastIntent { spell, target: SpellTarget::None, aim_at_target: false };
+            let outcome = if WITH_RECAST {
+                verify_recast_during_pass(&owner, actor, session, intent).await?
+            } else {
+                owner.cast_spell_completion(actor, session, 1, intent)
+                    .await.ok_or("terminal spell completion")?
+            };
             assert_eq!(
                 outcome.disposition,
                 SpellCastDisposition::Cast,
@@ -413,4 +431,112 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             h.cleanup().await
         })
     })
+}
+
+async fn verify_recast_during_pass(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    intent: SpellCastIntent,
+) -> TestResult<crate::gameplay_transport::actor_spell::SpellCastOutcome> {
+    use crate::gameplay_transport::actor_spell::native_combat_cast::{
+        NATIVE_CAST_BEFORE_INSTALL,
+    };
+    use crate::gameplay_transport::actor_spell::NativeCastDispatch;
+    use std::future::{Future, poll_fn};
+    use std::sync::{Arc, atomic::Ordering};
+    use std::task::Poll;
+    let access = owner.refresh_and_apply_spell_access(actor, session).await;
+    let definition = owner.spells.indexed(intent.spell).ok_or("Invisible definition")?;
+    let crate::spell::ManaCost::Fixed(cost) = definition.mana else {
+        return Err("Invisible must have a fixed mana cost".into());
+    };
+    let cooldown_us = definition.groups.iter().map(|group| group.cooldown_micros)
+        .chain(std::iter::once(definition.cooldown_micros)).max().ok_or("cooldown")?;
+    let before = owner.observe_vitals(actor, session).await.ok_or("caster vitals before cast")?.1;
+    assert!(before.mana >= cost.saturating_mul(2), "the fixture must afford both casts");
+    let probe = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    let mut first = std::pin::pin!(NATIVE_CAST_BEFORE_INSTALL.scope(
+        probe.clone(), owner.cast_spell_completion(actor, session, 1, intent),
+    ));
+    tokio::select! {
+        () = probe.0.notified() => {}
+        _ = &mut first => return Err("first cast completed before the COMMIT/publication probe".into()),
+    }
+
+    // Let the full original cooldown elapse in semantic time while the real
+    // durability pass still holds the spell lane. The payer is not yet visible.
+    owner.states.test_owner_time.fetch_add(cooldown_us + 1, Ordering::Relaxed);
+    assert_eq!(owner.observe_vitals(actor, session).await.ok_or("unpublished payer")?.1.mana, before.mana);
+    let mut recast = std::pin::pin!(owner.cast_native_combat(actor, session, 2, &intent, &access, owner.owner_now()));
+    let overlapping = poll_fn(|cx| Poll::Ready(recast.as_mut().poll(cx))).await;
+    probe.1.notify_one();
+    let first = first.await.ok_or("first cast completion")?;
+    assert_eq!(first.disposition, SpellCastDisposition::Cast);
+    let paid = first.vitals.ok_or("paid vitals")?.1.mana;
+    assert_eq!(paid, before.mana - cost);
+    assert!(overlapping.is_pending(), "a new occurrence must wait for the in-flight cast");
+    let NativeCastDispatch::Outcome(refused) = recast.await else {
+        return Err("overlapping cast did not produce a terminal decision".into());
+    };
+    assert_eq!(refused.disposition, SpellCastDisposition::CoolingDown);
+    let immediate = owner.cast_spell_completion(actor, session, 3, intent).await.ok_or("immediate recast completion")?;
+    assert_eq!(immediate.disposition, SpellCastDisposition::CoolingDown);
+    assert_eq!(owner.observe_vitals(actor, session).await.ok_or("caster after recasts")?.1.mana, paid);
+    Ok(first)
+}
+
+async fn assert_invisible_cooldowns(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    spell: std::num::NonZeroU32,
+    start: u64,
+) -> TestResult {
+    use crate::gameplay_transport::connection::CooldownProjection;
+    use oteryn_protocol_oteryn::presentation as wire;
+    let actor = admitted.runtime_actor.ok_or("caster")?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[6, wire::CAPABILITY_PRESENTATION_V1],
+    )
+    .ok_or("presentation selection")?;
+    let (mut server, mut client) = tokio::io::duplex(4096);
+    let mut projection = CooldownProjection::default();
+    let mut sequence = admitted.continuity.server_sequence;
+    projection
+        .emit_for_test(&mut server, owner, actor, &mut admitted, &mut sequence)
+        .await?;
+    drop(server);
+    let frame = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+    let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+    assert_eq!(
+        (delta.domain_id, delta.base_revision, delta.new_revision),
+        (wire::STATE_DOMAIN_ACTOR_COOLDOWNS, 0, 1)
+    );
+    let value = wire::decode_actor_cooldowns(delta.payload).map_err(debug)?;
+    let definition = owner.spells.indexed(spell).ok_or("authored Invisible")?;
+    let support = definition
+        .groups
+        .iter()
+        .find(|group| group.key == "support")
+        .ok_or("authored Support group")?;
+    let group = crate::gameplay_transport::spell_catalog::cooldown_group_ordinal(&support.key)
+        .ok_or("Support ordinal")?;
+    assert_eq!(
+        value.entries,
+        [
+            wire::ActorCooldown {
+                kind: wire::ActorCooldownKind::Spell,
+                id: spell.get(),
+                expires_at_ms: (start + definition.cooldown_micros).div_ceil(1000)
+            },
+            wire::ActorCooldown {
+                kind: wire::ActorCooldownKind::Group,
+                id: group,
+                expires_at_ms: (start + support.cooldown_micros).div_ceil(1000)
+            },
+        ]
+    );
+    Ok(())
 }

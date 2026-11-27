@@ -62,7 +62,7 @@ pub(super) async fn immediate<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>
             .achievement_notice_revision
             .is_some()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     if let EarnedNotice::Earned(earned) = notice {
         if session.achievement_notices.is_some() {
@@ -111,9 +111,10 @@ async fn deliver<S: AsyncWrite + Unpin>(
         let (Some(delta_sequence), Some(to)) =
             (session.sequence.checked_add(1), from.checked_add(1))
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
-        let payload = encode_achievement_earned(earned).map_err(|_| ServeEnd::Disconnected)?;
+        let payload = encode_achievement_earned(earned)
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
         let delta = encode_state_delta(
             session.generation,
             delta_sequence,
@@ -123,20 +124,20 @@ async fn deliver<S: AsyncWrite + Unpin>(
             DELTA_TYPE_ACHIEVEMENT_EARNED_V1,
             &payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
         // Preserve ACH-NOTIFY-1: a revision possibly sent to the client is never reused.
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = delta_sequence;
         session.admitted.continuity.achievement_notice_revision = Some(to);
         write_frame(stream, &delta)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
     }
     // Crystal player_achievement.cpp:27-42 uses the ordinary advance/status-text channel.
     // A client selecting only tutorial notices still gets that existing representation.
     let text =
         crate::gameplay_transport::achievement_notification(&EarnedNotice::Earned(earned.clone()))
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     tutorial_notices_transport::emit_notice(
         stream,
         &mut session.admitted,
@@ -144,7 +145,7 @@ async fn deliver<S: AsyncWrite + Unpin>(
         &oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(text),
     )
     .await
-    .ok_or(ServeEnd::Disconnected)?;
+    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     if let Some(seen) = session.achievement_notices.as_mut() {
         seen.keys.insert(earned.key.clone());
     }

@@ -54,7 +54,7 @@ where
             &TutorialNotice::StatusText(warning.into()),
         )
         .await
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     }
     if session.admitted.continuity.gameplay_idle.elapsed(now)
         >= Duration::from_millis(policy.removal_after_ms)
@@ -71,7 +71,7 @@ where
             // retried at the next cadence, without repeating the warning.
             LogoutReply::NoLogout
             | LogoutReply::Result(LogoutResult::InFight { .. } | LogoutResult::Busy) => {}
-            LogoutReply::Unknown => return Err(ServeEnd::Disconnected),
+            LogoutReply::Unknown => return Err(ServeEnd::server("serve_state_unavailable")),
         }
     }
     Ok(())

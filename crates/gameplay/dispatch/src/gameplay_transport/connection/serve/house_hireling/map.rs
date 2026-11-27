@@ -14,8 +14,8 @@ impl State {
         let update = authority
             .observe_house_map(*admitted, map, items)
             .await
-            .ok_or(ServeEnd::Disconnected)?
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?
+            .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
         if let Some(update) = update {
             match update {
                 MapUpdate::Delta(delta) => {
@@ -24,10 +24,10 @@ impl State {
                         admitted.continuity.server_sequence,
                         &delta,
                     )
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
                     write_frame(stream, &frame)
                         .await
-                        .map_err(|_| ServeEnd::Disconnected)?;
+                        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
                     admitted.continuity.server_sequence = sequence;
                 }
                 MapUpdate::Snapshot(snapshot) => {
@@ -35,7 +35,7 @@ impl State {
                         .continuity
                         .server_sequence
                         .checked_add(1)
-                        .ok_or(ServeEnd::Disconnected)?;
+                        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
                     let frames = encode_single_chunk_snapshot(
                         admitted.continuity.connection_generation,
                         sequence,
@@ -47,11 +47,11 @@ impl State {
                             payload: &snapshot.payload,
                         }],
                     )
-                    .map_err(|_| ServeEnd::Disconnected)?;
+                    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
                     for frame in frames {
                         write_frame(stream, &frame)
                             .await
-                            .map_err(|_| ServeEnd::Disconnected)?;
+                            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
                     }
                     admitted.continuity.server_sequence = sequence;
                 }
