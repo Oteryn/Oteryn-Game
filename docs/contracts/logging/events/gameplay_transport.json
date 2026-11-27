@@ -383,6 +383,17 @@
       "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
     },
     {
+      "event": "premium_overview_unavailable",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason",
+        "snapshot"
+      ],
+      "codes": [],
+      "note": "The authenticated account overview has no current Premium observation. Reason is the typed Game projection failure and snapshot is the typed pull outcome if unavailable. No player identifiers or raw errors."
+    },
+    {
       "event": "quick_loot_refused",
       "level": "warn",
       "span": false,

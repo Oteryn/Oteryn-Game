@@ -35,6 +35,29 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         crate::gameplay_transport::world_spatial::step_wait_receipts_enabled()
     }
 
+    async fn await_admitted_premium(&self, admitted: AdmittedSession) {
+        let (Some(actor), Some(account), Some(coordinator)) = (
+            admitted.runtime_actor,
+            self.session_account(admitted.game_session_id),
+            self.premium_coordinator,
+        ) else {
+            return;
+        };
+        if self.premium.wait_for_snapshot(account).await.is_ok()
+            && coordinator.ready_premium_gate(account).await.is_ok()
+            && self.session_account(admitted.game_session_id) == Some(account)
+        {
+            let budget = AdmissionRetryBudget::for_command(self.root);
+            let _ = self
+                .refresh_and_apply_spell_access_with_budget(
+                    actor,
+                    admitted.game_session_id,
+                    Some(&budget),
+                )
+                .await;
+        }
+    }
+
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }

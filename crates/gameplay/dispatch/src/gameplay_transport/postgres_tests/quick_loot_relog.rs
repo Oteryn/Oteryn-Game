@@ -8,7 +8,8 @@ use crate::gameplay_transport::connection::{
     ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority, LogoutReply, UseCommand,
 };
 use crate::gameplay_transport::spell_premium_coordinator::{
-    SpellPremiumCoordinator, purchase_fixture,
+    PremiumActivation, RegisteredPremiumClock, SpellPremiumCoordinator, clock_registration,
+    purchase_fixture,
 };
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt as _;
 use oteryn_protocol_oteryn::{logout::LogoutResult, quick_loot as wire};
@@ -25,7 +26,7 @@ fn quick_loot_food_to_gold_pouch_waits_for_relog_snapshot_postgres() -> TestResu
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run(admin, true)
+    run(admin, Case::PlatformSnapshot)
 }
 
 #[test]
@@ -33,28 +34,44 @@ fn quick_loot_food_to_gold_pouch_on_first_command_after_relog() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run(admin, false)
+    run(admin, Case::HolderContention)
 }
 
-fn run(admin: String, live_premium: bool) -> TestResult {
+#[test]
+fn quick_loot_pouch_relog_releases_on_one_logout_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::PouchLogout)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    HolderContention,
+    PlatformSnapshot,
+    PouchLogout,
+}
+
+fn run(admin: String, case: Case) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot-relog", move || {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?
-            .block_on(scenario(admin, live_premium))
+            .block_on(scenario(admin, case))
     })
 }
 
-async fn scenario(admin: String, live_premium: bool) -> TestResult {
+async fn scenario(admin: String, case: Case) -> TestResult {
     reset();
     let h = Harness::create_with_admission_seed(admin, "quick_loot_relog", false, false).await?;
-    let result = exercise(&h, live_premium).await;
+    let result = exercise(&h, case).await;
     let cleanup = h.cleanup().await;
     result?;
     cleanup
 }
 
-async fn exercise(h: &Harness, live_premium: bool) -> TestResult {
+async fn exercise(h: &Harness, case: Case) -> TestResult {
+    let live_premium = case == Case::PlatformSnapshot;
     let request = prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -72,11 +89,19 @@ async fn exercise(h: &Harness, live_premium: bool) -> TestResult {
     let room = pin.qualified_room().clone();
     let deps =
         Dependencies::with_content(pin.into_channel_pin(), room, native.spell_book().clone())?;
-    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
-    let consumer = if live_premium {
-        Default::default()
+    let (consumer, clock, activation) = if live_premium {
+        let clock: std::sync::Arc<dyn RegisteredPremiumClock> = std::sync::Arc::new(SnapshotClock);
+        (
+            Default::default(),
+            clock,
+            PremiumActivation {
+                activation_id: "quick-loot-relog-snapshot".into(),
+                switch_over_us: SNAPSHOT_ISSUED_US,
+            },
+        )
     } else {
-        consumer
+        let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+        (consumer, clock, activation)
     };
     let premium = SpellPremiumCoordinator::new(
         consumer.clone(),
@@ -122,6 +147,34 @@ async fn exercise(h: &Harness, live_premium: bool) -> TestResult {
             .bind(id(41).as_slice()).bind(pouch.as_slice()).bind(id(42).as_slice())
             .execute(&mut *tx).await?;
     tx.commit().await?;
+    if case == Case::PouchLogout {
+        let request = wire::QuickLootRequest {
+            action: wire::QuickLootAction::AssignLoot,
+            corpse: None,
+            category: None,
+            recipient: Some(wire::QuickLootRecipient::GoldPouch),
+            recipient_id: Some(pouch),
+            fallback_to_main: true,
+            filter_mode: None,
+            filter_definition_ref: None,
+        };
+        let payload = wire::encode_quick_loot_request(&request).map_err(debug)?;
+        assert_eq!(
+            owner
+                .quick_loot_destinations(
+                    admitted,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: admitted.continuity.next_command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    (request.action.command_type(), &payload),
+                    Some(request),
+                )
+                .await,
+            Some((CommandStatus::Accepted, Vec::new()))
+        );
+    }
     if let Some(live) = &live {
         owner.premium = crate::premium::refresh::PremiumRefresher::new(
             consumer.clone(),
@@ -152,6 +205,37 @@ async fn exercise(h: &Harness, live_premium: bool) -> TestResult {
         owner.logout_session(admitted).await,
         LogoutReply::Result(LogoutResult::Accepted)
     );
+
+    assert_eq!(
+        store
+            .current_session(admitted.game_session_id)
+            .await?
+            .session_state(),
+        crate::foundation::GameSessionState::Terminal
+    );
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(deps.actor, admitted.game_session_id)
+            .is_err()
+    );
+    let character = admitted
+        .item_fence
+        .ok_or("initial item fence")?
+        .character_id;
+    let monk = h
+        .root
+        .read_character_monk_state(&authority, character)
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        monk.harmony(),
+        0,
+        "a vocationless fixture must not save Monk Harmony"
+    );
+    assert_eq!(monk.serene_forced_remaining_micros(), 0);
 
     if live_premium {
         assert_eq!(
@@ -202,6 +286,10 @@ async fn exercise(h: &Harness, live_premium: bool) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98, 607])
             .ok_or("Quick Loot destination capability")?;
+
+    if case == Case::PouchLogout {
+        return logout_once(&owner, h, admitted).await;
+    }
 
     let command = wire::QuickLootRequest {
         action: wire::QuickLootAction::AssignLoot,
@@ -313,6 +401,17 @@ async fn exercise(h: &Harness, live_premium: bool) -> TestResult {
     Ok(())
 }
 
+// The shared producer's default snapshot starts at 2026-09-30T12:00:00Z.
+const SNAPSHOT_ISSUED_US: i64 = 1_790_769_600_000_000;
+
+struct SnapshotClock;
+impl clock_registration::Registered for SnapshotClock {}
+impl RegisteredPremiumClock for SnapshotClock {
+    fn read_current_window(&self) -> Option<crate::premium::TrustedNow> {
+        crate::premium::TrustedNow::new(SNAPSHOT_ISSUED_US + 60_000_000, 0)
+    }
+}
+
 struct LivePremium {
     // The producer task is stopped by its owner on drop.
     _producer: premium_test_producer::TestProducer,
@@ -338,15 +437,7 @@ impl LivePremium {
             let (pause_next, requested, respond) =
                 (pause_next.clone(), requested.clone(), respond.clone());
             move |request| {
-                let reply = Reply::json(snapshot(
-                    request,
-                    7,
-                    &[
-                        ("authority_issued_at", "2026-10-01T00:00:00Z".into()),
-                        ("authority_valid_until", "2026-10-01T01:00:00Z".into()),
-                        ("refresh_after", "2026-10-01T00:40:00Z".into()),
-                    ],
-                ));
+                let reply = Reply::json(snapshot(request, 7, &[]));
                 if pause_next.load(Ordering::Acquire) {
                     requested.notify_one();
                     reply.after_notification(respond.clone())
@@ -400,4 +491,93 @@ impl LivePremium {
         assert_eq!(replies, [(CommandStatus::Accepted, Vec::new())]);
         Ok(())
     }
+}
+
+async fn logout_once(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use super::item_look_fixtures::read_frame;
+    use crate::foundation::GameSessionState;
+    use crate::gameplay_transport::composed_admission::{
+        CONDITION_RELEASE_PROBE, HolderCheckoutProbe,
+    };
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, MessageType, decode_command_result, decode_wire_envelope,
+        encode_client_command,
+        logout::{COMMAND_TYPE_LOGOUT_INTENT, decode_logout_result},
+    };
+    use std::{cell::Cell, sync::Arc, time::Duration};
+    use tokio::io::AsyncWriteExt as _;
+
+    let probe = Arc::new(HolderCheckoutProbe::default());
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let drive = async {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            if decode_wire_envelope(&frame)?.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let command_id = admitted.continuity.next_command_id;
+        let frame = encode_client_command(
+            admitted.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id,
+                command_type: COMMAND_TYPE_LOGOUT_INTENT,
+                payload: &[],
+            },
+        )?;
+        client.write_u32(u32::try_from(frame.len())?).await?;
+        client.write_all(&frame).await?;
+        probe.contend(&harness.root).await?;
+        loop {
+            let frame = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let reply = decode_command_result(envelope.payload())?;
+                assert_eq!(reply.command_id, command_id);
+                assert_eq!(
+                    decode_logout_result(reply.payload).map_err(debug)?,
+                    LogoutResult::Accepted
+                );
+                break;
+            }
+        }
+        client.shutdown().await?;
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(
+        Duration::from_secs(30),
+        super::fixture::join_two(
+            CONDITION_RELEASE_PROBE.scope(
+                Cell::new(Some(Arc::clone(&probe))),
+                serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
+            ),
+            drive,
+        ),
+    )
+    .await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+    let session = admitted.game_session_id;
+    assert_eq!(
+        FreshAdmissionStore::from_root(harness.root.clone())
+            .current_session(session)
+            .await?
+            .session_state(),
+        GameSessionState::Terminal
+    );
+    let actor = admitted.runtime_actor.ok_or("readmitted actor")?;
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(actor, session)
+            .is_err()
+    );
+    Ok(())
 }

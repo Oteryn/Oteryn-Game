@@ -162,7 +162,6 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             );
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
-        deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
         )
@@ -179,6 +178,35 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             )
             .map_err(debug)?;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
+        // The logout case persists this actor. Its runtime vocation must agree
+        // with the durable build so relog can restore its saved state.
+        use crate::gameplay_transport::spell_character_facts::{
+            CastFactsLoad, load_character_cast_facts,
+        };
+        let CastFactsLoad::NoVocation { facts, .. } =
+            load_character_cast_facts(&harness.root, &authority, fence.character_id).await
+        else {
+            return Err("the Quick Loot fixture must have a vocationless build".into());
+        };
+        {
+            let runtime = deps.runtime.lock().await;
+            assert!(
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .initialize(
+                        &runtime,
+                        deps.actor,
+                        deps.admitted.game_session_id,
+                        facts,
+                        (0, 0),
+                        owner.owner_now(),
+                    )
+                    .is_some()
+            );
+        }
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
