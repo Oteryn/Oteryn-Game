@@ -231,6 +231,50 @@ pub(super) async fn relogin_request(
     relogin_into(h, id(41), id(40), id(110), None).await
 }
 
+pub(super) async fn readmit_after_logout(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    previous: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<crate::gameplay_transport::connection::AdmittedSession> {
+    use crate::gameplay_transport::connection::{AdmittedSession, ControllerBinding, SessionContinuity};
+    let (session, request) = relogin_request(harness).await?;
+    let store = FreshAdmissionStore::from_root(harness.root.clone());
+    let transport = store
+        .current_session(session)
+        .await?
+        .current_transport()
+        .ok_or("relog transport")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        runtime.commit_fresh_session(reserved).map_err(debug)?
+    };
+    let (first_entry, item_fence, _) =
+        Box::pin(owner.initialize_first_entry(&request, session, transport, actor)).await;
+    assert!(
+        matches!(
+            first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ),
+        "{first_entry:?}"
+    );
+    Ok(AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(actor),
+        controller: Some(ControllerBinding {
+            transport,
+            account_id: id(40),
+        }),
+        continuity: SessionContinuity {
+            selected_capabilities: previous.continuity.selected_capabilities,
+            ..SessionContinuity::FRESH
+        },
+        first_entry,
+        item_fence,
+        ..previous
+    })
+}
+
 /// `relogin_as`, optionally into another assigned Channel of the World (chsw).
 pub(super) async fn relogin_into(
     h: &Harness,

@@ -332,6 +332,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut settled_death = None;
         let mut kills = None;
         let budget = AdmissionRetryBudget::for_command(self.root);
+        let started = tokio::time::Instant::now();
         let step = loop {
             let step = self
                 .release_attempt(
@@ -346,7 +347,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let ReleaseAttempt::Retry(stage) = step else {
                 break step;
             };
-            operator_event(&format!("event=logout_release_retry stage={stage}"));
+            operator_event(&format!(
+                "event=logout_release_retry stage={stage} ms={}",
+                started.elapsed().as_millis()
+            ));
             if !budget
                 .retries_unavailable(AdmissionRefusal::Unavailable)
                 .await
@@ -354,6 +358,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break step;
             }
         };
+        // The retry budget's foreground demand and waiter belong to this phase.
+        // Settlement uses its own holder ticket after the retry phase releases them.
+        drop(budget);
         Ok(match step {
             ReleaseAttempt::Done(GraceExpiryResult::Released) => {
                 LogoutReply::Result(LogoutResult::Accepted)
@@ -371,7 +378,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             ReleaseAttempt::Retry(_) => match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Lifted => {
-                    operator_event("event=logout_busy stage=release_retry_lifted");
+                    operator_event(&format!(
+                        "event=logout_busy stage=release_retry_lifted ms={}",
+                        started.elapsed().as_millis()
+                    ));
                     LogoutReply::Result(LogoutResult::Busy)
                 }
                 UnendedSettle::Terminal => {

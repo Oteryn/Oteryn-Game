@@ -52,6 +52,8 @@ use std::sync::Arc;
 
 const MEAT: &str = "oteryn:item.tibia.i3577";
 
+const WATCH: &str = "oteryn:item.tibia.i2906";
+
 const FISH: &str = "oteryn:item.tibia.i3578";
 
 const TRADER: &str = "oteryn:npc.alice";
@@ -237,12 +239,14 @@ pub(super) enum ShopScenario {
     MissingProfile,
     PackedBuy,
     EquippedSale,
+    BuyWatch,
 }
 
 pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
     let wandering_rashid = matches!(case, ShopScenario::Rashid);
     let packed = matches!(case, ShopScenario::PackedBuy);
     let equipped = matches!(case, ShopScenario::EquippedSale);
+    let watch = matches!(case, ShopScenario::BuyWatch);
     let bulk = matches!(case, ShopScenario::Bulk) || packed;
     let weight_limit = matches!(case, ShopScenario::WeightLimit);
     run(async move |admin| {
@@ -257,7 +261,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
-        if equipped {
+        if equipped || watch {
             super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
         }
         let active = controller.active().ok_or("active content")?;
@@ -358,6 +362,11 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             buy.item.key = "oteryn:item.tibia.i3447".into();
             buy.direction = ProjectV2ServiceOfferDirection::SellToPlayer;
             buy.unit_price = 1;
+            vec![buy]
+        } else if watch {
+            let mut buy = offer.clone();
+            buy.item.key = WATCH.into();
+            buy.direction = ProjectV2ServiceOfferDirection::SellToPlayer;
             vec![buy]
         } else if bulk {
             let mut buy = offer.clone();
@@ -467,6 +476,10 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 .execute(&h.pool)
                 .await?;
             super::guild_bank_fixtures::bank_seed::balance(&h, id(40), id(41), 1000, 180).await?;
+        } else if watch {
+            seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
+            sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
+                .bind(id(41).as_slice()).execute(&h.pool).await?;
         } else if bulk {
             seed_main_backpack(
                 &h,
@@ -512,6 +525,29 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             ],
         )
         .ok_or("npc shop selection")?;
+        if watch {
+            deps.runtime.lock().await.bind_attacker_lease(
+                deps.actor,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                ).map_err(debug)?,
+            ).map_err(debug)?;
+            let reference = active.native_gameplay().and_then(|native| native.item_index())
+                .and_then(|index| index.definition_ref("Item", WATCH, "definition-r1"))
+                .ok_or("watch definition")?;
+            buy_watch_use_and_logout(&h, &owner, admitted, npc, reference).await?;
+            assert_eq!(carried(&h).await?, vec![
+                ("oteryn:item.tibia.i3031".into(), 100 - i64::from(unit_price)),
+                (WATCH.into(), 1),
+            ]);
+            assert_eq!(footprint(&h).await?.0, 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if weight_limit {
             let before = footprint(&h).await?;
             let inventory = carried(&h).await?;
@@ -899,62 +935,7 @@ async fn bulk_exchange(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async { serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await };
     let driving = async {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
-        let mut shown = None;
-        for (command_id, text) in [(first, "hi"), (first + 1, "trade")] {
-            if text == "trade" {
-                shown = None;
-            }
-            let payload = wire::encode_npc_talk_intent(&NpcTalkIntent {
-                npc_actor: npc,
-                text: text.into(),
-            })
-            .map_err(debug)?;
-            write_frame(
-                &mut client,
-                &encode_client_command(
-                    before.continuity.connection_generation,
-                    &ClientCommandValue {
-                        command_id,
-                        command_type: COMMAND_TYPE_NPC_TALK_INTENT,
-                        payload: &payload,
-                    },
-                )
-                .map_err(debug)?,
-            )
-            .await?;
-            let mut result = false;
-            while !result || text == "trade" && shown.is_none() {
-                let frame = read_frame(&mut client).await?;
-                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-                if envelope.message_type() == MessageType::CommandResult {
-                    let reply = decode_command_result(envelope.payload()).map_err(debug)?;
-                    assert_eq!(reply.command_id, command_id);
-                    assert_eq!(
-                        wire::decode_npc_intent_result(reply.payload).map_err(debug)?,
-                        NpcIntentDisposition::Ok
-                    );
-                    result = true;
-                } else if envelope.message_type() == MessageType::StateDelta {
-                    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
-                        .map_err(debug)?;
-                    if delta.domain_id == wire::STATE_DOMAIN_NPC_TRADE_WINDOW {
-                        shown = Some(
-                            wire::decode_npc_trade_window_for(delta.payload, true)
-                                .map_err(debug)?,
-                        );
-                    }
-                }
-            }
-        }
-        let window = shown.ok_or("shop window")?;
+        let window = open_trade(&mut client, before, npc, first).await?;
         let (offer_index, offer) = window
             .offers
             .iter()
@@ -1043,4 +1024,167 @@ async fn bulk_exchange(
         *admitted = current;
     }
     result
+}
+
+
+async fn open_trade(
+    client: &mut tokio::io::DuplexStream,
+    before: AdmittedSession,
+    npc: EntityRef,
+    first: u64,
+) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcTradeWindow> {
+    use oteryn_protocol_oteryn::npc_service as wire;
+    loop {
+        let frame = read_frame(client).await?;
+        if decode_wire_envelope(&frame).map_err(debug)?.message_type()
+            == MessageType::SnapshotCommit
+        {
+            break;
+        }
+    }
+    let mut shown = None;
+    for (command_id, text) in [(first, "hi"), (first + 1, "trade")] {
+        if text == "trade" {
+            shown = None;
+        }
+        let payload = wire::encode_npc_talk_intent(&NpcTalkIntent {
+            npc_actor: npc,
+            text: text.into(),
+        })
+        .map_err(debug)?;
+        write_frame(
+            client,
+            &encode_client_command(
+                before.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id,
+                    command_type: COMMAND_TYPE_NPC_TALK_INTENT,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?,
+        )
+        .await?;
+        let mut result = false;
+        while !result || text == "trade" && shown.is_none() {
+            let frame = read_frame(client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(reply.command_id, command_id);
+                assert_eq!(
+                    wire::decode_npc_intent_result(reply.payload).map_err(debug)?,
+                    NpcIntentDisposition::Ok
+                );
+                result = true;
+            } else if envelope.message_type() == MessageType::StateDelta {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                    .map_err(debug)?;
+                if delta.domain_id == wire::STATE_DOMAIN_NPC_TRADE_WINDOW {
+                    shown = Some(
+                        wire::decode_npc_trade_window_for(delta.payload, true)
+                            .map_err(debug)?,
+                    );
+                }
+            }
+        }
+    }
+    shown.ok_or_else(|| "shop window".into())
+}
+
+async fn buy_watch_use_and_logout(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    npc: EntityRef,
+    watch: std::num::NonZeroU32,
+) -> TestResult {
+    use super::autowalk_fixtures::{read, send};
+    use super::quick_loot::command_reply;
+    use crate::gameplay_transport::{
+        composed_admission::HolderCheckoutProbe,
+        item_ref_admission::USE_INVENTORY_CHECKOUT_PROBE,
+        npc_trade_command::TRADE_BACKPACK_CHECKOUT_PROBE,
+    };
+    use oteryn_protocol_oteryn::item_view::{
+        STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
+    };
+    use oteryn_protocol_oteryn::logout::{
+        COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+    };
+    use oteryn_protocol_oteryn::npc_service as wire;
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_item_intent,
+    };
+    use std::{cell::Cell, time::Duration};
+
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let trade_checkout = Arc::new(HolderCheckoutProbe::default());
+    let use_checkout = Arc::new(HolderCheckoutProbe::default());
+    let drive = async {
+        let first = admitted.continuity.next_command_id;
+        let window = open_trade(&mut client, admitted, npc, first).await?;
+        let (_, catalogue_revision) = window.open.ok_or("open shop quote")?;
+        let (index, quote) = window.offers.iter().enumerate()
+            .find(|(_, offer)| offer.side == NpcTradeSide::Buy && offer.item_definition_ref == watch.get())
+            .ok_or("watch buy offer")?;
+        let command = first + 2;
+        send(&mut client, command, wire::COMMAND_TYPE_NPC_TRADE_INTENT, &wire::encode_npc_trade_intent(
+            &wire::NpcTradeIntent {
+                npc_actor: npc,
+                catalogue_revision,
+                offer_index: u32::try_from(index)?,
+                side: NpcTradeSide::Buy,
+                quantity: 1,
+                expected_unit_price: quote.unit_price,
+            },
+        ).map_err(debug)?).await?;
+        trade_checkout.contend(&h.root).await?;
+        let (status, payload) = command_reply(&mut client, command).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(wire::decode_npc_intent_result(&payload).map_err(debug)?, NpcIntentDisposition::Ok);
+
+        let handle = loop {
+            let frame = read(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() != MessageType::StateDelta {
+                continue;
+            }
+            let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+            if delta.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
+                let inventory = decode_character_inventory(delta.payload).map_err(debug)?;
+                if let Some(entry) = inventory.entries.iter().find(|entry| entry.item_definition_ref == watch) {
+                    break entry.handle;
+                }
+            }
+        };
+        send(&mut client, command + 1, COMMAND_TYPE_USE_INTENT, &encode_use_item_intent(handle)).await?;
+        use_checkout.contend(&h.root).await?;
+        let (status, payload) = command_reply(&mut client, command + 1).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(decode_use_result(&payload).map_err(debug)?, UseDisposition::Committed);
+        send(&mut client, command + 2, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
+        let (status, payload) = command_reply(&mut client, command + 2).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(decode_logout_result(&payload).map_err(debug)?, LogoutResult::Accepted);
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let serving = async move {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let (end, result) = tokio::time::timeout(
+        Duration::from_secs(30),
+        fixture::join_two(
+            TRADE_BACKPACK_CHECKOUT_PROBE.scope(
+                Cell::new(Some(Arc::clone(&trade_checkout))),
+                USE_INVENTORY_CHECKOUT_PROBE.scope(Cell::new(Some(Arc::clone(&use_checkout))), serving),
+            ),
+            drive,
+        ),
+    ).await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)), "{end:?}");
+    Ok(())
 }

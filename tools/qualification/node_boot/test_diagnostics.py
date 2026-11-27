@@ -61,6 +61,21 @@ class RuntimeEvidenceTests(unittest.TestCase):
         self.assertIn('event=logout_unknown kind=unknown failure_stage=pvp_refresh', result.stdout)
         self.assertNotIn('secret', result.stdout)
 
+    def test_logout_retry_reports_prerequisite_and_elapsed_ms(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        lines = [
+            'oteryn-game-server event=logout_release_retry stage=conditions ms=75 session=secret',
+            'oteryn-game-server event=logout_busy stage=release_retry_lifted ms=900',
+            'oteryn-game-server event=logout_release_retry stage=secret ms=secret',
+        ]
+        script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        self.assertIn('event=logout_release_retry failure_stage=conditions ms=75 observed_ms=', result.stdout)
+        self.assertIn('event=logout_busy failure_stage=release_retry_lifted ms=900 observed_ms=', result.stdout)
+        self.assertNotIn('secret', result.stdout)
+
     def test_loss_blockers_keep_closed_stages_without_sensitive_fields(self):
         monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
         prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]

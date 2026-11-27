@@ -980,7 +980,7 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
           'step_rejected_stale_position', 'step_rejected_pending_spell',
           'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy',
-          'session_durability_failed', 'logout_unknown', 'logout_busy',
+          'session_durability_failed', 'logout_unknown', 'logout_busy', 'logout_release_retry',
           'control_loss_reconcile_pending', 'control_loss_result',
           'control_loss_publication', 'control_loss_grace', 'character_authority_check_failed',
           'appearance_initial_failed', 'appearance_observation_failed'}
@@ -1032,6 +1032,9 @@ labels = {
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
 }
+release_prerequisites = {'drome', 'death', 'timed_items', 'pending_items', 'write_fence',
+                         'wheel_or_monk', 'spell_training', 'gourmet', 'conditions', 'kill_rewards',
+                         'familiar', 'offline_training'}
 authority_stages = {'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
                     'bazaar', 'revision_chain', 'appearance', 'build_chain',
                     'proficiency_history', 'familiar_chain', 'spell_familiar_group',
@@ -1063,6 +1066,9 @@ def report(line):
     for key, allowed in labels.items():
         if fields.get(key) in allowed:
             safe.append((key, fields[key]))
+    if (event == 'logout_release_retry' and fields.get('stage') in release_prerequisites
+            and ('failure_stage', fields['stage']) not in safe):
+        safe.append(('failure_stage', fields['stage']))
     if event == 'character_authority_check_failed' and fields.get('stage') in authority_stages:
         safe.append(('check_stage', fields['stage']))
     for key in ('source', 'caller'):
