@@ -58,6 +58,7 @@ enum Case {
     NotConvinceable,
     SummonLimit,
     Animate,
+    AnimateRat,
     AnimateBlackSkull,
     NonCorpse,
 }
@@ -79,6 +80,13 @@ fn utility_runes_animate_real_dispatch_owns_skeleton_and_consumes_corpse() -> Te
     scenario(Case::Animate)
 }
 #[test]
+fn utility_runes_animate_dead_rat_use_summons_skeleton_and_consumes_corpse() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(Case::AnimateRat)
+}
+#[test]
 fn utility_runes_animate_real_dispatch_refuses_non_corpse() -> TestResult {
     scenario(Case::NonCorpse)
 }
@@ -89,9 +97,9 @@ fn utility_runes_animate_real_dispatch_refuses_black_skull() -> TestResult {
 }
 
 fn scenario(case: Case) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
@@ -105,17 +113,12 @@ fn scenario(case: Case) -> TestResult {
 async fn run_case(admin: String, case: Case) -> TestResult {
     let animate = matches!(
         case,
-        Case::Animate | Case::AnimateBlackSkull | Case::NonCorpse
+        Case::Animate | Case::AnimateRat | Case::AnimateBlackSkull | Case::NonCorpse
     );
-    let committed = matches!(case, Case::Convince | Case::Animate);
-    let harness = Harness::create_with_admission_seed(admin, "utility_runes", true, false).await?;
-    prepare_current_session(&harness).await?;
-    let seal = harness.recovery.seal_current().map_err(debug)?;
-    let authority = harness
-        .root
-        .open_character_authority(&seal)
-        .await
-        .map_err(debug)?;
+    let committed = matches!(case, Case::Convince | Case::Animate | Case::AnimateRat);
+    let harness =
+        Harness::create_with_admission_seed(admin, "utility_runes", case != Case::AnimateRat, false)
+            .await?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, pin) = production_generation_with_source(
         world,
@@ -126,6 +129,43 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     )?;
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
+    let level = if case == Case::AnimateRat { 27 } else { 50 };
+    if case == Case::AnimateRat {
+        // The native cast reads both the durable progression and live spell state.
+        let progression = native
+            .progression()
+            .ok_or("progression")?
+            .policy_for("profile-1", "ruleset-1", "content-1")
+            .map_err(debug)?;
+        let xp = progression
+            .thresholds
+            .iter()
+            .find(|row| row.level == level)
+            .ok_or("Animate Dead level threshold")?
+            .minimum_experience
+            .get();
+        sqlx::query(
+            "INSERT INTO game_character_progression_state VALUES
+             (encode($1,'hex')::uuid,1,$2,$3,'profile-1','ruleset-1','content-1',$4,$5,$6,$7,$8)",
+        )
+        .bind(id(41).as_slice())
+        .bind(i32::try_from(level)?)
+        .bind(xp)
+        .bind(&progression.context.simulation)
+        .bind(&progression.context.evidence)
+        .bind(&progression.context.declaration)
+        .bind(&progression.policy_revision)
+        .bind(&progression.reward_revision)
+        .execute(&harness.pool)
+        .await?;
+    }
+    prepare_current_session(&harness).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let entry_room = pin.qualified_room();
     let map = crate::map::spell_tiles::tests::movement_arena::world();
     let cells = map
@@ -190,18 +230,19 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             assert!(!policy.convinceable);
         }
         let target_key = policy.definition_key.clone();
-        let skeleton = native
+        // Install both actual Skeleton variants from the live manifest.
+        let skeletons = native
             .policies()
             .policies()
             .iter()
-            .find(|p| p.definition_key == "oteryn:creature.skeleton")
-            .ok_or("Skeleton policy")?
-            .as_ref()
-            .clone();
+            .filter(|p| p.display_name.eq_ignore_ascii_case("Skeleton"));
+        let mut policies = vec![policy];
+        policies.extend(skeletons.map(|p| p.as_ref().clone()));
+        assert_eq!(policies.len(), 3, "both Skeleton variants must be installed");
         let policies =
             crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
                 native.source_digest(),
-                vec![policy, skeleton],
+                policies,
             )
             .map_err(debug)?;
         runtime
@@ -304,8 +345,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?,
         BuildCommitOutcome::Committed(_)
     ));
-    let trained =
-        DurableBuildState::new(druid.vocation(), (10, 0), druid.skills()).map_err(debug)?;
+    let magic_level = if case == Case::AnimateRat { 4 } else { 10 };
+    let trained = DurableBuildState::new(druid.vocation(), (magic_level, 0), druid.skills())
+        .map_err(debug)?;
     harness
         .root
         .commit_character_build(
@@ -333,9 +375,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                     actor,
                     session,
                     CharacterCastFacts {
-                        level: 50,
-                        max_mana: 2000,
-                        magic_level: 10,
+                        level,
+                        max_mana: if case == Case::AnimateRat { 642 } else { 2000 },
+                        magic_level: u32::from(magic_level),
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -415,7 +457,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             )
             .map_err(debug)?;
         drop(runtime);
-        seed_target(&harness, native, &address, case != Case::NonCorpse).await?;
+        seed_target(&harness, native, &address, case).await?;
     }
     let before = {
         let runtime = owner.runtime.lock().await;
@@ -428,6 +470,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .ok_or("caster")?
             .vitals()
     };
+    if case == Case::AnimateRat {
+        assert_eq!(before.mana, 642);
+    }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
         let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
@@ -564,7 +609,10 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 "oteryn:creature.rat"
             }
         );
-        if !animate {
+        if animate {
+            assert_eq!(owned[0].state.policy.definition_revision, "definition-r1");
+            assert_eq!(owned[0].state.policy.display_name, "Skeleton");
+        } else {
             assert_eq!(owned[0].actor, target_actor);
         }
     }
@@ -583,6 +631,16 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .bind(id(180).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(body, if committed { (2, 0) } else { (1, 1) });
     }
+    if case == Case::AnimateRat {
+        let (chain, durations): (Vec<i32>, Vec<i64>) = sqlx::query_as(
+            "SELECT game_summer_corpse_chain($1), game_source_corpse_durations_v1($1)",
+        )
+        .bind("oteryn:item.tibia.i5964")
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(chain, [5964, 3994, 3995, 3996]);
+        assert_eq!(durations, [10_000, 300_000, 300_000, 60_000]);
+    }
     drop(owner);
     drop(authority);
     drop(seal);
@@ -593,13 +651,19 @@ async fn seed_target(
     h: &Harness,
     native: &crate::content::native_gameplay::NativeGameplayState,
     target: &crate::durability::native_world_items::SpellGroundTarget,
-    corpse: bool,
+    case: Case,
 ) -> TestResult {
+    let rat = case == Case::AnimateRat;
+    let creature_key = if rat {
+        "oteryn:creature.rat"
+    } else {
+        "oteryn:creature.goldhanded_cultist"
+    };
     let creature = native
         .creature_profiles()
         .records
         .iter()
-        .find(|r| r.profile.target.key == "oteryn:creature.goldhanded_cultist")
+        .find(|r| r.profile.target.key == creature_key)
         .ok_or("qualified corpse creature")?;
     let crate::content::ProjectV2AuthoringProfileData::Creature(profile) = &creature.profile.data
     else {
@@ -610,25 +674,32 @@ async fn seed_target(
         .as_ref()
         .and_then(|d| d.corpse_item.as_ref())
         .ok_or("creature corpse")?;
-    let policy = native
-        .item_policy(&corpse_ref.key, &corpse_ref.revision)
-        .ok_or("movable creature corpse policy")?;
-    let definition = &policy.record().production_definition;
-    let qualified =
-        crate::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)
-            .map_err(debug)?;
-    assert!(qualified.movable, "the actual creature corpse is movable");
+    let item_key = if rat {
+        assert_eq!(corpse_ref.key, "oteryn:item.tibia.i5964");
+        // Place the first movable stage. Global only permits summoning once
+        // the initial, immovable death appearance has decayed.
+        "oteryn:item.tibia.i3994"
+    } else {
+        let policy = native
+            .item_policy(&corpse_ref.key, &corpse_ref.revision)
+            .ok_or("movable creature corpse policy")?;
+        let qualified =
+            crate::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)
+                .map_err(debug)?;
+        assert!(qualified.movable, "the actual creature corpse is movable");
+        &corpse_ref.key
+    };
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$4,$5,1,1,encode($3,'hex')::uuid)")
-        .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(181).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).execute(&mut *tx).await?;
+        .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(181).as_slice()).bind(item_key).bind(&corpse_ref.revision).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,$7,$8,100)")
         .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(&target.spatial_position).bind(id(182).as_slice()).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).execute(&mut *tx).await?;
-    if corpse {
-        sqlx::query("INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(1,game_item_death_scope_key(encode($1,'hex')::uuid,1::smallint,encode($2,'hex')::uuid,NULL),encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable','fixture:cultist','r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,1)")
-            .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(vec![1_u8;33]).bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(180).as_slice()).bind(vec![1_u8;32]).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    if case != Case::NonCorpse {
+        sqlx::query("INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(1,game_item_death_scope_key(encode($1,'hex')::uuid,1::smallint,encode($2,'hex')::uuid,NULL),encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable',$9,'r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,CASE WHEN $10 THEN floor(extract(epoch FROM clock_timestamp())*1000)::bigint-10000 ELSE 1 END)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(vec![1_u8;33]).bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(180).as_slice()).bind(vec![1_u8;32]).bind(id(41).as_slice()).bind(creature_key).bind(rat).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

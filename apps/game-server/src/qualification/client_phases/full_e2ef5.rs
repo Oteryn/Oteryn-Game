@@ -3911,6 +3911,47 @@ pub(super) async fn approach_melee(
     walk(client, world, &path).await
 }
 
+fn rat_corpse_item(
+    detail: oteryn_dev_client::EntityDetail,
+    expected: u32,
+    require_handle: bool,
+) -> bool {
+    use oteryn_dev_client::EntityDetail::{Object, ObjectWithAppearance};
+    matches!(detail,
+        Object { item_definition_ref, item_handle, .. }
+        | ObjectWithAppearance { item_definition_ref, item_handle, .. }
+            if item_definition_ref == expected && (!require_handle || item_handle.is_some()))
+}
+
+#[test]
+fn rat_corpse_matches_both_wire_object_variants() {
+    use oteryn_dev_client::EntityDetail::{Object, ObjectWithAppearance};
+    let appearance_id = std::num::NonZeroU16::MIN;
+    let legacy = Object {
+        item_definition_ref: 402,
+        quantity: 1,
+        item_handle: None,
+    };
+    let native = ObjectWithAppearance {
+        item_definition_ref: 402,
+        quantity: 1,
+        item_handle: None,
+        appearance_id,
+    };
+    let with_handle = ObjectWithAppearance {
+        item_definition_ref: 402,
+        quantity: 1,
+        item_handle: Some(std::num::NonZeroU64::MIN),
+        appearance_id,
+    };
+    assert!(rat_corpse_item(with_handle, 402, true));
+    for detail in [legacy, native] {
+        assert!(rat_corpse_item(detail, 402, false));
+        assert!(!rat_corpse_item(detail, 403, false));
+        assert!(!rat_corpse_item(detail, 402, true));
+    }
+}
+
 async fn player_corpse(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -3949,7 +3990,7 @@ async fn player_corpse(
                         if entry.kind == oteryn_dev_client::EntityKind::Corpse
                             && !existing.contains(&entry.entity)
                             && entry.position == last
-                            && matches!(entry.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. } if item_definition_ref == corpse_ref.get())
+                            && rat_corpse_item(entry.detail, corpse_ref.get(), true)
                         {
                             corpse = Some((entry, delta.server_sequence));
                         }
@@ -3978,7 +4019,21 @@ async fn animate_corpse(
     corpse: oteryn_dev_client::WorldSpatialEntity,
 ) -> TestResult<(oteryn_dev_client::EntityRef, u64)> {
     spell_ready(client, spell).await?;
-    creature(client, corpse.entity)?;
+    // Wait for the server to publish the first movable Rat corpse appearance.
+    // Global's initial death appearance cannot be used to summon a Skeleton.
+    let index = provisioning::item_index()?;
+    let movable = provisioning::item_reference(&index, 3994)?;
+    let until = tokio::time::Instant::now() + Duration::from_secs(20);
+    let corpse = loop {
+        let current = creature(client, corpse.entity)?;
+        if rat_corpse_item(current.detail, movable.get(), false) {
+            break current;
+        }
+        if tokio::time::Instant::now() >= until {
+            return Err("Rat corpse did not become movable before Animate Dead USE".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    };
     let before = census(client)?;
     let vitals = client
         .actor_vitals()
@@ -3993,9 +4048,16 @@ async fn animate_corpse(
     if client
         .actor_vitals()
         .is_none_or(|after| after.mana != vitals.mana || after.soul != vitals.soul)
-        || creature(client, corpse.entity).is_ok()
     {
-        return Err("Animate Dead did not remove the exact corpse with zero resource cost".into());
+        return Err("Animate Dead changed mana or soul".into());
+    }
+    // The corpse view reconciles from durable custody on the item clock.
+    let until = tokio::time::Instant::now() + Duration::from_secs(5);
+    while creature(client, corpse.entity).is_ok() {
+        if tokio::time::Instant::now() >= until {
+            return Err("Animate Dead did not remove the exact corpse".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
     }
     let (skeleton, _) = companion_spawn(client, &before, "Skeleton", corpse.position).await?;
     Ok((skeleton, sequence))
