@@ -133,8 +133,7 @@ pub(super) fn cleave_targets(
             if at.floor != to.floor || (at.x, at.y) != tile {
                 continue;
             }
-            let Some(facts) =
-                target_facts(runtime, room, entry.actor, entry.session, row.actor, now)
+            let Ok(facts) = target_facts(runtime, room, entry.actor, entry.session, row.actor, now)
             else {
                 continue;
             };

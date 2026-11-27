@@ -339,6 +339,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             }
+            if entry
+                .state
+                .target()
+                .is_some_and(|target| states.player_hidden_from(&runtime, entry.actor, target, now))
+            {
+                entry.clear_target_for(AttackTargetReason::Invisible);
+                continue;
+            }
+            entry.settle_held_target(&runtime, room, now);
             if unavailable_source_players.contains(&entry.actor.placement_identity()) {
                 continue;
             }
@@ -547,9 +556,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .borrow_exact_actor_commit()
                     .bound_attacker_lease(entry.actor, swing.lineage)
                 else {
-                    if !extension {
-                        entry.clear_target();
-                    }
                     continue;
                 };
                 let base_critical = (offence.critical_chance, offence.critical_damage);
@@ -760,9 +766,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let Ok(snapshot) = runtime.companion_snapshot(target) else {
-                    if !extension {
-                        entry.clear_target();
-                    }
                     continue;
                 };
                 let race_key = snapshot.state.policy.definition_key.clone();
@@ -1040,9 +1043,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     plan.occurrence(),
                     ExactActorProposal::client(target),
                 ) else {
-                    if !extension {
-                        entry.clear_target();
-                    }
                     continue;
                 };
                 // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
@@ -1094,9 +1094,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     committed
                 };
                 let Ok(result) = committed else {
-                    if !extension {
-                        entry.clear_target();
-                    }
                     continue;
                 };
                 if !extension && result.applied {
@@ -2038,9 +2035,8 @@ pub(super) fn select_swing(
         // Crystal player_wheel.cpp:3009-3017: the no-adjacent-monster branch adds 3 distance.
         skills.attack = skills.attack.checked_add(3)?;
     }
-    let mut facts = target_facts(runtime, room, entry.actor, entry.session, target, now)?;
-    // Vanished/dead/nonattackable targets still reach the original clearing rules, even
-    // when ammunition is missing. Cost/range gates may only stall a valid held target.
+    let mut facts = target_facts(runtime, room, entry.actor, entry.session, target, now).ok()?;
+    // Held-target loss is settled by the actual owner before the swing is selected.
     if let Some(ranged) = &weapon.ranged
         && facts.present_and_visible
         && facts.attackable_kind
@@ -2260,7 +2256,7 @@ fn settle_kill(
         Some(now),
     );
     if clear {
-        entry.clear_target();
+        entry.clear_target_for(AttackTargetReason::Dead);
     }
 }
 

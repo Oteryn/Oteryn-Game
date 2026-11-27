@@ -89,6 +89,20 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "attack_target_resolution",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "action",
+        "command_id",
+        "reason",
+        "target_generation",
+        "target_identity"
+      ],
+      "codes": [],
+      "note": "Typed attack target refusal or loss. Clear uses the command that selected the target; refusal uses the incoming command. The target reference is opaque."
+    },
+    {
       "event": "bloodjaw_target_refused",
       "level": "warn",
       "span": false,

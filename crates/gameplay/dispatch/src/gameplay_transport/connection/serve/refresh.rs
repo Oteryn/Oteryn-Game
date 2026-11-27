@@ -461,6 +461,53 @@ where
         let now = tokio::time::Instant::now();
         session.chase_due = Some(session.pacer.wait_until(now).unwrap_or(now));
     }
+    publish_combat(stream, authority, session, state, true).await
+}
+
+pub(super) async fn publish_combat<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    state: ActorCombatState,
+    synchronize_target_loss: bool,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    // A lethal swing clears the combat lock before the periodic visibility
+    // update. Send the creature's removal first so a client cannot retarget the
+    // stale incarnation. If the observation is busy, keep the last sent state
+    // and retry its publication on the next combat tick.
+    if synchronize_target_loss
+        && state.target.is_none()
+        && let Some(previous) = session
+            .admitted
+            .continuity
+            .combat
+            .sent
+            .and_then(|sent| sent.target)
+        && session
+            .visibility
+            .as_ref()
+            .is_some_and(|view| view.shows_creature(previous))
+    {
+        let mut step = "entity_names";
+        let observation = crate::durability::DurabilityRoot::with_background_holder(
+            authority.background_operation(Box::pin(spatial_entities(
+                stream, authority, session, &mut step,
+            ))),
+        )
+        .await;
+        match observation {
+            Ok(()) => {}
+            Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => return Ok(()),
+            Err(ObservationError::Unavailable) => {
+                operator_event(&format!("event=visibility_refresh_refused step={step}"));
+                return Err(ServeEnd::Disconnected);
+            }
+        }
+    }
     let Some(change) =
         session
             .admitted
@@ -677,53 +724,11 @@ where
         }
     }
     // VIS-3: entities that moved, entered or left without this actor's step.
-    let Some(view) = session.visibility.as_mut() else {
+    if session.visibility.is_none() {
         return Ok(());
-    };
-    *step = "entity_names";
-    let mut channel = Box::pin(crate::gameplay_transport::entity_names::observe_result(
-        authority,
-        session.actor,
-        session.admitted.continuity.selected_capabilities,
-    ))
-    .await;
-    if matches!(channel, Err(AdmissionRefusal::Unavailable)) {
-        // Movement committed by another actor's command still belongs on this
-        // connection. The published names suffice for already introduced actors.
-        channel = Box::pin(
-            crate::gameplay_transport::entity_names::observe_with_published_names(
-                authority,
-                session.actor,
-                session.admitted.continuity.selected_capabilities,
-                view,
-            ),
-        )
-        .await;
     }
-    let projection = match channel {
-        Ok(channel) => {
-            *step = "appearances";
-            Box::pin(session.appearances.refresh_result(
-                stream,
-                authority,
-                session.actor,
-                &mut session.admitted,
-                view,
-                &channel,
-                session.item_view.as_mut(),
-                (session.sequence, session.revision),
-                false,
-            ))
-            .await
-        }
-        Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
-        Err(_) => return Err(ServeEnd::Disconnected),
-    };
-    match projection {
-        Ok((to_sequence, to_revision)) => {
-            session.sequence = to_sequence;
-            session.revision = to_revision;
-            session.admitted.continuity.spatial_revision = session.revision;
+    match spatial_entities(stream, authority, session, step).await {
+        Ok(()) => {
             *step = "party_skull";
             party_skull::refresh(stream, authority, session).await?;
             inventory_capacity::refresh(stream, authority, session).await?;
@@ -819,6 +824,66 @@ where
     }
     Ok(())
 }
+async fn spatial_entities<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    step: &mut &'static str,
+) -> Result<(), ObservationError>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    // VIS-3: entities that moved, entered or left without this actor's step.
+    let Some(view) = session.visibility.as_mut() else {
+        return Ok(());
+    };
+    *step = "entity_names";
+    let mut channel = Box::pin(crate::gameplay_transport::entity_names::observe_result(
+        authority,
+        session.actor,
+        session.admitted.continuity.selected_capabilities,
+    ))
+    .await;
+    if matches!(channel, Err(AdmissionRefusal::Unavailable)) {
+        // Movement committed by another actor's command still belongs on this
+        // connection. The published names suffice for already introduced actors.
+        channel = Box::pin(
+            crate::gameplay_transport::entity_names::observe_with_published_names(
+                authority,
+                session.actor,
+                session.admitted.continuity.selected_capabilities,
+                view,
+            ),
+        )
+        .await;
+    }
+    let projection = match channel {
+        Ok(channel) => {
+            *step = "appearances";
+            Box::pin(session.appearances.refresh_result(
+                stream,
+                authority,
+                session.actor,
+                &mut session.admitted,
+                view,
+                &channel,
+                session.item_view.as_mut(),
+                (session.sequence, session.revision),
+                false,
+            ))
+            .await
+        }
+        Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
+        Err(_) => Err(ObservationError::Unavailable),
+    };
+    let (to_sequence, to_revision) = projection?;
+    session.sequence = to_sequence;
+    session.revision = to_revision;
+    session.admitted.continuity.spatial_revision = to_revision;
+    Ok(())
+}
+
 pub(super) async fn sounds<S, A>(
     stream: &mut S,
     authority: &A,

@@ -489,6 +489,49 @@ fn a_rat_in_a_protection_zone_and_an_attacker_in_one_are_refused() {
 }
 
 #[test]
+fn p11_dead_creature_clears_held_target_and_refuses_retarget_with_dead_reason() {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let mut owner = owner();
+            let rat = owner.rat;
+            let creature = owner.runtime.visible_entities().creatures[0].actor;
+            assert_eq!(owner.target(T0, Some(rat), 7), AttackIntentDisposition::Ok);
+            assert_eq!(owner.held(), Some(rat));
+            assert!(owner.runtime.kill_creature_for_test(creature));
+            let lines = oteryn_error_codes::capture(|| {
+                owner.attack.settle_held_target(
+                    &owner.runtime,
+                    &owner.room,
+                    owner.player,
+                    owner.session,
+                    at(T0 + 1),
+                );
+                assert_eq!(owner.held(), None);
+                assert_eq!(
+                    owner.target(T0 + 2, Some(rat), 8),
+                    AttackIntentDisposition::TargetNotVisible
+                );
+            });
+            assert!(
+                lines.iter().any(|line| line
+                    .contains("event=attack_target_resolution action=clear command_id=7")
+                    && line.contains("reason=dead")),
+                "{lines:?}"
+            );
+            assert!(
+                lines.iter().any(|line| line
+                    .contains("event=attack_target_resolution action=refuse command_id=8")
+                    && line.contains("reason=dead")),
+                "{lines:?}"
+            );
+        })
+        .expect("start owner test")
+        .join()
+        .expect("owner test");
+}
+
+#[test]
 fn every_target_refusal_has_its_wire_disposition() {
     use AttackIntentDisposition as D;
     for (refusal, disposition) in [
@@ -500,7 +543,11 @@ fn every_target_refusal_has_its_wire_disposition() {
         (TargetRefusal::ReentryProtected, D::ReentryProtected),
         (TargetRefusal::TargetReentryProtected, D::ReentryProtected),
     ] {
-        assert_eq!(refusal_disposition(refusal), disposition, "{refusal:?}");
+        assert_eq!(
+            refusal_reason(refusal).disposition(),
+            disposition,
+            "{refusal:?}"
+        );
     }
 }
 
@@ -1319,7 +1366,7 @@ fn a_bundle_rat_is_held_and_attackable_outside_a_bundle_protection_zone() {
             actor,
             at(T0),
         )
-        .is_none()
+        .is_err()
     );
 }
 

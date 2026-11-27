@@ -475,20 +475,10 @@ where
             else {
                 return Ok(());
             };
-            let Some(change) = session.admitted.continuity.combat.delta(
-                session.generation,
-                session.sequence,
-                state,
-            ) else {
-                return Err(ServeEnd::Disconnected);
-            };
-            if let Some((delta_sequence, frame)) = change {
-                session.sequence = delta_sequence;
-                session.admitted.continuity.server_sequence = session.sequence;
-                if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
-                }
-            }
+            let cancel = command.command_type
+                == oteryn_protocol_oteryn::attack::COMMAND_TYPE_ATTACK_TARGET_INTENT
+                && matches!(decode_attack_target_intent(command.payload), Ok(None));
+            refresh::publish_combat(stream, authority, session, state, !cancel).await?;
         }
         Dispatch::Guild(_) if command.command_type == 73 && command.payload.first() == Some(&4) => {
             if let Some(view) = session.item_view.as_mut()
