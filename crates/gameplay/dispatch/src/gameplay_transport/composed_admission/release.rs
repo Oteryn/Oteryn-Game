@@ -217,9 +217,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Retry this checkpoint under the existing logout fence. The holder can now
         // serve the deferred read/write directly, without re-running earlier saves.
-        while !self.save_conditions_at_actor_end(actor, session).await {
-            if !progress.retry(ReleaseRetryStage::Conditions).await {
-                return Err(ReleaseRetryStage::Conditions);
+        loop {
+            let stage = match self.save_conditions_at_actor_end(actor, session).await {
+                Ok(true) => break,
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    ReleaseRetryStage::ConditionsHolder
+                }
+                _ => ReleaseRetryStage::Conditions,
+            };
+            if !progress.retry(stage).await {
+                return Err(stage);
             }
         }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.

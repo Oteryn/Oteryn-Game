@@ -511,6 +511,16 @@ pub(super) fn guard_refusal(
                 .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
             Dispatch::Reply(status, payload)
         }
+        oteryn_protocol_oteryn::forge_preview::COMMAND_TYPE_FORGE_PREVIEW => {
+            let Some(request) =
+                oteryn_protocol_oteryn::forge_preview::Request::decode(command.payload)
+            else {
+                return Ok(Dispatch::Unregistered);
+            };
+            let payload = crate::gameplay_transport::forge_preview::refused_reply(request.nonce)
+                .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
+            Dispatch::Reply(rejected, payload)
+        }
         COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY => {
             Dispatch::Reply(rejected, COMMAND_BUSY_REFUSAL.to_vec())
         }
