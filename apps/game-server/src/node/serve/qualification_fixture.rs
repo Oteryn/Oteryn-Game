@@ -56,7 +56,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
-        "w09-aid-audit" => Some(("master_sorcerer", 300)),
+        "w09-aid-audit" => Some(("sorcerer", 300)),
         "w09-kooldown" => Some(("sorcerer", 41)),
         "w10-primal" => Some(("knight", 500)),
         "w20b-light" => Some(("sorcerer", 26)),
