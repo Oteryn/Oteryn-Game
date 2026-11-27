@@ -150,6 +150,8 @@ fn scenario() -> TestResult {
                 category: Some(QuickLootCategory::Gold),
                 recipient: Some(QuickLootRecipient::MainContainer),
                 corpse: None,
+                selected_item: None,
+                review_filters: false,
                 recipient_id: None,
                 fallback_to_main: false,
                 filter_mode: None,
