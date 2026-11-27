@@ -1741,6 +1741,13 @@ const SAMS_BACKPACK_BEFORE_KROOX_ALIAS: [u8; 32] = super::published_quest_pins::
     b"e618fcebed1f65d871a0228c3f508c8fa74abae80f6c162585dda4dcff2e0364",
 );
 
+const MAKESHIFT_QUEST: &str = "oteryn:quest.makeshift_warrior_outfits_quest";
+const MAKESHIFT_QUALIFICATION: &str = "oteryn:quest-progress/quest/makeshift_warrior/qualification";
+// Active Makeshift definition captured from main e2750951e before native token ownership.
+const MAKESHIFT_NPC_PREDECESSOR: [u8; 32] = super::published_quest_pins::hash(
+    b"67836840fef082524a7d0518889d28a0e482940995475f4094004da869c5b15a",
+);
+
 // The published Rookgaard definition before Norma's mission-zero restart.
 const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
     0xb7, 0xfb, 0x18, 0x3d, 0x7d, 0xfa, 0x0a, 0xd8, 0x8b, 0x80, 0x6e, 0xcc, 0xb3, 0xcf, 0xc7, 0xdb,
@@ -1819,8 +1826,29 @@ const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 5] = [
     ),
 ];
 
-pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
+    // Retain saved qualification values while item actions own every new grant.
+    let mut catalogue = catalogue
+        .with_quest(
+            vec![QuestTrack {
+                key: MAKESHIFT_QUALIFICATION.into(),
+                quest: MAKESHIFT_QUEST.into(),
+                initial: 0,
+                min: 0,
+                max: 2,
+            }],
+            Vec::new(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    catalogue
+        .predecessors
+        .entry(MAKESHIFT_QUEST.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash: MAKESHIFT_NPC_PREDECESSOR,
+            defaults: BTreeMap::from([(MAKESHIFT_QUALIFICATION.into(), 0)]),
+        });
     // These changes preserve every track default.
     for (quest, hash) in [
         (
@@ -2785,10 +2813,45 @@ mod tests {
 
     #[test]
     fn makeshift_outfit_has_no_npc_custody_or_achievement_shortcut() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        assert!(load_for(catalogue)?.iter().all(|callback| {
+            callback.quest != MAKESHIFT_QUEST
+                && !matches!(
+                    callback.carried_item.as_deref(),
+                    Some(
+                        "oteryn:item.tibia.i27655"
+                            | "oteryn:item.tibia.i27656"
+                            | "oteryn:item.tibia.i27657"
+                    )
+                )
+        }));
         assert!(
-            load()?
-                .iter()
-                .all(|callback| callback.quest != "oteryn:quest.makeshift_warrior_outfits_quest")
+            catalogue
+                .transitions
+                .values()
+                .all(|transition| transition.quest != MAKESHIFT_QUEST)
+        );
+        let qualification = catalogue
+            .track(MAKESHIFT_QUALIFICATION)
+            .ok_or("historical Makeshift qualification")?;
+        assert_eq!(qualification.quest, MAKESHIFT_QUEST);
+        assert_eq!(
+            (qualification.initial, qualification.min, qualification.max),
+            (0, 0, 2)
+        );
+        assert_eq!(
+            super::super::npc_rules::legacy_defaults(
+                catalogue,
+                MAKESHIFT_QUEST,
+                &MAKESHIFT_NPC_PREDECESSOR,
+            ),
+            Some(&BTreeMap::from([(MAKESHIFT_QUALIFICATION.into(), 0)])),
+        );
+        assert!(
+            super::super::npc_rules::legacy_defaults(catalogue, MAKESHIFT_QUEST, &[0; 32])
+                .is_none()
         );
         Ok(())
     }

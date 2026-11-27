@@ -2812,26 +2812,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.gnomadness",
-      "keywords": [
-        "salvage"
-      ],
-      "topic": 0,
-      "next_topic": 11,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Will you help me with this task?"
-      ]
-    },
-    {
       "npc": "oteryn:npc.gnomally",
       "keywords": [
         "addition to the crystal warlord armor outfit"

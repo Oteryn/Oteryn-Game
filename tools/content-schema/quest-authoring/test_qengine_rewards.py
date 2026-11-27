@@ -485,18 +485,15 @@ class QuestRewards(unittest.TestCase):
             ("dream-warrior", 250),
             ("dream-warrior-undal", 250),
             ("issavi", 250),
-            ("makeshift", 100),
         ]:
             for stage in ["base", "first", "second"]:
                 row = rows[f"l11-{label}-{stage}"]
                 self.assertEqual(row["minimum_level"], level)
                 self.assertTrue(row["requires_premium"])
-            if label != "makeshift":
-                row = rows[f"l11-{label}-base"]
-                self.assertEqual(row["storage"], [])
-                self.assertEqual(row["forbids_outfits"], [row["outfit"]["outfit"]])
-            if label in ("issavi", "makeshift"):
-                self.assertEqual(rows[f"l11-{label}-second"]["requires_addons"][0]["addons"], 1)
+            row = rows[f"l11-{label}-base"]
+            self.assertEqual(row["storage"], [])
+            self.assertEqual(row["forbids_outfits"], [row["outfit"]["outfit"]])
+        self.assertEqual(rows["l11-issavi-second"]["requires_addons"][0]["addons"], 1)
         for label, npc in [("dream-warrior", "vanys"), ("dream-warrior-undal", "undal")]:
             for stage, bit, item, count in [("first", 1, 30169, 5), ("second", 2, 30168, 1)]:
                 row = rows[f"l11-{label}-{stage}"]
@@ -527,6 +524,31 @@ class QuestRewards(unittest.TestCase):
             )[field] = value
             with self.assertRaises((ValueError, ValidationError)):
                 q.validate_callbacks(bad)
+
+    def test_makeshift_tokens_belong_to_native_item_use(self):
+        tokens = {27655, 27656, 27657}
+        item_keys = {f"oteryn:item.tibia.i{item}" for item in tokens}
+        conflicts = [
+            row["key"]
+            for row in self.callbacks["callbacks"]
+            if row["quest"] == "oteryn:quest.makeshift_warrior_outfits_quest"
+            or row.get("carried_item") in item_keys
+        ]
+        self.assertEqual(conflicts, [])
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        self.assertEqual(
+            [
+                row for row in offers
+                if row["npc"] == "oteryn:npc.gnomadness" and "salvage" in row["keywords"]
+            ],
+            [],
+        )
+        item_rules = json.loads(
+            self.outputs["tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"]
+        )["rules"]
+        self.assertCountEqual(
+            [row["item_id"] for row in item_rules if row["item_id"] in tokens], tokens
+        )
 
     def test_l10_distinct_order_documents_and_exact_carried_binding(self):
         rows = {c["key"].rsplit("/", 1)[-1]: c for c in self.callbacks["callbacks"]}
@@ -1209,8 +1231,8 @@ class QuestRewards(unittest.TestCase):
         }
         outfit_keys = {c["key"].rsplit("/", 1)[-1] for c in callbacks if c["outfit"] is not None}
         self.assertLessEqual(completion_variants, outfit_keys)
-        self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 112)
-        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 175)
+        self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 109)
+        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 174)
         self.assertTrue(
             any(len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"]) for c in callbacks)
         )

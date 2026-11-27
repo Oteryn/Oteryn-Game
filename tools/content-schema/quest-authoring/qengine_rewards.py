@@ -3766,113 +3766,41 @@ def build():
             callbacks[-1]["sources"].append(
                 "owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21"
             )
-    for label, quest, npc, family, level, ready, tokens in [
-        (
-            "issavi",
+    # Makeshift Warrior grants are owned by native item actions.
+    for stage, bit, item in [("first", 1, 37003), ("second", 2, 37002)]:
+        add(
+            f"l11-issavi-{stage}",
             "authored.citizen_of_issavi_outfits_quest",
             "eshaya",
-            "citizen_of_issavi",
-            250,
-            [requirement(wanted, 1)],
-            [(37003, 1), (37002, 1)],
-        ),
-        (
-            "makeshift",
-            "makeshift_warrior_outfits_quest",
-            "gnomadness",
-            "makeshift_warrior",
-            100,
+            ["document"],
             [],
-            [(27657, 1), (27656, 1)],
-        ),
-    ]:
-        for bit, (item, count) in enumerate(tokens, 1):
-            add(
-                "l11-" + label + "-" + ("first" if bit == 1 else "second"),
-                quest,
-                npc,
-                ["document"],
-                [],
-                take=[(item, count)],
-                outfit=(family, bit),
-                requires=ready,
-            )
-            callback = callbacks[-1]
+            take=[(item, 1)],
+            outfit=("citizen_of_issavi", bit),
+            requires=[requirement(wanted, 1)],
+        )
+        callback = callbacks[-1]
+        callback.update(
+            minimum_level=250,
+            requires_premium=True,
+            requires_outfits=["oteryn:outfit.citizen_of_issavi"],
+            forbids_addons=[{"outfit": "oteryn:outfit.citizen_of_issavi", "addons": bit}],
+        )
+        if bit == 2:
             callback.update(
-                minimum_level=level,
-                requires_premium=True,
-                requires_outfits=["oteryn:outfit." + family],
-                forbids_addons=[{"outfit": "oteryn:outfit." + family, "addons": bit}],
+                requires_addons=[{"outfit": "oteryn:outfit.citizen_of_issavi", "addons": 1}],
             )
-            if bit == 2:
-                callback["requires_addons"] = [
-                    {"outfit": "oteryn:outfit." + family, "addons": 1}
-                ]
-                wiki = {
-                    "dream-warrior": "https://tibia.fandom.com/?curid=86660&oldid=848561",
-                    "issavi": "https://tibia.fandom.com/?curid=94721&oldid=869754",
-                }.get(label)
-                if wiki:
-                    callback["achievement"] = "oteryn:achievement/" + family
-                    callback["sources"].append(wiki)
-            callback["carried_item"] = f"oteryn:item.tibia.i{item}"
-            if label == "issavi":
-                callback["sources"].append(
-                    "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
-                )
-            if label == "issavi" and bit == 2:
-                callback.update(
-                    achievement="oteryn:achievement/citizen_of_issavi", completes=True
-                )
-                callback["sources"].append(
-                    "https://tibia.fandom.com/index.php?curid=94999&oldid=875550"
-                )
-    qualification = prefix + "makeshift_warrior/qualification"
-    declarations.append(
-        {
-            "key": qualification,
-            "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
-            "initial": 0,
-            "min": 0,
-            "max": 2,
-            "writable": True,
-            "sources": [
-                "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role"
-            ],
-        }
-    )
-    add(
-        "l11-makeshift-start",
-        "makeshift_warrior_outfits_quest",
-        "gnomadness",
-        ["salvage"],
-        [storage(qualification, 0, 1)],
-        next_topic=11,
-    )
-    callbacks[-1].update(minimum_level=100, requires_premium=True)
-    callbacks[-1]["sources"].append(
-        "owner:chosen-Gnome-Deep-Hub-apprenticeship:meeting-admitted-Gnomadness-witnesses-exploration"
-    )
-    add(
-        "l11-makeshift-base",
-        "makeshift_warrior_outfits_quest",
-        "gnomadness",
-        ["yes"],
-        [storage(qualification, 1, 2)],
-        outfit=("makeshift_warrior", 0),
-        topic=11,
-    )
-    callbacks[-1].update(
-        minimum_level=100,
-        requires_premium=True,
-        forbids_outfits=["oteryn:outfit.makeshift_warrior"],
-    )
-    callbacks[-1]["sources"].append(
-        "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification"
-    )
-    source_offer(
-        "gnomadness", ["salvage"], 0, 11, [storage(qualification, 1, 1, preserve=True)]
-    )
+            callback["sources"].append("https://tibia.fandom.com/?curid=94721&oldid=869754")
+        callback["carried_item"] = f"oteryn:item.tibia.i{item}"
+        callback["sources"].append(
+            "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
+        )
+        if bit == 2:
+            callback.update(
+                achievement="oteryn:achievement/citizen_of_issavi", completes=True
+            )
+            callback["sources"].append(
+                "https://tibia.fandom.com/index.php?curid=94999&oldid=875550"
+            )
     # L12: owner-selected fixed hunting trials; native deaths are the only counter writer.
     for label, family, quest, npc, level, counts, materials in [
         (
