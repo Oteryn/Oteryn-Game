@@ -471,8 +471,8 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         .map_err(|error| format!("{error:?}"))?;
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     let origin = ActorPosition {
-        x: 32489,
-        y: 32169,
+        x: 32356,
+        y: 32247,
         floor: 7,
     };
     let rat_tile = ActorPosition {
@@ -626,11 +626,11 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
     let origin = ActorPosition {
-        x: 32489,
-        y: 32169,
+        x: 32356,
+        y: 32247,
         floor: 7,
     };
-    let rat_tile = ActorPosition { x: 32491, ..origin };
+    let rat_tile = ActorPosition { x: 32358, ..origin };
     let caster = EntityRef {
         identity: [1; 16],
         generation: 1,
@@ -661,7 +661,7 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         })
     };
     let mut events = vec![words, damage(PresentationColor::Orange)];
-    for (dx, min, max) in [(1, 0, 0), (2, -1, 1), (3, -1, 1)] {
+    for (dx, min, max) in [(1, 0, 0), (2, -1, 1), (3, -1, 1), (4, -2, 2)] {
         for dy in min..=max {
             events.push(event(Kind::MagicEffect {
                 position: ActorPosition {
@@ -707,7 +707,7 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         return Err("missing test damage event".into());
     };
     *position = ActorPosition {
-        x: origin.x + 4,
+        x: origin.x + 5,
         ..origin
     };
     let outside = *position;
@@ -744,7 +744,7 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
     assert!(verify(&events[..3]).is_err());
     events.push(event(Kind::MagicEffect {
         position: ActorPosition {
-            x: origin.x + 4,
+            x: origin.x + 5,
             ..origin
         },
         effect_id: 16,

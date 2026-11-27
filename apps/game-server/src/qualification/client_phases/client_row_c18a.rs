@@ -3,7 +3,6 @@
 //! `crates/client-runtime/src/features/local-spell-action-bar/protocol.rs::run_cast`.
 
 use super::*;
-use crate::qualification_wild_spawn::{C18A_RAT_FIXTURE, C18A_RAT_POSITION};
 use oteryn_dev_client::client_runtime::combat::{CombatCommand, CombatReport, run_combat};
 use oteryn_dev_client::client_runtime::spell::SpellFeedback;
 use oteryn_dev_client::{EntityDetail, SessionEvent};
@@ -16,18 +15,15 @@ const SCORCH_MANA: u32 = 8;
 const MEAT: u32 = 3577;
 const MEAT_SATIETY: Duration = Duration::from_secs(180);
 const RAT_MAX_HP: u64 = 20;
-const RETREAT_STEPS: usize = 64;
 // Keep the Rat outside melee reach while its attack target is selected.
 const CAST_TILE: TilePos = TilePos {
-    x: 32489,
-    y: 32169,
+    x: 32356,
+    y: 32247,
     floor: -7,
 };
-const RAT_TILE: TilePos = TilePos {
-    x: C18A_RAT_POSITION.x as u16,
-    y: C18A_RAT_POSITION.y as u16,
-    floor: -(C18A_RAT_POSITION.floor as i8),
-};
+const RAT_TILE: TilePos = TilePos { x: CAST_TILE.x + 2, ..CAST_TILE };
+const REST_TILE: TilePos = TilePos { y: CAST_TILE.y + 3, ..CAST_TILE };
+const MIN_SPAWN_DISTANCE: u16 = 24;
 const WORDS: &str = "exevo infir flam hur";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, scenario: &str) {
@@ -90,7 +86,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
             "C18a authored Scorch cone or fire effect differs from the expected profile".into(),
         );
     }
-    let spawn_cells = metadata
+    let spawn_cells: std::collections::BTreeSet<TilePos> = metadata
         .spawns
         .sources
         .iter()
@@ -158,6 +154,15 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         .session_mut()
         .gated_snapshot(world_clock::STATE_DOMAIN_WORLD_CLOCK)
         .map(|snapshot| (snapshot.revision, snapshot.payload.clone()));
+    for at in [CAST_TILE, RAT_TILE, REST_TILE] {
+        let distance = spawn_cells.iter().filter(|spawn| spawn.floor == at.floor)
+            .map(|spawn| spawn.x.abs_diff(at.x).max(spawn.y.abs_diff(at.y)))
+            .min();
+        if distance.is_none_or(|distance| distance < MIN_SPAWN_DISTANCE) {
+            return Err(format!("C18a fixed outdoor site too close to an authored spawn: tile={at:?} distance={distance:?}").into());
+        }
+        evidence(&format!("c18a_outdoor_site tile={at:?} nearest_spawn_distance={distance:?}"));
+    }
     let path = fixed_cast_route(&client, world, &spawn_cells, CAST_TILE)?;
     let (&last_step, approach) = path
         .split_last()
@@ -166,7 +171,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         .iter()
         .try_fold(TOWN, |at, &step| destination(world, at, step))
         .ok_or("C18a cast approach has an invalid landing")?;
-    let mut aggressors = walk_path(
+    let aggressors = walk_path(
         &mut client,
         world,
         &spawn_cells,
@@ -176,9 +181,10 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         clock_before.as_mut(),
     )
     .await?;
-    clear_travel_combat(&mut client, approach_goal, &mut aggressors, clock_before.as_mut()).await?;
-    // A held attack target would otherwise let the starter wand fire at the Rat
-    // from two tiles away. Stow it after the travel fight and before Rat placement.
+    if !aggressors.is_empty() {
+        return Err(format!("C18a safe approach took damage from {aggressors:?}").into());
+    }
+    // Stow the starter wand before selecting the Rat to isolate Scorch damage.
     let wand = provisioning::item_reference(&item_index, 21348)?;
     let inventory = client.inventory().ok_or("C18a starter inventory absent")?;
     let wand_handle = inventory
@@ -620,39 +626,19 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         clear.command_id, clear.result_server_sequence
     ));
 
-    // Use a fixed prefix of the return route. The caster stays outdoors until
-    // the ordinary combat lock clears.
+    // Stay outside a protection zone so only expiry can clear the battle sign.
+    let rest = REST_TILE;
     let retreat = route_avoiding(
         world,
         CAST_TILE,
-        |at| at == TOWN,
-        |at| !spawn_cells.contains(&at),
-    )
-    .ok_or("C18a fixed retreat route unavailable")?;
-    let retreat = retreat
-        .get(..RETREAT_STEPS)
-        .ok_or("C18a retreat route too short")?;
-    let rest = retreat
-        .iter()
-        .try_fold(CAST_TILE, |from, &direction| {
-            destination(world, from, direction).filter(|at| {
-                world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
+        |at| at == rest,
+        |at| {
+            !spawn_cells.contains(&at)
+                && world.base().tile(at.x, at.y, at.floor)
                     .is_some_and(|tile| !tile.protection_zone())
-            })
-        })
-        .ok_or("C18a fixed retreat crosses a protection tile")?;
-    walk_path(
-        &mut client,
-        world,
-        &spawn_cells,
-        retreat,
-        rest,
-        Some(&mut observation),
-        None,
-    )
-    .await?;
+        },
+    ).ok_or("C18a fixed outdoor retreat route unavailable")?;
+    walk_path(&mut client, world, &spawn_cells, &retreat, rest, Some(&mut observation), None).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
         let state = client
@@ -967,7 +953,8 @@ async fn place_exact_rat(
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let receipt = request_spawn(session, C18A_RAT_FIXTURE.into())
+    let request = format!("{},{},{}:oteryn:creature.rat", RAT_TILE.x, RAT_TILE.y, -RAT_TILE.floor);
+    let receipt = request_fixture_control(session, "--spawn-at", request)
         .await
         .map_err(RatPlacementRefusal::Fixture)?;
     let target = parse_spawned_entity(&receipt).map_err(|_| RatPlacementRefusal::InvalidReceipt)?;
@@ -1033,108 +1020,6 @@ fn fixed_cast_route(
         |at| !spawn_cells.contains(&at),
     )
     .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}").into())
-}
-
-async fn clear_travel_combat(
-    client: &mut oteryn_dev_client::DevClientSession,
-    approach: TilePos,
-    aggressors: &mut Aggressors,
-    mut clock: Option<&mut (u64, Vec<u8>)>,
-) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(145);
-    let mut attacks = 0;
-    let mut last_aggression = None;
-    loop {
-        let frames = collect_events(client, None, clock.as_deref_mut())?;
-        if !frames.aggressors.is_empty() {
-            last_aggression = Some(tokio::time::Instant::now());
-            aggressors.extend(frames.aggressors);
-        }
-        if tile(client.world_spatial().actor_position)? != approach
-            || client.actor_vitals().is_none_or(|vitals| vitals.health == 0)
-        {
-            return Err("C18a travel fight displaced or killed the caster".into());
-        }
-        let state = *client.session_mut().combat_state()
-            .ok_or("C18a missing travel combat state")?;
-        let view = client.world_entities().ok_or("C18a missing travel visibility")?;
-        let threat = aggressors.iter().filter_map(|id| view.get(id))
-            .filter(|row| row.kind == oteryn_dev_client::EntityKind::Creature
-                && actor_state(row.detail).is_some_and(|(_, health)| health > 0))
-            .min_by_key(|row| {
-                let position = client.world_spatial().actor_position;
-                (row.position.x.abs_diff(position.x).max(row.position.y.abs_diff(position.y)), row.entity)
-            }).copied();
-        evidence(&format!(
-            "c18a_travel_lock at_ms={} sequence={} caster={approach:?} state={state:?} frame={:?} next_attacker={:?} quiet_ms={:?}",
-            lock_trace_time_ms(), client.last_server_sequence(), frames.combat,
-            threat.as_ref().map(|row| (row.entity, row.position)),
-            last_aggression.map(|at: tokio::time::Instant| at.elapsed().as_millis()),
-        ));
-        if threat.is_none() && !state.in_fight && state.target.is_none()
-            && last_aggression.is_none_or(|at| at.elapsed() >= Duration::from_secs(60))
-        {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("C18a travel combat did not produce a clear frame after the quiet window".into());
-        }
-        if let Some(row) = threat {
-            if attacks >= 8 {
-                return Err("C18a travel attackers kept arriving after eight bounded fights".into());
-            }
-            attacks += 1;
-            let target = row.entity;
-            let command = client.next_command_id();
-            evidence(&format!(
-                "c18a_travel_attack at_ms={} attempt={attacks} command={command} target={target:?} position={:?}",
-                lock_trace_time_ms(), row.position,
-            ));
-            let result = client.session_mut().attack_target(Some(&target)).await?;
-            require_mechanic_acceptance(result.status, "C18a setup attack")?;
-            if result.disposition != attack::AttackIntentDisposition::Ok {
-                return Err(format!("C18a setup attack was refused: target={target:?} result={result:?}").into());
-            }
-            let fight_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(18));
-            let mut hit = false;
-            let mut kill = false;
-            let mut departed = false;
-            loop {
-                let frames = collect_events(client, None, clock.as_deref_mut())?;
-                aggressors.extend(frames.aggressors);
-                hit |= frames.damaged.contains(&target);
-                kill |= frames.kill_credit;
-                departed |= frames.departed.contains(&target);
-                if hit && kill && departed {
-                    aggressors.remove(&target);
-                    last_aggression = Some(tokio::time::Instant::now());
-                    evidence(&format!("c18a_travel_kill at_ms={} target={target:?} sequence={}",
-                        lock_trace_time_ms(), client.last_server_sequence()));
-                    break;
-                }
-                if tokio::time::Instant::now() >= fight_deadline {
-                    return Err(format!("C18a setup kill unproven: target={target:?} hit={hit} kill_credit={kill} departed={departed}").into());
-                }
-                if tile(client.world_spatial().actor_position)? != approach
-                    || client.actor_vitals().is_none_or(|vitals| vitals.health == 0)
-                {
-                    return Err("C18a setup fight displaced or killed the caster".into());
-                }
-                client.service_liveness(Duration::from_millis(200)).await?;
-            }
-            let state = client.session_mut().combat_state().ok_or("C18a missing state after setup kill")?;
-            if state.target.is_some() {
-                let clear = client.session_mut().attack_target(None).await?;
-                require_mechanic_acceptance(clear.status, "C18a setup target clear")?;
-                if clear.disposition != attack::AttackIntentDisposition::Ok {
-                    return Err(format!("C18a setup target clear refused: {clear:?}").into());
-                }
-            }
-        } else {
-            client.service_liveness(Duration::from_secs(1)).await?;
-        }
-        verdict::Harness::global().progress("wait-for-travel-combat");
-    }
 }
 
 async fn walk_once(
@@ -1563,9 +1448,6 @@ type Aggressors = std::collections::BTreeSet<oteryn_dev_client::EntityRef>;
 struct SetupCombatFrames {
     combat: Option<(u64, attack::ActorCombatState)>,
     aggressors: Aggressors,
-    damaged: Aggressors,
-    departed: Aggressors,
-    kill_credit: bool,
 }
 
 fn collect_events(
@@ -1580,33 +1462,10 @@ fn collect_events(
         } else {
             trace_setup_combat(client, &event);
             use oteryn_protocol_oteryn::analyser::AnalyserFact;
-            match &event {
-                SessionEvent::AnalyserAttributedFacts(delta) => {
-                    for fact in &delta.value {
-                        match fact.fact {
-                            AnalyserFact::DamageInput { .. } => frames.aggressors.extend(fact.attacker),
-                            AnalyserFact::Kill { .. } => frames.kill_credit = true,
-                            _ => {}
-                        }
-                    }
-                }
-                SessionEvent::AnalyserFacts(delta) => frames.kill_credit |= delta.value.iter()
-                    .any(|fact| matches!(fact, AnalyserFact::Kill { .. })),
-                SessionEvent::WorldSpatialEntities(delta) => frames.departed.extend(&delta.value.leave),
-                SessionEvent::Presentation(delta) => {
-                    if let Some(view) = client.world_entities() {
-                        frames.damaged.extend(delta.value.iter().filter_map(|cue| match cue.kind {
-                            presentation::PresentationEventKind::ValueText {
-                                kind: presentation::PresentationValueKind::DamageDealt,
-                                attacker: Some(actor),
-                                target,
-                                ..
-                            } if &actor.identity == view.own_identity() => Some(target),
-                            _ => None,
-                        }));
-                    }
-                }
-                _ => {}
+            if let SessionEvent::AnalyserAttributedFacts(delta) = &event {
+                frames.aggressors.extend(delta.value.iter()
+                    .filter(|fact| matches!(fact.fact, AnalyserFact::DamageInput { .. }))
+                    .filter_map(|fact| fact.attacker));
             }
         }
         match event {
@@ -1691,7 +1550,7 @@ fn rat_in_scorch_cone(
     rat: oteryn_protocol_oteryn::world_spatial::ActorPosition,
 ) -> bool {
     origin.floor == rat.floor
-        && matches!((rat.x - origin.x, rat.y - origin.y), (1, 0) | (2 | 3, -1..=1))
+        && matches!((rat.x - origin.x, rat.y - origin.y), (1, 0) | (2 | 3, -1..=1) | (4, -2..=2))
 }
 
 fn require_unique_rat_tile(

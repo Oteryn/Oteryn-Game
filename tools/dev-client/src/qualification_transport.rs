@@ -254,9 +254,22 @@ pub fn qualification_scorch_impact(
         }
     }
     cells.sort_unstable();
-    // The pinned cast tile faces a mountain wall at x + 4 across y - 2..=y + 2.
-    let expected = [(1, 0), (2, -1), (2, 0), (2, 1), (3, -1), (3, 0), (3, 1)]
-        .map(|(x, y)| (x, y, origin.floor));
+    // East rotation of the cardinal cone about the caster-adjacent origin.
+    let expected = [
+        (1, 0),
+        (2, -1),
+        (2, 0),
+        (2, 1),
+        (3, -1),
+        (3, 0),
+        (3, 1),
+        (4, -2),
+        (4, -1),
+        (4, 0),
+        (4, 1),
+        (4, 2),
+    ]
+    .map(|(x, y)| (x, y, origin.floor));
     if cells != expected {
         return Err(format!(
             "C18a Scorch cone cells {cells:?}; expected {expected:?}"
