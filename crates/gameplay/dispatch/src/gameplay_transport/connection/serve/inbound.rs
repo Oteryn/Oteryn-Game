@@ -165,27 +165,7 @@ where
                 Ok(result) => result?,
                 Err(_) => return Err(ServeEnd::Disconnected),
             }
-            let probe = match session.liveness.tick() {
-                Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
-                Err(LivenessEnd::ControlLost) => {
-                    return Err(ServeEnd::ControlLost("liveness_missed"));
-                }
-                Err(LivenessEnd::ProbesExhausted) => {
-                    return Err(ServeEnd::Disconnected);
-                }
-            };
-            let Ok(probe) = probe else {
-                return Err(ServeEnd::Disconnected);
-            };
-            // A peer that does not consume even one small probe within a cadence is not
-            // in control; an unbounded write would also stall the cadence itself.
-            match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
-                Ok(Ok(())) => {}
-                Ok(Err(_)) => {
-                    return Err(ServeEnd::Disconnected);
-                }
-                Err(_) => return Err(ServeEnd::ControlLost("probe_write_timeout")),
-            }
+            write_liveness_probe(stream, session).await?;
             // Existing periodic display work shares the liveness cadence. No independent
             // achievement timer or timestamp cursor is needed for committed kill/event facts.
             let interval = session.policy.interval;
@@ -217,6 +197,26 @@ where
         buffered_original,
         received_at,
     }))
+}
+
+/// Advance the probe and write it without taking any actor or durability turn.
+pub(super) async fn write_liveness_probe<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd> {
+    let probe_id = match session.liveness.tick() {
+        Ok(probe_id) => probe_id,
+        Err(LivenessEnd::ControlLost) => return Err(ServeEnd::ControlLost("liveness_missed")),
+        Err(LivenessEnd::ProbesExhausted) => return Err(ServeEnd::Disconnected),
+    };
+    let probe =
+        encode_liveness_probe(session.generation, probe_id).map_err(|_| ServeEnd::Disconnected)?;
+    // A peer that does not consume a probe within one cadence is no longer in control.
+    match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(_)) => Err(ServeEnd::Disconnected),
+        Err(_) => Err(ServeEnd::ControlLost("probe_write_timeout")),
+    }
 }
 
 #[cfg(test)]

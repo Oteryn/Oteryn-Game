@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
-use super::fixture::{Harness, debug, id, join_two};
 use super::autowalk_fixtures::{command_reply, read, send};
+use super::fixture::{Harness, debug, id, join_two};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
 };
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
+    MessageType, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
 };
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
@@ -738,9 +738,12 @@ async fn pouch_relog_logout(
         LogoutReply::Result(LogoutResult::Accepted)
     );
     let mut admitted = super::full_world_support::readmit_after_logout(harness, owner, previous).await?;
-    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        owner.offered_capabilities(), &[4, 6, CAPABILITY_LOGOUT_V1, 98],
-    ).ok_or("pouch relog logout capabilities")?;
+    let mut supported = previous.continuity.selected_capabilities.as_slice().to_vec();
+    supported.push(CAPABILITY_LOGOUT_V1);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &supported)
+            .ok_or("pouch relog logout capabilities")?;
+    assert!(admitted.continuity.selected_capabilities.contains(CAPABILITY_LOGOUT_V1));
     let session = admitted.game_session_id;
     let actor = admitted.runtime_actor.ok_or("readmitted actor")?;
     let store = FreshAdmissionStore::from_root(harness.root.clone());
