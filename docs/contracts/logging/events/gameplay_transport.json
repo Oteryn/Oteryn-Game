@@ -205,6 +205,20 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "corpse_decay_deferred",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "corpse_id",
+        "stage",
+        "phase",
+        "reason",
+        "retry"
+      ],
+      "codes": [],
+      "note": "A deferred corpse schedule, transform or retirement. Corpse ID and production key are the last observed values, or unknown before the first successful observation. Retry is zero on the initial failure and increases for retries within the same turn."
+    },
+    {
       "event": "fresh_admission_pending",
       "level": "warn",
       "span": false,

@@ -1,5 +1,8 @@
 //! Bounded source-owned world deadlines in the actual Channel owner cycle.
 use super::ComposedFreshAdmission;
+use super::corpse_decay::{DECAY_HOLDER_RETRIES, durability_deferral_reason};
+use crate::durability::DurabilityError;
+use crate::durability::spell_item_transaction::SpellItemError;
 
 use std::future::{Future, poll_fn};
 use std::pin::pin;
@@ -136,7 +139,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         3 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
-                                    .with_background_operation(self.drain_source_item_deadlines())
+                                    .with_background_operation(
+                                        self.drain_source_item_deadlines_and_project(),
+                                    )
                                     .await;
                                 self.drain_spite_recovery_notices().await;
                             }
@@ -392,16 +397,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         true
     }
 
-    pub(super) async fn drain_source_item_deadlines(&self) {
+    async fn drain_source_item_deadlines_and_project(&self) {
+        // A change and its visibility read share one background turn. With
+        // sustained foreground demand, separate grants can delay projection
+        // well after the durable stage has changed.
+        if self.drain_source_item_deadlines().await {
+            self.reconcile_corpse_schedule(false).await;
+        }
+    }
+
+    pub(super) async fn drain_source_item_deadlines(&self) -> bool {
+        for retry in 0..=DECAY_HOLDER_RETRIES {
+            match self.try_drain_source_item_deadlines().await {
+                Ok(changed) => return changed != 0,
+                Err(error) => {
+                    let reason = match &error {
+                        SpellItemError::Durability(error) => durability_deferral_reason(error),
+                        SpellItemError::Database(_) => "database",
+                        _ => "source_timer_rejected",
+                    };
+                    self.log_corpse_read_deferral("transform", reason, retry)
+                        .await;
+                    if !matches!(
+                        error,
+                        SpellItemError::Durability(DurabilityError::RootUnavailable)
+                    ) || retry == DECAY_HOLDER_RETRIES
+                    {
+                        return false;
+                    }
+                    self.wait_for_decay_holder().await;
+                }
+            }
+        }
+        false
+    }
+
+    async fn try_drain_source_item_deadlines(&self) -> Result<usize, SpellItemError> {
         let Some(source) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
         else {
-            return;
+            return Ok(0);
         };
         // Lock order (§1.2): the lane before any Channel guard.
         let Some(permit) = self.spell_lane_permit().await else {
-            return;
+            return Ok(0);
         };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -410,11 +450,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || runtime.owner_fence().is_err()
             || source.source_digest() != runtime.content_pin().server_artifact_digest()
         {
-            return;
+            return Ok(0);
         }
-        // Failed or uncertain commits also retry on the next bounded owner
-        // pass. Immutable SQL deadlines reconcile them without another cause.
-        states.next_item_deadline_pass_us = now.saturating_add(1_000_000);
         let scope = runtime.binding().runtime_scope();
         let mut ground_change = super::loop_move::GroundChange(Some(&self.states.loop_ground));
         let result = self
@@ -427,8 +464,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.binding().scope_generation().get(),
             )
             .await;
-        if matches!(result, Ok(0)) {
+        // A failed checkout did no work. Leave this turn due so it can retry
+        // as soon as the holder returns. Unknown commits still reconcile on
+        // the next normal pass against the original absolute SQL deadlines.
+        if matches!(
+            result,
+            Err(SpellItemError::Durability(DurabilityError::RootUnavailable))
+        ) {
             ground_change.0 = None;
+        } else {
+            states.next_item_deadline_pass_us = now.saturating_add(1_000_000);
+            if matches!(result, Ok(0)) {
+                ground_change.0 = None;
+            }
         }
+        result
     }
 }
