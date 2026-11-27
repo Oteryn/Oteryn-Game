@@ -1,6 +1,6 @@
 //! AI counters, sampled budget breaches and debug decision diagnostics.
 
-use crate::foundation::ExactActorRef;
+use crate::foundation::{ExactActorRef, MovementLocalPosition};
 use oteryn_error_codes::metrics::{Counter, Registry};
 use oteryn_error_codes::{FieldValue, Level, Line, emit};
 use std::sync::{Arc, OnceLock};
@@ -23,28 +23,41 @@ pub fn melee_diagnostics_enabled() -> bool {
 
 pub(super) fn record_target_decision(
     monster: ExactActorRef,
-    target: Option<ExactActorRef>,
+    position: MovementLocalPosition,
+    target: Option<(ExactActorRef, MovementLocalPosition)>,
+    now_us: u64,
     reason: &str,
 ) {
     if !melee_diagnostics_enabled() {
         return;
     }
-    emit(
-        "oteryn-game-server",
-        &Line::new(decision_level(), "monster_ai", "target_decision")
-            .field("monster", FieldValue::Owned(monster_identity(monster)))
+    let level = decision_level();
+    let mut line = Line::new(level, "monster_ai", "target_decision")
+        .field("monster", FieldValue::Owned(monster_identity(monster)))
+        .field(
+            "target",
+            target.map_or(FieldValue::Token("none"), |(actor, _)| {
+                FieldValue::Owned(format!(
+                    "{}/{}",
+                    actor.actor_local_id(),
+                    actor.actor_local_generation()
+                ))
+            }),
+        )
+        .field("reason", FieldValue::Token(reason));
+    if level == Level::Info {
+        let cell = |at: MovementLocalPosition| {
+            FieldValue::Owned(format!("{}/{}/{}", at.x, at.y, at.floor))
+        };
+        line = line
+            .field("monster_cell", cell(position))
             .field(
-                "target",
-                target.map_or(FieldValue::Token("none"), |actor| {
-                    FieldValue::Owned(format!(
-                        "{}/{}",
-                        actor.actor_local_id(),
-                        actor.actor_local_generation()
-                    ))
-                }),
+                "target_cell",
+                target.map_or(FieldValue::Token("none"), |(_, at)| cell(at)),
             )
-            .field("reason", FieldValue::Token(reason)),
-    );
+            .field("owner_us", FieldValue::U64(now_us));
+    }
+    emit("oteryn-game-server", &line);
 }
 
 fn monster_identity(actor: ExactActorRef) -> String {
