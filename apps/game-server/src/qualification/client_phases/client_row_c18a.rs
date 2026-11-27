@@ -910,9 +910,8 @@ async fn walk_path(
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, from, direction).ok_or("C18a route lost its planned landing")?;
-        if expected == CAST_TILE {
-            wait_for_cast_tile(client, vitals.as_deref_mut(), clock.as_deref_mut()).await?;
-        }
+        wait_for_walk_tile(client, expected, vitals.as_deref_mut(), clock.as_deref_mut())
+            .await?;
         let command = client.next_command_id();
         let frame_before = client.last_server_sequence();
         let trace_boundary = matches!(command, 209 | 210);
@@ -1176,33 +1175,46 @@ fn collect_events(
     Ok(())
 }
 
-async fn wait_for_cast_tile(
+async fn wait_for_walk_tile(
     client: &mut oteryn_dev_client::DevClientSession,
+    landing: TilePos,
     mut vitals: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let mut attempt = 0;
     loop {
         let entities = client
             .world_entities()
-            .ok_or("C18a cast tile occupancy unavailable")?;
+            .ok_or("C18a walk tile occupancy unavailable")?;
         let occupant = entities.iter().find(|entity| {
             matches!(
                 entity.kind,
                 oteryn_dev_client::EntityKind::Creature
                     | oteryn_dev_client::EntityKind::Npc
                     | oteryn_dev_client::EntityKind::Player
-            ) && tile(entity.position).ok() == Some(CAST_TILE)
+            ) && tile(entity.position).ok() == Some(landing)
         });
         let Some(occupant) = occupant else {
             return Ok(());
         };
-        if tokio::time::Instant::now() >= deadline {
-            return Err(
-                format!("C18a fixed cast tile is occupied by {:?}", occupant.entity).into(),
-            );
+        attempt += 1;
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        evidence(&format!(
+            "c18a_walk_tile_occupied attempt={attempt} landing={landing:?} occupant={:?} remaining_ms={}",
+            occupant.entity,
+            remaining.as_millis()
+        ));
+        if remaining.is_zero() {
+            return Err(format!(
+                "C18a walk tile occupancy deadline: landing={landing:?} occupant={:?}",
+                occupant.entity
+            )
+            .into());
         }
-        client.service_liveness(Duration::from_millis(50)).await?;
+        client
+            .service_liveness(remaining.min(Duration::from_millis(250)))
+            .await?;
         collect_events(client, vitals.as_deref_mut(), clock.as_deref_mut())?;
     }
 }
