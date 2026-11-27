@@ -4,7 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from grizzly_shop_profiles import accepted_first
+from grizzly_shop_profiles import accepted_first, known_conflict
+from native_profile_composition import compact_item_profile
 
 NATIVE = Path("tools/content-schema/native-gameplay")
 COHORT = NATIVE / "loot-slice-1-creatures.txt"
@@ -120,7 +121,27 @@ def corpse_profiles(root, source, raw_xml, client, appearances, bindings):
         )["records"]
 
 
-def admit_native(root, generated, profile_path, starter_path, order, canonical):
+def matches_corpse_custody(prior, qualified):
+    prior = compact_item_profile(prior)
+    qualified = compact_item_profile(qualified)
+    identity_fields = (
+        "production_definition", "production_binding", "production_binding_qualification",
+        "admission", "authoring",
+    )
+    return (
+        all(prior.get(field) == qualified.get(field) for field in identity_fields)
+        and all(
+            prior["attributes"].get(field) == value
+            for field, value in qualified["attributes"].items()
+        )
+        and not any(
+            known_conflict(value, prior["semantics"].get(field))
+            for field, value in qualified["semantics"].items()
+        )
+    )
+
+
+def admit_native(root, generated, profile_path, starter_path, order, canonical, shared_corpse_ids):
     """Reuse existing carried custody and fill missing facts from exact Item sources."""
     import encounter_loot_item_admissions as donor
     import house_decoration_actions
@@ -238,7 +259,10 @@ def admit_native(root, generated, profile_path, starter_path, order, canonical):
         prior = existing.get(key)
         if prior is None:
             document["records"].append(body)
-        elif prior != body:
+        elif prior != body and not (
+            int(body["production_binding"]["external_id"]) in shared_corpse_ids
+            and matches_corpse_custody(prior, body)
+        ):
             raise ValueError(
                 f"Loot slice corpse conflicts with its native owner: {key}"
             )

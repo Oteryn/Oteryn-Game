@@ -1956,10 +1956,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     } - pre_equipment_keys
     # Loot admissions complete shared rows after the exact equipment sources.
     import loot_slice_one
+
+    ordinary_ids = set(ordinary_corpse_profiles.read(root, 'item-ids'))
+    ordinary_ids.update(map(int, ordinary_corpse_cohort.packet(root)['items']))
     generated[item_path] = spell_import.canonical_bytes(items)
     loot_admissions = loot_slice_one.admit_native(
         root, generated, item_path, starting_loadout_profiles.FRAGMENT,
-        provider_order, spell_import.canonical_bytes,
+        provider_order, spell_import.canonical_bytes, ordinary_ids,
     )
     items = json.loads(generated[item_path])
     import cloot2_item_admissions
@@ -1985,8 +1988,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         del basic["Skill Boost"]
         capture[identifier] = {**row, "basic": basic}
     item_detail_source_facts.apply_capture_stats(existing_items, capture)
-    ordinary_ids = set(ordinary_corpse_profiles.read(root, 'item-ids'))
-    ordinary_ids.update(map(int, ordinary_corpse_cohort.packet(root)['items']))
     # Share only native Items admitted by the pinned corpse and source
     # capture owners. Each ordinary overlay still checks the exact record.
     ordinary_ids.update(int(key.rsplit(".i", 1)[1]) for key in native_goal_corpse_keys)
