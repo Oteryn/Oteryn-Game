@@ -190,7 +190,7 @@ async fn paid_splash(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     (actor, session): (crate::foundation::ExactActorRef, GameSessionId),
-    (victim, victim_session): (crate::foundation::ExactActorRef, GameSessionId),
+    (victim, _victim_session): (crate::foundation::ExactActorRef, GameSessionId),
     (second_shooter, second_session): (crate::foundation::ExactActorRef, GameSessionId),
     content: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult {
