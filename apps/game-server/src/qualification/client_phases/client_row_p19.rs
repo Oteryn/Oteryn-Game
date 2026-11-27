@@ -200,6 +200,30 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             "P19_FORGE entity={exact:?} forge_stacks={stacks} sequence={}",
             first
         ));
+        let combat_tile = tile(client.world_spatial().actor_position)?;
+        let retreat = route(world, combat_tile, |at| is_logout_rest_tile(world, at))
+            .ok_or("P19 FIXTURE_PLACEMENT no rest tile for live-marker relog")?;
+        move_first_attempt(&mut client, world, retreat).await?;
+        let rest_position = client.world_spatial().actor_position;
+        let previous = client.join_snapshot().game_session_id;
+        require_logout(&mut client).await?;
+        drop(client);
+        client = connect_character(clients, 0x19, 1).await?;
+        if client.join_snapshot().game_session_id == previous
+            || client.world_spatial().actor_position != rest_position
+        {
+            return Err("P19 live-marker relog did not restore the saved position in a new session".into());
+        }
+        let appearances = client.session_mut().visible_appearances();
+        if !appearances.iter().any(|entry| {
+            entry.entity.entity == exact && entry.forge_stacks == Some(stacks)
+        }) {
+            return Err(format!("P19 fresh admission lacks live marker for {exact:?} with stacks={stacks}").into());
+        }
+        evidence(&format!("P19 live-marker fresh admission entity={exact:?} stacks={stacks}"));
+        let approach = route(world, tile(rest_position)?, |at| at == combat_tile)
+            .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile after live-marker relog")?;
+        move_first_attempt(&mut client, world, approach).await?;
         let corpse = kill_and_observe_clear(&mut client, exact).await?;
         let stopped = client.session_mut().attack_target(None).await?;
         require_mechanic_acceptance(stopped.status, "P19 stop attack")?;
@@ -207,10 +231,18 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
         let killed = rewards(&mut client).await?;
-        let (expected_items, expected_slivers) =
+        let (corpse_handle, expected_items, expected_slivers) =
             corpse_contents(&mut client, corpse, sliver).await?;
         quick_loot_corpse(&mut client, corpse, expected_items).await?;
         let after = rewards(&mut client).await?;
+        let source = client
+            .open_container()
+            .filter(|view| view.container_handle == Some(corpse_handle))
+            .ok_or("P19 exact corpse container missing after Quick Loot")?;
+        if !source.entries.is_empty() {
+            return Err(format!("P19 Quick Loot left {} stacks in exact corpse {corpse:?}", source.entries.len()).into());
+        }
+        evidence(&format!("P19 Quick Loot source depleted corpse={corpse:?} before={expected_items} after=0"));
         let looted = after
             .slivers
             .checked_sub(killed.slivers)
@@ -638,7 +670,7 @@ async fn corpse_contents(
     client: &mut DevClientSession,
     identity: [u8; 16],
     sliver: NonZeroU32,
-) -> TestResult<(usize, u64)> {
+) -> TestResult<(oteryn_protocol_oteryn::item_view::ItemHandle, usize, u64)> {
     let corpse = client
         .world_entities()
         .and_then(|entities| {
@@ -675,7 +707,7 @@ async fn corpse_contents(
                     .filter(|entry| entry.item_definition_ref == sliver)
                     .map(|entry| u64::from(entry.count.get()))
                     .sum();
-                return TestResult::Ok((container.entries.len(), quantity));
+                return TestResult::Ok((handle, container.entries.len(), quantity));
             }
             client.service_liveness(Duration::from_millis(50)).await?;
         }
