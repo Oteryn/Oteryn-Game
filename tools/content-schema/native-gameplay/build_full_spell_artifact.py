@@ -25,8 +25,8 @@ FORMAL = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 VOCATIONS = ('druid', 'knight', 'monk', 'paladin', 'sorcerer')
 LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'creature_profiles': 8 * 1024**2, 'presentation_profiles': 8 * 1024**2,
-          # Match existing production MAX_ITEM_PROFILES (native_gameplay.rs:73).
-          'item_profiles': 16 * 1024**2, 'spell_appearances': 8 * 1024**2,
+          # Match MAX_ITEM_PROFILES in native_gameplay.rs.
+          'item_profiles': 24 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
           'source_world': 8 * 1024**2, 'progression': 256 * 1024,
@@ -612,6 +612,13 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
     # Reward-boss loot stays in personal entitlements; the physical corpse retains
     # its source capacity. Ordinary corpse contents keep GAMEITEM01's 48-entry cap
     # (CORPSE48, owner 2026-11-17), matching CreatureRewardTable's per-creature admission rule.
+    # Canary items.xml:16256-16261 pins 56 slots for the exact dead dragon.
+    # The separate mint and view owners still bound ordinary corpse entries.
+    if (ref['key'] == 'oteryn:item.tibia.i5984' and capacity == 56
+        and profile['admission']['legal_destinations'] == ['Ground']
+        and known_native(physical['pickupable']) is False
+        and profile['admission']['stack_class'] == 'NonStackable'):
+        return capacity
     maximum = 0xffffffff if reward_boss else 48
     return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 

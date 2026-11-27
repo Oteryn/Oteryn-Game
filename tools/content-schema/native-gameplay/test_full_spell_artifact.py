@@ -230,8 +230,8 @@ class NativeItemProviderBoundaryTests(unittest.TestCase):
                 source_world=None, native_map_profile='accepted-entry-r1')
             item_json = b'{ "schema":"OTERYN_NATIVE_ITEM_PROFILES/v1", "records":[{"proof":"source bytes"}] }\n'
             # JSON permits this UTF-8 whitespace. Exercise actual build/hash/output
-            # admission above the old8MiB limit and at the existing16MiB native limit.
-            for size in (8 * 1024**2 + 1, 16 * 1024**2):
+            # admission above 8 MiB, at 16 MiB, and at the corpse provider's 24 MiB bound.
+            for size in (8 * 1024**2 + 1, 16 * 1024**2, 24 * 1024**2):
                 with self.subTest(accepted_bytes=size):
                     raw = item_json + b' ' * (size - len(item_json))
                     args.items.write_bytes(raw)
@@ -241,7 +241,7 @@ class NativeItemProviderBoundaryTests(unittest.TestCase):
                     manifest = json.loads(manifest_bytes)
                     self.assertEqual(manifest['item_profiles']['sha256'], full.digest(raw))
                     self.assertEqual(proof['manifest_sha256'], full.digest(manifest_bytes))
-            raw = item_json + b' ' * (16 * 1024**2 + 1 - len(item_json))
+            raw = item_json + b' ' * (24 * 1024**2 + 1 - len(item_json))
             args.items.write_bytes(raw)
             with self.assertRaisesRegex(ValueError, 'Native input exceeds bounded provider size: item_profiles'):
                 full.build(args)

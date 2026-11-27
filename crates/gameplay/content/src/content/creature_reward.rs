@@ -23,6 +23,10 @@ use oteryn_gameplay_domain::domain::loot_data::{
 #[path = "creature_reward_empty_corpse.rs"]
 mod empty_corpse;
 
+#[cfg(test)]
+#[path = "creature_reward_corpse_tests.rs"]
+mod corpse_tests;
+
 pub const LOOT_TABLES_SCHEMA: &str = "OTERYN_NATIVE_LOOT_TABLES/v1";
 /// The record bound of each list of the loot section.
 const LOOT_SECTION_RECORDS_MAX: usize = 4096;
@@ -924,17 +928,17 @@ fn verified_source_corpses(
         if source_48 || source_plain || source_questpc7 {
             qualified.special.insert(definition.production_key.clone());
         }
-        // Retain the pinned physical capacity while the independent mint and
-        // view owners still bound the number of entries they can process.
-        if record.admission.legal_destinations == [NativeItemDestination::Ground]
+        // Canary items.xml:16256-16261 pins 56 slots for this exact corpse.
+        // The independent mint and view owners still bound their entry work.
+        if definition.production_key == "oteryn:item.tibia.i5984"
+            && record.admission.legal_destinations == [NativeItemDestination::Ground]
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::Known(ReferenceItemType::Container))
             && matches!(&record.semantics.physical, F::Known(value) if value.pickupable == F::Known(false))
-            && let F::Known(container) = &record.semantics.container
-            && let F::Known(capacity @ 49..=255) = container.capacity
+            && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(56))
         {
             qualified
                 .large_containers
-                .insert(definition.production_key.clone(), u32::from(capacity));
+                .insert(definition.production_key.clone(), 56);
         }
     }
     qualified

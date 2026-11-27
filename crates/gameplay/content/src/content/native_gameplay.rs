@@ -2492,8 +2492,8 @@ mod tests {
             Err(ContentError::InvalidArtifact(reason)) if reason == "native gameplay item top-order source facts")
         );
 
-        // Exercise the Item record bound separately from the unchanged 16 MiB
-        // byte bound. Duplicate identities would fail later; count must refuse first.
+        // Exercise the Item record bound separately from the byte bound.
+        // Duplicate identities would fail later; count must refuse first.
         let smallest = profiles["records"]
             .as_array()
             .unwrap()
