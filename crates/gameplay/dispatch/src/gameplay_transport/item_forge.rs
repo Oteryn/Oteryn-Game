@@ -1,11 +1,207 @@
 //! Exaltation Forge composition: authenticated command, retained receipt, then native mutation.
 use super::{
     ComposedFreshAdmission,
-    connection::AdmittedSession,
+    connection::{AdmittedSession, UseCommand, UseOutcome},
     item_view::{ItemKey, SessionItemView},
 };
 use crate::durability::character_forge_dust::{ForgeDustLimitError, ForgeResolvedItems};
-use crate::foundation::{CommandId, CommandRef};
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId};
+use crate::map::{overlay::TilePos, view::MapFacts};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use std::{collections::HashMap, sync::Mutex};
+
+#[derive(Default)]
+pub(super) struct Stations(Mutex<HashMap<GameSessionId, StationUse>>);
+
+struct StationUse {
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+    target: WorldObjectTarget,
+}
+
+impl Stations {
+    pub(super) fn forget(&self, session: GameSessionId) {
+        if let Ok(mut stations) = self.0.lock() {
+            stations.remove(&session);
+        }
+    }
+}
+
+/// Crystal 201189f8 data/scripts/actions/objects/exaltation_forge.lua:3–9
+/// registers these usable pieces of the Global Exaltation Forge object.
+fn station_position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    target: &WorldObjectTarget,
+) -> Option<TilePos> {
+    let map = owner.bundle_map()?;
+    let index = super::item_ref_admission::pinned_index(runtime, owner.active_generation)?;
+    let facts = map.facts.pinned();
+    let resolved = super::world_map::resolve_map_target(
+        &super::world_map::MapViewSource {
+            overlay: &map.overlay,
+            facts: &facts,
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            reset_epoch: owner.reset_epoch,
+        },
+        target,
+        |_| None::<()>,
+    )
+    .ok()?;
+    let tile = map
+        .overlay
+        .base()
+        .tile(resolved.pos.x, resolved.pos.y, resolved.pos.floor)?;
+    let (&id, _) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(resolved.ordinal))?;
+    let entry = facts.base_entry(resolved.pos, resolved.ordinal, id)?;
+    let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) = entry.definition else {
+        return None;
+    };
+    let (key, _) = index.definition_at(reference)?;
+    let id = key
+        .strip_prefix("oteryn:item.tibia.i")?
+        .parse::<u32>()
+        .ok()?;
+    (!entry.pickupable
+        && matches!(
+            id,
+            37122 | 37128 | 37129 | 37131 | 37132 | 37133 | 37153 | 37157
+        ))
+    .then_some(resolved.pos)
+}
+
+fn station_reachable(runtime: &ChannelRuntimeV1, actor: ExactActorRef, target: TilePos) -> bool {
+    runtime.read_actor_position(actor).is_ok_and(|position| {
+        let at = position.position();
+        oteryn_gameplay_items::reach::within_reach(
+            (at.x, at.y, i32::from(at.floor)),
+            (
+                i32::from(target.x),
+                i32::from(target.y),
+                -i32::from(target.floor),
+            ),
+        )
+    })
+}
+
+fn controls(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+) -> bool {
+    let binding = runtime.binding();
+    fence.runtime_scope == binding.runtime_scope()
+        && fence.scope_ownership_generation == binding.scope_generation()
+        && runtime.owner_fence().is_ok()
+        && runtime
+            .player_control_facts(actor, fence.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+}
+
+pub(super) async fn use_station(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    target: &WorldObjectTarget,
+) -> Option<UseOutcome> {
+    {
+        let runtime = owner.runtime.lock().await;
+        station_position(owner, &runtime, target)?;
+    }
+    let Some(fence) = command
+        .item_fence
+        .filter(|fence| fence.game_session_id == command.game_session_id)
+    else {
+        return Some(UseOutcome::rejected());
+    };
+    let Some(_permit) = owner.spell_lane_permit().await else {
+        return Some(UseOutcome::rejected());
+    };
+    let store =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(owner.root.clone());
+    let current = super::AdmissionRetryBudget::for_command(owner.root)
+        .retry_command_guard(async || store.current_session(fence.game_session_id).await)
+        .await;
+    if current.ok().and_then(super::item_fence_of) != Some(fence) {
+        return Some(UseOutcome::rejected());
+    }
+
+    let runtime = owner.runtime.lock().await;
+    let Some(position) = station_position(owner, &runtime, target) else {
+        return Some(UseOutcome {
+            disposition: UseDisposition::StaleState,
+            ..UseOutcome::rejected()
+        });
+    };
+    if !controls(&runtime, actor, fence) || owner.states.spell_states.lock().await.is_dead(actor) {
+        return Some(UseOutcome::rejected());
+    }
+    if !station_reachable(&runtime, actor, position) {
+        return Some(UseOutcome {
+            disposition: UseDisposition::TooFar,
+            ..UseOutcome::rejected()
+        });
+    }
+    let mut stations = owner.states.forge_stations.0.lock().ok()?;
+    stations.insert(
+        fence.game_session_id,
+        StationUse {
+            actor,
+            fence,
+            target: target.clone(),
+        },
+    );
+    Some(UseOutcome {
+        disposition: UseDisposition::ForgeOpened,
+        ..UseOutcome::rejected()
+    })
+}
+
+async fn at_open_station(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+) -> bool {
+    let runtime = owner.runtime.lock().await;
+    if !controls(&runtime, actor, fence) || owner.states.spell_states.lock().await.is_dead(actor) {
+        return false;
+    }
+    owner.states.forge_stations.0.lock().is_ok_and(|stations| {
+        stations.get(&fence.game_session_id).is_some_and(|open| {
+            open.fence == fence
+                && open.actor == actor
+                && station_position(owner, &runtime, &open.target)
+                    .is_some_and(|target| station_reachable(&runtime, actor, target))
+        })
+    })
+}
+
+fn station_required(request: Request) -> Option<Vec<u8>> {
+    use Operation::*;
+    let operation = match request.operation {
+        QueryHistory => "history",
+        Fusion => "fusion",
+        ConvergenceFusion => "convergence_fusion",
+        Transfer => "transfer",
+        ConvergenceTransfer => "convergence_transfer",
+        DustToSlivers => "dust_to_slivers",
+        SliversToCores => "slivers_to_cores",
+        DustLimit => "dust_limit",
+    };
+    serde_json::to_vec(&serde_json::json!({
+        "operation": operation, "applied": false, "succeeded": false,
+        "reason": oteryn_protocol_oteryn::item_forge::FORGE_STATION_REQUIRED,
+        "bonus": 0, "result": null
+    }))
+    .ok()
+}
+
 use oteryn_protocol_oteryn::item_forge::{CAPABILITY_ITEM_FORGE_V1, Operation, Request};
 
 macro_rules! authority_methods {
@@ -150,14 +346,28 @@ pub(super) async fn execute(
             return Some(Vec::new());
         }
     }
+    if request.operation != Operation::QueryHistory && !at_open_station(owner, actor, fence).await {
+        return station_required(request);
+    }
     let command = CommandRef::new(admitted.game_session_id, id);
+    let retry = super::AdmissionRetryBudget::for_command(owner.root);
     // A consumed item, changed content, new trade or cooldown must not change a retained reply.
     // The read independently proves current session, lease, scope and node authority.
-    match owner
-        .root
-        .read_item_forge_reply(owner.character, owner.holder, fence, command, request)
-        .await
-    {
+    let retained = loop {
+        match owner
+            .root
+            .read_item_forge_reply(owner.character, owner.holder, fence, command, request)
+            .await
+        {
+            Err(ForgeDustLimitError::Unavailable(
+                crate::durability::DurabilityError::RootUnavailable,
+            )) if retry
+                .retries_unavailable(super::connection::AdmissionRefusal::Unavailable)
+                .await => {}
+            result => break result,
+        }
+    };
+    match retained {
         Ok(Some(result)) => return serde_json::to_vec(&result).ok(),
         Ok(None) => {}
         Err(ForgeDustLimitError::Unavailable(_)) => return None,
@@ -202,25 +412,38 @@ pub(super) async fn execute(
     {
         return Some(Vec::new());
     }
-    match owner
-        .root
-        .execute_item_forge(
-            &permit,
-            owner.character,
-            owner.holder,
-            fence,
-            command,
-            request,
-            resolved_items,
-            native,
-            &super::item_ref_admission::NativeItemWeights(native)
-                .with_wheel(owner.premium_coordinator),
-        )
-        .await
-    {
-        Ok(result) => serde_json::to_vec(&result).ok(),
-        Err(ForgeDustLimitError::Unavailable(_)) => None,
-        Err(_) => Some(Vec::new()),
+    let weights =
+        super::item_ref_admission::NativeItemWeights(native).with_wheel(owner.premium_coordinator);
+    loop {
+        if request.operation != Operation::QueryHistory
+            && !at_open_station(owner, actor, fence).await
+        {
+            return station_required(request);
+        }
+        let result = owner
+            .root
+            .execute_item_forge(
+                &permit,
+                owner.character,
+                owner.holder,
+                fence,
+                command,
+                request,
+                resolved_items,
+                native,
+                &weights,
+            )
+            .await;
+        match result {
+            Err(ForgeDustLimitError::Unavailable(
+                crate::durability::DurabilityError::RootUnavailable,
+            )) if retry
+                .retries_unavailable(super::connection::AdmissionRefusal::Unavailable)
+                .await => {}
+            Ok(result) => return serde_json::to_vec(&result).ok(),
+            Err(ForgeDustLimitError::Unavailable(_)) => return None,
+            Err(_) => return Some(Vec::new()),
+        }
     }
 }
 

@@ -328,8 +328,8 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         &mut self,
         command: &oteryn_client_runtime::world_interaction::Command,
         raw_wire: bool,
-    ) -> Result<String, SessionError> {
-        oteryn_client_runtime::world_interaction::send_framed(self, command, raw_wire).await
+    ) -> Result<oteryn_client_runtime::world_interaction::Reply, SessionError> {
+        oteryn_client_runtime::world_interaction::send_framed_reply(self, command, raw_wire).await
     }
     fn feature_selected(&self, capability: u32) -> bool {
         self.is_selected(capability)

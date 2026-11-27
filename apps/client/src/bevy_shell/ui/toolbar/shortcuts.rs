@@ -34,7 +34,6 @@ pub(super) fn open(owner: &mut HostOwner, id: &str) -> bool {
     let (code, shift, alt) = match id {
         "cyclopedia" => (24, false, false),
         "rewards" => (7, false, false),
-        "forge" => (9, true, false),
         "outfit" => (4, false, true),
         "prey" => (19, false, false),
         "proficiency" => (19, true, false),
@@ -61,7 +60,6 @@ pub(super) fn open(owner: &mut HostOwner, id: &str) -> bool {
     match id {
         "cyclopedia" => link.cyclopedia_character_input(&events),
         "rewards" => link.daily_reward_input(&events),
-        "forge" => link.item_forge_input(&events),
         "outfit" => link.appearance_input(&events),
         "prey" => link.prey_input(&events),
         "proficiency" => link.weapon_proficiency_input(&events),

@@ -46,9 +46,16 @@ impl Stepper for Peer {
         })
     }
 
-    async fn world_context(&mut self, command: &Command, _: bool) -> Result<String, SessionError> {
+    async fn world_context(
+        &mut self,
+        command: &Command,
+        _: bool,
+    ) -> Result<oteryn_client_runtime::world_interaction::Reply, SessionError> {
         assert_eq!(command.action, Action::Use);
-        self.uses.pop_front().ok_or(SessionError::SessionUnusable)
+        self.uses
+            .pop_front()
+            .map(Into::into)
+            .ok_or(SessionError::SessionUnusable)
     }
 
     async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {

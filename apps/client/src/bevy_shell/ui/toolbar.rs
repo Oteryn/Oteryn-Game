@@ -24,7 +24,6 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Cyclopedia Map", Control::CyclopediaMap),
     ("Daily Rewards", Control::Shortcut("rewards")),
     ("Depot", Control::Depot),
-    ("Forge", Control::Shortcut("forge")),
     ("Highscores", Control::Shortcut("highscores")),
     ("Houses", Control::Shortcut("houses")),
     ("Imbuing", Control::Shortcut("imbuing")),

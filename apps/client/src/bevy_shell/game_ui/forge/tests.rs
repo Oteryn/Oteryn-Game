@@ -254,7 +254,7 @@ fn forge_convergence_clears_selection() -> Result<(), Error> {
 }
 
 #[test]
-fn forge_shortcut_opens_and_requests_data() -> Result<(), Error> {
+fn forge_shortcut_requires_world_use() -> Result<(), Error> {
     let (mut app, mut commands, _) = fixture(panel()?)?;
     let key = oteryn_input_actions::NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(9)?,
@@ -271,10 +271,8 @@ fn forge_shortcut_opens_and_requests_data() -> Result<(), Error> {
         .non_send_mut::<HostOwner>()
         .route_input(&[key], false);
     app.update();
-    assert!(current(&app)?.open);
-    assert!(
-        matches!(commands.try_recv()?, PlayCommand::Feature(c) if wire::Request::decode(&c.payload).is_some_and(|r| r.selection == wire::Selection::Browse { after: 0 }))
-    );
+    assert!(!current(&app)?.open);
+    assert!(commands.try_recv().is_err());
     Ok(())
 }
 #[test]

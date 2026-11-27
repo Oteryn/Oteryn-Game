@@ -1,5 +1,5 @@
 use crate::play::{Outbox, Stepper, mailbox::lock};
-use oteryn_client_runtime::world_interaction::Command;
+use oteryn_client_runtime::world_interaction::{Command, Reply};
 impl Outbox {
     pub(in crate::play) fn targeting_initialize(&self, enabled: bool) {
         lock(&self.0).world_context.use_with = enabled;
@@ -29,13 +29,17 @@ impl Outbox {
         // are taken to the wire frame, inside the runtime send.
         let raw_wire = lock(&self.0).wire_frame() == crate::play::wire_frame::WireFrame::Raw;
         let result = session.world_context(command, raw_wire).await;
+        if matches!(result, Ok(Reply::ForgeOpened)) {
+            self.open_forge(session).await?;
+        }
         let mut mailbox = lock(&self.0);
         mailbox.world_context.pending = false;
         mailbox.use_with_pending = false;
         // The ordinary use owns the result; refresh advisory multiaction data afterwards.
         mailbox.bar_actions.item_cooldowns.clear();
         match result {
-            Ok(text) => {
+            Ok(reply) => {
+                let text = reply.feedback();
                 #[cfg(bevy_shell)]
                 crate::play::feature_local_text_messages::view::record_look(
                     &mut mailbox,
@@ -72,7 +76,7 @@ macro_rules! session_trait {
                 _command: &oteryn_client_runtime::world_interaction::Command,
                 _raw_wire: bool,
             ) -> impl std::future::Future<
-                Output = Result<String, oteryn_session::SessionError>,
+                Output = Result<oteryn_client_runtime::world_interaction::Reply, oteryn_session::SessionError>,
             > + Send {
                 async {
                     Err(oteryn_session::SessionError::CapabilityNotSelected { capability: 28 })

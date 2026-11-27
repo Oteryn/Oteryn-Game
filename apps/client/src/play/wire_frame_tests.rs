@@ -220,12 +220,12 @@ impl Stepper for Recorder {
         &mut self,
         command: &WorldCommand,
         raw_wire: bool,
-    ) -> Result<String, SessionError> {
+    ) -> Result<oteryn_client_runtime::world_interaction::Reply, SessionError> {
         self.contexts
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push((command.clone(), raw_wire));
-        Ok(String::new())
+        Ok(String::new().into())
     }
 }
 

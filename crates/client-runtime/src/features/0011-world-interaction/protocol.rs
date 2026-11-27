@@ -95,6 +95,42 @@ pub async fn send_framed<S: SessionStream>(
     command: &Command,
     raw_wire: bool,
 ) -> Result<String, SessionError> {
+    Ok(send_framed_reply(session, command, raw_wire)
+        .await?
+        .feedback())
+}
+
+pub enum Reply {
+    Feedback(String),
+    ForgeOpened,
+}
+
+impl Reply {
+    pub fn feedback(self) -> String {
+        match self {
+            Self::Feedback(text) => text,
+            Self::ForgeOpened => "Exaltation Forge opened".into(),
+        }
+    }
+}
+
+impl From<String> for Reply {
+    fn from(value: String) -> Self {
+        Self::Feedback(value)
+    }
+}
+
+impl From<&str> for Reply {
+    fn from(value: &str) -> Self {
+        Self::Feedback(value.into())
+    }
+}
+
+pub async fn send_framed_reply<S: SessionStream>(
+    session: &mut Session<S>,
+    command: &Command,
+    raw_wire: bool,
+) -> Result<Reply, SessionError> {
     // The session task continues receiving while the native popup owns the UI loop.
     // Drain already-readable pushes before consulting the session's current stores.
     session
@@ -136,7 +172,7 @@ pub async fn send_framed<S: SessionStream>(
         }
         (Target::Item(handle), Action::Use | Action::Open | Action::BedInteract) => {
             if !session.is_selected(4) {
-                return Ok(format!("{label} unavailable"));
+                return Ok(format!("{label} unavailable").into());
             }
             session
                 .world_context_use(&world_object::encode_use_item_intent(*handle))
@@ -144,7 +180,7 @@ pub async fn send_framed<S: SessionStream>(
         }
         (Target::Object(object), Action::Use | Action::Open | Action::BedInteract) => {
             let Ok(payload) = world_object::encode_use_intent(object) else {
-                return Ok(format!("{label} unavailable"));
+                return Ok(format!("{label} unavailable").into());
             };
             session.world_context_use(&payload).await?
         }
@@ -154,7 +190,7 @@ pub async fn send_framed<S: SessionStream>(
             };
             session.gated_command(11, 31, &payload).await?
         }
-        _ => return Ok(format!("{label} unavailable")),
+        _ => return Ok(format!("{label} unavailable").into()),
     };
     if command.action != Action::Look
         && matches!(
@@ -171,7 +207,7 @@ pub async fn send_framed<S: SessionStream>(
         result.status,
         oteryn_session::CommandStatus::Accepted | oteryn_session::CommandStatus::DuplicateReplay
     ) {
-        return Ok(format!("{label} refused"));
+        return Ok(format!("{label} refused").into());
     }
     if command.action == Action::Look {
         return Ok(
@@ -179,7 +215,7 @@ pub async fn send_framed<S: SessionStream>(
                 &result.payload,
                 ItemLookSelection { extended: true },
             ) {
-                Ok(item_look::ItemLookResult::Text(text)) => text,
+                Ok(item_look::ItemLookResult::Text(text)) => text.into(),
                 Ok(item_look::ItemLookResult::Refused(_)) => "Look refused".into(),
                 Err(_) => "Look: unknown result".into(),
             },
@@ -187,10 +223,11 @@ pub async fn send_framed<S: SessionStream>(
     }
     use world_object::UseDisposition;
     let Ok((disposition, _)) = world_object::decode_use_result_with_gate(&result.payload) else {
-        return Ok(format!("{label}: unknown result"));
+        return Ok(format!("{label}: unknown result").into());
     };
     let text = match disposition {
         UseDisposition::Committed => "completed",
+        UseDisposition::ForgeOpened => return Ok(Reply::ForgeOpened),
         UseDisposition::BedChooseSkill => "choose an offline training skill in the server dialog",
         UseDisposition::BedOccupied => "this bed is occupied",
         UseDisposition::BedWoken => "sleeper woke",
@@ -213,7 +250,7 @@ pub async fn send_framed<S: SessionStream>(
         UseDisposition::Occupied => "occupied",
         UseDisposition::Rejected => "refused",
     };
-    Ok(format!("{label}: {text}"))
+    Ok(format!("{label}: {text}").into())
 }
 
 #[cfg(test)]
@@ -284,6 +321,7 @@ fn refusal_message(payload: &[u8], selected: bool) -> Option<&'static str> {
         world_object::UseDisposition::Committed
             | world_object::UseDisposition::BedWoken
             | world_object::UseDisposition::OfflineTraining
+            | world_object::UseDisposition::ForgeOpened
     ) {
         return None;
     }

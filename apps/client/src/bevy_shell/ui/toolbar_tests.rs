@@ -142,7 +142,6 @@ fn toolbar_covers_existing_keyboard_windows() {
     for label in [
         "Cyclopedia",
         "Daily Rewards",
-        "Forge",
         "Highscores",
         "Imbuing",
         "NPC Trade",
@@ -205,7 +204,6 @@ fn toolbar_shortcuts_activate_existing_window_owners() -> Result<(), Box<dyn std
             "bars" => !owner.settings.preferences.action_bar.visible,
             "cyclopedia" => link.cyclopedia_character_panel().open,
             "rewards" => link.daily_reward_panel().open,
-            "forge" => link.item_forge_panel().open,
             "outfit" => link.appearance_panel().open,
             "prey" => link.prey_panel().open,
             "proficiency" => link.weapon_proficiency_is_open(),

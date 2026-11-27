@@ -4,7 +4,11 @@ use oteryn_session::{SessionError, SessionEvent};
 
 struct LookPeer;
 impl Stepper for LookPeer {
-    async fn world_context(&mut self, _: &Command, _: bool) -> Result<String, SessionError> {
+    async fn world_context(
+        &mut self,
+        _: &Command,
+        _: bool,
+    ) -> Result<oteryn_client_runtime::world_interaction::Reply, SessionError> {
         Ok("You see a sword.\nIt weighs 35.00 oz.".into())
     }
     async fn step(

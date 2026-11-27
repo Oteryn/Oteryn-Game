@@ -212,7 +212,6 @@ impl HostOwner {
             || Controls::discovery(&play.link, &routed)
             || self.controls.container(&play.link, &routed, generation)
             || play.link.player_trade_input(&routed)
-            || play.link.item_forge_input(&routed)
             || (routed.iter().any(|event| {
                 matches!(
                     event,

@@ -1,8 +1,8 @@
 //! Shared, native Forge setup and actual command-181 connection driver.
 
+use super::super::fixture::{Harness, debug, id, run};
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
-use super::super::fixture::{Harness, debug, id, run};
 
 use super::super::{Dependencies, TestResult, item_look_fixtures, prepare_current_session};
 
@@ -45,6 +45,7 @@ pub(in super::super) enum Case {
     Fences,
     Concurrent,
     NoRoom,
+    StationRequired,
     Stash,
     Nested,
     HistoryBound,
@@ -195,7 +196,8 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 super::super::forge_preview_fixtures::exercise(&h, &owner, &mut admitted).await?
             }
             Case::CurrentDust => {
-                super::super::nx8_forge_projection_fixtures::exercise(&h, &owner, &mut admitted).await?
+                super::super::nx8_forge_projection_fixtures::exercise(&h, &owner, &mut admitted)
+                    .await?
             }
             Case::Conversions => super::conversions(&h, &owner, &mut admitted).await?,
             Case::DustLimit => super::dust_limit(&h, &owner, &mut admitted).await?,
@@ -227,6 +229,19 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             Case::Fences => super::fences(&h, &owner, &mut admitted).await?,
             Case::Concurrent => super::concurrent(&h, &owner, &mut admitted).await?,
             Case::NoRoom => super::no_room(&h, &owner, &mut admitted).await?,
+            Case::StationRequired => {
+                let before = balances(&h).await?;
+                let (_, result) = exchange(
+                    &owner,
+                    &mut admitted,
+                    request(Operation::DustToSlivers, 164),
+                )
+                .await?;
+                assert_eq!(result["reason"], "FORGE_STATION_REQUIRED", "{result}");
+                assert_eq!(result["applied"], false);
+                assert_eq!(balances(&h).await?, before);
+            }
+
             Case::Stash => super::materials_and_history::stash(&h, &owner, &mut admitted).await?,
             Case::Nested => super::materials_and_history::nested(&h, &owner, &mut admitted).await?,
             Case::HistoryBound => {
@@ -247,18 +262,29 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 super::legacy_budget::exercise(&h, &owner, &deps, &mut admitted).await?
             }
             Case::Items(operation) => {
-                super::super::item_forge_fusion_fixtures::exercise(operation, &h, &owner, &mut admitted)
-                    .await?
+                super::super::item_forge_fusion_fixtures::exercise(
+                    operation,
+                    &h,
+                    &owner,
+                    &mut admitted,
+                )
+                .await?
             }
             Case::Integrity => {
-                super::super::item_forge_integrity_fixtures::exercise(&h, &owner, &mut admitted).await?
-            }
-            Case::CoreRefusal => {
-                super::super::item_forge_fusion_fixtures::insufficient_cores(&h, &owner, &mut admitted)
+                super::super::item_forge_integrity_fixtures::exercise(&h, &owner, &mut admitted)
                     .await?
             }
+            Case::CoreRefusal => {
+                super::super::item_forge_fusion_fixtures::insufficient_cores(
+                    &h,
+                    &owner,
+                    &mut admitted,
+                )
+                .await?
+            }
             Case::MixedFee => {
-                super::super::item_forge_fusion_fixtures::fee::exercise(&h, &owner, &mut admitted).await?
+                super::super::item_forge_fusion_fixtures::fee::exercise(&h, &owner, &mut admitted)
+                    .await?
             }
         }
         eprintln!("FORGE POSTGRES_CASE_COMPLETED {case:?}");

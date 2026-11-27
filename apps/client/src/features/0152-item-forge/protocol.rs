@@ -9,13 +9,46 @@ impl Outbox {
         };
         mailbox.item_forge.preview.selected = preview_selected;
     }
+    pub(in crate::play) async fn open_forge(
+        &self,
+        session: &mut impl crate::play::Stepper,
+    ) -> Result<(), oteryn_session::SessionError> {
+        use oteryn_client_runtime::{cui3::item_forge::Operation, forge_preview::Selection};
+        let browse = {
+            let mut mailbox = lock(&self.0);
+            let panel = &mut mailbox.item_forge;
+            if !panel.selected {
+                return Ok(());
+            }
+            if !panel.operation.requires_pair() && panel.retry.is_none() {
+                panel.operation = Operation::Fusion;
+            }
+            panel.open = true;
+            panel.preview.invalidate();
+            panel.preview.items.clear();
+            panel.preview.page = None;
+            oteryn_client_ui::item_forge::preview_request(panel, Selection::Browse { after: 0 })
+        };
+        if let Some(command) = browse {
+            let result = session.feature(&command).await?;
+            oteryn_client_ui::item_forge::preview::apply(
+                &mut lock(&self.0).item_forge,
+                &command,
+                &result,
+            );
+        }
+        Ok(())
+    }
+
     pub(in crate::play) fn item_forge_result(
         &self,
         response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
     ) {
         let mut mailbox = lock(&self.0);
         let panel = &mut mailbox.item_forge;
-        let pair = panel.submitted.is_some_and(|request| request.operation.requires_pair());
+        let pair = panel
+            .submitted
+            .is_some_and(|request| request.operation.requires_pair());
         oteryn_client_ui::item_forge::apply_result(panel, response);
         if pair && panel.retry.is_none() {
             panel.preview.items.clear();
@@ -52,7 +85,10 @@ impl Outbox {
 
 #[allow(dead_code, reason = "Native combo state is exercised in play tests")]
 pub(in crate::play) fn retained_bag(selected: u64, entries: &[(u64, String)]) -> u64 {
-    entries.iter().find(|entry| entry.0 == selected).map_or(0, |entry| entry.0)
+    entries
+        .iter()
+        .find(|entry| entry.0 == selected)
+        .map_or(0, |entry| entry.0)
 }
 
 #[allow(dead_code, reason = "Native dialog keys are exercised in play tests")]
