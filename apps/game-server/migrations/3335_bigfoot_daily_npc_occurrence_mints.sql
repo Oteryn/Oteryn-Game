@@ -1,5 +1,4 @@
--- Keep the existing NPC MINT proof and give the authored Bigfoot daily
--- supplies and rewards the same command-bound identity as repeatable quest exchanges.
+-- Prove the command-bound MINT identity for each authored repeatable NPC reward.
 CREATE FUNCTION game_quest_npc_reward_claim_key(
     p_plan JSONB, p_transition TEXT, p_character UUID, p_cause UUID, p_ordinal NUMERIC
 ) RETURNS TEXT LANGUAGE SQL IMMUTABLE AS $function$
@@ -8,7 +7,20 @@ CREATE FUNCTION game_quest_npc_reward_claim_key(
         OR p_transition ~ '^oteryn:quest-npc/bigfoot_s_burden_quest/gnomeral/branch-(77-4-1-1|119-11-1-1|161-18-1-1|(90-6-1-1|132-13-1-1|174-20-1-1|214-27-1-1)(-rank-(26|27|28|30))?)$'
     ) THEN game_quest_reward_mint_claim_key(
         p_character, p_cause, p_ordinal, p_transition, '{"per_occurrence_mint":true}'::JSONB
-    ) ELSE game_quest_npc_reward_claim_key(p_plan,p_transition) END
+    ) WHEN p_transition IN (
+        'oteryn:quest-npc/dangerous_depths/gnomus/measurements-report',
+        'oteryn:quest-npc/dangerous_depths/gnomus/charting-report-1',
+        'oteryn:quest-npc/dangerous_depths/gnomus/charting-report-2',
+        'oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-report',
+        'oteryn:quest-npc/spike/gnomilly/upper-pacifier-accept',
+        'oteryn:quest-npc/spike/gnombold/middle-mushroom-accept',
+        'oteryn:quest-npc/spike/gnombold/middle-charge-accept'
+    ) THEN 'oteryn:reward-claim.npc-program.'||encode(sha256(
+        convert_to(p_transition||'/daily/','UTF8')||uuid_send(p_cause)
+        -- Serialize all u64 command ordinals as eight big-endian bytes.
+        ||int8send((CASE WHEN p_ordinal < 9223372036854775808 THEN p_ordinal
+                       ELSE p_ordinal - 18446744073709551616 END)::BIGINT)
+    ),'hex') ELSE game_quest_npc_reward_claim_key(p_plan,p_transition) END
 $function$;
 
 DO $migration$
