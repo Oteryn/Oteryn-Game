@@ -910,6 +910,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 session,
             ),
         );
+        let objects = self.door.lock().await;
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
             let (leftover, parked) = writer.finish();
             super::PendingSpellMarker::settle(
@@ -927,7 +928,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         // await. Deadline cancellation cannot discard the original occurrence:
         // before the commit window it stays in the context, after it the window
         // parks it in the lane.
-        let objects = self.door.lock().await;
         let mut context = (self, access, writer, Some((runtime, states, objects)));
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
             let (owner,access,writer,guards)=ctx;

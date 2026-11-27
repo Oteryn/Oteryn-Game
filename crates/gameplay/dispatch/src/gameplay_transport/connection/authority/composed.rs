@@ -39,6 +39,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }
+    fn report_join_holder_timeout(&self, phase: &'static str, cause: &'static str) {
+        self.root.report_holder_wait_timeout(phase, cause);
+    }
+
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         Some(self.root)
@@ -2213,6 +2217,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: item_view::ItemKey,
     ) -> Option<item_view::ItemTargetObservation> {
         item_ref_admission::observe_item_target(self, actor, target).await
+    }
+
+    async fn observe_corpse_for_use(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: item_view::ItemKey,
+    ) -> Result<item_view::ItemTargetObservation, item_view::CorpseOpenRefusal> {
+        item_ref_admission::observe_corpse_for_use(self, actor, command, target).await
     }
 
     /// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack.

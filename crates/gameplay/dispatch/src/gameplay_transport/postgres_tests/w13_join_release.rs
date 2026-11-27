@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::{
     decode_wire_envelope, encode_client_bootstrap,
 };
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::io::AsyncWriteExt as _;
 use tokio::sync::Notify;
 
@@ -25,6 +25,8 @@ enum Case {
     Relog,
     Snapshot,
     Exhausted,
+    Catalogue,
+    PeerField,
 }
 
 #[test]
@@ -51,6 +53,22 @@ fn w13_join_refuses_with_typed_holder_cause_at_deadline_postgres() -> TestResult
     run(admin, Case::Exhausted)
 }
 
+#[test]
+fn w13_blocked_live_catalogue_releases_holder_for_join_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::Catalogue)
+}
+
+#[test]
+fn w13_peer_field_turn_waiting_on_runtime_leaves_holder_for_join_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::PeerField)
+}
+
 fn run(admin: String, case: Case) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("w13-join-release", move || {
         let runtime = tokio::runtime::Builder::new_current_thread()
@@ -61,13 +79,15 @@ fn run(admin: String, case: Case) -> TestResult {
             result = runtime.block_on(scenario(admin, case));
         });
         result?;
-        assert!(
-            lines
-                .iter()
-                .any(|line| line.contains("event=admission_retry")
-                    && line.contains("phase=spell_catalog")
-                    && line.contains("cause=holder_busy"))
-        );
+        if case != Case::PeerField {
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=admission_retry")
+                        && line.contains("phase=spell_catalog")
+                        && line.contains("cause=holder_busy"))
+            );
+        }
         if case == Case::Relog {
             assert!(
                 lines
@@ -82,6 +102,17 @@ fn run(admin: String, case: Case) -> TestResult {
                 && line.contains("reason=join_refused")
                 && line.contains("phase=spell_catalog")
                 && line.contains("cause=holder_busy")));
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=holder_wait_timeout")
+                        && line.contains("phase=spell_catalog")
+                        && line.contains("cause=holder_busy")
+                        && line.contains("state=checked_out")
+                        && line.contains("owner=")
+                        && line.contains("w13_join_release.rs")
+                        && line.contains("held_ms="))
+            );
         }
         Ok(())
     })
@@ -152,7 +183,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     owner.evidence = &source.evidence;
 
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    if case != Case::Exhausted {
+    if matches!(case, Case::Relog | Case::Snapshot) {
         let frame = bootstrap(91, &[])?;
         let (old, pending) = admit_frame_for_join(&mut server, &frame, &owner, &Identifiers(91))
             .await
@@ -205,6 +236,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     let barrier = Arc::new((Notify::new(), Notify::new()));
     let returned = Notify::new();
     let finished = Notify::new();
+    let snapshot_committed = Notify::new();
     let serving = async {
         let end = DurabilityRoot::with_holder_owner(BEFORE_JOIN_SNAPSHOT.scope(
             barrier.clone(),
@@ -214,9 +246,76 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         finished.notify_one();
         end
     };
+    let mut catalogue_lock = if case == Case::Catalogue {
+        Some(block_catalogue(h, admitted.world_id).await?)
+    } else {
+        None
+    };
     let contending = async {
+        use std::future::{Future, poll_fn};
+        use std::task::Poll;
+
         barrier.0.notified().await;
-        let mut holder = h.root.try_acquire_ready()?;
+        if case == Case::PeerField {
+            let peer_dependencies = Dependencies::new()?;
+            let peer = peer_dependencies.owner(h, &authority);
+            let blocked = peer.runtime.lock().await;
+            let mut step = std::pin::pin!(peer.lock_field_step_turn());
+            assert!(
+                poll_fn(|cx| Poll::Ready(step.as_mut().poll(cx)))
+                    .await
+                    .is_pending()
+            );
+            assert!(
+                h.root.is_ready(),
+                "the blocked peer must not take the holder"
+            );
+            barrier.1.notify_one();
+
+            // Hold the peer runtime until the actual client observes its snapshot.
+            snapshot_committed.notified().await;
+            drop(blocked);
+            let (runtime, states, pass) = step.await.map_err(debug)?;
+            drop((runtime, states));
+            pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            returned.notify_one();
+            return Ok::<_, Box<dyn std::error::Error>>(());
+        }
+        if case == Case::Catalogue {
+            use crate::durability::public_projections::house_catalogue::PublicHouseCatalogue;
+            let mut publishing = std::pin::pin!(DurabilityRoot::with_holder_owner(
+                h.root.sync_public_house_catalogue(
+                    &authority,
+                    &h.node,
+                    PublicHouseCatalogue {
+                        world: admitted.world_id,
+                        channel: admitted.channel_id,
+                        generation: 1,
+                        reset_epoch: 0,
+                        map_revision: "map-1".into(),
+                        houses: None,
+                    }
+                ),
+            ));
+            assert!(
+                poll_fn(|cx| Poll::Ready(publishing.as_mut().poll(cx)))
+                    .await
+                    .is_pending()
+            );
+            let deadline = h
+                .root
+                .checked_out_pass_deadline()
+                .ok_or("catalogue checkout")?;
+            assert!(deadline <= tokio::time::Instant::now() + crate::durability::DB_PASS_DEADLINE);
+            barrier.1.notify_one();
+            assert!(
+                publishing.await.is_err(),
+                "the SQL lock remains held until after join"
+            );
+            returned.notify_one();
+            return Ok::<_, Box<dyn std::error::Error>>(());
+        }
+        let holder = h.root.try_issue_semantic_pass()?;
         barrier.1.notify_one();
         if case == Case::Exhausted {
             finished.notified().await;
@@ -231,9 +330,12 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
                 "snapshot refused while the holder was still settling"
             );
         }
-        holder
-            .return_to_pool_observed_until(Instant::now() + crate::durability::DB_PASS_DEADLINE)
-            .await;
+        if case == Case::Exhausted {
+            drop(holder);
+            h.root.await_ready().await?;
+        } else {
+            holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        }
         returned.notify_one();
         Ok::<_, Box<dyn std::error::Error>>(())
     };
@@ -260,6 +362,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
                 }
             }
         }
+        snapshot_committed.notify_one();
         returned.notified().await;
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
@@ -268,6 +371,9 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         tokio::join!(serving, contending, receiving)
     })
     .await?;
+    if let Some(tx) = catalogue_lock.take() {
+        tx.rollback().await?;
+    }
     contend?;
     receive?;
     if case == Case::Exhausted {
@@ -281,4 +387,30 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         assert!(pending.is_none());
     }
     Ok(())
+}
+
+async fn block_catalogue(
+    h: &Harness,
+    world: crate::foundation::WorldId,
+) -> TestResult<sqlx::Transaction<'static, sqlx::Postgres>> {
+    sqlx::query("INSERT INTO game_world_reset_epochs
+        (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
+        VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),
+            to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'))
+        ON CONFLICT (world_id,reset_epoch) DO NOTHING")
+        .bind(world.as_bytes().as_slice())
+        .bind([7_u8; 32].as_slice())
+        .execute(&h.pool).await?;
+    sqlx::query(
+        "INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)
+        ON CONFLICT (world_id) DO NOTHING",
+    )
+    .bind(world.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("LOCK TABLE game_public_house_catalogue_state IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *tx)
+        .await?;
+    Ok(tx)
 }

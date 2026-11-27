@@ -2700,6 +2700,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             UnresolvedSpellCommit::park_vacant(ParkedMarkerKind::Native, actor, session),
         );
         let objects = self.door.lock().await;
+        let mut attack = self.states.attack.lock().await;
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
             drop(objects);
             let (leftover, parked) = writer.finish();
@@ -2717,7 +2718,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let intent = *intent;
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
         let (attack_target, pvp_modes) = {
-            let mut attack = self.states.attack.lock().await;
             // Best-effort allocation before SQL/installation; failure grants no activity.
             attack.prepare_shared_experience_record(&runtime, actor, session);
             // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
@@ -2729,6 +2729,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 attack.expert_modes(actor, session),
             )
         };
+        drop(attack);
         // The attempt lives in the external context before any committing await. Deadline
         // cancellation cannot discard the original normalized occurrence: before the commit
         // window it stays in the context, after it the window parks it in the lane.

@@ -351,7 +351,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         native_owner_turn(room, "profile_transaction", "taints_refused");
                     }).map_err(|_| crate::durability::DurabilityError::Unavailable)?
                 } else { Vec::new() };
-                let objects = owner.door.lock().await;
+                let objects = owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)

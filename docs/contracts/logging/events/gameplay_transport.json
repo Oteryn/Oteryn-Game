@@ -276,6 +276,22 @@
       "note": "Daily Boost runtime wait or durable selection attempt under the command deadline."
     },
     {
+      "event": "corpse_open_refused",
+      "level": "warn",
+      "span": false,
+      "fields": ["command_id", "cause"],
+      "codes": [],
+      "note": "Corpse USE refused with its command id and closed cause."
+    },
+    {
+      "event": "corpse_open_wait",
+      "level": "warn",
+      "span": false,
+      "fields": ["command_id", "cause", "budget_ms"],
+      "codes": [],
+      "note": "Corpse USE waits for the durability holder within the command budget."
+    },
+    {
       "event": "daily_boost_refused",
       "level": "warn",
       "span": false,

@@ -96,7 +96,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let binding=runtime.binding();
             let authority=assert_spell_item_scope_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,binding.runtime_scope(),binding.scope_generation().get()).await.map_err(|_|DurabilityError::Unavailable)?;
             if !crate::durability::raid_runner::claustrophobic_cue_pending_in_transaction(&mut tx,owner.holder,cue,owner.world_id,owner.reset_epoch,index.map().overlay.base().digest()).await?{return Err(DurabilityError::Unavailable)}
-            let objects=owner.door.lock().await;
+            let objects=owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
             let mut map=CurrentMonsterMap::new(&mut tx,&authority,runtime,room,&objects,native);
             let frame=context.source_frame();
             let physical=|p:oteryn_gameplay_encounter_rules::raid::source_claustrophobic::Position|frame.physical_position([p.x,p.y,i32::from(p.floor)]).map(|(x,y,floor)|MovementLocalPosition{x,y,floor});

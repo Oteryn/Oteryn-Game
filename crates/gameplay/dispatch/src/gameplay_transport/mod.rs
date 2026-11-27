@@ -1379,7 +1379,8 @@ fn record_admission_stage(phase: &str, wait_on: &str, outcome: &str, elapsed: Du
 
 /// Join boundaries are emitted before awaiting their work, so a cancelled join still names
 /// its last phase. The entry outcome is the current one, after all admission participants.
-fn record_join_progress(phase: &str, first_entry: connection::FirstEntryOutcome) {
+fn record_join_progress(phase: &'static str, first_entry: connection::FirstEntryOutcome) {
+    connection::note_admission_phase(phase);
     use oteryn_error_codes::{FieldValue, Level, Line};
     let trace = connection::diagnostic_connection_trace().map(format_connection_trace);
     let first_entry = format!("{first_entry:?}");

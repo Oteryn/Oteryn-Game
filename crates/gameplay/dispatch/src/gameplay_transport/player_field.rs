@@ -632,11 +632,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     ) {
         let mut window = permit.open_commit_window(pending, park);
         window.mark_already_committed();
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
             return;
         };
-        let mut runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
         let mut context = (self, &mut *runtime, &mut *states, &mut window);
         let result = pass
             .run_with_context(&mut context, |holder, deadline, context| {

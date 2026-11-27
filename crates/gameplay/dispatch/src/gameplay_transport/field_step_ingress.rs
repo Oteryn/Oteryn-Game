@@ -363,7 +363,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(())
     }
 
-    /// Acquire before taking either Channel guard; only checkout is retryable.
+    /// Try a checkout while the caller owns the Channel guards. A miss does no work.
+    pub(in crate::gameplay_transport) fn try_field_step_pass(
+        &self,
+    ) -> Result<crate::durability::IssuedSemanticPass, super::super::AdmissionRefusal> {
+        use super::super::AdmissionRefusal;
+        self.root
+            .try_issue_semantic_pass()
+            .map_err(|error| match error {
+                crate::durability::DurabilityError::RootUnavailable => {
+                    AdmissionRefusal::Unavailable
+                }
+                _ => AdmissionRefusal::Rejected,
+            })
+    }
+
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn acquire_field_step_pass(
         &self,
     ) -> Result<
@@ -373,16 +388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Retry only RootUnavailable. Keep transaction,
         // field refusal and reconciliation results outside this retry scope.
         super::super::AdmissionRetryBudget::for_command(self.root)
-            .retry_unavailable(async || {
-                self.root
-                    .try_issue_semantic_pass()
-                    .map_err(|error| match error {
-                        crate::durability::DurabilityError::RootUnavailable => {
-                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable
-                        }
-                        _ => crate::gameplay_transport::connection::AdmissionRefusal::Rejected,
-                    })
-            })
+            .retry_unavailable(async || self.try_field_step_pass())
             .await
     }
 
@@ -489,7 +495,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let source=owner.active_generation.and_then(|active|active.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;
             let room=owner.rooms().gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let objects=owner.door.lock().await;
+            let objects=owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
             let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells()) {
                 match crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await {
                     Ok(prepared)=>Some(prepared),

@@ -68,7 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| DurabilityError::Unavailable)?;
                 let current =
                     cake::current_source_in_transaction(&mut tx, owner.holder, identity).await?;
-                let objects = owner.door.lock().await;
+                let objects = owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let mut pending = Vec::new();
                 pending
                     .try_reserve_exact(candidates.len())
