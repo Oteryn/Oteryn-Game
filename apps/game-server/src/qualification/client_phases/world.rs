@@ -3244,6 +3244,7 @@ pub(super) async fn journeys(
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
     }
+    reset_core_fixture_position(clients).await?;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -3261,15 +3262,10 @@ pub(super) async fn journeys(
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    // Resume from the profile journey's saved cell and travel normally to town.
     let from = tile(client.world_spatial().actor_position)?;
-    evidence(&format!(
-        "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
-    ));
-    let back = route(world, from, |at| at == TOWN).ok_or_else(|| {
-        format!("required core has no return route to town: from={from:?} to={TOWN:?}")
-    })?;
-    walk(&mut client, world, &back).await?;
+    if from != TOWN {
+        return Err(format!("core fixture did not start at {TOWN:?}: actual={from:?}").into());
+    }
     client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, world).await?;
@@ -3436,6 +3432,41 @@ async fn connect_world(
     tag: u8,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     connect_character(clients, tag, 1).await
+}
+
+/// The movement journey uses this same fixture. Its last save is incidental to
+/// the inventory rows, which always start at the configured town entrance.
+async fn reset_core_fixture_position(clients: &SeamClients<'_>) -> TestResult {
+    let index = 1;
+    wait_character_released(clients, index).await?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    // Only the disposable fixture's ordinary saved position is reset. A
+    // missing row already takes the normal first-entry path. Leave any pending
+    // respawn or arrival to its owner and let admission verify the result.
+    let previous: Option<(i32, i32, i16)> = sqlx::query_as(
+        "UPDATE game_character_last_positions AS p
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=p.write_sequence+1
+         WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
+           AND (p.tile_x,p.tile_y,p.tile_floor)<>($3,$4,$5)
+           AND p.house_key IS NULL
+           AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s
+                WHERE s.world_id=p.world_id AND s.character_id=p.character_id AND s.session_state<>3)
+           AND NOT EXISTS (SELECT 1 FROM game_character_pending_respawns r WHERE r.character_id=p.character_id)
+           AND NOT EXISTS (SELECT 1 FROM game_character_pending_arrivals a WHERE a.character_id=p.character_id)
+         RETURNING old.tile_x, old.tile_y, old.tile_floor",
+    )
+    .bind(clients.characters[index].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(TOWN.x))
+    .bind(i32::from(TOWN.y))
+    .bind(i16::from(TOWN.floor))
+    .fetch_optional(&mut database)
+    .await?;
+    database.close().await?;
+    evidence(&format!(
+        "world_fixture role=core phase=position_reset previous={previous:?} town={TOWN:?}"
+    ));
+    Ok(())
 }
 
 fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
