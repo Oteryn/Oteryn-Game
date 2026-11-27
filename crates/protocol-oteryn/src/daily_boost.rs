@@ -43,11 +43,21 @@ pub enum DailyBoostRefusal {
     Unavailable = 22,
     InputUnavailable = 23,
     InputGuardDeferred = 24,
+    RuntimeBusyBeforeSelection = 25,
+    RuntimeBusyAfterSelection = 26,
 }
 
 impl DailyBoostRefusal {
     pub const fn encode(self) -> [u8; 1] {
         [self as u8]
+    }
+
+    pub const fn runtime_phase(self) -> Option<&'static str> {
+        match self {
+            Self::RuntimeBusyBeforeSelection => Some("before_selection"),
+            Self::RuntimeBusyAfterSelection => Some("after_selection"),
+            _ => None,
+        }
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, DailyBoostCodecError> {
@@ -76,6 +86,8 @@ impl DailyBoostRefusal {
             [22] => Ok(Self::Unavailable),
             [23] => Ok(Self::InputUnavailable),
             [24] => Ok(Self::InputGuardDeferred),
+            [25] => Ok(Self::RuntimeBusyBeforeSelection),
+            [26] => Ok(Self::RuntimeBusyAfterSelection),
             _ => Err(DailyBoostCodecError),
         }
     }

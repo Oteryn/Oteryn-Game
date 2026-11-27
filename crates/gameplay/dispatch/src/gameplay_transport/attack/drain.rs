@@ -464,7 +464,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
             {
-                log_swing_skip(entry, Some(selected.target), SwingSkip::PaymentUnavailable);
+                log_swing_skip(
+                    entry,
+                    Some(selected.target),
+                    SwingSkip::RangedPaymentUnavailable,
+                );
                 if pvp_permit.has_unresolved() {
                     return;
                 }
@@ -1991,7 +1995,7 @@ enum SwingSkip {
     NativeHealthUnavailable,
     BudgetStarved,
     PvpRefused,
-    PaymentUnavailable,
+    RangedPaymentUnavailable,
     AttackerLeaseUnavailable,
     DamageUnavailable,
     StaleTarget,
@@ -2008,10 +2012,19 @@ fn log_swing_skip(entry: &ActorAttack, target: Option<ExactActorRef>, reason: Sw
             .held_target_lineage()
             .map(|(_, lineage)| lineage),
     );
-    log_held_swing_skip(held, reason);
+    log_held_swing_skip(entry.actor, held, reason);
 }
 
-fn log_held_swing_skip(held: Option<(ExactActorRef, CommandRef)>, reason: SwingSkip) {
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static SWING_SKIP_PROBE: std::cell::RefCell<Vec<String>>;
+}
+
+fn log_held_swing_skip(
+    attacker: ExactActorRef,
+    held: Option<(ExactActorRef, CommandRef)>,
+    reason: SwingSkip,
+) {
     // Closed reason tokens with no debug whitespace or private character IDs.
     let reason = match reason {
         SwingSkip::Cleared(detail) => format!("Cleared.{detail:?}"),
@@ -2019,20 +2032,24 @@ fn log_held_swing_skip(held: Option<(ExactActorRef, CommandRef)>, reason: SwingS
         SwingSkip::Ranged(detail) => format!("Ranged.{detail:?}"),
         other => format!("{other:?}"),
     };
+    let actor_id = |actor: ExactActorRef| {
+        actor
+            .placement_identity()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    };
     let (target, command) = held.map_or_else(
         || ("none".into(), 0),
-        |(target, lineage)| {
-            let id = target
-                .placement_identity()
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>();
-            (id, lineage.command_id().get())
-        },
+        |(target, lineage)| (actor_id(target), lineage.command_id().get()),
     );
-    operator_event(&format!(
-        "event=auto_attack_swing_skipped command_id={command} target={target} reason={reason}"
-    ));
+    let line = format!(
+        "event=auto_attack_swing_skipped command_id={command} attacker={} target={target} reason={reason}",
+        actor_id(attacker),
+    );
+    #[cfg(test)]
+    let _ = SWING_SKIP_PROBE.try_with(|lines| lines.borrow_mut().push(line.clone()));
+    operator_event(&line);
 }
 
 pub(super) fn select_swing(
@@ -2048,7 +2065,7 @@ pub(super) fn select_swing(
     match select_swing_inner(entry, runtime, states, room, digest, now, constants) {
         Ok(swing) => Some(swing),
         Err(reason) => {
-            log_held_swing_skip(held, reason);
+            log_held_swing_skip(entry.actor, held, reason);
             None
         }
     }

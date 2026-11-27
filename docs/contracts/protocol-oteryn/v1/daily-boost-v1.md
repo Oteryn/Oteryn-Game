@@ -54,6 +54,12 @@ sequence. A rejected query has no post-command presentation refresh.
 | 22 | `Unavailable` |
 | 23 | `InputUnavailable` |
 | 24 | `InputGuardDeferred` |
+| 25 | `RuntimeBusyBeforeSelection` |
+| 26 | `RuntimeBusyAfterSelection` |
+
+The two phase-specific runtime refusals mean the command exceeded its runtime
+wait budget and can be retried as a new query. Code 8 is retained for decoding
+replies from earlier servers.
 
 ## View
 

@@ -26,6 +26,8 @@ mod attack_chase_search;
 pub(super) mod charm_combat;
 mod cyclopedia;
 mod drain;
+#[cfg(test)]
+pub(super) use drain::SWING_SKIP_PROBE;
 mod equipped_offence;
 #[path = "attack/house_transfer.rs"]
 mod house_transfer;

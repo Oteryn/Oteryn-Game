@@ -1,8 +1,12 @@
 //! BOOSTED-1: the committed World/server-save choice shared by queries, kills and home spawns.
-use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession};
+use super::{
+    AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession, operator_event,
+};
 use crate::content::ProjectV2AuthoringProfileData;
 use crate::durability::DurabilityError;
 use crate::durability::daily_boost::DailyBoostBinding;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::foundation::ChannelRuntimeV1;
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_protocol_oteryn::daily_boost::{self as wire, DailyBoostRefusal};
 
@@ -10,6 +14,23 @@ use oteryn_protocol_oteryn::daily_boost::{self as wire, DailyBoostRefusal};
 tokio::task_local! {
     pub(in crate::gameplay_transport) static DAILY_BOOST_CHECKOUT_PROBE:
         std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
+#[derive(Clone, Copy)]
+struct DailyBoostQuery {
+    admitted: AdmittedSession,
+    fence: CurrentCharacterItemFence,
+    command_id: u64,
+}
+
+impl DailyBoostQuery {
+    fn attempt(self, phase: &'static str, attempt: u32) {
+        operator_event(&format!(
+            "event=daily_boost_query_attempt command_id={} seq={} phase={phase} attempt={attempt}",
+            self.command_id,
+            self.admitted.continuity.server_sequence.saturating_add(1),
+        ));
+    }
 }
 
 pub(super) fn offered(
@@ -80,114 +101,163 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     pub(super) async fn initialize_daily_boost(&self) -> Result<(), ()> {
         let budget = AdmissionRetryBudget::for_command(self.root);
-        self.load_daily_boost(&budget, false).await.map_err(|_| ())
+        self.load_daily_boost(&budget, None)
+            .await
+            .map(|_| ())
+            .map_err(|_| ())
+    }
+
+    async fn runtime_for_daily_boost(
+        &self,
+        budget: &AdmissionRetryBudget<'_>,
+        query: Option<DailyBoostQuery>,
+        busy: DailyBoostRefusal,
+    ) -> Result<tokio::sync::MutexGuard<'_, ChannelRuntimeV1>, DailyBoostRefusal> {
+        if let Some(query) = query
+            && let Some(phase) = busy.runtime_phase()
+        {
+            query.attempt(phase, 1);
+        }
+        // Keep one FIFO ticket for the whole wait. Retrying try_lock would
+        // lose this command's place every time a Channel owner released it.
+        let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
+            .await
+            .map_err(|_| busy)?;
+        if let Some(query) = query {
+            Self::check_daily_boost_session(&runtime, query.admitted, query.fence)?;
+        }
+        Ok(runtime)
     }
 
     async fn load_daily_boost(
         &self,
         budget: &AdmissionRetryBudget<'_>,
-        refresh: bool,
-    ) -> Result<(), DurabilityError> {
+        query: Option<DailyBoostQuery>,
+    ) -> Result<Option<wire::DailyBoostView>, DailyBoostRefusal> {
         let Some(map) = self.bundle_map() else {
-            return Ok(());
+            return Ok(None);
         };
-        {
-            let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
-                .await
-                .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+        let (binding, content_digest) = {
+            let runtime = self
+                .runtime_for_daily_boost(
+                    budget,
+                    query,
+                    DailyBoostRefusal::RuntimeBusyBeforeSelection,
+                )
+                .await?;
             runtime
                 .owner_fence()
-                .map_err(|_| DurabilityError::Unavailable)?;
+                .map_err(|_| DailyBoostRefusal::OwnerUnavailable)?;
+            let digest = runtime.content_pin().server_artifact_digest();
             if self
                 .active_generation
                 .and_then(crate::content::ActiveGeneration::native_gameplay)
-                .is_some_and(|native| {
-                    native.source_digest() != runtime.content_pin().server_artifact_digest()
-                })
+                .is_some_and(|native| native.source_digest() != digest)
             {
-                return Err(DurabilityError::Unavailable);
+                return Err(DailyBoostRefusal::SelectionUnavailable);
             }
-            if !refresh
+            if query.is_none()
                 && runtime
                     .daily_boost()
                     .is_some_and(|choice| choice.reset_epoch == self.reset_epoch)
             {
-                return Ok(());
+                return Ok(None);
             }
-        }
+            (runtime.binding(), digest)
+        };
         let pools = self.daily_boost_pools();
         if pools.0.is_empty() || pools.1.is_empty() {
-            return Ok(());
+            return Ok(None);
         }
-        // This world-level selection has no player effects to reconcile. Preserve any
-        // parked spell write for its owner and wait only for the lane within our budget.
-        let permit = tokio::time::timeout_at(budget.deadline, self.spell_lane.acquire())
-            .await
-            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
-            .map_err(|_| DurabilityError::Unavailable)?;
-        let (binding, content_digest) = {
-            let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
-                .await
-                .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
-            runtime
-                .owner_fence()
-                .map_err(|_| DurabilityError::Unavailable)?;
-            (
-                runtime.binding(),
-                runtime.content_pin().server_artifact_digest(),
-            )
-        };
         #[cfg(test)]
-        let probe = refresh
-            .then(|| {
-                DAILY_BOOST_CHECKOUT_PROBE
-                    .try_with(std::cell::Cell::take)
-                    .ok()
-                    .flatten()
-            })
-            .flatten();
+        let probe = query.and_then(|_| {
+            DAILY_BOOST_CHECKOUT_PROBE
+                .try_with(std::cell::Cell::take)
+                .ok()
+                .flatten()
+        });
         #[cfg(test)]
         if let Some(probe) = &probe {
             probe.pause().await;
         }
-        let selection = budget
-            .retry_durability("daily_boost_selection", async || {
-                budget.check_deadline()?;
-                let result = self
-                    .root
-                    .prepare_daily_boost(
-                        self.character,
-                        self.holder,
-                        &permit,
-                        DailyBoostBinding {
-                            scope: binding.runtime_scope(),
-                            generation: binding.scope_generation().get(),
-                            bundle: map.overlay.base().digest(),
-                            epoch: self.reset_epoch,
-                        },
-                        pools.clone(),
-                    )
-                    .await;
-                #[cfg(test)]
-                if matches!(result, Err(DurabilityError::RootUnavailable))
-                    && let Some(probe) = &probe
-                {
-                    probe.blocked();
+        let mut attempt = 0_u32;
+        let (selection, _permit) = budget
+            .retry_durability("daily_boost_selection", || {
+                attempt = attempt.saturating_add(1);
+                if let Some(query) = query {
+                    query.attempt("selection", attempt);
                 }
-                result
+                async {
+                    budget.check_deadline()?;
+                    // A holder miss releases the lane before the budget waits for readiness.
+                    // Parked spell writes remain with their own reconciliation path.
+                    let permit =
+                        tokio::time::timeout_at(budget.deadline, self.spell_lane.acquire())
+                            .await
+                            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
+                            .map_err(|_| DurabilityError::Unavailable)?;
+                    let selection_binding = DailyBoostBinding {
+                        scope: binding.runtime_scope(),
+                        generation: binding.scope_generation().get(),
+                        bundle: map.overlay.base().digest(),
+                        epoch: self.reset_epoch,
+                    };
+                    let result = if query.is_some() {
+                        self.root
+                            .prepare_daily_boost_by(
+                                self.character,
+                                self.holder,
+                                &permit,
+                                selection_binding,
+                                pools.clone(),
+                                budget.deadline,
+                            )
+                            .await
+                    } else {
+                        self.root
+                            .prepare_daily_boost(
+                                self.character,
+                                self.holder,
+                                &permit,
+                                selection_binding,
+                                pools.clone(),
+                            )
+                            .await
+                    };
+                    #[cfg(test)]
+                    if matches!(result, Err(DurabilityError::RootUnavailable))
+                        && let Some(probe) = &probe
+                    {
+                        probe.blocked();
+                    }
+                    result.map(|selection| (selection, permit))
+                }
             })
-            .await?;
-        let mut runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
             .await
-            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+            .map_err(selection_refusal)?;
+        let mut runtime = self
+            .runtime_for_daily_boost(budget, query, DailyBoostRefusal::RuntimeBusyAfterSelection)
+            .await?;
         if runtime.binding() != binding
             || runtime.content_pin().server_artifact_digest() != content_digest
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DailyBoostRefusal::SelectionUnavailable);
         }
         runtime
             .install_daily_boost(selection)
-            .map_err(|_| DurabilityError::Unavailable)
+            .map_err(|_| DailyBoostRefusal::SelectionUnavailable)?;
+        // Publish and read under the same guard. A queued owner cannot take
+        // the runtime between installation and the wire projection.
+        Ok(query.and_then(|_| {
+            runtime
+                .daily_boost()
+                .filter(|choice| choice.reset_epoch == self.reset_epoch)
+                .map(|choice| wire::DailyBoostView {
+                    reset_epoch: choice.reset_epoch,
+                    creature_key: choice.creature.clone(),
+                    boss_key: choice.boss.clone(),
+                })
+        }))
     }
 
     pub(super) async fn daily_boost_wire(
@@ -220,45 +290,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let budget =
             AdmissionRetryBudget::for_foreground_command(self.root).map_err(selection_refusal)?;
-        {
-            let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
-                .await
-                .map_err(|_| DailyBoostRefusal::RuntimeBusy)?;
-            Self::check_daily_boost_session(&runtime, admitted, fence)?;
-        }
-        // A relog can overlap a holder return or replacement. Use the same
-        // foreground budget for readiness and the fenced selection.
-        budget
-            .retry_durability("daily_boost_readiness", || async {
-                tokio::time::timeout_at(budget.deadline, self.root.await_ready())
-                    .await
-                    .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
-            })
-            .await
-            .map_err(selection_refusal)?;
-        self.load_daily_boost(&budget, true)
-            .await
-            .map_err(selection_refusal)?;
-        let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
-            .await
-            .map_err(|_| DailyBoostRefusal::RuntimeBusy)?;
-        Self::check_daily_boost_session(&runtime, admitted, fence)?;
-        let choice = runtime
-            .daily_boost()
-            .filter(|choice| choice.reset_epoch == self.reset_epoch)
+        let view = self
+            .load_daily_boost(
+                &budget,
+                Some(DailyBoostQuery {
+                    admitted,
+                    fence,
+                    command_id: id,
+                }),
+            )
+            .await?
             .ok_or(DailyBoostRefusal::SelectionMissing)?;
-        wire::encode_view(&wire::DailyBoostView {
-            reset_epoch: choice.reset_epoch,
-            creature_key: choice.creature.clone(),
-            boss_key: choice.boss.clone(),
-        })
-        .map_err(|_| DailyBoostRefusal::ViewEncoding)
+        wire::encode_view(&view).map_err(|_| DailyBoostRefusal::ViewEncoding)
     }
 
     fn check_daily_boost_session(
-        runtime: &crate::foundation::ChannelRuntimeV1,
+        runtime: &ChannelRuntimeV1,
         admitted: AdmittedSession,
-        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        fence: CurrentCharacterItemFence,
     ) -> Result<(), DailyBoostRefusal> {
         runtime
             .owner_fence()
