@@ -5,6 +5,50 @@ use oteryn_protocol_oteryn::npc_service::{
     COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result,
     encode_npc_talk_intent,
 };
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+
+async fn talk(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    word: &str,
+    replay: bool,
+) -> TestResult<NpcIntentDisposition> {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let command = admitted.continuity.next_command_id;
+    let intent = encode_npc_talk_intent(&NpcTalkIntent {
+        npc_actor: npc,
+        text: word.into(),
+    })
+    .map_err(debug)?;
+    let response = wire(
+        owner,
+        admitted,
+        command,
+        COMMAND_TYPE_NPC_TALK_INTENT,
+        intent.clone(),
+    )
+    .await?;
+    assert_eq!(admitted.continuity.next_command_id, command + 1);
+    if replay {
+        assert_eq!(
+            wire(
+                owner,
+                admitted,
+                command,
+                COMMAND_TYPE_NPC_TALK_INTENT,
+                intent
+            )
+            .await?,
+            response
+        );
+        assert_eq!(admitted.continuity.next_command_id, command + 1);
+    }
+    Ok(decode_npc_intent_result(&response).map_err(debug)?)
+}
 
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -16,6 +60,7 @@ pub(super) async fn exercise(
     let mut mint_command = 900;
     super::qengine_voucher_stories_fixtures::mint(owner, admitted, 3585, 14, &mut mint_command)
         .await?;
+    assert_eq!(admitted.continuity.next_command_id, 1);
     for (word, topic, apples, key) in [
         ("hi", 0, 14, None),
         ("key", 0, 14, None),
@@ -29,39 +74,8 @@ pub(super) async fn exercise(
         ("yes", 5, 7, None),
         ("yes", 0, 7, Some(3666)),
     ] {
-        let command = admitted.continuity.next_command_id;
-        let disposition = if key.is_some() {
-            let intent = encode_npc_talk_intent(&NpcTalkIntent {
-                npc_actor: npc,
-                text: word.into(),
-            })
-            .map_err(debug)?;
-            let response = wire(
-                owner,
-                admitted,
-                command,
-                COMMAND_TYPE_NPC_TALK_INTENT,
-                intent.clone(),
-            )
-            .await?;
-            assert_eq!(
-                wire(
-                    owner,
-                    admitted,
-                    command,
-                    COMMAND_TYPE_NPC_TALK_INTENT,
-                    intent
-                )
-                .await?,
-                response
-            );
-            decode_npc_intent_result(&response).map_err(debug)?
-        } else {
-            admitted.continuity.next_command_id += 1;
-            super::qengine_rewards_fixtures::talk(owner, admitted, npc, command, word).await?
-        };
         assert_eq!(
-            disposition,
+            talk(owner, admitted, npc, word, key.is_some()).await?,
             NpcIntentDisposition::Ok,
             "{word}, expected topic {topic}",
         );
@@ -99,9 +113,7 @@ pub(super) async fn exercise(
         "yes",
         "yes",
     ] {
-        let command = admitted.continuity.next_command_id;
-        admitted.continuity.next_command_id += 1;
-        super::qengine_rewards_fixtures::talk(owner, admitted, npc, command, word).await?;
+        talk(owner, admitted, npc, word, false).await?;
         assert_eq!(
             owner
                 .states
