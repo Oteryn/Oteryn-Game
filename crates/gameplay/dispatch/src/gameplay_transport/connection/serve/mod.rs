@@ -534,6 +534,9 @@ where
                     ServeEnd::Closed(error) => format!("{error:?}"),
                     ServeEnd::ControlLost(path) => format!("ControlLost({path})"),
                     ServeEnd::Disconnected => "Disconnected".to_owned(),
+                    ServeEnd::SnapshotObservation(refusal) => {
+                        format!("SnapshotObservation({refusal:?})")
+                    }
                     ServeEnd::LoggedOut => "LoggedOut".to_owned(),
                     ServeEnd::Transferred(_) => "Transferred".to_owned(),
                 };
