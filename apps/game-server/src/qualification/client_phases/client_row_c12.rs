@@ -690,6 +690,15 @@ async fn build_harmony<S: SessionStream>(
 pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     session: &mut Session<S>,
 ) -> TestResult {
+    // The authored route just descended a floor. STEP pacing does not cover stairhop exhaust.
+    let floor_exhaust = Duration::from_micros(oteryn_gameplay_spell_rules::cast::STAIRHOP_MICROS);
+    evidence(&format!(
+        "C12_CLIENT_AUTHORED_CAST_WAIT reason=stairhop wait_ms={}",
+        floor_exhaust.as_millis()
+    ));
+    session
+        .service_liveness_discarding_events(floor_exhaust)
+        .await?;
     let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
     let target = loop {
         let visible = session
@@ -737,9 +746,20 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     let before = *session
         .actor_vitals()
         .ok_or("C12 authored cast pre-state missing")?;
-    let outcome = session
-        .cast_spell(spell, SpellTarget::AttackTarget, true)
-        .await?;
+    let command = session.next_command_id();
+    let outcome = tokio::time::timeout(
+        COMMAND_BUDGET,
+        session.cast_spell(spell, SpellTarget::AttackTarget, true),
+    )
+    .await
+    .map_err(|_| format!("C12 authored Tarantula cast exchange timed out: command={command}"))?
+    .map_err(|error| {
+        format!("C12 authored Tarantula cast exchange failed: command={command} error={error:?}")
+    })?;
+    evidence(&format!(
+        "C12_CLIENT_AUTHORED_CAST_RECEIPT command={command} status={:?} disposition={:?} mana_before={}",
+        outcome.status, outcome.disposition, before.mana
+    ));
     if outcome.status != CommandStatus::Accepted
         || outcome.disposition != SpellCastDisposition::Cast
     {
