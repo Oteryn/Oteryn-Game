@@ -14,9 +14,9 @@ const DEADLINE: Duration = Duration::from_secs(1_800);
 const RAT: &str = "oteryn:creature.rat";
 const TROLL: &str = "oteryn:creature.troll";
 const TROLL_SPAWN: TilePos = TilePos {
-    x: 32469,
-    y: 32235,
-    floor: -8,
+    x: 32470,
+    y: 32249,
+    floor: -7,
 };
 const PROTECTED_LOGOUT: TilePos = TilePos {
     x: 32484,
