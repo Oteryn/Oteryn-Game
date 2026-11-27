@@ -168,35 +168,28 @@ pub(super) async fn scheduled_inputs(
     seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
     let schedules = [
         (
-            "game_item_timed_states",
-            "INSERT INTO game_item_timed_states(item_instance_id,remaining_ms,deadline_at,state_revision) VALUES(encode($1,'hex')::uuid,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,1)",
+            "DELETE FROM game_item_timed_states s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)",
+            "INSERT INTO game_item_timed_states AS s(item_instance_id,remaining_ms,deadline_at,state_revision) VALUES(encode($1,'hex')::uuid,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,1) RETURNING to_jsonb(s)",
         ),
         (
-            "game_spell_item_temporal_schedules",
-            "INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea))",
+            "DELETE FROM game_spell_item_temporal_schedules s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)",
+            "INSERT INTO game_spell_item_temporal_schedules AS s(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea)) RETURNING to_jsonb(s)",
         ),
         (
-            "game_spell_field_temporal_schedules",
-            "INSERT INTO game_spell_field_temporal_schedules(item_instance_id,source_stage,blocks_movement,blocks_projectile,immovable_block_solid,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,1,false,false,false,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea))",
+            "DELETE FROM game_spell_field_temporal_schedules s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)",
+            "INSERT INTO game_spell_field_temporal_schedules AS s(item_instance_id,source_stage,blocks_movement,blocks_projectile,immovable_block_solid,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,1,false,false,false,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea)) RETURNING to_jsonb(s)",
         ),
     ];
-    for (offset, (table, insert)) in schedules.into_iter().enumerate() {
+    for (offset, (remove, insert)) in schedules.into_iter().enumerate() {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        sqlx::query(insert)
+        let before: Value = sqlx::query_scalar(insert)
             .bind(id(101).as_slice())
-            .execute(&mut *tx)
+            .fetch_one(&mut *tx)
             .await?;
         tx.commit().await?;
-        let snapshot = format!(
-            "SELECT to_jsonb(s) FROM {table} s WHERE item_instance_id=encode($1,'hex')::uuid"
-        );
-        let before: Value = sqlx::query_scalar(&snapshot)
-            .bind(id(101).as_slice())
-            .fetch_one(&h.pool)
-            .await?;
         let occurrence = 120 + u8::try_from(offset)?;
         let mut action = pair(Operation::Fusion, occurrence, 101, 102);
         action.request.occurrence =
@@ -206,8 +199,10 @@ pub(super) async fn scheduled_inputs(
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        let after: Value = sqlx::query_scalar(&format!("DELETE FROM {table} s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)"))
-            .bind(id(101).as_slice()).fetch_one(&mut *tx).await?;
+        let after: Value = sqlx::query_scalar(remove)
+            .bind(id(101).as_slice())
+            .fetch_one(&mut *tx)
+            .await?;
         assert_eq!(after, before);
         tx.commit().await?;
     }
