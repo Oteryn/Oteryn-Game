@@ -1,17 +1,21 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). C06: Xodet at the retained Thais promotion-candidate cell 32398,32222,z7 for native rune purchases. QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CNPC1 joins six-region contacts by runtime NPC identity to the Crystal 201189f world-npc.xml and uses retained TibiaWiki BR revision cells where the XML has no placement. The original candidates supply agreeing positions and the override rows retain pinned evidence where they differ. CNPC2: stationary regional contacts from Crystal 201189f8; retained Wiki coordinates where the pinned Crystal XML has no matching occurrence. Regional population for Yalahar, Farmine, Gray Beach, Rathleton, Roshamuul, Issavi and Marapur at the pinned Crystal Global cells or retained TibiaWiki fallback cells. Shattered Isles: admit the retained quest NPC candidate cells for the chosen four passages. CWTRAV2: Crystal travel origins at their pinned Global map cells. Travel lane 3: static transport actors checked against Crystal 201189f8 data-global/world/world-npc.xml, including the outbound Tonar passage. Old Adall and Ziyad retain their source-backed solid-object contacts. Crystal NPC services at their retained source placements, including the post office. Postman mission 1: four tour contacts at their retained candidate cells.; Djinn War Marid: the 201189f8 Global anchors, with the Orc King and Umar retaining their solid-object contacts. Paradox Tower: A Prisoner, Oldrak, Padreia and Riddler at their retained Crystal contact centers. Tower Defence and Troll Sabotage: Bunny Bonecrusher, Thanita, Jerom and the mainland Chief Grarkharok use their matching Crystal 201189f world-npc.xml cells (lines 24–28, 321–322 and 1564–1565). Too Hot to Handle: retained TibiaWiki BR contacts for Brodraem Orcbeard, Gnomevisor and Gnomystery. Inquisition Eclipse uses the retained Uzon departure and return cells in Femor Hills and on the Big Old One.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). C06: Xodet at the retained Thais promotion-candidate cell 32398,32222,z7 for native rune purchases. QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CNPC1 joins six-region contacts by runtime NPC identity to the Crystal 201189f world-npc.xml and uses retained TibiaWiki BR revision cells where the XML has no placement. The original candidates supply agreeing positions and the override rows retain pinned evidence where they differ. CNPC2: stationary regional contacts from Crystal 201189f8; retained Wiki coordinates where the pinned Crystal XML has no matching occurrence. Regional population for Yalahar, Farmine, Gray Beach, Rathleton, Roshamuul, Issavi and Marapur at the pinned Crystal Global cells or retained TibiaWiki fallback cells. Shattered Isles: admit the retained quest NPC candidate cells for the chosen four passages. CWTRAV2: Crystal travel origins at their pinned Global map cells. Travel lane 3: static transport actors checked against Crystal 201189f8 data-global/world/world-npc.xml, including the outbound Tonar passage. Old Adall and Ziyad retain their source-backed solid-object contacts. Crystal NPC services at their retained source placements, including the post office. Postman mission 1: four tour contacts at their retained candidate cells.; Djinn War Marid: the 201189f8 Global anchors, with the Orc King and Umar retaining their solid-object contacts. Paradox Tower: A Prisoner, Oldrak, Padreia and Riddler at their retained Crystal contact centers. Tower Defence and Troll Sabotage: Bunny Bonecrusher, Thanita, Jerom and the mainland Chief Grarkharok use their matching Crystal 201189f world-npc.xml cells (lines 24–28, 321–322 and 1564–1565). Too Hot to Handle: retained TibiaWiki BR contacts for Brodraem Orcbeard, Gnomevisor and Gnomystery. Inquisition Eclipse uses the retained Uzon departure and return cells in Femor Hills and on the Big Old One. Crystal 201189f8 Global NPC XML: exact solid-object contacts for Kepar, Palimuth, Rafzan, Raymond Striker, Sinatuki, The First Dragon and Zalamon. Habdel uses the staffed Ankrahmun cell, excluding the empty example-map tile at 12072,12043,7. Wyrdin’s Apprentice and Death bind their existing catalogue identities to their Crystal map contacts. Spike, Bigfoot and Dangerous Depths daily contacts use the pinned Crystal Global NPC cells.",
   "npcs": [
     "oteryn:npc.a_beggar",
     "oteryn:npc.a_confused_frog",
     "oteryn:npc.a_dark_priestess",
+    "oteryn:npc.a_dragon_lord",
     "oteryn:npc.a_dragon_mother",
+    "oteryn:npc.a_drillworm",
     "oteryn:npc.a_dwarven_ghost",
     "oteryn:npc.a_fluffy_squirrel",
     "oteryn:npc.a_frog",
     "oteryn:npc.a_ghostly_woman_ghostland",
     "oteryn:npc.a_grumpy_cyclops",
+    "oteryn:npc.a_lost_basher",
     "oteryn:npc.a_lost_soul",
+    "oteryn:npc.a_lost_thrower",
     "oteryn:npc.a_majestic_warwolf",
     "oteryn:npc.a_prisoner",
     "oteryn:npc.a_restless_soul",
@@ -24,6 +28,7 @@
     "oteryn:npc.a_sweaty_cyclops",
     "oteryn:npc.a_tainted_soul",
     "oteryn:npc.a_tortured_soul",
+    "oteryn:npc.a_vulcongra",
     "oteryn:npc.a_wrinkled_bonelord",
     "oteryn:npc.abran_ironeye",
     "oteryn:npc.admiral_wyrmslicer",
@@ -125,10 +130,13 @@
     "oteryn:npc.brengus",
     "oteryn:npc.brewster",
     "oteryn:npc.briasol",
+    "oteryn:npc.brodraem_orcbeard",
     "oteryn:npc.brodrosch",
     "oteryn:npc.broken_servant_sentry",
+    "oteryn:npc.brom",
     "oteryn:npc.bron",
     "oteryn:npc.bruce",
+    "oteryn:npc.brutus",
     "oteryn:npc.buddel",
     "oteryn:npc.buddel_helheim",
     "oteryn:npc.buddel_okolnir",
@@ -168,6 +176,7 @@
     "oteryn:npc.chantalle",
     "oteryn:npc.charles",
     "oteryn:npc.charlotta",
+    "oteryn:npc.chartan",
     "oteryn:npc.chatterbone",
     "oteryn:npc.chavis",
     "oteryn:npc.chemar",
@@ -186,6 +195,7 @@
     "oteryn:npc.clark",
     "oteryn:npc.cledwyn",
     "oteryn:npc.clyde",
+    "oteryn:npc.commander_stone",
     "oteryn:npc.cornelia",
     "oteryn:npc.cornell",
     "oteryn:npc.corym_butler",
@@ -198,16 +208,19 @@
     "oteryn:npc.corym_worker_3",
     "oteryn:npc.corym_worker_4",
     "oteryn:npc.corym_worker_5",
+    "oteryn:npc.costello",
     "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.cruleo",
     "oteryn:npc.dabui",
     "oteryn:npc.dagomir",
+    "oteryn:npc.dalbrect",
     "oteryn:npc.dallheim",
     "oteryn:npc.dane",
     "oteryn:npc.daniel_steelsoul",
     "oteryn:npc.dankwart",
     "oteryn:npc.danlon",
     "oteryn:npc.dario",
+    "oteryn:npc.death_npc",
     "oteryn:npc.dedoras",
     "oteryn:npc.demon_skeleton",
     "oteryn:npc.dermot",
@@ -215,6 +228,7 @@
     "oteryn:npc.digger",
     "oteryn:npc.dixi",
     "oteryn:npc.djema",
+    "oteryn:npc.doctor_marrow",
     "oteryn:npc.domizian",
     "oteryn:npc.donald_mcronald",
     "oteryn:npc.dorbin",
@@ -253,6 +267,7 @@
     "oteryn:npc.eliyas",
     "oteryn:npc.eliza",
     "oteryn:npc.elliott",
+    "oteryn:npc.ellipses",
     "oteryn:npc.elvith",
     "oteryn:npc.elyen_ravenlock",
     "oteryn:npc.emael",
@@ -270,6 +285,7 @@
     "oteryn:npc.ethan",
     "oteryn:npc.etzel",
     "oteryn:npc.eustacio",
+    "oteryn:npc.eustacios_spy_rat",
     "oteryn:npc.eva",
     "oteryn:npc.evan",
     "oteryn:npc.ezebeth",
@@ -309,6 +325,7 @@
     "oteryn:npc.galuna",
     "oteryn:npc.gamel",
     "oteryn:npc.gamon",
+    "oteryn:npc.gate_guardian",
     "oteryn:npc.gederas",
     "oteryn:npc.gelidrazah_s_thirst",
     "oteryn:npc.george_the_boyscout",
@@ -319,8 +336,12 @@
     "oteryn:npc.gladys",
     "oteryn:npc.gnomadness",
     "oteryn:npc.gnomally",
+    "oteryn:npc.gnomargery",
+    "oteryn:npc.gnombold",
+    "oteryn:npc.gnomeral",
     "oteryn:npc.gnomewart",
     "oteryn:npc.gnomfurry",
+    "oteryn:npc.gnomilly",
     "oteryn:npc.gnominer",
     "oteryn:npc.gnomish_operative_catching",
     "oteryn:npc.gnomish_operative_gt_m_01",
@@ -328,6 +349,8 @@
     "oteryn:npc.gnomish_operative_resonating",
     "oteryn:npc.gnomish_operative_volcano",
     "oteryn:npc.gnommander",
+    "oteryn:npc.gnomus",
+    "oteryn:npc.gnomystery",
     "oteryn:npc.golem_guardian",
     "oteryn:npc.gordon",
     "oteryn:npc.gorn",
@@ -356,6 +379,7 @@
     "oteryn:npc.gundralph",
     "oteryn:npc.gunther",
     "oteryn:npc.gurbasch",
+    "oteryn:npc.gustavo_the_guard",
     "oteryn:npc.haani",
     "oteryn:npc.habdel",
     "oteryn:npc.hairycles",
@@ -366,6 +390,7 @@
     "oteryn:npc.hanna",
     "oteryn:npc.hardek",
     "oteryn:npc.harkath_bloodblade",
+    "oteryn:npc.harlow",
     "oteryn:npc.harlow_vengoth",
     "oteryn:npc.haroun",
     "oteryn:npc.harsky",
@@ -453,6 +478,7 @@
     "oteryn:npc.kjesse",
     "oteryn:npc.klaus",
     "oteryn:npc.klesar",
+    "oteryn:npc.klom_stonecutter",
     "oteryn:npc.kromrek",
     "oteryn:npc.kroox",
     "oteryn:npc.kulag_the_guard",
@@ -653,8 +679,10 @@
     "oteryn:npc.ross",
     "oteryn:npc.roswitha",
     "oteryn:npc.rottin_wood",
+    "oteryn:npc.roughington",
     "oteryn:npc.rowenna",
     "oteryn:npc.rudolph",
+    "oteryn:npc.ruprecht",
     "oteryn:npc.s_zallar_m_andar",
     "oteryn:npc.sam",
     "oteryn:npc.samir",
@@ -673,6 +701,7 @@
     "oteryn:npc.servant_sentry",
     "oteryn:npc.sessek",
     "oteryn:npc.seymour",
+    "oteryn:npc.shadowpunch",
     "oteryn:npc.shalmar",
     "oteryn:npc.shanar",
     "oteryn:npc.sharai",
@@ -697,6 +726,7 @@
     "oteryn:npc.skeleton_guard",
     "oteryn:npc.skip",
     "oteryn:npc.skjaar",
+    "oteryn:npc.skullfrost",
     "oteryn:npc.smiley",
     "oteryn:npc.snake_eye",
     "oteryn:npc.sniff",
@@ -795,6 +825,7 @@
     "oteryn:npc.vascalir",
     "oteryn:npc.velvet",
     "oteryn:npc.vescu",
+    "oteryn:npc.victor",
     "oteryn:npc.vincent",
     "oteryn:npc.viola",
     "oteryn:npc.virgil",
@@ -838,12 +869,7 @@
     "oteryn:npc.zlak",
     "oteryn:npc.znozel",
     "oteryn:npc.zoltan",
-    "oteryn:npc.zora",
-    "oteryn:npc.brodraem_orcbeard",
-    "oteryn:npc.costello",
-    "oteryn:npc.dalbrect",
-    "oteryn:npc.gnomystery",
-    "oteryn:npc.gustavo_the_guard"
+    "oteryn:npc.zora"
   ],
   "position_conflicts": [],
   "placement_cells": {
@@ -923,6 +949,13 @@
         "y": 31754,
         "z": 1
       }
+    ],
+    "oteryn:npc.habdel": [
+      {
+        "x": 33225,
+        "y": 32434,
+        "z": 7
+      }
     ]
   },
   "block_solid_contacts": [
@@ -935,6 +968,7 @@
     "oteryn:npc.aruda",
     "oteryn:npc.asnarus",
     "oteryn:npc.barnabas_dee",
+    "oteryn:npc.brodraem_orcbeard",
     "oteryn:npc.bron",
     "oteryn:npc.budrik",
     "oteryn:npc.cerdras",
@@ -942,18 +976,23 @@
     "oteryn:npc.chuck_the_worker",
     "oteryn:npc.corym_butler",
     "oteryn:npc.corym_worker_5",
+    "oteryn:npc.doctor_marrow",
     "oteryn:npc.doubleday",
     "oteryn:npc.dream_butterfly",
     "oteryn:npc.eclesius",
     "oteryn:npc.edgar_ellen",
     "oteryn:npc.edmund",
+    "oteryn:npc.ellipses",
     "oteryn:npc.emily",
     "oteryn:npc.emma",
     "oteryn:npc.fayla",
     "oteryn:npc.frosty",
     "oteryn:npc.gnomally",
+    "oteryn:npc.gnomargery",
+    "oteryn:npc.gnombold",
     "oteryn:npc.gnomewart",
     "oteryn:npc.gnomfurry",
+    "oteryn:npc.gnomilly",
     "oteryn:npc.gnommander",
     "oteryn:npc.imbul",
     "oteryn:npc.iyad",
@@ -962,6 +1001,7 @@
     "oteryn:npc.jessica",
     "oteryn:npc.kais",
     "oteryn:npc.kalvin",
+    "oteryn:npc.kepar",
     "oteryn:npc.llathriel",
     "oteryn:npc.lorek",
     "oteryn:npc.maun",
@@ -972,9 +1012,11 @@
     "oteryn:npc.oiriz",
     "oteryn:npc.old_adall",
     "oteryn:npc.ortheus",
+    "oteryn:npc.palimuth",
     "oteryn:npc.polly",
     "oteryn:npc.pompan",
     "oteryn:npc.prisoner",
+    "oteryn:npc.rafzan",
     "oteryn:npc.ray",
     "oteryn:npc.raymond_striker",
     "oteryn:npc.rock_with_a_soft_spot",
@@ -982,8 +1024,10 @@
     "oteryn:npc.sherry_mcronald",
     "oteryn:npc.sholley",
     "oteryn:npc.silas",
+    "oteryn:npc.sinatuki",
     "oteryn:npc.talesia",
     "oteryn:npc.telas",
+    "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_orc_king",
     "oteryn:npc.timothy",
     "oteryn:npc.tooth_fairy",
@@ -991,10 +1035,11 @@
     "oteryn:npc.uncle",
     "oteryn:npc.vescu",
     "oteryn:npc.wally",
+    "oteryn:npc.wyrdins_apprentice",
     "oteryn:npc.yawno",
+    "oteryn:npc.zalamon",
     "oteryn:npc.zarifan",
-    "oteryn:npc.ziyad",
-    "oteryn:npc.brodraem_orcbeard"
+    "oteryn:npc.ziyad"
   ],
   "native_contacts": [
     "oteryn:npc.brodraem_orcbeard",
@@ -1004,8 +1049,16 @@
   ],
   "placement_adjustments": {
     "oteryn:npc.captain_jack": {
-      "source": {"x": 32190, "y": 31957, "z": 6},
-      "target": {"x": 32190, "y": 31958, "z": 6},
+      "source": {
+        "x": 32190,
+        "y": 31957,
+        "z": 6
+      },
+      "target": {
+        "x": 32190,
+        "y": 31958,
+        "z": 6
+      },
       "reason": "Use the adjacent dock tile to keep Dalbrect's Isle of the Kings arrival clear."
     },
     "oteryn:npc.alternative_rock": {
@@ -1534,6 +1587,7 @@
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       },
       "basis": "Exact source NPC XML center33243,31213,z10 plus offsetx=-1,y=0. Source XML has no facing; select NPC engine default NORTH, not a recovered source direction. Preserve actual source identity and replace the older Wiki placement hypothesis.",
+      "source_ground": 470,
       "placements": [
         {
           "position": {
@@ -9816,6 +9870,443 @@
           }
         }
       ]
+    },
+    "oteryn:npc.death_npc": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Death is the NPC catalogue’s Death (NPC). Exact Global NPC XML line 2952; engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32570,
+            "y": 32574,
+            "z": 11
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.brom": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Brom. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32703,
+            "y": 31832,
+            "z": 12
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.brutus": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Brutus. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33153,
+            "y": 32984,
+            "z": 8
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.doctor_marrow": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Doctor Marrow. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 34010,
+            "y": 32641,
+            "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.ellipses": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for .... Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33449,
+            "y": 32805,
+            "z": 11
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.eustacios_spy_rat": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Eustacios Spy Rat. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33857,
+            "y": 31334,
+            "z": 9
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.harlow": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Harlow. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32836,
+            "y": 31364,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.roughington": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Roughington. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33535,
+            "y": 31832,
+            "z": 9
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.shadowpunch": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Shadowpunch. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33377,
+            "y": 31832,
+            "z": 9
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.skullfrost": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Skullfrost. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32549,
+            "y": 32622,
+            "z": 11
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.victor": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact Global NPC XML contact for Victor. Engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32255,
+            "y": 32216,
+            "z": 8
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.a_dragon_lord": {
+      "basis": "Crystal world-npc.xml:3236-3238 places A Dragon Lord at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32273,
+            "y": 32629,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.a_drillworm": {
+      "basis": "Crystal world-npc.xml:3131-3133 places A Drillworm at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32232,
+            "y": 32684,
+            "z": 13
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.a_lost_basher": {
+      "basis": "Crystal world-npc.xml:3239-3241 places A Lost Basher at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32171,
+            "y": 32630,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.a_lost_thrower": {
+      "basis": "Crystal world-npc.xml:3230-3232 places A Lost Thrower at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32306,
+            "y": 32546,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.a_vulcongra": {
+      "basis": "Crystal world-npc.xml:3119-3121 places A Vulcongra at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32132,
+            "y": 32562,
+            "z": 13
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.commander_stone": {
+      "basis": "Crystal world-npc.xml:2840-2842 places Commander Stone at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32805,
+            "y": 31798,
+            "z": 10
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.gnomargery": {
+      "basis": "Crystal world-npc.xml:3233-3235 places Gnomargery at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32245,
+            "y": 32600,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.gnombold": {
+      "basis": "Crystal world-npc.xml:2954-2956 places Gnombold at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32242,
+            "y": 32598,
+            "z": 11
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.gnomeral": {
+      "basis": "Crystal world-npc.xml:2668-2670 places Gnomeral at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32963,
+            "y": 31875,
+            "z": 9
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.gnomilly": {
+      "basis": "Crystal world-npc.xml:2743-2745 places Gnomilly at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32242,
+            "y": 32599,
+            "z": 9
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.gnomus": {
+      "basis": "Crystal world-npc.xml:3203-3205 places Gnomus at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33753,
+            "y": 32165,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.klom_stonecutter": {
+      "basis": "Crystal world-npc.xml:3206-3208 places Klom Stonecutter at the daily quest contact. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33773,
+            "y": 32200,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
     }
   },
   "wiki_br_contacts": {
@@ -9892,18 +10383,58 @@
     "oteryn:npc.messenger_of_santa": {
       "pageid": 28529,
       "cells": [
-        [32307, 31837, 8],
-        [32357, 32210, 7],
-        [32642, 31892, 9],
-        [32655, 31665, 8],
-        [32915, 32070, 9]
+        [
+          32307,
+          31837,
+          8
+        ],
+        [
+          32357,
+          32210,
+          7
+        ],
+        [
+          32642,
+          31892,
+          9
+        ],
+        [
+          32655,
+          31665,
+          8
+        ],
+        [
+          32915,
+          32070,
+          9
+        ]
       ],
       "adjacent_cells": [
-        [32308, 31837, 8],
-        [32356, 32210, 7],
-        [32641, 31892, 9],
-        [32654, 31665, 8],
-        [32916, 32070, 9]
+        [
+          32308,
+          31837,
+          8
+        ],
+        [
+          32356,
+          32210,
+          7
+        ],
+        [
+          32641,
+          31892,
+          9
+        ],
+        [
+          32654,
+          31665,
+          8
+        ],
+        [
+          32916,
+          32070,
+          9
+        ]
       ],
       "direction": "SOUTH"
     },

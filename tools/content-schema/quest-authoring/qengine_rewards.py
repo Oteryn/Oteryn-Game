@@ -28,6 +28,7 @@ import questl2_ready
 import questpc7_smith_programme
 import taming_cosmetics
 import wizard_cosmetics
+import token_exchanges
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -1568,6 +1569,7 @@ def build():
             requirement(shattered + "rays_mission4", 5),
         ],
     )
+    callbacks[-1]["msg_contains"] = True
     sabre = pirate + "pirate_sabre_addon"
     start = [
         storage(sabre, -1, 1, 0),
@@ -3669,6 +3671,16 @@ def build():
     fibula.append(fibula_callbacks, offers, inputs)
     fibula.append_simon(fibula_callbacks, offers, fibula_tracks, inputs)
     # Keep every registered document within the runtime's 256-record bound.
+    exchange_start = len(callbacks)
+    exchange_tracks = token_exchanges.append(add, storage, callbacks, offers)
+    exchange_callbacks = callbacks[exchange_start:]
+    del callbacks[exchange_start:]
+    exchange_document = {"schema": 1, "tracks": exchange_tracks,
+                         # The stable sort retains Jorge's authored table order.
+                         "callbacks": sorted(exchange_callbacks, key=lambda c:
+                             c["key"] if c["npc"] != "oteryn:npc.jorge"
+                             else "oteryn:quest-reward/jorge-exchange-")}
+    validate_callbacks(exchange_document)
     l13_callbacks = [c for c in callbacks if c["key"].split("/")[-1].startswith("l13-")]
     callbacks = [c for c in callbacks if c not in l13_callbacks]
     programme_callbacks = [c for c in callbacks if c["key"].split("/")[-1].startswith("questpc7-")]
@@ -3801,7 +3813,13 @@ def build():
                 callbacks.append(finishing)
     callbacks.sort(key=lambda c: c["key"])
     free_glove_offers.sort(key=lambda offer: (offer["npc"], offer["topic"]))
-    offers.sort(key=lambda c: (c["npc"], c["topic"], c["keywords"]))
+    # Cledwyn's and Gnomally's overlapping early replies retain source order.
+    offers.sort(key=lambda offer: (
+        offer["npc"],
+        offer["topic"],
+        [] if offer["npc"] in ("oteryn:npc.cledwyn", "oteryn:npc.gnomally")
+        and offer.get("reward_order") == "before" else offer["keywords"],
+    ))
     item_disguises = load_module(
         "quest_item_disguises",
         "tools/content-schema/quest-authoring/quest_item_disguises.py",
@@ -3881,6 +3899,7 @@ def build():
         ),
         "content/quests/shared-reward-offers.json": encoded({"schema": 1, "offers": offers}),
     }
+    generated[token_exchanges.SHARD] = encoded(exchange_document)
     generated["content/quests/npc-callbacks/l2-ready-stories.json"] = encoded(
         {"schema": 1, "tracks": [], "callbacks": ready_callbacks}
     )
@@ -3971,7 +3990,8 @@ def build():
         + m39_callbacks
         + ready_callbacks
         + l13_callbacks
-        + programme_callbacks,
+        + programme_callbacks
+        + exchange_callbacks,
         inputs,
     )
     generated["content/dialogues/quests/shared-reward-greetings.json"] = encoded(
@@ -3986,9 +4006,12 @@ def build():
         json.loads((ROOT / "tools/content-schema/quest-authoring/cael-shop.json").read_bytes())
     )
     service = 'oteryn:service.trade.black_bert'
-    trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
-    stock = next(row['declaration']['offers'] for row in trade['records']
-                 if row['declaration']['identity']['key'] == service)
+    stock = next(
+        row["declaration"]["offers"]
+        for shard in sorted((ROOT / "content/services/trade").glob("trade-*.json"))
+        for row in json.loads(shard.read_bytes())["records"]
+        if row["declaration"]["identity"]["key"] == service
+    )
     bert_source = inputs['data-global/npc/black_bert.lua']
     # The corpus copy is byte-identical to the chosen 201189f8 shop source.
     if sha(bert_source) != 'd4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c':

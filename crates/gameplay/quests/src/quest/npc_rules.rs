@@ -10,8 +10,13 @@ mod equipped_storage;
 pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
-mod item_exchange;
+pub(in crate::quest) mod item_exchange;
 mod keyword;
+
+/// Crystal's literal conversation matcher, shared by source reward dialogue.
+pub fn msg_contains(message: &str, keyword: &str) -> bool {
+    keyword::matches(message, keyword, NpcKeywordMode::MsgContains).unwrap_or(false)
+}
 mod marlin_trophy;
 mod player_name;
 mod questpc2_albinius_source;
@@ -519,6 +524,7 @@ impl NpcRuleCatalog {
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/ape-city.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/beginning.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/hunting-tasks.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/postman.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
@@ -526,6 +532,7 @@ impl NpcRuleCatalog {
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/wrath-city.json"),
                 ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
@@ -546,6 +553,10 @@ impl NpcRuleCatalog {
                             == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.citizen-source-sagas")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.hunting-tasks")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.wrath-city")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
@@ -567,6 +578,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.spike_task"
                                 | "oteryn:quest.the_postman_missions_quest"
                                 | "oteryn:quest.tower_defence_quest"
                                 | "oteryn:quest.troll_sabotage_quest"

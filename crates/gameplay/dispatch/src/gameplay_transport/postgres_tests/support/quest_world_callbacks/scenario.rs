@@ -418,12 +418,16 @@ fn scenario_case(
     );
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let shared_rewards = name == "questpc7-grave"
+    let regional_hunt_dialogue = name.starts_with("regional-hunt-dialogue-");
+    let shared_rewards = regional_hunt_dialogue
+        || name == "questpc7-grave"
         || name == "questpc7-ferumbras"
         || name == "questpc7-hero"
         || name == "questpc7-hydra"
         || name == "questpc7-hoist-story"
         || name == "questpc7-tokens"
+        || name == "regional-hunt-save"
+        || name == "token-exchanges"
         || name.starts_with("questpc7-hidden-")
         || name.starts_with("questpc7-outfits-")
         || name == "l1-warmaster-wardrobe"
@@ -431,7 +435,8 @@ fn scenario_case(
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
-    let classic_npc = shared_rewards
+    let bigfoot_daily = name.starts_with("bigfoot-daily-");
+    let classic_npc = bigfoot_daily || shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
@@ -1202,7 +1207,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if hot_cuisine_books {
+        let world = if bigfoot_daily {
+            super::super::bigfoot_dailies_fixtures::world(
+                name, generation.native_gameplay().ok_or("Bigfoot native content")?,
+            )?
+        } else if hot_cuisine_books {
             use crate::map::overlay::TilePos;
             super::super::source_world_crop::world(
                 TilePos { x: 33064, y: 32529, floor: -5 },
@@ -1625,6 +1634,8 @@ fn scenario_case(
             // The settlement journey includes combat with a classed starter loadout.
             new_frontier_journey_fixtures::NAME | new_frontier_journey_fixtures::POLISHER_RETRY => Some(8),
             super::super::classic_quest_parity_fixtures::NPC_CASE => Some(8),
+            "regional-hunt-dialogue-daniel" => Some(30),
+            _ if regional_hunt_dialogue => Some(60),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1843,7 +1854,7 @@ fn scenario_case(
                 8 // Pilgrim, six contacts, and the lever's timed Ghoul.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
-                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
+                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped" | "token-exchanges")
             {
                 6
             } else if name == "authored-magic-sword" {
@@ -1966,7 +1977,8 @@ fn scenario_case(
                 Some(activation),
                 Some(h.root.clone()),
             );
-        let eligibility_premium = if feaster
+        let eligibility_premium = if regional_hunt_dialogue
+            || feaster
             || name == "catalogue-npc-inventory"
             || matches!(
                 name,
@@ -3084,6 +3096,16 @@ fn scenario_case(
             super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
             super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if regional_hunt_dialogue {
+            Box::pin(super::super::regional_hunt_save_fixtures::dialogue(
+                &mut owner, &mut admitted, &h, name,
+            ))
+            .await?;
+        } else if name == "regional-hunt-save" {
+            Box::pin(super::super::regional_hunt_save_fixtures::exercise(&mut owner, &mut admitted, &h))
+                .await?;
+        } else if name == "token-exchanges" {
+            super::super::token_exchanges_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if hot_cuisine_books {
             super::super::m42_hot_cuisine_fixtures::exercise_books(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-tokens" {
@@ -3500,6 +3522,8 @@ fn scenario_case(
                 origin,
             ))
             .await?;
+        } else if bigfoot_daily {
+            Box::pin(super::super::bigfoot_dailies_fixtures::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == "authored-wrath-crystals" {
             super::super::questpc8_wrath_crystals_fixtures::exercise(
                 &mut owner,
@@ -3567,7 +3591,7 @@ fn scenario_case(
                 )
                 .await?;
             }
-        } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+        } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped" | "token-exchanges") {
             if sidec_npc {
                 super::super::npc_program_fixtures::exercise_scoped(
                     &mut owner,

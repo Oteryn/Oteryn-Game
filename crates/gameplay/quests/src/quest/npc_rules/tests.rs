@@ -711,9 +711,11 @@ const EXPECTED_LEGACY_QUESTS: [&str; 29] = [
     "oteryn:quest.hero_of_rathleton_quest",
     "oteryn:quest.hot_cuisine_quest",
     "oteryn:quest.in_service_of_yalahar_quest",
+    "oteryn:quest.killing_in_the_name_of_quest",
     "oteryn:quest.kilmaresh_quest",
     "oteryn:quest.marlin_trophy_quest",
     "oteryn:quest.outfit_and_addon_quests",
+    "oteryn:quest.spike_task",
     "oteryn:quest.the_ape_city_quest",
     "oteryn:quest.the_beginning_quest",
     "oteryn:quest.the_djinn_war_efreet_faction",
@@ -727,6 +729,7 @@ const EXPECTED_LEGACY_QUESTS: [&str; 29] = [
     "oteryn:quest.the_white_raven_monastery_quest",
     "oteryn:quest.tibia_tales",
     "oteryn:quest.tower_defence_quest",
+    "oteryn:quest.wrath_of_the_emperor_quest",
     "oteryn:quest.troll_sabotage_quest",
 ];
 
@@ -848,6 +851,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
         "oteryn:quest.outfit_and_addon_quests",
+        "oteryn:quest.killing_in_the_name_of_quest",
         "oteryn:quest.kilmaresh_quest",
         "oteryn:quest.the_ape_city_quest",
         "oteryn:quest.the_beginning_quest",
@@ -861,8 +865,10 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.the_paradox_tower_quest",
         "oteryn:quest.the_postman_missions_quest",
         "oteryn:quest.the_white_raven_monastery_quest",
+        "oteryn:quest.spike_task",
         "oteryn:quest.tibia_tales",
         "oteryn:quest.tower_defence_quest",
+        "oteryn:quest.wrath_of_the_emperor_quest",
         "oteryn:quest.troll_sabotage_quest",
     ]);
     assert_eq!(
@@ -874,22 +880,25 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .collect::<std::collections::BTreeSet<_>>(),
         expected_programmes
     );
-    let gnomus_programmes: Vec<_> = runtime
+    let dangerous_depths_programmes: Vec<_> = runtime
         .programs()
         .iter()
         .filter(|program| program.document.quest == questpc2_gnomus_source::QUEST)
         .map(|program| program.document.program_key.as_deref())
         .collect();
-    assert_eq!(gnomus_programmes.len(), 2);
+    assert_eq!(dangerous_depths_programmes.len(), 3);
     assert_eq!(
-        gnomus_programmes
+        dangerous_depths_programmes
             .into_iter()
             .collect::<std::collections::BTreeSet<_>>(),
-        std::collections::BTreeSet::from([None, Some(questpc2_gnomus_source::PROGRAM)])
+        std::collections::BTreeSet::from([
+            None,
+            Some(questpc2_gnomus_source::PROGRAM),
+            Some("oteryn:quest-npc-program.dangerous-depths-subterranean-life"),
+        ])
     );
-    // The distinct quest set counts Gnomus once; its second source programme
-    // and the separately checked schema2 Mystery each add one runtime owner.
-    assert_eq!(runtime.programs().len(), expected_programmes.len() + 2);
+    // The two Dangerous Depths supplements and the schema2 Mystery add three owners.
+    assert_eq!(runtime.programs().len(), expected_programmes.len() + 3);
     assert_eq!(
         runtime
             .programs()
@@ -1796,6 +1805,344 @@ fn m54_citizen_source_aliases_require_both_local_sagas() -> Result<(), NpcRuleEr
     assert_eq!(
         plan.track_changes[0].key,
         "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-rook"
+    );
+    Ok(())
+}
+
+#[test]
+fn measurements_offer_reopens_at_the_stored_deadline() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let mut facts = Facts::empty();
+    let prefix = "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/";
+    facts.tracks.insert(format!("{prefix}measurements"), 2);
+    facts
+        .tracks
+        .insert(format!("{prefix}time_task_measurements"), 1_700_000_000);
+    let mut input = facts.input("oteryn:npc.gnomus", "measurements", 0);
+    input.now_epoch_seconds -= 1;
+    let cooldown = catalogue
+        .plan(&input)?
+        .ok_or_else(|| NpcRuleError::Invalid("missing measurements cooldown".into()))?;
+    assert_eq!(cooldown.next_topic, 1);
+    input.now_epoch_seconds += 1;
+    let offer = catalogue
+        .plan(&input)?
+        .ok_or_else(|| NpcRuleError::Invalid("missing measurements restart".into()))?;
+    assert_eq!(offer.next_topic, 2);
+    assert!(offer.track_changes.is_empty());
+    Ok(())
+}
+
+#[test]
+fn subterranean_life_accepts_reports_and_restarts() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let mut facts = Facts::empty();
+    let prefix = "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/";
+    let npc = "oteryn:npc.klom_stonecutter";
+    let offer = catalogue
+        .plan(&facts.input(npc, "subterraneans", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing Subterranean Life offer".into()))?;
+    let accept = catalogue
+        .plan(&facts.input(npc, "yes", offer.next_topic))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing Subterranean Life acceptance".into()))?;
+    for change in accept.track_changes {
+        facts.tracks.insert(change.key, change.after);
+    }
+    assert_eq!(facts.tracks.get(&format!("{prefix}subterranean")), Some(&1));
+    assert_eq!(facts.tracks.get(&format!("{prefix}organisms")), Some(&0));
+    facts.tracks.insert(format!("{prefix}organisms"), 50);
+    let report = catalogue
+        .plan_inventory(&facts.input(npc, "subterraneans", accept.next_topic))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing Subterranean Life report".into()))?;
+    assert!(report.effects.iter().any(|effect| matches!(effect,
+        NpcRuleEffect::GiveItem { item, count: 1, .. } if item == "oteryn:item.tibia.i27654")));
+    for change in report.track_changes {
+        facts.tracks.insert(change.key, change.after);
+    }
+    assert_eq!(facts.tracks.get(&format!("{prefix}subterranean")), Some(&2));
+    assert_eq!(facts.tracks.get(&format!("{prefix}points")), Some(&0));
+    let mut input = facts.input(npc, "subterraneans", report.next_topic);
+    input.now_epoch_seconds += 71_999;
+    let cooldown = catalogue
+        .plan(&input)?
+        .ok_or_else(|| NpcRuleError::Invalid("missing cooldown".into()))?;
+    assert_eq!(cooldown.next_topic, 1);
+    input.now_epoch_seconds += 1;
+    let restart = catalogue
+        .plan(&input)?
+        .ok_or_else(|| NpcRuleError::Invalid("missing restart".into()))?;
+    assert_eq!(restart.next_topic, offer.next_topic);
+    Ok(())
+}
+
+#[test]
+fn spike_tasks_enforce_level_attempt_and_report_cooldown() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let prefix = "oteryn:quest-progress/quest/u10_20/spike_task_quest/";
+    for (npc, task, word, report_word, level, goal, xp) in [
+        ("gnomilly", "upper_kill", "kill", "killing", 25, 7, 1000),
+        ("gnombold", "middle_kill", "kill", "killing", 50, 7, 2000),
+        ("gnomargery", "lower_kill", "kill", "kill", 80, 7, 3500),
+        (
+            "gnomilly",
+            "upper_pacifier",
+            "pacifiers",
+            "pacifiers",
+            25,
+            7,
+            1000,
+        ),
+        (
+            "gnombold",
+            "middle_mushroom",
+            "fertilise",
+            "fertilisation",
+            50,
+            4,
+            2000,
+        ),
+        (
+            "gnombold",
+            "middle_charge",
+            "charges",
+            "charges",
+            50,
+            3,
+            2000,
+        ),
+    ] {
+        let mut facts = Facts::empty();
+        let npc = format!("oteryn:npc.{npc}");
+        let stage = format!("{prefix}spike_{task}_main");
+        let mut request = facts.input(&npc, word, 0);
+        request.level = level;
+        let offer = catalogue
+            .plan(&request)?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing {task} offer")))?;
+        assert_ne!(offer.next_topic, 0);
+        request.level -= 1;
+        assert!(catalogue.plan(&request)?.is_none());
+        let mut confirm = facts.input(&npc, "yes", offer.next_topic);
+        confirm.level = level;
+        let start = catalogue
+            .plan(&confirm)?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing {task} acceptance")))?;
+        assert!(
+            start
+                .track_changes
+                .iter()
+                .any(|change| change.key == stage && change.after == 0)
+        );
+        facts.tracks.insert(stage.clone(), goal);
+        let report = catalogue
+            .plan(&facts.input(&npc, "report", 0))?
+            .ok_or_else(|| NpcRuleError::Invalid("missing report prompt".into()))?;
+        let result = catalogue
+            .plan(&facts.input(&npc, report_word, report.next_topic))?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing {task} report")))?;
+        assert!(
+            result
+                .effects
+                .contains(&NpcRuleEffect::Experience { amount: xp })
+        );
+        assert!(
+            result
+                .track_changes
+                .iter()
+                .any(|change| change.key == stage && change.after == -1)
+        );
+        for change in result.track_changes {
+            facts.tracks.insert(change.key, change.after);
+        }
+        let mut request = facts.input(&npc, word, 0);
+        request.level = level;
+        request.now_epoch_seconds += 72_000;
+        assert_eq!(
+            catalogue.plan(&request)?.map(|plan| plan.next_topic),
+            Some(0)
+        );
+        request.now_epoch_seconds += 1;
+        assert_eq!(
+            catalogue.plan(&request)?.map(|plan| plan.next_topic),
+            Some(offer.next_topic)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn spike_undercover_counts_each_contact_once_per_attempt() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let mut facts = Facts::empty();
+    let stage = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main";
+    facts.tracks.insert(stage.into(), 0);
+    for (index, npc) in [
+        "oteryn:npc.a_drillworm",
+        "oteryn:npc.a_vulcongra",
+        "oteryn:npc.a_lost_thrower",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut hello = facts.input(npc, "hi", 0);
+        hello.trigger = NpcRuleTrigger::Greet;
+        let report = catalogue
+            .plan(&hello)?
+            .ok_or_else(|| NpcRuleError::Invalid("undercover contact missing".into()))?;
+        assert!(
+            report
+                .track_changes
+                .iter()
+                .any(|change| change.key == stage && change.after == index as i64 + 1)
+        );
+        for change in report.track_changes {
+            facts.tracks.insert(change.key, change.after);
+        }
+        let mut hello = facts.input(npc, "hi", 0);
+        hello.trigger = NpcRuleTrigger::Greet;
+        assert!(catalogue.plan(&hello)?.is_none());
+    }
+    Ok(())
+}
+
+#[test]
+fn dangerous_depths_offers_reset_the_distinct_survey_flags() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let prefix = "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/";
+    let npc = "oteryn:npc.gnomus";
+    for (name, counter, source, flags) in [
+        (
+            "measurements",
+            "location_count",
+            "gnome_chart_chest",
+            &[
+                "location_a",
+                "location_b",
+                "location_c",
+                "location_d",
+                "location_e",
+            ][..],
+        ),
+        (
+            "charting",
+            "charting_count",
+            "gnome_chart_paper",
+            &[
+                "old_gate",
+                "lost_ruin",
+                "the_gaze",
+                "outpost",
+                "bastion",
+                "broken_tower",
+            ][..],
+        ),
+    ] {
+        let mut facts = Facts::empty();
+        facts.tracks.insert(format!("{prefix}{name}"), 2);
+        facts
+            .tracks
+            .insert(format!("{prefix}time_task_{name}"), 1_700_000_000);
+        for flag in flags {
+            facts.tracks.insert(format!("{prefix}{flag}"), 1);
+        }
+        let offer = catalogue
+            .plan(&facts.input(npc, name, 0))?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing {name} offer")))?;
+        let accepted = catalogue
+            .plan(&facts.input(npc, "yes", offer.next_topic))?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing {name} acceptance")))?;
+        for (key, expected) in [(name, 1), (counter, 0), (source, 1)]
+            .into_iter()
+            .chain(flags.iter().map(|flag| (*flag, 0)))
+        {
+            assert!(
+                accepted.track_changes.iter().any(
+                    |change| change.key == format!("{prefix}{key}") && change.after == expected
+                ),
+                "{key}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn gnomus_charting_bonus_plans_two_separate_jar_outputs() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let mut facts = Facts::empty();
+    let prefix = "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/";
+    facts.tracks.insert(format!("{prefix}charting"), 1);
+    facts.tracks.insert(format!("{prefix}charting_count"), 6);
+    let report = catalogue
+        .plan(&facts.input("oteryn:npc.gnomus", "charting", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing charting report".into()))?;
+    let gifts: Vec<_> = report
+        .effects
+        .iter()
+        .filter_map(|effect| match effect {
+            NpcRuleEffect::GiveItem { item, count, .. } => Some((item.as_str(), *count)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(gifts, [("oteryn:item.tibia.i27654", 1); 2]);
+    Ok(())
+}
+
+#[test]
+fn completed_regional_hunts_explain_the_boss_route_hold() -> Result<(), NpcRuleError> {
+    let rules = NpcRuleCatalog::runtime()?;
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-hunt-dialogue")
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let mut missing = Vec::new();
+    for (npc, hunt, quota) in [
+        ("oteryn:npc.budrik", "minotaurs", 5000),
+        ("oteryn:npc.malor", "blue-djinns", 500),
+        ("oteryn:npc.gabel", "green-djinns", 500),
+        ("oteryn:npc.lugri", "necromancers", 4000),
+    ] {
+        let tracks = BTreeMap::from([
+            (
+                format!("oteryn:quest-progress/hunting-tasks/{hunt}/phase"),
+                1,
+            ),
+            (
+                format!("oteryn:quest-progress/hunting-tasks/{hunt}/count"),
+                quota,
+            ),
+        ]);
+        let input = NpcRuleInput {
+            npc,
+            trigger: NpcRuleTrigger::Say,
+            message: "task",
+            player_name: None,
+            topic: 0,
+            tracks: &tracks,
+            inventory: &NpcInventorySnapshot::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: false,
+            level: 100,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let admitted = rules
+            .admitted_for_npc(npc, loaded.catalogue())?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing hunt programme: {hunt}")))?;
+        for message in ["task", "I finished the task"] {
+            let input = NpcRuleInput { message, ..input };
+            match admitted.plan_storage(&input)? {
+                Some(plan) if plan.reply.iter().any(|line| line.contains("boss route")) => {
+                    assert!(plan.track_changes.is_empty(), "{hunt}");
+                    assert!(plan.effects.is_empty(), "{hunt}");
+                }
+                plan => missing.push((hunt, message, plan.map(|p| p.reply))),
+            }
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "completed report dialogue missing: {missing:?}"
     );
     Ok(())
 }

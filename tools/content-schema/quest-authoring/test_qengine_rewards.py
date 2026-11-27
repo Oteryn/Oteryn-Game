@@ -1023,6 +1023,57 @@ class QuestRewards(unittest.TestCase):
             )
         )
 
+    def test_token_exchange_refusals_clear_the_quote(self):
+        exchange_shard = json.loads(self.outputs[q.token_exchanges.SHARD])
+        callbacks = self.callbacks["callbacks"] + exchange_shard["callbacks"]
+        exchanges = [
+            callback
+            for callback in callbacks
+            if "-exchange-" in callback["key"] or "/storkus-rank-" in callback["key"]
+        ]
+        self.assertEqual(len(exchanges), 90)
+        stale = [
+            callback["key"] for callback in exchanges
+            if callback.get("clear_topic_on_refusal") is not True
+        ]
+        self.assertEqual(stale, [])
+
+    def test_token_exchange_keyword_matching_follows_the_donor(self):
+        exchange_shard = json.loads(self.outputs[q.token_exchanges.SHARD])
+        callbacks = self.callbacks["callbacks"] + exchange_shard["callbacks"]
+        for prefix, rows in (
+            ("cledwyn", q.token_exchanges.CLEDWYN),
+            ("gnomally", q.token_exchanges.GNOMALLY),
+            ("jorge", q.token_exchanges.JORGE),
+            ("ruprecht", q.token_exchanges.RUPRECHT),
+        ):
+            for _, _, _, output in rows:
+                key = f"oteryn:quest-reward/{prefix}-exchange-{output}"
+                callback = next(c for c in callbacks if c["key"] == key)
+                with self.subTest(callback=key):
+                    self.assertTrue(callback.get("msg_contains"))
+        for rank in range(1, len(q.token_exchanges.RANKS) + 1):
+            key = f"oteryn:quest-reward/storkus-rank-{rank}"
+            callback = next(c for c in callbacks if c["key"] == key)
+            with self.subTest(callback=key):
+                self.assertTrue(callback.get("msg_contains"))
+
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        expected = {
+            ("cledwyn", "enchant"),
+            ("gnomally", "equipment"),
+            ("gnomally", "minor"),
+            ("gnomally", "major"),
+            ("ruprecht", "offers"),
+            ("storkus", "vampire lord token"),
+        }
+        migrated = [
+            offer for offer in offers
+            if (offer["npc"].removeprefix("oteryn:npc."), offer["keywords"][0]) in expected
+        ]
+        self.assertEqual(len(migrated), 5 + len(q.token_exchanges.RANKS))
+        self.assertTrue(all(offer.get("msg_contains") for offer in migrated))
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         merged = self.callbacks["callbacks"] + self.outfit_completions
         full_outfit = [c for c in merged if c["key"].endswith("-full-outfit")]

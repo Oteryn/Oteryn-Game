@@ -882,6 +882,14 @@ impl SpellSource {
                 needs_direction: d.needs_direction,
             });
         }
+        // ComposedSource seals the Crystal matrix and schedule. Older content
+        // generations still use the ordinary beam.
+        if executable_index.is_none()
+            && e.ability.key == "oteryn:ability.creature.nibblemaw.attack-3"
+            && matches!(d.area, Some(ProjectV2AbilityArea::Matrix { .. }))
+        {
+            return Err(AttackError::UnsupportedShape);
+        }
         let effect = match executable_index {
             Some(i)
                 if branch.is_none()

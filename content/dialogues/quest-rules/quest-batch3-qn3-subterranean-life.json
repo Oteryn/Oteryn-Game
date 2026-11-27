@@ -1,0 +1,356 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.dangerous-depths-subterranean-life",
+  "quest": "oteryn:quest.dangerous_depths_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/organisms",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/time_task_subterranean",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/points",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-110"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-offer",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.klom_stonecutter",
+      "trigger": "say",
+      "keywords": [
+        "subterraneans"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Vermin. Everywhere. We get a lot of strange four-legged crawlers and worms down here lately. It's getting out of hand and... well, I need a real killer for this. ",
+        "Prepared to get rid of some seriously foul creepers for us?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-repeat",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.klom_stonecutter",
+      "trigger": "say",
+      "keywords": [
+        "subterraneans"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/time_task_subterranean",
+          "op": "le"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Vermin. Everywhere. We get a lot of strange four-legged crawlers and worms down here lately. It's getting out of hand and... well, I need a real killer for this. ",
+        "Prepared to get rid of some seriously foul creepers for us?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-cooldown",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.klom_stonecutter",
+      "trigger": "say",
+      "keywords": [
+        "subterraneans"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/time_task_subterranean",
+          "op": "gt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:74-91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-pending",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.klom_stonecutter",
+      "trigger": "say",
+      "keywords": [
+        "subterraneans"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/organisms",
+          "op": "lt",
+          "value": 50
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:92-94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-report",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.klom_stonecutter",
+      "trigger": "say",
+      "keywords": [
+        "subterraneans"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/organisms",
+          "op": "ge",
+          "value": 50
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/time_task_subterranean",
+          "value": 72000
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i27654",
+          "count": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/points",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I'l say I'm blown away but a Klom Stonecutter is not that easily impressed. Still, your got your hands dirt for us and I appreciate that."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:95-102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-accept-initial",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.klom_stonecutter",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/organisms",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Alright, good. Those things are strolling about and I ain't gonna have that. If it moves more than two legs, destroy it. If it moves legs and tentacles, destroy it again."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:103-110"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "subterraneans",
+        "home",
+        "status",
+        "suspicious device"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-accept-repeat",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.klom_stonecutter",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/organisms",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Alright, good. Those things are strolling about and I ain't gonna have that. If it moves more than two legs, destroy it. If it moves legs and tentacles, destroy it again."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:103-110"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "subterraneans",
+        "home",
+        "status",
+        "suspicious device"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/klom_stonecutter.lua",
+      "sha256": "80581b78544dd6d62f7fad960365bc9357b51c99989e142765db602f38a9e9b1",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

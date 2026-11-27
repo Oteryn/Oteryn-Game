@@ -561,11 +561,11 @@ def test_package_tree_contract():
     assert all(not path.startswith("content/world/") for path in paths)
 
     assert manifest["families"]["NPC"] == {
-        "records": 1282,
+        "records": 1292,
         "index": "content/npcs/definitions/index.json",
     }
     assert manifest["families"]["Dialogue"] == {
-        "records": 852,
+        "records": 855,
         "index": "content/dialogues/definitions/index.json",
     }
     assert manifest["families"]["Service.Trade"] == {

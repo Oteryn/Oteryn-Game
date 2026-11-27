@@ -323,7 +323,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
-        if !close && let Some(delay) = callback.effects.reset_after_ms {
+        let random = |purpose, index| {
+            use oteryn_simulation_determinism::{
+                DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+            };
+            let mut occurrence = [0; 16];
+            occurrence[..8].copy_from_slice(&key.to_be_bytes());
+            occurrence[8..].copy_from_slice(&expected_revision.to_be_bytes());
+            let root =
+                GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+            deterministic_decision_u64(
+                &root,
+                DecisionOccurrenceId::from_bytes(occurrence),
+                purpose,
+                index,
+            )
+        };
+        let reset_delay_ms = match callback.effects.random_reset_seconds {
+            Some([minimum, maximum]) => {
+                let Ok(draw) = random("quest.crystal-keeper.reset", 0) else {
+                    return UseDisposition::Rejected;
+                };
+                let seconds =
+                    crate::spell::uniform_draw(draw, i64::from(minimum), i64::from(maximum));
+                let Ok(seconds) = u32::try_from(seconds) else {
+                    return UseDisposition::Rejected;
+                };
+                Some(seconds * 1000)
+            }
+            None => callback.effects.reset_after_ms,
+        };
+        if !close && let Some(delay) = reset_delay_ms {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
@@ -832,6 +862,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let _ = error;
                     return UseDisposition::Rejected;
                 }
+            }
+        } else if let Some(rule) = callback.effects.random_relocation {
+            const PURPOSE: &str = "quest.spike-lodestone.relocation";
+            let Ok(draw) = random(PURPOSE, 0) else {
+                return UseDisposition::Rejected;
+            };
+            let refuse_threshold = 100 - i64::from(rule.chance_percent);
+            if crate::spell::uniform_draw(draw, 1, 100) <= refuse_threshold {
+                None
+            } else {
+                let coordinate = |index, minimum, maximum| {
+                    random(PURPOSE, index)
+                        .ok()
+                        .map(|draw| crate::spell::uniform_draw(draw, minimum, maximum))
+                };
+                (0..u64::from(rule.attempts)).find_map(|attempt| {
+                    let next = 1 + 3 * attempt;
+                    let x = coordinate(next, rule.minimum.x.into(), rule.maximum.x.into())?;
+                    let y = coordinate(next + 1, rule.minimum.y.into(), rule.maximum.y.into())?;
+                    let floor = coordinate(
+                        next + 2,
+                        rule.minimum.floor.into(),
+                        rule.maximum.floor.into(),
+                    )?;
+                    crate::map::floor::prepare_scripted_quest_teleport_facing(
+                        runtime,
+                        self.movement_cells(),
+                        actor,
+                        session,
+                        expected,
+                        local(Position {
+                            x: x.try_into().ok()?,
+                            y: y.try_into().ok()?,
+                            floor: floor.try_into().ok()?,
+                        }),
+                        blocked,
+                        &closed,
+                        facing,
+                        false,
+                    )
+                    .ok()
+                })
             }
         } else {
             match destination {
@@ -1674,7 +1746,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Readset projections carry the same timer for the Children lever owner.
             if paid_scene.is_none()
                 && !close
-                && let Some(delay) = callback.effects.reset_after_ms
+                && let Some(delay) = reset_delay_ms
             {
                 let Some(published_due) =
                     self.owner_now().get().checked_add(u64::from(delay) * 1_000)
@@ -1924,9 +1996,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if callback.effects.loot_merchant {
             map.facts.emit_movement_effect(pos, 46);
         }
-        if let Some(magic) = &callback.effects.magic {
-            map.facts
-                .emit_movement_effect(tile(magic.position), magic.effect);
+        if let Some(magic) = &callback.effects.magic
+            && let Some(position) = magic
+                .position
+                .map(tile)
+                .or_else(|| native(expected.position()))
+        {
+            map.facts.emit_movement_effect(position, magic.effect);
         }
         if let Some(effect) = callback
             .effects

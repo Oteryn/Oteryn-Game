@@ -139,7 +139,7 @@ pub fn spell_from_bundle(
     {
         return fail("a spell with a harmony_role must be castable by monks only");
     }
-    let mana = match (costs.get("mana"), costs.get("mana_percent")) {
+    let mut mana = match (costs.get("mana"), costs.get("mana_percent")) {
         (Some(_), None) => ManaCost::Fixed(number(costs, "mana")?),
         (None, Some(_)) => ManaCost::PercentOfMaximum(number(costs, "mana_percent")?),
         _ => return fail("exactly one of mana and mana_percent is required"),
@@ -227,7 +227,12 @@ pub fn spell_from_bundle(
                         "a party_buff takes its mana from its parameters; costs.mana must be 0",
                     );
                 }
-                Execution::PartyBuff(party_buff(field(native, "parameters")?, dependencies)?)
+                let buff = party_buff(field(native, "parameters")?, dependencies)?;
+                // Crystal checks its registered base before the party script runs.
+                mana = ManaCost::Fixed(match buff.mana {
+                    PartyMana::Fixed(base) | PartyMana::Scaled { base, .. } => base,
+                });
+                Execution::PartyBuff(buff)
             }
             // S7/D13: a key without an implementation is rejected.
             other => {

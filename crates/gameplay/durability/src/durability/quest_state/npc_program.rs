@@ -5,6 +5,8 @@ use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
 };
 mod achievements;
+#[cfg(test)]
+mod daily_mint_tests;
 mod equipped;
 mod fathers_burden;
 pub(in crate::durability) mod hot_cuisine_m42;
@@ -304,7 +306,18 @@ fn evaluate_source(
     } else if inventory.is_some() && source.equipped_storage_requirements(&request.npc).is_some() {
         source.plan_equipped_storage(&input)
     } else if inventory.is_some() {
-        source.plan_item_exchange(&input)
+        source.plan_item_exchange_with_draw(&input, || {
+            // Preview and locked evaluation derive the same unbiased target from
+            // the bound command. Saved receipts replay the committed response.
+            oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                *request.command.game_session_id().as_bytes(),
+                request.command.command_id().get(),
+                *b"BigfootMatchmake",
+                1,
+                7,
+            )
+            .and_then(|draw| u8::try_from(draw).ok())
+        })
     } else {
         source.plan_storage(&input)
     }

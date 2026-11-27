@@ -210,6 +210,13 @@
         "PARALYSIS_REMOVAL": "3"
       },
       "slot_count": 1
+    },
+    "16112": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
     }
   },
   "schema": "OTERYN_CRYSTAL_ITEM_IMBUEMENT_SLOT_FACTS/v1",

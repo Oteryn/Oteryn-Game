@@ -13,7 +13,7 @@ use crate::durability::item_use::mount_taming::MountTamingRequest;
 use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -88,17 +88,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Carried quest tools use the registered World receipt and exact selected custody.
-    async fn use_quest_tool_object(
+    pub(super) async fn use_quest_tool_object(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
-            &intent.use_with_map_item
-        else {
-            return Ok(None);
+        let target = match &intent.use_with_map_item {
+            Some(MapUseTarget::Object(target)) => Some(target),
+            None if intent.use_with.is_none() && intent.use_with_position.is_none() => None,
+            _ => return Ok(None),
         };
         let source = match (&intent.target, source) {
             (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
@@ -108,30 +108,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else {
             return Ok(None);
         };
-        let view = super::world_map::MapViewSource {
-            overlay: &map.overlay,
-            facts: &map.facts,
-            content_generation: self
-                .active_generation
-                .ok_or(())?
-                .identity()
-                .client_artifact_digest(),
-            reset_epoch: self.reset_epoch,
-        };
-        let Ok(resolved) = super::world_map::resolve_map_target(&view, target, |_| None::<()>)
-        else {
-            return Ok(None);
-        };
-        let required_tools = self
-            .callback_content()
-            .iter()
-            .filter(|callback| {
-                quest_objects::accepts(callback)
-                    && super::quest_callbacks::matches(map, callback, resolved.placement_key)
-            })
-            .filter_map(|callback| callback.item_on_target.as_ref())
-            .collect::<Vec<_>>();
-        if required_tools.is_empty() {
+        use super::quest_callbacks::{matches, native, tile};
+        use crate::map::view::{MapFacts, placement_key};
+        use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
+        let callbacks = self.callback_content();
+        let mut tools = Vec::new();
+        if let Some(target) = target {
+            let view = super::world_map::MapViewSource {
+                overlay: &map.overlay,
+                facts: &map.facts,
+                content_generation: self
+                    .active_generation
+                    .ok_or(())?
+                    .identity()
+                    .client_artifact_digest(),
+                reset_epoch: self.reset_epoch,
+            };
+            let Ok(resolved) = super::world_map::resolve_map_target(&view, target, |_| None::<()>)
+            else {
+                return Ok(None);
+            };
+            tools.extend(callbacks.iter().filter_map(|callback| {
+                (quest_objects::accepts(callback) && matches(map, callback, resolved.placement_key))
+                    .then_some((callback.item_on_target.as_ref()?, resolved.placement_key))
+            }));
+        } else {
+            let runtime = self.runtime.lock().await;
+            let Some(at) = runtime
+                .read_actor_position(actor)
+                .ok()
+                .and_then(|p| native(p.position()))
+            else {
+                return Ok(None);
+            };
+            let actor_position = Position {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            };
+            tools.extend(callbacks.iter().filter_map(|callback| {
+                if !callback.admits_direct_use(actor_position) {
+                    return None;
+                }
+                let position = tile(callback.selector.position?);
+                let ordinal = u8::try_from(callback.selector.ordinal?).ok()?;
+                let key = placement_key(position, ordinal)?;
+                matches(map, callback, key).then_some((callback.item_on_target.as_ref()?, key))
+            }));
+        }
+        if tools.is_empty() {
             return Ok(None);
         }
         let Some(fence) = command.item_fence else {
@@ -148,28 +174,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find_map(|entry| {
-                let required = required_tools.iter().copied().find(|required| {
+                let (required, key) = tools.iter().copied().find(|(required, _)| {
                     quest_objects::is_required_tool(required, &entry.item.definition.production_key)
                 })?;
+                let definition = self
+                    .active_generation
+                    .and_then(crate::content::ActiveGeneration::native_gameplay)
+                    .and_then(|native| native.item_index())
+                    .and_then(|index| {
+                        index.definition_ref(
+                            &entry.item.definition.family,
+                            &entry.item.definition.production_key,
+                            &entry.item.definition.revision_ref,
+                        )
+                    });
                 quest_objects::matches_source(
                     &intent.target,
                     source,
                     entry.item.item_instance_id,
-                    self.active_generation
-                        .and_then(crate::content::ActiveGeneration::native_gameplay)
-                        .and_then(|native| native.item_index())
-                        .and_then(|index| {
-                            index.definition_ref(
-                                &entry.item.definition.family,
-                                &entry.item.definition.production_key,
-                                &entry.item.definition.revision_ref,
-                            )
-                        }),
+                    definition,
                 )
-                .then_some((entry, required))
+                .then_some((entry, required, key))
             });
-        let Some((selected, required)) = selected else {
-            return Ok(Some(outcome(UseDisposition::NothingToUse)));
+        let Some((selected, required, key)) = selected else {
+            return Ok(target.map(|_| outcome(UseDisposition::NothingToUse)));
+        };
+        let direct = target.is_none();
+        let derived_target;
+        let target = if let Some(target) = target {
+            target
+        } else {
+            let mut placement = map.overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            derived_target = WorldObjectTarget {
+                placement,
+                expected_revision: map.facts.object_revision(key),
+            };
+            &derived_target
         };
         let intent =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
@@ -179,6 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 map,
                 target,
+                direct,
                 required
                     .selected_instance
                     .then_some((selected.item.item_instance_id, intent)),

@@ -615,6 +615,17 @@ impl VampireCoffinKind {
 }
 
 impl Callback {
+    #[must_use]
+    pub fn admits_direct_use(&self, actor: Position) -> bool {
+        self.effects
+            .direct_use_area
+            .is_some_and(|[minimum, maximum]| {
+                actor.floor == minimum.floor
+                    && (minimum.x..=maximum.x).contains(&actor.x)
+                    && (minimum.y..=maximum.y).contains(&actor.y)
+            })
+    }
+
     /// A garlic offering selects the alternate encounter on the same coffin.
     pub fn vampire_coffin_fallback(&self) -> Option<&'static str> {
         match self.key.as_str() {
@@ -796,6 +807,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m09-treasure.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/gnome-dailies.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/hot-cuisine-books.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -894,6 +908,10 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
     ))?);
+    callbacks.extend(parse_with_provenance(
+        include_str!("../../../../../content/quests/world-callbacks/wrath-city.json"),
+        true,
+    )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/tibia-tales.json"
     ))?);
@@ -1088,7 +1106,26 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.operations().map(|s| &s.track).collect();
         let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
-        if !completed_quests::valid(callback)
+        if callback.effects.direct_use_area.is_some_and(|[minimum, maximum]| {
+            callback.quest != "oteryn:quest.dangerous_depths_quest"
+                || !callback.key.starts_with("oteryn:quest-callback/dangerous-depths-daily/")
+                || callback.trigger != Trigger::Use
+                || callback.actor_kind != ActorKind::Player
+                || !callback.requires_world_admission
+                || !callback.item_on_target.as_ref().is_some_and(|tool| {
+                    tool.reusable
+                        && tool.selected_instance
+                        && matches!(tool.item.as_str(), "oteryn:item.tibia.i27307" | "oteryn:item.tibia.i27308")
+                })
+                || !valid_pos(minimum)
+                || minimum.floor != maximum.floor
+                || minimum.x > maximum.x
+                || minimum.y > maximum.y
+                || minimum.x.abs_diff(maximum.x) >= 64
+                || minimum.y.abs_diff(maximum.y) >= 64
+                || !selector.position.is_some_and(|pos| callback.admits_direct_use(pos))
+                || !selector.ordinal.is_some_and(|ordinal| u8::try_from(ordinal).is_ok())
+        }) || !completed_quests::valid(callback)
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))
             || (matches!(
@@ -3056,7 +3093,15 @@ mod tests {
         }) {
             for storage in &callback.storage {
                 if callback.key.starts_with("oteryn:quest-callback/authored-") {
-                    assert!(storage.track.starts_with("oteryn:quest-progress/chosen/"));
+                    let namespace = if callback.key
+                        == "oteryn:quest-callback/authored-wrath-city-feed-prisoners"
+                    {
+                        assert_eq!(callback.quest, "oteryn:quest.wrath_of_the_emperor_quest");
+                        "oteryn:quest-progress/wrath-city/"
+                    } else {
+                        "oteryn:quest-progress/chosen/"
+                    };
+                    assert!(storage.track.starts_with(namespace));
                     assert!(
                         callback
                             .sources
@@ -3733,6 +3778,223 @@ mod srvenc_live_requirements_tests {
         ] {
             value["character_requirements"] = invalid;
             assert!(parse(&packet(&value)).is_err());
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod daily_tests {
+    use super::*;
+
+    #[test]
+    fn bigfoot_daily_tools_bind_the_selected_item_and_active_attempt() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("ctdaily")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = load_for(loaded.catalogue())?;
+        for target in 15809..=15815 {
+            let key = format!("oteryn:quest-callback/bigfoot-daily/matchmaker-{target}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(key)?;
+            let tool = callback.item_on_target.as_ref().ok_or("matchmaker tool")?;
+            assert_eq!(callback.selector.appearance, Some(target));
+            assert_eq!(tool.item, "oteryn:item.tibia.i15801");
+            assert!(tool.selected_instance);
+            assert!(!tool.reusable);
+            assert!(callback.storage.iter().any(|entry| {
+                entry.track.ends_with("/matchmaker_id_needed")
+                    && entry.minimum == i64::from(target)
+                    && entry.maximum == i64::from(target)
+            }));
+            assert!(callback.storage.iter().any(
+                |entry| entry.track.ends_with("/mission_matchmaker")
+                    && entry.minimum == 1
+                    && entry.maximum == 1
+            ));
+            assert!(callback.storage.iter().any(
+                |entry| entry.track.ends_with("/matchmaker_status")
+                    && entry.minimum == 0
+                    && entry.maximum == 0
+                    && entry.set == 1
+            ));
+        }
+        let repairs: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/bigfoot-daily/crystal-keeper-")
+            })
+            .collect();
+        assert_eq!(repairs.len(), 34);
+        let captured = include_str!(
+            "../../../../../tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json"
+        );
+        let (_, range) = captured
+            .split_once("reset po random")
+            .ok_or("repair source")?;
+        let (range, _) = range.split_once("s;").ok_or("repair delay")?;
+        let (minimum, maximum) = range.split_once("..").ok_or("repair range")?;
+        let source_delay = [
+            minimum.parse::<u16>().map_err(|error| error.to_string())?,
+            maximum.parse::<u16>().map_err(|error| error.to_string())?,
+        ];
+        for repair in repairs {
+            let tool = repair.item_on_target.as_ref().ok_or("repair tool")?;
+            assert_eq!(tool.item, "oteryn:item.tibia.i15703");
+            assert!(tool.selected_instance && tool.reusable);
+            assert!(matches!(repair.selector.appearance, Some(15712 | 15796)));
+            assert_eq!(repair.effects.transform, Some(15800));
+            assert_eq!(repair.effects.reset_after_ms, None);
+            assert_eq!(repair.effects.random_reset_seconds, Some(source_delay));
+            assert!(repair.storage.iter().any(|entry| {
+                entry.track.ends_with("/repaired_crystal_count")
+                    && entry.minimum == 0
+                    && entry.maximum == 4
+                    && entry.increment
+                    && entry.set == 1
+            }));
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod spike_daily_tests {
+    use super::*;
+
+    #[test]
+    fn spike_tools_require_their_map_target_and_distinct_attempt_state() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("ctdaily")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = load_for(loaded.catalogue())?;
+        for (task, appearance, targets, steps) in [
+            ("upper-pacifier", 19208, 18, 2),
+            ("middle-mushroom", 19215, 10, 2),
+            ("middle-charge", 19217, 6, 3),
+        ] {
+            let selected: Vec<_> = callbacks
+                .iter()
+                .filter(|callback| {
+                    callback
+                        .key
+                        .starts_with(&format!("oteryn:quest-callback/spike-daily/{task}-"))
+                })
+                .collect();
+            assert_eq!(selected.len(), targets * steps, "{task}");
+            let positions: BTreeSet<_> = selected
+                .iter()
+                .filter_map(|callback| callback.selector.position)
+                .collect();
+            assert_eq!(positions.len(), targets, "{task}");
+            for callback in selected {
+                let tool = callback
+                    .item_on_target
+                    .as_ref()
+                    .ok_or("selected quest tool")?;
+                assert!(tool.selected_instance);
+                assert_eq!(callback.selector.appearance, Some(appearance));
+                let transition = primary_transition(callback)?;
+                assert!(loaded.catalogue().transition(&transition.key).is_some());
+                if task == "middle-mushroom" {
+                    assert!(callback.storage.iter().any(|entry| {
+                        entry.track.contains("/middle_mushroom/")
+                            && entry.minimum == 0
+                            && entry.maximum == 0
+                            && entry.set == 1
+                    }));
+                } else {
+                    assert_eq!(callback.effects.reset_after_ms, Some(120_000));
+                    assert!(callback.effects.transform.is_some());
+                }
+                if task == "middle-charge"
+                    && tool.replacement.as_deref() == Some("oteryn:item.tibia.i19218")
+                {
+                    assert!(callback.effects.magic.is_none());
+                    assert!(callback.effects.random_relocation.is_none());
+                } else if task == "middle-charge" {
+                    assert!(callback.effects.random_relocation.is_some());
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod depths_survey_tests {
+    use super::*;
+
+    #[test]
+    fn dangerous_depths_surveys_register_tools_sites_and_per_attempt_mints() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("ctdaily")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = load_for(catalogue)?;
+        for (task, tool, site_count) in [
+            ("measurements", "oteryn:item.tibia.i27307", 5),
+            ("charting", "oteryn:item.tibia.i27308", 6),
+        ] {
+            let stem = format!("oteryn:quest-callback/dangerous-depths-daily/{task}-");
+            let cache = callbacks
+                .iter()
+                .find(|callback| callback.key == format!("{stem}tool"))
+                .ok_or("survey tool cache")?;
+            assert_eq!(
+                cache
+                    .item_reward()
+                    .as_ref()
+                    .map(|reward| reward.item.as_str()),
+                Some(tool)
+            );
+            assert!(cache.effects.item_reward_per_use);
+            let sites: Vec<_> = callbacks
+                .iter()
+                .filter(|callback| {
+                    callback.key.starts_with(&stem) && callback.item_on_target.is_some()
+                })
+                .collect();
+            assert_eq!(sites.len(), site_count);
+            let mut positions = BTreeSet::new();
+            let mut unique_flags = BTreeSet::new();
+            for site in sites {
+                assert!(positions.insert(site.selector.position.ok_or("survey position")?));
+                let [minimum, maximum] =
+                    site.effects.direct_use_area.ok_or("direct survey area")?;
+                let magic = site.effects.magic.as_ref().ok_or("survey success effect")?;
+                assert!(
+                    magic.position.is_none(),
+                    "{} must publish at the surveyor's tile, including {minimum:?}",
+                    site.key
+                );
+                assert!(site.admits_direct_use(minimum));
+                assert!(site.admits_direct_use(maximum));
+                assert!(!site.admits_direct_use(Position {
+                    floor: minimum.floor + 1,
+                    ..minimum
+                }));
+                assert!(!site.admits_direct_use(Position {
+                    x: maximum.x + 1,
+                    ..maximum
+                }));
+                assert!(
+                    site.item_on_target
+                        .as_ref()
+                        .is_some_and(|item| item.item == tool
+                            && item.selected_instance
+                            && item.reusable)
+                );
+                let site_flag = site
+                    .storage
+                    .iter()
+                    .find(|state| state.minimum == 0 && state.maximum == 0 && state.set == 1)
+                    .ok_or("survey flag")?;
+                assert!(unique_flags.insert(&site_flag.track));
+                let transition = primary_transition(site)?;
+                assert!(catalogue.transition(&transition.key).is_some());
+            }
         }
         Ok(())
     }

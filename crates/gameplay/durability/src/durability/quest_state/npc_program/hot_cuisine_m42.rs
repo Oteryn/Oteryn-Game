@@ -47,10 +47,11 @@ pub(super) fn plan(
     }
 }
 
-/// A permitted cook increments its own persisted count; each occurrence has one MINT.
-/// Other source NPC rewards keep their original once-only claim identity.
+/// Cooks have a persisted count. These daily rules can be selected anew only
+/// after their fenced phase and cooldown checks admit another attempt.
 pub(in crate::durability) fn claim_key(
     plan: &NpcRulePlan,
+    command: CommandRef,
 ) -> std::result::Result<String, DurabilityError> {
     let rule = plan
         .selected_rule_keys
@@ -84,8 +85,24 @@ pub(in crate::durability) fn claim_key(
         }
         input.push_str(&format!("/{}", change.after));
     }
-    let hash = Sha256::digest(input.as_bytes())
-        .iter()
+    let mut claim = Sha256::new().chain_update(input.as_bytes());
+    if matches!(
+        rule.as_str(),
+        "oteryn:quest-npc/dangerous_depths/gnomus/measurements-report"
+            | "oteryn:quest-npc/dangerous_depths/gnomus/charting-report-1"
+            | "oteryn:quest-npc/dangerous_depths/gnomus/charting-report-2"
+            | "oteryn:quest-npc/dangerous_depths/klom_stonecutter/subterranean-report"
+            | "oteryn:quest-npc/spike/gnomilly/upper-pacifier-accept"
+            | "oteryn:quest-npc/spike/gnombold/middle-mushroom-accept"
+            | "oteryn:quest-npc/spike/gnombold/middle-charge-accept"
+    ) {
+        // The source receipt and MINT reservation share this exact command.
+        // Other programmes retain their published once-only claim keys.
+        claim.update(b"/daily/");
+        claim.update(command.game_session_id().as_bytes());
+        claim.update(command.command_id().get().to_be_bytes());
+    }
+    let hash = claim.finalize().iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
     Ok(format!("oteryn:reward-claim.npc-program.{hash}"))

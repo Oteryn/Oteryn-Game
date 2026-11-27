@@ -124,8 +124,8 @@ class ConvertSpawnsTest(unittest.TestCase):
                 self.assertNotIn("respawn_ms", point)
         self.assertEqual(self.index["additional_sources"][0]["record_count"], 10)
         held = json.loads(self.files["held-bosses.json"])["records"]
-        self.assertEqual(len(held), 34)
-        self.assertEqual(self.index["held_bosses"]["point_count"], 34)
+        self.assertEqual(len(held), 26)
+        self.assertEqual(self.index["held_bosses"]["point_count"], 26)
         self.assertTrue(all("boss_policy" not in row["point"] for row in held))
 
     def test_public_pharaohs_retain_their_exact_spawn_and_respawn(self):
@@ -137,7 +137,7 @@ class ConvertSpawnsTest(unittest.TestCase):
         ]
         self.assertEqual(len(points), 7)
         for point in points:
-            x, y, z = cs.PHARAOHS[point["creature"]]
+            x, y, z, _ = cs.FIXED_PUBLIC_BOSSES[point["creature"]]
             self.assertEqual(point["cell"], {"floor": z, "x": x, "y": y})
             self.assertEqual(
                 point["boss_policy"], {"respawn": {"min_s": 90, "max_s": 90}}

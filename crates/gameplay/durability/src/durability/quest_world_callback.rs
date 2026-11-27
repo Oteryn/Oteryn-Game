@@ -524,7 +524,13 @@ pub(super) async fn consume(
         .item_on_target
         .as_ref()
         .is_some_and(|item| item.selected_instance);
-    if exact != context.selected_tool.is_some() {
+    if exact != context.selected_tool.is_some()
+        || (context
+            .selected_tool
+            .as_ref()
+            .is_some_and(|tool| tool.direct)
+            && callback.effects.direct_use_area.is_none())
+    {
         return Ok(false);
     }
     if !context_is_current(tx, permit, fence, context).await? {

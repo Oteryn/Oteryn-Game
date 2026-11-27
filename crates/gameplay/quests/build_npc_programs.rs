@@ -58,7 +58,11 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
                     .file_name()
                     .and_then(|name| name.to_str())
                     .is_some_and(|name| {
-                        name.starts_with("quest-batch3-") || name.starts_with("quest-authored-")
+                        // The retained Gnomus capture pins the Jar's item custody.
+                        // The daily document owns the live program.
+                        name != "quest-batch3-qn3-dangerous_depths.json"
+                            && (name.starts_with("quest-batch3-")
+                                || name.starts_with("quest-authored-"))
                     })
             {
                 println!("cargo:rerun-if-changed={}", path.display());
@@ -107,6 +111,27 @@ mod tests {
         let actual = std::fs::read_to_string(out.join("npc_rule_programs.rs"))?;
         std::fs::remove_dir_all(scratch)?;
         assert_eq!(actual, render(&[])?);
+        Ok(())
+    }
+
+    #[test]
+    fn gnomus_runtime_mount_uses_the_daily_document() -> Result<(), Box<dyn std::error::Error>> {
+        let scratch =
+            std::env::temp_dir().join(format!("oteryn-npc-registry-gnomus-{}", std::process::id()));
+        let root = scratch.join("crates/gameplay/quests");
+        let out = scratch.join("generated");
+        let rules = root.join("../../../content/dialogues/quest-rules");
+        let retained = rules.join("quest-batch3-qn3-dangerous_depths.json");
+        let dailies = rules.join("quest-batch3-qn3-gnomus-dailies.json");
+        for directory in [&root, &out, &rules] {
+            std::fs::create_dir_all(directory)?;
+        }
+        std::fs::write(&retained, "{}")?;
+        std::fs::write(&dailies, "{}")?;
+        generate(&root, &out)?;
+        let actual = std::fs::read_to_string(out.join("npc_rule_programs.rs"))?;
+        std::fs::remove_dir_all(scratch)?;
+        assert_eq!(actual, render(&[dailies])?);
         Ok(())
     }
 

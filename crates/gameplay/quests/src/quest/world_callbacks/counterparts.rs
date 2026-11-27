@@ -57,7 +57,7 @@ fn apply_text(callbacks: &mut Vec<Callback>, text: &str) -> Result<(), String> {
         }
         if let Some(effect) = entry.entry_effect {
             callback.effects.magic = Some(MagicEffect {
-                position: entry.native.position,
+                position: Some(entry.native.position),
                 effect,
             });
         }

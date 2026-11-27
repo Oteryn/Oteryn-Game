@@ -107,7 +107,7 @@ pub(super) async fn acquire(client: &mut DevClientSession, world: &BundleWorld, 
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, id)?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("content/services/trade/trade-00000-00323.json"))?)?;
+    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("content/services/trade/trade-00000-00324.json"))?)?;
     let key = format!("oteryn:item.tibia.i{id}");
     let sellers: BTreeSet<_> = trades["records"].as_array().ok_or("trade records absent")?.iter().filter_map(|record| {
         let declaration = &record["declaration"];

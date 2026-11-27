@@ -103,7 +103,25 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                         && callback
                             .selector
                             .action
-                            .is_some_and(|action| (4208..=4223).contains(&action)))))
+                            .is_some_and(|action| (4208..=4223).contains(&action)))
+                    || [
+                        (
+                            "oteryn:quest.bigfoot_s_burden_quest",
+                            "oteryn:quest-callback/bigfoot-daily/",
+                        ),
+                        (
+                            "oteryn:quest.dangerous_depths_quest",
+                            "oteryn:quest-callback/dangerous-depths-daily/",
+                        ),
+                        (
+                            "oteryn:quest.spike_task",
+                            "oteryn:quest-callback/spike-daily/",
+                        ),
+                    ]
+                    .iter()
+                    .any(|(quest, prefix)| {
+                        callback.quest == *quest && callback.key.starts_with(prefix)
+                    })))
             || rottin_walls::accepts(callback)
             || callback.effects.place_item == Some(12187)
             || matches!(
@@ -214,6 +232,30 @@ mod tests {
                 "unhandled {prefix} tools: {unhandled:?}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn gnome_daily_world_tools_reach_the_carried_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let tools: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                ["bigfoot-daily", "dangerous-depths-daily", "spike-daily"]
+                    .iter()
+                    .any(|owner| {
+                        callback
+                            .key
+                            .starts_with(&format!("oteryn:quest-callback/{owner}/"))
+                    })
+                    && callback.item_on_target.is_some()
+            })
+            .collect();
+        assert_eq!(tools.len(), 126);
+        assert!(tools.iter().all(|callback| accepts(callback)));
+        let mut unrelated = tools[0].clone();
+        unrelated.quest = "oteryn:quest.tibia_tales".into();
+        assert!(!accepts(&unrelated));
         Ok(())
     }
 

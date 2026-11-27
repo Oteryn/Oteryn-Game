@@ -1,5 +1,7 @@
 #[path = "support/cake_creature_admission.rs"]
 mod cake_creature_admission;
+#[path = "npc_materializer/crystal_world_contacts.rs"]
+mod crystal_world_contacts;
 #[path = "support/cyclopedia_creatures.rs"]
 mod cyclopedia_creatures;
 #[path = "support/item_fx_audio_raw_import.rs"]
@@ -445,7 +447,8 @@ fn limits() -> ProjectEvidenceLimits {
             + 62
             + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2
             + cake_creature_admission::RECORD_DELTA
-            + cyclopedia_creatures::RECORD_DELTA,
+            + cyclopedia_creatures::RECORD_DELTA
+            + crystal_world_contacts::RECORD_COUNT,
         // The four monster-full-mechanics batches add four sources and reimport states.
         max_import_records: 30
             + cake_creature_admission::IMPORT_DELTA
@@ -468,7 +471,9 @@ fn promote_beds(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Er
 fn main_world_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         // E06 mints 68 client-only Crystal market Items into the committed world.
-        max_reference_records: 62_886 + cyclopedia_creatures::RECORD_DELTA,
+        max_reference_records: 62_886
+            + cyclopedia_creatures::RECORD_DELTA
+            + crystal_world_contacts::RECORD_COUNT,
         max_reimport_states: 404,
         max_import_records: 30
             + cake_creature_admission::IMPORT_DELTA
@@ -557,7 +562,8 @@ fn reconciled_limits() -> ProjectEvidenceLimits {
             + 26_194
             + 2_564
             + cake_creature_admission::RECORD_DELTA
-            + cyclopedia_creatures::RECORD_DELTA,
+            + cyclopedia_creatures::RECORD_DELTA
+            + crystal_world_contacts::RECORD_COUNT,
         max_import_records: 30
             + cake_creature_admission::IMPORT_DELTA
             + cyclopedia_creatures::IMPORT_DELTA,
@@ -3225,6 +3231,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_item_market_crystal_parity(&mut draft)?;
         apply_current_power_ring(&mut draft)?;
         cake_creature_admission::apply(&mut draft)?;
+        crystal_world_contacts::apply(&mut draft)?;
         cyclopedia_creatures::apply(&mut draft)?;
         preserved_display_names::apply(&mut draft.state.declarations)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
@@ -3537,6 +3544,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_arbaziloth_loot(&mut draft)?;
     apply_official_creature_balance(&mut draft)?;
     cake_creature_admission::apply(&mut draft)?;
+    crystal_world_contacts::apply(&mut draft)?;
     preserved_display_names::apply(&mut draft.state.declarations)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {

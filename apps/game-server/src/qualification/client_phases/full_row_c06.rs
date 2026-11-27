@@ -399,7 +399,7 @@ async fn acquire(
     use oteryn_protocol_oteryn::npc_service as wire;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
+        root.join("content/services/trade/trade-00000-00324.json"),
     )?)?;
     let key = format!("oteryn:item.tibia.i{item_id}");
     let sellers: BTreeSet<String> = trades["records"]

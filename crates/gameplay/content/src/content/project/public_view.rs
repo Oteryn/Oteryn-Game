@@ -1427,6 +1427,8 @@ mod tests {
                 // Source display-name provenance stays in the field inventory.
                 assert!(first.field_inventory.contains(
                     "declaration.Npc.fields[].field_path=\"oteryn:source.npc.display_name\""));
+                assert!(first.field_inventory.contains(
+                    "declaration.Npc.fields[].field_path=\"oteryn:source.npc.crystal_source\""));
                 let expected: BTreeMap<String, String> = serde_json::from_str(include_str!(
                     "../../../../../../tools/game-platform-catalog/fixtures/public-view-fields.json"
                 ))?;

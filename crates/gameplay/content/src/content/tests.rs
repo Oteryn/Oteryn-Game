@@ -337,7 +337,7 @@ fn itemglob3_global_cyclopedia_values() -> Result<(), Box<dyn std::error::Error>
     assert_eq!(boost["parameter"]["value"]["value"], 3);
 
     let alexander = record(
-        "services/trade/trade-00000-00323.json",
+        "services/trade/trade-00000-00324.json",
         "oteryn:service.trade.alexander",
     )?;
     let offers = alexander["declaration"]["offers"]

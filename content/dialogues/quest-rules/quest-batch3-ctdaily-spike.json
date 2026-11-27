@@ -1,0 +1,3100 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.spike_task",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/player.lua:160-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32163-32711-11",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32166-32519-11",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32167-32683-12",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32205-32515-12",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32231-32637-11",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32244-32536-12",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32250-32557-11",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32311-32681-11",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32334-32506-11",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32350-32629-12",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_active",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:261-269"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_daily",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:128-138"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+      "quest": "oteryn:quest.spike_task",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:255-265"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_daily",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:104-114"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+      "quest": "oteryn:quest.spike_task",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:192-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_daily",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:90-100"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+      "quest": "oteryn:quest.spike_task",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:155-167"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_active",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:260-268"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_daily",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:126-136"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+      "quest": "oteryn:quest.spike_task",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:254-264"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_daily",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:102-112"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+      "quest": "oteryn:quest.spike_task",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:191-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_active",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:264-272"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_daily",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:125-135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+      "quest": "oteryn:quest.spike_task",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:258-268"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_daily",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:89-99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+      "quest": "oteryn:quest.spike_task",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:157-168"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_dragon_lord",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_dragon_lord.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_drillworm",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_drillworm.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_basher",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_basher.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_thrower",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_thrower.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_vulcongra",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_vulcongra.lua:53-72"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-offer",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 25
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 49
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "We need someone to reduce the steadily growing number of demon skeletons in the caves. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:250-260"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-cooldown",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 25
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 49
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_daily",
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "This task is still on cooldown."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:250-260"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-active",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "ge",
+          "value": 0
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "You have already started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:250-260"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 25
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 49
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_active",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnometastic! Just go out and kill them. You should find more of them than you like."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:264-272"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-decline",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Ok then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:268-274"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "killing"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "value": -1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_active",
+          "value": 0
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_daily",
+          "value": 72000
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 1000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have done well. Here, take your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:125-135"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-unstarted",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "killing"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:125-135"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-kill-unfinished",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "killing"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "ge",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnowful! Just go out to the caves and kill at least seven demon skeletons."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:125-135"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-offer",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "This mission will require you to kill some crystal crushers for us. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:246-256"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-cooldown",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_daily",
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "This task is still on cooldown."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:246-256"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-active",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "ge",
+          "value": 0
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "You have already started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:246-256"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_active",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnometastic! You should have no trouble to find enough crystal crushers. Killing seven of them should be enough."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:260-268"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-decline",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Ok then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:264-270"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "killing"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "value": -1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_active",
+          "value": 0
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_daily",
+          "value": 72000
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have done well. Here, take your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:126-136"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-unstarted",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "killing"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:126-136"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-kill-unfinished",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "killing"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "ge",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnowful! Just go out to the caves and kill at least seven crystalcrushers."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:126-136"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-offer",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "This mission will require you to kill some drillworms for us. If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:247-257"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-cooldown",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_daily",
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "This task is still on cooldown."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:247-257"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-active",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "ge",
+          "value": 0
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "You have already started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:247-257"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_active",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnometastic! You should have no trouble finding enough drillworms."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:261-269"
+      ],
+      "topics": [
+        4
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-decline",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Ok then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:265-271"
+      ],
+      "topics": [
+        4
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "value": -1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_active",
+          "value": 0
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_daily",
+          "value": 72000
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 3500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have done well. Here, take your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:128-138"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-unstarted",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:128-138"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-kill-unfinished",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "kill"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "ge",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnowful! Just go out to the caves and kill at least seven drillworms."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:128-138"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-offer",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "pacifiers"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 25
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 49
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "We need you to recharge our ghost pacifiers. They are placed at several strategic points in the caves around us and should be easy to find. Your mission would be to charge seven of them.",
+        "If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:149-159"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-cooldown",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "pacifiers"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 25
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 49
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_daily",
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "This task is still on cooldown."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:149-159"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-active",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "pacifiers"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "ge",
+          "value": 0
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "You have already started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:149-159"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 25
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 49
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i19204",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Gnometastic! Take this resonance charger and use it on seven of the pacifiers in the cave. If you lose the charger, you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:164-172"
+      ],
+      "topics": [
+        5
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-decline",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Ok then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:168-174"
+      ],
+      "topics": [
+        5
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "pacifiers"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "value": -1
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_daily",
+          "value": 72000
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 1000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have done well. Here, take your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:89-99"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-unstarted",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "pacifiers"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:89-99"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/upper-pacifier-unfinished",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "pacifiers"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "ge",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_pacifier_main",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnowful! Take the resonance charger and use it on seven of the pacifiers in the cave."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:89-99"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-offer",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "fertilise"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Your mission would be to seek out gardener mushrooms in the caves and use some fertiliser on them. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:183-193"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-cooldown",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "fertilise"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_daily",
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "This task is still on cooldown."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:183-193"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-active",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "fertilise"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "ge",
+          "value": 0
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "You have already started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:183-193"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i19214",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32334-32506-11",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32166-32519-11",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32250-32557-11",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32231-32637-11",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32311-32681-11",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32163-32711-11",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32205-32515-12",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32244-32536-12",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32350-32629-12",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/middle_mushroom/32167-32683-12",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnometastic! And here is your fertiliser - use it on four gardener mushroom in the caves. If you lose the fertiliser you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:198-206"
+      ],
+      "topics": [
+        6
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-decline",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Ok then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:202-208"
+      ],
+      "topics": [
+        6
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "fertilisation"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "value": -1
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_daily",
+          "value": 72000
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have done well. Here, take your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:102-112"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-unstarted",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "fertilisation"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:102-112"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-mushroom-unfinished",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "fertilisation"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "ge",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_mushroom_main",
+          "op": "lt",
+          "value": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnowful! Use the fertiliser on four gardener mushroom in the caves."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:102-112"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-offer",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "charges"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Our mission for you is to use a magnet on three different monoliths in the cave system here. After the magnet evaporates on the last charge, enter the magnetic extractor here to deliver your charge.",
+        "If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:147-157"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-cooldown",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "charges"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_daily",
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "This task is still on cooldown."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:147-157"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-active",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "charges"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "ge",
+          "value": 0
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "You have already started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:147-157"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 50
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 79
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i19207",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Gnometastic! Charge this magnet at three monoliths in the cave system. With three charges, the magnet will disintegrate and charge you with its gathered energies. Step on the magnetic extractor here to deliver the charge to us, then report to me.",
+        "If you lose the magnet you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:163-171"
+      ],
+      "topics": [
+        7
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-decline",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Ok then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:167-173"
+      ],
+      "topics": [
+        7
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "charges"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "value": -1
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_daily",
+          "value": 72000
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have done well. Here, take your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:90-100"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-unstarted",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "charges"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:90-100"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/middle-charge-unfinished",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "charges"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "ge",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+          "op": "lt",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnowful! Charge this magnet at three monoliths in the cave system. With three charges, the magnet will disintegrate and charge you with its gathered energies. Step on the magnetic extractor here to deliver the charge to us, then report to me."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:90-100"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-offer",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "undercover"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Someone is needed to get three reports from our undercover agents posing as monsters in the caves around us. If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:184-194"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-cooldown",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "undercover"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_daily",
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "This task is still on cooldown."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:184-194"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-active",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "undercover"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "ge",
+          "value": 0
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "You have already started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:184-194"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_daily",
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_dragon_lord",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_drillworm",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_basher",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_thrower",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_vulcongra",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnometastic! Get three reports from our agents. You can find them anywhere in the caves around us. Just keep looking for monsters that behave strangely and give you a wink."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:198-206"
+      ],
+      "topics": [
+        8
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-decline",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Ok then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:202-208"
+      ],
+      "topics": [
+        8
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "undercover"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "value": -1
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_daily",
+          "value": 72000
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 3500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have done well. Here, take your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:104-114"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-unstarted",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "undercover"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not started that mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:104-114"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/lower-undercover-unfinished",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "undercover"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "ge",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "lt",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Gnowful! Get three reports from our undercover agents posing as monsters in the caves around us."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:104-114"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "report"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Which mission do you want to report? {killing}, {pacifiers}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:83-86"
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomilly/mission",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I can offer these missions. {kill}, {pacifiers}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:74-82"
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "report"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Which mission do you want to report? {killing}, {fertilisation}, {charges}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:84-87"
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnombold/mission",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I can offer these missions. {kill}, {fertilise}, {charges}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:75-83"
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "report"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Which mission do you want to report? {kill}, {undercover}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:86-89"
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/gnomargery/mission",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I can offer these missions. {kill}, {undercover}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:77-85"
+      ],
+      "keyword_mode": "msg_contains"
+    },
+    {
+      "key": "oteryn:quest-npc/spike/a_dragon_lord/undercover-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.a_dragon_lord",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "between",
+          "value": 0,
+          "maximum": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_dragon_lord",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_dragon_lord",
+          "value": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_dragon_lord.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/spike/a_drillworm/undercover-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.a_drillworm",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "between",
+          "value": 0,
+          "maximum": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_drillworm",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_drillworm",
+          "value": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_drillworm.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/spike/a_lost_basher/undercover-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.a_lost_basher",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "between",
+          "value": 0,
+          "maximum": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_basher",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_basher",
+          "value": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_basher.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/spike/a_lost_thrower/undercover-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.a_lost_thrower",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "between",
+          "value": 0,
+          "maximum": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_thrower",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_lost_thrower",
+          "value": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_thrower.lua:53-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/spike/a_vulcongra/undercover-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.a_vulcongra",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "op": "between",
+          "value": 0,
+          "maximum": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_vulcongra",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/undercover/a_vulcongra",
+          "value": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_undercover_main",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_vulcongra.lua:53-72"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/a_dragon_lord.lua",
+      "sha256": "d503177d99be6236e0124e20ed8d7363d965768222539586e4532f0638ac4933",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/a_drillworm.lua",
+      "sha256": "607864470a36c5de758cd17ff16b0581280f1cdb8cc0daa2820d1c6bc77b5580",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/a_lost_basher.lua",
+      "sha256": "d778782924b3a4bce7db15b4e8b41ebd545b612a822b684cc605767306520e86",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/a_lost_thrower.lua",
+      "sha256": "252436254d4e9d19f6b31a2179b29dcdc0c730795e43c7ff8d4d4259a14cdff0",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/a_vulcongra.lua",
+      "sha256": "783794ec7bbf41ac4e4d07f1c90e9b4b44d571b0d0fb92f7a7d1629cdee1b94f",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/gnomargery.lua",
+      "sha256": "0556cf61bdcd38acf013f0afa983871d8cee2fd4a5b9e068042bd84479809e4e",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/gnombold.lua",
+      "sha256": "36292696a8a1b4a096fa522ffadc9ade511205549eab8b8ef8151cda0fff143e",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/gnomilly.lua",
+      "sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

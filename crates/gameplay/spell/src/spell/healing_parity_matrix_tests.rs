@@ -464,3 +464,69 @@ fn healing_matrix_never_shrinks_and_every_case_has_an_adapter() {
         );
     }
 }
+
+#[test]
+fn area_runes_use_crystal_magic_damage_bounds() {
+    let book = book();
+    for key in ["great_fireball_rune", "avalanche_rune"] {
+        let spell = find(&book, &format!("candidate:spell/rune/{key}"));
+        let Execution::Effects(effects) = &spell.execution else {
+            panic!("expected executable rune: {key}");
+        };
+        let (formula, element) = effects
+            .iter()
+            .find_map(|effect| match effect {
+                SpellEffect::Damage {
+                    formula,
+                    damage_type,
+                } => Some((formula, damage_type)),
+                _ => None,
+            })
+            .expect("rune damage");
+        assert_eq!(
+            element,
+            if key == "great_fireball_rune" {
+                "fire"
+            } else {
+                "ice"
+            }
+        );
+        let mut inputs = FormulaInputs {
+            level: 757,
+            magic_level: 54,
+            base_power: spell.base_power,
+            attack_skill: 0,
+            attack_value: 0,
+            attack_factor: 1.0,
+            shielding_skill: 0,
+            shield_defense: None,
+        };
+        assert_eq!(
+            formula.bounds(&inputs).expect("high-level bounds"),
+            (344, 438),
+            "{key}"
+        );
+        inputs.level = 30;
+        inputs.magic_level = 4;
+        assert_eq!(
+            formula.bounds(&inputs).expect("entry-level bounds"),
+            (28, 36),
+            "{key}"
+        );
+    }
+}
+
+#[test]
+fn production_party_buffs_load_the_crystal_base_mana() {
+    let book = book();
+    for (spell, base) in [
+        ("enchant_party", 120),
+        ("enlighten_party", 75),
+        ("heal_party", 120),
+        ("protect_party", 90),
+        ("train_party", 60),
+    ] {
+        let spell = find(&book, &format!("candidate:spell/{spell}"));
+        assert_eq!(spell.mana, ManaCost::Fixed(base), "{}", spell.name);
+    }
+}

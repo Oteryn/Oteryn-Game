@@ -160,8 +160,8 @@ const CREATURE_SOURCE_BINDINGS: usize = CREATURES + 16;
 const CREATURE_RECORDS: usize = 26_810;
 const CREATURE_PROFILES: usize = 25_657;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1282;
-const NPC_RECORDS: usize = 2_564;
+const NPCS: usize = 1292;
+const NPC_RECORDS: usize = 2_584;
 // Includes BANK-3's Henricus blessing Service.
 // S10 adds one bank, three promotion and six blessing Service declarations.
 // N3 adds Buddel’s travel Service.

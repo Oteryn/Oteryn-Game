@@ -183,8 +183,13 @@ impl ComposedSource {
         profiles: &[ProjectV2AuthoringProfile],
         content: [u8; 32],
     ) -> Result<Self, AttackError> {
+        let bodies = if caster.key == "oteryn:creature.nibblemaw" {
+            include_str!("../../../../../content/abilities/source-imports/nibblemaw-wave.json")
+        } else {
+            SOURCE_BODIES
+        };
         let expected: serde_json::Value =
-            serde_json::from_str(SOURCE_BODIES).map_err(|_| AttackError::InvalidSource)?;
+            serde_json::from_str(bodies).map_err(|_| AttackError::InvalidSource)?;
         let case = expected["cases"]
             .as_array()
             .ok_or(AttackError::InvalidSource)?
@@ -211,6 +216,11 @@ impl ComposedSource {
         };
         let entry = b.attacks.get(index).ok_or(AttackError::InvalidSource)?;
         if index >= 16 || b.attacks.len() > 16 || case["ability"] != entry.ability.key {
+            return Err(AttackError::InvalidSource);
+        }
+        if let Some(schedule) = case.get("schedule")
+            && serde_json::to_value(entry).map_err(|_| AttackError::InvalidSource)? != *schedule
+        {
             return Err(AttackError::InvalidSource);
         }
         let Some(Data::Creature(cp)) = map.get(caster).copied() else {
@@ -1386,3 +1396,141 @@ pub const SOURCE_BODIES: &str = r##"{"cases":[{"creature":"oteryn:creature.a_gre
 #[cfg(test)]
 #[path = "callback_stage_composed_tests.rs"]
 mod callback_stage_composed_tests;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The test loads an authored fixture from the committed repository.
+    #[allow(clippy::expect_used)]
+    #[test]
+    fn nibblemaw_wave_loads_crystal_schedule_and_directional_area()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::native_gameplay::CreatureProfilesDocument;
+        use crate::foundation::MovementLocalPosition;
+
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), String> {
+                let bytes = std::fs::read(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/creatures/definitions/spell-native-profiles.json"
+                ))
+                .expect("native creature profile bytes");
+                let loaded: CreatureProfilesDocument =
+                    serde_json::from_slice(&bytes).expect("native creature profiles");
+                let nibblemaw = loaded
+                    .records
+                    .iter()
+                    .find(|record| record.profile.target.key == "oteryn:creature.nibblemaw")
+                    .expect("Nibblemaw");
+                let definitions = nibblemaw
+                    .attack_definitions
+                    .as_ref()
+                    .expect("attack closure");
+                let source = ComposedSource::from_native_parts(
+                    &nibblemaw.profile.target,
+                    2,
+                    &definitions.records,
+                    &definitions.profiles,
+                    [1; 32],
+                )
+                .expect("composed Nibblemaw Wave");
+                let primary = source.primary_source().expect("earth damage");
+                assert_eq!(
+                    (primary.minimum, primary.maximum, primary.element.as_deref()),
+                    (152, 352, Some("earth"))
+                );
+                let Some(crate::content::ProjectV2AuthoringProfileData::Behavior(behavior)) =
+                    nibblemaw.behavior.as_ref().map(|profile| &profile.data)
+                else {
+                    return Err("missing Nibblemaw behavior".into());
+                };
+                assert_eq!(
+                    (
+                        behavior.attacks[2].interval_ms,
+                        behavior.attacks[2].chance_ppm
+                    ),
+                    (2000, 200_000)
+                );
+                let from = MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                };
+                // Crystal spells.cpp:1311-1313 anchors needDirection one step ahead.
+                assert_eq!(
+                    source.cast_center(from, from, Some(Facing::North)),
+                    Ok(MovementLocalPosition { y: 99, ..from }),
+                );
+                let mut north = source
+                    .target_tiles(from, from, Some(Facing::North))
+                    .expect("north wave");
+                north.sort_unstable();
+                assert_eq!(
+                    north,
+                    vec![
+                        (99, 95, 7),
+                        (99, 96, 7),
+                        (99, 97, 7),
+                        (100, 95, 7),
+                        (100, 96, 7),
+                        (100, 97, 7),
+                        (100, 98, 7),
+                        (100, 99, 7),
+                        (101, 95, 7),
+                        (101, 96, 7),
+                        (101, 97, 7),
+                    ]
+                );
+                let mut east = source
+                    .target_tiles(from, from, Some(Facing::East))
+                    .expect("east wave");
+                east.sort_unstable();
+                let mut rotated: Vec<_> = north.iter().map(|&(x, y, z)| (200 - y, x, z)).collect();
+                rotated.sort_unstable();
+                assert_eq!(east, rotated);
+                assert_eq!(
+                    SpellSource::from_native(
+                        &nibblemaw.profile.target,
+                        2,
+                        &definitions.records,
+                        &definitions.profiles,
+                        [1; 32]
+                    )
+                    .err(),
+                    Some(AttackError::UnsupportedShape)
+                );
+                let mut legacy_profiles = definitions.profiles.clone();
+                let legacy_ability = legacy_profiles
+                    .iter_mut()
+                    .find(|profile| profile.target == source.ability)
+                    .expect("wave ability");
+                let Data::Ability(legacy_ability) = &mut legacy_ability.data else {
+                    return Err("missing legacy ability".into());
+                };
+                legacy_ability
+                    .details
+                    .as_mut()
+                    .expect("ability details")
+                    .area = Some(ProjectV2AbilityArea::Beam {
+                    length_tiles: 5,
+                    spread_tiles: 5,
+                });
+                assert!(
+                    SpellSource::from_native(
+                        &nibblemaw.profile.target,
+                        2,
+                        &definitions.records,
+                        &legacy_profiles,
+                        [1; 32],
+                    )
+                    .is_ok()
+                );
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "wave test thread panicked")??;
+        Ok(())
+    }
+}

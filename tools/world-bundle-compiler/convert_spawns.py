@@ -58,19 +58,33 @@ SOURCE = {
 DIRECTIONS = {None: "north", "0": "north", "1": "east", "2": "south", "3": "west"}
 
 
-# Public Ancient Tombs bosses use the fixed respawn in Crystal 201189f8
-# data-global/world/world-monster.xml:186588–199168, also retained by the
-# pinned Summer map. Match each exact source point before admitting it.
-PHARAOHS = {
-    "oteryn:creature.dipthrah": (33097, 32589, 15),
-    "oteryn:creature.mahrdis": (33191, 32957, 15),
-    "oteryn:creature.morguthis": (33172, 32694, 14),
-    "oteryn:creature.omruc": (33201, 33001, 14),
-    "oteryn:creature.rahemos": (33076, 32780, 14),
-    "oteryn:creature.thalas": (33396, 32839, 14),
-    "oteryn:creature.vashresamun": (33121, 32655, 15),
+# Public quest bosses retain the fixed respawn from the exact World point.
+# Crystal 201189f8 data-global/world/world-monster.xml:
+# Isle of Evil lines 751, 1984, 3883, 6693, 11407, 17706;
+# Black Knight line 139459; Ancient Tombs lines 148222, 186588–199168.
+# The pinned Summer XML agrees at these cells.
+FIXED_PUBLIC_BOSSES = {
+    "oteryn:creature.ashmunrah": (33179, 32888, 11, 90),
+    "oteryn:creature.black_knight": (32874, 31946, 11, 80),
+    "oteryn:creature.boogey": (32749, 31457, 3, 90),
+    "oteryn:creature.dipthrah": (33097, 32589, 15, 90),
+    "oteryn:creature.dirtbeard": (32747, 31460, 5, 90),
+    "oteryn:creature.doctor_perhaps": (32749, 31452, 6, 90),
+    "oteryn:creature.evil_mastermind": (32752, 31458, 1, 90),
+    "oteryn:creature.mahrdis": (33191, 32957, 15, 90),
+    "oteryn:creature.mephiles": (32760, 31458, 4, 90),
+    "oteryn:creature.monstor": (32754, 31459, 2, 90),
+    "oteryn:creature.morguthis": (33172, 32694, 14, 90),
+    "oteryn:creature.omruc": (33201, 33001, 14, 90),
+    "oteryn:creature.rahemos": (33076, 32780, 14, 90),
+    "oteryn:creature.thalas": (33396, 32839, 14, 90),
+    "oteryn:creature.vashresamun": (33121, 32655, 15, 90),
 }
 
+PHARAOHS = {
+    "oteryn:creature." + name for name in
+    ("dipthrah", "mahrdis", "morguthis", "omruc", "rahemos", "thalas", "vashresamun")
+}
 # Crystal 201189f8 world-monster.xml:190614–190616. This mine leader is a
 # public respawn with death credit, not an encounter-owned actor.
 FRONTIER_MINE_LEADER = "oteryn:creature.shard_of_corruption"
@@ -402,7 +416,7 @@ def convert(xml: bytes) -> dict[str, str]:
     chances_bytes = BOSS_CHANCES.read_bytes()
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
-    pharaohs = {}
+    fixed_bosses = {}
     scoped_bytes = SCOPED_RECONCILIATION.read_bytes()
     scoped_anchors = json.loads(scoped_bytes)["points"]
     corrections = {}
@@ -450,22 +464,18 @@ def convert(xml: bytes) -> dict[str, str]:
             )
         live_points = []
         for point in points:
-            if point["creature"] in PHARAOHS:
+            if point["creature"] in FIXED_PUBLIC_BOSSES:
                 creature = point["creature"]
-                x, y, z = PHARAOHS[creature]
-                if (
-                    creature in pharaohs
-                    or point["cell"] != {"floor": z, "x": x, "y": y}
-                    or point["respawn_ms"] != 90_000
-                ):
-                    sys.exit(f"{key}: Ancient Tombs spawn differs from its source")
-                scheduled = {
-                    key: value for key, value in point.items() if key != "respawn_ms"
-                }
-                scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
-                pharaohs[creature] = {"declaration": {
+                x, y, z, seconds = FIXED_PUBLIC_BOSSES[creature]
+                if (creature in fixed_bosses or point["cell"] != {"floor": z, "x": x, "y": y}
+                        or point["respawn_ms"] != seconds * 1000):
+                    sys.exit(f"{key}: fixed public boss spawn differs from its source")
+                scheduled = {key: value for key, value in point.items() if key != "respawn_ms"}
+                scheduled["boss_policy"] = {"respawn": {"min_s": seconds, "max_s": seconds}}
+                suffix = "pharaoh" if creature in PHARAOHS else "fixed_boss"
+                fixed_bosses[creature] = {"declaration": {
                     "centre": {"floor": cz, "x": cx, "y": cy},
-                    "identity": {"key": f"{key}.pharaoh", "revision": "definition-r1"},
+                    "identity": {"key": f"{key}.{suffix}", "revision": "definition-r1"},
                     "points": [scheduled],
                 }}
             elif point["creature"] == FRONTIER_MINE_LEADER:
@@ -531,12 +541,13 @@ def convert(xml: bytes) -> dict[str, str]:
                 }
             }
         )
+    if fixed_bosses.keys() != FIXED_PUBLIC_BOSSES.keys():
+        sys.exit("fixed public boss source spawns are incomplete")
+    records.extend(scheduled_bosses)
+    records.extend(fixed_bosses[key] for key in sorted(PHARAOHS))
+    records.extend(fixed_bosses[key] for key in sorted(fixed_bosses.keys() - PHARAOHS))
     if corrections:
         sys.exit(f"spawn reconciliation matches no donor point: {sorted(corrections)}")
-    if pharaohs.keys() != PHARAOHS.keys():
-        sys.exit("Ancient Tombs source spawns are incomplete")
-    records.extend(scheduled_bosses)
-    records.extend(pharaohs[key] for key in sorted(pharaohs))
     reconciliation_bytes = FIRST_RECONCILIATION.read_bytes()
     reconciliation = json.loads(reconciliation_bytes)
     reconcile_cells(records, reconciliation)

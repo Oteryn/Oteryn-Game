@@ -28,7 +28,7 @@ impl Counter {
             gate_value: self.gate_value(),
             minimum: 0,
             maximum: self.maximum,
-            death_area: None,
+            death_area: self.death_area,
             encounter_source: None,
         }
     }
@@ -102,5 +102,90 @@ impl QuestStateCatalogue {
                     .iter()
                     .any(|change| change.track == counter.track && change.after == counter.maximum)
             })
+    }
+}
+
+#[cfg(test)]
+mod daily_tests {
+    use super::*;
+
+    #[test]
+    fn spike_kills_check_victim_species_floor_and_area() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("ctdaily")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (tier, species, minimum, maximum) in [
+            (
+                "upper",
+                "demon_skeleton",
+                [32008, 32522, 8],
+                [32365, 32759, 10],
+            ),
+            (
+                "middle",
+                "crystalcrusher",
+                [32100, 32470, 11],
+                [32380, 32725, 12],
+            ),
+            ("lower", "drillworm", [32120, 32470, 13], [32345, 32710, 15]),
+        ] {
+            let key = format!("oteryn:quest-transition/native-kills/spike-{tier}-kill");
+            let counter = counter_for(catalogue, &key).ok_or("Spike kill counter")?;
+            let area = counter.death_area.ok_or("Spike kill area")?;
+            assert_eq!(counter.creature, format!("oteryn:creature.{species}"));
+            assert_eq!(area.minimum, minimum);
+            assert_eq!(area.maximum, maximum);
+            assert!(area.contains(minimum));
+            assert!(area.contains(maximum));
+            assert!(!area.contains([minimum[0], minimum[1], minimum[2] - 1]));
+            let mut tracks =
+                BTreeMap::from([(counter.gate.to_owned(), 1), (counter.track.to_owned(), 0)]);
+            assert!(active_for(catalogue, &tracks).contains(&key));
+            tracks.insert(counter.track.to_owned(), 7);
+            assert!(!active_for(catalogue, &tracks).contains(&key));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn bigfoot_and_dangerous_depths_kills_share_the_existing_counter_owner() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("ctdaily")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (mission, names, maximum) in [
+            ("bigfoot-exterminators", &["wiggler"][..], 10),
+            (
+                "dangerous-depths-subterranean",
+                &["deepworm", "diremaw"][..],
+                50,
+            ),
+        ] {
+            for name in names {
+                let key = format!("oteryn:quest-transition/native-kills/{mission}-{name}");
+                let counter = counter_for(catalogue, &key).ok_or(key.clone())?;
+                assert_eq!(counter.creature, format!("oteryn:creature.{name}"));
+                let state = BTreeMap::from([
+                    (counter.gate.to_owned(), 1),
+                    (counter.track.to_owned(), maximum - 1),
+                ]);
+                assert!(active_for(catalogue, &state).contains(&key));
+                let transition = catalogue.transition(&key).ok_or("kill transition")?;
+                let changes = catalogue
+                    .evaluate(transition, &state, 0)
+                    .map_err(|error| format!("{error:?}"))?;
+                assert!(
+                    changes
+                        .iter()
+                        .any(|change| change.track == counter.track && change.after == maximum)
+                );
+                let mut capped = state;
+                capped.insert(counter.track.to_owned(), maximum);
+                assert!(!active_for(catalogue, &capped).contains(&key));
+                capped.insert(counter.track.to_owned(), 0);
+                capped.insert(counter.gate.to_owned(), 2);
+                assert!(!active_for(catalogue, &capped).contains(&key));
+            }
+        }
+        Ok(())
     }
 }

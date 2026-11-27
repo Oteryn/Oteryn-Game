@@ -5,6 +5,16 @@ use std::collections::BTreeMap;
 
 impl Offer {
     pub(super) fn matches_keyword(&self, text: &str) -> bool {
+        self.keywords.iter().any(|word| {
+            if self.msg_contains {
+                oteryn_gameplay_quests::quest::npc_rules::msg_contains(text, word)
+            } else {
+                word == text
+            }
+        })
+    }
+
+    pub(super) fn matches_keyword(&self, text: &str) -> bool {
         super::matches_menu_or_exact_keyword(&self.npc, &self.keywords, text)
     }
 

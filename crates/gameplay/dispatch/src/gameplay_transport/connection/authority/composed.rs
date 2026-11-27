@@ -1440,6 +1440,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome));
         }
+        if intent.use_with_map_item.is_none()
+            && let Some(outcome) = self
+                .use_quest_tool_object(actor, command, &intent, source)
+                .await?
+        {
+            return Ok(Some(outcome));
+        }
         if let Some(outcome) = self
             .use_carried_item_disguise(actor, command, &intent, source)
             .await?

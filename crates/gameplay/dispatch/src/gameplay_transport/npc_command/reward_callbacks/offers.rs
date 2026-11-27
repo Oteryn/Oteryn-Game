@@ -32,6 +32,7 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/too-hot-to-handle.json"),
     include_str!("../../../../../../../content/quests/npc-offers/tower-defence.json"),
     include_str!("../../../../../../../content/quests/npc-offers/vampire-hunter.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/wrath-city.json"),
 ];
 
 pub(super) fn load(

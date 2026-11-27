@@ -43,6 +43,20 @@ class HandKinds(unittest.TestCase):
         profiles['records'][0]['authoring']['taxonomy']={'primary':'Shields'}
         with self.assertRaises(ValueError):hand.capture(hand.ROOT,profiles)
 
+    def test_mathmaster_replica_is_a_shield_slot_item_without_combat_stats(self):
+        profile = {
+            "production_definition": {"production_key": "oteryn:item.tibia.i25982"},
+            "authoring": {"taxonomy": {"primary": "Shields"}},
+        }
+        facts = hand.capture(hand.ROOT, {"records": [profile]})
+        self.assertEqual(facts["records"], [{
+            "key": "oteryn:item.tibia.i25982",
+            "source_id": 25982,
+            "source_line": 50199,
+            "taxonomy": "Shields",
+            "weapon_type": "SHIELD",
+        }])
+
     def test_source_pin_mismatch_refuses(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)

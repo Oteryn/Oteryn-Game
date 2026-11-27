@@ -14,6 +14,7 @@ pub(super) const COUNTERS: &[Counter] = &[Counter {
     track: MISSION,
     gate: MISSION,
     maximum: 3,
+    death_area: None,
     world_change: None,
 }];
 pub(super) fn matches(counter: &Counter) -> bool {

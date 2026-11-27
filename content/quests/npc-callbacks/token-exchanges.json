@@ -1,0 +1,2770 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 6,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-30342",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i29428",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i30342",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your sleep shawl."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted sleep shawl and 2 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-30344",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i29429",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i30344",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your pendulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted pendulet and 2 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-30403",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 104,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i30401",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i30403",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your theurgic amulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted theurgic amulet and 2 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-31557",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i31621",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31557",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your blister ring."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted blister ring and 2 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-32621",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 105,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i32636",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i32621",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your ring of souls."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted ring of souls and 2 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-39177",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 106,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i39179",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i39177",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your spiritthorn ring."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted spiritthorn ring and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-39180",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 107,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i39182",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i39180",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your alicorn ring."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted alicorn ring and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-39183",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 108,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i39185",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i39183",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your arcanomancer sigil."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted arcanomancer sigil and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-39187",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 109,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i39188",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i39187",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your arboreal ring."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted arboreal ring and 5 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/cledwyn-exchange-39233",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 110,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i39235",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i39233",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, excellent. Here is your turtle amulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "failure_reply": [
+        "Bring an unenchanted turtle amulet and 2 silver tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19151",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "abacus"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19151",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 abacus."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-28897",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "assassin doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i28897",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 assassin doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23682",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "bag of oriental spices"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23682",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 bag of oriental spices."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-28895",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "bookworm doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i28895",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 bookworm doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-43511",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "citizen doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i43511",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 citizen doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-25981",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "crimson doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i25981",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 crimson doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23679",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "doll of durin the almighty"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23679",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 doll of durin the almighty."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-22027",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "dragon eye"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22027",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 dragon eye."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31265",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "dragon goblet"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31265",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 dragon goblet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-25979",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "draken doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i25979",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 draken doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-25980",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "emblem"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i25980",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 emblem."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23678",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "encyclopedia"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23678",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 encyclopedia."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19153",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "friendship amulet"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19153",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 friendship amulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19156",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "frozen heart"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19156",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 frozen heart."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-28896",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "golden falcon"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i28896",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 golden falcon."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23681",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "golden newspaper"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23681",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 golden newspaper."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-34210",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "goromaphone"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i34210",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 goromaphone."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23676",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "hand puppets"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23676",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 hand puppets."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23683",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "imortus"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23683",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 imortus."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31268",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "jade amulet"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31268",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 jade amulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19152",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "key of numerous locks"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19152",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 key of numerous locks."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-37058",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "little adventurer doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i37058",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 little adventurer doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31267",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "loremaster doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31267",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 loremaster doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-37059",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "lucky clover amulet"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i37059",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 lucky clover amulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-25982",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "mathmaster shield"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i25982",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 mathmaster shield."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23680",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "medusa skull"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23680",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 medusa skull."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23677",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "music box"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23677",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 music box."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-22028",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "noble sword"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22028",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 noble sword."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19150",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "norseman doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19150",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 norseman doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-28894",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "old radio"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i28894",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 old radio."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19155",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "orc's jaw shredder"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19155",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 orc's jaw shredder."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-22026",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "phoenix statue"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22026",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 phoenix statue."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31266",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "pigeon trophy"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31266",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 pigeon trophy."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-43517",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "shield of destiny"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i43517",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 shield of destiny."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-37060",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "shield of endless search"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i37060",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 shield of endless search."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19154",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "the mexcalibur"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19154",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 the mexcalibur."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-43510",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "tibiora's box"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i43510",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 tibiora's box."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-10338",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 114,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 500
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i10338",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa teddy."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-10339",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 109,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 150
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i10339",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your snowman doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-10346",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 106,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 75
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i10346",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa backpack."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-174",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 10
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i174",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your gingerbread recipe."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-20308",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 111,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i20308",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your frazzlemaw santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-20309",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 112,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i20309",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your leaf golem santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-20310",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i20310",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your christmas cookie tray."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-20311",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 110,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 150
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i20311",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your snow globe."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-20313",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 113,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i20313",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa music box."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-20315",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 107,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 75
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i20315",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your snow flake tapestry."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-21952",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 115,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i21952",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your maxxen santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-22879",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 117,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22879",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your ferumbras' teddy santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-24394",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 119,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i24394",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your orclops santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-27591",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 121,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i27591",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa fox."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-29947",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 118,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i29947",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your nightmare beast santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-32746",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 122,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i32746",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa leech."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-35692",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 120,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 250
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i35692",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your raccoon santa."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-6500",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6500",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your gingerbreadman."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-6511",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 108,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 100
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6511",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-6526",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 116,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6496",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6526",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your Christmas token."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have a present bag."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-6531",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 105,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 50
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6531",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your santa hat."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/ruprecht-exchange-7527",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.ruprecht",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 104,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6526",
+          "count": 25
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7527",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, here is your jewel case."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+      ],
+      "failure_reply": [
+        "You don't have enough Christmas tokens."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/storkus-rank-1",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ye' brought the tokens needed for vampire hunter rank 1."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ],
+      "experience": 1000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
+      "failure_reply": [
+        "Ye' don't have enough tokens."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/storkus-rank-2",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 4
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ye' brought the tokens needed for vampire hunter rank 2."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ],
+      "experience": 5000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
+      "failure_reply": [
+        "Ye' don't have enough tokens."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/storkus-rank-3",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ye' brought the tokens needed for vampire hunter rank 3."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ],
+      "experience": 10000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
+      "failure_reply": [
+        "Ye' don't have enough tokens."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/storkus-rank-4",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ye' brought the tokens needed for vampire hunter rank 4."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ],
+      "experience": 20000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
+      "failure_reply": [
+        "Ye' don't have enough tokens."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/storkus-rank-5",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 30
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ye' brought the tokens needed for vampire hunter rank 5."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ],
+      "experience": 50000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
+      "failure_reply": [
+        "Ye' don't have enough tokens."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/storkus-rank-6",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 50
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i8191",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ye' brought the tokens needed for vampire hunter rank 6."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ],
+      "experience": 100000,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true,
+      "failure_reply": [
+        "Ye' don't have enough tokens."
+      ]
+    }
+  ]
+}

@@ -16,6 +16,8 @@ mod integration;
 #[path = "grizzly_adams/rules.rs"]
 mod rules;
 
+pub(crate) mod regional_tasks;
+
 pub use integration::{extend, journal};
 pub use rules::{can_start_task, plan_action, points_reward, promotion_due};
 

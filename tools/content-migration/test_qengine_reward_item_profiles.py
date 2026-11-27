@@ -177,6 +177,22 @@ class NativeFactJoin(unittest.TestCase):
 
 
 class MainNativeFactJoin(unittest.TestCase):
+    def test_gnome_daily_portable_operands_are_admitted_to_the_native_provider(self):
+        native = json.loads((q.ROOT / q.PROFILE).read_bytes())
+        admitted = {row['production_definition']['production_key']: row for row in native['records']}
+        for item_id in (15703, 15801, 15802, 19204, 19207, 19214, 19216, 19218, 27307, 27308):
+            with self.subTest(item_id=item_id):
+                key = f'oteryn:item.tibia.i{item_id}'
+                self.assertTrue(key in admitted, key)
+                record = admitted[key]
+                self.assertEqual(record['admission'], {
+                    'materializable': True,
+                    'stack_class': 'NonStackable',
+                    'legal_destinations': ['CharacterInventory', 'Ground'],
+                })
+                self.assertEqual(record['semantics']['physical']['value']['weight']['state'], 'KNOWN')
+                self.assertEqual(record['semantics']['temporal']['state'], 'NOT_APPLICABLE')
+
     def record(self):
         return dict(production_definition={'production_key': 'item'},
                     production_binding={'exact': True}, admission={'materializable': True},

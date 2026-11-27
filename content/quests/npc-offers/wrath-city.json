@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "supplies",
+        "zzuppliezz"
+      ],
+      "topic": 0,
+      "next_topic": 41,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        }
+      ],
+      "reply": [
+        "Can you gather weapons and fish for the resistance?"
+      ]
+    }
+  ]
+}

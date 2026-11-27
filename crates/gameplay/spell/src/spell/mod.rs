@@ -601,15 +601,16 @@ fn resolve_with_wheel(
     let members = match (&spell.execution, facts) {
         (Execution::PartyBuff(buff), Facts::Party(world)) => {
             let members = buff.affected(world).map_err(party_rejection)?;
-            // The authored `costs.mana` is 0 for a party buff (reader rule); the buff's mana is added.
-            mana = buff
+            let scaled = buff
                 .mana_cost(members.len())
-                .ok()
-                .and_then(|cost| mana.checked_add(cost))
-                .ok_or(CastRejection::PartyCostOverflow)?;
-            if caster.mana < mana {
-                return Err(CastRejection::NotEnoughMana { required: mana });
+                .map_err(|_| CastRejection::PartyCostOverflow)?;
+            if caster.mana < scaled {
+                return Err(CastRejection::NotEnoughMana { required: scaled });
             }
+            // Crystal applies the party refund before the base debit, so
+            // only the part that fits under max mana reduces the net debit.
+            let headroom = caster.max_mana.saturating_sub(caster.mana);
+            mana = scaled.max(mana.saturating_sub(headroom));
             members
         }
         (Execution::PartyBuff(_), _) => return Err(CastRejection::PartyWorldRequired),

@@ -1,0 +1,1530 @@
+{
+  "records": [
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.brom",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.brom",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.brutus",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.brutus",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.ellipses",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.ellipses",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.roughington",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.roughington",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.shadowpunch",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.shadowpunch",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.skullfrost",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.skullfrost",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.victor",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.victor",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    }
+  ],
+  "authoring_profiles": [
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.brom",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/69",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.brom",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 2000,
+              "radius_tiles": 2
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.brutus",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/143",
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/97"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/77"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/78"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/116"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/143/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/143/addon-2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.brutus",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 2000,
+              "radius_tiles": 2
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/1611",
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/57"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/95"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": false,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.ellipses",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/294",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.ellipses",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 1500,
+              "radius_tiles": 2
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/1346",
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/114"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/114"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/117"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/1346/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/1346/addon-2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 2000,
+              "radius_tiles": 1
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/151",
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/116"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/77"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/113"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 2000,
+              "radius_tiles": 2
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.roughington",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/132",
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/21"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/57"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/99"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/57"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/132/addon-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.roughington",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 2000,
+              "radius_tiles": 2
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.shadowpunch",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/152",
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/91"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/91"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/93"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/91"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/152/addon-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.shadowpunch",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 2000,
+              "radius_tiles": 2
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.skullfrost",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/991",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.skullfrost",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": false,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.victor",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/134",
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/21"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/78"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/38"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/95"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/134/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/134/addon-2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.victor",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false,
+            "wander": {
+              "interval_ms": 2000,
+              "radius_tiles": 2
+            }
+          },
+          "targeting": {
+            "hostile": false,
+            "can_target": false,
+            "sense_invisible": false,
+            "target_distance_tiles": 0,
+            "static_attack_chance_ppm": 0,
+            "flee_health": 0
+          }
+        }
+      }
+    }
+  ],
+  "declarations": [
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.brom",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.brom",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.brom",
+        "revision": "definition-r1"
+      },
+      "dialogue": null,
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Brom"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brom.lua sha256=f3fa08318f891a2f3431d347bede4eaafdda2299747c13e0ee32d234ed5122e3"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.brutus",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.brutus",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.brutus",
+        "revision": "definition-r1"
+      },
+      "dialogue": null,
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Brutus"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus.lua sha256=a4dd011a5812877dc822968a95d414305ae5b7ffb4795cf70cf3b3894f76ae93"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "Dialogue",
+      "identity": {
+        "key": "oteryn:dialogue.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "fields": [],
+      "greet": [
+        "Visitors at last. Perhaps you are capable of helping me."
+      ],
+      "farewell": [
+        "Come back after you have dealt with the majordomo."
+      ],
+      "keywords": [
+        {
+          "key": "abomination",
+          "triggers": [
+            "abomination"
+          ],
+          "reply": [
+            "Destroy the creature before this experiment gets any further."
+          ]
+        },
+        {
+          "key": "believers",
+          "triggers": [
+            "believers"
+          ],
+          "reply": [
+            "I joined the cult, became its prophet and gave it a purpose of my own."
+          ]
+        },
+        {
+          "key": "capable",
+          "triggers": [
+            "capable"
+          ],
+          "reply": [
+            "Welcome to my prison. We have a problem in common."
+          ]
+        },
+        {
+          "key": "creation",
+          "triggers": [
+            "creation"
+          ],
+          "reply": [
+            "We built this palace from air, moonsilver and belief. Then failure."
+          ]
+        },
+        {
+          "key": "explain",
+          "triggers": [
+            "explain"
+          ],
+          "reply": [
+            "Smaller fragments fell before the moonrock struck Thalassara. I collected some samples."
+          ]
+        },
+        {
+          "key": "failure",
+          "triggers": [
+            "failure"
+          ],
+          "reply": [
+            "The devotion of my followers was stronger than I reckoned. They made their own god."
+          ]
+        },
+        {
+          "key": "god",
+          "triggers": [
+            "god"
+          ],
+          "reply": [
+            "Their belief made it real. It thinks the world is its to rule."
+          ]
+        },
+        {
+          "key": "helping",
+          "triggers": [
+            "helping"
+          ],
+          "reply": [
+            "You can act outside my prison. I can tell you what to do when you get there."
+          ]
+        },
+        {
+          "key": "hesitate",
+          "triggers": [
+            "hesitate"
+          ],
+          "reply": [
+            "I concealed your arrival. I can keep its eye off you while you cross the palace."
+          ]
+        },
+        {
+          "key": "interaction",
+          "triggers": [
+            "interaction"
+          ],
+          "reply": [
+            "The material answers a singular purpose. I found that focus in devoted believers."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I conduct experiments. The others might call them reckless."
+          ]
+        },
+        {
+          "key": "moonsilver",
+          "triggers": [
+            "moonsilver"
+          ],
+          "reply": [
+            "I have never worked with anything more promising or more regrettable."
+          ]
+        },
+        {
+          "key": "name",
+          "triggers": [
+            "name"
+          ],
+          "reply": [
+            "Doctor Marrow. My reputation seems to arrive before me."
+          ]
+        },
+        {
+          "key": "prison",
+          "triggers": [
+            "prison"
+          ],
+          "reply": [
+            "You might be tempted to reach me if these bars were gone. Let me explain."
+          ]
+        },
+        {
+          "key": "purpose",
+          "triggers": [
+            "purpose"
+          ],
+          "reply": [
+            "My followers and I secured the moonrock and began to harvest it. Then came creation."
+          ]
+        },
+        {
+          "key": "samples",
+          "triggers": [
+            "samples"
+          ],
+          "reply": [
+            "Moonsilver has a peculiar interaction with the mind."
+          ]
+        },
+        {
+          "key": "stopped",
+          "triggers": [
+            "stopped"
+          ],
+          "reply": [
+            "Start with the majordomo, the servant most devoted to it."
+          ]
+        },
+        {
+          "key": "unpleasant",
+          "triggers": [
+            "unpleasant"
+          ],
+          "reply": [
+            "It keeps me here because I am useful. It must be stopped before it reaches beyond the palace."
+          ]
+        },
+        {
+          "key": "wayland",
+          "triggers": [
+            "wayland"
+          ],
+          "reply": [
+            "My assistant. He worries easily, but he knows how to find capable people."
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "dialogue": {
+        "family": "Dialogue",
+        "key": "oteryn:dialogue.npc.doctor_marrow",
+        "revision": "definition-r1"
+      },
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Doctor Marrow"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doctor_marrow.lua sha256=af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.ellipses",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.ellipses",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.ellipses",
+        "revision": "definition-r1"
+      },
+      "dialogue": null,
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "..."
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/....lua sha256=6a167beaed12476682af973eeb1d72a480753aa56d63d688244c49ebb75a130a"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "Dialogue",
+      "identity": {
+        "key": "oteryn:dialogue.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "fields": [],
+      "greet": [
+        "Keep your voice down."
+      ],
+      "farewell": [
+        "Go on, then."
+      ],
+      "keywords": [
+        {
+          "key": "advantage",
+          "triggers": [
+            "advantage"
+          ],
+          "reply": [
+            "Use the terrain and stay out of sight. Bring parcels if you need help climbing."
+          ]
+        },
+        {
+          "key": "assistance",
+          "triggers": [
+            "assistance"
+          ],
+          "reply": [
+            "I set a disguise by the laboratory entrance. Get inside and find the chest with the mouldy powder."
+          ]
+        },
+        {
+          "key": "convincing",
+          "triggers": [
+            "convincing"
+          ],
+          "reply": [
+            "Keep out of the light and away from the guards. Watch for the glowing bugs to dim."
+          ]
+        },
+        {
+          "key": "disguise",
+          "triggers": [
+            "disguise"
+          ],
+          "reply": [
+            "It will fool someone at a distance in the dark. The magic fades, so move quickly."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I am a pirate who likes being paid in cheese."
+          ]
+        },
+        {
+          "key": "loud",
+          "triggers": [
+            "loud"
+          ],
+          "reply": [
+            "I would lose my job if I were seen with you. Good thing Eustacio sent word and cheese."
+          ]
+        },
+        {
+          "key": "people",
+          "triggers": [
+            "people"
+          ],
+          "reply": [
+            "Eustacio brings the cheese. I provide assistance."
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "dialogue": {
+        "family": "Dialogue",
+        "key": "oteryn:dialogue.npc.eustacios_spy_rat",
+        "revision": "definition-r1"
+      },
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Eustacio's Spy Rat"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacios_spy_rat.lua sha256=8ab58c88432b7c4b76947fa1c95233dcb43940c711cc904d25aba9864129d1f7"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "Dialogue",
+      "identity": {
+        "key": "oteryn:dialogue.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "fields": [],
+      "greet": [
+        "What do you want? I am busy."
+      ],
+      "farewell": [
+        "Goodbye."
+      ],
+      "keywords": [
+        {
+          "key": "busy",
+          "triggers": [
+            "busy"
+          ],
+          "reply": [
+            "I have a job to get back to."
+          ]
+        },
+        {
+          "key": "job",
+          "triggers": [
+            "job"
+          ],
+          "reply": [
+            "I make deliveries by boat."
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.harlow",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "dialogue": {
+        "family": "Dialogue",
+        "key": "oteryn:dialogue.npc.harlow",
+        "revision": "definition-r1"
+      },
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Harlow"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/harlow.lua sha256=a7b39edd4830c79d07e02ca715260a48577184cea2463002506b62796f6109e3"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.roughington",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.roughington",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.roughington",
+        "revision": "definition-r1"
+      },
+      "dialogue": null,
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Roughington"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/roughington.lua sha256=7354649a4e88dd4344a6fc74a4a94539a003c50d6c9d30b9b0a934bfaec40f7f"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.shadowpunch",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.shadowpunch",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.shadowpunch",
+        "revision": "definition-r1"
+      },
+      "dialogue": null,
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Shadowpunch"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shadowpunch.lua sha256=ed0cf26d620cc9228b1afea41ddc6e4859fdb1b42da2da443885187a71ccfcb9"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.skullfrost",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.skullfrost",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.skullfrost",
+        "revision": "definition-r1"
+      },
+      "dialogue": null,
+      "services": [],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Skullfrost"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skullfrost.lua sha256=330b5737b05713f684e2385172f4c570b6ee7c2a7d7ad0412fb911bb276b0202"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "Service",
+      "identity": {
+        "key": "oteryn:service.trade.victor",
+        "revision": "definition-r1"
+      },
+      "fields": [],
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i236",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 150
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i239",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 300
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i266",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 75
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i7643",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 500
+        }
+      ]
+    },
+    {
+      "kind": "NPC",
+      "identity": {
+        "key": "oteryn:npc.victor",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.npc.victor",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.npc.victor",
+        "revision": "definition-r1"
+      },
+      "dialogue": null,
+      "services": [
+        {
+          "family": "Service",
+          "key": "oteryn:service.trade.victor",
+          "revision": "definition-r1"
+        }
+      ],
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.display_name",
+          "value": {
+            "type": "Text",
+            "value": "Victor"
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.crystal_source",
+          "value": {
+            "type": "Text",
+            "value": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/victor.lua sha256=f3f20421193d046e6034d8e021ae6b8b26f199e244ffd9db4fd219d4b1303a0a"
+          }
+        }
+      ]
+    }
+  ]
+}

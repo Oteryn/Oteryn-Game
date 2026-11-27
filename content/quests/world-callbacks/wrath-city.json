@@ -1,0 +1,352 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/authored-wrath-city-city-to-rebel-north",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33076,
+          "y": 31218,
+          "floor": -8
+        },
+        "appearance": 1949,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 33076,
+            "y": 31218,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33216,
+        "y": 31069,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/zlak",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:1-6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:42-69",
+        "oteryn-authored:wrath-mission-five-access:native-razachai-r1"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-wrath-city-city-to-rebel-south",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33076,
+          "y": 31219,
+          "floor": -8
+        },
+        "appearance": 1949,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 33076,
+            "y": 31219,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33216,
+        "y": 31069,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/zlak",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:1-6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:42-69",
+        "oteryn-authored:wrath-mission-five-access:native-razachai-r1"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-wrath-city-feed-prisoners",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33259,
+          "y": 31158,
+          "floor": -7
+        },
+        "appearance": 2293,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 33259,
+            "y": 31158,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 2293
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/prisoners",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i10218",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz",
+        "content/world/placements/region-z07-x129-y121.b3",
+        "oteryn-authored:wrath-mission-five-supplies:native-chaochai-r1"
+      ],
+      "achievements": [
+        "oteryn:achievement/vive_la_resistance"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-wrath-city-rebel-to-city",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33216,
+          "y": 31067,
+          "floor": -9
+        },
+        "appearance": 1959,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 33216,
+            "y": 31067,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 1959
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33078,
+        "y": 31219,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/zlak",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:1-6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_teleports_access.lua:42-69",
+        "oteryn-authored:wrath-mission-five-access:native-razachai-r1"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-wrath-city-supply-crate",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33228,
+          "y": 31144,
+          "floor": -8
+        },
+        "appearance": 10062,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 33228,
+            "y": 31144,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 10062
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/crate",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz",
+        "content/world/placements/region-z08-x129-y121.b3",
+        "oteryn-authored:wrath-mission-five-supplies:native-chaochai-r1"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i10247",
+        "count": 1,
+        "contents": []
+      },
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-wrath-city-supply-fish",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33229,
+          "y": 31150,
+          "floor": -7
+        },
+        "appearance": 6984,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 33229,
+            "y": 31150,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 6984
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wrath-city/supplies",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/wrath-city/fish",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz",
+        "content/world/placements/region-z07-x129-y121.b3",
+        "oteryn-authored:wrath-mission-five-supplies:native-chaochai-r1"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i10218",
+        "count": 2,
+        "contents": []
+      },
+      "requires_world_admission": true
+    }
+  ]
+}

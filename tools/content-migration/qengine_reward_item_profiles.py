@@ -125,6 +125,9 @@ IDS |= {9106}
 IDS |= {24966}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
+# Crystal 201189f Spike, Bigfoot and Dangerous Depths daily tools and packages.
+# The retained client/Canary physical rows agree with the donor item weights.
+IDS |= {15703, 15801, 15802, 19204, 19207, 19214, 19216, 19218, 27307, 27308}
 IDS |= qmech_m39.ITEMS
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.
@@ -377,10 +380,24 @@ RAID_LOOT_IDS = {
     19391,
 }
 IDS |= COOKBOOK_IDS | JORGE_REPLICA_IDS | RAID_CORPSE_IDS | WILLI_WASP_DECAY | RAID_LOOT_IDS
+# Wrath Mission 5 provisions use the matching Crystal and Canary physical facts.
+IDS |= {10218, 10247}
 
 # Existing Dworc and Merlkin loot yields require portable native custody.
 IDS |= {3348, 3403}
 IDS |= SIDE_IDS
+# Ruprecht's items, existing exchange currencies, and already admitted charged
+# variants retain their native owners. These are the missing portable identities.
+TOKEN_EXCHANGE_ITEMS = {
+    8191, 8192, 16094, 16099, 16101, 16104, 16105, 16106, 16107, 16109,
+    16110, 16111, 16112, 16116, 16153, 16154, 19150, 19152, 19153, 19154,
+    19155, 19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
+    23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895, 28896,
+    28897, 29428, 29429, 30342, 30344, 30401, 30403, 31265, 31266, 31267,
+    31268, 31557, 31621, 32621, 32636, 34210, 37058, 37059, 37060, 39179,
+    39182, 39185, 39187, 39188, 39233, 39235, 43510, 43511, 43517,
+}
+IDS |= TOKEN_EXCHANGE_ITEMS
 PROOF = "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
 PROFILE = "content/items/definitions/spell-native-profiles.json"
 XML = "imports/canary/items-xml/items.xml"
@@ -391,6 +408,10 @@ CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 
 # (Accepted canonical weight, retained source weight).
 CANONICAL_WEIGHTS = {
+    10218: (510, 509),
+    10247: (8000, 7500),
+    32636: (90, 80),
+    39187: (70, 0),
     19361: (150, 850),
     19371: (1700, 170),
     23677: (2700, 200),
@@ -521,6 +542,8 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         | RAID_CORPSE_IDS
         | WILLI_WASP_DECAY
         | MERCHANT_SCENERY
+        | EXPLORER_CORPSES
+        | TOKEN_EXCHANGE_ITEMS
         | {4837, 6300}
     )
     for item_id in sorted(selected):
@@ -567,6 +590,14 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                     "write_once_target": {"state": "UNKNOWN"},
                 }
             )
+        if item_id == 39187:
+            # The donor mints the equipped variant, whose countdown is
+            # suspended when it transforms to 39186 on unequip.
+            temporal = record['semantics']['temporal']['value']
+            if attributes.get('transformdeequipto') != '39186':
+                raise ValueError('TOKEN_EXCHANGE_ARBOREAL_TRANSFORM_DRIFT')
+            temporal['consumption_mode'] = source.K('AUTHORITATIVE_ACTIVE_TIME_BUDGET')
+            temporal['stop_duration'] = source.K(True)
         if flower:
             record = lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical

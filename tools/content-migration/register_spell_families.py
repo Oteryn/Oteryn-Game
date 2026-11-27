@@ -648,6 +648,20 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
         return _outputs(root, include_prey=include_prey)
 
 
+def crystal_area_rune_bounds(generated):
+    # Crystal 201189f8 data/scripts/runes/{avalanche,great_fireball}.lua:7-9
+    # invoke the same register_spells.lua:636-644 helper as Light Stone Shower.
+    catalog = json.loads(generated[spell_import.CATALOG])
+    formulas = [row for entry in catalog["bundles"] for row in entry["dependencies"]["formulas"]]
+    donor, = (row for row in formulas if row["identity"]["key"] ==
+              "candidate:formula/spell/rune/light_stone_shower_rune/combat-1")
+    for rune in ("avalanche_rune", "great_fireball_rune"):
+        formula, = (row for row in formulas if row["identity"]["key"] ==
+                    f"candidate:formula/spell/rune/{rune}/combat-1")
+        formula.update(minimum=donor["minimum"], maximum=donor["maximum"])
+    return current_sources.with_catalog(generated, catalog)
+
+
 def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     """Prepare the entire registration before writing any file.
 
@@ -660,6 +674,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     from compose_monster_current_sources import compose
 
     generated = compose(root, baseline, generated)
+    generated = crystal_area_rune_bounds(generated)
     import engenc2_fugue_profile
 
     engenc2_fugue_profile.admit(root, generated, spell_import.canonical_bytes)
