@@ -1,10 +1,16 @@
 //! Capture the fresh equipped admission and its actual spell exchange for the client replay.
 
 use super::*;
-use oteryn_dev_client::native_session::{Admission, Session};
+use oteryn_dev_client::native_session::{Admission, Session, SessionStream};
+use oteryn_dev_client::{EntityRef, SessionEvent};
+use oteryn_protocol_oteryn::CommandStatus;
+use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
-use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+use oteryn_protocol_oteryn::item_view::{
+    EquipmentSlot, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
+};
+use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use std::io::{self, Write};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
@@ -101,47 +107,16 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     .await?;
     let id = session.join_snapshot().game_session_id;
     let inventory = session.inventory().ok_or("C12 fresh inventory absent")?;
-    let total: u64 = inventory
-        .entries
-        .iter()
-        .chain(inventory.main_backpack.iter())
-        .chain(inventory.equipment.iter().map(|entry| &entry.item))
-        .filter(|entry| entry.item_definition_ref == definition)
-        .map(|entry| u64::from(entry.count.get()))
-        .sum();
-    if total != 1
-        || id == previous
-        || !inventory.equipment.iter().any(|entry| {
-            entry.slot == EquipmentSlot::RightHand
-                && entry.item.item_definition_ref == definition
-                && entry.item.count.get() == 1
-        })
-        || inventory
-            .entries
-            .iter()
-            .any(|entry| entry.item_definition_ref == definition)
-    {
-        return Err(
-            "C12 fresh admission did not retain exactly one weapon in the right hand".into(),
-        );
+    if id == previous || !frame_capture::equipped(inventory, definition) {
+        return Err("C12 fresh admission requires one equipped Fist and a vacant off hand".into());
     }
     if tile(session.world_spatial().actor_position)? != prior_position {
         return Err("C12.client old position was not retained across relog".into());
     }
     evidence("C12_CLIENT_EQUIPPED item=50271 right_hand_count=1 fresh_session=true");
     full_row_c12::require_current_premium(&mut session).await?;
-    let catalog = session
-        .spell_catalog()?
-        .ok_or("C12 fresh spell catalogue absent")?;
-    let spell = catalog
-        .entries
-        .iter()
-        .find(|entry| entry.words == "exori nia" && entry.rune_item.is_none())
-        .ok_or("C12 Greater Tiger Clash absent from fresh catalogue")?;
-    if !spell.available {
-        return Err(format!("C12 Greater Tiger Clash unavailable after equipped relog: learned={} required_level={}", spell.learned, spell.level).into());
-    }
-    let spell = NonZeroU32::new(spell.cast_index).ok_or("C12 spell index is zero")?;
+    let spell = spell_index(&session, "exori nia")?;
+    let builder = spell_index(&session, "exori infir pug")?;
     let mut traveled = String::new();
     for (direction, expected) in route {
         let before = tile(session.world_spatial().actor_position)?;
@@ -180,140 +155,110 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
                 "C12_CLIENT_FIXTURE_TARGET_ERROR at={position:?} error={error}"
             ));
         })?;
-    let entities = session
-        .world_entities()
-        .ok_or("C12 fresh entity projection absent")?;
-    let own = entities
-        .iter()
-        .find(|entry| entry.entity.identity == *entities.own_identity())
-        .ok_or("C12 fresh caster entity absent")?
-        .entity;
-    if session
-        .combat_state()
-        .ok_or("C12 fresh combat state absent")?
-        .target
-        .is_some()
-    {
-        return Err("C12 fresh combat target was already set".into());
-    }
-    let attack = session.attack_target(Some(&target)).await?;
-    require_mechanic_acceptance(attack.status, "C12.client ATTACK")?;
-    if attack.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("C12.client attack reply={attack:?}").into());
-    }
-    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
-    while session.combat_state().and_then(|state| state.target) != Some(target) {
-        if tokio::time::Instant::now() >= deadline {
-            return Err("C12.client attack target change not served".into());
-        }
-        session.service_liveness(Duration::from_millis(25)).await?;
-        session.take_events();
-    }
-    let damage_before = inspect_damage(id, target).await;
-    let cast_origin = session.world_spatial().actor_position;
-    let target_before = session
-        .world_entities()
-        .and_then(|entities| entities.get(&target))
-        .ok_or("C12.client selected target absent immediately before CAST")?;
-    let target_position = target_before.position;
-    let target_detail = target_before.detail;
-    if target_position.floor != cast_origin.floor
-        || target_position
-            .x
-            .abs_diff(cast_origin.x)
-            .max(target_position.y.abs_diff(cast_origin.y))
-            != 1
-    {
-        return Err(format!("C12.client selected target out of range at CAST: {target:?} origin={cast_origin:?} position={target_position:?}").into());
-    }
-    evidence(&format!(
-        "C12_CLIENT_CAST_TARGET target={target:?} origin={cast_origin:?} position={target_position:?} detail={target_detail:?} owner_damage_before={damage_before:?}"
-    ));
-    let before = session
-        .actor_vitals()
-        .ok_or("C12 actor vitals absent before cast")?
-        .mana;
-    let path = PathBuf::from(required("NODE_BOOT_CAST_EVIDENCE_LOG")?);
-    let offset = std::fs::metadata(&path)?.len();
-    session.take_events();
+    let own = select_target(&mut session, target, position).await?;
+    let attack_id = session.next_command_id() - 1;
+    let builder_start = wire_boundary(&received)?;
+    let builder_sequence = session.last_server_sequence();
+    build_harmony(&mut session, own, target, position, builder).await?;
     let before_sequence = session.last_server_sequence();
-    let before_bytes = received
-        .lock()
-        .map_err(|_| "C12 capture lock unavailable")?
-        .len();
-    let cast = session
-        .cast_spell(spell, SpellTarget::AttackTarget, true)
-        .await?;
-    require_mechanic_acceptance(cast.status, "C12.client CAST")?;
-    if cast.disposition != SpellCastDisposition::Cast {
-        return Err(format!("C12.client cast reply={cast:?}").into());
-    }
-    let delta = cast
-        .actor_vitals_delta
-        .ok_or("C12 cast actor-vitals delta absent")?;
-    let vitals = delta.value;
-    if before.checked_sub(50) != Some(vitals.mana) || session.actor_vitals() != Some(&vitals) {
-        return Err(format!(
-            "C12.client exact mana debit not applied: {before} -> {}",
-            vitals.mana
-        )
-        .into());
-    }
-    let session_id = hex_bytes(id.as_bytes());
-    let sequence = delta.server_sequence;
-    let command = cast.command_id;
-    let result_sequence = cast.result_server_sequence;
-    let target_identity = hex_bytes(&target.identity);
-    let marker = format!(
-        "SEAM_EVIDENCE c12_base_damage session={session_id} command={command} target={target_identity} generation={} ",
-        target.generation
-    );
-    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
-    let damage = loop {
-        let dealt: u64 = session
-            .take_events()
-            .iter()
-            .map(|event| full_row_c12::cast_damage_in(event, own, target, spell.get()))
-            .sum();
-        if dealt != 0 {
-            break dealt;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            let damage_after = inspect_damage(id, target).await;
-            let owner_cast = full_row_c12::committed_base_damage(
-                &path,
-                offset,
-                &marker,
-                full_row_c12::content_augment()?,
-            );
-            let target_after = session
-                .world_entities()
-                .and_then(|entities| entities.get(&target));
-            evidence(&format!(
-                "C12_CLIENT_CAST_DIAGNOSTIC session={session_id} command={command} mana={before}->{} target_after={target_after:?} owner_damage_before={damage_before:?} owner_damage_after={damage_after:?} committed_cast={owner_cast:?}",
-                vitals.mana
-            ));
-            return Err("C12.client cast did not serve attributed damage".into());
-        }
-        session.service_liveness(Duration::from_millis(25)).await?;
-    };
-    let owner_damage = full_row_c12::committed_base_damage(
-        &path,
-        offset,
-        &marker,
+    let before_bytes = wire_boundary(&received)?;
+    let mut cast = cast_checked(
+        &mut session,
+        own,
+        target,
+        position,
+        spell,
         full_row_c12::content_augment()?,
-    )?;
-    if damage != owner_damage.committed {
-        return Err(format!(
-            "C12.client served damage {damage} differs from committed HP loss {owner_damage:?}"
-        )
-        .into());
+    )
+    .await?;
+    let clear_start = wire_boundary(&received)?;
+    let clear_sequence = session.last_server_sequence();
+    let (bytes, logout_start, logout_sequence, mut fresh) = verify_post_cast_relog(
+        session, clients, id, &received, &mut cast, own, target, spell,
+    )
+    .await?;
+
+    if !frame_capture::equipped(
+        fresh.inventory().ok_or("C12 successor inventory absent")?,
+        definition,
+    ) {
+        return Err("C12 successor lost equipped Fists or has an occupied off hand".into());
     }
+    let handle = fresh
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .find(|entry| entry.slot == EquipmentSlot::RightHand)
+        })
+        .ok_or("C12 equipped Fists handle missing")?
+        .item
+        .handle;
+    let moved = fresh
+        .move_item(&ItemMoveIntent {
+            source: handle,
+            destination: ItemMoveDestination::MainBackpack,
+        })
+        .await?;
+    if moved.outcome != ItemMoveOutcome::Moved || moved.status != CommandStatus::Accepted {
+        return Err(format!("C12 unequip failed on first attempt: {moved:?}").into());
+    }
+    let until = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while !frame_capture::carried(
+        fresh
+            .inventory()
+            .ok_or("C12 unequipped inventory missing")?,
+        definition,
+    ) {
+        if tokio::time::Instant::now() >= until {
+            return Err("C12 control cast requires one copy of the weapon in the backpack".into());
+        }
+        fresh.service_liveness(Duration::from_millis(25)).await?;
+        fresh.take_events();
+    }
+    let baseline_spell = spell_index(fresh.session_mut(), "exori nia")?;
+    let baseline_builder = spell_index(fresh.session_mut(), "exori infir pug")?;
+    let own = select_target(fresh.session_mut(), target, position).await?;
+    build_harmony(fresh.session_mut(), own, target, position, baseline_builder).await?;
+    let mut baseline = cast_checked(
+        fresh.session_mut(),
+        own,
+        target,
+        position,
+        baseline_spell,
+        0,
+    )
+    .await?;
+    fresh.service_liveness(Duration::from_secs(8)).await?;
+    collect_hits(
+        &fresh.take_events(),
+        own,
+        target,
+        baseline_spell,
+        &mut baseline.hits,
+    );
+    baseline.verify_hits()?;
+    evidence(&format!(
+        "C12_CLIENT_UNEQUIPPED command={} damage={} augment_bps=0 harmony=1->0",
+        baseline.command, baseline.damage
+    ));
+
+    let CheckedCast {
+        command,
+        sequence,
+        result_sequence,
+        vitals,
+        mana_before: before,
+        damage,
+        ..
+    } = cast;
+    let session_id = hex_bytes(id.as_bytes());
+    let target_identity = hex_bytes(&target.identity);
     let earlier = hex_bytes(previous.as_bytes());
     let expected = format!(
-        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {before_sequence} {before_bytes} {traveled} {x} {y} {floor}\n",
+        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {before_sequence} {before_bytes} {builder} {builder_start} {builder_sequence} {clear_start} {clear_sequence} {logout_start} {logout_sequence} {traveled} {x} {y} {floor}\n",
         root.display(),
-        attack_id = attack.command_id,
         target_generation = target.generation,
         health = vitals.health,
         max_health = vitals.max_health,
@@ -326,11 +271,6 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         y = position.y,
         floor = position.floor,
     );
-    let bytes = received
-        .lock()
-        .map_err(|_| "C12 capture lock unavailable")?
-        .clone();
-    verify_post_cast_relog(session, clients, id, before).await?;
     let frames = frame_capture::envelopes(&bytes, id)
         .map_err(|error| error as Box<dyn std::error::Error>)?;
     let frames = serde_json::to_vec(&frames)?;
@@ -348,12 +288,240 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     Ok(())
 }
 
-async fn verify_post_cast_relog<S: oteryn_dev_client::native_session::SessionStream>(
+fn wire_boundary(received: &Mutex<Vec<u8>>) -> TestResult<usize> {
+    Ok(received
+        .lock()
+        .map_err(|_| "C12 capture lock unavailable")?
+        .len())
+}
+
+fn spell_index<S: SessionStream>(session: &Session<S>, words: &str) -> TestResult<NonZeroU32> {
+    let catalog = session
+        .spell_catalog()?
+        .ok_or("C12 spell catalogue absent")?;
+    catalog
+        .entries
+        .iter()
+        .find(|entry| entry.words == words && entry.available && entry.rune_item.is_none())
+        .and_then(|entry| NonZeroU32::new(entry.cast_index))
+        .ok_or_else(|| format!("C12 available spell absent: {words}").into())
+}
+
+fn check_target<S: SessionStream>(
+    session: &Session<S>,
+    target: EntityRef,
+    position: ActorPosition,
+) -> TestResult {
+    let origin = session.world_spatial().actor_position;
+    let actual = session
+        .world_entities()
+        .and_then(|entities| entities.get(&target))
+        .ok_or("C12 selected target absent immediately before CAST")?
+        .position;
+    if !frame_capture::exact_target(origin, actual, position)
+        || session.combat_state().and_then(|state| state.target) != Some(target)
+    {
+        return Err(format!("C12 exact north attack target required: origin={origin:?} target={actual:?} expected_origin={position:?}").into());
+    }
+    Ok(())
+}
+
+async fn select_target<S: SessionStream>(
+    session: &mut Session<S>,
+    target: EntityRef,
+    position: ActorPosition,
+) -> TestResult<EntityRef> {
+    let entities = session
+        .world_entities()
+        .ok_or("C12 entity projection absent")?;
+    let own = entities
+        .iter()
+        .find(|entry| entry.entity.identity == *entities.own_identity())
+        .ok_or("C12 caster entity absent")?
+        .entity;
+    if session
+        .combat_state()
+        .ok_or("C12 combat state absent")?
+        .target
+        .is_some()
+    {
+        return Err("C12 combat target already set".into());
+    }
+    let attack = session.attack_target(Some(&target)).await?;
+    require_mechanic_acceptance(attack.status, "C12.client ATTACK")?;
+    if attack.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("C12.client attack reply={attack:?}").into());
+    }
+    let until = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while session.combat_state().and_then(|state| state.target) != Some(target) {
+        if tokio::time::Instant::now() >= until {
+            return Err("C12 attack target change not served".into());
+        }
+        session
+            .service_liveness_discarding_events(Duration::from_millis(25))
+            .await?;
+    }
+    check_target(session, target, position)?;
+    Ok(own)
+}
+
+fn collect_hits(
+    events: &[SessionEvent],
+    own: EntityRef,
+    target: EntityRef,
+    spell: NonZeroU32,
+    hits: &mut Vec<u64>,
+) {
+    for event in events {
+        if let SessionEvent::Presentation(delta) = event {
+            frame_capture::attributed_hits(&delta.value, own, target, spell.get(), hits);
+        }
+    }
+}
+
+async fn build_harmony<S: SessionStream>(
+    session: &mut Session<S>,
+    own: EntityRef,
+    target: EntityRef,
+    position: ActorPosition,
+    spell: NonZeroU32,
+) -> TestResult {
+    check_target(session, target, position)?;
+    if session
+        .actor_vitals()
+        .ok_or("C12 builder pre-state missing")?
+        .harmony
+        != 0
+    {
+        return Err("C12 Swift Jab requires zero Harmony before cast".into());
+    }
+    session.take_events();
+    let reply = session
+        .cast_spell(spell, SpellTarget::AttackTarget, true)
+        .await?;
+    require_mechanic_acceptance(reply.status, "C12.client Swift Jab")?;
+    if reply.disposition != SpellCastDisposition::Cast
+        || reply
+            .actor_vitals_delta
+            .is_none_or(|delta| delta.value.harmony != 1)
+    {
+        return Err("C12 Swift Jab did not publish Harmony 0 -> 1".into());
+    }
+    let mut hits = Vec::new();
+    collect_hits(&session.take_events(), own, target, spell, &mut hits);
+    // Swift Jab's authored attack-group cooldown is two seconds.
+    session.service_liveness(Duration::from_secs(2)).await?;
+    collect_hits(&session.take_events(), own, target, spell, &mut hits);
+    if hits.is_empty() {
+        return Err("C12 Swift Jab did not serve attributed physical damage".into());
+    }
+    Ok(())
+}
+
+struct CheckedCast {
+    command: u64,
+    result_sequence: u64,
+    sequence: u64,
+    mana_before: u32,
+    vitals: ActorVitals,
+    damage: u64,
+    hits: Vec<u64>,
+}
+
+impl CheckedCast {
+    fn verify_hits(&self) -> TestResult {
+        if !frame_capture::exact_hit(&self.hits, self.damage) {
+            return Err(format!(
+                "C12 command {} expected exactly one attributed hit of {}, observed {:?}",
+                self.command, self.damage, self.hits
+            )
+            .into());
+        }
+        Ok(())
+    }
+}
+
+async fn cast_checked<S: SessionStream>(
+    session: &mut Session<S>,
+    own: EntityRef,
+    target: EntityRef,
+    position: ActorPosition,
+    spell: NonZeroU32,
+    bps: u64,
+) -> TestResult<CheckedCast> {
+    let path = PathBuf::from(required("NODE_BOOT_CAST_EVIDENCE_LOG")?);
+    let offset = std::fs::metadata(&path)?.len();
+    check_target(session, target, position)?;
+    let before = *session.actor_vitals().ok_or("C12 cast pre-state missing")?;
+    if before.harmony != 1 {
+        return Err("C12 Greater Tiger Clash requires one Harmony before CAST".into());
+    }
+    session.take_events();
+    let reply = session
+        .cast_spell(spell, SpellTarget::AttackTarget, true)
+        .await?;
+    require_mechanic_acceptance(reply.status, "C12.client CAST")?;
+    let delta = reply.actor_vitals_delta.ok_or("C12 cast vitals missing")?;
+    let vitals = delta.value;
+    let events = session.take_events();
+    let mana_before = events
+        .iter()
+        .filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) if update.server_sequence < delta.server_sequence => {
+                Some(update)
+            }
+            _ => None,
+        })
+        .max_by_key(|update| update.server_sequence)
+        .map_or(before.mana, |update| update.value.mana);
+    if reply.disposition != SpellCastDisposition::Cast
+        || mana_before.checked_sub(50) != Some(vitals.mana)
+        || !frame_capture::spent_harmony(before.harmony, vitals.harmony)
+        || session.actor_vitals() != Some(&vitals)
+    {
+        return Err(format!("C12 cast must apply exact mana and Harmony debits: before={before:?} mana_at_cast={mana_before} after={vitals:?}").into());
+    }
+    let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
+    let target_id = full_row_c12::hex_bytes(&target.identity);
+    let marker = format!(
+        "SEAM_EVIDENCE c12_base_damage session={id} command={} target={target_id} generation={} ",
+        reply.command_id, target.generation
+    );
+    let damage = full_row_c12::committed_base_damage(&path, offset, &marker, bps)?.committed;
+    let mut hits = Vec::new();
+    collect_hits(&events, own, target, spell, &mut hits);
+    let until = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while hits.is_empty() {
+        if tokio::time::Instant::now() >= until {
+            return Err("C12 attributed damage missing after CAST".into());
+        }
+        session.service_liveness(Duration::from_millis(25)).await?;
+        collect_hits(&session.take_events(), own, target, spell, &mut hits);
+    }
+    let cast = CheckedCast {
+        command: reply.command_id,
+        result_sequence: reply.result_server_sequence,
+        sequence: delta.server_sequence,
+        mana_before,
+        vitals,
+        damage,
+        hits,
+    };
+    cast.verify_hits()?;
+    Ok(cast)
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn verify_post_cast_relog<S: SessionStream>(
     mut session: Session<S>,
     clients: &SeamClients<'_>,
     old_id: oteryn_protocol_oteryn::GameSessionId,
-    mana_before_cast: u32,
-) -> TestResult {
+    received: &Mutex<Vec<u8>>,
+    cast: &mut CheckedCast,
+    own: EntityRef,
+    target: EntityRef,
+    spell: NonZeroU32,
+) -> TestResult<(Vec<u8>, usize, u64, oteryn_dev_client::DevClientSession)> {
     let clear = session.attack_target(None).await?;
     require_mechanic_acceptance(clear.status, "C12.client clear attack")?;
     if clear.disposition != AttackIntentDisposition::Ok {
@@ -370,62 +538,58 @@ async fn verify_post_cast_relog<S: oteryn_dev_client::native_session::SessionStr
         if tokio::time::Instant::now() >= deadline {
             return Err("C12.client post-cast combat lock did not expire".into());
         }
-        session
-            .service_liveness_discarding_events(Duration::from_millis(250))
-            .await?;
+        session.service_liveness(Duration::from_millis(250)).await?;
+        collect_hits(&session.take_events(), own, target, spell, &mut cast.hits);
     }
-    let mana = session
+    let prior_mana = session
         .actor_vitals()
-        .ok_or("C12.client pre-logout vitals absent")?
+        .ok_or("C12 pre-logout vitals absent")?
         .mana;
-    if mana >= mana_before_cast {
-        return Err(format!("C12.client post-cast mana no longer distinguishes pre-state: {mana_before_cast}->{mana}").into());
-    }
+    let until = tokio::time::Instant::now() + Duration::from_secs(12);
+    let mana = loop {
+        session.service_liveness(Duration::from_millis(50)).await?;
+        collect_hits(&session.take_events(), own, target, spell, &mut cast.hits);
+        let mana = session
+            .actor_vitals()
+            .ok_or("C12 logout regen vitals absent")?
+            .mana;
+        if matches!(mana.checked_sub(prior_mana), Some(1 | 2)) {
+            break mana;
+        }
+        if mana != prior_mana || tokio::time::Instant::now() >= until {
+            return Err(format!("C12 expected one final mana tick: {prior_mana} -> {mana}").into());
+        }
+    };
+    let logout_start = wire_boundary(received)?;
+    let logout_sequence = session.last_server_sequence();
     let logout = session.logout().await?;
     require_mechanic_acceptance(logout.status, "C12.client LOGOUT")?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C12.client logout refused on first attempt: {logout:?}").into());
     }
+    collect_hits(&session.take_events(), own, target, spell, &mut cast.hits);
+    cast.verify_hits()?;
+    let bytes = received
+        .lock()
+        .map_err(|_| "C12 capture lock unavailable")?
+        .clone();
     drop(session);
-    let saved_mana = full_row_c12::saved_mana(clients).await?;
-    if saved_mana < mana || saved_mana >= mana_before_cast {
-        return Err(format!("C12.client terminal mana does not preserve the cast debit: before_cast={mana_before_cast} before_logout={mana} saved={saved_mana}").into());
-    }
+    let saved = full_row_c12::saved_mana(clients).await?;
     let fresh = full_row_c12::connect_c12_character(clients).await?;
-    let durable_mana = fresh
+    let reloaded = fresh
         .actor_vitals()
-        .ok_or("C12.client post-relog vitals absent")?
+        .ok_or("C12 post-relog vitals absent")?
         .mana;
-    if fresh.join_snapshot().game_session_id == old_id || durable_mana != saved_mana {
-        return Err(format!("C12.client relog did not retain exact post-cast mana: expected={saved_mana} observed={durable_mana}").into());
+    if fresh.join_snapshot().game_session_id == old_id
+        || !frame_capture::exact_saved_mana(cast.mana_before, mana, saved, reloaded)
+    {
+        return Err(format!("C12 exact mana save mismatch: before_cast={} before_logout={mana} saved={saved} reloaded={reloaded}", cast.mana_before).into());
     }
     evidence(&format!(
-        "C12_CLIENT_RELOG mana_before_cast={mana_before_cast} durable_mana={durable_mana} fresh_session=true"
+        "C12_CLIENT_RELOG mana_before_cast={} before_logout={mana} durable_mana={reloaded} fresh_session=true",
+        cast.mana_before
     ));
-    Ok(())
-}
-
-async fn inspect_damage(
-    session: oteryn_protocol_oteryn::GameSessionId,
-    target: oteryn_dev_client::EntityRef,
-) -> Result<u64, String> {
-    let answer = request_fixture_control(
-        uuid_text(session.as_bytes()),
-        "--inspect-damage",
-        format!(
-            "{} {}",
-            full_row_c12::hex_bytes(&target.identity),
-            target.generation
-        ),
-    )
-    .await?;
-    let mut fields = answer.split_ascii_whitespace();
-    match (fields.next(), fields.next(), fields.next(), fields.next()) {
-        (Some("damage"), Some(total), Some(_), None) => total
-            .parse()
-            .map_err(|error| format!("C12 damage inspection total: {error}")),
-        _ => Err(format!("C12 damage inspection response: {answer}")),
-    }
+    Ok((bytes, logout_start, logout_sequence, fresh))
 }
 
 fn write_packet(root: &Path, name: &str, bytes: &[u8]) -> TestResult {

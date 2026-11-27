@@ -3,13 +3,12 @@
 use super::*;
 use oteryn_protocol_oteryn::actor_spell::{self, ActorVitals, SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
-use oteryn_protocol_oteryn::item_view::EquipmentSlot;
-use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
 use oteryn_protocol_oteryn::world_spatial::{
     ActorPosition, StepDirection, StepDisposition, decode_step_intent_profile,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
-use std::cell::Cell;
+use oteryn_protocol_oteryn::{FrameLength, MessageType, decode_framed_envelope};
+use std::cell::{Cell, RefCell};
 use std::io;
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
@@ -35,6 +34,13 @@ struct Witness {
     damage: u64,
     before_sequence: u64,
     before_bytes: usize,
+    builder: NonZeroU32,
+    builder_start: usize,
+    builder_sequence: u64,
+    clear_start: usize,
+    clear_sequence: u64,
+    logout_start: usize,
+    logout_sequence: u64,
     vitals: ActorVitals,
     traveled: Vec<StepDirection>,
     cast_tile: ActorPosition,
@@ -79,6 +85,13 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         damage,
         before_sequence,
         before_bytes,
+        builder,
+        builder_start,
+        builder_sequence,
+        clear_start,
+        clear_sequence,
+        logout_start,
+        logout_sequence,
         traveled,
         x,
         y,
@@ -114,6 +127,13 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         damage: damage.parse()?,
         before_sequence: before_sequence.parse()?,
         before_bytes: before_bytes.parse()?,
+        builder: builder.parse()?,
+        builder_start: builder_start.parse()?,
+        builder_sequence: builder_sequence.parse()?,
+        clear_start: clear_start.parse()?,
+        clear_sequence: clear_sequence.parse()?,
+        logout_start: logout_start.parse()?,
+        logout_sequence: logout_sequence.parse()?,
         traveled,
         cast_tile: ActorPosition {
             x: x.parse()?,
@@ -135,9 +155,17 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         },
     };
     if witness.session == witness.prior
-        || witness.attack_command.checked_add(1) != Some(witness.command)
+        || witness.attack_command.checked_add(2) != Some(witness.command)
         || witness.before_sequence >= witness.result_sequence
         || witness.result_sequence >= witness.delta_sequence
+        || witness.builder == witness.spell
+        || witness.builder_start >= witness.before_bytes
+        || witness.before_bytes >= witness.clear_start
+        || witness.builder_sequence >= witness.before_sequence
+        || witness.delta_sequence > witness.clear_sequence
+        || witness.clear_start >= witness.logout_start
+        || witness.clear_sequence >= witness.logout_sequence
+        || witness.vitals.harmony != 0
         || witness.damage == 0
         || witness.mana_before.checked_sub(50) != Some(witness.vitals.mana)
     {
@@ -196,19 +224,21 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     if captured != frame_capture::envelopes(&bytes, session)? {
         return Err("C12 #3521 envelopes do not match the original server frames".into());
     }
-    if !(1..bytes.len()).contains(&witness.before_bytes) {
-        return Err("C12 cast boundary outside the original transcript".into());
-    }
     let length = bytes.len();
     let before_attack = command_result_start(&bytes, witness.attack_command)?;
-    if before_attack >= witness.before_bytes {
-        return Err("C12 attack result does not precede the cast boundary".into());
+    if before_attack >= witness.builder_start || witness.logout_start >= length {
+        return Err("C12 command boundaries outside captured transcript".into());
     }
     let visible = Rc::new(Cell::new(before_attack));
+    let consumed = Rc::new(Cell::new(0));
+    let expected_cast = Rc::new(Cell::new(None));
+    let outbound = Rc::new(RefCell::new(Vec::new()));
     let wire = ReplayWire {
         bytes,
-        offset: 0,
         visible: Rc::clone(&visible),
+        consumed: Rc::clone(&consumed),
+        expected_cast: Rc::clone(&expected_cast),
+        outbound: Rc::clone(&outbound),
     };
     let dictionary = root.join("c12-item-dictionary.json");
     if !(1..=4096).contains(&dictionary.metadata()?.len()) {
@@ -234,26 +264,7 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         return Err("original C12 admission does not match capture provenance".into());
     }
     let inventory = session.inventory().ok_or("captured C12 inventory absent")?;
-    let total: u64 = inventory
-        .entries
-        .iter()
-        .chain(inventory.main_backpack.iter())
-        .chain(inventory.equipment.iter().map(|entry| &entry.item))
-        .filter(|entry| entry.item_definition_ref == witness.definition)
-        .map(|entry| u64::from(entry.count.get()))
-        .sum();
-    assert_eq!(total, 1);
-    assert!(inventory.equipment.iter().any(|entry| {
-        entry.slot == EquipmentSlot::RightHand
-            && entry.item.item_definition_ref == witness.definition
-            && entry.item.count.get() == 1
-    }));
-    assert!(
-        !inventory
-            .entries
-            .iter()
-            .any(|entry| entry.item_definition_ref == witness.definition)
-    );
+    assert!(frame_capture::equipped(inventory, witness.definition));
     // The live transcript begins with the fresh account's Premium observation.
     use oteryn_protocol_oteryn::{character_info, premium_overview};
     let premium = session
@@ -280,8 +291,17 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
                 && entry.rune_item.is_none()
                 && entry.cast_index == witness.spell.get())
     );
+    assert!(
+        catalog
+            .entries
+            .iter()
+            .any(|entry| entry.words == "exori infir pug"
+                && entry.available
+                && entry.rune_item.is_none()
+                && entry.cast_index == witness.builder.get())
+    );
     assert_ne!(session.world_spatial().actor_position, witness.cast_tile);
-    for direction in witness.traveled {
+    for &direction in &witness.traveled {
         let before = session.world_spatial().actor_position;
         let command = session.next_command_id();
         let step = session.step(direction).await?;
@@ -324,29 +344,63 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         }
         session.wait_for_events(Duration::from_secs(2)).await?;
     };
-    visible.set(witness.before_bytes);
+    visible.set(witness.builder_start);
     let attack = session.attack_target(Some(&witness.target)).await?;
     assert_eq!(attack.command_id, witness.attack_command);
     assert_eq!(attack.status, CommandStatus::Accepted);
     assert_eq!(attack.disposition, AttackIntentDisposition::Ok);
-    while session.combat_state().and_then(|state| state.target) != Some(witness.target)
-        || session.last_server_sequence() < witness.before_sequence
-    {
-        session.wait_for_events(Duration::from_secs(2)).await?;
-    }
+    drain_boundary(&mut session, &consumed, witness.builder_start).await?;
+    assert_eq!(session.last_server_sequence(), witness.builder_sequence);
+    check_cast_target(&session, &witness)?;
     assert_eq!(
         session
             .actor_vitals()
-            .ok_or("captured C12 pre-cast vitals absent")?
-            .mana,
-        witness.mana_before
+            .ok_or("C12 builder pre-state missing")?
+            .harmony,
+        0
     );
-    assert_eq!(session.last_server_sequence(), witness.before_sequence);
     session.take_events();
-    visible.set(length);
+
+    let generation = session.connection_generation;
+    expected_cast.set(Some(ExpectedCast {
+        command: witness.attack_command + 1,
+        spell: witness.builder,
+        generation,
+        visible_after: witness.before_bytes,
+    }));
+    let builder = session
+        .cast_spell(witness.builder, SpellTarget::AttackTarget, true)
+        .await?;
+    assert!(expected_cast.get().is_none());
+    assert_eq!(builder.status, CommandStatus::Accepted);
+    assert_eq!(builder.disposition, SpellCastDisposition::Cast);
+    assert_eq!(
+        builder
+            .actor_vitals_delta
+            .ok_or("C12 builder delta missing")?
+            .value
+            .harmony,
+        1
+    );
+    drain_boundary(&mut session, &consumed, witness.before_bytes).await?;
+    assert_eq!(session.last_server_sequence(), witness.before_sequence);
+    check_cast_target(&session, &witness)?;
+    let before = *session
+        .actor_vitals()
+        .ok_or("captured C12 pre-cast vitals absent")?;
+    assert_eq!(before.harmony, 1);
+    session.take_events();
+
+    expected_cast.set(Some(ExpectedCast {
+        command: witness.command,
+        spell: witness.spell,
+        generation,
+        visible_after: witness.clear_start,
+    }));
     let cast = session
         .cast_spell(witness.spell, SpellTarget::AttackTarget, true)
         .await?;
+    assert!(expected_cast.get().is_none());
     assert_eq!(cast.command_id, witness.command);
     assert_eq!(cast.status, CommandStatus::Accepted);
     assert_eq!(cast.disposition, SpellCastDisposition::Cast);
@@ -357,36 +411,114 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     assert_eq!(delta.server_sequence, witness.delta_sequence);
     assert_eq!(delta.value, witness.vitals);
     assert_eq!(session.actor_vitals(), Some(&witness.vitals));
+    assert!(frame_capture::spent_harmony(
+        before.harmony,
+        delta.value.harmony
+    ));
     let mut events = session.take_events();
-    loop {
-        let damage: u64 = events
-            .iter()
-            .map(|event| damage_for_cast(event, own, witness.target, witness.spell.get()))
-            .sum();
-        if damage != 0 {
-            assert_eq!(damage, witness.damage);
-            break;
-        }
-        events = session.wait_for_events(Duration::from_secs(2)).await?;
-    }
+    let mana_before = events
+        .iter()
+        .filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) if update.server_sequence < delta.server_sequence => {
+                Some(update)
+            }
+            _ => None,
+        })
+        .max_by_key(|update| update.server_sequence)
+        .map_or(before.mana, |update| update.value.mana);
+    assert_eq!(mana_before, witness.mana_before);
+    assert_eq!(mana_before.checked_sub(50), Some(delta.value.mana));
+
+    drain_boundary(&mut session, &consumed, witness.clear_start).await?;
+    assert_eq!(session.last_server_sequence(), witness.clear_sequence);
+    events.extend(session.take_events());
+    visible.set(witness.logout_start);
+    let clear = session.attack_target(None).await?;
+    assert_eq!(clear.command_id, witness.command + 1);
+    assert_eq!(clear.status, CommandStatus::Accepted);
+    assert_eq!(clear.disposition, AttackIntentDisposition::Ok);
+    drain_boundary(&mut session, &consumed, witness.logout_start).await?;
+    assert_eq!(session.last_server_sequence(), witness.logout_sequence);
+    assert!(
+        session
+            .combat_state()
+            .is_some_and(|state| state.target.is_none() && !state.in_fight)
+    );
+    events.extend(session.take_events());
     let unchanged = *session.actor_vitals().ok_or("C12 actor vitals absent")?;
     assert!(actor_spell::decode_actor_vitals(&[0x38, 0x02]).is_err());
     assert_eq!(session.actor_vitals(), Some(&unchanged));
+    visible.set(length);
+    let logout = session.logout().await?;
+    assert_eq!(logout.command_id, witness.command + 2);
+    assert_eq!(logout.status, CommandStatus::Accepted);
+    assert_eq!(
+        logout.result,
+        Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    );
+    assert_eq!(consumed.get(), length);
+    events.extend(session.take_events());
+    let mut hits = Vec::new();
+    for event in events {
+        if let SessionEvent::Presentation(delta) = event {
+            frame_capture::attributed_hits(
+                &delta.value,
+                own,
+                witness.target,
+                witness.spell.get(),
+                &mut hits,
+            );
+        }
+    }
+    assert!(
+        frame_capture::exact_hit(&hits, witness.damage),
+        "C12 attributed hits through logout: {hits:?}"
+    );
+    assert!(
+        session
+            .combat_state()
+            .is_some_and(|state| state.target.is_none() && !state.in_fight)
+    );
+    assert!(
+        outbound.borrow().is_empty(),
+        "C12 trailing partial outgoing frame"
+    );
     Ok(())
 }
 
-fn damage_for_cast(event: &SessionEvent, caster: EntityRef, target: EntityRef, spell: u32) -> u64 {
-    let SessionEvent::Presentation(delta) = event else {
-        return 0;
-    };
-    delta.value.iter().filter_map(|entry| match entry.kind {
-        PresentationEventKind::ValueText { kind: PresentationValueKind::DamageDealt, target: victim, attacker: Some(attacker), primary, secondary: None, .. }
-            if victim == target && attacker == caster && primary.color == oteryn_protocol_oteryn::presentation::PresentationColor::Red && delta.value.iter().any(|part| {
-                part.decision_ordinal == entry.decision_ordinal
-                    && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. } if source == caster && cue == spell)
-            }) => Some(primary.value),
-        _ => None,
-    }).sum()
+async fn drain_boundary(
+    session: &mut Session<ReplayWire>,
+    consumed: &Cell<usize>,
+    boundary: usize,
+) -> Result<(), BoxError> {
+    if consumed.get() < boundary {
+        session.service_liveness(Duration::from_millis(50)).await?;
+    }
+    if consumed.get() != boundary {
+        return Err(format!(
+            "C12 did not replay the complete boundary: {} != {boundary}",
+            consumed.get()
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn check_cast_target(session: &Session<ReplayWire>, witness: &Witness) -> Result<(), BoxError> {
+    let target = session
+        .world_entities()
+        .and_then(|entities| entities.get(&witness.target))
+        .ok_or("C12 replay target missing at CAST")?;
+    assert!(frame_capture::exact_target(
+        session.world_spatial().actor_position,
+        target.position,
+        witness.cast_tile
+    ));
+    assert_eq!(
+        session.combat_state().and_then(|state| state.target),
+        Some(witness.target)
+    );
+    Ok(())
 }
 
 #[test]
@@ -409,16 +541,16 @@ fn c12_capture_provenance_refuses_stale_or_mismatched_fields() -> Result<(), Box
     let prior = "01a218115a6578e2a6913d169380b741";
     let target = "00000000000000000000000000000009";
     let current = format!(
-        "/current-run\n{session} {prior} 7 4 5 6 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 3 26013 1234 32295 32334 8\n"
+        "/current-run\n{session} {prior} 8 4 5 6 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 3 26013 41 20000 2 28000 6 30000 9 1234 32295 32334 8\n"
     );
     let witness = read_witness(run, &current)?;
-    assert_eq!(witness.command, 7);
+    assert_eq!(witness.command, 8);
     assert_eq!(witness.delta_sequence, 5);
     assert_eq!(witness.traveled.len(), 4);
     for invalid in [
         current.replace("/current-run", "/previous-run"),
         current.replace(prior, session),
-        current.replace(" 7 4 5 6 ", " 7 5 4 6 "),
+        current.replace(" 8 4 5 6 ", " 8 5 4 6 "),
         current.replace(" 305 305 70 210 ", " 305 305 120 210 "),
         current.replace(" 1234 32295 ", " 1934 32295 "),
     ] {
@@ -447,22 +579,25 @@ fn c12_capture_requires_exact_envelope_keys() -> Result<(), BoxError> {
 
 struct ReplayWire {
     bytes: Vec<u8>,
-    offset: usize,
     visible: Rc<Cell<usize>>,
+    consumed: Rc<Cell<usize>>,
+    expected_cast: Rc<Cell<Option<ExpectedCast>>>,
+    outbound: Rc<RefCell<Vec<u8>>>,
 }
 
 impl AsyncRead for ReplayWire {
     fn poll_read(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         _: &mut Context<'_>,
         buffer: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
-        let end = (self.offset + buffer.remaining()).min(self.visible.get());
-        if end == self.offset && buffer.remaining() != 0 {
+        let offset = self.consumed.get();
+        let end = (offset + buffer.remaining()).min(self.visible.get());
+        if end == offset && buffer.remaining() != 0 {
             return Poll::Pending;
         }
-        buffer.put_slice(&self.bytes[self.offset..end]);
-        self.offset = end;
+        buffer.put_slice(&self.bytes[offset..end]);
+        self.consumed.set(end);
         Poll::Ready(Ok(()))
     }
 }
@@ -473,7 +608,33 @@ impl AsyncWrite for ReplayWire {
         _: &mut Context<'_>,
         buffer: &[u8],
     ) -> Poll<io::Result<usize>> {
-        // Only server-to-client frames are stored. The client issues its own real commands.
+        let mut pending = self.outbound.borrow_mut();
+        pending.extend_from_slice(buffer);
+        while let Some(prefix) = pending.get(..4) {
+            let size = FrameLength::from_prefix(prefix)
+                .map_err(io::Error::other)?
+                .get() as usize
+                + 4;
+            let Some(frame) = pending.get(..size) else {
+                break;
+            };
+            let envelope = decode_framed_envelope(frame).map_err(io::Error::other)?;
+            if envelope.message_type() == MessageType::ClientCommand {
+                if let Some(expected) = self.expected_cast.get() {
+                    verify_cast_intent(frame, expected)?;
+                    self.expected_cast.set(None);
+                    self.visible.set(expected.visible_after);
+                } else if envelope
+                    .client_command(envelope.connection_generation())
+                    .map_err(io::Error::other)?
+                    .command_type
+                    == actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT
+                {
+                    return Poll::Ready(Err(io::Error::other("unexpected outgoing C12 CAST")));
+                }
+            }
+            pending.drain(..size);
+        }
         Poll::Ready(Ok(buffer.len()))
     }
 
@@ -484,4 +645,116 @@ impl AsyncWrite for ReplayWire {
     fn poll_shutdown(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<io::Result<()>> {
         Poll::Ready(Ok(()))
     }
+}
+
+#[derive(Clone, Copy)]
+struct ExpectedCast {
+    command: u64,
+    spell: NonZeroU32,
+    generation: u64,
+    visible_after: usize,
+}
+
+fn verify_cast_intent(frame: &[u8], expected: ExpectedCast) -> io::Result<()> {
+    let envelope = decode_framed_envelope(frame).map_err(io::Error::other)?;
+    let command = envelope
+        .client_command(expected.generation)
+        .map_err(io::Error::other)?;
+    let intent = actor_spell::SpellCastIntent {
+        spell: expected.spell,
+        target: SpellTarget::AttackTarget,
+        aim_at_target: true,
+    };
+    if command.command_type != actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT
+        || command.command_id != expected.command
+        || actor_spell::decode_spell_cast_intent(command.payload).ok() != Some(intent)
+        || command.payload != actor_spell::encode_spell_cast_intent(&intent)
+    {
+        return Err(io::Error::other("outgoing C12 CAST intent mismatch"));
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_replay_only_releases_response_for_exact_outgoing_cast() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
+    use tokio::io::AsyncWriteExt;
+
+    let expected = ExpectedCast {
+        command: 11,
+        spell: NonZeroU32::MIN,
+        generation: 7,
+        visible_after: 4,
+    };
+    let correct = actor_spell::SpellCastIntent {
+        spell: expected.spell,
+        target: SpellTarget::AttackTarget,
+        aim_at_target: true,
+    };
+    let cast_type = actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT;
+    block_on(async {
+        for (generation, command, command_type, intent, accepted) in [
+            (7, 11, cast_type, correct, true),
+            (
+                7,
+                11,
+                cast_type,
+                actor_spell::SpellCastIntent {
+                    spell: NonZeroU32::new(2).ok_or("spell")?,
+                    ..correct
+                },
+                false,
+            ),
+            (
+                7,
+                11,
+                cast_type,
+                actor_spell::SpellCastIntent {
+                    target: SpellTarget::None,
+                    ..correct
+                },
+                false,
+            ),
+            (
+                7,
+                11,
+                cast_type,
+                actor_spell::SpellCastIntent {
+                    aim_at_target: false,
+                    ..correct
+                },
+                false,
+            ),
+            (8, 11, cast_type, correct, false),
+            (7, 12, cast_type, correct, false),
+            (7, 11, 9, correct, false),
+        ] {
+            let visible = Rc::new(Cell::new(0));
+            let gate = Rc::new(Cell::new(Some(expected)));
+            let mut wire = ReplayWire {
+                bytes: vec![0; 4],
+                visible: Rc::clone(&visible),
+                consumed: Rc::new(Cell::new(0)),
+                expected_cast: Rc::clone(&gate),
+                outbound: Rc::new(RefCell::new(Vec::new())),
+            };
+            let payload = actor_spell::encode_spell_cast_intent(&intent);
+            let body = encode_client_command(
+                generation,
+                &ClientCommandValue {
+                    command_id: command,
+                    command_type,
+                    payload: &payload,
+                },
+            )?;
+            let prefix = u32::try_from(body.len())?.to_be_bytes();
+            wire.write_all(&prefix[..2]).await?;
+            wire.write_all(&prefix[2..]).await?;
+            assert_eq!(visible.get(), 0);
+            assert_eq!(wire.write_all(&body).await.is_ok(), accepted);
+            assert_eq!(visible.get(), if accepted { 4 } else { 0 });
+            assert_eq!(gate.get().is_none(), accepted);
+        }
+        Ok::<(), BoxError>(())
+    })?
 }

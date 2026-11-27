@@ -87,3 +87,216 @@ pub fn envelopes(
     }
     Ok(result)
 }
+
+use oteryn_protocol_oteryn::item_view::{CharacterInventory, EquipmentSlot};
+use oteryn_protocol_oteryn::presentation::{
+    PresentationColor, PresentationEvent, PresentationEventKind, PresentationValueKind,
+};
+use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use std::num::NonZeroU32;
+
+pub fn equipped(inventory: &CharacterInventory, definition: NonZeroU32) -> bool {
+    weapon_units(inventory, definition) == 1
+        && inventory.equipment.iter().any(|entry| {
+            entry.slot == EquipmentSlot::RightHand
+                && entry.item.item_definition_ref == definition
+                && entry.item.count.get() == 1
+        })
+        && !inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.slot == EquipmentSlot::LeftHand)
+}
+
+pub fn carried(inventory: &CharacterInventory, definition: NonZeroU32) -> bool {
+    weapon_units(inventory, definition) == 1
+        && inventory
+            .entries
+            .iter()
+            .any(|entry| entry.item_definition_ref == definition && entry.count.get() == 1)
+}
+
+fn weapon_units(inventory: &CharacterInventory, definition: NonZeroU32) -> u64 {
+    inventory
+        .entries
+        .iter()
+        .chain(inventory.main_backpack.iter())
+        .chain(inventory.equipment.iter().map(|entry| &entry.item))
+        .filter(|entry| entry.item_definition_ref == definition)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum()
+}
+
+pub fn exact_target(origin: ActorPosition, target: ActorPosition, expected: ActorPosition) -> bool {
+    origin == expected
+        && target.floor == origin.floor
+        && target.x == origin.x
+        && target.y.checked_add(1) == Some(origin.y)
+}
+
+pub fn spent_harmony(before: u32, after: u32) -> bool {
+    before == 1 && after == 0
+}
+
+pub fn exact_saved_mana(before_cast: u32, before_logout: u32, saved: u32, reloaded: u32) -> bool {
+    before_logout < before_cast && before_logout == saved && saved == reloaded
+}
+
+pub fn attributed_hits(
+    events: &[PresentationEvent],
+    caster: EntityRef,
+    victim: EntityRef,
+    spell: u32,
+    hits: &mut Vec<u64>,
+) {
+    for event in events {
+        if let PresentationEventKind::ValueText {
+            kind: PresentationValueKind::DamageDealt, target, attacker: Some(attacker),
+            primary, secondary: None, ..
+        } = event.kind
+            && target == victim && attacker == caster && primary.color == PresentationColor::Red
+            && events.iter().any(|part| part.decision_ordinal == event.decision_ordinal
+                && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. }
+                    if source == caster && cue == spell))
+        {
+            hits.push(primary.value);
+        }
+    }
+}
+
+pub fn exact_hit(hits: &[u64], expected: u64) -> bool {
+    expected > 0 && hits == [expected]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::item_view::{EquippedItem, ItemEntry};
+    use std::num::NonZeroU64;
+
+    #[test]
+    fn c12_equipment_rejects_a_retained_shield() {
+        let item = ItemEntry {
+            appearance_id: 0,
+            handle: NonZeroU64::MIN,
+            item_definition_ref: NonZeroU32::MIN,
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        };
+        let mut inventory = CharacterInventory {
+            equipment: vec![EquippedItem {
+                slot: EquipmentSlot::RightHand,
+                item,
+            }],
+            ..CharacterInventory::default()
+        };
+        assert!(equipped(&inventory, item.item_definition_ref));
+        assert!(!carried(&inventory, item.item_definition_ref));
+        inventory.equipment.push(EquippedItem {
+            slot: EquipmentSlot::LeftHand,
+            item: ItemEntry {
+                item_definition_ref: NonZeroU32::new(2).expect("shield"),
+                ..item
+            },
+        });
+        assert!(!equipped(&inventory, item.item_definition_ref));
+        inventory.equipment.clear();
+        inventory.entries.push(item);
+        assert!(carried(&inventory, item.item_definition_ref));
+        assert!(!equipped(&inventory, item.item_definition_ref));
+    }
+
+    #[test]
+    fn c12_rejects_harmony_noop_and_stale_mana() {
+        assert!(spent_harmony(1, 0));
+        assert!(!spent_harmony(0, 0));
+        assert!(!spent_harmony(1, 1));
+        assert!(exact_saved_mana(810, 769, 769, 769));
+        assert!(!exact_saved_mana(810, 769, 770, 770));
+        assert!(!exact_saved_mana(810, 769, 769, 770));
+        assert!(!exact_saved_mana(810, 810, 810, 810));
+    }
+
+    #[test]
+    fn c12_rejects_displacement_after_attack() {
+        let origin = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        let target = ActorPosition { y: 99, ..origin };
+        assert!(exact_target(origin, target, origin));
+        assert!(!exact_target(
+            origin,
+            ActorPosition { x: 101, ..target },
+            origin
+        ));
+        assert!(!exact_target(
+            ActorPosition { x: 101, ..origin },
+            target,
+            origin
+        ));
+        assert!(!exact_target(
+            origin,
+            ActorPosition { floor: 8, ..target },
+            origin
+        ));
+    }
+
+    #[test]
+    fn c12_late_duplicate_invalidates_the_initial_exact_hit() {
+        use oteryn_protocol_oteryn::presentation::PresentationValue;
+        let caster = EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        let target = EntityRef {
+            identity: [2; 16],
+            generation: 1,
+        };
+        let position = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        let first = [
+            PresentationEvent {
+                decision_ordinal: 5,
+                emission_ordinal: 1,
+                kind: PresentationEventKind::SpellWords {
+                    caster,
+                    position,
+                    spell: 42,
+                },
+            },
+            PresentationEvent {
+                decision_ordinal: 5,
+                emission_ordinal: 2,
+                kind: PresentationEventKind::ValueText {
+                    kind: PresentationValueKind::DamageDealt,
+                    position,
+                    target,
+                    attacker: Some(caster),
+                    primary: PresentationValue {
+                        color: PresentationColor::Red,
+                        value: 33,
+                    },
+                    secondary: None,
+                },
+            },
+        ];
+        let mut hits = Vec::new();
+        assert!(!exact_hit(&hits, 33));
+        attributed_hits(&first, caster, target, 42, &mut hits);
+        assert!(exact_hit(&hits, 33));
+        // Decision ordinals are local to a batch. A duplicate decision can arrive in a later batch.
+        let late = first.map(|mut event| {
+            event.decision_ordinal = 1;
+            event
+        });
+        attributed_hits(&late, caster, target, 42, &mut hits);
+        assert!(!exact_hit(&hits, 33));
+        assert!(!exact_hit(&[11, 22], 33));
+    }
+}

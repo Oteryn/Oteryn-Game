@@ -1682,6 +1682,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn c12_unequipped_control_rejects_an_unconditional_augment() -> TestResult {
+        let marker =
+            "SEAM_EVIDENCE c12_base_damage session=test command=11 target=rat generation=2 ";
+        let unchanged =
+            format!("{marker}before=28 after=28 critical=false element=physical committed=28");
+        let augmented =
+            format!("{marker}before=28 after=30 critical=false element=physical committed=30");
+        assert_eq!(
+            read_base_damage(unchanged.as_bytes(), marker, 0)?.committed,
+            28
+        );
+        assert_eq!(
+            read_base_damage(augmented.as_bytes(), marker, AUGMENT_BPS)?.committed,
+            30
+        );
+        assert!(read_base_damage(augmented.as_bytes(), marker, 0).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn committed_pair_requires_exact_unchanged_input_and_expected_delta() -> TestResult {
         const MARKER: &str =
             "SEAM_EVIDENCE c12_base_damage session=test command=1 target=rat generation=2 ";
