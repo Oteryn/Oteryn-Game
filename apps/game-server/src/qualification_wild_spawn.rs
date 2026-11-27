@@ -220,7 +220,11 @@ fn snapshot_spawn(
         Placement::Adjacent(session) => {
             let (actor, snapshot) = runtime
                 .positioned_player_for_session(session)
-                .map_err(|error| fence(format!("qualification spawn session actor: {error:?}")))?
+                .map_err(|error| {
+                    SpawnRefusal::Unavailable(format!(
+                        "qualification spawn session actor: {error:?}"
+                    ))
+                })?
                 .ok_or(SpawnRefusal::SessionUnknown)?;
             let position = snapshot.position();
             (adjacent_cells(position), Some((session, actor, position)))
@@ -233,9 +237,15 @@ fn snapshot_spawn(
             skipped = reason;
             continue;
         }
-        let target = oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+        let target = match oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
             room, runtime, position,
-        ).map_err(|error| fence(error.to_owned()))?;
+        ) {
+            Ok(target) => target,
+            Err(reason) => {
+                skipped = reason.to_owned();
+                continue;
+            }
+        };
         targets.push((position, target));
     }
     if targets.is_empty() {
@@ -322,7 +332,9 @@ pub(crate) fn publish_spawn(
     if let Some((session, actor, position)) = plan.player {
         let current = runtime
             .positioned_player_for_session(session)
-            .map_err(|error| fence(format!("qualification spawn session actor: {error:?}")))?;
+            .map_err(|error| {
+                SpawnRefusal::Unavailable(format!("qualification spawn session actor: {error:?}"))
+            })?;
         if !current.is_some_and(|(current_actor, snapshot)| {
             current_actor == actor && snapshot.position() == position
         }) {
