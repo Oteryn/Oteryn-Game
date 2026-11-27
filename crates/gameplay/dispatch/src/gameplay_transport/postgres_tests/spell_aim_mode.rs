@@ -98,7 +98,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         cp,
         room.clone(),
         native.spell_book().clone(),
-        4,
+        6,
     )?;
     deps.combat_room = Some(room);
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
