@@ -2,6 +2,24 @@
 -- surviving operands into it. The original item, fee, dust and audit checks
 -- remain in charge of the same fenced physical transaction.
 
+CREATE OR REPLACE FUNCTION game_forge_pending_item_timer(p_item UUID) RETURNS boolean
+LANGUAGE sql STABLE AS $$
+ SELECT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=p_item
+    AND num_nonnulls(t.charges,t.remaining_ms,t.deadline_at)>0)
+  OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules t JOIN game_item_instances i USING(item_instance_id)
+    WHERE t.item_instance_id=p_item
+    AND (t.definition_family,t.definition_production_key,t.definition_revision) =
+        (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+    AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts r WHERE r.item_instance_id=t.item_instance_id))
+  OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules t JOIN game_item_instances i USING(item_instance_id)
+    WHERE t.item_instance_id=p_item
+    AND (t.definition_family,t.definition_production_key,t.definition_revision) =
+        (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+    AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts r
+        WHERE r.item_instance_id=t.item_instance_id AND r.source_stage=t.source_stage))
+$$;
+REVOKE ALL ON FUNCTION game_forge_pending_item_timer(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_forge_pending_item_timer(uuid) TO oteryn_game_runtime;
 
 CREATE OR REPLACE FUNCTION game_forge_operation_admit() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE r game_forge_reservations%ROWTYPE; i game_item_instances%ROWTYPE; l JSONB; n INT:=0; key TEXT;
@@ -58,12 +76,10 @@ BEGIN
     OR ((l->>'quantity_after')::bigint=0 AND (l->>'tier_after')::int<>0)
     OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=i.item_instance_id)
   THEN RAISE EXCEPTION 'Forge input changed custody, state or tier' USING ERRCODE='23514'; END IF;
-  -- Timed owners retain custody of scheduled instances until their own settlement.
-  IF EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
-    OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules WHERE item_instance_id=i.item_instance_id)
-    OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules WHERE item_instance_id=i.item_instance_id)
-  THEN RAISE EXCEPTION 'Forge input is owned by an item timer' USING ERRCODE='23514'; END IF;
   IF NEW.operation BETWEEN 1 AND 4 AND n<=2 THEN
+   -- Timed owners retain custody until their own settlement. Decay history is immutable.
+   IF game_forge_pending_item_timer(i.item_instance_id) THEN
+    RAISE EXCEPTION 'Forge input is owned by an item timer' USING ERRCODE='23514'; END IF;
    IF i.quantity<>1 OR (l->>'quantity_after')::bigint NOT IN(0,1)
       OR (n=1 AND i.item_instance_id IS DISTINCT FROM r.first_item_instance_id)
       OR (n=2 AND i.item_instance_id IS DISTINCT FROM r.second_item_instance_id)
@@ -77,6 +93,9 @@ BEGIN
       OR (NEW.operation BETWEEN 1 AND 4 AND (l->>'quantity_after')::bigint>=i.quantity)
       OR EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=i.item_instance_id)
       OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=i.item_instance_id)
+      OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
+      OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules WHERE item_instance_id=i.item_instance_id)
+      OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules WHERE item_instance_id=i.item_instance_id)
       OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)
    THEN RAISE EXCEPTION 'Forge material requires plain native resource units' USING ERRCODE='23514'; END IF;
   END IF;
@@ -418,7 +437,7 @@ $arm$;
   END IF;
   EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
  END LOOP;
- FOREACH n IN ARRAY ARRAY['game_forge_operation_admit()','game_forge_complete(uuid)',
+ FOREACH n IN ARRAY ARRAY['game_forge_pending_item_timer(uuid)','game_forge_operation_admit()','game_forge_complete(uuid)',
                           'game_forge_transition_proven()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',n,current_schema());
  END LOOP;

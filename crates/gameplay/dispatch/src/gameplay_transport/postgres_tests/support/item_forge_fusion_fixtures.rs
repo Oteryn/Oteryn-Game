@@ -164,8 +164,9 @@ pub(super) async fn scheduled_inputs(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
+    const STAFF: &str = "oteryn:item.tibia.i3289";
     seed_bank(h).await?;
-    seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
+    seed_items(h, &[(101, STAFF, 1, 0), (102, STAFF, 1, 0)]).await?;
     let schedules = [
         (
             "DELETE FROM game_item_timed_states s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)",
@@ -173,11 +174,11 @@ pub(super) async fn scheduled_inputs(
         ),
         (
             "DELETE FROM game_spell_item_temporal_schedules s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)",
-            "INSERT INTO game_spell_item_temporal_schedules AS s(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea)) RETURNING to_jsonb(s)",
+            "INSERT INTO game_spell_item_temporal_schedules AS s(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3289','definition-r1',sha256('chest timer fixture'::bytea)) RETURNING to_jsonb(s)",
         ),
         (
             "DELETE FROM game_spell_field_temporal_schedules s WHERE item_instance_id=encode($1,'hex')::uuid RETURNING to_jsonb(s)",
-            "INSERT INTO game_spell_field_temporal_schedules AS s(item_instance_id,source_stage,blocks_movement,blocks_projectile,immovable_block_solid,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,1,false,false,false,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3264','definition-r1',sha256('chest timer fixture'::bytea)) RETURNING to_jsonb(s)",
+            "INSERT INTO game_spell_field_temporal_schedules AS s(item_instance_id,source_stage,blocks_movement,blocks_projectile,immovable_block_solid,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,1,false,false,false,encode($1,'hex')::uuid,1,1000,floor(extract(epoch FROM statement_timestamp())*1000)::bigint+86400000,'Item','oteryn:item.tibia.i3289','definition-r1',sha256('chest timer fixture'::bytea)) RETURNING to_jsonb(s)",
         ),
     ];
     for (offset, (remove, insert)) in schedules.into_iter().enumerate() {
@@ -206,6 +207,38 @@ pub(super) async fn scheduled_inputs(
         assert_eq!(after, before);
         tx.commit().await?;
     }
+    // An enchanted staff decays into a forgeable staff. Keep the original
+    // schedule and settled receipt as immutable history for the same ItemInstance.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,60000,1,'Item','oteryn:item.tibia.i3321','definition-r1','Item','oteryn:item.tibia.i3289','definition-r1',sha256('completed staff timer fixture'::bytea))")
+        .bind(id(101).as_slice()).bind(id(160).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_spell_item_temporal_receipts(transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,1,1,1,2,encode($6,'hex')::uuid,encode($7,'hex')::uuid,1,1,encode($8,'hex')::uuid,1)")
+        .bind(id(161).as_slice()).bind(id(162).as_slice()).bind(id(101).as_slice())
+        .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(id(41).as_slice())
+        .bind(admitted.game_session_id.as_bytes().as_slice()).bind(id(70).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let mut action = pair(Operation::Fusion, 123, 101, 102);
+    action.request.occurrence =
+        occurrence_for(h, 123, |rolls| rolls[0] < 50 && rolls[2] < 7400).await?;
+    committed(
+        h,
+        owner,
+        admitted,
+        action,
+        Expected {
+            succeeded: true,
+            bonus: 0,
+            tiers: (1, None),
+            cost: (100, 0, 25_000),
+        },
+    )
+    .await?;
+    let history: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules s JOIN game_spell_item_temporal_receipts r USING(item_instance_id) WHERE s.item_instance_id=encode($1,'hex')::uuid AND s.definition_production_key='oteryn:item.tibia.i3321' AND r.transaction_id=encode($2,'hex')::uuid)")
+        .bind(id(101).as_slice()).bind(id(161).as_slice()).fetch_one(&h.pool).await?;
+    assert!(history);
     Ok(())
 }
 
