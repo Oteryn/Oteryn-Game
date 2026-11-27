@@ -72,6 +72,13 @@ fn native_health_swing_targets(
     now: SemanticTimeMicros,
     constants: &AttackConstants,
 ) -> Result<Vec<ExactActorRef>, ()> {
+    if entry
+        .state
+        .next_due(constants.attack_interval_micros())
+        .is_some_and(|due| now < due)
+    {
+        return Ok(Vec::new());
+    }
     let mut preview = entry.clone();
     let Ok(selected) =
         select_swing_inner(&mut preview, runtime, states, room, digest, now, constants)
@@ -2060,7 +2067,9 @@ fn select_swing_inner(
     let player = states
         .get(runtime, entry.actor, entry.session)
         .ok_or(SwingSkip::AttackerNotCurrent)?;
-    if states.player_hidden_from(runtime, entry.actor, target, now) {
+    if !runtime.contains_live_creature(target)
+        && states.player_hidden_from(runtime, entry.actor, target, now)
+    {
         entry.clear_target();
         return Err(SwingSkip::HiddenTarget);
     }

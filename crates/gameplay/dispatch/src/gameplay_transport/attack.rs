@@ -449,12 +449,16 @@ fn target_facts(
         attacker_reentry_protected,
         target_reentry_protected: false,
     };
-    if runtime
-        .visible_entities()
-        .players
-        .iter()
-        .any(|p| p.actor == target)
+    // A held creature already has an exact generation. Resolve it directly
+    // before the player-census path, which materializes every placed actor.
+    let live_creature = runtime.contains_live_creature(target);
+    if !live_creature
         && target != attacker
+        && runtime
+            .visible_entities()
+            .players
+            .iter()
+            .any(|p| p.actor == target)
     {
         let to = runtime.read_actor_position(target).ok()?.position();
         return Some(TargetFacts {
@@ -472,7 +476,7 @@ fn target_facts(
     if runtime.is_tibiadrome(attacker) != runtime.is_tibiadrome(target) {
         return Some(absent);
     }
-    if !runtime.contains_live_creature(target) {
+    if !live_creature {
         return Some(absent);
     }
     let Ok(target_snapshot) = runtime.read_actor_position(target) else {
