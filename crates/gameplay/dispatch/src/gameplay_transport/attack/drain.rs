@@ -25,7 +25,7 @@ use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
     creature_melee_mitigation, creature_physical_resistance, creature_physically_immune,
     equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN},
-    swing_mitigated, swing_mitigated_with_block,
+    swing_mitigated,
 };
 use oteryn_gameplay_items::equipment_effects::apply_protection;
 use oteryn_gameplay_progression::charm_effects::{
@@ -966,15 +966,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         blocked,
                         armor,
                         |damage, blocked, armor| {
-                            swing_mitigated_with_block(
+                            creature_mitigated(
                                 &root,
                                 constants,
-                                entry.actor.placement_identity(),
-                                (
-                                    *swing.lineage.game_session_id().as_bytes(),
-                                    swing.lineage.command_id().get(),
-                                ),
-                                ordinal,
+                                (entry.actor, swing.lineage, ordinal),
                                 damage,
                                 blocked.then_some((defense / 2, defense)),
                                 armor,

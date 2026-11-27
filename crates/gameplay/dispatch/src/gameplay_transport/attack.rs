@@ -1085,20 +1085,15 @@ fn swing_draw(
     )
 }
 
-#[cfg(test)]
-#[allow(clippy::too_many_arguments)]
 fn creature_mitigated(
     root: &GameplayDecisionRoot,
     constants: &AttackConstants,
-    attacker: ExactActorRef,
-    lineage: CommandRef,
-    ordinal: u16,
+    (attacker, lineage, ordinal): (ExactActorRef, CommandRef, u16),
     damage: i64,
-    blocked: bool,
-    defense: u32,
+    defence: Option<(u32, u32)>,
     armor: u32,
-) -> Option<i64> {
-    oteryn_gameplay_combat_rules::resolution::creature_mitigated(
+) -> Option<(i64, oteryn_gameplay_progression::hit_training::HitBlock)> {
+    oteryn_gameplay_combat_rules::resolution::swing_mitigated_with_block(
         root,
         constants,
         attacker.placement_identity(),
@@ -1108,8 +1103,7 @@ fn creature_mitigated(
         ),
         ordinal,
         damage,
-        blocked,
-        defense,
+        defence,
         armor,
     )
 }
