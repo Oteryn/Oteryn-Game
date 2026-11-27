@@ -65,6 +65,7 @@ pub(super) fn prepare_map(
 }
 
 const MAERYN: &str = "oteryn:npc.maeryn";
+const NAVIGATOR: &str = "oteryn:npc.navigator";
 
 fn shared_npcs(
     changes: &DailyWorldChanges,
@@ -75,7 +76,7 @@ fn shared_npcs(
     [
         (K::HiveBorn, "oteryn:npc.orockle", (33448, 31309, 7)),
         (K::Overhunting, "oteryn:npc.benevola", (32596, 31745, 7)),
-        (K::Deeplings, "oteryn:npc.navigator", (33638, 31377, 9)),
+        (K::Deeplings, NAVIGATOR, (33638, 31377, 9)),
         // Explicit native barter station, not an asserted donor Yeo coordinate.
         (K::FireFeathered, "oteryn:npc.yeo", (33554, 31624, 14)),
         (
@@ -89,7 +90,7 @@ fn shared_npcs(
     .map(|(_, key, at)| (key, at))
 }
 
-/// Keep Maeryn's qualified downstairs contact on ordinary days.
+/// Remove bundle placements replaced by the day's NPCs.
 pub(super) fn retain_bundle_npc(changes: &DailyWorldChanges, npc: &mut NpcPlacements) -> bool {
     if npc.key == MAERYN {
         if changes.reset_epoch != 0 && changes.grimvale_full_moon {
@@ -98,7 +99,18 @@ pub(super) fn retain_bundle_npc(changes: &DailyWorldChanges, npc: &mut NpcPlacem
         npc.placements.retain(|placement| placement.floor == -7);
         return !npc.placements.is_empty();
     }
-    changes.reset_epoch == 0 || !shared_npcs(changes).any(|(daily, _)| daily == npc.key)
+    if changes.reset_epoch != 0
+        && let Some((_, (x, y, z))) = shared_npcs(changes).find(|(key, _)| *key == npc.key)
+    {
+        // Deeplings moves Navigator from the authored contact to the adjacent daily station.
+        let relocated_from = (npc.key == NAVIGATOR).then_some((33639, 31377, -9));
+        npc.placements.retain(|placement| {
+            let cell = (placement.x, placement.y, placement.floor);
+            cell != (x, y, -z) && Some(cell) != relocated_from
+        });
+        return !npc.placements.is_empty();
+    }
+    true
 }
 
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
@@ -344,6 +356,102 @@ pub(crate) mod tests {
         assert_eq!(apply(&mut runtime, Some(&boot(&[])), &june, None), 0);
         assert_eq!(apply(&mut runtime, None, &june, None), 0);
         assert!(npc_keys(&runtime).is_empty());
+    }
+
+    #[test]
+    fn counter_npc_boot_keeps_the_private_twenty_miles_contacts() {
+        let guardian = "oteryn:npc.guardian_of_the_deep_seas";
+        let yeo = "oteryn:npc.yeo";
+        let keys = [
+            "oteryn:npc.benevola",
+            guardian,
+            NAVIGATOR,
+            "oteryn:npc.orockle",
+            yeo,
+        ];
+        let sources = [
+            include_str!("../../../../../content/world/npc-placements/placements-00000-00055.json"),
+            include_str!("../../../../../content/world/npc-placements/placements-00500-00999.json"),
+            include_str!("../../../../../content/world/npc-placements/placements-01000-01156.json"),
+        ]
+        .map(|json| serde_json::from_str::<serde_json::Value>(json).expect("NPC placements"));
+        let authored = keys.map(|key| {
+            let row = sources
+                .iter()
+                .flat_map(|source| source["records"].as_array().expect("NPC placement records"))
+                .map(|record| &record["declaration"])
+                .find(|row| row["npc"] == key)
+                .expect("authored NPC placement");
+            let cell = &row["cell"];
+            let number = |field: &str| cell[field].as_u64().expect("NPC placement coordinate");
+            (
+                key,
+                (
+                    u16::try_from(number("x")).expect("placement x"),
+                    u16::try_from(number("y")).expect("placement y"),
+                    i8::try_from(number("floor")).expect("placement floor"),
+                ),
+            )
+        });
+        let day = DailyWorldChanges::roll(41, 1, 12, |_| u64::MAX);
+        let scheduled: Vec<_> = shared_npcs(&day).collect();
+        assert_eq!(scheduled.len(), keys.len());
+
+        let mut admitted = boot(&keys);
+        if let NpcBoot::Place { table, .. } = &mut admitted {
+            for (key, (x, y, z)) in authored {
+                let mut placements = vec![NpcPlacement {
+                    x,
+                    y,
+                    floor: -z,
+                    direction: MovementFacing::North,
+                }];
+                // Also exercise a bundle which already contains the Fire-Feathered stations.
+                if key == guardian || key == yeo {
+                    let (_, (x, y, z)) = scheduled
+                        .iter()
+                        .copied()
+                        .find(|(scheduled, _)| *scheduled == key)
+                        .expect("Fire-Feathered station");
+                    placements.push(NpcPlacement {
+                        x,
+                        y,
+                        floor: -z,
+                        direction: MovementFacing::North,
+                    });
+                    placements.sort_by_key(|placement| (placement.floor, placement.y, placement.x));
+                }
+                table.npcs.push(NpcPlacements {
+                    key: key.into(),
+                    placements,
+                });
+            }
+        }
+
+        let mut runtime = channel_runtime();
+        let private = authored
+            .into_iter()
+            .filter(|(key, _)| *key == guardian || *key == yeo);
+        assert_eq!(
+            super::super::bundle_npcs::place(&mut runtime, Some(&admitted), Some(&day))
+                .expect("static bundle placement"),
+            private.clone().count()
+        );
+        assert_eq!(
+            apply(&mut runtime, Some(&admitted), &day, None),
+            scheduled.len()
+        );
+        let snapshot = runtime.visible_entities();
+        for (key, (x, y, z)) in private.chain(scheduled) {
+            assert!(
+                snapshot.npcs.iter().any(|npc| {
+                    runtime.npc_key(npc.actor) == Some(key)
+                        && (npc.position.x, npc.position.y, npc.position.floor)
+                            == (i32::from(x), i32::from(y), i16::from(z))
+                }),
+                "missing {key} at ({x}, {y}, {z})"
+            );
+        }
     }
 
     #[test]
