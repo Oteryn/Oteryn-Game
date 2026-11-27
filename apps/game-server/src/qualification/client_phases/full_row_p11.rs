@@ -10,13 +10,14 @@ use super::*;
 use oteryn_dev_client::client_runtime::account_achievements::{
     AccountAchievementsResult, Response,
 };
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::account_achievements as wire;
 
 // The live sword-350 run took 36.5 seconds to remove the first 35% of a demon's
 // health. Allow 150 seconds per target for damage variation and server ticks, then
 // 120 seconds for party setup, the combat lock, the reward and relog.
 const TARGET_DEADLINE: Duration = Duration::from_secs(150);
+const STEP_CLEAR_DEADLINE: Duration = Duration::from_secs(20);
 pub(super) const JOURNEY_DEADLINE: Duration = Duration::from_secs(420);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, core: &SeamClients<'_>) {
@@ -247,6 +248,56 @@ async fn corridor_step(
     y: u16,
 ) -> TestResult {
     let expected = TilePos { x, y, floor: -13 };
+    let origin = client.world_spatial().actor_position;
+    let (dx, dy) = direction.delta();
+    // A teleport's arrival differs from the tile the step actually enters.
+    let next = ActorPosition {
+        x: origin.x + dx,
+        y: origin.y + dy,
+        floor: origin.floor,
+    };
+    let started = tokio::time::Instant::now();
+    let deadline = started + STEP_CLEAR_DEADLINE;
+    let mut waiting = false;
+    loop {
+        let now = tokio::time::Instant::now();
+        if now >= deadline {
+            return Err(format!(
+                "P11 step tile did not clear within {STEP_CLEAR_DEADLINE:?}: {next:?}"
+            )
+            .into());
+        }
+        let entities = client
+            .world_entities()
+            .ok_or("P11 step entity state missing")?;
+        let blocker = entities.iter().find(|row| {
+            row.position == next
+                && matches!(
+                    row.kind,
+                    EntityKind::Creature | EntityKind::Player | EntityKind::Npc
+                )
+        });
+        let Some(blocker) = blocker else {
+            if waiting {
+                evidence(&format!(
+                    "P11_STEP_CLEAR tile={next:?} waited_ms={}",
+                    started.elapsed().as_millis()
+                ));
+            }
+            break;
+        };
+        if !waiting {
+            evidence(&format!(
+                "P11_STEP_WAIT tile={next:?} blocker={:?} timeout_ms={}",
+                blocker.entity,
+                STEP_CLEAR_DEADLINE.as_millis()
+            ));
+            waiting = true;
+        }
+        client
+            .service_liveness((deadline - now).min(Duration::from_millis(100)))
+            .await?;
+    }
     let reply = client.step(direction).await?;
     let actual = tile(client.world_spatial().actor_position)?;
     if reply.disposition != StepDisposition::Moved || actual != expected {
@@ -309,7 +360,7 @@ fn corridor_target_lost(
 }
 
 async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
-    use oteryn_dev_client::{EntityDetail, EntityKind};
+    use oteryn_dev_client::EntityDetail;
     let mut targets = Vec::new();
     let entities = client
         .world_entities()
