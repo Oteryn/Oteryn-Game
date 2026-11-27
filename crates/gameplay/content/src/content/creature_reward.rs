@@ -551,14 +551,19 @@ impl CreatureRewardTable {
         section: &LootTablesSection,
         races: &HashMap<String, BestiaryRace>,
     ) -> Self {
-        Self::build_with_native_corpses(creatures, section, races, &HashSet::new())
+        Self::build_with_native_corpses(
+            creatures,
+            section,
+            races,
+            &VerifiedSourceCorpses::default(),
+        )
     }
 
     fn build_with_native_corpses(
         creatures: &CreatureProfilesDocument,
         section: &LootTablesSection,
         races: &HashMap<String, BestiaryRace>,
-        verified_source_corpses: &HashSet<String>,
+        verified_source_corpses: &VerifiedSourceCorpses,
     ) -> Self {
         let bindings: HashMap<&str, Option<&SectionRef>> = section
             .creature_loot
@@ -832,41 +837,77 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef, private_reward:
         )
 }
 
+#[derive(Default)]
+struct VerifiedSourceCorpses {
+    special: HashSet<String>,
+    large_containers: HashMap<String, u32>,
+}
+
 fn verified_source_corpses(
     items: Option<&super::native_gameplay::ItemProfilesDocument>,
-) -> HashSet<String> {
+) -> VerifiedSourceCorpses {
     use super::native_gameplay::{NativeItemDestination, NativeItemStackClass};
     use super::{ReferenceItemField as F, ReferenceItemType};
     let Some(items) = items else {
-        return HashSet::new();
+        return VerifiedSourceCorpses::default();
     };
-    items.records.iter().filter(|record| {
+    let mut qualified = VerifiedSourceCorpses::default();
+    for record in &items.records {
         let definition = &record.production_definition;
-        let common = definition.family == "Item" && definition.revision_ref == "definition-r1"
-            && record.production_binding.disposition == super::ProjectV2SourceIdentityDisposition::Exact
-            && matches!(record.production_binding.target.family, super::ProjectV2Family::Item)
+        let common = definition.family == "Item"
+            && definition.revision_ref == "definition-r1"
+            && record.production_binding.disposition
+                == super::ProjectV2SourceIdentityDisposition::Exact
+            && matches!(
+                record.production_binding.target.family,
+                super::ProjectV2Family::Item
+            )
             && record.production_binding.target.key == definition.production_key
             && record.production_binding.target.revision == definition.revision_ref
             && record.admission.materializable
             && record.admission.stack_class == NativeItemStackClass::NonStackable
-            && record.admission.legal_destinations.contains(&NativeItemDestination::Ground)
+            && record
+                .admission
+                .legal_destinations
+                .contains(&NativeItemDestination::Ground)
             && matches!(&record.semantics.stack, F::Known(value) if value.stackable == F::Known(false));
-        if !common { return false; }
-        let source_48 = matches!(definition.production_key.as_str(),
-            "oteryn:item.tibia.i33797" | "oteryn:item.tibia.i33801" | "oteryn:item.tibia.i33805"
-            | "oteryn:item.tibia.i33809" | "oteryn:item.tibia.i33813" | "oteryn:item.tibia.i33817"
-            | "oteryn:item.tibia.i33859" | "oteryn:item.tibia.i33863" | "oteryn:item.tibia.i33867"
-            | "oteryn:item.tibia.i33871" | "oteryn:item.tibia.i33875" | "oteryn:item.tibia.i33889"
-            | "oteryn:item.tibia.i33897" | "oteryn:item.tibia.i33901" | "oteryn:item.tibia.i33905" | "oteryn:item.tibia.i33909")
-            && record.admission.legal_destinations == [NativeItemDestination::Ground]
+        if !common {
+            continue;
+        }
+        let source_48 = matches!(
+            definition.production_key.as_str(),
+            "oteryn:item.tibia.i33797"
+                | "oteryn:item.tibia.i33801"
+                | "oteryn:item.tibia.i33805"
+                | "oteryn:item.tibia.i33809"
+                | "oteryn:item.tibia.i33813"
+                | "oteryn:item.tibia.i33817"
+                | "oteryn:item.tibia.i33859"
+                | "oteryn:item.tibia.i33863"
+                | "oteryn:item.tibia.i33867"
+                | "oteryn:item.tibia.i33871"
+                | "oteryn:item.tibia.i33875"
+                | "oteryn:item.tibia.i33889"
+                | "oteryn:item.tibia.i33897"
+                | "oteryn:item.tibia.i33901"
+                | "oteryn:item.tibia.i33905"
+                | "oteryn:item.tibia.i33909"
+        ) && record.admission.legal_destinations == [NativeItemDestination::Ground]
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::Known(ReferenceItemType::Container))
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
-        let source_plain = matches!(definition.production_key.as_str(),
-            "oteryn:item.tibia.i11589" | "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
-            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984" | "oteryn:item.tibia.i4992")
-            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
+        let source_plain = matches!(
+            definition.production_key.as_str(),
+            "oteryn:item.tibia.i11589"
+                | "oteryn:item.tibia.i33792"
+                | "oteryn:item.tibia.i33793"
+                | "oteryn:item.tibia.i33876"
+                | "oteryn:item.tibia.i33891"
+                | "oteryn:item.tibia.i33949"
+                | "oteryn:item.tibia.i33984"
+                | "oteryn:item.tibia.i4992"
+        ) && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
             "oteryn:item.tibia.i6048" => Some(36),
@@ -880,8 +921,23 @@ fn verified_source_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
-        source_48 || source_plain || source_questpc7
-    }).map(|record| record.production_definition.production_key.clone()).collect()
+        if source_48 || source_plain || source_questpc7 {
+            qualified.special.insert(definition.production_key.clone());
+        }
+        // Retain the pinned physical capacity while the independent mint and
+        // view owners still bound the number of entries they can process.
+        if record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::Known(ReferenceItemType::Container))
+            && matches!(&record.semantics.physical, F::Known(value) if value.pickupable == F::Known(false))
+            && let F::Known(container) = &record.semantics.container
+            && let F::Known(capacity @ 49..=255) = container.capacity
+        {
+            qualified
+                .large_containers
+                .insert(definition.production_key.clone(), u32::from(capacity));
+        }
+    }
+    qualified
 }
 
 /// W07/Echo rules read exact Crystal 201189f stars. Native Bestiary progression is
@@ -908,7 +964,7 @@ fn source_tusk_shield_pair(creature: &str, loot: &SectionRef) -> bool {
 
 struct CorpseAdmission<'a> {
     maximum_corpse_capacity: u32,
-    verified_source_corpses: &'a HashSet<String>,
+    verified_source_corpses: &'a VerifiedSourceCorpses,
 }
 
 fn row(
@@ -966,7 +1022,7 @@ fn row(
         .details
         .as_ref()
         .is_some_and(|details| details.system_eligibility.reward_boss);
-    let source_plain = verified_source_corpses.contains(&corpse.key)
+    let source_plain = verified_source_corpses.special.contains(&corpse.key)
         && source_plain_corpse_pair(creature, &corpse, private_reward);
     if !source_plain {
         items
@@ -978,15 +1034,17 @@ fn row(
                 // materializable physical container's positive capacity is admitted.
                 (*capacity > 0 && private_reward)
                     || (1..=maximum_corpse_capacity).contains(capacity)
+                    || (corpse.revision == "definition-r1"
+                        && verified_source_corpses.large_containers.get(&corpse.key) == Some(capacity))
                     // Source capacity36 belongs only to this exact Seacrest
                     // body; the independent runtime loot-entry limit stays30.
                     || (*capacity == 36
                         && corpse.key == "oteryn:item.tibia.i21893"
                         && corpse.revision == "definition-r1")
                     || (*capacity == 48
-                        && verified_source_corpses.contains(&corpse.key)
+                        && verified_source_corpses.special.contains(&corpse.key)
                         && source_soul_war_corpse_pair(creature, profile, &corpse))
-                    || (verified_source_corpses.contains(&corpse.key)
+                    || (verified_source_corpses.special.contains(&corpse.key)
                         && source_questpc7_corpse_capacity(creature, &corpse) == Some(*capacity))
             })
             .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
@@ -1216,7 +1274,7 @@ mod private_loot_capacity_tests {
                 None,
                 CorpseAdmission {
                     maximum_corpse_capacity: 30,
-                    verified_source_corpses: &HashSet::new(),
+                    verified_source_corpses: &VerifiedSourceCorpses::default(),
                 },
             )
             .is_ok()
@@ -1237,7 +1295,7 @@ mod private_loot_capacity_tests {
                 None,
                 CorpseAdmission {
                     maximum_corpse_capacity: 30,
-                    verified_source_corpses: &HashSet::new(),
+                    verified_source_corpses: &VerifiedSourceCorpses::default(),
                 },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
@@ -1260,7 +1318,7 @@ mod private_loot_capacity_tests {
                     None,
                     CorpseAdmission {
                         maximum_corpse_capacity: 30,
-                        verified_source_corpses: &HashSet::new(),
+                        verified_source_corpses: &VerifiedSourceCorpses::default(),
                     },
                 ),
                 Err(NoSettlementReason::CorpseItemInadmissible)
@@ -1278,7 +1336,7 @@ mod private_loot_capacity_tests {
                 None,
                 CorpseAdmission {
                     maximum_corpse_capacity: 30,
-                    verified_source_corpses: &HashSet::new(),
+                    verified_source_corpses: &VerifiedSourceCorpses::default(),
                 },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
@@ -1329,7 +1387,7 @@ mod private_loot_tests {
                 None,
                 CorpseAdmission {
                     maximum_corpse_capacity: 30,
-                    verified_source_corpses: &HashSet::new(),
+                    verified_source_corpses: &VerifiedSourceCorpses::default(),
                 },
             )
             .is_ok()
@@ -1350,7 +1408,7 @@ mod private_loot_tests {
                 None,
                 CorpseAdmission {
                     maximum_corpse_capacity: 30,
-                    verified_source_corpses: &HashSet::new(),
+                    verified_source_corpses: &VerifiedSourceCorpses::default(),
                 },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
@@ -1373,7 +1431,7 @@ mod private_loot_tests {
                     None,
                     CorpseAdmission {
                         maximum_corpse_capacity: 30,
-                        verified_source_corpses: &HashSet::new(),
+                        verified_source_corpses: &VerifiedSourceCorpses::default(),
                     },
                 ),
                 Err(NoSettlementReason::CorpseItemInadmissible)
@@ -1391,7 +1449,7 @@ mod private_loot_tests {
                 None,
                 CorpseAdmission {
                     maximum_corpse_capacity: 30,
-                    verified_source_corpses: &HashSet::new(),
+                    verified_source_corpses: &VerifiedSourceCorpses::default(),
                 },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
@@ -1421,7 +1479,7 @@ mod source_48_corpse_tests {
         // The exact source closure includes sixteen48-capacity bodies and
         // five plain bodies; unrelated admitted Items remain excluded.
         assert_eq!(
-            verified_source_corpses(Some(&items)),
+            verified_source_corpses(Some(&items)).special,
             std::collections::HashSet::from(
                 [
                     "oteryn:item.tibia.i33792",
@@ -1460,14 +1518,26 @@ mod source_48_corpse_tests {
             .admission
             .legal_destinations
             .push(NativeItemDestination::CharacterInventory);
-        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
+        assert!(
+            !verified_source_corpses(Some(&items))
+                .special
+                .contains(greed_key)
+        );
         items.records[original] = record.clone();
         if let F::Known(container) = &mut items.records[original].semantics.container {
             container.capacity = F::Known(47);
         }
-        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
+        assert!(
+            !verified_source_corpses(Some(&items))
+                .special
+                .contains(greed_key)
+        );
         items.records[original] = record;
-        assert!(verified_source_corpses(Some(&items)).contains(greed_key));
+        assert!(
+            verified_source_corpses(Some(&items))
+                .special
+                .contains(greed_key)
+        );
         let mut profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
             "details": {
                 "display_name":"Goshnar's Greed","inspection":"","defense":0,"critical_chance_ppm":0,
