@@ -176,12 +176,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(command_id) = CommandId::new(command.command_id) else {
             return refuse("command_id", QuickLootRefusal::InvalidRequest);
         };
-        let permit = match self.try_spell_lane_permit().await {
-            Ok(permit) => permit,
-            Err(error) => {
-                log_refusal(&admitted, command.command_id, "spell_lane", &error);
-                return rejected(durability_refusal(&error));
-            }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return refuse("spell_lane", QuickLootRefusal::Unavailable);
         };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
