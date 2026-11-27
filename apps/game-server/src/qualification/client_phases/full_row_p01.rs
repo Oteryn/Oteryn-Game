@@ -135,6 +135,14 @@ pub(super) async fn logout_when_ready(client: &mut DevClientSession) -> TestResu
     Ok(())
 }
 
+pub(super) async fn close_relog_fixture(client: &mut DevClientSession) -> TestResult {
+    let (cleanup, detail, _, _) = fixture_logout_retrying_busy(client).await?;
+    if cleanup != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P01 relog fixture cleanup refused: {detail}").into());
+    }
+    Ok(())
+}
+
 async fn query(client: &mut DevClientSession) -> TestResult<CharmProgressionReply> {
     let reply = command(client, CharmProgressionAction::Query).await?;
     if reply.outcome != CharmProgressionOutcome::Query || reply.charms.charms.is_empty() {
@@ -790,7 +798,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "step=charm-proc no Enflame fire damage observed during bounded unarmed hunts".into(),
         );
     }
-    logout_when_ready(&mut fresh).await
+    close_relog_fixture(&mut fresh).await
 }
 
 #[cfg(test)]

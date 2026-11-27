@@ -267,7 +267,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if durable != after {
         return Err(format!("P01.client relog lost the changed views: {durable:?}").into());
     }
-    full_row_p01::logout_when_ready(&mut fresh).await?;
+    full_row_p01::close_relog_fixture(&mut fresh).await?;
     let session = uuid_text(old_session.as_bytes());
     let durable_session = uuid_text(fresh.join_snapshot().game_session_id.as_bytes());
     let expected = format!(
