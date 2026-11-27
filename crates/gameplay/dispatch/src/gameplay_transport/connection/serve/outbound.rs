@@ -130,7 +130,7 @@ where
     if command.command_type == oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
         && matches!(
             dispatch,
-            Dispatch::Reply(crate::foundation::CommandStatus::Rejected, _)
+            Dispatch::Reply(crate::foundation::CommandStatus::Rejected, _) | Dispatch::Unregistered
         )
     {
         return Ok(());
