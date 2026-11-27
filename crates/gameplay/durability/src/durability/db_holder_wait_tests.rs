@@ -13,7 +13,9 @@ fn site() -> Site {
 }
 
 fn current_thread() -> Result<tokio::runtime::Runtime, std::io::Error> {
-    tokio::runtime::Builder::new_current_thread().enable_all().build()
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
 }
 
 #[test]
@@ -22,8 +24,18 @@ fn a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most() {
     let start = Instant::now();
     let mut waits = Vec::new();
     note_wait_refused(&mut waits, waiter, Some(owner), start);
-    note_wait_refused(&mut waits, waiter, Some(other), start + Duration::from_millis(200));
-    note_wait_refused(&mut waits, waiter, Some(owner), start + Duration::from_millis(400));
+    note_wait_refused(
+        &mut waits,
+        waiter,
+        Some(other),
+        start + Duration::from_millis(200),
+    );
+    note_wait_refused(
+        &mut waits,
+        waiter,
+        Some(owner),
+        start + Duration::from_millis(400),
+    );
     let end = start + Duration::from_millis(650);
     let wait = finish_wait(&mut waits, waiter, end).ok_or("a 650 ms wait is reported");
     assert!(waits.is_empty());
@@ -99,7 +111,8 @@ fn slow_and_stuck_lines_name_the_caller_and_held_time() {
 }
 
 #[test]
-fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<(), std::io::Error> {
+fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<(), std::io::Error>
+{
     let runtime = current_thread()?;
     let slot = Arc::new(StdMutex::new(None));
     let waiter = site();
@@ -114,16 +127,18 @@ fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<
                     Instant::now() - Duration::from_millis(600),
                 );
             }
-            let owner = PassOwner::checked_out(&slot, waiter, Instant::now());
-            assert!(
-                slot.lock()
-                    .is_ok_and(|held| held.is_some_and(|(_, _, trace)| trace == Some(TRACE)))
-            );
+            let deadline = TokioInstant::now() + DB_PASS_DEADLINE;
+            let owner = PassOwner::checked_out(&slot, waiter, Instant::now(), deadline);
+            assert!(slot.lock().is_ok_and(|held| {
+                held.is_some_and(|(_, _, bound, trace)| bound == deadline && trace == Some(TRACE))
+            }));
             drop(owner);
         }));
     });
     let wait = lines.iter().find(|line| line.contains("event=holder_wait"));
-    let dropped = lines.iter().find(|line| line.contains("event=pass_dropped"));
+    let dropped = lines
+        .iter()
+        .find(|line| line.contains("event=pass_dropped"));
     for line in [wait, dropped] {
         assert!(
             line.is_some_and(|line| line.contains(&format!("trace={TRACE_TEXT}"))),
@@ -134,14 +149,16 @@ fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<
 }
 
 #[test]
-fn a_root_task_inherits_the_trace_of_the_task_that_spawned_it() -> Result<(), Box<dyn std::error::Error>> {
+fn a_root_task_inherits_the_trace_of_the_task_that_spawned_it()
+-> Result<(), Box<dyn std::error::Error>> {
     let runtime = current_thread()?;
     runtime.block_on(async {
         // Lazy: the fixture establishes no connection.
         let root = DurabilityRoot::connect_test_runtime("postgres://oteryn@127.0.0.1:1/oteryn")?;
-        let traced =
-            with_holder_trace(TRACE, async { root.spawn_task(async { holder_trace() }).await })
-                .await?;
+        let traced = with_holder_trace(TRACE, async {
+            root.spawn_task(async { holder_trace() }).await
+        })
+        .await?;
         assert_eq!(traced, Some(TRACE));
         assert_eq!(root.spawn_task(async { holder_trace() }).await?, None);
         Ok(())
