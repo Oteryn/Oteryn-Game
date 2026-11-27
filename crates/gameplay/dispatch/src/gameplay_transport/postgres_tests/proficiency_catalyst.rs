@@ -1,7 +1,7 @@
 //! P08 Proficiency Catalysts through the production use-with owner: one unit burns with one
 //! `catalyst` receipt, a replay burns nothing, and a non-weapon target spends nothing.
-use super::adventurers_stone::{assert_holder_refusal, contend_use, holder_timeout_delay, send_use};
 use super::fixture::{Harness, debug, id, run};
+use super::use_holder_fixtures::{assert_holder_refusal, contend_use, holder_timeout_delay, send_use};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_proficiency::ProficiencyDefinitions;
 use crate::foundation::MovementLocalPosition;
