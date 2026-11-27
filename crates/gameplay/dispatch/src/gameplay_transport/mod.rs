@@ -1627,15 +1627,37 @@ impl<'r> AdmissionRetryBudget<'r> {
             }
             return false;
         }
+        self.wait_for_holder_retry(now, (now + self.backoff).min(self.deadline))
+            .await;
+        if tokio::time::Instant::now() < self.deadline {
+            return true;
+        }
+        if let Some(Some(waiter)) = self.waiter.get() {
+            waiter.stop_waiting();
+        }
+        false
+    }
+
+    /// A checkout can use the remaining fraction of a backoff interval.
+    /// Only the wait is bounded here. The issued pass keeps its own deadline.
+    async fn retries_holder_checkout(&self) -> bool {
+        let now = tokio::time::Instant::now();
+        if now >= self.deadline {
+            return false;
+        }
+        self.wait_for_holder_retry(now, (now + self.backoff).min(self.deadline))
+            .await;
+        tokio::time::Instant::now() < self.deadline
+    }
+
+    async fn wait_for_holder_retry(&self, now: tokio::time::Instant, latest: tokio::time::Instant) {
         match self.root {
             Some(root) => {
                 let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
-                let latest = (now + self.backoff).min(self.deadline);
                 if !root.wait_holder_turn(earliest, latest).await {
                     // A retired holder cannot emit a return notification. Service
-                    // real readiness within this same retry window, then retry on
-                    // its observed return; neither deadline nor refusal changes.
+                    // readiness within the same retry interval.
                     let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
                     let retry_at = if matches!(ready, Ok(Ok(()))) {
                         earliest.min(latest)
@@ -1645,15 +1667,8 @@ impl<'r> AdmissionRetryBudget<'r> {
                     tokio::time::sleep_until(retry_at).await;
                 }
             }
-            None => tokio::time::sleep(self.backoff).await,
+            None => tokio::time::sleep_until(latest).await,
         }
-        if tokio::time::Instant::now() < self.deadline {
-            return true;
-        }
-        if let Some(Some(waiter)) = self.waiter.get() {
-            waiter.stop_waiting();
-        }
-        false
     }
 
     /// Runs one durable `step` of the attempt, retrying an unavailable outcome (such as a

@@ -118,6 +118,8 @@ pub enum MovementError {
     Blocked,
     CapacityExceeded,
     NotQualified,
+    HolderUnavailable,
+    FieldAuthorityUnavailable,
 }
 
 impl std::fmt::Display for MovementError {

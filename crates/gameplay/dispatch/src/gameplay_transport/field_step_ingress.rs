@@ -63,6 +63,9 @@ impl StepIngressRead<'_, '_> {
         ),
         MovementError,
     > {
+        if states.has_pending_spell_commit(actor, session) {
+            return Err(MovementError::FieldAuthorityUnavailable);
+        }
         let fence = self.read.fence();
         if actor != self.actor
             || !self.player_fields_current
@@ -74,7 +77,6 @@ impl StepIngressRead<'_, '_> {
                 != self.origin
             || self.origin.context() != runtime.pinned_movement_context()
             || states.get(runtime, actor, session) != self.before.as_ref()
-            || states.has_pending_spell_commit(actor, session)
             || !runtime.player_step_allowed(actor, session, direction.delta())
             || fence.game_session_id != session
             || fence.runtime_scope != runtime.binding().runtime_scope()
@@ -358,7 +360,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Ok(pass) = pass {
             pass.run(|_, _| Box::pin(async { Ok(()) }))
                 .await
-                .map_err(|_| MovementError::NotQualified)?;
+                .map_err(|_| MovementError::FieldAuthorityUnavailable)?;
         }
         Ok(())
     }
@@ -370,20 +372,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::IssuedSemanticPass,
         crate::gameplay_transport::connection::AdmissionRefusal,
     > {
-        // Retry only RootUnavailable. Keep transaction,
-        // field refusal and reconciliation results outside this retry scope.
-        super::super::AdmissionRetryBudget::for_command(self.root)
-            .retry_unavailable(async || {
-                self.root
-                    .try_issue_semantic_pass()
-                    .map_err(|error| match error {
-                        crate::durability::DurabilityError::RootUnavailable => {
-                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable
-                        }
-                        _ => crate::gameplay_transport::connection::AdmissionRefusal::Rejected,
-                    })
-            })
-            .await
+        use crate::durability::DurabilityError;
+        use crate::gameplay_transport::connection::AdmissionRefusal;
+
+        let budget = super::super::AdmissionRetryBudget::for_command(self.root);
+        loop {
+            match self.root.try_issue_semantic_pass() {
+                Ok(pass) => return Ok(pass),
+                Err(DurabilityError::RootUnavailable) => {
+                    if !budget.retries_holder_checkout().await {
+                        return Err(AdmissionRefusal::Unavailable);
+                    }
+                }
+                Err(_) => return Err(AdmissionRefusal::Rejected),
+            }
+        }
     }
 
     /// Runtime and state locks are held by the real transport caller. Ground
@@ -407,7 +410,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         equipment_delta: Option<i32>,
     ) -> super::actor_movement::StepInChannel {
         use super::actor_movement::step_in_channel;
-        let fail = || Err(MovementError::NotQualified);
+        let fail = || Err(MovementError::FieldAuthorityUnavailable);
         let Some(source) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -428,9 +431,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(_room) = self.rooms().gate_field_step_ingress() else {
             return fail();
         };
-        let Ok(origin) = runtime.read_actor_position(actor) else {
-            return fail();
-        };
+        let origin = runtime
+            .read_actor_position(actor)
+            .map_err(MovementError::Actor)?;
         // Preserve original accepted entry movement without inventing an empty
         // field owner. Field casts cannot qualify against its absent metadata.
         if !crate::movement::source_floor_change::is_source_profile(self.movement_cells())
@@ -469,7 +472,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(pass) => pass,
             Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable) => {
                 super::super::operator_event("event=step_rejected_holder_busy");
-                return fail();
+                return Err(MovementError::HolderUnavailable);
             }
             Err(_) => return fail(),
         };
@@ -623,8 +626,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = context.4 {
             outcome
         } else {
-            let _ = result;
-            fail()
+            match result {
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    Err(MovementError::HolderUnavailable)
+                }
+                _ => fail(),
+            }
         }
     }
 }

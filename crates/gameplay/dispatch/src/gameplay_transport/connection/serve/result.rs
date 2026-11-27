@@ -365,7 +365,9 @@ pub(super) fn encode(
             }
         }
         Dispatch::Achievements(
-            AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
+            AccountAchievementsReply::Terminal(_)
+            | AccountAchievementsReply::Unavailable
+            | AccountAchievementsReply::Rejected,
         )
         | Dispatch::CharacterInfo(
             crate::gameplay_transport::character_info::CharacterInfoReply::Rejected

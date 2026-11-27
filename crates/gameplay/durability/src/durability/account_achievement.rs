@@ -26,7 +26,7 @@
 
 use super::DurabilityError;
 use super::DurabilityRoot;
-use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::character_authority::{ReconciledCharacterAuthority, recovery_fence_is_current};
 use super::character_progression::uuid_text;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::reward_claim_mint::RewardClaimFenceChecked;
@@ -436,12 +436,15 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| AccountAchievementReadError::AuthorityRejected)?;
-        Ok(self
+        self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    if !recovery_fence_is_current(&mut tx, &recovery, true).await? {
+                        tx.rollback().await?;
+                        return Ok(None);
+                    }
                     let rows = sqlx::query(
                         "SELECT f.achievement_key, r.earned_at \
                            FROM game_account_achievements f \
@@ -467,10 +470,11 @@ impl DurabilityRoot {
                         })
                         .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(facts)
+                    Ok(Some(facts))
                 })
             })
-            .await?)
+            .await?
+            .ok_or(AccountAchievementReadError::AuthorityRejected)
     }
 }
 

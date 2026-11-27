@@ -481,6 +481,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         "event=step_rejected_movement kind=CapacityExceeded"
                     }
                     MovementError::NotQualified => "event=step_rejected_movement kind=NotQualified",
+                    MovementError::HolderUnavailable => {
+                        "event=step_rejected_movement kind=HolderUnavailable"
+                    }
+                    MovementError::FieldAuthorityUnavailable => {
+                        "event=step_rejected_movement kind=FieldAuthorityUnavailable"
+                    }
                 });
                 (StepOutcome::rejected(), None)
             }
