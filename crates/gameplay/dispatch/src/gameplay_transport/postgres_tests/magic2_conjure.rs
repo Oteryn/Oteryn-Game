@@ -367,6 +367,7 @@ async fn check_conjure_wire(
 
     const LIGHT_MISSILE: &str = "oteryn:item.tibia.i3174";
     const HAND_SLOT: i16 = 5;
+    const HELD_BLANK: u8 = 98;
     seed_main_backpack(h, &[]).await?;
     {
         let mut tx = h.pool.begin().await?;
@@ -375,7 +376,12 @@ async fn check_conjure_wire(
             .execute(&mut *tx)
             .await?;
         sqlx::raw_sql(sqlx::AssertSqlSafe(
-            crate::durability::item_fee_burn::test_support::item(70, BLANK, "definition-r1", 1),
+            crate::durability::item_fee_burn::test_support::item(
+                HELD_BLANK,
+                BLANK,
+                "definition-r1",
+                1,
+            ),
         ))
         .execute(&mut *tx)
         .await?;
@@ -383,7 +389,7 @@ async fn check_conjure_wire(
             .bind(id(41).as_slice())
             .bind(id(42).as_slice())
             .bind(HAND_SLOT)
-            .bind(id(70).as_slice())
+            .bind(id(HELD_BLANK).as_slice())
             .execute(&mut *tx)
             .await?;
         tx.commit().await?;
