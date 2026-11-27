@@ -26,13 +26,13 @@ async fn platform_premium_evidence(
             "SELECT e.entitlement_id, e.authority_revision::bigint
              FROM game_premium_account_fence f
              JOIN game_premium_evidence e USING (account_id, authority_revision)
-             WHERE f.account_id=encode($1,'hex')::uuid AND f.conflict_authority_revision IS NULL
+             WHERE f.account_id=$1::text::uuid AND f.conflict_authority_revision IS NULL
                AND e.entitlement_state=1 AND e.entitlement_id IS NOT NULL
                AND e.effective_from_us <= extract(epoch FROM statement_timestamp()) * 1000000
                AND LEAST(e.effective_until_us, e.authority_valid_until_us, e.refresh_after_us)
                    > extract(epoch FROM statement_timestamp()) * 1000000",
         )
-        .bind(scope.accounts[0].as_slice())
+        .bind(scope.accounts[0].as_str())
         .fetch_optional(&mut connection)
         .await?;
         if let Some((entitlement, revision)) = current {
