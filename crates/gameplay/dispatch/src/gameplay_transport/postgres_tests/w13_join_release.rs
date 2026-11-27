@@ -53,19 +53,29 @@ fn w13_join_refuses_with_typed_holder_cause_at_deadline_postgres() -> TestResult
 
 fn run(admin: String, case: Case) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("w13-join-release", move || {
-        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
         let mut result = Ok(());
         let lines = oteryn_error_codes::capture(|| {
             result = runtime.block_on(scenario(admin, case));
         });
         result?;
-        assert!(lines.iter().any(|line| line.contains("event=admission_retry")
-            && line.contains("phase=spell_catalog")
-            && line.contains("cause=holder_busy")));
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains("event=admission_retry")
+                    && line.contains("phase=spell_catalog")
+                    && line.contains("cause=holder_busy"))
+        );
         if case == Case::Relog {
-            assert!(lines.iter().any(|line| line.contains("event=admission_retry")
-                && line.contains("phase=fresh_admission")
-                && line.contains("cause=holder_busy")));
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=admission_retry")
+                        && line.contains("phase=fresh_admission")
+                        && line.contains("cause=holder_busy"))
+            );
         }
         if case == Case::Exhausted {
             assert!(lines.iter().any(|line| line.contains("event=serve_end")
@@ -115,14 +125,28 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     };
 
     let source = RecoverySource::start(h).await?;
-    let now = i64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs())?;
+    let now = i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs(),
+    )?;
     let mut readiness = super::fresh_fixture::fresh::Source::new(now)?;
-    readiness.rows.retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    h.root.publish_runtime_readiness(
-        &h.node, &AdmissionAuthorityPublicationV1::prepare(&readiness, now).map_err(debug)?,
-    ).await?;
+    readiness
+        .rows
+        .retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
+    h.root
+        .publish_runtime_readiness(
+            &h.node,
+            &AdmissionAuthorityPublicationV1::prepare(&readiness, now).map_err(debug)?,
+        )
+        .await
+        .map_err(debug)?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let deps = Dependencies::new()?;
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &source.evidence;
@@ -131,14 +155,21 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     if case != Case::Exhausted {
         let frame = bootstrap(91, &[])?;
         let (old, pending) = admit_frame_for_join(&mut server, &frame, &owner, &Identifiers(91))
-            .await.map_err(debug)?;
+            .await
+            .map_err(debug)?;
         assert!(pending.is_some(), "the old actor is a normal Channel entry");
         // Exercise the terminal release owner and assert its exact successful result.
-        assert_eq!(owner.logout(old).await, LogoutReply::Result(LogoutResult::Accepted));
+        assert_eq!(
+            owner.logout(old).await,
+            LogoutReply::Result(LogoutResult::Accepted)
+        );
         let terminal: bool = sqlx::query_scalar(
             "SELECT session_state=3 FROM game_durability_reconnect_sessions
                 WHERE game_session_id=encode($1,'hex')::uuid",
-        ).bind(old.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        )
+        .bind(old.game_session_id.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
         assert!(terminal);
     }
 
@@ -151,13 +182,25 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         ));
         if case == Case::Relog {
             let holder = h.root.try_issue_semantic_pass()?;
-            assert!(tokio::time::timeout(Duration::from_millis(100), &mut admission).await.is_err());
+            assert!(
+                tokio::time::timeout(Duration::from_millis(100), &mut admission)
+                    .await
+                    .is_err()
+            );
             holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
         }
         admission.await.map_err(debug)?
     };
-    assert!(admitted.continuity.selected_capabilities.contains(supported[0]));
-    assert!(pending.is_some(), "normal fresh Channel admission defers acceptance");
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(supported[0])
+    );
+    assert!(
+        pending.is_some(),
+        "normal fresh Channel admission defers acceptance"
+    );
 
     let barrier = Arc::new((Notify::new(), Notify::new()));
     let returned = Notify::new();
@@ -166,7 +209,8 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         let end = DurabilityRoot::with_holder_owner(BEFORE_JOIN_SNAPSHOT.scope(
             barrier.clone(),
             serve_admitted_for_join(&mut server, admitted, &owner, IDLE_LIVENESS, &mut pending),
-        )).await;
+        ))
+        .await;
         finished.notify_one();
         end
     };
@@ -177,12 +221,19 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         if case == Case::Exhausted {
             finished.notified().await;
         } else {
-            assert!(tokio::time::timeout(
-                crate::gameplay_transport::COMMAND_HOLDER_WINDOW + Duration::from_millis(250),
-                finished.notified(),
-            ).await.is_err(), "snapshot refused while the holder was still settling");
+            assert!(
+                tokio::time::timeout(
+                    crate::gameplay_transport::COMMAND_HOLDER_WINDOW + Duration::from_millis(250),
+                    finished.notified(),
+                )
+                .await
+                .is_err(),
+                "snapshot refused while the holder was still settling"
+            );
         }
-        holder.return_to_pool_observed_until(Instant::now() + crate::durability::DB_PASS_DEADLINE).await;
+        holder
+            .return_to_pool_observed_until(Instant::now() + crate::durability::DB_PASS_DEADLINE)
+            .await;
         returned.notify_one();
         Ok::<_, Box<dyn std::error::Error>>(())
     };
@@ -192,8 +243,12 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         if case == Case::Exhausted {
             assert_eq!(envelope.message_type(), MessageType::ProtocolError);
             assert_eq!(envelope.connection_generation(), 0);
-            assert_eq!(decode_protocol_error(envelope.payload()).map_err(debug)?.error_code,
-                FoundationProtocolError::SessionJoinUnavailable.code());
+            assert_eq!(
+                decode_protocol_error(envelope.payload())
+                    .map_err(debug)?
+                    .error_code,
+                FoundationProtocolError::SessionJoinUnavailable.code()
+            );
         } else {
             assert_eq!(envelope.message_type(), MessageType::ServerAccepted);
             loop {
@@ -211,11 +266,15 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     };
     let (end, contend, receive) = tokio::time::timeout(Duration::from_secs(22), async {
         tokio::join!(serving, contending, receiving)
-    }).await?;
+    })
+    .await?;
     contend?;
     receive?;
     if case == Case::Exhausted {
-        assert!(matches!(end, ConnectionEnd::AdmittedThenClosed(_, FoundationProtocolError::SessionJoinUnavailable)));
+        assert!(matches!(
+            end,
+            ConnectionEnd::AdmittedThenClosed(_, FoundationProtocolError::SessionJoinUnavailable)
+        ));
         assert!(pending.is_some());
     } else {
         assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
