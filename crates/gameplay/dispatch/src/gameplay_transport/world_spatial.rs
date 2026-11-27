@@ -1254,29 +1254,48 @@ mod tests {
             100,
             7,
         );
-        view.snapshot(&channel([corpse]), &mut no_handles)
+        corpse.generation = 0;
+        let mut items = super::super::item_view::SessionItemView::resume(Default::default());
+        let mut attach = |entities: &mut [WorldSpatialEntity]| {
+            items
+                .attach_spatial_handles(entities)
+                .map_err(|_| WorldSpatialError::Malformed)
+        };
+        let initial = view
+            .snapshot(&channel([corpse]), &mut attach)
             .expect("snapshot");
+        let EntityDetail::Object {
+            item_handle: Some(initial_handle),
+            ..
+        } = initial.entities[1].detail
+        else {
+            panic!("snapshot corpse has a handle");
+        };
         corpse.kind = VisibleKind::Corpse {
             native_appearance_id: None,
             item_definition_ref: std::num::NonZeroU32::new(2).expect("spent Item ref"),
         };
         let changed = view
-            .refresh(&channel([corpse]), &mut no_handles)
+            .refresh(&channel([corpse]), &mut attach)
             .expect("corpse Item update");
         assert_eq!(update_ids(&changed), [id(1)]);
         let VisibilityUpdate::Delta(delta) = changed else {
             panic!("corpse Item delta")
         };
-        assert!(matches!(
-            delta.update[0].detail,
+        let (_, bytes) = encode_visibility_delta(&[4, 6], &delta).expect("encode delta");
+        let decoded = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(&bytes)
+            .expect("decode delta");
+        assert_eq!(
+            decoded.update[0].detail,
             EntityDetail::Object {
                 item_definition_ref: 2,
-                ..
+                quantity: 1,
+                item_handle: Some(initial_handle),
             }
-        ));
+        );
         assert_eq!(corpse.revision, 0);
         assert_eq!(
-            view.refresh(&channel([corpse]), &mut no_handles)
+            view.refresh(&channel([corpse]), &mut attach)
                 .expect("unchanged"),
             VisibilityUpdate::Unchanged
         );

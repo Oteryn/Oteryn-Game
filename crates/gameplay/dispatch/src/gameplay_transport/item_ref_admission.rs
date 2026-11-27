@@ -7,7 +7,6 @@
 //! The index is read from the active generation rather than carried on `ChannelContentPin`:
 //! `foundation` is also compiled into the durability integration tests without `content`.
 
-use super::ComposedFreshAdmission;
 use super::capabilities::{
     ITEM_VIEW_OFFERED_CAPABILITIES, OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES,
 };
@@ -17,6 +16,7 @@ use super::item_view::{
     inventory_from_backpack,
 };
 use super::world_spatial::{ActorPosition, ChannelEntity, VisibleKind};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission};
 use super::{FreshAdmissionStore, GameSessionId, GameSessionState};
 use crate::combat_pickup::GroundPickupError;
 use crate::content::ActiveGeneration;
@@ -180,39 +180,88 @@ pub(super) async fn observe_item_target(
     let ItemKey::Entity(identity) = target else {
         return None;
     };
-    let (position, corpse, index) = {
+    let actor_scope_generation = actor.scope_generation().get();
+    let (position, corpse, index, scope_generation) = {
         let mut runtime = admission.runtime.lock().await;
-        let index = pinned_index(&runtime, admission.active_generation)?;
-        let position = runtime
-            .borrow_movement_position()
-            .read(actor)
-            .ok()?
-            .position();
-        (position, runtime.bound_corpse(identity), index)
+        let scope_generation = runtime.binding().scope_generation().get();
+        let Some(index) = pinned_index(&runtime, admission.active_generation) else {
+            log_corpse_observation_stale(
+                "content_pin",
+                actor_scope_generation,
+                scope_generation,
+                None,
+            );
+            return None;
+        };
+        let Ok(position) = runtime.borrow_movement_position().read(actor) else {
+            log_corpse_observation_stale(
+                "actor_position",
+                actor_scope_generation,
+                scope_generation,
+                None,
+            );
+            return None;
+        };
+        (
+            position.position(),
+            runtime.bound_corpse(identity),
+            index,
+            scope_generation,
+        )
     };
     let actor_position = ActorPosition {
         x: position.x,
         y: position.y,
         floor: position.floor,
     };
-    let Some(corpse) = corpse else {
-        return Some(ItemTargetObservation {
+    let log = |stage: &str| {
+        log_corpse_observation_stale(
+            stage,
+            actor_scope_generation,
+            scope_generation,
+            corpse.as_ref().map(|corpse| corpse.revision),
+        );
+    };
+    let gone = || {
+        Some(ItemTargetObservation {
             actor: actor_position,
             target: UseItemTarget::Gone,
-        });
+        })
     };
-    let Some(entries) = admission
-        .root
-        .read_corpse_contents(admission.character, corpse.item.item_instance_id)
+    let Some(corpse) = &corpse else {
+        log("runtime_binding");
+        return gone();
+    };
+    // The source and corpse deadline workers share the durable holder with USE.
+    // Wait for a transient checkout failure under the existing in-session budget.
+    let entries = match AdmissionRetryBudget::for_command(admission.root)
+        .retry_command_guard(async || {
+            match admission
+                .root
+                .read_corpse_contents(admission.character, corpse.item.item_instance_id)
+                .await
+            {
+                Err(ItemTransferError::Unavailable(error)) => Err(error),
+                result => Ok(result),
+            }
+        })
         .await
-        .ok()?
-    else {
-        return Some(ItemTargetObservation {
-            actor: actor_position,
-            target: UseItemTarget::Gone,
-        });
+    {
+        Ok(Ok(Some(entries))) => entries,
+        Ok(Ok(None)) => {
+            log("durable_corpse_gone");
+            return gone();
+        }
+        Ok(Err(_)) => {
+            log("durable_contents_refused");
+            return None;
+        }
+        Err(_) => {
+            log("durable_contents_unavailable");
+            return None;
+        }
     };
-    let contents = entries
+    let Some(contents) = entries
         .iter()
         .map(|entry| {
             Some(ViewItem {
@@ -223,7 +272,11 @@ pub(super) async fn observe_item_target(
                 sub_type: 0,
             })
         })
-        .collect::<Option<Vec<_>>>()?;
+        .collect::<Option<Vec<_>>>()
+    else {
+        log("contents_definition");
+        return None;
+    };
     Some(ItemTargetObservation {
         actor: actor_position,
         target: UseItemTarget::Corpse {
@@ -235,6 +288,19 @@ pub(super) async fn observe_item_target(
             contents,
         },
     })
+}
+
+fn log_corpse_observation_stale(
+    stage: &str,
+    actor_scope_generation: u64,
+    scope_generation: u64,
+    corpse_revision: Option<u64>,
+) {
+    let corpse_revision =
+        corpse_revision.map_or_else(|| "none".to_owned(), |revision| revision.to_string());
+    super::operator_event(&format!(
+        "event=corpse_use_observation_stale stage={stage} actor_scope_generation={actor_scope_generation} scope_generation={scope_generation} corpse_revision={corpse_revision}"
+    ));
 }
 
 /// D1211: resolve every locked carried definition from this exact admitted native generation.
