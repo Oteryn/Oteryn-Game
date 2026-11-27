@@ -783,6 +783,58 @@ fn replay_fixture_view(root: std::path::PathBuf) -> Result<crate::play::PlayView
 
 #[cfg(bevy_shell)]
 #[test]
+fn atlas_resize_on_relog_rebinds_minimap_texture() -> Result<(), Error> {
+    use oteryn_client_domain::world::CELL_PX;
+    use oteryn_client_ui::minimap::{COLUMNS, TILE_PX};
+    use oteryn_renderer::{
+        lighting::PointLight,
+        world::{ATLAS_COLUMNS, atlas_from_cells, builtin_rgba},
+    };
+
+    let root = tempfile::tempdir()?;
+    let view = replay_fixture_view(root.path().to_owned())?;
+    // Index 137 is in palette row 4. At the resized UV, the old atlas samples row 3.
+    let color = 137;
+    super::lock(&view.minimap).cells.insert((7, 105, 200), color);
+    let mut host = crate::bevy_shell::N07dHost::new(true)?;
+    host.admit(view, crate::play::play_channel().0);
+    host.drag_minimap([13, 6])?;
+
+    let at = [28., 24.];
+    for smooth in [false, true] {
+        for (rows, height) in [(3, 96), (4, 128)] {
+            let mut cells = builtin_rgba();
+            let count = ATLAS_COLUMNS * rows;
+            cells.resize(count * (CELL_PX * CELL_PX * 4) as usize, 0);
+            let atlas = atlas_from_cells(cells, count)?;
+            assert_eq!((atlas.width(), atlas.height()), (4096, height));
+
+            {
+                let mut view = host.view_mut()?;
+                view.scene.set_test_presentation_atlas(atlas)?;
+                view.scene.set_lights(if smooth {
+                    vec![PointLight {
+                        position: at,
+                        radius: 128.,
+                        color: [96, 32, 32],
+                    }]
+                } else {
+                    Vec::new()
+                });
+            }
+            let pixel = host.minimap_pixels()?[(24 * COLUMNS * TILE_PX + 28) as usize];
+            assert_eq!(
+                pixel,
+                palette_rgba(color),
+                "sidebar pixel (28, 24) with a 4096x{height} atlas and smooth={smooth}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
 fn minimap_render_target_readback_matches_scene() -> Result<(), Error> {
     let root = tempfile::tempdir()?;
     let mut host = crate::bevy_shell::N07dHost::new(true)?;

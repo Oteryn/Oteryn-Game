@@ -3,6 +3,35 @@ use oteryn_renderer::{SpriteBatch, TileCoord, TileView};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+#[test]
+fn atlas_upload_reuses_same_size_and_releases_resized_image() -> TestResult {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>();
+    let (mut cached, mut handle) = (None, None);
+    let (old, resized) = {
+        let mut images = app.world_mut().resource_mut::<Assets<Image>>();
+        let atlas = AtlasImage::new(1, 1, 1, vec![0; 4])?;
+        let old = upload_atlas(&atlas, &mut cached, &mut handle, &mut images).id();
+        let atlas = AtlasImage::new(1, 1, 1, vec![255; 4])?;
+        let updated = upload_atlas(&atlas, &mut cached, &mut handle, &mut images).id();
+        assert_eq!(updated, old);
+        assert_eq!(
+            images.get(updated).and_then(|image| image.data.as_deref()),
+            Some(atlas.rgba())
+        );
+        let atlas = AtlasImage::new(1, 1, 2, vec![255; 8])?;
+        let resized = upload_atlas(&atlas, &mut cached, &mut handle, &mut images).id();
+        assert_ne!(resized, old);
+        (old, resized)
+    };
+    app.update();
+    let images = app.world().resource::<Assets<Image>>();
+    assert!(!images.contains(old));
+    assert!(images.contains(resized));
+    Ok(())
+}
+
 pub(super) fn bounds(
     sprite: &Sprite,
     transform: &Transform,

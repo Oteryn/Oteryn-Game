@@ -19,6 +19,16 @@ impl Cache {
         }
     }
 
+    pub fn rebind_atlases(&self, assets: &mut MeshAssets, images: [&Handle<Image>; 2]) {
+        for ((_, _, handle), image) in self.batches.iter().zip(images) {
+            if let Some(mut material) = assets.materials.get_mut(handle)
+                && material.texture.as_ref() != Some(image)
+            {
+                material.texture = Some(image.clone());
+            }
+        }
+    }
+
     pub fn draw(
         &mut self,
         commands: &mut Commands,
@@ -29,14 +39,9 @@ impl Cache {
         let (meshes, materials) = (&mut assets.meshes, &mut assets.materials);
         for (index, (vertices, image)) in batches.into_iter().zip(images).enumerate() {
             let mesh = vertices.mesh();
-            if let Some((entity, handle, material)) = self.batches.get(index) {
+            if let Some((entity, handle, _)) = self.batches.get(index) {
                 if let Some(mut existing) = meshes.get_mut(handle) {
                     *existing = mesh;
-                }
-                if materials.get(material).and_then(|m| m.texture.as_ref()) != Some(image)
-                    && let Some(mut material) = materials.get_mut(material)
-                {
-                    material.texture = Some(image.clone());
                 }
                 commands.entity(*entity).insert(Visibility::Visible);
             } else {
