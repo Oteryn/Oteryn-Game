@@ -50,6 +50,39 @@ fn crystal_rope_tools_resolve_a_durable_ground_item_to_its_tile() -> TestResult 
 }
 
 #[test]
+fn crystal_rope_spot_bypasses_unrelated_taming_receipts_when_the_holder_is_busy() -> TestResult {
+    normal_rope_case(super::vertical_move_fixtures::RopeUse::ClimbWithBusyHolder)
+}
+
+#[test]
+fn crystal_rope_spot_refuses_when_its_inventory_holder_stays_busy() -> TestResult {
+    normal_rope_case(super::vertical_move_fixtures::RopeUse::ClimbWithBusyInventory)
+}
+
+fn normal_rope_case(action: super::vertical_move_fixtures::RopeUse) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(move || {
+            super::fixture::run(async |admin| {
+                super::vertical_move_fixtures::agent_rope(
+                    admin,
+                    "oteryn:item.tibia.i3003",
+                    386,
+                    action,
+                )
+                .await
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Crystal rope dispatch panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn secret_agent_ropes_from_a_covered_spot_by_object() -> TestResult {
     agent_rope_case(super::vertical_move_fixtures::RopeUse::CoveredObject)
 }

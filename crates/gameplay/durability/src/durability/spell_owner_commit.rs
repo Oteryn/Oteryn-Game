@@ -99,6 +99,22 @@ impl SpellLane {
         }
     }
 
+    /// A read can report Busy while a writer holds the lane or awaits install.
+    /// It does not queue behind, or take ownership of, the pending mutation.
+    pub fn try_acquire_observation(&self) -> Result<SpellLanePermit, DurabilityError> {
+        let guard = Arc::clone(&self.state)
+            .try_lock_owned()
+            .map_err(|_| DurabilityError::RootUnavailable)?;
+        let permit = SpellLanePermit {
+            scope: self.scope,
+            guard,
+        };
+        if permit.has_unresolved() {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        Ok(permit)
+    }
+
     /// A Channel reload from durable truth (§1.6): the in-memory attempt is dropped with the
     /// runtime it belonged to.
     pub async fn clear_after_reload(&self) {

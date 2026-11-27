@@ -371,6 +371,24 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
+        if before == 3699 {
+            use crate::durability::DurabilityRoot;
+            use crate::gameplay_transport::connection::UseCommand;
+
+            let held = harness.root.try_issue_background_semantic_pass()?;
+            let busy = DurabilityRoot::with_holder_owner(owner.use_event_world_object(
+                deps.actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: admitted.continuity.next_command_id,
+                    item_fence: admitted.item_fence,
+                },
+                target.clone(),
+            )).await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(matches!(busy, Ok(Some(ref outcome)) if outcome.disposition == UseDisposition::Rejected),
+                "busy harvest receipt must yield a typed reply: {busy:?}");
+        }
         if yields && source.is_none() {
             // Fail after the real map CAS, before value rows. The transaction must restore
             // both map and value state, and retrying cannot select a different flower draw.

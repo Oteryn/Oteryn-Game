@@ -54,6 +54,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        let rope_spot = self.exact_rope_spot_placement(command, &intent).is_some();
+        if rope_spot {
+            // Rope spots are known from the active map. Let their tool owner
+            // run before unrelated crafting receipts can hold up the command.
+            match self
+                .use_rope_tool(actor, command, &intent, source, target)
+                .await
+            {
+                Ok(Some(outcome)) => return Some(outcome),
+                Ok(None) => {}
+                Err(()) => return None,
+            }
+        }
         if matches!(
             intent.use_with_map_item.as_ref(),
             Some(MapUseTarget::Item(_))
@@ -127,13 +140,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(()) => return None,
         }
-        match self
-            .use_rope_tool(actor, command, &intent, source, target)
-            .await
-        {
-            Ok(Some(outcome)) => return Some(outcome),
-            Ok(None) => {}
-            Err(()) => return None,
+        if !rope_spot {
+            match self
+                .use_rope_tool(actor, command, &intent, source, target)
+                .await
+            {
+                Ok(Some(outcome)) => return Some(outcome),
+                Ok(None) => {}
+                Err(()) => return None,
+            }
         }
         match self
             .use_terrain_tool(actor, command, &intent, source, target)

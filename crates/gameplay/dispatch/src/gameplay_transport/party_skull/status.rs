@@ -26,8 +26,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(DurabilityError::Unavailable);
         }
-        let permit = self.try_spell_lane_permit().await?;
-        let runtime = self.runtime.lock().await;
+        let permit = self.spell_lane.try_acquire_observation()?;
+        let runtime = self
+            .runtime
+            .try_lock()
+            .map_err(|_| DurabilityError::RootUnavailable)?;
         runtime
             .assert_actor_spell_unreserved(actor)
             .map_err(|_| DurabilityError::Unavailable)?;

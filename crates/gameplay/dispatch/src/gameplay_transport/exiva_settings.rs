@@ -49,7 +49,11 @@ pub(super) async fn execute(
     let content = active.native_gameplay()?;
     let permit = owner.spell_lane_permit().await?;
     let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
-    let pass = owner.root.try_issue_semantic_pass().ok()?;
+    let pass = match owner.root.try_issue_semantic_pass() {
+        Ok(pass) => pass,
+        Err(DurabilityError::RootUnavailable) => return Some(vec![0]),
+        Err(_) => return None,
+    };
     let mut context = owner;
     pass.run_with_context(&mut context, move |holder, deadline, owner| Box::pin(async move {
         let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;

@@ -1,6 +1,8 @@
 //! Carried rope climbs a rope spot or pulls through a resolved open hole.
+use super::super::{AdmissionRefusal, AdmissionRetryBudget};
 use super::*;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
+use crate::durability::{DurabilityError, item_use::ItemUseError};
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -9,6 +11,34 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 mod pull;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn exact_rope_spot_placement(
+        &self,
+        command: UseCommand,
+        intent: &UseIntent,
+    ) -> Option<u64> {
+        let fence = command.item_fence?;
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return None;
+        }
+        let target @ MapUseTarget::Object(_) = intent.use_with_map_item.as_ref()? else {
+            return None;
+        };
+        let map = self.bundle_map()?;
+        let generation = self.active_generation?;
+        let facts = map.facts.pinned();
+        let view = super::super::world_map::MapViewSource {
+            overlay: &map.overlay,
+            facts: &facts,
+            content_generation: generation.identity().client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        let (spot, placement) = terrain_target(&view, target, None).ok()?;
+        placement.filter(|_| is_rope_spot(&map.overlay, &facts, spot))
+    }
+
     pub(in crate::gameplay_transport) async fn use_rope_tool(
         &self,
         actor: ExactActorRef,
@@ -39,17 +69,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else {
             return Ok(None);
         };
-        let Some(permit) = self.spell_lane_permit().await else {
-            return Err(());
+        let permit = match self.try_spell_lane_permit().await {
+            Ok(permit) => permit,
+            Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => {
+                return Ok(Some(UseOutcome::rejected()));
+            }
+            Err(_) => return Err(()),
         };
-        let inventory = tokio::time::timeout(
-            std::time::Duration::from_secs(10),
-            self.root
-                .read_item_use_inventory(self.character, self.holder, fence),
-        )
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let inventory = match tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                let result = self
+                    .root
+                    .read_item_use_inventory(self.character, self.holder, fence)
+                    .await;
+                if !matches!(
+                    &result,
+                    Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+                ) || !retry
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+                {
+                    break result;
+                }
+            }
+        })
         .await
-        .map_err(|_| ())?
-        .map_err(|_| ())?;
+        {
+            Ok(Ok(inventory)) => inventory,
+            Err(_)
+            | Ok(Err(ItemUseError::Unavailable(
+                DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded,
+            ))) => return Ok(Some(UseOutcome::rejected())),
+            Ok(Err(_)) => return Err(()),
+        };
+        drop(retry);
         let index = {
             let runtime = self.runtime.lock().await;
             pinned_index(&runtime, self.active_generation).ok_or(())?

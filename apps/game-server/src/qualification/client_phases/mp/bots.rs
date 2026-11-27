@@ -580,10 +580,13 @@ pub(super) async fn party_skull_query(
     bot: &mut Bot<'_, '_>,
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
+    let ordinal = bot.ordinal;
     let client = bot.client()?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     tokio::time::timeout_at(deadline, async {
+        let mut attempt = 0;
         loop {
+            attempt += 1;
             let reply = client
                 .session_mut()
                 .gated_command(
@@ -603,6 +606,10 @@ pub(super) async fn party_skull_query(
                 )
                 .into());
             }
+            evidence(&format!(
+                "mp_party_query_busy bot={ordinal} attempt={attempt} command_id={}",
+                reply.command_id,
+            ));
             client.service_liveness(Duration::from_millis(50)).await?;
         }
     })

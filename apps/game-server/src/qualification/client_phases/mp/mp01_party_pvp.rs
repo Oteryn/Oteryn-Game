@@ -732,7 +732,29 @@ async fn pvp_world_rows(
         );
         check(
             "pvp-relog",
-            bounded("pvp-relog", 1100, relog(&mut bots, false, PVP_VOCATIONS[1])).await,
+            bounded("pvp-relog", 1100, async {
+                // The respawn was already verified. A fresh login may move off
+                // an occupied saved cell. Stage the exact persistence check
+                // at the north side of Thais, beyond Quentin's wander radius.
+                let victim = bots[1].client()?;
+                let from = tile(victim.world_spatial().actor_position)?;
+                let occupied = full_e2ef3::occupied_tiles(victim);
+                let path = route_avoiding(
+                    world,
+                    from,
+                    |at| {
+                        at.floor == TOWN.floor
+                            && at.y < TOWN.y
+                            && at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y)) <= 3
+                            && is_logout_rest_tile(world, at)
+                    },
+                    |at| !occupied.contains(&at),
+                )
+                .ok_or("MP01 has no free logout cell north of the Thais temple")?;
+                bots::walk_bot_to_logout(&mut bots, 1, world, &path).await?;
+                relog(&mut bots, false, PVP_VOCATIONS[1]).await
+            })
+            .await,
             failures,
         );
     } else {

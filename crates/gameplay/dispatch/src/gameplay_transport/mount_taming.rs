@@ -52,6 +52,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        // A current rope spot with no matching quest tool belongs to the rope
+        // owner. Stale and quest-bound placements still check historical receipts.
+        if let Some(placement) = self.exact_rope_spot_placement(command, &intent)
+            && let Some(map) = self.bundle_map()
+            && !self.callback_content().iter().any(|callback| {
+                quest_objects::accepts(callback)
+                    && super::quest_callbacks::matches(map, callback, placement)
+            })
+        {
+            return Ok(None);
+        }
         if intent.use_with_map_item.is_some() {
             let corpse = match item_target {
                 Some(ItemKey::Instance(id)) => Some(id),

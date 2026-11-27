@@ -40,6 +40,8 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum RopeUse {
     Climb,
+    ClimbWithBusyHolder,
+    ClimbWithBusyInventory,
     Pull,
     PullFromFullLanding,
     PullCreature,
@@ -56,7 +58,7 @@ pub(super) enum RopeUse {
 
 impl RopeUse {
     fn climbs(self) -> bool {
-        matches!(self, Self::Climb | Self::CoveredObject | Self::CoveredHandle) || self.ground_handle()
+        matches!(self, Self::Climb | Self::ClimbWithBusyHolder | Self::ClimbWithBusyInventory | Self::CoveredObject | Self::CoveredHandle) || self.ground_handle()
     }
 
     fn pulls(self) -> bool {
@@ -452,7 +454,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             assert_eq!(target.placement_key, spot);
             assert_eq!(ground.ground_entry(&id(72)).map(|(pos, _)| (pos.x, pos.y, pos.floor)), Some((11, 10, -8)));
         }
-        let explicit_inventory = if action == RopeUse::Jam || (pull && tool == "oteryn:item.tibia.i3003") {
+        let explicit_inventory = if matches!(action, RopeUse::Jam | RopeUse::ClimbWithBusyHolder | RopeUse::ClimbWithBusyInventory) || (pull && tool == "oteryn:item.tibia.i3003") {
             let character = current_fence(&owner, session).await?.character_id;
             let backpack = h.root.read_character_backpack(&authority, character).await?;
             let items = inventory_from_backpack(backpack.as_ref(), |definition| {
@@ -496,6 +498,37 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
                 use_with_position: None,
                 use_with_map_item: Some(map_target.clone()),
             };
+            let command = UseCommand {
+                game_session_id: session,
+                command_id,
+                item_fence: crate::gameplay_transport::item_fence_of(current),
+            };
+            if action == RopeUse::ClimbWithBusyHolder {
+                use crate::durability::DurabilityRoot;
+                let held = h.root.try_issue_background_semantic_pass()?;
+                let taming = DurabilityRoot::with_holder_owner(owner.tame_mount(
+                    actor, command, intent.clone(), Some(ItemKey::Instance(item)), None, false,
+                )).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(matches!(taming, Ok(None)),
+                    "an exact rope spot must reach its owner while the unrelated receipt holder is busy: {taming:?}");
+            }
+            if action == RopeUse::ClimbWithBusyInventory {
+                use crate::durability::DurabilityRoot;
+                let held = h.root.try_issue_background_semantic_pass()?;
+                let attempt = DurabilityRoot::with_holder_owner(owner.use_rope_tool(
+                    actor, command, &intent, Some(ItemKey::Instance(item)), None,
+                )).await;
+                let routed = DurabilityRoot::with_holder_owner(owner.use_craft(
+                    actor, command, intent.clone(), Some(ItemKey::Instance(item)), None,
+                )).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(matches!(attempt, Ok(Some(ref outcome)) if outcome.disposition == UseDisposition::Rejected),
+                    "a rope command with a busy inventory holder must have a typed reply: owner={attempt:?}, route={routed:?}");
+                assert!(matches!(routed, Some(ref outcome) if outcome.disposition == UseDisposition::Rejected),
+                    "placement routing must preserve the typed rope reply: {routed:?}");
+                assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), start);
+            }
             if action.ground_handle() {
                 assert_eq!(command_id, admitted.continuity.next_command_id);
                 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -523,11 +556,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             let outcome = crate::gameplay_transport::item_craft::dispatch(
                 &owner,
                 actor,
-                UseCommand {
-                    game_session_id: session,
-                    command_id,
-                    item_fence: crate::gameplay_transport::item_fence_of(current),
-                },
+                command,
                 intent,
                 Some(&view),
             )

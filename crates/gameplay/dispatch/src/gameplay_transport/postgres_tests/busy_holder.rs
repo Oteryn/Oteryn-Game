@@ -10,6 +10,98 @@ use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use std::time::Duration;
 
 #[test]
+fn exiva_settings_query_returns_a_refusal_with_the_holder_busy() -> TestResult {
+    use crate::durability::DurabilityRoot;
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use oteryn_protocol_oteryn::exiva::Request;
+
+    super::kill_reward_e2e_fixtures::scenario_thread::run("exiva-busy-holder", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "exiva_query_busy", true, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let deps = Dependencies::new()?;
+            let mut owner = deps.owner(&h, &authority);
+            let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                deps.admitted.world_id, None,
+            );
+            owner.active_generation = Some(controller.active().ok_or("active Exiva generation")?);
+            let mut admitted = deps.admitted;
+            admitted.item_fence = crate::gameplay_transport::item_fence_of(
+                FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(admitted.game_session_id).await?.0,
+            );
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(), &[6, 7, 147],
+            ).ok_or("Exiva capability selection")?;
+            let request = Request::decode(&[5]).ok_or("Exiva list request")?;
+            let held = h.root.try_issue_background_semantic_pass()?;
+            let busy = DurabilityRoot::with_holder_owner(owner.exiva_settings(
+                admitted, admitted.continuity.next_command_id, request,
+            )).await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert_eq!(busy.as_deref(), Some(&[0][..]), "busy Exiva read must reply");
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+#[test]
+fn party_skull_query_refuses_without_waiting_on_a_busy_holder() -> TestResult {
+    use crate::durability::{DurabilityError, DurabilityRoot};
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use std::{future::Future, task::Poll};
+
+    super::kill_reward_e2e_fixtures::scenario_thread::run("party-skull-busy-holder", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "party_skull_busy", true, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let deps = Dependencies::new()?;
+            let owner = deps.owner(&h, &authority);
+            deps.initialize(&owner).await;
+            let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = crate::gameplay_transport::item_fence_of(
+                FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(admitted.game_session_id).await?.0,
+            );
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(), &[6, 42, 134],
+            ).ok_or("party icon selection")?;
+
+            let held = h.root.try_issue_background_semantic_pass()?;
+            let lane = owner.spell_lane.acquire().await.map_err(|_| "spell lane unresolved")?;
+            let observation = {
+                let mut observation = std::pin::pin!(DurabilityRoot::with_holder_owner(
+                    owner.observe_party_icons(admitted),
+                ));
+                std::future::poll_fn(|cx| Poll::Ready(observation.as_mut().poll(cx))).await
+            };
+            let status = {
+                let mut status = std::pin::pin!(DurabilityRoot::with_holder_owner(
+                    owner.observe_pvp_status(admitted),
+                ));
+                std::future::poll_fn(|cx| Poll::Ready(status.as_mut().poll(cx))).await
+            };
+            drop(lane);
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(matches!(observation, Poll::Ready(Err(DurabilityError::RootUnavailable))),
+                "a party query must return Busy while the writer holds the lane and holder: {observation:?}");
+            assert!(matches!(status, Poll::Ready(Err(DurabilityError::RootUnavailable))),
+                "a PvP state query must return Busy while the writer holds the lane and holder: {status:?}");
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+#[test]
 fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("first-entry-busy-holder", || {
         run(async |admin| {

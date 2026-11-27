@@ -98,8 +98,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(DurabilityError::Unavailable);
         }
-        let permit = self.try_spell_lane_permit().await?;
-        let runtime = self.runtime.lock().await;
+        let permit = self.spell_lane.try_acquire_observation()?;
+        let runtime = self
+            .runtime
+            .try_lock()
+            .map_err(|_| DurabilityError::RootUnavailable)?;
         runtime
             .assert_actor_spell_unreserved(actor)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -119,8 +122,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(DurabilityError::Unavailable);
         }
-        let states = self.states.spell_states.lock().await;
-        let attack = self.states.attack.lock().await;
+        let states = self
+            .states
+            .spell_states
+            .try_lock()
+            .map_err(|_| DurabilityError::RootUnavailable)?;
+        let attack = self
+            .states
+            .attack
+            .try_lock()
+            .map_err(|_| DurabilityError::RootUnavailable)?;
         let pass = self.root.try_issue_semantic_pass()?;
         let mut context = (self, &*runtime, &*states, &*attack, &permit);
         let result = pass.run_with_context(&mut context, move |holder, deadline, ctx| {

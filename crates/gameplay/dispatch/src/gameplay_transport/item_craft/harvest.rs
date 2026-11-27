@@ -94,25 +94,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encode_item_use_intent(intent).map_err(|_| ())?,
             operand: None,
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
-        if let Some(result) = self
-            .root
-            .harvest_map_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &NativeItemWeights(native),
-            )
-            .await
-            .map_err(|error| {
+        use crate::durability::DurabilityError;
+
+        let permit = match self.try_spell_lane_permit().await {
+            Ok(permit) => permit,
+            Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => {
+                return Ok(Some(UseOutcome::rejected()));
+            }
+            Err(_) => return Err(()),
+        };
+        let weights = NativeItemWeights(native);
+        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
+        let replay = retry
+            .retry_durability("harvest_receipt", || {
+                self.root.harvest_map_item(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &weights,
+                )
+            })
+            .await;
+        drop(retry);
+        let replay = match replay {
+            Ok(replay) => replay,
+            Err(error) => {
                 let kind = match error {
-                    crate::durability::DurabilityError::RootUnavailable => "holder_unavailable",
-                    crate::durability::DurabilityError::RootPassDeadlineExceeded => {
-                        "holder_deadline"
-                    }
+                    DurabilityError::RootUnavailable => "holder_unavailable",
+                    DurabilityError::RootPassDeadlineExceeded => "holder_deadline",
                     _ => "durability_error",
                 };
                 crate::gameplay_transport::operator_event(&format!(
@@ -120,8 +132,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     file!(),
                     line!(),
                 ));
-            })?
-        {
+                return if matches!(
+                    error,
+                    DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded
+                ) {
+                    Ok(Some(UseOutcome::rejected()))
+                } else {
+                    Err(())
+                };
+            }
+        };
+        if let Some(result) = replay {
             drop(permit);
             if result.disposition == UseDisposition::Committed {
                 self.refresh_terrain_tools().await;
@@ -274,7 +295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         request.operand = Some(operand);
-        let result = self
+        let result = match self
             .root
             .harvest_map_item(
                 &permit,
@@ -283,11 +304,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 request,
                 native,
-                &NativeItemWeights(native),
+                &weights,
             )
             .await
-            .map_err(|_| ())?
-            .ok_or(())?;
+        {
+            Ok(Some(result)) => result,
+            Err(DurabilityError::RootUnavailable) => return Ok(Some(UseOutcome::rejected())),
+            Ok(None) | Err(_) => return Err(()),
+        };
         drop(permit);
         if result.disposition == UseDisposition::Committed {
             self.states.loop_ground.invalidate();
