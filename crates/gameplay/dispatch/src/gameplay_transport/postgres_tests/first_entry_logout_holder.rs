@@ -75,10 +75,12 @@ async fn scenario(admin: String, exhaust: bool) -> TestResult {
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let store = FreshAdmissionStore::from_root(h.root.clone());
-    admitted.item_fence = Some(
-        item_fence_of(store.current_session_at(admitted.game_session_id).await?.0)
-            .ok_or("first-entry item fence")?,
-    );
+    let (current, _) = store.current_session_at(admitted.game_session_id).await?;
+    let lease = current.character_lease();
+    owner.runtime.lock().await
+        .bind_attacker_lease(deps.actor, admitted.game_session_id, lease)
+        .map_err(debug)?;
+    admitted.item_fence = Some(item_fence_of(current).ok_or("first-entry item fence")?);
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
         &BUNDLE_WORLD_OFFERED_CAPABILITIES,
         &[CAPABILITY_LOGOUT_V1, CAPABILITY_BOSS_ENCOUNTER_V1],
@@ -144,8 +146,10 @@ async fn scenario(admin: String, exhaust: bool) -> TestResult {
                 GameSessionState::Active,
             );
             assert!(owner.states.fence_holders.counts().is_empty());
-            assert!(owner.runtime.lock().await
-                .bound_attacker_lease(deps.actor, admitted.game_session_id).is_ok());
+            assert_eq!(
+                owner.runtime.lock().await.bound_attacker_lease(deps.actor, admitted.game_session_id),
+                Ok(lease)
+            );
             send_logout(&mut client, 1).await?;
             assert_eq!(
                 logout_result(&mut client, 1).await?,
