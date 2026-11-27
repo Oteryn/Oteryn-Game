@@ -144,7 +144,10 @@ pub(super) async fn prepare_channel(
     crate::durability::activity_handoff::ActivityHandoffOwner::new(root.clone())
         .publish_qualified_boss_rooms(proof, &activity_templates)
         .await
-        .map_err(|_| BootError::ContentActivation("qualified activity catalogue publication"))?;
+        .map_err(|error| {
+            boot_step_failed("qualified activity catalogue publication", &error);
+            BootError::ContentActivation("qualified activity catalogue publication")
+        })?;
     for diagnostic in activity_diagnostics {
         event(&format!(
             "event=activity_template state=unavailable source={} reason={:?} unavailable_source_hooks={:?}",
