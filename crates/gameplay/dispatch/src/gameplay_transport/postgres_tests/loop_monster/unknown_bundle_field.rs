@@ -7,7 +7,19 @@ use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Tab
 
 #[test]
 fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestResult {
-    run_case(async |harness| {
+    bundle_creature_case(false)
+}
+
+#[test]
+fn adjacent_rat_lands_melee_attributed_to_its_exact_actor() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    bundle_creature_case(true)
+}
+
+fn bundle_creature_case(test_melee: bool) -> TestResult {
+    run_case(async move |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -42,6 +54,22 @@ fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestRe
             .first_mut()
             .ok_or("ground palette")?
             .key = "oteryn:item.tibia.i100".into();
+        if test_melee {
+            // Put the pickupable stack under the caster while the adjacent Rat
+            // starts on the unchanged ground tile at x=2.
+            let tiles = &mut bundle.sectors.first_mut().ok_or("sector")?.tiles;
+            let coin_stack = tiles
+                .iter()
+                .find(|tile| tile.x == 7)
+                .ok_or("coin tile")?
+                .items
+                .clone();
+            tiles
+                .iter_mut()
+                .find(|tile| tile.x == 3)
+                .ok_or("caster tile")?
+                .items = coin_stack;
+        }
         bundle.spawns = Table {
             creatures: vec![Creature {
                 key: "oteryn:creature.rat".into(),
@@ -197,6 +225,14 @@ fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestRe
         let mut owner = deps.owner(harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = deps.room.movement_cells().into();
+        if test_melee {
+            let rat = creatures
+                .iter()
+                .find(|entry| entry.position.x == 2)
+                .ok_or("adjacent Rat")?
+                .actor;
+            return rat_attributed_hit(&owner, &deps, rat).await;
+        }
         let permit = owner.spell_lane_permit().await.ok_or("lane")?;
         let health_names = owner.read_native_health_names(&permit).await.map_err(debug)?;
         let mut runtime = deps.runtime.lock().await;
@@ -377,4 +413,133 @@ fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestRe
         );
         Ok(())
     })
+}
+
+async fn rat_attributed_hit(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    rat: ExactActorRef,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::{
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+    };
+    use oteryn_protocol_oteryn::analyser::{
+        AnalyserDamageSource, AnalyserFact, decode_attributed_analyser_facts,
+    };
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    use std::time::Duration;
+
+    let mut admitted = deps.admitted;
+    admitted.runtime_actor = Some(deps.actor);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 10, 486])
+            .ok_or("hit attribution capability selection")?;
+    let facts = crate::gameplay_transport::actor_spell::tests::FACTS;
+    {
+        let mut runtime = deps.runtime.lock().await;
+        let position = runtime
+            .read_actor_position(deps.actor)
+            .map_err(debug)?
+            .position();
+        let rat_at = runtime.read_actor_position(rat).map_err(debug)?.position();
+        assert_eq!(
+            crate::ai_think::chebyshev_distance(position, rat_at),
+            Some(1)
+        );
+        let cells = deps.room.movement_cells();
+        assert_eq!(
+            cells.spell_tiles().lookup(
+                cells.scope(),
+                crate::content::LogicalCell {
+                    x: position.x,
+                    y: position.y,
+                    z: i32::from(position.floor),
+                }
+            ),
+            Err(crate::content::SpellTileLookupError::Unknown)
+        );
+        assert_eq!(
+            crate::gameplay_transport::actor_spell::qualified_protection_zone(
+                &mut runtime,
+                cells,
+                deps.actor,
+            ),
+            Some(false)
+        );
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .initialize(
+                &runtime,
+                deps.actor,
+                admitted.game_session_id,
+                facts,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .ok_or("initialize caster")?;
+    }
+    owner
+        .analyser_snapshot(admitted)
+        .await
+        .ok_or("analyser stream")?;
+    let health = || async {
+        let runtime = deps.runtime.lock().await;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .get(&runtime, deps.actor, admitted.game_session_id)
+            .map(|state| state.vitals().health)
+            .ok_or("caster health")
+    };
+    let before = health().await?;
+    let attacker = EntityRef {
+        identity: rat.placement_identity(),
+        generation: rat.actor_local_generation(),
+    };
+    let interval = Duration::from_millis(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS);
+    let mut elapsed = Duration::ZERO;
+    let mut attributed_hit = false;
+    while elapsed < Duration::from_secs(30) {
+        // Advance simulation time while leaving real PostgreSQL deadlines running normally.
+        tokio::time::pause();
+        let step_started = tokio::time::Instant::now();
+        tokio::time::advance(interval).await;
+        elapsed += step_started.elapsed();
+        tokio::time::resume();
+        owner
+            .drain_monster_melee_at(
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(u64::try_from(
+                    elapsed.as_micros(),
+                )?),
+            )
+            .await;
+        while let Some(payload) = owner.analyser_next(admitted).await {
+            attributed_hit |= decode_attributed_analyser_facts(&payload)
+                .map_err(debug)?
+                .iter()
+                .any(|event| {
+                    event.attacker == Some(attacker)
+                        && matches!(
+                            event.fact,
+                            AnalyserFact::DamageInput {
+                                source: AnalyserDamageSource::Creature(_),
+                                ..
+                            }
+                        )
+                });
+        }
+        if attributed_hit {
+            break;
+        }
+    }
+    assert!(
+        attributed_hit && health().await? < before,
+        "adjacent Rat {attacker:?} must land an attributed melee hit within 30 seconds"
+    );
+    Ok(())
 }
