@@ -173,6 +173,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 pub(super) async fn invisibility_remaining(
     client: &mut DevClientSession,
 ) -> TestResult<Option<i64>> {
+    Ok(invisibility_sample(client).await?.0)
+}
+
+pub(super) async fn invisibility_sample(client: &mut DevClientSession) -> TestResult<(Option<i64>, u64)> {
     use oteryn_protocol_oteryn::condition_status as wire;
     let reply = client
         .session_mut()
@@ -185,16 +189,22 @@ pub(super) async fn invisibility_remaining(
     require_mechanic_acceptance(reply.status, "C17b condition status")?;
     let state =
         wire::ConditionStatus::decode(&reply.payload).ok_or("C17b malformed condition status")?;
-    Ok(state
+    Ok((state
         .conditions
         .iter()
         .find(|condition| condition.icon == 9)
-        .map(|condition| condition.remaining_ms))
+        .map(|condition| condition.remaining_ms), reply.server_sequence))
 }
 
 pub(super) async fn logout_after_rat_combat(
     caster: &mut DevClientSession,
 ) -> TestResult<(u32, u32)> {
+    let paid = wait_rat_combat_end(caster).await?;
+    logout(caster).await?;
+    Ok(paid)
+}
+
+pub(super) async fn wait_rat_combat_end(caster: &mut DevClientSession) -> TestResult<(u32, u32)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     loop {
         let state = caster
@@ -205,9 +215,7 @@ pub(super) async fn logout_after_rat_combat(
             let vitals = caster
                 .actor_vitals()
                 .ok_or("C17b vitals absent before logout")?;
-            let paid = (vitals.mana, vitals.soul);
-            logout(caster).await?;
-            return Ok(paid);
+            return Ok((vitals.mana, vitals.soul));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("C17b combat protection did not clear before first logout".into());
@@ -257,6 +265,10 @@ async fn prepare_caster(
         return Err("C17b caster preparation reused the original session".into());
     }
     let level = full_e2ef5::prepare_spell_access(&mut caster, spell).await?;
+    let vocation = full_e2ef5::current_vocation(&mut caster).await?;
+    if vocation != crate::spell::Vocation::Sorcerer {
+        return Err(format!("C17b regeneration fixture requires base Sorcerer, received {vocation:?}").into());
+    }
     let vitals = caster.actor_vitals().ok_or("C17b caster vitals absent")?;
     if level != 35 || vitals.mana != vitals.max_mana || vitals.max_mana < 440 {
         return Err(format!("C17b seeded caster has level={level} vitals={vitals:?}").into());
@@ -746,6 +758,65 @@ async fn full_caster_loadout(caster: &mut DevClientSession) -> TestResult<Defenc
     Ok(defence)
 }
 
+// Global base Sorcerer, including a Premium character without promotion:
+// https://tibia.fandom.com/wiki/Sorcerer#Regeneration
+// Vitals frames contain full pool values but no tick timestamp. Prove at most
+// one credit per pool within a sub-period window, even across buffered frames.
+pub(super) fn verify_recast(
+    outcome: &oteryn_dev_client::native_session::CastOutcome,
+    paid: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    sequence: u64,
+    after: Option<oteryn_protocol_oteryn::actor_spell::ActorVitals>,
+    events: &[SessionEvent],
+    elapsed: Duration,
+) -> TestResult {
+    require_mechanic_acceptance(outcome.status, "C17b cooldown recast")?;
+    if outcome.disposition != SpellCastDisposition::CoolingDown
+        || outcome.actor_vitals_delta.is_some() || outcome.result_server_sequence <= sequence {
+        return Err(format!("C17b invalid cooldown receipt {outcome:?} after sequence={sequence}").into());
+    }
+    let mut observed = paid;
+    let mut last = sequence;
+    for event in events {
+        let SessionEvent::ActorVitals(delta) = event else { continue };
+        if delta.server_sequence <= sequence { continue; }
+        if delta.server_sequence <= last || delta.server_sequence >= outcome.result_server_sequence {
+            return Err(format!("C17b out-of-order recast vitals sequence={}", delta.server_sequence).into());
+        }
+        verify_regen_credit(paid, observed, delta.value, elapsed)?;
+        observed = delta.value;
+        last = delta.server_sequence;
+    }
+    if after != Some(observed) {
+        return Err(format!("C17b unexplained recast vitals paid={paid:?} observed={observed:?} after={after:?}").into());
+    }
+    evidence(&format!("C17b cooldown vitals before_sequence={sequence} after_sequence={} elapsed_ms={} mana={}->{} health={}->{}", outcome.result_server_sequence, elapsed.as_millis(), paid.mana, observed.mana, paid.health, observed.health));
+    Ok(())
+}
+
+fn verify_regen_credit(
+    paid: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    previous: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    next: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    elapsed: Duration,
+) -> TestResult {
+    let credit = |initial: u32, previous: u32, next: u32, cap: u32, amount: u32, seconds| {
+        next == previous || (previous == initial && next > previous
+            && next == previous.saturating_add(amount).min(cap)
+            && elapsed < Duration::from_secs(seconds))
+    };
+    if !credit(paid.health, previous.health, next.health, paid.max_health, 1, 12)
+        || !credit(paid.mana, previous.mana, next.mana, paid.max_mana, 2, 3)
+        || (oteryn_protocol_oteryn::actor_spell::ActorVitals {
+            health: previous.health,
+            mana: previous.mana,
+            ..next
+        }) != previous || next == previous {
+        return Err(format!("C17b unproved recast regeneration before={previous:?} after={next:?} window_ms={}", elapsed.as_millis()).into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -811,24 +882,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=cast-and-cost observed=status:{:?}/disposition:{:?}/vitals:{:?} need=Cast-and-exact-mana-delta", cast.status, cast.disposition, cast.actor_vitals_delta).into());
     }
     row.pass("cast-and-cost", cast.result_server_sequence)?;
-    let paid = caster
-        .actor_vitals()
-        .copied()
-        .ok_or("step=cooldown observed=vitals-absent")?;
-    let cooldown = caster
-        .cast_spell(spell_index(&book)?, SpellTarget::None, false)
-        .await?;
-    if cooldown.disposition != SpellCastDisposition::CoolingDown
-        || cooldown.actor_vitals_delta.is_some()
-        || caster
-            .actor_vitals()
-            .is_none_or(|v| v.mana != paid.mana || v.soul != paid.soul)
-    {
-        return Err(format!(
-            "step=cooldown-no-cost observed={cooldown:?} need=Cooldown-without-vitals-delta"
-        )
-        .into());
-    }
+    let paid = cast.actor_vitals_delta.as_ref().ok_or("C17b cast vitals absent")?;
+    let started = tokio::time::Instant::now();
+    let cooldown = caster.cast_spell(spell_index(&book)?, SpellTarget::None, false).await?;
+    let events = caster.take_events();
+    verify_recast(&cooldown, paid.value, paid.server_sequence, caster.actor_vitals().copied(), &events, started.elapsed())?;
     row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
     let active = invisibility_remaining(&mut caster)
         .await?
@@ -960,6 +1018,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recast_regeneration_rejects_a_charge_and_unproved_credits() -> TestResult {
+        use oteryn_protocol_oteryn::actor_spell::ActorVitals;
+        let paid = ActorVitals { mana: 460, max_mana: 900, health: 314, max_health: 320, ..Default::default() };
+        let next = ActorVitals { mana: 462, health: 315, ..paid };
+        let elapsed = Duration::from_secs(1);
+        verify_regen_credit(paid, paid, next, elapsed)?;
+        assert!(verify_regen_credit(paid, next, ActorVitals { mana: 22, ..next }, elapsed).is_err());
+        assert!(verify_regen_credit(paid, next, ActorVitals { mana: 464, ..next }, elapsed).is_err());
+        assert!(verify_regen_credit(paid, paid, next, Duration::from_secs(3)).is_err());
+        Ok(())
+    }
+
     #[test]
     fn return_search_includes_landings_outside_the_town_window() {
         let from = TilePos {
