@@ -237,9 +237,14 @@ impl CreatureAiState {
             target = Some(found);
             reason = "flee_strategy";
         }
-        crate::observability::record_target_decision(self.actor, target, reason);
-
         let target_position = target.and_then(find).map(|candidate| candidate.position);
+        crate::observability::record_target_decision(
+            self.actor,
+            position,
+            target.zip(target_position),
+            facts.now_us,
+            reason,
+        );
         let goal = self.choose_goal(
             position,
             target.zip(target_position),

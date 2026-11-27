@@ -7,7 +7,7 @@ use std::num::NonZeroU32;
 
 use oteryn_game_server::foundation::{ChannelId, WorldId};
 use oteryn_game_server::map::BundlePins;
-use oteryn_game_server::map::boot::{BootPins, BootRefusal, BundleWorld, boot};
+use oteryn_game_server::map::boot::{BootPins, BundleWorld, boot};
 use oteryn_game_server::map::facts::ItemDefinition;
 use oteryn_game_server::map::overlay::TilePos;
 use oteryn_game_server::map::view::{MapFacts, placement_key};
@@ -218,7 +218,9 @@ fn map_cutover_an_item_the_index_lacks_or_places_elsewhere_refuses_boot() -> Tes
     let missing = |key: &str| item(key).filter(|_| key != "item:lever");
     assert_eq!(
         boot_with(missing).err().map(|error| error.to_string()),
-        Some(BootRefusal::ItemReference.to_string())
+        Some(
+            r#"world bundle palette entry "item:lever" cannot be resolved at compact id 1"#.into()
+        )
     );
     let moved = |key: &str| {
         item(key).map(|definition| ItemDefinition {
@@ -228,7 +230,7 @@ fn map_cutover_an_item_the_index_lacks_or_places_elsewhere_refuses_boot() -> Tes
     };
     assert_eq!(
         boot_with(moved).err().map(|error| error.to_string()),
-        Some(BootRefusal::ItemReference.to_string())
+        Some(r#"world bundle palette entry "item:coin" cannot be resolved at compact id 0"#.into())
     );
     Ok(())
 }

@@ -135,8 +135,11 @@ pub struct ItemDefinition {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FactsRefusal {
     Load(LoadError),
-    /// A palette Item key that the §1.6 index lacks or places at another `id`.
-    ItemReference,
+    /// A palette entry that cannot be resolved at the compact id it declares.
+    ItemReference {
+        palette_key: String,
+        item_id: u32,
+    },
 }
 
 impl From<LoadError> for FactsRefusal {
@@ -1157,11 +1160,15 @@ fn palette_facts(
     entry: &PaletteEntry,
     item: &impl Fn(&str) -> Option<ItemDefinition>,
 ) -> Result<PaletteFacts, FactsRefusal> {
+    let invalid_reference = || FactsRefusal::ItemReference {
+        palette_key: entry.key.clone(),
+        item_id: entry.id,
+    };
     let reference = entry
         .id
         .checked_add(1)
         .and_then(NonZeroU32::new)
-        .ok_or(FactsRefusal::ItemReference)?;
+        .ok_or_else(invalid_reference)?;
     let mut facts = EntryFacts {
         definition: MapDefinition::Terrain(reference),
         terrain_kind: entry.terrain.as_ref().map(|terrain| terrain.kind),
@@ -1206,7 +1213,7 @@ fn palette_facts(
             || entry.terrain != Some(terrain)
             || crate::content::static_surface_definition_id(&entry.key) != Some(entry.id)
         {
-            return Err(FactsRefusal::ItemReference);
+            return Err(invalid_reference());
         }
         solid = surface.block_solid;
         facts.blocks_projectile = surface.blocks_projectile;
@@ -1214,7 +1221,7 @@ fn palette_facts(
     if entry.family == Family::Item {
         let definition = item(&entry.key)
             .filter(|definition| definition.reference == reference)
-            .ok_or(FactsRefusal::ItemReference)?;
+            .ok_or_else(invalid_reference)?;
         facts.definition = MapDefinition::Item(reference);
         facts.blocks_projectile = entry
             .terrain

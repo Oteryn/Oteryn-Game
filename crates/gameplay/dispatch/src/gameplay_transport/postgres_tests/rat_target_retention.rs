@@ -308,10 +308,15 @@ fn bundle_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::Tile;
-    let (bytes, mut pins) = crate::map::boot::tests::bundle_with_items(
-        "oteryn:item.tibia.i2854",
-        "oteryn:item.tibia.i3031",
-    );
+    let item_id = |key: &str| {
+        crate::map::boot::native_item_definition(Some(native), key)
+            .map(|item| item.reference.get() - 1)
+            .ok_or_else(|| format!("missing fixture item definition {key}"))
+    };
+    let bag = "oteryn:item.tibia.i2854";
+    let coin = "oteryn:item.tibia.i3031";
+    let (bytes, mut pins) =
+        crate::map::boot::tests::bundle_with_item_ids((bag, item_id(bag)?), (coin, item_id(coin)?));
     let mut bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(debug)?;
     bundle.manifest.palette[0].key = "oteryn:item.tibia.i100".into();
     let sector = bundle.sectors.first_mut().ok_or("fixture sector")?;
@@ -360,5 +365,5 @@ fn bundle_world(
         deps.admitted.channel_id,
         |key| crate::map::boot::native_item_definition(Some(native), key),
     )
-    .map_err(|error| debug(error).into())
+    .map_err(Into::into)
 }
