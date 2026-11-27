@@ -608,7 +608,58 @@ mod tests {
             .filter(|row| !row.native_addition || row.key == nargor)
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
-        assert_eq!(corrections.len() - corrected.len(), 60);
+        let travora_ports = [
+            ("captain_breezelda", "svargrond", 32_341, 31_108),
+            ("captain_greyhound", "carlin", 32_387, 31_820),
+            ("captain_seahorse", "edron", 33_175, 31_764),
+            ("captain_sinbeard", "ankrahmun", 33_092, 32_883),
+            ("karith", "yalahar", 32_816, 31_272),
+            ("petros", "darashia", 33_289, 32_480),
+        ];
+        let inbound_routes = travora_ports
+            .iter()
+            .map(|(captain, ..)| format!("oteryn:service.travel.{captain}/travora"))
+            .collect::<Vec<_>>();
+        let ticket = super::TravelTicketRequirement {
+            track: "oteryn:quest-progress/travora/ticket_purchased".into(),
+            valid_for_seconds: 86400,
+        };
+        for ((_, port, x, y), inbound_key) in travora_ports.iter().zip(&inbound_routes) {
+            let inbound = corrections
+                .iter()
+                .find(|row| row.key == *inbound_key)
+                .ok_or("Travora inbound")?;
+            assert!(inbound.native_addition && !inbound.held && !inbound.premium);
+            assert_eq!(
+                (inbound.price, inbound.x, inbound.y, inbound.floor),
+                (0, 32_057, 32_368, 6)
+            );
+            assert_eq!(inbound.ticket.as_ref(), Some(&ticket));
+            assert!(inbound.return_origin.is_none());
+
+            let return_key = format!("oteryn:service.travel.captain_tiberius/{port}");
+            let outbound = corrections
+                .iter()
+                .find(|row| row.key == return_key)
+                .ok_or("Travora return")?;
+            assert!(outbound.native_addition && !outbound.held && !outbound.premium);
+            assert_eq!(
+                (outbound.price, outbound.x, outbound.y, outbound.floor),
+                (0, *x, *y, 6)
+            );
+            assert!(outbound.ticket.is_none());
+            assert_eq!(
+                outbound.return_origin.as_ref(),
+                Some(&super::TravelReturnRequirement {
+                    inbound_routes: inbound_routes.clone(),
+                    return_from: inbound_key.clone(),
+                }),
+            );
+        }
+        assert_eq!(
+            corrections.len() - corrected.len(),
+            60 + 2 * travora_ports.len()
+        );
         assert_eq!(sources.len(), 195);
         assert_eq!(evidence.len(), 195);
         for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {

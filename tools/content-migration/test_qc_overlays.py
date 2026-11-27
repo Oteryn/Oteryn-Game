@@ -50,3 +50,25 @@ class TwentyMilesOverlayTests(unittest.TestCase):
                                    lambda row: row['production_definition']['production_key'],
                                    spells.spell_import.canonical_bytes)
         self.assertEqual(generated, baseline)
+
+    def test_lantern_forms_complete_their_extra_slot_eligibility(self):
+        destination = spells.spell_import.PROVIDER_DESTINATIONS['item_profiles']
+        records = json.loads((ROOT / destination).read_bytes())['records']
+        lanterns = [row for row in records if row['production_definition']['production_key']
+                    in {'oteryn:item.tibia.i23734', 'oteryn:item.tibia.i23738'}]
+        self.assertEqual(len(lanterns), 2)
+        for row in lanterns:
+            pattern, = row['semantics']['equipment']['value']['patterns']['value']
+            pattern['level'] = pattern['vocations'] = {'state': 'UNKNOWN'}
+        generated = {'profiles': json.dumps({'records': lanterns}).encode(),
+                     'manifest': b'{"item_profiles":{}}'}
+
+        qc_item_profiles.admit_lantern_facts(
+            ROOT, generated, 'profiles', 'manifest', spells.spell_import.canonical_bytes
+        )
+
+        for row in json.loads(generated['profiles'])['records']:
+            pattern, = row['semantics']['equipment']['value']['patterns']['value']
+            self.assertEqual(pattern['primary_slot'], {'state': 'KNOWN', 'value': 'EXTRA'})
+            self.assertEqual(pattern['level'], {'state': 'KNOWN', 'value': 0})
+            self.assertEqual(pattern['vocations'], {'state': 'KNOWN', 'value': []})

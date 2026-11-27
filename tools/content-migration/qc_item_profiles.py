@@ -159,10 +159,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     shared.admit_records(
         root, generated, profile_path, manifest_path, order, canonical, records
     )
-    admit_lantern_ground_facts(root, generated, profile_path, manifest_path, canonical)
+    admit_lantern_facts(root, generated, profile_path, manifest_path, canonical)
 
 
-def admit_lantern_ground_facts(root, generated, profile_path, manifest_path, canonical):
+def admit_lantern_facts(root, generated, profile_path, manifest_path, canonical):
     # Crystal 201189f8 data/items/items.xml and the retained XML agree: both
     # registered lantern forms are generic lights with no automatic decay.
     raw = (root / RETAINED_ITEM_XML).read_bytes()
@@ -191,11 +191,28 @@ def admit_lantern_ground_facts(root, generated, profile_path, manifest_path, can
         }
         if attributes & {"type", "duration", "decayto", "stopduration"}:
             raise ValueError(f"QC_LANTERN_GROUND_FACTS:{key}")
+        semantics = profiles[key]["semantics"]
         for field in ("temporal", "classification"):
-            semantics = profiles[key]["semantics"]
             if semantics[field]["state"] not in {"UNKNOWN", "NOT_APPLICABLE"}:
                 raise ValueError(f"QC_LANTERN_GROUND_CONFLICT:{key}:{field}")
             semantics[field] = {"state": "NOT_APPLICABLE"}
+        # The admitted Extra slot has no equip-level or vocation gate
+        # (ITEM-MOVE-WIRE-1 §4). Use requirements remain independent.
+        equipment = semantics["equipment"]
+        patterns = equipment.get("value", {}).get("patterns", {})
+        slots = patterns.get("value", [])
+        if (
+            equipment["state"] != "KNOWN"
+            or patterns.get("state") != "KNOWN"
+            or len(slots) != 1
+            or slots[0]["primary_slot"] != {"state": "KNOWN", "value": "EXTRA"}
+        ):
+            raise ValueError(f"QC_LANTERN_EQUIPMENT_PATTERN:{key}")
+        for field, value in (("level", 0), ("vocations", [])):
+            expected = {"state": "KNOWN", "value": value}
+            if slots[0][field] not in ({"state": "UNKNOWN"}, expected):
+                raise ValueError(f"QC_LANTERN_EQUIPMENT_CONFLICT:{key}:{field}")
+            slots[0][field] = expected
     generated[profile_path] = canonical(document)
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(
