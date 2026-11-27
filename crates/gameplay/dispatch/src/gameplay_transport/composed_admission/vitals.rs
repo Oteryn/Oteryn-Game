@@ -271,7 +271,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let _ = self
             .retry_waiting_familiar_return(actor, game_session_id, &cleanup_access)
             .await;
-        let _ = self.tick_familiar_defenses(actor, game_session_id).await;
+        self.tick_familiar_defenses(actor, game_session_id);
         let _ = self.drain_native_ai_timers().await;
         resting.or(fifth_taint).or(result).or(party_vitals)
     }
