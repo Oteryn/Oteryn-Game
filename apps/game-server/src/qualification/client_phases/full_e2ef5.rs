@@ -1357,12 +1357,47 @@ pub(super) async fn acquire_rune(
     }
 }
 
+fn corpse_coin_handle(
+    detail: oteryn_dev_client::EntityDetail,
+) -> Option<oteryn_protocol_oteryn::item_view::ItemHandle> {
+    use oteryn_dev_client::EntityDetail::{Object, ObjectWithAppearance};
+    match detail {
+        Object { item_handle, .. } | ObjectWithAppearance { item_handle, .. } => item_handle,
+        _ => None,
+    }
+}
+
+#[test]
+fn corpse_coin_loot_uses_handles_from_both_wire_object_variants() {
+    use oteryn_dev_client::EntityDetail::{Object, ObjectWithAppearance};
+    let handle = Some(std::num::NonZeroU64::MIN);
+    for item_handle in [None, handle] {
+        assert_eq!(
+            corpse_coin_handle(Object {
+                item_definition_ref: 402,
+                quantity: 1,
+                item_handle,
+            }),
+            item_handle,
+        );
+        assert_eq!(
+            corpse_coin_handle(ObjectWithAppearance {
+                item_definition_ref: 402,
+                quantity: 1,
+                item_handle,
+                appearance_id: std::num::NonZeroU16::MIN,
+            }),
+            item_handle,
+        );
+    }
+}
+
 async fn loot_corpse_coins(
     client: &mut DevClientSession,
     corpse: oteryn_dev_client::WorldSpatialEntity,
     index: &crate::content::item_ref::ItemDefinitionIndex,
 ) -> TestResult {
-    let oteryn_dev_client::EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
+    let Some(handle) = corpse_coin_handle(corpse.detail) else {
         return Err("Rat corpse has no server-issued item handle".into());
     };
     let use_reply = client.use_item(handle).await?;
