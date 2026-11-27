@@ -2475,7 +2475,7 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = if synchronize_sculpture {
-                        let mut tx = super::db::begin_locking_observation_transaction(holder, deadline)
+                        let mut tx = super::db::begin_sculpture_observation(holder, deadline)
                             .await?;
                         super::spell_item_transaction::lock_ground_scope(&mut tx, scope).await?;
                         tx

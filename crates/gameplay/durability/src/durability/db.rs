@@ -2147,6 +2147,21 @@ pub(super) async fn begin_locking_observation_transaction<'a>(
     Ok(tx)
 }
 
+/// The protected census must see writers that committed before lock acquisition.
+pub(super) async fn begin_sculpture_observation<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: TokioInstant,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    let mut tx = begin_transaction(
+        holder,
+        deadline,
+        Some("BEGIN ISOLATION LEVEL READ COMMITTED READ ONLY"),
+    )
+    .await?;
+    bound_periodic_lock_wait(&mut tx).await?;
+    Ok(tx)
+}
+
 /// PostgreSQL's smallest nonzero lock timeout also covers locks acquired inside
 /// security-definer functions and triggers, where callers cannot append NOWAIT.
 pub(super) async fn bound_periodic_lock_wait(
