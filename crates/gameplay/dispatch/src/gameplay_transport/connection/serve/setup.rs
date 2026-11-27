@@ -289,6 +289,18 @@ pub(super) fn failed(event: &'static str, end: ServeEnd) -> ServeEnd {
     end
 }
 
+pub(super) fn observation_failed(phase: &'static str, refusal: AdmissionRefusal) -> ServeEnd {
+    let reason = match refusal {
+        AdmissionRefusal::Unavailable => "unavailable",
+        _ => "rejected",
+    };
+    operator_event(&format!(
+        "event=join_prepare_failed phase={phase} reason={reason} code={}",
+        FoundationProtocolError::SessionJoinUnavailable.code()
+    ));
+    ServeEnd::SnapshotObservation(refusal)
+}
+
 async fn live<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &mut AdmittedSession,

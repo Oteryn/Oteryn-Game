@@ -92,9 +92,7 @@ impl State {
         let mut spatial_revision = admitted.continuity.spatial_revision;
         if selected.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
             let entities =
-                crate::gameplay_transport::entity_names::observe(authority, actor, selected)
-                    .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                super::super::snapshot::join_visibility(authority, actor, admitted).await?;
             let mut view = SessionVisibility::with_objects(items.is_some())
                 .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1))
                 .with_motion(
@@ -111,7 +109,9 @@ impl State {
                     items.as_mut(),
                 )
                 .await
-                .ok_or(ServeEnd::Disconnected)?;
+                .map_err(|refusal| {
+                    super::super::setup::observation_failed("appearances", refusal)
+                })?;
             spatial_revision = spatial_revision
                 .checked_add(1)
                 .ok_or(ServeEnd::Disconnected)?;

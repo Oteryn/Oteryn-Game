@@ -188,6 +188,7 @@ enum ServeEnd {
     Transferred(Box<AdmittedSession>),
     Disconnected,
     ControlLost(&'static str),
+    SnapshotObservation(AdmissionRefusal),
     LoggedOut,
     Closed(FoundationProtocolError),
 }
@@ -208,6 +209,8 @@ impl ServeEnd {
             Self::Transferred(_) => "transferred",
             Self::Disconnected => "disconnected",
             Self::ControlLost(_) => "control_lost",
+            Self::SnapshotObservation(AdmissionRefusal::Unavailable) => "snapshot_unavailable",
+            Self::SnapshotObservation(_) => "snapshot_rejected",
             Self::LoggedOut => "logged_out",
             Self::Closed(_) => "protocol_error",
         };
@@ -224,7 +227,9 @@ impl ServeEnd {
         ));
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
-            Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Self::Disconnected | Self::SnapshotObservation(_) => {
+                ConnectionEnd::AdmittedThenDisconnected(admitted)
+            }
             Self::ControlLost(_) => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
             Self::Closed(error) => ConnectionEnd::AdmittedThenClosed(admitted, error),

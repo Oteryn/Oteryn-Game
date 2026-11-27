@@ -49,6 +49,26 @@ fn all_charms_outgoing_native_cripple_primary_kill() -> TestResult {
     scenario(true, "cripple_primary_kill", 3)
 }
 #[test]
+fn p11_lethal_native_spell_settles_before_first_step_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(move || {
+            run(async |_| {
+                crate::gameplay_transport::actor_spell::native_combat_cast::INTERRUPT_NATIVE_CAST_AFTER_COMMIT
+                    .scope(std::cell::Cell::new(true), scenario_inner(admin, true, "cripple_primary_kill", 3))
+                    .await
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "P11 lethal spell thread panicked")??;
+    Ok(())
+}
+
+#[test]
 fn all_charms_outgoing_ordinary_child_has_no_leech() -> TestResult {
     scenario(false, "leech", 3)
 }
@@ -617,6 +637,24 @@ async fn scenario_with_harness(
             target_facts.health > 0 && target_facts.health < target_facts.maximum_health,
             "the real source spell must damage a living creature"
         );
+    }
+    if let Ok(interrupted) =
+        crate::gameplay_transport::actor_spell::native_combat_cast::INTERRUPT_NATIVE_CAST_AFTER_COMMIT
+            .try_with(|armed| !armed.get())
+    {
+        assert!(interrupted, "the lethal spell must cross the interrupted COMMIT");
+        assert_eq!(target_facts.health, 0);
+        let before = runtime.read_actor_position(actor).map_err(debug)?.position();
+        drop(runtime);
+        use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+        let (step, _) = owner.paced_step(actor, session, StepDirection::East).await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        let after = deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+        assert_eq!(after.x, before.x + 1);
+        assert_eq!(after.y, before.y);
+        assert_eq!(after.floor, before.floor);
+        eprintln!("P11 lethal spell COMMIT reconciled and first STEP accepted");
+        return Ok(());
     }
     let condition_before_replay = condition_snapshot_including_dead(&mut runtime, target)?;
     if charm == "cripple_primary_kill" {

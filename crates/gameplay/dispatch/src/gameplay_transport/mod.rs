@@ -1649,6 +1649,15 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    async fn retry_join_observation<T>(
+        &self,
+        observe: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> Result<T, AdmissionRefusal> {
+        tokio::time::timeout_at(self.deadline, self.retry_unavailable(observe))
+            .await
+            .map_err(|_| AdmissionRefusal::Unavailable)?
+    }
+
     /// Retry only transient pre-dispatch holder failures, retaining the exact
     /// failure when this command's fixed foreground budget is exhausted.
     async fn retry_command_guard<T>(

@@ -239,9 +239,9 @@
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,
-      "fields": [],
+      "fields": ["phase", "reason", "code"],
       "codes": [],
-      "note": "Seeded from current server code."
+      "note": "Join preparation failure. Visibility and appearance failures include a typed reason."
     },
     {
       "event": "join_progress",
