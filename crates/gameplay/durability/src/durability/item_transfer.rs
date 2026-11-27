@@ -208,6 +208,14 @@ pub enum ItemTransferError {
     Unavailable(DurabilityError),
 }
 
+/// Outcome of reading a live corpse for an open-container view.
+#[derive(Debug)]
+pub enum CorpseContents {
+    Absent,
+    NotOwner,
+    Open(Vec<BackpackEntry>),
+}
+
 impl From<DurabilityError> for ItemTransferError {
     fn from(error: DurabilityError) -> Self {
         Self::Unavailable(error)
@@ -787,33 +795,80 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         corpse_item_instance_id: [u8; 16],
     ) -> Result<Option<Vec<BackpackEntry>>> {
+        match self.read_corpse(authority, corpse_item_instance_id, None).await? {
+            CorpseContents::Absent => Ok(None),
+            CorpseContents::Open(entries) => Ok(Some(entries)),
+            CorpseContents::NotOwner => Err(ItemTransferError::AuthorityRejected),
+        }
+    }
+
+    /// Read the owner, current party and entries under one semantic pass.
+    /// The exclusivity window uses the database clock, as in transfer and quick loot.
+    pub async fn read_corpse_contents_for_open(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        corpse_item_instance_id: [u8; 16],
+        viewer: CharacterId,
+        deadline: tokio::time::Instant,
+    ) -> Result<CorpseContents> {
+        self.read_corpse(authority, corpse_item_instance_id, Some((viewer, deadline)))
+            .await
+    }
+
+    async fn read_corpse(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        corpse_item_instance_id: [u8; 16],
+        viewer: Option<(CharacterId, tokio::time::Instant)>,
+    ) -> Result<CorpseContents> {
         use super::item_mint::CORPSE_CONTAINER_ENTRIES_MAX;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemTransferError::AuthorityRejected)?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+        let pass = match viewer {
+            Some((_, deadline)) => self.try_issue_semantic_pass_by(deadline)?,
+            None => self.try_issue_semantic_pass()?,
+        };
+        pass.run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    let live_corpse: bool = sqlx::query_scalar(
-                        "SELECT EXISTS ( \
-                           SELECT 1 FROM game_item_mint_receipts r \
-                             JOIN game_item_ground_locations g \
-                               ON g.item_instance_id = r.item_instance_id \
-                             JOIN game_item_instances i \
-                               ON i.item_instance_id = r.item_instance_id \
-                            WHERE r.item_instance_id = encode($1,'hex')::uuid \
-                              AND r.loot_purpose_key = $2 \
-                              AND i.lifecycle = 1)",
+                    let viewer_id = viewer.map(|(character, _)| *character.as_bytes());
+                    let corpse = sqlx::query(
+                        "SELECT r.corpse_top_damage_character_id::text AS owner, r.materialized_at,
+                                floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS db_now,
+                                EXISTS (SELECT 1 FROM game_party_members a
+                                         JOIN game_party_members b USING (party_id)
+                                        WHERE a.character_id = r.corpse_top_damage_character_id
+                                          AND b.character_id = encode($3,'hex')::uuid) AS party
+                           FROM game_item_mint_receipts r
+                           JOIN game_item_ground_locations g USING (item_instance_id, world_id)
+                           JOIN game_item_instances i USING (item_instance_id, world_id)
+                          WHERE r.item_instance_id = encode($1,'hex')::uuid
+                            AND r.loot_purpose_key = $2 AND r.draw_ordinal = 0 AND i.lifecycle = 1",
                     )
                     .bind(corpse_item_instance_id.as_slice())
                     .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
-                    .fetch_one(&mut *tx)
+                    .bind(viewer_id.as_ref().map(|id| id.as_slice()))
+                    .fetch_optional(&mut *tx)
                     .await?;
-                    if !live_corpse {
+                    let Some(corpse) = corpse else {
                         commit_semantic_read(tx, deadline).await?;
-                        return Ok(Ok(None));
+                        return Ok(Ok(CorpseContents::Absent));
+                    };
+                    if let Some(viewer) = viewer_id
+                        && let Some(owner) = corpse.try_get::<Option<String>, _>("owner")?
+                        && !corpse.try_get::<bool, _>("party")?
+                        && !corpse_window_allows(
+                            viewer,
+                            uuid_text(&owner)?,
+                            corpse.try_get::<Option<i64>, _>("materialized_at")?
+                                .ok_or(DurabilityError::InvalidStoredState)?,
+                            corpse.try_get("db_now")?,
+                        )
+                    {
+                        commit_semantic_read(tx, deadline).await?;
+                        return Ok(Ok(CorpseContents::NotOwner));
                     }
                     let rows = sqlx::query(
                         "SELECT e.item_instance_id::text, e.placement_ordinal::text, \
@@ -849,7 +904,7 @@ impl DurabilityRoot {
                         })
                         .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
                     commit_semantic_read(tx, deadline).await?;
-                    Ok(Ok(Some(entries)))
+                    Ok(Ok(CorpseContents::Open(entries)))
                 })
             })
             .await?

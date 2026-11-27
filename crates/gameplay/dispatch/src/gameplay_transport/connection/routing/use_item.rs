@@ -8,6 +8,7 @@ use super::super::{
     decode_use_intent_target,
 };
 use super::Dispatch;
+use transport::item_view::CorpseOpenRefusal;
 use oteryn_protocol_oteryn::ClientCommandView;
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -68,6 +69,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             intent.target,
             UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
         )
+        && !matches!(intent.target, UseTarget::Item(handle)
+            if matches!(item_view.as_ref().and_then(|view| view.resolve(handle)), Some(ItemKey::Entity(_))))
     {
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
@@ -117,6 +120,33 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         {
             return Ok(Dispatch::Use(UseOutcome::rejected()));
         }
+    }
+    // Spatial item handles name corpse projections, never a carried rune.
+    // Resolve plain corpse clicks before the carried-item receipt probes.
+    if let Ok(UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }) = &decoded
+        && let Some(view) = item_view.as_mut()
+        && let Some(key @ ItemKey::Entity(_)) = view.resolve(*handle)
+    {
+        let observed = authority.observe_corpse_for_use(actor, UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: command.command_id,
+            item_fence: admitted.item_fence,
+        }, key).await;
+        let observation = match observed {
+            Ok(observation) => observation,
+            Err(reason) => return Ok(refuse_corpse_open(command.command_id, reason)),
+        };
+        let opened = view.open(key, observation);
+        admitted.continuity.item_view = view.continuity();
+        let Ok((decision, delta)) = opened else {
+            return Ok(super::refuse_use(command, "corpse_view_projection"));
+        };
+        return Ok(Dispatch::UseItem(decision, delta));
     }
     if let Ok(intent) = &decoded
         && intent.use_with.is_none()
@@ -512,19 +542,28 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Ok(intent) if !opens_container
                 && transport::rune_use_bridge::routes(
                     &intent, &admitted.continuity.selected_capabilities,
-                ) => match transport::rune_use_bridge::dispatch(
-                authority, actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                intent, item_view.as_ref(), visibility.as_ref(),
-                &admitted.continuity.selected_capabilities,
-            ).await {
-                Some(outcome) => Dispatch::Use(outcome),
-                None => return Err("rune_use_unresolved"),
-            },
+                ) => {
+                let stale_plain_handle = intent.use_with.is_none()
+                    && intent.use_with_position.is_none()
+                    && matches!(intent.target, UseTarget::Item(handle)
+                        if item_view.as_ref().and_then(|view| view.resolve(handle)).is_none());
+                let outcome = transport::rune_use_bridge::dispatch(
+                    authority, actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    intent, item_view.as_ref(), visibility.as_ref(),
+                    &admitted.continuity.selected_capabilities,
+                ).await.ok_or("rune_use_unresolved")?;
+                if stale_plain_handle && outcome.disposition
+                    == oteryn_protocol_oteryn::world_object::UseDisposition::StaleState
+                {
+                    log_corpse_open_refusal(command.command_id, &CorpseOpenRefusal::HandleStale);
+                }
+                Dispatch::Use(outcome)
+            }
             // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
             // Creature and unrouted position targets still fail closed here.
             Ok(UseIntent {
@@ -633,6 +672,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         };
                         Dispatch::UseItem(decision, delta)
                     }
+                    (_, None, _) => refuse_corpse_open(command.command_id, CorpseOpenRefusal::HandleStale),
                     _ => Dispatch::UseItem(OpenDecision::StaleState, None),
                 }
             }
@@ -673,5 +713,31 @@ mod fluid_routing_tests {
         );
         assert!(imbuement < fluid, "imbuement handler before fluid");
         assert!(key < fluid, "key handler before fluid");
+    }
+}
+
+
+fn log_corpse_open_refusal(command_id: u64, refusal: &CorpseOpenRefusal) {
+    let cause = match refusal {
+        CorpseOpenRefusal::DurableRead(_) => "durable_read",
+        CorpseOpenRefusal::HolderBusy => "holder_busy",
+        CorpseOpenRefusal::HandleStale => "handle_stale",
+        CorpseOpenRefusal::CorpseAbsent => "corpse_absent",
+        CorpseOpenRefusal::NotOwner => "not_owner",
+    };
+    let detail = match refusal {
+        CorpseOpenRefusal::DurableRead(error) => format!("{error:?}"),
+        _ => cause.to_owned(),
+    };
+    transport::operator_event(&format!(
+        "event=corpse_open_refused command_id={command_id} cause={cause} detail={detail:?}",
+    ));
+}
+
+fn refuse_corpse_open(command_id: u64, refusal: CorpseOpenRefusal) -> Dispatch {
+    log_corpse_open_refusal(command_id, &refusal);
+    match refusal {
+        CorpseOpenRefusal::NotOwner => Dispatch::Use(UseOutcome::rejected()),
+        _ => Dispatch::UseItem(OpenDecision::StaleState, None),
     }
 }

@@ -1159,6 +1159,25 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Direct corpse USE, with typed read, custody and availability failures.
+    fn observe_corpse_for_use(
+        &self,
+        actor: ExactActorRef,
+        _command: UseCommand,
+        target: ItemKey,
+    ) -> impl Future<Output = Result<ItemTargetObservation, super::super::item_view::CorpseOpenRefusal>>
+    {
+        async move {
+            use super::super::item_view::{CorpseOpenRefusal, UseItemTarget};
+            match self.observe_item_target(actor, target).await {
+                Some(observation) if !matches!(observation.target, UseItemTarget::Gone) => {
+                    Ok(observation)
+                }
+                _ => Err(CorpseOpenRefusal::CorpseAbsent),
+            }
+        }
+    }
+
     fn look_item(
         &self,
         _actor: ExactActorRef,

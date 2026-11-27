@@ -148,6 +148,17 @@ pub struct ItemTargetObservation {
     pub target: UseItemTarget<Vec<ViewItem>>,
 }
 
+/// Why a corpse view could not be opened. The command logs the exact reason
+/// before adapting it to the existing USE wire dispositions.
+#[derive(Debug)]
+pub enum CorpseOpenRefusal {
+    DurableRead(crate::durability::item_transfer::ItemTransferError),
+    HolderBusy,
+    HandleStale,
+    CorpseAbsent,
+    NotOwner,
+}
+
 /// The item view part of one GameSession's continuity.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ItemViewContinuity {

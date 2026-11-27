@@ -284,7 +284,18 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             ));
         };
         let reopen = match view.carried_open_corpse() {
-            Some(key) => authority.observe_item_target(actor, key).await,
+            Some(key) => authority
+                .observe_corpse_for_use(
+                    actor,
+                    super::super::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 0,
+                        item_fence: admitted.item_fence,
+                    },
+                    key,
+                )
+                .await
+                .ok(),
             None => None,
         };
         let snapshot = view.snapshot(inventory, reopen);
