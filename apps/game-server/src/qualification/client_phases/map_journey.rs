@@ -91,6 +91,15 @@ async fn check(
 ) -> TestResult<Option<&'static str>> {
     let from = tile(client.world_spatial().actor_position)?;
     let target = sample.position;
+    let rope = sample.kind == "rope_spot";
+    let tool_probe = rope || sample.kind == "shovel_hole";
+    if tool_probe
+        && !client
+            .selected_capabilities()
+            .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+    {
+        return Err("map tool probe has no negotiated world map view".into());
+    }
     let blocked = matches!(sample.kind, "blocking_item" | "closed_door")
         || (sample.kind == "field"
             && model
@@ -112,6 +121,11 @@ async fn check(
     let Some((path, at, direction, landing)) = approaches.first() else {
         return Ok(Some("no_reachable_approach_within_160_tile_2_floor_budget"));
     };
+    if rope && !model.rope_lands_on_return_route(target, returnable) {
+        return Err(
+            format!("rope spot {target:?} lacks a walking return from every landing").into(),
+        );
+    }
     walk_map_route(client, model.world, path, bounds).await?;
     if tile(client.world_spatial().actor_position)? != *at {
         return Err("map approach did not end at predicted position".into());
@@ -134,9 +148,8 @@ async fn check(
         client.take_events();
         return Ok(None);
     }
-    if matches!(sample.kind, "rope_spot" | "shovel_hole") {
+    if tool_probe {
         use oteryn_protocol_oteryn::world_object::*;
-        let rope = sample.kind == "rope_spot";
         let index = provisioning::item_index()?;
         let reference = provisioning::item_reference(&index, if rope { 3003 } else { 3457 })?;
         let source = client
@@ -172,10 +185,7 @@ async fn check(
         let payload = encode_item_use_intent(&intent)
             .map_err(|error| format!("map tool encode: {error:?}"))?;
         let before = tile(client.world_spatial().actor_position)?;
-        let response = client
-            .session_mut()
-            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
-            .await?;
+        let response = client.session_mut().world_context_use(&payload).await?;
         if response.status != CommandStatus::Accepted
             || decode_use_result(&response.payload)
                 .map_err(|error| format!("map tool result: {error:?}"))?
@@ -198,6 +208,11 @@ async fn check(
                 client.service_liveness(Duration::from_millis(50)).await?;
                 client.take_events();
             }
+            let landed = tile(client.world_spatial().actor_position)?;
+            let back = model.path(landed, bounds, Some(bounds)).ok_or_else(|| {
+                format!("rope landing {landed:?} has no walking return to {bounds:?}")
+            })?;
+            walk_map_route(client, model.world, &back, bounds).await?;
         } else {
             if tile(client.world_spatial().actor_position)? != before {
                 return Err("shovel use moved the character before stepping".into());

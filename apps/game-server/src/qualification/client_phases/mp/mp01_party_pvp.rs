@@ -259,8 +259,30 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
     let expected = expected.into_iter().map(str::to_owned).collect::<Vec<_>>();
     let leader = bots[0].name.to_owned();
     let mut party_id = None;
-    for bot in &mut bots[..3] {
-        let view = party(bot, None).await?;
+    for index in 0..4 {
+        let (before, remaining) = bots.split_at_mut(index);
+        let (bot, after) = remaining
+            .split_first_mut()
+            .ok_or("MP01 party witness missing")?;
+        let (view, rows) = super::observations::while_servicing_liveness(
+            async {
+                let view = party(bot, None).await?;
+                let rows = durable_party(bot).await?;
+                TestResult::Ok((view, rows))
+            },
+            async || {
+                bots::pump(before).await?;
+                bots::pump(after).await?;
+                Ok(())
+            },
+        )
+        .await??;
+        if index == 3 {
+            if !view.members.is_empty() || !rows.is_empty() {
+                return Err("MP01 D unexpectedly belongs to the party".into());
+            }
+            continue;
+        }
         let mut members = view
             .members
             .iter()
@@ -277,7 +299,6 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
             )
             .into());
         }
-        let rows = durable_party(bot).await?;
         let mut names = rows.iter().map(|r| r.1.as_str()).collect::<Vec<_>>();
         names.sort_unstable();
         if names != expected
@@ -297,11 +318,6 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
             "MP_CHECK MP01 party-view PASS participant={} members={members:?} PG={rows:?}",
             bot.name
         ));
-    }
-    if !party(&mut bots[3], None).await?.members.is_empty()
-        || !durable_party(&bots[3]).await?.is_empty()
-    {
-        return Err("MP01 D unexpectedly belongs to the party".into());
     }
     Ok(())
 }

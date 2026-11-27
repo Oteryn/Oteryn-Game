@@ -328,6 +328,32 @@ impl<'a> MapModel<'a> {
         }
     }
 
+    fn rope_lands_on_return_route(&self, spot: TilePos, returnable: &BTreeSet<TilePos>) -> bool {
+        let Some(floor) = spot.floor.checked_add(1) else {
+            return false;
+        };
+        let mut landings = [-1, 0, 1]
+            .into_iter()
+            .flat_map(|dx| [-1, 0, 1].into_iter().map(move |dy| (dx, dy)))
+            .filter(|&(dx, dy)| (dx, dy) != (0, 0))
+            .filter_map(|(dx, dy)| {
+                let at = TilePos {
+                    x: spot.x.checked_add_signed(dx)?,
+                    y: spot.y.checked_add_signed(dy)?,
+                    floor,
+                };
+                self.tiles
+                    .get(&at)
+                    .is_some_and(|facts| facts.walkable)
+                    .then_some(at)
+            });
+        // An occupied preferred landing can cause the rope owner to select a
+        // different adjacent tile. Every walkable landing must let us walk back.
+        landings.next().is_some_and(|first| {
+            returnable.contains(&first) && landings.all(|at| returnable.contains(&at))
+        })
+    }
+
     fn samples(&self, start: TilePos, seed: u64) -> TestResult<(Vec<Sample>, BTreeSet<TilePos>)> {
         let (reachable, returnable) = town_reachability(start, |at, direction| {
             self.destination(at, direction)

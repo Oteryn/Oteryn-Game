@@ -729,13 +729,40 @@ mod e2ef1 {
         actual.filter(|at| without_teleport() == Some(*at))
     }
 
+    async fn floor_exhaust_cast(
+        client: &mut DevClientSession,
+        spell: std::num::NonZeroU32,
+    ) -> TestResult<(
+        oteryn_protocol_oteryn::actor_spell::ActorVitals,
+        oteryn_dev_client::CastOutcome,
+    )> {
+        use oteryn_protocol_oteryn::actor_spell::SpellTarget;
+
+        client.take_events();
+        let before = client
+            .actor_vitals()
+            .copied()
+            .ok_or("floor exhaust vitals")?;
+        let result = client.cast_spell(spell, SpellTarget::None, false).await?;
+        // Vitals already pushed before the command result belong to the baseline.
+        // The server emits any vitals effect of the cast after its result.
+        let before_result = client
+            .take_events()
+            .iter()
+            .rev()
+            .filter_map(oteryn_dev_client::SessionEvent::actor_vitals)
+            .find(|delta| delta.server_sequence < result.result_server_sequence)
+            .map_or(before, |delta| delta.value);
+        Ok((before_result, result))
+    }
+
     async fn m03(
         client: &mut DevClientSession,
         world: &BundleWorld,
         objects: &[Object],
         checks: &mut Checks,
     ) -> TestResult {
-        use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+        use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
         let book = native_spell_book()?;
         let spell = book
             .spoken(FLOOR_EXHAUST_SPELL)
@@ -805,20 +832,35 @@ mod e2ef1 {
                     checks.pass("stairs", client.world_spatial());
                 }
                 let changed = std::time::Instant::now();
-                let before = client.actor_vitals().copied().ok_or("floor exhaust vitals")?;
-                let result = client.cast_spell(index, SpellTarget::None, false).await?;
-                if result.disposition != SpellCastDisposition::CoolingDown || result.actor_vitals_delta.is_some() || client.actor_vitals() != Some(&before) { return Err(format!("floor action did not refuse without resource spend: {result:?}").into()); }
+                let (before, result) = floor_exhaust_cast(client, index).await?;
+                if result.disposition != SpellCastDisposition::CoolingDown
+                    || result.actor_vitals_delta.is_some()
+                    || client.actor_vitals() != Some(&before)
+                {
+                    return Err(format!("floor action did not refuse without resource spend: {result:?}").into());
+                }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
                 loop {
                     client.service_liveness(Duration::from_millis(100)).await?;
-                    client.take_events();
-                    let result = client.cast_spell(index, SpellTarget::None, false).await?;
+                    let (before, result) = floor_exhaust_cast(client, index).await?;
                     if result.disposition == SpellCastDisposition::Cast {
-                        if changed.elapsed() < Duration::from_millis(1800) || client.actor_vitals().is_none_or(|v| v.mana >= before.mana) || result.actor_vitals_delta.is_none() { return Err("floor exhaust expired early or post-window cast spent no mana".into()); }
+                        if changed.elapsed() < Duration::from_millis(1800)
+                            || result.actor_vitals_delta.as_ref().is_none_or(|delta| delta.value.mana >= before.mana)
+                        {
+                            return Err("floor exhaust expired early or post-window cast spent no mana".into());
+                        }
                         ready = tokio::time::Instant::now() + cooldown;
                         break;
                     }
-                    if result.disposition != SpellCastDisposition::CoolingDown || client.actor_vitals().is_none_or(|v| v.mana != before.mana || v.soul != before.soul) || tokio::time::Instant::now() >= deadline { return Err(format!("aggressive action did not become executable after floor exhaust: {result:?}").into()); }
+                    if result.disposition != SpellCastDisposition::CoolingDown
+                        || result.actor_vitals_delta.is_some()
+                        || client.actor_vitals() != Some(&before)
+                    {
+                        return Err(format!("floor exhaust retry was not a resource-free refusal: {result:?}").into());
+                    }
+                    if tokio::time::Instant::now() >= deadline {
+                        return Err(format!("aggressive action did not become executable after floor exhaust: {result:?}").into());
+                    }
                 }
                 exhausted += 1;
                 Ok(())
