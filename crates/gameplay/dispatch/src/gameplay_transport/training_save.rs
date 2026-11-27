@@ -82,7 +82,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     deadline: tokio::time::Instant::now() + super::super::COMMAND_HOLDER_WINDOW,
                     ..AdmissionRetryBudget::new(&session)
                 };
-                self.save_training_checkpoint(actor, session, false, &budget)
+                self.root
+                    .with_periodic_lock_budget(
+                        self.save_training_checkpoint(actor, session, false, &budget),
+                    )
                     .await
             })
             .await
@@ -281,10 +284,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return TrainingSave::Unknown;
         };
-        // Live enrichment never waits for a revision owner or holds the slot
-        // while retrying a refused checkout. Forced end-path saves retain the
-        // original bounded read retry and ordering.
-        let mut slot = if force {
+        // A cadence owner has no foreground holder reservation. Its optional
+        // work yields to a Character revision owner rather than queuing.
+        let background = budget.root.is_none();
+        let mut slot = if !background {
             self.revision_sequencer.acquire(character).await
         } else if let Some(slot) = self.revision_sequencer.try_acquire(character) {
             slot
@@ -297,7 +300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .map_err(character_read_error)
         };
-        let root = if force {
+        let root = if !background {
             budget
                 .retry_durability("training_character", read_character)
                 .await
@@ -406,10 +409,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.finish_training_checkpoint_once(actor, session, &store, &retained, &outcome)
                 .await
         };
-        let result = if force {
-            budget.retry_durability("training_readback", readback).await
-        } else {
+        let result = if background {
+            // The writer has finished. Independent authority and the exact
+            // retained occurrence qualify the live install without the slot.
+            drop(slot);
             readback().await
+        } else {
+            budget.retry_durability("training_readback", readback).await
         };
         result.unwrap_or(TrainingSave::Unknown)
     }
