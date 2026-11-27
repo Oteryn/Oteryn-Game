@@ -329,7 +329,12 @@ async fn verify(
     };
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
     host.route(create_mark_key()?);
-    host.click_minimap_button("Cancel mark")?;
+    host.click_minimap_button("Save mark")?;
+    assert_eq!(super::lock(&host.view()?.minimap).markers, std::slice::from_ref(&marker));
+    wait_for_saved_marks(host, &cache_path, std::slice::from_ref(&marker)).await?;
+    host.open_mark_menu_at_cell([15, 12])?;
+    host.click_minimap_button("Delete Mark")?;
+    wait_for_saved_marks(host, &cache_path, &[]).await?;
     host.open_mark_menu_at_cell([15, 12])?;
     host.click_minimap_button("Set Mark")?;
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
@@ -410,10 +415,16 @@ async fn verify(
     };
     assert_remembered_cells(&super::lock(&view.minimap), &union);
     check_reply(&logout, &first_id, step.command_id + 1).await?;
+    let pre_logout_feedback = super::lock(&retained_cache).feedback.clone();
     host.logout()?;
     tokio::time::timeout_at(periodic_deadline, async {
         while !host.logged_out() {
             host.poll();
+            assert_eq!(
+                super::lock(&retained_cache).feedback,
+                pre_logout_feedback,
+                "N07d logout flush reported a failure before completion"
+            );
             tokio::task::yield_now().await;
         }
     })
@@ -423,6 +434,11 @@ async fn verify(
     tokio::time::timeout_at(periodic_deadline, async {
         while host.has_retired_saves() {
             host.poll();
+            assert_eq!(
+                super::lock(&retained_cache).feedback,
+                pre_logout_feedback,
+                "N07d logout flush reported a failure before completion"
+            );
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     })
