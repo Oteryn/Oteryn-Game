@@ -93,9 +93,6 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 .tile(at.x, at.y, at.floor)
                 .is_some_and(|tile| !tile.protection_zone())
     };
-    for (classification, stacks, folder, slot) in
-        [("influenced 3", 3, "", 0), ("fiendish", 15, "fiendish", 1)]
-    {
         let path = route(
             world,
             tile(client.world_spatial().actor_position)?,
@@ -103,11 +100,9 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         )
         .ok_or("P19 FIXTURE_PLACEMENT no approach with two open spawn tiles")?;
         move_first_attempt(&mut client, world, path).await?;
-        let positions = cells(tile(client.world_spatial().actor_position)?);
-        let position = *positions
-            .get(slot)
-            .ok_or("P19 FIXTURE_PLACEMENT spawn tile absent")?;
-        if slot == 0 {
+    let positions = cells(tile(client.world_spatial().actor_position)?);
+        {
+            let position = positions[0];
             let refused = request_fixture_control(
                 uuid_text(client.join_snapshot().game_session_id.as_bytes()),
                 "--spawn-forge",
@@ -123,10 +118,8 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 );
             }
         }
-        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         let before = rewards(&mut client).await?;
-        if slot == 0
-            && before
+        if before
                 != (Rewards {
                     dust: 0,
                     limit: 100,
@@ -138,6 +131,12 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         if sliver_count(&client, sliver)? != before.slivers {
             return Err("P19 pre-combat backpack and Forge sliver counts disagree".into());
         }
+    let mut encounters = Vec::new();
+    for (classification, stacks, folder, position) in [
+        ("influenced 3", 3, "", positions[0]),
+        ("fiendish", 15, "fiendish", positions[1]),
+    ] {
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         client.take_events();
         evidence(&format!(
             "P19 FIXTURE classification={classification} placement={position:?}"
@@ -203,6 +202,14 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             "P19_FORGE entity={exact:?} forge_stacks={stacks} sequence={}",
             first
         ));
+        let candidates = client.session_mut().visible_appearances();
+        let mut matching = candidates.iter().filter(|entry| entry.forge_stacks == Some(stacks));
+        let selected = matching.next().ok_or("P19 client cannot see the requested Forge marker")?.entity.entity;
+        if matching.next().is_some() || selected != exact {
+            return Err(format!("P19 ambiguous or wrong client Forge selection: {selected:?}, expected {exact:?}").into());
+        }
+        encounters.push((classification, stacks, selected));
+    }
         let combat_tile = tile(client.world_spatial().actor_position)?;
         let retreat = route(world, combat_tile, |at| is_logout_rest_tile(world, at))
             .ok_or("P19 FIXTURE_PLACEMENT no rest tile for live-marker relog")?;
@@ -218,14 +225,18 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err("P19 live-marker relog did not restore the saved position in a new session".into());
         }
         let appearances = client.session_mut().visible_appearances();
+        for &(_, stacks, exact) in &encounters {
         if !appearances.iter().any(|entry| {
             entry.entity.entity == exact && entry.forge_stacks == Some(stacks)
         }) {
             return Err(format!("P19 fresh admission lacks live marker for {exact:?} with stacks={stacks}").into());
         }
         evidence(&format!("P19 live-marker fresh admission entity={exact:?} stacks={stacks}"));
-        let approach = route(world, tile(rest_position)?, |at| at == combat_tile)
-            .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile after live-marker relog")?;
+        }
+        let mut before = before;
+    for (classification, stacks, exact) in encounters {
+        let approach = route(world, tile(client.world_spatial().actor_position)?, |at| at == combat_tile)
+            .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile")?;
         move_first_attempt(&mut client, world, approach).await?;
         let pre_attack = rewards(&mut client).await?;
         if pre_attack != before {
@@ -287,6 +298,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         evidence(&format!(
             "P19 rewards {classification} fresh_admission={restored:?}"
         ));
+        before = restored;
     }
     // Both reward proofs have completed. Release the fixture character for the runner.
     evidence("P19 FIXTURE_CLEANUP step=logout");
