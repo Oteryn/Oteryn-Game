@@ -27,7 +27,7 @@ use sha2::{Digest, Sha256};
 
 use super::ComposedFreshAdmission;
 use super::actor_spell::ChannelSpellStates;
-use super::connection::{EarnedNotice, UseCommand, UseOutcome};
+use super::connection::{EarnedNotice, UseCommand, UseOutcome, UseOwnerError};
 use super::item_view::ItemKey;
 use crate::content::native_gameplay::{ItemProfileRecord, NativeGameplayState};
 use crate::content::{
@@ -356,6 +356,15 @@ enum Effect {
     Concoction,
 }
 
+#[path = "item_use/food_text.rs"]
+mod food_text;
+
+#[derive(Default)]
+struct CarriedUseFeedback {
+    utterance: Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
+    unavailable: Option<UseOwnerError>,
+}
+
 enum UseSource {
     Handle(ItemKey),
     Definition(NonZeroU32),
@@ -366,6 +375,95 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
 
+    pub(super) async fn classify_item_use(
+        &self,
+        definition: NonZeroU32,
+    ) -> Option<super::connection::ItemUseKind> {
+        use super::connection::ItemUseKind;
+        use crate::durability::item_use::soul_war_source::source_use;
+        use crate::durability::quest_state::adventurers_stone::STONE_KEY;
+        use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
+
+        let runtime = self.runtime.lock().await;
+        let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+        let (key, revision) = index.definition_at(definition)?;
+        let native = self.active_generation?.native_gameplay()?;
+        Some(match key {
+            STONE_KEY => ItemUseKind::Stone,
+            _ if crate::durability::item_use::proficiency_catalyst::catalyst_progress(key)
+                .is_some() =>
+            {
+                ItemUseKind::Catalyst
+            }
+            DROME_CUBE_KEY => ItemUseKind::Cube,
+            _ if source_use(&TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: revision.into(),
+            })
+            .is_some() =>
+            {
+                ItemUseKind::SoulWar
+            }
+            _ => {
+                let policy = native.item_policy(key, revision)?;
+                let record = policy.record();
+                if matches!(&record.semantics.consumption,
+                    ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
+                        if food.regeneration_seconds > 0)
+                {
+                    ItemUseKind::Food
+                } else if matches!(&record.semantics.container,
+                    ReferenceItemField::Known(container)
+                        if matches!(container.capacity, ReferenceItemField::Known(n) if n > 0))
+                {
+                    ItemUseKind::Container
+                } else if record
+                    .production_binding
+                    .external_id
+                    .parse()
+                    .ok()
+                    .and_then(|id| self.legacy_rune_spell(id))
+                    .is_some()
+                {
+                    ItemUseKind::Rune
+                } else {
+                    ItemUseKind::Other
+                }
+            }
+        })
+    }
+
+    pub(super) async fn use_classified_stone(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: Option<ItemKey>,
+        definition: NonZeroU32,
+    ) -> Result<UseOutcome, UseOwnerError> {
+        let source = item.map_or(UseSource::Definition(definition), UseSource::Handle);
+        let (outcome, unavailable) = self.use_carried_item(actor, command, source, true).await;
+        unavailable.map_or(Ok(outcome), Err)
+    }
+
+    pub(super) async fn use_admitted_food(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: Option<ItemKey>,
+        definition: NonZeroU32,
+    ) -> Result<Option<UseOutcome>, UseOwnerError> {
+        if self.classify_item_use(definition).await != Some(super::connection::ItemUseKind::Food) {
+            return Ok(None);
+        }
+        if self.trade_item_available(actor, command, item).await != Some(true) {
+            return Ok(Some(UseOutcome::rejected()));
+        }
+        let source = item.map_or(UseSource::Definition(definition), UseSource::Handle);
+        let (outcome, unavailable) = self.use_carried_item(actor, command, source, false).await;
+        unavailable.map_or(Ok(Some(outcome)), Err)
+    }
+
     /// One `USE` of the carried-tree entry `item` under capability 15.
     pub(super) async fn use_backpack_item(
         &self,
@@ -373,8 +471,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         item: ItemKey,
     ) -> UseOutcome {
-        self.use_carried_item(actor, command, UseSource::Handle(item))
+        self.use_carried_item(actor, command, UseSource::Handle(item), false)
             .await
+            .0
     }
 
     /// BAGS-0 §8: field 5 searches closed bags as well as equipment and open containers.
@@ -384,8 +483,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         definition: NonZeroU32,
     ) -> UseOutcome {
-        self.use_carried_item(actor, command, UseSource::Definition(definition))
+        self.use_carried_item(actor, command, UseSource::Definition(definition), false)
             .await
+            .0
     }
 
     /// Let the carried essence owner select its recipe before a House decoration
@@ -475,23 +575,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         source: UseSource,
-    ) -> UseOutcome {
-        let mut potion_utterance = None;
+        stone: bool,
+    ) -> (UseOutcome, Option<UseOwnerError>) {
+        let mut feedback = CarriedUseFeedback::default();
         let disposition = match self
-            .item_use(actor, command, source, &mut potion_utterance)
+            .item_use(actor, command, source, stone, &mut feedback)
             .await
         {
             Ok(disposition) | Err(disposition) => disposition,
         };
-        UseOutcome {
-            disposition,
-            committed: None,
-            earned: EarnedNotice::NoneEarned,
-            reward_granted: None,
-            gate_message_id: None,
-            potion_utterance,
-            refusal_detail: None,
-        }
+        (
+            UseOutcome {
+                disposition,
+                committed: None,
+                earned: EarnedNotice::NoneEarned,
+                reward_granted: None,
+                gate_message_id: None,
+                potion_utterance: feedback.utterance,
+                refusal_detail: None,
+            },
+            feedback.unavailable,
+        )
     }
 
     async fn item_use(
@@ -499,7 +603,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         source: UseSource,
-        utterance: &mut Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
+        stone: bool,
+        feedback: &mut CarriedUseFeedback,
     ) -> Result<UseDisposition, UseDisposition> {
         use oteryn_protocol_oteryn::world_object::PotionUtterance;
         let fence = command.item_fence.ok_or(UseDisposition::Rejected)?;
@@ -507,17 +612,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !super::hireling::resolve_pending_lamp(self, actor, session).await {
             return Err(UseDisposition::Rejected);
         }
-        if let Some(result) =
-            Box::pin(rotten_essence::use_essence(self, actor, command, &source)).await
+        if !stone
+            && let Some(result) =
+                Box::pin(rotten_essence::use_essence(self, actor, command, &source)).await
         {
             return result;
         }
         // Bind the exact ingress before resolving live inventory. A replay after return/relog
         // answers from its record without selecting a different lamp or using a new tile.
-        if matches!(
-            fence.runtime_scope,
-            crate::foundation::RuntimeScopeRefV1::Instance { .. }
-        ) {
+        if !stone
+            && matches!(
+                fence.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            )
+        {
             use crate::durability::house_hireling::HirelingLampInput;
             let input = match &source {
                 UseSource::Handle(ItemKey::Instance(id)) => {
@@ -596,7 +704,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
+        if !stone && let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
             return result;
         }
         if matches!(
@@ -630,7 +738,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .gate(&runtime, actor, session)
                 .ok_or(UseDisposition::Rejected)?;
             if gate.last.is_some_and(|(id, _)| id == command.command_id) {
-                *utterance = gate.last_utterance;
+                feedback.utterance = gate.last_utterance;
             }
             gate.admit(command.command_id, self.owner_ms())?;
         }
@@ -638,11 +746,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(ActiveGeneration::native_gameplay)
             .ok_or(UseDisposition::Rejected)?;
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let inventory = budget
+            .retry_use_holder(
+                "carried_item_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
-            .map_err(|_| UseDisposition::Rejected)?;
+            .map_err(|error| {
+                if super::item_use_holder_busy(&error) {
+                    feedback.unavailable = Some(UseOwnerError::HolderBusy);
+                }
+                UseDisposition::Rejected
+            })?;
         let source = match source {
             UseSource::Handle(ItemKey::Instance(id)) => id,
             UseSource::Handle(_) => return Err(UseDisposition::NothingToUse),
@@ -690,9 +811,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if entry.item.definition.production_key
             == crate::durability::quest_state::adventurers_stone::STONE_KEY
         {
-            return self
-                .use_adventurers_stone(actor, command, fence, source)
-                .await;
+            return match self
+                .use_adventurers_stone(actor, command, fence, source, &budget)
+                .await
+            {
+                Ok(disposition) => disposition,
+                Err(error) => {
+                    feedback.unavailable = Some(error);
+                    Err(UseDisposition::Rejected)
+                }
+            };
+        }
+        if stone {
+            return Err(UseDisposition::StaleState);
         }
         if entry.item.definition.production_key
             == crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_KEY
@@ -721,7 +852,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             if result == Ok(UseDisposition::Committed) {
-                *utterance = Some(condition_potions::utterance(potion));
+                feedback.utterance = Some(condition_potions::utterance(potion));
             }
             return result;
         }
@@ -808,6 +939,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Effect::Food(seconds) = effect
                 && eat_food(&mut state.clone(), seconds, self.owner_ms()).is_err()
             {
+                self.states
+                    .chat
+                    .push_quest_feedback(session, "You are full.");
                 return Err(UseDisposition::Full);
             }
             let gate = states.item_uses.gate(&runtime, actor, session);
@@ -853,8 +987,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.owner_ms(),
             );
         }
+        if known_commit
+            && matches!(kind, ItemUseKind::Food)
+            && let Some(text) = record.and_then(|record| {
+                food_text::utterance(record.production_binding.external_id.parse().ok()?)
+            })
+        {
+            self.states
+                .chat
+                .publish_quest_speech(&runtime, actor, session, text);
+        }
         if disposition == UseDisposition::Committed && matches!(kind, ItemUseKind::Potion) {
-            *utterance = Some(PotionUtterance::Restore);
+            feedback.utterance = Some(PotionUtterance::Restore);
         }
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
             gate.settle(
@@ -862,7 +1006,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition,
                 if ambiguous { &reserved } else { &[] },
             );
-            gate.last_utterance = *utterance;
+            gate.last_utterance = feedback.utterance;
         }
         Ok(disposition)
     }

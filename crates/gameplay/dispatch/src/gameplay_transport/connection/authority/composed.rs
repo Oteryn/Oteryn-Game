@@ -1,7 +1,7 @@
 //! Production delegation to the existing mechanic owners.
 
 use crate::gameplay_transport::connection::{
-    AchievementNoticeObservation, SelectedCapabilities, UseCommand,
+    AchievementNoticeObservation, ItemUseKind, SelectedCapabilities, UseCommand, UseOwnerError,
 };
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
@@ -1295,6 +1295,41 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn item_use_kind(&self, definition: std::num::NonZeroU32) -> Option<ItemUseKind> {
+        self.classify_item_use(definition).await
+    }
+
+    async fn use_stone(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: Option<ItemKey>,
+        definition: std::num::NonZeroU32,
+    ) -> Result<UseOutcome, UseOwnerError> {
+        self.use_classified_stone(actor, command, item, definition)
+            .await
+    }
+
+    async fn retained_rune_use(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &oteryn_protocol_oteryn::world_object::UseIntent,
+    ) -> bool {
+        self.has_retained_rune_use(actor, command, intent).await
+    }
+
+    async fn use_known_food(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: Option<item_view::ItemKey>,
+        definition: std::num::NonZeroU32,
+    ) -> Result<Option<UseOutcome>, UseOwnerError> {
+        self.use_admitted_food(actor, command, item, definition)
+            .await
+    }
+
     async fn use_item_completion(
         &self,
         actor: ExactActorRef,
@@ -1552,7 +1587,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         key: Option<item_view::ItemKey>,
         visible: bool,
         field_runes: bool,
-    ) -> Option<UseOutcome> {
+    ) -> Result<UseOutcome, UseOwnerError> {
         self.use_legacy_rune(actor, command, intent, key, visible, field_runes)
             .await
     }

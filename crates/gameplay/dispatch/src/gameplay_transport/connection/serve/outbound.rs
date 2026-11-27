@@ -76,8 +76,12 @@ where
     if session
         .commands
         .terminalize_with(command.command_id, &result, || {
-            authority
-                .player_trade_terminalized(session.admitted.game_session_id, command.command_id)
+            if !matches!(dispatch, Dispatch::UseUnavailable) {
+                authority.player_trade_terminalized(
+                    session.admitted.game_session_id,
+                    command.command_id,
+                );
+            }
         })
         .is_none()
     {
@@ -164,6 +168,9 @@ where
     write_frame(stream, &result)
         .await
         .map_err(|error| ServeEnd::Transport(TransportEnd::Write(error.kind())))?;
+    if matches!(dispatch, Dispatch::UseUnavailable) {
+        return Ok(());
+    }
     if let Some(relocation_seq) = relocation_seq {
         operator_event(&format!(
             "event=use_relocation_published command_id={} relocation_seq={relocation_seq} use_result_seq={result_sequence}",
@@ -593,6 +600,7 @@ where
         | Dispatch::Training(_)
         | Dispatch::Logout(LogoutResult::Accepted | LogoutResult::Busy)
         | Dispatch::House(_)
+        | Dispatch::UseUnavailable
         | Dispatch::Unregistered => {}
     }
     refresh::sounds(stream, authority, session).await?;

@@ -568,6 +568,22 @@
       "note": "A bounded structured replacement for legacy transport operator diagnostics."
     },
     {
+      "event": "use_holder_wait",
+      "level": "info",
+      "span": false,
+      "fields": ["purpose", "waited_ms", "outcome"],
+      "codes": [],
+      "note": "Elapsed wait and result of a command owner retrying a failed durability checkout."
+    },
+    {
+      "event": "use_owner_unavailable",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "owner", "cause"],
+      "codes": [],
+      "note": "The USE owner could not return a mechanic result; its cause distinguishes a pre-write checkout refusal from an unresolved commit."
+    },
+    {
       "event": "use_relocation_published",
       "level": "info",
       "span": false,

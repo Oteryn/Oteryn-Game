@@ -68,7 +68,10 @@ macro_rules! authority_methods {
             _catalyst: $crate::gameplay_transport::item_view::ItemKey,
             _weapon: $crate::gameplay_transport::item_view::ItemKey,
         ) -> impl std::future::Future<
-            Output = Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()>,
+            Output = Result<
+                Option<$crate::gameplay_transport::connection::UseOutcome>,
+                $crate::gameplay_transport::connection::UseOwnerError,
+            >,
         > {
             async { Ok(None) }
         }
@@ -156,7 +159,10 @@ macro_rules! composed_methods {
             command: $crate::gameplay_transport::connection::UseCommand,
             catalyst: $crate::gameplay_transport::item_view::ItemKey,
             weapon: $crate::gameplay_transport::item_view::ItemKey,
-        ) -> Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()> {
+        ) -> Result<
+            Option<$crate::gameplay_transport::connection::UseOutcome>,
+            $crate::gameplay_transport::connection::UseOwnerError,
+        > {
             $crate::gameplay_transport::weapon_proficiency_select::catalyst::use_catalyst(
                 self, actor, command, catalyst, weapon,
             )

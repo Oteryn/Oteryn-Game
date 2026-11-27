@@ -59,56 +59,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: crate::foundation::GameSessionId,
     ) -> bool {
-        // NODEBOOT-1: both reads go through the shared holder that background passes also
-        // take, so a busy holder is retried briefly instead of refusing the command.
-        use crate::durability::{
-            DurabilityError, character_progression::CharacterProgressionError,
-        };
         let Ok(budget) =
             crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
         else {
             return false;
         };
-        let Ok((fence, stored, house_scope)) = budget
-            .retry_durability("pvp_refresh", async || {
-                let fence = self
-                    .current_quest_fence_durable(session)
-                    .await?
-                    .ok_or(DurabilityError::CommitRejected)?;
-                // Activities also use Instance scopes. Only a native House
-                // actor may select the named-House custody reader.
-                let house_scope = self
-                    .runtime
-                    .lock()
-                    .await
-                    .house_actor_state(actor, session)
-                    .is_ok();
-                let stored = if house_scope {
-                    self.root
-                        .read_house_pvp_state(self.character, self.holder, fence, self.channel_id)
-                        .await
-                } else {
-                    self.root
-                        .read_pvp_state(self.character, self.holder, fence)
-                        .await
-                }
-                .map_err(|error| match error {
-                    CharacterProgressionError::Unavailable(error) => error,
-                    _ => DurabilityError::CommitRejected,
-                })?;
-                Ok((fence, stored, house_scope))
-            })
+        self.refresh_pvp_locks_within(actor, session, &budget)
             .await
-        else {
-            return false;
+            .is_ok()
+    }
+
+    pub(in crate::gameplay_transport) async fn refresh_pvp_locks_within(
+        &self,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        budget: &crate::gameplay_transport::AdmissionRetryBudget<'_>,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        // NODEBOOT-1: both reads go through the shared holder that background passes also
+        // take, so a busy holder is retried briefly instead of refusing the command.
+        use crate::durability::{
+            DurabilityError, character_progression::CharacterProgressionError,
         };
-        // Every durable read is complete; retain no foreground demand while
-        // waiting for the runtime and cached-lock publication below.
-        drop(budget);
+        let (fence, stored, house_scope) = budget
+            .retry_use_holder(
+                "pvp_refresh",
+                async || {
+                    let fence = self
+                        .current_quest_fence_durable(session)
+                        .await?
+                        .ok_or(DurabilityError::CommitRejected)?;
+                    // Activities also use Instance scopes. Only a native House
+                    // actor may select the named-House custody reader.
+                    let house_scope = self
+                        .runtime
+                        .lock()
+                        .await
+                        .house_actor_state(actor, session)
+                        .is_ok();
+                    let stored = if house_scope {
+                        self.root
+                            .read_house_pvp_state(
+                                self.character,
+                                self.holder,
+                                fence,
+                                self.channel_id,
+                            )
+                            .await
+                    } else {
+                        self.root
+                            .read_pvp_state(self.character, self.holder, fence)
+                            .await
+                    }
+                    .map_err(|error| match error {
+                        CharacterProgressionError::Unavailable(error) => error,
+                        _ => DurabilityError::CommitRejected,
+                    })?;
+                    Ok((fence, stored, house_scope))
+                },
+                crate::gameplay_transport::root_holder_busy,
+            )
+            .await?;
         let runtime = self.runtime.lock().await;
         if house_scope {
             let Ok(house) = runtime.house_actor_state(actor, session) else {
-                return false;
+                return Err(DurabilityError::CommitRejected);
             };
             if fence.game_session_id != session
                 || house.scope != fence.runtime_scope
@@ -116,10 +130,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
                 || house.lease.generation() != fence.character_lease_generation
             {
-                return false;
+                return Err(DurabilityError::CommitRejected);
             }
         } else if runtime.player_control_facts(actor, session).is_err() {
-            return false;
+            return Err(DurabilityError::CommitRejected);
         }
         let mut states = self.states.spell_states.lock().await;
         states.pvp_locks.retain(|(a, s, _)| {
@@ -142,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 deadline(stored.readmission_remaining.kill),
             );
         }
-        true
+        Ok(())
     }
 }
 pub(in crate::gameplay_transport) struct PvpBlocker<'a> {

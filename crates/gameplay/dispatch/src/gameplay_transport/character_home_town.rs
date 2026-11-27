@@ -478,7 +478,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command: crate::foundation::CommandRef::new(session, id),
                 expected: entered, destination: target,
                 travel: crate::durability::quest_state::adventurers_stone::GuildStoneTravel::Return { town },
-            }).await;
+            }, &super::AdmissionRetryBudget::for_command(self.root)).await.ok().flatten();
         }
         let mut runtime = self.runtime.lock().await;
         if runtime.binding().runtime_scope() != scope {

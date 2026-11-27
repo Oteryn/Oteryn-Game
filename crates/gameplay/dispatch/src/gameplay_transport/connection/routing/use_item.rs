@@ -3,8 +3,8 @@
 use super::super::super as transport;
 use super::super::{
     AdmittedSession, CAPABILITY_ITEM_USE_V1, ContainerObservation, ContainerViewOutcome,
-    ContainerViewState, ExactActorRef, FreshAdmissionAuthority, ItemKey, OpenDecision, PendingOpen,
-    SessionItemView, SessionVisibility, UseCommand, UseIntent, UseOutcome, UseTarget,
+    ContainerViewState, ExactActorRef, FreshAdmissionAuthority, ItemKey, ItemUseKind, OpenDecision, PendingOpen,
+    SessionItemView, SessionVisibility, UseCommand, UseIntent, UseOutcome, UseOwnerError, UseTarget,
     decode_use_intent_target,
 };
 use super::Dispatch;
@@ -23,9 +23,62 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
-    // W09: a committed Cube may have consumed the last source unit. Its original
-    // command still resolves from a receipt even when the view handle no longer exists.
-    // Preserve the same timeout/unknown close used by receipt-backed Item actions.
+    let use_command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: command.command_id,
+        item_fence: admitted.item_fence,
+    };
+    let selected = admitted.continuity.selected_capabilities;
+    let item_use = selected.contains(CAPABILITY_ITEM_USE_V1);
+    let plain = decoded.as_ref().is_ok_and(|intent| {
+        intent.use_with.is_none()
+            && intent.use_with_map_item.is_none()
+            && intent.use_with_position.is_none()
+    });
+    let source = match decoded.as_ref().ok().map(|intent| &intent.target) {
+        Some(UseTarget::Item(handle)) => item_view.as_ref().and_then(|view| view.resolve(*handle)),
+        _ => None,
+    };
+    let definition = match decoded.as_ref().ok().map(|intent| &intent.target) {
+        Some(UseTarget::ItemByDefinition(definition)) => Some(*definition),
+        _ => source.and_then(|key| {
+            item_view.as_ref()?.backpack_entry_definition(key).or_else(|| {
+                container_views.as_ref()?.carried_entry_definition(key)
+            })
+        }),
+    };
+    let kind = match definition {
+        Some(definition) => authority.item_use_kind(definition).await,
+        None => None,
+    };
+    let opens_item = plain && (
+        matches!(source, Some(ItemKey::Entity(_) | ItemKey::BrowseField { .. }))
+        || source.is_some_and(|key| {
+            item_view.as_ref().is_some_and(|view| view.is_main_backpack(&key))
+        })
+        || kind == Some(ItemUseKind::Container) && source.is_some()
+    );
+
+    if item_use && plain && kind == Some(ItemUseKind::Food)
+        && let Some(definition) = definition
+    {
+        let outcome = authority.use_known_food(actor, use_command, source, definition).await;
+        if authority.item_use_pending(actor, admitted.game_session_id).await {
+            return None;
+        }
+        return owner_result(
+            command.command_id, "food", outcome.map(|value| value.unwrap_or_else(UseOutcome::rejected)),
+        );
+    }
+    let rune_owner = if let Ok(intent) = &decoded
+        && transport::rune_use_bridge::accepts_intent_shape(intent, &selected)
+        && !opens_item
+    {
+        kind == Some(ItemUseKind::Rune)
+            || (kind.is_none() && authority.retained_rune_use(actor, use_command, intent).await)
+    } else {
+        false
+    };
     if let Ok(UseIntent {
         target: UseTarget::WorldObject(target),
         use_with: None,
@@ -50,27 +103,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     {
         return Some(Dispatch::Use(outcome));
     }
-    if admitted
-        .continuity
-        .selected_capabilities
-        .contains(CAPABILITY_ITEM_USE_V1)
-        // Cube receipts belong to Channel sessions. A named-House handoff has
-        // its own session and must reach its owner after the shared trade check.
+    // Cube receipts belong to the Channel. Replay also admits a retired handle,
+    // after excluding any exact retained rune USE and other known owners.
+    if item_use && plain && !rune_owner
         && !admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
             crate::foundation::RuntimeScopeRefV1::Instance { .. }))
+        && !opens_item
+        && (kind.is_none() || kind == Some(ItemUseKind::Cube))
         && let Ok(intent) = &decoded
-        && intent.use_with.is_none()
-        && intent.use_with_map_item.is_none()
-        && intent.use_with_position.is_none()
-        && matches!(
-            intent.target,
-            UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
-        )
+        && matches!(intent.target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
+        && !matches!(source, Some(ItemKey::MapBase { .. } | ItemKey::MapAdded(_)))
     {
-        let source = match intent.target {
-            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
-            _ => None,
-        };
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_drome_cube(
@@ -91,31 +134,46 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(outcome));
         }
     }
-    if let Ok(intent) = &decoded {
-        let source = match intent.target {
-            UseTarget::Item(handle) => {
-                Some(item_view.as_ref().and_then(|view| view.resolve(handle)))
-            }
-            UseTarget::ItemByDefinition(_) => Some(None),
-            _ => None,
-        };
-        if let Some(source) = source
-            && !authority
-                .player_trade_item_available(
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    source,
-                )
-                .await?
-        {
-            return Some(Dispatch::Use(UseOutcome::rejected()));
-        }
+    if let Ok(UseIntent { target, .. }) = &decoded
+        && matches!(target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
+        && !authority.player_trade_item_available(actor, use_command, source).await?
+    {
+        return Some(Dispatch::Use(UseOutcome::rejected()));
     }
-    if let Ok(intent) = &decoded
+
+    if item_use && plain && kind == Some(ItemUseKind::Stone)
+        && let Some(definition) = definition
+    {
+        let outcome = authority.use_stone(actor, use_command, source, definition).await;
+        return owner_result(command.command_id, "stone", outcome);
+    }
+    if item_use
+        && kind == Some(ItemUseKind::Catalyst)
+        && let Some(source) = source
+        && let Ok(intent) = &decoded
+        && let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(handle)) =
+            intent.use_with_map_item
+        && let Some(target) = item_view.as_ref().and_then(|view| view.resolve(handle))
+    {
+        return owner_result(
+            command.command_id,
+            "proficiency_catalyst",
+            authority
+                .use_proficiency_catalyst(actor, use_command, source, target)
+                .await
+                .map(|outcome| outcome.unwrap_or_else(UseOutcome::rejected)),
+        );
+    }
+    if rune_owner && let Ok(intent) = &decoded
+    {
+        let outcome = transport::rune_use_bridge::dispatch(
+            authority, actor, use_command, intent.clone(),
+            item_view.as_ref(), visibility.as_ref(), &selected,
+        )
+        .await;
+        return owner_result(command.command_id, "rune", outcome);
+    }
+    if !opens_item && let Ok(intent) = &decoded
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
@@ -169,7 +227,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     // The shared item-action owner also admits equipped hats and player-targeted toys.
     // Map and position uses must reach their own receipt probes before an unrelated
     // event-item inventory check can reject a historical command's stale fence.
-    if let Ok(intent) = &decoded
+    if !opens_item && kind != Some(ItemUseKind::SoulWar)
+        && let Ok(intent) = &decoded
         && (intent.use_with_map_item.is_none()
             || (admitted.item_fence.is_some_and(|fence| {
                 matches!(
@@ -213,11 +272,12 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(outcome));
         }
     }
-    if let Ok(intent) = &decoded {
-        let source = match intent.target {
-            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
-            _ => None,
-        };
+    if !opens_item
+        && let Ok(intent) = &decoded
+        && matches!(intent.target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
+        && (kind.is_none() || kind == Some(ItemUseKind::SoulWar)
+            || intent.use_with.is_some())
+    {
         let target = match intent.use_with_map_item {
             Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(handle)) => {
                 item_view.as_ref().and_then(|view| view.resolve(handle))
@@ -380,9 +440,6 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     intent.clone(), source, target,
                 ).await { return Some(Dispatch::Use(outcome)); }
                 if let (Some(source), Some(target)) = (source, target)
-                    && let Some(outcome) = authority.use_proficiency_catalyst(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await.ok()?
-                { return Some(Dispatch::Use(outcome)); }
-                if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority
                         .use_fluid_container(
                             actor,
@@ -468,22 +525,19 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     None => return None,
                 }
             }
-            Ok(intent) if !opens_container
-                && transport::rune_use_bridge::routes(
-                    &intent, &admitted.continuity.selected_capabilities,
-                ) => match transport::rune_use_bridge::dispatch(
-                authority, actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                intent, item_view.as_ref(), visibility.as_ref(),
-                &admitted.continuity.selected_capabilities,
-            ).await {
-                Some(outcome) => Dispatch::Use(outcome),
-                None => return None,
-            },
+            // Preserve the USE disposition for a targeted handle with no specific owner.
+            // The rune adapter cannot execute or diagnose a non-rune source.
+            Ok(intent) if transport::rune_use_bridge::accepts_intent_shape(&intent, &selected)
+                && (intent.use_with.is_some() || intent.use_with_position.is_some()) => {
+                Dispatch::Use(UseOutcome {
+                    disposition: if source.is_some() {
+                        oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
+                    } else {
+                        oteryn_protocol_oteryn::world_object::UseDisposition::StaleState
+                    },
+                    ..UseOutcome::rejected()
+                })
+            }
             // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
             // Creature and unrouted position targets still fail closed here.
             Ok(UseIntent {
@@ -527,7 +581,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 let container = container.filter(|_| opens_container);
                 // BAGS-USE-1: a carried entry of an open view can be used under capability
                 // 15. The owner revalidates custody before PREPARE; equipped sources fail closed.
-                let consumable = container.is_none()
+                let consumable = !opens_item && container.is_none()
                     && matches!(key, Some(ItemKey::Instance(_)))
                     && admitted
                         .continuity
@@ -630,5 +684,32 @@ mod fluid_routing_tests {
         );
         assert!(imbuement < fluid, "imbuement handler before fluid");
         assert!(key < fluid, "key handler before fluid");
+    }
+}
+
+#[cfg(test)]
+#[path = "use_item/owner_tests.rs"]
+mod owner_tests;
+
+fn owner_result(
+    command_id: u64,
+    owner: &'static str,
+    outcome: Result<UseOutcome, UseOwnerError>,
+) -> Option<Dispatch> {
+    match outcome {
+        Ok(outcome) => Some(Dispatch::Use(outcome)),
+        Err(error) => {
+            let cause = match error {
+                UseOwnerError::HolderBusy => "holder_busy",
+                UseOwnerError::OutcomeUnknown => "outcome_unknown",
+            };
+            transport::operator_event(&format!(
+                "event=use_owner_unavailable command_id={command_id} owner={owner} cause={cause}"
+            ));
+            match error {
+                UseOwnerError::HolderBusy => Some(Dispatch::UseUnavailable),
+                UseOwnerError::OutcomeUnknown => None,
+            }
+        }
     }
 }

@@ -24,7 +24,9 @@ impl<S: SessionStream> Session<S> {
         if outcome.as_ref().is_err_and(|error| {
             !matches!(
                 error,
-                SessionError::ScopeChanged | SessionError::ActivityScopeChanged
+                SessionError::ScopeChanged
+                    | SessionError::ActivityScopeChanged
+                    | SessionError::CommandRefused { .. }
             )
         }) {
             self.unusable = true;
@@ -106,9 +108,27 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         payload: &[u8],
     ) -> Result<UseOutcome, SessionError> {
-        let result = self
+        let result = match self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
-            .await?;
+            .await
+        {
+            Err(SessionError::CommandRefused {
+                command_id,
+                server_sequence,
+            }) => {
+                self.last_refusal_detail = None;
+                return Ok(CommandOutcome {
+                    command_id,
+                    status: CommandStatus::Rejected,
+                    disposition: UseDisposition::Rejected,
+                    result_server_sequence: server_sequence,
+                    world_spatial_delta: None,
+                    world_object_overlay_delta: None,
+                    gate_message_id: None,
+                });
+            }
+            outcome => outcome?,
+        };
         let (payload, detail) = self.item_result_payload(&result.payload)?;
         let (disposition, gate_message_id) = world_object::decode_use_result_with_gate(payload)?;
         // Dispositions 11 to 17 and the gate message id exist only under capability 11, and
@@ -253,6 +273,18 @@ impl<S: SessionStream> Session<S> {
                     expected: command_id,
                     actual: result.command_id,
                 });
+            }
+            // Operation-terminal refusals carry the code in the command envelope and
+            // have no command-specific payload to decode.
+            if result.error_code == FoundationProtocolError::CommandRefused.code() {
+                return if result.status == CommandStatus::Rejected && result.payload.is_empty() {
+                    Err(SessionError::CommandRefused {
+                        command_id,
+                        server_sequence,
+                    })
+                } else {
+                    Err(FoundationProtocolError::MalformedEnvelope.into())
+                };
             }
             return Ok(ReceivedResult {
                 command_id,

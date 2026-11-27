@@ -17,6 +17,11 @@ pub enum SessionError {
         code: u32,
         connection_trace: Option<[u8; 16]>,
     },
+    /// The server refused one command and kept the session open.
+    CommandRefused {
+        command_id: u64,
+        server_sequence: u64,
+    },
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
     ActorSpell(actor_spell::ActorSpellError),
@@ -202,6 +207,9 @@ impl fmt::Display for SessionError {
             },
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
+            }
+            Self::CommandRefused { command_id, .. } => {
+                write!(formatter, "command {command_id} was refused")
             }
             Self::WorldObject(error) => {
                 write!(formatter, "WORLD_OBJECT_OVERLAY decode failed: {error:?}")

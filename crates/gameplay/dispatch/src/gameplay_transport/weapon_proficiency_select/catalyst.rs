@@ -4,11 +4,15 @@
 use super::*;
 use crate::durability::item_use::proficiency_catalyst::catalyst_progress;
 use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
-use crate::gameplay_transport::connection::UseOutcome;
+use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
+use crate::gameplay_transport::{
+    AdmissionRetryBudget, item_use_holder_busy, progression_holder_busy, root_holder_busy,
+};
+use crate::gameplay_transport::connection::{UseOutcome, UseOwnerError};
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
-fn disposition(disposition: UseDisposition) -> Option<Result<UseOutcome, ()>> {
+fn disposition(disposition: UseDisposition) -> Option<Result<UseOutcome, UseOwnerError>> {
     Some(Ok(UseOutcome {
         disposition,
         ..UseOutcome::rejected()
@@ -43,18 +47,24 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
     command: UseCommand,
     catalyst: ItemKey,
     weapon: ItemKey,
-) -> Option<Result<UseOutcome, ()>> {
+) -> Option<Result<UseOutcome, UseOwnerError>> {
     let (ItemKey::Instance(catalyst), ItemKey::Instance(weapon)) = (catalyst, weapon) else {
         return None;
     };
     let session = command.game_session_id;
     let fence = command.item_fence?;
     let catalogue = owner.proficiency_catalogue.as_ref()?;
-    let inventory = owner
-        .root
-        .read_item_use_inventory(owner.character, owner.holder, fence)
+    let budget = AdmissionRetryBudget::for_command(owner.root);
+    let inventory = match budget
+        .retry_use_holder("catalyst_inventory", async || {
+            owner.root.read_item_use_inventory(owner.character, owner.holder, fence).await
+        }, item_use_holder_busy)
         .await
-        .ok()?;
+    {
+        Ok(inventory) => inventory,
+        Err(error) if item_use_holder_busy(&error) => return Some(Err(UseOwnerError::HolderBusy)),
+        Err(_) => return disposition(UseDisposition::Rejected),
+    };
     let carried = || {
         inventory
             .backpack
@@ -89,32 +99,52 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
     ))
     .ok()?;
     // Uncheckpointed kill progress is committed first, so the catalyst adds to it.
-    match owner.save_weapon_proficiency(actor, session, true).await {
+    match owner.save_weapon_proficiency_with_budget(actor, session, true, &budget).await {
         TrainingSave::Saved | TrainingSave::NotApplicable => {}
         TrainingSave::FencedOut => return None,
         TrainingSave::Unknown => return disposition(UseDisposition::Rejected),
     }
-    let current = owner.current_quest_fence(session).await.ok()??;
-    let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
-    let root = owner
-        .root
-        .read_current_character(owner.character, current.character_id)
+    let current = match budget
+        .retry_use_holder("catalyst_fence", async || owner.current_quest_fence_durable(session).await, root_holder_busy)
         .await
-        .ok()?;
+    {
+        Ok(Some(current)) => current,
+        Err(DurabilityError::RootUnavailable) => return Some(Err(UseOwnerError::HolderBusy)),
+        _ => return disposition(UseDisposition::Rejected),
+    };
+    let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
+    let authority_busy = |error: &CharacterAuthorityError| {
+        matches!(error, CharacterAuthorityError::Unavailable(error) if root_holder_busy(error))
+    };
+    let root = match budget
+        .retry_use_holder("catalyst_character", async || {
+            owner.root.read_current_character(owner.character, current.character_id).await
+        }, authority_busy)
+        .await
+    {
+        Ok(root) => root,
+        Err(error) if authority_busy(&error) => return Some(Err(UseOwnerError::HolderBusy)),
+        Err(_) => return disposition(UseDisposition::Rejected),
+    };
     let gameplay = CurrentCharacterGameplayFence {
         expected_character_revision: root.revision,
         ..current
     };
-    let (tracks, receipt) = owner
-        .root
-        .read_character_proficiency_with_definitions(
-            owner.character,
-            gameplay.character_id,
-            Some(occurrence),
-            Arc::clone(&definitions),
-        )
+    let (tracks, receipt) = match budget
+        .retry_use_holder("catalyst_track", async || {
+            owner.root.read_character_proficiency_with_definitions(
+                owner.character,
+                gameplay.character_id,
+                Some(occurrence),
+                Arc::clone(&definitions),
+            ).await
+        }, progression_holder_busy)
         .await
-        .ok()?;
+    {
+        Ok(track) => track,
+        Err(error) if progression_holder_busy(&error) => return Some(Err(UseOwnerError::HolderBusy)),
+        Err(_) => return Some(Err(UseOwnerError::OutcomeUnknown)),
+    };
     if let Some(receipt) = receipt {
         return disposition(if receipt.cause == ProficiencyCause::Catalyst {
             UseDisposition::Committed
@@ -187,17 +217,19 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
         source_quantity_before: source.quantity,
         flask: ItemUseFlaskPlan::None,
     };
-    let outcome = slot
-        .commit_proficiency_catalyst(
-            owner.root,
-            owner.character,
-            owner.holder,
-            gameplay,
-            item,
-            change.clone(),
-            Arc::clone(&definitions),
-            Some(gameplay.expected_character_revision),
-        )
+    let outcome = budget
+        .retry_use_holder("catalyst_commit", async || {
+            slot.commit_proficiency_catalyst(
+                owner.root,
+                owner.character,
+                owner.holder,
+                gameplay,
+                item.clone(),
+                change.clone(),
+                Arc::clone(&definitions),
+                Some(gameplay.expected_character_revision),
+            ).await
+        }, progression_holder_busy)
         .await;
     let receipt = match outcome {
         Ok(
@@ -212,25 +244,32 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
             CharacterProgressionError::CharacterRevisionMismatch
             | CharacterProgressionError::ConflictingOccurrence,
         ) => return disposition(UseDisposition::Rejected),
-        // An unknown outcome is reconciled by the occurrence; still unknown disconnects.
-        Err(_) => match owner
-            .root
-            .reconcile_character_proficiency_with_definitions(
-                owner.character,
-                gameplay.character_id,
-                gameplay.expected_character_revision,
-                change,
-                Some(Arc::clone(&definitions)),
-            )
+        Err(error) if progression_holder_busy(&error) => {
+            return Some(Err(UseOwnerError::HolderBusy));
+        }
+        // Reconcile the original occurrence. A failed lookup cannot prove a rollback.
+        Err(_) => match budget
+            .retry_use_holder("catalyst_receipt", async || {
+                owner.root.reconcile_character_proficiency_with_definitions(
+                    owner.character,
+                    gameplay.character_id,
+                    gameplay.expected_character_revision,
+                    change.clone(),
+                    Some(Arc::clone(&definitions)),
+                ).await
+            }, progression_holder_busy)
             .await
         {
             Ok(Some(receipt)) => receipt,
-            Ok(None) | Err(_) => return Some(Err(())),
+            Ok(None) | Err(_) => return Some(Err(UseOwnerError::OutcomeUnknown)),
         },
     };
     drop(slot);
+    let Some(line) = receipt.lines.first() else {
+        return disposition(UseDisposition::Committed);
+    };
     let committed = StoredProficiencyTrack {
-        state: receipt.lines.first()?.after().clone(),
+        state: line.after().clone(),
         committed_character_revision: receipt.committed_character_revision,
         last_proficiency_occurrence_id: receipt.occurrence_id,
         modifications,

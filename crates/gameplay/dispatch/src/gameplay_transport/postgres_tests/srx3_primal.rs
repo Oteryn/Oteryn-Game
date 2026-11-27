@@ -264,7 +264,7 @@ fn srx3_primal_real_source_entry_wave_pods_and_terminal_postgres() -> TestResult
                     Some(crate::gameplay_transport::item_view::ItemKey::Instance(super::fixture::id(71))),
                     true,
                     true,
-                ).await.ok_or("Source rune result")?;
+                ).await.map_err(|error| format!("Source rune result: {error:?}"))?;
                 assert_eq!(outcome.disposition, UseDisposition::RequirementNotMet);
             }
             // Following stages use the same production native owner and Item writer;

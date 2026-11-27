@@ -953,7 +953,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
                 false,
             )
             .await
-            .ok_or("stale rune owner returns a deterministic refusal")?;
+            .map_err(|error| format!("stale rune owner returns a deterministic refusal: {error:?}"))?;
         assert_eq!(refused.disposition, UseDisposition::Rejected);
     }
     if case == Case::LostContent {
@@ -1045,7 +1045,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         let result = owner
             .use_rune(actor, command, original.clone(), None, true, false)
             .await
-            .ok_or("owner reconciles its retained original")?;
+            .map_err(|error| format!("owner reconciles its retained original: {error:?}"))?;
         assert_eq!(result.disposition, expected);
         if case != Case::StaleRevision {
             let health = owner
@@ -1056,7 +1056,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             let replay = owner
                 .use_rune(actor, command, original, None, true, false)
                 .await
-                .ok_or("owner retains its reconciled original")?;
+                .map_err(|error| format!("owner retains its reconciled original: {error:?}"))?;
             assert_eq!(replay.disposition, UseDisposition::Committed);
             assert_eq!(
                 owner

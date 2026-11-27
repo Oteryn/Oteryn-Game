@@ -1,11 +1,13 @@
 //! Carried Adventurer's Stone admission and its paired Guild return.
 use super::*;
+use crate::durability::DurabilityError;
 use crate::durability::character_last_position::LastVitals;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::quest_state::adventurers_stone::GuildStoneTravel;
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition, MovementPositionSnapshot};
 use crate::map::overlay::TilePos;
 use crate::map::view::MapFacts;
+use connection::UseOwnerError;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::HashSet;
 use std::sync::Mutex;
@@ -89,6 +91,12 @@ pub(super) struct StoneMove {
     pub travel: GuildStoneTravel,
 }
 
+pub(super) enum StoneMoveError {
+    Refused,
+    HolderBusy,
+    OutcomeUnknown,
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn refuse_stone(&self, session: GameSessionId) -> UseDisposition {
         self.states.chat.push_quest_feedback(session, REFUSAL);
@@ -102,7 +110,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         fence: CurrentCharacterItemFence,
         item: [u8; 16],
-    ) -> Result<UseDisposition, UseDisposition> {
+        budget: &super::AdmissionRetryBudget<'_>,
+    ) -> Result<Result<UseDisposition, UseDisposition>, UseOwnerError> {
+        let session = command.game_session_id;
+        match self.refresh_pvp_locks_within(actor, session, budget).await {
+            Ok(()) => {}
+            Err(DurabilityError::RootUnavailable) => return Err(UseOwnerError::HolderBusy),
+            Err(_) => return Ok(Err(self.refuse_stone(session))),
+        }
+        let prepared = self.prepare_stone_move(actor, command, fence, item).await;
+        let (map, movement) = match prepared {
+            Ok(prepared) => prepared,
+            Err(disposition) => return Ok(Err(disposition)),
+        };
+        match self.commit_stone_move(map, movement, budget).await {
+            Ok(_) => Ok(Ok(UseDisposition::Committed)),
+            Err(StoneMoveError::Refused) => Ok(Err(self.refuse_stone(session))),
+            Err(StoneMoveError::HolderBusy) => Err(UseOwnerError::HolderBusy),
+            Err(StoneMoveError::OutcomeUnknown) => Err(UseOwnerError::OutcomeUnknown),
+        }
+    }
+
+    async fn prepare_stone_move(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        fence: CurrentCharacterItemFence,
+        item: [u8; 16],
+    ) -> Result<(&crate::map::boot::BundleMap, StoneMove), UseDisposition> {
         let session = command.game_session_id;
         let map = self
             .bundle_map()
@@ -110,8 +145,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !matches!(
             fence.runtime_scope,
             crate::foundation::RuntimeScopeRefV1::Channel { .. }
-        ) || !self.refresh_pvp_locks(actor, session).await
-        {
+        ) {
             return Err(self.refuse_stone(session));
         }
         let fight = self.combat_lock_fact(actor, session).await;
@@ -159,31 +193,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (expected, town)
         };
         let id = CommandId::new(command.command_id).map_err(|_| UseDisposition::Rejected)?;
-        if self
-            .commit_stone_move(
-                map,
-                StoneMove {
-                    actor,
-                    fence,
-                    command: CommandRef::new(session, id),
-                    expected,
-                    destination: ARRIVAL,
-                    travel: GuildStoneTravel::Enter { item, town },
-                },
-            )
-            .await
-            .is_none()
-        {
-            return Err(self.refuse_stone(session));
-        }
-        Ok(UseDisposition::Committed)
+        Ok((
+            map,
+            StoneMove {
+                actor,
+                fence,
+                command: CommandRef::new(session, id),
+                expected,
+                destination: ARRIVAL,
+                travel: GuildStoneTravel::Enter { item, town },
+            },
+        ))
     }
 
     pub(super) async fn commit_stone_move(
         &self,
         map: &crate::map::boot::BundleMap,
         movement: StoneMove,
-    ) -> Option<MovementPositionSnapshot> {
+        budget: &super::AdmissionRetryBudget<'_>,
+    ) -> Result<Option<MovementPositionSnapshot>, StoneMoveError> {
         let StoneMove {
             actor,
             fence,
@@ -194,22 +222,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } = movement;
         let session = command.game_session_id();
         let closed = crate::map::floor::BundleDoors(&map.facts);
-        let _hold = self.states.guild_stone_moves.start(session)?;
+        let _hold = self
+            .states
+            .guild_stone_moves
+            .start(session)
+            .ok_or(StoneMoveError::Refused)?;
         // Travel advances the quest and Character root together. It follows the
         // same spell lane then Character revision order as other quest callbacks.
         let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
         let (proof, placed) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
-            let state = states.get(&runtime, actor, session)?;
-            let lease = runtime.bound_attacker_lease(actor, session).ok()?;
+            let state = states
+                .get(&runtime, actor, session)
+                .ok_or(StoneMoveError::Refused)?;
+            let lease = runtime
+                .bound_attacker_lease(actor, session)
+                .map_err(|_| StoneMoveError::Refused)?;
             if runtime.binding().runtime_scope() != fence.runtime_scope
                 || runtime.binding().scope_generation() != fence.scope_ownership_generation
                 || lease.character_id().as_bytes() != fence.character_id.as_bytes()
                 || lease.generation() != fence.character_lease_generation
                 || states.is_dead(actor)
             {
-                return None;
+                return Err(StoneMoveError::Refused);
             }
             let proof = crate::map::floor::prepare_quest_callback_teleport(
                 &runtime,
@@ -221,7 +257,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
                 &closed,
             )
-            .ok()?;
+            .map_err(|_| StoneMoveError::Refused)?;
             let mut placed = self.placed_record(&runtime, destination);
             placed.record.vitals = state
                 .saved_vitals()
@@ -229,7 +265,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             placed.record.rest = Some(state.bed_rest_snapshot(self.owner_now().get()));
             (proof, placed)
         };
-        let budget = super::AdmissionRetryBudget::for_command(self.root);
         let attempt = async || {
             self.root
                 .commit_guild_stone_travel(
@@ -242,27 +277,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
         };
-        let result = budget.retry_command_guard(attempt).await;
+        let result = budget
+            .retry_use_holder("stone_travel", attempt, super::root_holder_busy)
+            .await;
         revision.observe_endgame_progression();
-        if matches!(
-            result,
-            Err(crate::durability::DurabilityError::CommitOutcomeUnknown)
-        ) {
-            // Resolve the same command and captured landing through its immutable receipt.
-            budget.retry_command_guard(attempt).await.ok()?;
-        } else {
-            result.ok()?;
+        match result {
+            Ok(()) => {}
+            Err(DurabilityError::RootUnavailable) => return Err(StoneMoveError::HolderBusy),
+            Err(DurabilityError::CommitOutcomeUnknown) => {
+                // Resolve the same command and captured landing through its immutable receipt.
+                budget
+                    .retry_use_holder("stone_receipt", attempt, super::root_holder_busy)
+                    .await
+                    .map_err(|_| StoneMoveError::OutcomeUnknown)?;
+            }
+            Err(_) => return Err(StoneMoveError::Refused),
         }
         let mut runtime = self.runtime.lock().await;
-        let arrival = runtime.commit_source_step(proof).ok()?;
-        let _ = map.facts.emit_movement_effect(
-            tile(expected.position())?,
-            super::character_home_town::TELEPORT_EFFECT,
-        );
-        let _ = map.facts.emit_movement_effect(
-            tile(destination)?,
-            super::character_home_town::TELEPORT_EFFECT,
-        );
-        Some(arrival)
+        let arrival = runtime.commit_source_step(proof).ok();
+        if arrival.is_some() {
+            for at in [expected.position(), destination]
+                .into_iter()
+                .filter_map(tile)
+            {
+                let _ = map
+                    .facts
+                    .emit_movement_effect(at, super::character_home_town::TELEPORT_EFFECT);
+            }
+        }
+        // A live installation failure cannot negate the durable receipt.
+        Ok(arrival)
     }
 }
