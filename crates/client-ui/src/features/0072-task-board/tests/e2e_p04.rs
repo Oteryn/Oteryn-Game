@@ -574,6 +574,7 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert_eq!(unchanged, weekly);
     let refused_text = panel_text(&panel);
     verify_unstarted_weekly(&refused_text)?;
+    verify_rendered_shop(&refused_text, &weekly)?;
     assert!(refused_text.ends_with("The server refused: level too low for this difficulty"));
 
     let mut fresh = TaskBoardPanel {
@@ -591,12 +592,29 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert!(!fresh.pending);
     assert_eq!(fresh.feedback, None);
     assert_eq!(fresh.weekly.as_ref(), Some(&weekly));
-    verify_unstarted_weekly(&panel_text(&fresh))?;
+    let readmitted_text = panel_text(&fresh);
+    verify_unstarted_weekly(&readmitted_text)?;
+    verify_rendered_shop(&readmitted_text, &weekly)?;
 
     if let Some((master, assignments)) = captured.master {
         verify_master_replay(master, &weekly, &assignments)?;
     }
     assert_invalid_results(&mut panel, &refused)
+}
+
+#[test]
+fn p04_refusal_requires_the_rendered_shop() -> Result<(), Error> {
+    let fixture = fixture()?;
+    let mut panel = TaskBoardPanel::default();
+    apply_full_result(&mut panel, &fixture.refused);
+    let reply = panel.weekly.as_ref().ok_or("missing refusal board")?;
+    let text = panel_text(&panel);
+    verify_rendered_shop(&text, reply)?;
+    let missing = text.replace("\nTask shop\n", "\n");
+    verify_unstarted_weekly(&missing)?;
+    assert!(missing.ends_with("The server refused: level too low for this difficulty"));
+    assert!(verify_rendered_shop(&missing, reply).is_err());
+    Ok(())
 }
 
 #[test]
