@@ -3467,11 +3467,15 @@ mod tests {
         assert_eq!(parse(OUTFIT_COMPLETIONS)?.len(), 18);
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
-        let (gnomally, legacy): (Vec<_>, Vec<_>) = non_qb.into_iter().partition(|callback| {
-            callback
-                .key
-                .starts_with("oteryn:quest-reward/gnomally-exchange-")
-        });
+        let callbacks = load()?;
+        let gnomally: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-reward/gnomally-exchange-")
+            })
+            .collect();
         assert_eq!(gnomally.len(), 15);
         assert!(
             gnomally
@@ -3572,7 +3576,6 @@ mod tests {
                 );
             }
         }
-        let callbacks = load()?;
         let completion = callbacks
             .iter()
             .find(|c| c.key == "oteryn:quest-reward/l6-spirit-confession")
