@@ -23,6 +23,9 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::task_board::{self as wire, full};
+use std::collections::BTreeSet;
+
+pub(super) const P04_BOUNTY_KILL_BUDGET: Duration = Duration::from_secs(60);
 
 const TALISMAN_ITEM: u32 = 51_978;
 
@@ -161,23 +164,25 @@ pub(super) async fn complete_bounty(
     clients: &SeamClients<'_>,
     opened: &full::Reply,
 ) -> TestResult<full::Reply> {
-    complete_bounty_with_placement(client, clients, opened, false).await
+    complete_bounty_with_placement(client, clients, opened, None).await
 }
 
 pub(super) async fn complete_p04_bounty(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     opened: &full::Reply,
+    publish_count: tokio::sync::oneshot::Sender<u32>,
 ) -> TestResult<full::Reply> {
-    complete_bounty_with_placement(client, clients, opened, true).await
+    complete_bounty_with_placement(client, clients, opened, Some(publish_count)).await
 }
 
 async fn complete_bounty_with_placement(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     opened: &full::Reply,
-    fixture: bool,
+    publish_count: Option<tokio::sync::oneshot::Sender<u32>>,
 ) -> TestResult<full::Reply> {
+    let fixture = publish_count.is_some();
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -196,7 +201,7 @@ async fn complete_bounty_with_placement(
     } else {
         std::collections::BTreeSet::new()
     };
-    let can_place = fixture && p04_fixture_route(world, from).is_some();
+    let can_place = fixture && p04_fixture_route(world, from, &p04_visible_blockers(client)).is_some();
     let (index, offer) = bounty_offer(
         &opened.bounty.offers,
         fixture,
@@ -208,6 +213,9 @@ async fn complete_bounty_with_placement(
         format!("step=bounty-route no {eligibility} for {:?}", opened.bounty.offers)
     })?;
 
+    if let Some(publish_count) = publish_count {
+        publish_count.send(offer.required).map_err(|_| "P04 journey deadline closed")?;
+    }
     let mut state = accepted(4, command(client, 8, u16::try_from(index)?).await?)?;
     for previous in 0..offer.required {
         if state.bounty.active.as_ref().is_none_or(|active| {
@@ -223,11 +231,29 @@ async fn complete_bounty_with_placement(
             .into());
         }
         if fixture {
-            hunt_p04_fixture(client, world, &offer.race).await?;
+            let kill = previous + 1;
+            let required = offer.required;
+            let deadline = tokio::time::Instant::now() + P04_BOUNTY_KILL_BUDGET;
+            verdict::Harness::global().bounded_wait(deadline, "p04-bounty-kill");
+            evidence(&format!("P04_BOUNTY kill={kill}/{required} state=start budget_seconds={} race={}", P04_BOUNTY_KILL_BUDGET.as_secs(), offer.race));
+            state = tokio::time::timeout_at(deadline, async {
+                hunt_p04_fixture(client, world, &offer.race).await?;
+                TestResult::Ok(accepted(4, command(client, 4, 0).await?)?)
+            })
+            .await
+            .map_err(|elapsed| {
+                verdict::record_error(&elapsed);
+                format!("P04 bounty kill {kill}/{required} hit its progress deadline")
+            })??;
+            if state.bounty.current != kill {
+                return Err(format!("P04 bounty kill {kill}/{required} credit observed={}", state.bounty.current).into());
+            }
+            verdict::Harness::global().progress("p04-bounty-credit");
+            evidence(&format!("P04_BOUNTY kill={kill}/{required} state=credited race={}", offer.race));
         } else {
             hunt_for_race(client, world, &metadata.spawns, &offer.race).await?;
+            state = accepted(4, command(client, 4, 0).await?)?;
         }
-        state = accepted(4, command(client, 4, 0).await?)?;
     }
     if state.bounty.current != offer.required || state.bounty.state != 3 {
         return Err(format!(
@@ -444,17 +470,31 @@ pub(super) async fn hunt_for_race(
     hunt_target(client, key, target).await
 }
 
-fn p04_fixture_route(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> {
+fn p04_visible_blockers(client: &DevClientSession) -> BTreeSet<TilePos> {
+    use oteryn_dev_client::EntityKind;
+    client.world_entities().into_iter().flat_map(|entities| {
+        entities.iter().filter(move |entity| {
+            &entity.entity.identity != entities.own_identity()
+                && matches!(entity.kind, EntityKind::Creature | EntityKind::Npc | EntityKind::Player)
+        }).filter_map(|entity| tile(entity.position).ok())
+    }).collect()
+}
+
+fn p04_fixture_route(
+    world: &BundleWorld,
+    from: TilePos,
+    blocked: &BTreeSet<TilePos>,
+) -> Option<Vec<StepDirection>> {
     let outside_protection = |at: TilePos| {
         world.base().tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
+            .is_some_and(|tile| !tile.protection_zone() && !blocked.contains(&at))
     };
-    route(world, from, |at| {
+    route_avoiding(world, from, |at| {
         outside_protection(at)
             && [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
                 .into_iter()
                 .any(|direction| destination(world, at, direction).is_some_and(outside_protection))
-    })
+    }, |at| !blocked.contains(&at))
 }
 
 pub(super) async fn hunt_p04_fixture(
@@ -462,18 +502,34 @@ pub(super) async fn hunt_p04_fixture(
     world: &BundleWorld,
     key: &str,
 ) -> TestResult<KillSample> {
-    let from = tile(client.world_spatial().actor_position)?;
-    let path = p04_fixture_route(world, from)
-        .ok_or("P04 hunt fixture needs a nearby open combat tile")?;
-    for direction in path {
+    let mut detours = BTreeSet::new();
+    let mut placed = false;
+    for attempt in 0..32 {
         let before = tile(client.world_spatial().actor_position)?;
+        let mut blocked = p04_visible_blockers(client);
+        blocked.extend(detours.iter().copied());
+        let path = p04_fixture_route(world, before, &blocked)
+            .ok_or("P04 hunt fixture needs a nearby open combat tile")?;
+        let Some(&direction) = path.first() else {
+            placed = true;
+            break;
+        };
         let expected = destination(world, before, direction).ok_or("P04 hunt fixture route lost its landing")?;
-        evidence(&format!("FIXTURE row=P04.full fixture_walk_position={before:?} target={expected:?} race={key}"));
+        evidence(&format!("FIXTURE row=P04.full fixture_walk_position={before:?} target={expected:?} race={key} step={attempt} route_steps={} blockers={}", path.len(), blocked.len()));
         let step = client.step(direction).await?;
         let actual = tile(client.world_spatial().actor_position)?;
+        if step.disposition == StepDisposition::Blocked && actual == before
+            && p04_visible_blockers(client).contains(&expected) && detours.insert(expected)
+        {
+            evidence(&format!("FIXTURE row=P04.full fixture_detour from={before:?} occupied={expected:?} race={key}"));
+            continue;
+        }
         if step.disposition != StepDisposition::Moved || step.world_spatial_delta.is_none() || actual != expected {
             return Err(format!("P04 hunt fixture walk refused at {before:?} target={expected:?} actual={actual:?}: {:?}", step.disposition).into());
         }
+    }
+    if !placed {
+        return Err("P04 hunt fixture route exhausted its 32-step budget".into());
     }
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let position = client.world_spatial().actor_position;

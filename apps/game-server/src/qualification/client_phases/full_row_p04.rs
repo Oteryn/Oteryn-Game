@@ -136,11 +136,27 @@ async fn await_weekly_reset(
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = verdict::indexed_timeout(
-        Duration::from_secs(240),
-        verdict::observe(run(&mut journey, clients)),
-    )
-    .await;
+    let result = {
+        let start = tokio::time::Instant::now();
+        let base_budget = Duration::from_secs(240);
+        let (publish_count, mut count) = tokio::sync::oneshot::channel();
+        let journey = verdict::observe(run(&mut journey, clients, publish_count));
+        tokio::pin!(journey);
+        tokio::select! {
+            biased;
+            required = &mut count => {
+                let bounty_budget = required.map_or(Duration::ZERO, |kills| {
+                    full_row_p05::P04_BOUNTY_KILL_BUDGET * kills
+                });
+                let deadline = start + base_budget + bounty_budget;
+                verdict::indexed_timeout(
+                    deadline.saturating_duration_since(tokio::time::Instant::now()),
+                    journey,
+                ).await
+            }
+            result = verdict::indexed_timeout(base_budget, &mut journey) => result,
+        }
+    };
     match result {
         Ok(Ok(())) => {}
         Ok(Err(error)) => {
@@ -152,7 +168,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     journey.finish();
 }
 
-async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
+async fn run(
+    journey: &mut Journey,
+    clients: &SeamClients<'_>,
+    publish_count: tokio::sync::oneshot::Sender<u32>,
+) -> TestResult {
     let underlevel =
         character_prep::dedicated_character(clients, "NODE_BOOT_Q_P04_399_ACCOUNT").await?;
     let underlevel_clients = underlevel.clients(clients);
@@ -278,7 +298,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         opened.refusal == 0 && opened.bounty.state == 1 && opened.bounty.offers.len() == 3,
         (&opened.refusal, &opened.bounty),
     );
-    let claimed = full_row_p05::complete_p04_bounty(&mut client, clients, &opened).await?;
+    let claimed = full_row_p05::complete_p04_bounty(&mut client, clients, &opened, publish_count).await?;
     let rerolled = send(&mut client, 11, 0).await?;
     journey.check(
         5,
