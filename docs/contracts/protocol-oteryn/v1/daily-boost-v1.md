@@ -24,9 +24,9 @@ create a daily selection.
 
 ## Refusal
 
-A rejected command result carries a one-byte `DailyBoostRefusal`. The server
-logs the reason with the command ID and result sequence. A rejected query has
-no post-command presentation refresh.
+With the capability selected, a rejected command result carries a one-byte
+`DailyBoostRefusal`. The server logs the reason with the command ID and result
+sequence. A rejected query has no post-command presentation refresh.
 
 ## View
 
