@@ -342,10 +342,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &mut kills,
                 )
                 .await;
-            if !matches!(step, ReleaseAttempt::Retry(_))
-                || !budget
-                    .retries_unavailable(AdmissionRefusal::Unavailable)
-                    .await
+            let ReleaseAttempt::Retry(stage) = step else {
+                break step;
+            };
+            operator_event(&format!("event=logout_release_retry stage={stage}"));
+            if !budget
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
             {
                 break step;
             }
