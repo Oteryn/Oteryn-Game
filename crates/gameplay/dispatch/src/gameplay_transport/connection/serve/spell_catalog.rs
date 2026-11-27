@@ -27,7 +27,7 @@ impl SessionCatalog {
             admitted.game_session_id,
         )
         .await
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
         domains.push(
             crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
                 domain_id: wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG,
@@ -64,8 +64,13 @@ impl SessionCatalog {
         if payload == self.payload {
             return Ok(());
         }
-        let next_sequence = sequence.checked_add(1).ok_or(ServeEnd::Disconnected)?;
-        let revision = self.revision.checked_add(1).ok_or(ServeEnd::Disconnected)?;
+        let next_sequence = sequence
+            .checked_add(1)
+            .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
+        let revision = self
+            .revision
+            .checked_add(1)
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         let frame = encode_state_delta(
             admitted.continuity.connection_generation,
             next_sequence,
@@ -75,10 +80,10 @@ impl SessionCatalog {
             1,
             &payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         self.payload = payload;
         self.revision = revision;
         *sequence = next_sequence;

@@ -131,7 +131,7 @@ where
         authority.item_walk_route(session.actor, session.admitted.game_session_id, target),
     )
     .await
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
     drop(input);
     let mut queue = match route {
         Ok(Some(queue)) => queue,
@@ -191,7 +191,7 @@ where
             ),
         )
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
         record_actor_step(
             &mut session.pacer,
             authority,
@@ -211,7 +211,7 @@ where
             && authority
                 .pending_activity_switch(session.admitted)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?
+                .map_err(|_| ServeEnd::server("serve_state_unavailable"))?
                 .is_some()
         {
             // Native source STEP already handed off this Player. The queued USE

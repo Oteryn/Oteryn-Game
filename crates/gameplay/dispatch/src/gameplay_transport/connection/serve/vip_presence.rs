@@ -26,7 +26,7 @@ where
         wire::DELTA_TYPE_VIP_PRESENCE_V1,
         &payload,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     };
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
@@ -37,6 +37,6 @@ where
         write_frame(stream, &frame),
     )
     .await
-    .map_err(|_| ServeEnd::Disconnected)?
-    .map_err(|_| ServeEnd::Disconnected)
+    .map_err(|_| ServeEnd::server("frame_write_refused"))?
+    .map_err(|_| ServeEnd::server("frame_write_refused"))
 }

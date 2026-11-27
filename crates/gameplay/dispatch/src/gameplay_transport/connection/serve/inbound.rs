@@ -79,7 +79,7 @@ where
             .await
             {
                 Ok(Some(())) => Ok(None),
-                Ok(None) => Err(ServeEnd::Disconnected),
+                Ok(None) => Err(ServeEnd::server("serve_state_unavailable")),
                 Err(_) => Err(ServeEnd::ControlLost("server_message_timeout")),
             };
         }
@@ -156,14 +156,14 @@ where
             // pass deadline. Timeout follows ordinary control-loss reconciliation.
             match tokio::time::timeout(crate::durability::DB_PASS_DEADLINE, async {
                 if authority.account_closure_check(session.admitted).await {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("account_closed"));
                 }
                 idle::tick(stream, authority, session).await
             })
             .await
             {
                 Ok(result) => result?,
-                Err(_) => return Err(ServeEnd::Transport(TransportEnd::IdleWorkDeadline)),
+                Err(_) => return Err(ServeEnd::server("idle_work_deadline")),
             }
             let probe = match session.liveness.tick() {
                 Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
@@ -171,11 +171,11 @@ where
                     return Err(ServeEnd::ControlLost("liveness_missed"));
                 }
                 Err(LivenessEnd::ProbesExhausted) => {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 }
             };
             let Ok(probe) = probe else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             };
             // A peer that does not consume even one small probe within a cadence is not
             // in control; an unbounded write would also stall the cadence itself.
@@ -197,10 +197,10 @@ where
                     &mut session.sequence,
                 )
                 .await
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
                 super::party_membership::refresh(stream, authority, session)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
                 super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };

@@ -6,5 +6,5 @@ authority=player_typing
 [route]
 match routing::player_typing::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("player_typing_outcome_unavailable")),
 }

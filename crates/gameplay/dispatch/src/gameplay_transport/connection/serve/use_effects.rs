@@ -16,7 +16,7 @@ where
     if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT
         && outcome.disposition == UseDisposition::OfflineTraining
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
     // backpack or open bags; their deltas follow the durable commit when changed.
@@ -35,7 +35,7 @@ where
         .await
         .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     // ITEM-USE-1c: a committed food or potion changed the owner's vitals revision
     // (fed time or health/mana); its ACTOR_VITALS delta follows at once, as a spell's.
@@ -55,12 +55,12 @@ where
             to,
             &value,
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
         if write_frame(stream, &delta).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
         session.admitted.continuity.vitals_revision = to;
     }
@@ -74,16 +74,16 @@ where
         // that selected capability 18 has no domain 17 form: fail closed, never send
         // domain 2 or drop the state.
         if !session.overlay_served {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         }
         let (Some(delta_sequence), Some(prior_revision)) = (
             session.sequence.checked_add(1),
             entry.revision.checked_sub(1),
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
         let Ok(payload) = encode_world_object_overlay_delta(&entry) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_encode_failed"));
         };
         let Ok(delta) = encode_state_delta(
             session.generation,
@@ -94,12 +94,12 @@ where
             DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
             &payload,
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("serve_state_unavailable"));
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
         if write_frame(stream, &delta).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
         // r4122508665: only record the new overlay revision once the delta that
         // carries it has actually been transmitted.
@@ -115,6 +115,6 @@ where
         &mut session.sequence,
     )
     .await
-    .ok_or(ServeEnd::Disconnected)?;
+    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     Ok(())
 }

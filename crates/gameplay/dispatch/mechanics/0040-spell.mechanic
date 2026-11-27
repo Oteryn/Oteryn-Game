@@ -3,5 +3,5 @@ commands=3
 [route]
 match routing::spell::route(authority, session.actor, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("spell_outcome_unavailable")),
 }

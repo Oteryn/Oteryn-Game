@@ -119,7 +119,7 @@ where
             let mut logout =
                 std::pin::pin!(authority.logout_command(session.admitted, command.command_id));
             let reply = loop {
-                let reading = !outcome.lost_while_logging_out
+                let reading = outcome.lost_while_logging_out.is_none()
                     && session.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
                 let mut read = std::pin::pin!(session.frames.next(stream));
                 let next = std::future::poll_fn(|context| {
@@ -140,7 +140,7 @@ where
                             .held
                             .push_back((frame, false, tokio::time::Instant::now()));
                     }
-                    Err(Err(_)) => outcome.lost_while_logging_out = true,
+                    Err(Err(error)) => outcome.lost_while_logging_out = Some(error.kind()),
                 }
             };
             match reply {
@@ -148,7 +148,7 @@ where
                 LogoutReply::Result(result) => Dispatch::Logout(result),
                 // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
                 LogoutReply::Unknown => {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("command_outcome_unavailable"));
                 }
             }
         },

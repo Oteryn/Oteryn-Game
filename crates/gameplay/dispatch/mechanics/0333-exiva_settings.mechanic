@@ -4,4 +4,4 @@ transport=exiva_settings
 composed=exiva_settings
 authority=exiva_settings
 [route]
-match routing::exiva_settings::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }
+match routing::exiva_settings::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::server("exiva_settings_outcome_unavailable")) }

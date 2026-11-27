@@ -5,6 +5,6 @@ composed=coin_market
 authority=coin_market
 [route]
 {
- let bytes=authority.coin_market_command(session.admitted,command.command_id,command.payload).await.ok_or(ServeEnd::Disconnected)?;
+ let bytes=authority.coin_market_command(session.admitted,command.command_id,command.payload).await.ok_or(ServeEnd::server("coin_market_outcome_unavailable"))?;
  routing::Dispatch::Reply(oteryn_protocol_oteryn::CommandStatus::Accepted,bytes)
 }

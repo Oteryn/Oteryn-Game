@@ -21,14 +21,14 @@ where
     let current = authority
         .settle_activity_connection(session.admitted)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
     if current.game_session_id == session.admitted.game_session_id {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("scope_handoff_unavailable"));
     }
     pending(stream, authority, session)
         .await?
         .map(Some)
-        .ok_or(ServeEnd::Disconnected)
+        .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))
 }
 
 pub(super) async fn pending<S, A>(
@@ -43,13 +43,13 @@ where
     let Some(switch) = authority
         .pending_activity_switch(session.admitted)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?
+        .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?
     else {
         return Ok(None);
     };
     let source = session.admitted;
     let receipt = oteryn_protocol_oteryn::activity_scope::decode_activity_scope(&switch.payload)
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
     session.activity_ack =
         receipt
             .requires_ack
@@ -61,7 +61,7 @@ where
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let frames = encode_single_chunk_snapshot(
         session.generation,
         sequence,
@@ -73,7 +73,7 @@ where
             payload: &switch.payload,
         }],
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
     // SQL and native installation already changed the current session. A socket
     // failure while sending the barrier must lose the exact destination control,
     // rather than try to release the terminal source or reset a stale generation.
@@ -81,10 +81,10 @@ where
     for frame in frames {
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
     }
     if !authority.finish_activity_switch(source, switch.destination) {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("frame_write_refused"));
     }
     Ok(Some((switch.destination, switch.movement_effect_start)))
 }
@@ -113,10 +113,11 @@ where
     )
     .await
     .map_err(|_| ServeEnd::ControlLost("activity_transfer"))??;
-    let envelope = decode_wire_envelope(&frame).map_err(|_| ServeEnd::Disconnected)?;
+    let envelope =
+        decode_wire_envelope(&frame).map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
     let command = envelope
         .client_command(session.generation)
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
     use crate::gameplay_transport::session_ingress::CommandAction;
     match session.commands.begin(
         command.command_id,
@@ -125,12 +126,12 @@ where
         false,
     ) {
         Ok(CommandAction::Execute) => {}
-        _ => return Err(ServeEnd::Disconnected),
+        _ => return Err(ServeEnd::server("scope_handoff_unavailable")),
     }
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let result = encode_command_result(
         session.generation,
         sequence,
@@ -138,20 +139,20 @@ where
         CommandStatus::Accepted,
         &[],
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
     session
         .commands
         .terminalize_with(command.command_id, &result, || {})
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
     if !authority.remember_activity_connection(session.admitted) {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("scope_handoff_unavailable"));
     }
     write_frame(stream, &result)
         .await
-        .map_err(|_| ServeEnd::Disconnected)
+        .map_err(|_| ServeEnd::server("frame_write_refused"))
 }
 
 async fn read_acknowledgement<S: AsyncRead + Unpin>(
@@ -167,15 +168,16 @@ async fn read_acknowledgement<S: AsyncRead + Unpin>(
         let frame = frames
             .next(stream)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
-        let envelope = decode_wire_envelope(&frame).map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
+        let envelope = decode_wire_envelope(&frame)
+            .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
         envelope
             .validate(crate::foundation::Direction::ClientToServer, true)
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
         if envelope.message_type() == MessageType::ClientCommand {
             let command = envelope
                 .client_command(envelope.connection_generation())
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("scope_handoff_unavailable"))?;
             if envelope.connection_generation() == generation
                 && command.command_id == 1
                 && command.command_type == COMMAND_TYPE_ACTIVITY_SCOPE_ACK
@@ -185,7 +187,7 @@ async fn read_acknowledgement<S: AsyncRead + Unpin>(
             }
         }
     }
-    Err(ServeEnd::Disconnected)
+    Err(ServeEnd::server("scope_handoff_unavailable"))
 }
 
 #[cfg(test)]

@@ -6,5 +6,5 @@ authority=weapon_proficiency_select
 [route]
 match routing::weapon_proficiency_select::route(authority, session.actor, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("weapon_proficiency_select_outcome_unavailable")),
 }

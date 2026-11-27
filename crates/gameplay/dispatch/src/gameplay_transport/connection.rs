@@ -1272,7 +1272,12 @@ where
 {
     #[cfg(test)]
     super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
-    let end = Box::pin(serve_admitted_actor(stream, admitted, authority, policy)).await;
+    let end = super::tcp_tls::FRAME_FAILURE
+        .scope(
+            std::cell::Cell::default(),
+            Box::pin(serve_admitted_actor(stream, admitted, authority, policy)),
+        )
+        .await;
     let ended = match end {
         ConnectionEnd::AdmittedThenClosed(current, _)
         | ConnectionEnd::AdmittedThenDisconnected(current)

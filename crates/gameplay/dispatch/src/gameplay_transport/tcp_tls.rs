@@ -5,6 +5,33 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio_rustls::{TlsAcceptor, rustls, server::TlsStream};
 
+#[derive(Clone, Copy)]
+pub(super) enum FrameFailure {
+    Read(io::ErrorKind),
+    Write(io::ErrorKind),
+}
+
+tokio::task_local! {
+    // A few projection helpers intentionally expose Option or Result<(), ()>.
+    // Preserve the original frame failure even when those APIs discard it.
+    pub(super) static FRAME_FAILURE: std::cell::Cell<Option<FrameFailure>>;
+}
+
+impl FrameFailure {
+    pub(super) fn take() -> Option<Self> {
+        FRAME_FAILURE.try_with(std::cell::Cell::take).ok().flatten()
+    }
+
+    pub(super) fn record(self) {
+        let _ = FRAME_FAILURE.try_with(|slot| slot.set(Some(self)));
+    }
+}
+
+fn observe_frame<T>(result: &io::Result<T>, direction: fn(io::ErrorKind) -> FrameFailure) {
+    let _ = FRAME_FAILURE
+        .try_with(|slot| slot.set(result.as_ref().err().map(|error| direction(error.kind()))));
+}
+
 pub(super) fn tls_config(
     certificates: Vec<CertificateDer<'static>>,
     key: PrivateKeyDer<'static>,
@@ -38,13 +65,18 @@ pub(super) async fn accept_tls(
 }
 
 pub(super) async fn read_frame<R: AsyncRead + Unpin>(reader: &mut R) -> io::Result<Vec<u8>> {
-    let mut prefix = [0u8; 4];
-    reader.read_exact(&mut prefix).await?;
-    let length = crate::foundation::FrameLength::from_prefix(&prefix)
-        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-    let mut body = vec![0; length.get() as usize];
-    reader.read_exact(&mut body).await?;
-    Ok(body)
+    let result = async {
+        let mut prefix = [0u8; 4];
+        reader.read_exact(&mut prefix).await?;
+        let length = crate::foundation::FrameLength::from_prefix(&prefix)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        let mut body = vec![0; length.get() as usize];
+        reader.read_exact(&mut body).await?;
+        Ok(body)
+    }
+    .await;
+    observe_frame(&result, FrameFailure::Read);
+    result
 }
 
 /// Incremental frame reader whose `next` is cancel-safe: bytes read by a cancelled call stay
@@ -69,6 +101,12 @@ impl FrameReader {
         &mut self,
         reader: &mut R,
     ) -> io::Result<Vec<u8>> {
+        let result = self.read_next(reader).await;
+        observe_frame(&result, FrameFailure::Read);
+        result
+    }
+
+    async fn read_next<R: AsyncRead + Unpin>(&mut self, reader: &mut R) -> io::Result<Vec<u8>> {
         loop {
             if let Some(body) = self.body.as_mut() {
                 if self.body_filled == body.len() {
@@ -114,9 +152,14 @@ pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     })?;
     let length = crate::foundation::FrameLength::new(length)
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
-    writer.write_all(&length.to_prefix()).await?;
-    writer.write_all(body).await?;
-    writer.flush().await
+    let result = async {
+        writer.write_all(&length.to_prefix()).await?;
+        writer.write_all(body).await?;
+        writer.flush().await
+    }
+    .await;
+    observe_frame(&result, FrameFailure::Write);
+    result
 }
 
 #[cfg(test)]

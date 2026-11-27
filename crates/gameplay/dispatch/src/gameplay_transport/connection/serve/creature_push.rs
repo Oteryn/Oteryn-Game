@@ -37,7 +37,7 @@ pub(super) async fn route<A: FreshAdmissionAuthority>(
         authority.push_creature(session.actor, session.admitted.game_session_id, intent),
     )
     .await
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
     if disposition == CreaturePushDisposition::Moved {
         session.push_due = Some(tokio::time::Instant::now() + PUSH_DELAY);
     }

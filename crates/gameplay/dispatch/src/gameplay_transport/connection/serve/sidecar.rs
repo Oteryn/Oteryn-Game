@@ -12,7 +12,10 @@ pub(super) async fn write<S>(
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    let view = session.visibility.as_ref().ok_or(ServeEnd::Disconnected)?;
+    let view = session
+        .visibility
+        .as_ref()
+        .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
     let (sequence, revision) = write_view(
         stream,
         view,
@@ -39,16 +42,18 @@ pub(super) async fn write_view<S: AsyncWrite + Unpin>(
 ) -> Result<(u64, u64), ServeEnd> {
     // Repeat the header of the last view sent: the actor may have moved since (a staff
     // relocation during the sidecar read), and the client holds it where that view put it.
-    let (content_generation, actor_position) = view.published().ok_or(ServeEnd::Disconnected)?;
+    let (content_generation, actor_position) = view
+        .published()
+        .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
     let payload =
         encode_world_spatial_entities_sidecar_delta(content_generation, actor_position, sidecar)
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
     let sequence = previous_sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let revision = previous_revision
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let frame = encode_state_delta(
         generation,
         sequence,
@@ -58,7 +63,7 @@ pub(super) async fn write_view<S: AsyncWrite + Unpin>(
         2,
         &payload,
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
     write_frame(stream, &frame)
         .await
         .map_err(|error| ServeEnd::Transport(TransportEnd::Write(error.kind())))?;

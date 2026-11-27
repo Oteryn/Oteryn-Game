@@ -13,5 +13,5 @@ match routing::item_move::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("item_move_outcome_unavailable")),
 }
