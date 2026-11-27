@@ -79,6 +79,20 @@ pub(super) fn scenario_with_reward_callback() -> TestResult {
 }
 
 pub(super) fn scenario(reward_fixture: bool) -> TestResult {
+    run_scenario(reward_fixture, None)
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum FenceFault {
+    Busy,
+    MissingRelation,
+}
+
+pub(super) fn scenario_with_fence_fault(fault: FenceFault) -> TestResult {
+    run_scenario(false, Some(fault))
+}
+
+fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(
@@ -379,6 +393,14 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
         // A well-shaped migration-owner seed retains a ledger head for the bank balance.
         seed_bank(&mut tx).await?;
         tx.commit().await?;
+        if let Some(fault) = fault {
+            talk(&owner, &dependencies, npc, 7, "venore").await?;
+            confirm_with_fence_fault(&owner, &h, &dependencies, npc, fault).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         // Fail after payment but before arrival insertion. The transaction must roll back all value.
         sqlx::raw_sql("CREATE FUNCTION travel_test_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'TRAVEL injected arrival failure'; END; $$; CREATE TRIGGER travel_test_fail BEFORE INSERT ON game_character_pending_arrivals FOR EACH ROW EXECUTE FUNCTION travel_test_fail()").execute(&h.pool).await?;
         talk(&owner, &dependencies, npc, 7, "venore").await?;
@@ -1056,6 +1078,80 @@ fn xp_request() -> TestResult<crate::durability::character_progression::Experien
             death_loss_rounding: RoundingMode::Floor,
         },
     })
+}
+
+async fn confirm_with_fence_fault(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    dependencies: &Dependencies,
+    npc: EntityRef,
+    fault: FenceFault,
+) -> TestResult {
+    use crate::gameplay_transport::npc_command::NPC_FENCE_WAIT;
+    use std::time::Duration;
+
+    let session = dependencies.admitted.game_session_id;
+    let current = owner.current_quest_fence_durable(session).await?.ok_or("current fence")?;
+    let command = UseCommand {
+        game_session_id: session,
+        command_id: 8,
+        item_fence: Some(current.item_fence()),
+    };
+    let confirmation = owner.npc_talk(dependencies.actor, command, NpcTalkIntent {
+        npc_actor: npc,
+        text: "yes".into(),
+    });
+    let outcome = match fault {
+        FenceFault::Busy => {
+            let held = h.root.try_issue_semantic_pass()?;
+            let waiting = Arc::new(tokio::sync::Notify::new());
+            let mut confirmation = std::pin::pin!(NPC_FENCE_WAIT.scope(waiting.clone(), confirmation));
+            tokio::select! {
+                result = confirmation.as_mut() => {
+                    return Err(format!("confirmation ended before the fence holder returned: {}", line(&result)).into());
+                }
+                observed = tokio::time::timeout(Duration::from_secs(3), waiting.notified()) => {
+                    observed?;
+                }
+            }
+            assert!(dependencies.runtime.try_lock().is_ok());
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            tokio::time::timeout(Duration::from_secs(5), confirmation).await?
+        }
+        FenceFault::MissingRelation => {
+            // Break the actual SQL fence read in this isolated database. The
+            // already-open quote and live NPC context remain valid.
+            sqlx::query("ALTER TABLE game_character_roots RENAME TO travel_test_character_roots")
+                .execute(&h.pool).await?;
+            let outcome = tokio::time::timeout(Duration::from_secs(5), confirmation).await;
+            sqlx::query("ALTER TABLE travel_test_character_roots RENAME TO game_character_roots")
+                .execute(&h.pool).await?;
+            outcome?
+        }
+    };
+    assert!(!outcome.unknown);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_newhaven_travel_receipts WHERE command_id=8 AND arrived_at IS NOT NULL",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    match fault {
+        FenceFault::Busy => {
+            assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+            assert_eq!(line(&outcome), "Set the sails!");
+            assert_eq!(receipts, 1);
+        }
+        FenceFault::MissingRelation => {
+            assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
+            assert_eq!(line(&outcome), "I could not verify your request.");
+            assert_eq!(receipts, 0);
+            assert_eq!(bank(h).await?, 200);
+            assert_eq!(fees(h).await?, 0);
+        }
+    }
+    assert!(!owner.states.newhaven_travel.held(session));
+    eprintln!("POSTGRES_EXECUTED TRAVEL confirmation fence fault");
+    Ok(())
 }
 
 async fn bank(h: &Harness) -> TestResult<i64> {
