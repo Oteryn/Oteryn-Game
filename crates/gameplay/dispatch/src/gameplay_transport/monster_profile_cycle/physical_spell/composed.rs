@@ -122,6 +122,7 @@ pub(super) async fn execute(
     if let Some(primary) = outcome.primary {
         record_hits(
             runtime,
+            states,
             attack,
             Some(proposal.issuer),
             &reader.base.players,
@@ -139,7 +140,7 @@ pub(super) async fn execute(
             .iter()
             .find(|(actor, _)| *actor == target)
         {
-            attack.record_hit_taken(runtime, target, *session, semantic_now);
+            attack.record_player_hit_taken(runtime, states, target, *session, semantic_now);
         }
     }
     Ok(())

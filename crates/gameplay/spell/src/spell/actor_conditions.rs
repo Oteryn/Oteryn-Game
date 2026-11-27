@@ -1135,6 +1135,7 @@ fn stage_hit_with_gate(
     let damage = crate::ability::creature_bite::floor_creature_damage(next.health, remaining);
     next.health = damage.health_after;
     if next.health == 0 {
+        next.clear_wheel_gift_battle(now);
         clear_on_lifecycle(&mut next);
     }
     if next != *state {

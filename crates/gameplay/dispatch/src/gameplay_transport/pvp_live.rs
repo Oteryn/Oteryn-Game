@@ -663,7 +663,9 @@ pub(super) async fn record_spell_harm(
 
 #[path = "pvp_live_locks.rs"]
 mod locks;
-pub(super) use locks::{PvpBlocker, lock_mut, logout_blocked, pz_blocked, tracked};
+#[cfg(test)]
+pub(super) use locks::lock_mut;
+pub(super) use locks::{PvpBlocker, logout_blocked, pz_blocked, record_hit, tracked};
 
 #[cfg(test)]
 pub(super) mod faults {

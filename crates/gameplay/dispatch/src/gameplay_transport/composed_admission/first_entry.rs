@@ -626,6 +626,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (familiar_login_first_entry(outcome, false), None, None);
             }
         }
+        if self.wheel_ruleset.is_some() {
+            // Fresh actors start with the persisted remainder. A failed read
+            // leaves the perk closed and the normal vitals owner can retry it.
+            let _ = budget
+                .retry_until(async || self.load_wheel_gift(actor, game_session_id).await)
+                .await;
+        }
         (outcome, item_fence, Some(decided))
     }
 }

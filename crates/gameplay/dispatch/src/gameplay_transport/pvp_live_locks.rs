@@ -19,6 +19,30 @@ pub(in crate::gameplay_transport) fn lock_mut(
     };
     &mut states.pvp_locks[index].2
 }
+pub(in crate::gameplay_transport) fn record_hit(
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+    aggression: bool,
+) {
+    let lock = lock_mut(states, actor, session);
+    lock.on_pvp_hit(now);
+    if aggression {
+        lock.on_aggression(now);
+    }
+    // The caller has committed the hit under the same owner guards. A spell
+    // reservation can still be held during installation of the lock successor.
+    if let Some(until) = lock.battle_sign_until()
+        && let Some((_, _, player)) = states
+            .actors
+            .iter_mut()
+            .find(|(a, s, _)| *a == actor && *s == session)
+    {
+        player.record_wheel_gift_battle(now.get(), until.get());
+    }
+}
+
 /// Whether this session already carries a cached lock entry (from a PvP hit or a durable refresh).
 pub(in crate::gameplay_transport) fn tracked(
     states: &ChannelSpellStates,
@@ -126,6 +150,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.player_control_facts(*a, *s).is_ok()
                 || runtime.house_player_control_facts(*a, *s).is_ok()
         });
+        let first_read = !tracked(&states, actor, session);
         lock_mut(&mut states, actor, session);
         if let Some(stored) = stored {
             let now = self.owner_now().get();
@@ -136,11 +161,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                 })
             };
-            lock_mut(&mut states, actor, session).restore(
+            let lock = lock_mut(&mut states, actor, session);
+            lock.restore(
                 deadline(stored.readmission_remaining.logout),
                 deadline(stored.readmission_remaining.pz),
                 deadline(stored.readmission_remaining.kill),
             );
+            if first_read
+                && !house_scope
+                && let Some(until) = lock.battle_sign_until()
+                && let Some(player) = states.get_mut(&runtime, actor, session)
+            {
+                player.record_wheel_gift_battle(now, until.get());
+            }
         }
         true
     }

@@ -536,12 +536,13 @@ impl ChannelSpellStates {
         // in between. Stage both transitions on a clone so failure publishes neither.
         let mut next = state.clone();
         let expired = next.expire_owner_premium(now_micros)?;
-        let changed = next.apply_owner_promotion_transition(
+        let changed = next.apply_owner_promotion_transition_at(
             promoted,
             projection.is_some_and(|value| value.value),
             projection
                 .filter(|value| value.value)
                 .map(|value| value.valid_until_micros),
+            now_micros,
         )?;
         *state = next;
         Ok(expired || changed)

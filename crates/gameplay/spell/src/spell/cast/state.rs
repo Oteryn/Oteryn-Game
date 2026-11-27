@@ -578,12 +578,26 @@ impl PlayerSpellState {
         self.revision = revision;
         Ok(changed)
     }
+    pub fn apply_owner_promotion_transition_at(
+        &mut self,
+        promoted: bool,
+        current: bool,
+        valid_until_micros: Option<u64>,
+        now: u64,
+    ) -> Result<bool, SpellCastDisposition> {
+        if self.stored_promotion != promoted || self.hunting_premium_current(now) != current {
+            self.settle_wheel_gift(now);
+        }
+        self.apply_owner_promotion_transition(promoted, current, valid_until_micros)
+    }
+
     pub fn expire_owner_premium(&mut self, now_micros: u64) -> Result<bool, SpellCastDisposition> {
         if self.premium_current
             && self
                 .premium_valid_until_micros
                 .is_none_or(|until| now_micros >= until)
         {
+            self.settle_wheel_gift(now_micros);
             self.apply_owner_premium_transition(false, None)
         } else {
             Ok(false)

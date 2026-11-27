@@ -436,6 +436,7 @@ pub(super) async fn execute_proposals(
                 }
                 record_hits(
                     runtime,
+                    states,
                     attack,
                     Some(proposal.issuer),
                     &reader.players,
@@ -450,10 +451,10 @@ pub(super) async fn execute_proposals(
 
 pub(in crate::gameplay_transport) fn record_native_player_hit(
     runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
     attack: &mut ChannelAttackStates,
     source: Option<ExactActorRef>,
-    target: ExactActorRef,
-    session: GameSessionId,
+    (target, session): (ExactActorRef, GameSessionId),
     hit: &crate::player_lethal::PlayerDamageReceipt,
     now: u64,
 ) {
@@ -470,8 +471,9 @@ pub(in crate::gameplay_transport) fn record_native_player_hit(
             hit.vitals_revision,
         );
     }
-    attack.record_hit_taken(
+    attack.record_player_hit_taken(
         runtime,
+        states,
         target,
         session,
         oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
@@ -559,6 +561,7 @@ fn source_for(
 
 pub(super) fn record_hits(
     runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
     attack: &mut ChannelAttackStates,
     source: Option<ExactActorRef>,
     players: &[(ExactActorRef, GameSessionId)],
@@ -570,7 +573,15 @@ pub(super) fn record_hits(
             && let Some(damage) = hit.damage.filter(|damage| damage.applied > 0)
             && let Some((_, session)) = players.iter().find(|(actor, _)| *actor == target)
         {
-            record_native_player_hit(runtime, attack, source, target, *session, &damage, now);
+            record_native_player_hit(
+                runtime,
+                states,
+                attack,
+                source,
+                (target, *session),
+                &damage,
+                now,
+            );
         }
     }
 }

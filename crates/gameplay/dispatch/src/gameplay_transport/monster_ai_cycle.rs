@@ -1081,7 +1081,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                         now: now.get(),
                     });
-                    attack.record_hit_taken(&runtime, player, session, semantic_now);
+                    attack.record_player_hit_taken(
+                        &runtime,
+                        &mut states,
+                        player,
+                        session,
+                        semantic_now,
+                    );
                 }
             }
         }

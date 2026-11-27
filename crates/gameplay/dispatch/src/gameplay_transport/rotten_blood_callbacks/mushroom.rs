@@ -656,7 +656,15 @@ fn finish_explosion(
                     .commit_retained(runtime, states, semantic)
                     .map_err(|_| ())?;
                 if let Some(hit) = receipt {
-                    crate::gameplay_transport::monster_profile_cycle::physical_spell::record_native_player_hit(runtime,attack,Some(source.actor()),target,session,&hit,now);
+                    crate::gameplay_transport::monster_profile_cycle::physical_spell::record_native_player_hit(
+                        runtime,
+                        states,
+                        attack,
+                        Some(source.actor()),
+                        (target, session),
+                        &hit,
+                        now,
+                    );
                 }
                 pending.cursor += 1;
                 #[cfg(test)]

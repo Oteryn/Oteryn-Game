@@ -764,6 +764,7 @@ impl NativeOmrafir {
                     if let Some(outcome) = outcome.primary {
                         super::super::physical_spell::record_hits(
                             runtime,
+                            states,
                             attack,
                             Some(actor),
                             &players,

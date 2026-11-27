@@ -79,6 +79,11 @@ impl CombatLock {
         running(self.kill_until, now)
     }
 
+    /// The one-minute battle sign shared by a hit and aggression.
+    pub fn battle_sign_until(&self) -> Option<SemanticTimeMicros> {
+        self.logout_until.max(self.pz_until)
+    }
+
     /// Logout: any PvP block, the PZ block, the kill block or the PvE in-fight deadline.
     pub fn blocks_logout(
         &self,

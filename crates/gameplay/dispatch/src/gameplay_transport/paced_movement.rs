@@ -329,6 +329,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         match outcome {
             Ok((snapshot, duration)) => {
+                if super::actor_spell::qualified_protection_zone(
+                    &mut runtime,
+                    self.movement_cells(),
+                    actor,
+                ) == Some(true)
+                    && let Some(player) = states.get_mut(&runtime, actor, session)
+                {
+                    player.clear_wheel_gift_battle(now);
+                }
                 // Crystal hazard_primal.lua:23-55: actual accepted STEP consumes
                 // the exact physical pod, with HP owned by this same player turn.
                 super::primal_pods::step(
