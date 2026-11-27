@@ -2,6 +2,7 @@
 use super::*;
 
 mod autowalk;
+mod blocking;
 pub(super) mod drunk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
@@ -167,6 +168,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } {
             Ok(direction) => direction,
             Err(MovementError::Blocked) => {
+                operator_event("event=step_blocked cause=drome_rule");
                 drop((states, runtime));
                 let _ = Self::return_unused_field_step_pass(field_pass).await;
                 return (
@@ -316,6 +318,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &outcome,
                 Ok(_)
                     | Err(MovementError::Blocked
+                        | MovementError::BlockedByCreature(_)
+                        | MovementError::BlockedByItem(_)
                         | MovementError::Cell(
                             crate::content::static_cell_engine::StaticCellEngineError::Absent,
                         ))
@@ -447,17 +451,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (outcome, Some(duration))
             }
             Err(
-                MovementError::Blocked
+                error @ (MovementError::Blocked
+                | MovementError::BlockedByCreature(_)
+                | MovementError::BlockedByItem(_)
                 | MovementError::Cell(
                     crate::content::static_cell_engine::StaticCellEngineError::Absent,
-                ),
-            ) => (
-                StepOutcome {
-                    disposition: StepDisposition::Blocked,
-                    moved_to: None,
-                },
-                None,
-            ),
+                )),
+            ) => {
+                blocking::log(self, &pvp_blocking, origin, cardinal, error);
+                (
+                    StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    },
+                    None,
+                )
+            }
             Err(error) => {
                 // Only the closed variant name is operator evidence; payloads can
                 // contain actor/cell facts and must never enter this event.
@@ -476,7 +485,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         "event=step_rejected_movement kind=CoordinateOverflow"
                     }
                     MovementError::Cell(_) => "event=step_rejected_movement kind=Cell",
-                    MovementError::Blocked => "event=step_rejected_movement kind=Blocked",
+                    MovementError::Blocked
+                    | MovementError::BlockedByCreature(_)
+                    | MovementError::BlockedByItem(_) => {
+                        "event=step_rejected_movement kind=Blocked"
+                    }
                     MovementError::CapacityExceeded => {
                         "event=step_rejected_movement kind=CapacityExceeded"
                     }

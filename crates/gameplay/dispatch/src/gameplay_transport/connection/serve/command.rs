@@ -512,7 +512,7 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
     let failure = match house_input {
         Err(error) => Some(("house_transfer_input", error)),
         Ok(()) => authority
-            .activity_transfer_input(*admitted)
+            .activity_transfer_input(*admitted, command.command_id)
             .await
             .err()
             .map(|error| ("activity_transfer_input", error)),

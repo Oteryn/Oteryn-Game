@@ -161,8 +161,14 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
 
 #[test]
 fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("activity-input-busy-holder", || {
-        run(async |admin| {
+        let mut result = Ok(());
+        let lines = oteryn_error_codes::capture(|| {
+            result = run(async |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,
                 "activity_input_busy_holder",
@@ -195,16 +201,16 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
                     &[oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1],
                 )
                 .ok_or("activity capability")?;
-            assert!(owner.activity_transfer_input(admitted).await.is_ok());
+            assert!(owner.activity_transfer_input(admitted, 7).await.is_ok());
             let busy = hold_holder(&h.root, Duration::from_millis(300))?;
-            let accepted = owner.activity_transfer_input(admitted).await;
+            let accepted = owner.activity_transfer_input(admitted, 7).await;
             busy.await??;
             assert!(
                 accepted.is_ok(),
                 "the timed activity input refused on a busy holder"
             );
             let accepted = priority_handoff(&h.root, async {
-                owner.activity_transfer_input(admitted).await.is_ok()
+                owner.activity_transfer_input(admitted, 7).await.is_ok()
             })
             .await?;
             assert!(
@@ -214,14 +220,29 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
             // A persistently unavailable root still authorizes no input.
             let held = h.root.try_issue_semantic_pass()?;
             assert!(matches!(
-                owner.activity_transfer_input(admitted).await,
+                owner.activity_transfer_input(admitted, 7).await,
                 Err(crate::durability::DurabilityError::RootUnavailable)
             ));
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
             drop(owner);
             drop(seal);
             h.cleanup().await
-        })
+            });
+        });
+        result?;
+        let mut attempts = lines.iter().filter(|line| {
+            line.contains("event=activity_input_holder_attempt")
+                && line.contains("command_id=7")
+        });
+        assert!(
+            attempts.any(|line| line.contains("attempt=1") && line.contains("holder=busy")),
+            "the busy holder attempt must carry the original command ID"
+        );
+        assert!(
+            attempts.any(|line| !line.contains("attempt=1 ") && line.contains("holder=available")),
+            "the successful retry must carry the original command ID"
+        );
+        Ok(())
     })
 }
 

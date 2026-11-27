@@ -419,6 +419,18 @@ impl std::fmt::Display for AccountAchievementReadError {
 impl std::error::Error for AccountAchievementReadError {}
 
 impl DurabilityRoot {
+    /// Earned keys of one Character, with the earliest recorded grant per key.
+    pub async fn read_character_achievements(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        account_id: [u8; 16],
+        character_id: CharacterId,
+        limit: usize,
+    ) -> std::result::Result<Vec<EarnedAchievement>, AccountAchievementReadError> {
+        self.read_achievement_facts(authority, account_id, Some(character_id), limit)
+            .await
+    }
+
     /// Display contract §4: the facts of `account_id`, ordered by key, at most
     /// `limit` of them, each with the `earned_at` of the request it was
     /// derived from (the fact's own composite foreign key, so a later request
@@ -430,6 +442,17 @@ impl DurabilityRoot {
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         account_id: [u8; 16],
+        limit: usize,
+    ) -> std::result::Result<Vec<EarnedAchievement>, AccountAchievementReadError> {
+        self.read_achievement_facts(authority, account_id, None, limit)
+            .await
+    }
+
+    async fn read_achievement_facts(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        account_id: [u8; 16],
+        character_id: Option<CharacterId>,
         limit: usize,
     ) -> std::result::Result<Vec<EarnedAchievement>, AccountAchievementReadError> {
         let limit = i64::try_from(limit).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -445,7 +468,22 @@ impl DurabilityRoot {
                         tx.rollback().await?;
                         return Ok(None);
                     }
-                    let rows = sqlx::query(
+                    let rows = if let Some(character_id) = character_id {
+                        sqlx::query(
+                            "SELECT q.achievement_key, min(q.earned_at) AS earned_at \
+                               FROM game_account_achievement_grant_requests q \
+                               JOIN game_character_roots r USING (account_id, character_id) \
+                              WHERE q.account_id = encode($1,'hex')::uuid \
+                                AND q.character_id = encode($2,'hex')::uuid AND r.lifecycle = 1 \
+                              GROUP BY q.achievement_key ORDER BY q.achievement_key LIMIT $3",
+                        )
+                        .bind(account_id.as_slice())
+                        .bind(character_id.as_bytes().as_slice())
+                        .bind(limit)
+                        .fetch_all(&mut *tx)
+                        .await?
+                    } else {
+                        sqlx::query(
                         "SELECT f.achievement_key, r.earned_at \
                            FROM game_account_achievements f \
                            JOIN game_account_achievement_grant_requests r \
@@ -459,7 +497,8 @@ impl DurabilityRoot {
                     .bind(account_id.as_slice())
                     .bind(limit)
                     .fetch_all(&mut *tx)
-                    .await?;
+                        .await?
+                    };
                     let facts = rows
                         .iter()
                         .map(|row| {

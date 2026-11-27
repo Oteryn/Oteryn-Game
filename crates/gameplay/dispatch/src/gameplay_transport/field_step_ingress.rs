@@ -110,7 +110,7 @@ impl StepIngressRead<'_, '_> {
         let mut player_contact = None;
         for item in self.read.items() {
             if item.blocks_movement {
-                return Err(MovementError::Blocked);
+                return Err(MovementError::BlockedByItem(item.item_instance_id));
             }
             let policy = source
                 .item_policy(

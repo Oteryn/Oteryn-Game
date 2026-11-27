@@ -247,8 +247,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn activity_transfer_input(
         &self,
         admitted: AdmittedSession,
+        command_id: u64,
     ) -> Result<(), crate::durability::DurabilityError> {
-        self.note_activity_input(admitted).await
+        self.note_activity_input(admitted, command_id).await
     }
     async fn activity_scope_snapshot(
         &self,
