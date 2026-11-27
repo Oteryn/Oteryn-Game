@@ -228,6 +228,17 @@ async fn say(
     actor: EntityRef,
     text: &str,
 ) -> TestResult<Vec<String>> {
+    say_with_speaker(client, actor, text, None).await
+}
+
+async fn say_with_speaker(
+    client: &mut DevClientSession,
+    actor: EntityRef,
+    text: &str,
+    speaker: Option<(&str, &str)>,
+) -> TestResult<Vec<String>> {
+    use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
+
     client.take_events();
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
         npc_actor: actor,
@@ -252,27 +263,60 @@ async fn say(
         .into());
     }
     let mut lines = Vec::new();
+    let mut heard_default = false;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     loop {
         for event in client.take_events() {
-            if let SessionEvent::NpcConversation(delta) = event
-                && delta.server_sequence > reply.server_sequence
-            {
-                if delta.value.open.is_some_and(|(npc, _)| npc != actor) {
-                    return Err(
-                        format!("step=say-{text} observed=conversation-for-another-npc").into(),
-                    );
+            match event {
+                SessionEvent::NpcConversation(delta)
+                    if delta.server_sequence > reply.server_sequence =>
+                {
+                    let named = delta.value.open.map(|(npc, _)| npc);
+                    if named.is_some_and(|npc| npc != actor) {
+                        return Err(format!(
+                            "step=say-{text} observed=conversation-for-another-npc"
+                        )
+                        .into());
+                    }
+                    if speaker.is_some() && !delta.value.lines.is_empty() && named != Some(actor) {
+                        return Err(
+                            format!("step=say-{text} observed=reply-without-npc-speaker").into(),
+                        );
+                    }
+                    lines.extend(delta.value.lines);
                 }
-                lines.extend(delta.value.lines);
+                SessionEvent::ChatLine(delta) if delta.server_sequence > reply.server_sequence => {
+                    if let Some((name, expected_text)) = speaker
+                        && let ChatLine::Local {
+                            speaker,
+                            speaker_name,
+                            mode: ChatSpeechMode::Say,
+                            text,
+                            ..
+                        } = delta.value
+                        && speaker_name == name
+                        && text == expected_text
+                        && speaker.identity == actor.identity
+                        && speaker.generation.get() == actor.generation
+                    {
+                        heard_default = true;
+                    }
+                }
+                _ => {}
             }
         }
-        if !lines.is_empty() || tokio::time::Instant::now() >= deadline {
+        if (!lines.is_empty() && (speaker.is_none() || heard_default))
+            || tokio::time::Instant::now() >= deadline
+        {
             break;
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
     if lines.is_empty() {
         return Err(format!("step=say-{text} observed=no-reply-line").into());
+    }
+    if speaker.is_some() && !heard_default {
+        return Err(format!("step=say-{text} observed=no-attributed-default-reply").into());
     }
     Ok(lines)
 }
@@ -458,8 +502,17 @@ async fn sail_to_port_hope(
             format!("step=travel-quote observed={quote:?} expected=port-hope-{FARE}").into(),
         );
     }
-    if say(client, captain, "yes").await?.as_slice() != ["Set the sails!"] {
-        return Err("step=travel-confirm expected=Set-the-sails".into());
+    if say_with_speaker(
+        client,
+        captain,
+        "yes",
+        Some(("Captain Bluebear", "Set the sails!")),
+    )
+    .await?
+    .as_slice()
+        != ["Captain Bluebear: Set the sails!"]
+    {
+        return Err("step=travel-confirm expected=Captain-Bluebear-Set-the-sails".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {

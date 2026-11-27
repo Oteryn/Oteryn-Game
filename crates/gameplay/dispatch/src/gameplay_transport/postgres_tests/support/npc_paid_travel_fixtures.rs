@@ -88,13 +88,30 @@ pub(super) enum FenceFault {
     MissingRelation,
 }
 
-pub(super) fn scenario_with_fence_fault(fault: FenceFault) -> TestResult {
-    run_scenario(false, Some(fault))
+enum ConfirmationCase {
+    Fence(FenceFault),
+    PortHopeSpeaker(String),
 }
 
-fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
-    run(async |admin| {
+pub(super) fn scenario_with_fence_fault(fault: FenceFault) -> TestResult {
+    run_scenario(false, Some(ConfirmationCase::Fence(fault)))
+}
+
+pub(super) fn port_hope_speaker(admin: String) -> TestResult {
+    run_scenario(false, Some(ConfirmationCase::PortHopeSpeaker(admin)))
+}
+
+const PORT_HOPE_ARRIVAL: (u16, u16, i8) = (32527, 32784, -6);
+
+fn run_scenario(reward_fixture: bool, confirmation: Option<ConfirmationCase>) -> TestResult {
+    run(async move |admin| {
         reset();
+        let (admin, landings) = match &confirmation {
+            Some(ConfirmationCase::PortHopeSpeaker(admin)) => {
+                (admin.clone(), std::slice::from_ref(&PORT_HOPE_ARRIVAL))
+            }
+            _ => (admin, &[][..]),
+        };
         let h = Harness::create_with_admission_seed(
             admin,
             if reward_fixture {
@@ -119,7 +136,7 @@ fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
-        let bundle = travel_world(world, &[])?;
+        let bundle = travel_world(world, landings)?;
         let base_room = pin.qualified_room().clone();
         let cells = bundle
             .movement_cells(base_room.movement_cells())
@@ -332,8 +349,12 @@ fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
         talk(&owner, &dependencies, npc, 1, "hi").await?;
         assert!(line(&talk(&owner, &dependencies, npc, 2, "venore").await?).contains("170 gold"));
         if reward_fixture {
-            super::engnpc_paid_confirmation_fixtures::assert_quote_scope(&mut owner, &dependencies, npc)
-                .await?;
+            super::engnpc_paid_confirmation_fixtures::assert_quote_scope(
+                &mut owner,
+                &dependencies,
+                npc,
+            )
+            .await?;
         }
         let refused = talk(&owner, &dependencies, npc, 3, "yes").await?;
         assert!(
@@ -393,9 +414,44 @@ fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
         // A well-shaped migration-owner seed retains a ledger head for the bank balance.
         seed_bank(&mut tx).await?;
         tx.commit().await?;
-        if let Some(fault) = fault {
-            talk(&owner, &dependencies, npc, 7, "venore").await?;
-            confirm_with_fence_fault(&owner, &h, &dependencies, npc, fault).await?;
+        if let Some(confirmation) = confirmation {
+            match confirmation {
+                ConfirmationCase::Fence(fault) => {
+                    talk(&owner, &dependencies, npc, 7, "venore").await?;
+                    confirm_with_fence_fault(&owner, &h, &dependencies, npc, fault).await?;
+                }
+                ConfirmationCase::PortHopeSpeaker(_) => {
+                    let quote = talk(&owner, &dependencies, npc, 7, "port hope").await?;
+                    assert_eq!(
+                        line(&quote),
+                        "Do you seek a passage to port_hope for 160 gold?"
+                    );
+                    let outcome = talk(&owner, &dependencies, npc, 8, "yes").await?;
+                    assert_confirmation_speaker(&owner, session, npc, &outcome)?;
+                    let closed = owner
+                        .npc_follow(dependencies.actor, session, Some(npc))
+                        .await
+                        .and_then(|update| update.conversation)
+                        .ok_or("the travelling NPC conversation should close")?;
+                    assert!(closed.open.is_none());
+                    assert!(closed.lines.is_empty(), "no second walk-away farewell");
+                    let arrived: i64 = sqlx::query_scalar(
+                        "SELECT count(arrived_at) FROM game_newhaven_travel_receipts WHERE command_id=8",
+                    )
+                    .fetch_one(&h.pool)
+                    .await?;
+                    assert_eq!(arrived, 1);
+                    let position = dependencies
+                        .runtime
+                        .lock()
+                        .await
+                        .read_actor_position(dependencies.actor)
+                        .map_err(debug)?
+                        .position();
+                    assert_eq!((position.x, position.y, position.floor), (32527, 32784, 6));
+                    eprintln!("POSTGRES_EXECUTED TRAVEL Port Hope captain speech");
+                }
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -447,8 +503,8 @@ fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
                 .lock()
                 .map_err(|_| "holds")?;
             match &holds.get(&session).ok_or("held travel")?.route {
-                crate::gameplay_transport::newhaven_travel::Departure::Paid(request) => {
-                    (**request).clone()
+                crate::gameplay_transport::newhaven_travel::Departure::Paid(departure) => {
+                    departure.request.clone()
                 }
                 _ => return Err("paid request".into()),
             }
@@ -544,6 +600,7 @@ fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
             .ok_or("resume retained travel")?;
         assert!(!resumed.unknown);
         assert!(resumed.inventory_changed);
+        assert_confirmation_speaker(&owner, session, npc, &resumed)?;
         let position = dependencies
             .runtime
             .lock()
@@ -964,8 +1021,8 @@ fn run_scenario(reward_fixture: bool, fault: Option<FenceFault>) -> TestResult {
                     .lock()
                     .map_err(|_| "S10T holds")?;
                 match &holds.get(&session).ok_or("S10T retained travel")?.route {
-                    crate::gameplay_transport::newhaven_travel::Departure::Paid(request) => {
-                        (**request).clone()
+                    crate::gameplay_transport::newhaven_travel::Departure::Paid(departure) => {
+                        departure.request.clone()
                     }
                     _ => return Err("S10T paid request".into()),
                 }
@@ -1091,21 +1148,29 @@ async fn confirm_with_fence_fault(
     use std::time::Duration;
 
     let session = dependencies.admitted.game_session_id;
-    let current = owner.current_quest_fence_durable(session).await?.ok_or("current fence")?;
+    let current = owner
+        .current_quest_fence_durable(session)
+        .await?
+        .ok_or("current fence")?;
     let command = UseCommand {
         game_session_id: session,
         command_id: 8,
         item_fence: Some(current.item_fence()),
     };
-    let confirmation = owner.npc_talk(dependencies.actor, command, NpcTalkIntent {
-        npc_actor: npc,
-        text: "yes".into(),
-    });
+    let confirmation = owner.npc_talk(
+        dependencies.actor,
+        command,
+        NpcTalkIntent {
+            npc_actor: npc,
+            text: "yes".into(),
+        },
+    );
     let outcome = match fault {
         FenceFault::Busy => {
             let held = h.root.try_issue_semantic_pass()?;
             let waiting = Arc::new(tokio::sync::Notify::new());
-            let mut confirmation = std::pin::pin!(NPC_FENCE_WAIT.scope(waiting.clone(), confirmation));
+            let mut confirmation =
+                std::pin::pin!(NPC_FENCE_WAIT.scope(waiting.clone(), confirmation));
             tokio::select! {
                 result = confirmation.as_mut() => {
                     return Err(format!("confirmation ended before the fence holder returned: {}", line(&result)).into());
@@ -1122,10 +1187,12 @@ async fn confirm_with_fence_fault(
             // Break the actual SQL fence read in this isolated database. The
             // already-open quote and live NPC context remain valid.
             sqlx::query("ALTER TABLE game_character_roots RENAME TO travel_test_character_roots")
-                .execute(&h.pool).await?;
+                .execute(&h.pool)
+                .await?;
             let outcome = tokio::time::timeout(Duration::from_secs(5), confirmation).await;
             sqlx::query("ALTER TABLE travel_test_character_roots RENAME TO game_character_roots")
-                .execute(&h.pool).await?;
+                .execute(&h.pool)
+                .await?;
             outcome?
         }
     };
@@ -1138,7 +1205,7 @@ async fn confirm_with_fence_fault(
     match fault {
         FenceFault::Busy => {
             assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
-            assert_eq!(line(&outcome), "Set the sails!");
+            assert_confirmation_speaker(owner, session, npc, &outcome)?;
             assert_eq!(receipts, (1, 1));
         }
         FenceFault::MissingRelation => {
@@ -1151,6 +1218,45 @@ async fn confirm_with_fence_fault(
     }
     assert!(!owner.states.newhaven_travel.held(session));
     eprintln!("POSTGRES_EXECUTED TRAVEL confirmation fence fault");
+    Ok(())
+}
+
+fn assert_confirmation_speaker(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    npc: EntityRef,
+    outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{chat, npc_service};
+    let conversation = outcome.conversation.as_ref().ok_or("missing NPC reply")?;
+    let encoded = npc_service::encode_npc_conversation(conversation).map_err(debug)?;
+    let conversation = npc_service::decode_npc_conversation(&encoded).map_err(debug)?;
+    assert_eq!(
+        conversation.open,
+        Some((npc, npc_service::NpcConversationState::Open)),
+        "NPC channel must identify the exact speaker"
+    );
+    assert_eq!(conversation.lines, ["Captain Bluebear: Set the sails!"]);
+    let lines = owner.states.chat.drain(session);
+    let [line] = lines.as_slice() else {
+        return Err(format!("expected one Default echo, saw {lines:?}").into());
+    };
+    let encoded = chat::encode_chat_line(line).map_err(debug)?;
+    let chat::ChatLine::Local {
+        speaker,
+        speaker_name,
+        mode,
+        text,
+        ..
+    } = chat::decode_chat_line(&encoded).map_err(debug)?
+    else {
+        return Err("Default confirmation must be local NPC speech".into());
+    };
+    assert_eq!(speaker.identity, npc.identity);
+    assert_eq!(speaker.generation.get(), npc.generation);
+    assert_eq!(mode, chat::ChatSpeechMode::Say);
+    assert_eq!(speaker_name, "Captain Bluebear");
+    assert_eq!(text, "Set the sails!");
     Ok(())
 }
 
