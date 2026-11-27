@@ -37,11 +37,14 @@ class InventoryTests(unittest.TestCase):
             {'authoring': {'kind': 'Creature', 'profile': {'bestiary': None}}},
             {'authoring': {'kind': 'Creature', 'profile': {'bestiary': {'kill_thresholds': [10, 100, 250]}}}},
         ]
+        records[0]['source_bindings'] = [{}, {}]
+        records[1]['source_bindings'] = [{}]
+        records[2]['source_bindings'] = [{}]
         shard = root / SHARD
         shard.parent.mkdir(parents=True)
         shard.write_text(json.dumps({'records': records}))
         index = root / 'content/creatures/definitions/index.json'
-        index.write_text(json.dumps({'shards': [SHARD], 'record_count': 3}))
+        index.write_text(json.dumps({'shards': [SHARD], 'record_count': 3, 'attached_source_bindings': 4}))
         return index, shard, target
 
     def test_refreshes_creature_and_bestiary_pins_and_goldens_together(self):
@@ -52,6 +55,7 @@ class InventoryTests(unittest.TestCase):
             self.assertIn('assert_eq!(bestiary.races.len(), 2);', (root / CHARM).read_text())
             text = target.read_text()
             self.assertIn('const CREATURE_COUNT: usize = 3;', text)
+            self.assertIn('const CREATURE_BINDING_COUNT: usize = 4;', text)
             self.assertIn('const BESTIARY_COUNT: usize = 2;', text)
             self.assertIn('assert_eq!(catalogue.bestiary.len(), 2);', text)
             self.assertIn('assert_eq!(limits().max_reference_records, 3);', text)
@@ -90,7 +94,7 @@ class InventoryTests(unittest.TestCase):
             self.assertEqual(len(assertions), 2)
             binding = next(node for node in assertions if node.test.left.value.id == 'lock')
             expected = ast.literal_eval(binding.test.comparators[0])
-            self.assertEqual(expected['Creature'], 3)
+            self.assertEqual(expected['Creature'], 4)
             checks = compile(ast.Module(body=assertions, type_ignores=[]), '<generated record and binding goldens>', 'exec')
             for field in [None, 'record', 'binding']:
                 values = {'family_counts': {'Creature': 3}, 'lock': {'source_binding_counts': expected.copy()}}
@@ -124,18 +128,24 @@ class InventoryTests(unittest.TestCase):
                 self.assertEqual(before, (target.read_bytes(), (root / VALIDATOR).read_bytes(), (root / GOLDEN).read_bytes()))
 
     def test_wrong_population_or_duplicate_shard_is_refused(self):
-        for mutation in ['count', 'duplicate']:
+        for mutation, error in [
+            ('count', 'BESTIARY_SHARD_COUNT'),
+            ('duplicate', 'BESTIARY_SHARD_INVENTORY'),
+            ('bindings', 'BESTIARY_BINDING_COUNT'),
+        ]:
             with tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 index, _, target = self.fixture(root)
                 document = json.loads(index.read_text())
                 if mutation == 'count':
                     document['record_count'] += 1
-                else:
+                elif mutation == 'duplicate':
                     document['shards'].append(SHARD)
+                else:
+                    document['attached_source_bindings'] += 1
                 index.write_text(json.dumps(document))
                 before = (target.read_bytes(), (root / VALIDATOR).read_bytes(), (root / GOLDEN).read_bytes())
-                with self.assertRaisesRegex(RuntimeError, 'BESTIARY_SHARD_(COUNT|INVENTORY)'):
+                with self.assertRaisesRegex(RuntimeError, error):
                     module.refresh_bestiary_inventory(root)
                 self.assertEqual(before, (target.read_bytes(), (root / VALIDATOR).read_bytes(), (root / GOLDEN).read_bytes()))
 

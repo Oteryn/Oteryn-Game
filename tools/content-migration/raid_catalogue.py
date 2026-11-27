@@ -7,6 +7,7 @@ remain in the catalogue; a missing binding or rule is an inactive reason, never 
 replacement coordinate, creature, schedule or broadcast. Run `content --check` for
 the focused validator; `content` also registers the family in the content manifests.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -15,11 +16,11 @@ import hashlib
 import json
 import re
 import sys
-
-import seasonal_raids
-import feroxa_raid
 from pathlib import Path
 from xml.parsers import expat
+
+import feroxa_raid
+import seasonal_raids
 
 ROOT = Path(__file__).resolve().parents[2]
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -36,10 +37,41 @@ INDEX = "content/encounters/raids/index.json"
 CATALOGUE = "content/encounters/raids/catalogue.json"
 EVIDENCE = "content/encounters/raids/evidence-00000-00121.json"
 PLACEMENTS = "content/world/placements/index.json"
-CITY_NAMES = {"ab'dendriel", "ankrahmun", "carlin", "darashia", "edron", "kazordoon",
-              "liberty bay", "port hope", "rookgaard", "svargrond", "thais", "venore", "yalahar"}
+CITY_NAMES = {
+    "ab'dendriel",
+    "ankrahmun",
+    "carlin",
+    "darashia",
+    "edron",
+    "kazordoon",
+    "liberty bay",
+    "port hope",
+    "rookgaard",
+    "svargrond",
+    "thais",
+    "venore",
+    "yalahar",
+}
 MAX_CREATURES = 500  # Crystal yalahar/vampires.xml:6-12; RAIDS-GLOBAL 2026-11-01.
 MAX_WAVES = 50  # Crystal oramond/walkers.xml:4-53, 50 separately scheduled spawns.
+
+
+# Global admission requires the owning encounter or world-state prerequisite.
+GLOBAL_RAID_HOLDS = {
+    "raid:abdendriel.chayenne": "global_raid_membership_unproven:historical_unavailable",
+    "raid:farmine.zulazzathecorruptor": "global_siege_trigger_and_gate_transition_unbound",
+    "raid:oramond.ravenger": "global_oramond_catacombs_quest_trigger_unbound",
+    "raid:porthope.gorga": "global_regular_spawn_has_no_public_raid",
+    "raid:venore.the_old_widow": "global_raid_clock_unregistered",
+}
+
+# Crystal registers identical Orc bodies in data-global and data-crystal;
+# the catalogue has the compact spelling used by the latter registration.
+# The Oramond XML misspells the only Dark Trails boss in the donor monster tree.
+CRYSTAL_CREATURE_ALIASES = {
+    "orc_sam_backpack": "orc_sambackpack",
+    "the_ravenger": "the_ravager",
+}
 
 
 def encoded(value: object) -> bytes:
@@ -58,9 +90,13 @@ def verified_apply_plan(root: Path) -> dict[str, bytes]:
     result = {}
     for row in load(root, APPLY_PLAN)["target_files"]:
         target, staged = row["target_path"], row["staged_path"]
-        if (not target.startswith("content/encounters/raids/")
-                or not staged.startswith(EVIDENCE_DIR + "/")
-                or ".." in Path(target).parts or ".." in Path(staged).parts or target in result):
+        if (
+            not target.startswith("content/encounters/raids/")
+            or not staged.startswith(EVIDENCE_DIR + "/")
+            or ".." in Path(target).parts
+            or ".." in Path(staged).parts
+            or target in result
+        ):
             raise ValueError("RAID_APPLY_PATH")
         raw = (root / staged).read_bytes()
         if hashlib.sha256(raw).hexdigest() != row["sha256"]:
@@ -70,15 +106,21 @@ def verified_apply_plan(root: Path) -> dict[str, bytes]:
 
 
 def verified_sources(snapshot: dict) -> dict[str, dict]:
-    if (snapshot.get("schema") != CAPTURE_SCHEMA or snapshot.get("repository") != REPOSITORY
-            or snapshot.get("revision") != REVISION):
+    if (
+        snapshot.get("schema") != CAPTURE_SCHEMA
+        or snapshot.get("repository") != REPOSITORY
+        or snapshot.get("revision") != REVISION
+    ):
         raise ValueError("RAID_SOURCE_REVISION")
     result = {}
     for row in snapshot["files"]:
         raw = row["text"].encode()
         if hashlib.sha256(raw).hexdigest() != row["sha256"]:
             raise ValueError(f"RAID_SOURCE_SHA256 {row['path']}")
-        if hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest() != row["git_blob"]:
+        if (
+            hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+            != row["git_blob"]
+        ):
             raise ValueError(f"RAID_SOURCE_GIT_BLOB {row['path']}")
         if row["path"] in result:
             raise ValueError("RAID_SOURCE_DUPLICATE")
@@ -91,10 +133,17 @@ def verified_sources(snapshot: dict) -> dict[str, dict]:
 def xml(text: str) -> dict:
     parser = expat.ParserCreate()
     stack, roots = [], []
+
     def start(tag, attributes):
-        node = {"tag": tag, "attributes": attributes, "line": parser.CurrentLineNumber, "children": []}
+        node = {
+            "tag": tag,
+            "attributes": attributes,
+            "line": parser.CurrentLineNumber,
+            "children": [],
+        }
         (stack[-1]["children"] if stack else roots).append(node)
         stack.append(node)
+
     parser.StartElementHandler = start
     parser.EndElementHandler = lambda _: stack.pop()
     parser.Parse(text, True)
@@ -104,32 +153,59 @@ def xml(text: str) -> dict:
 
 
 def citation(source: dict, line: int) -> dict:
-    return {"repository": REPOSITORY, "revision": REVISION, "path": source["path"],
-            "line": line, "sha256": source["sha256"], "evidence": "OTS_HYPOTHESIS_ONLY"}
+    return {
+        "repository": REPOSITORY,
+        "revision": REVISION,
+        "path": source["path"],
+        "line": line,
+        "sha256": source["sha256"],
+        "evidence": "OTS_HYPOTHESIS_ONLY",
+    }
 
 
 def rectangle(attributes: dict) -> dict:
     if "x" in attributes:
-        first = {"x": int(attributes["x"]), "y": int(attributes["y"]), "floor": int(attributes["z"])}
+        first = {
+            "x": int(attributes["x"]),
+            "y": int(attributes["y"]),
+            "floor": int(attributes["z"]),
+        }
         last = dict(first)
     elif "radius" in attributes:
         radius = int(attributes["radius"])
-        first = {"x": max(0, int(attributes["centerx"]) - radius),
-                 "y": max(0, int(attributes["centery"]) - radius), "floor": int(attributes["centerz"])}
-        last = {"x": min(65535, int(attributes["centerx"]) + radius),
-                "y": min(65535, int(attributes["centery"]) + radius), "floor": first["floor"]}
+        first = {
+            "x": max(0, int(attributes["centerx"]) - radius),
+            "y": max(0, int(attributes["centery"]) - radius),
+            "floor": int(attributes["centerz"]),
+        }
+        last = {
+            "x": min(65535, int(attributes["centerx"]) + radius),
+            "y": min(65535, int(attributes["centery"]) + radius),
+            "floor": first["floor"],
+        }
     else:
-        first = {"x": int(attributes["fromx"]), "y": int(attributes["fromy"]), "floor": int(attributes["fromz"])}
-        last = {"x": int(attributes["tox"]), "y": int(attributes["toy"]), "floor": int(attributes["toz"])}
+        first = {
+            "x": int(attributes["fromx"]),
+            "y": int(attributes["fromy"]),
+            "floor": int(attributes["fromz"]),
+        }
+        last = {
+            "x": int(attributes["tox"]),
+            "y": int(attributes["toy"]),
+            "floor": int(attributes["toz"]),
+        }
     # uniform_random sorts reversed bounds (Crystal src/utils/tools.cpp:431-439); this is the
     # same rectangle, not a relocated position or an inferred native coordinate.
-    return {"from": {k: min(first[k], last[k]) for k in first},
-            "to": {k: max(first[k], last[k]) for k in first}}
+    return {
+        "from": {k: min(first[k], last[k]) for k in first},
+        "to": {k: max(first[k], last[k]) for k in first},
+    }
 
 
 def area_anchor(area: dict) -> str:
     return "raid-anchor:" + "-".join(
-        "_".join(str(area[end][key]) for key in ("x", "y", "floor")) for end in ("from", "to"))
+        "_".join(str(area[end][key]) for key in ("x", "y", "floor")) for end in ("from", "to")
+    )
 
 
 def bind_area(area: dict, placements: dict) -> bool:
@@ -145,8 +221,12 @@ def bind_area(area: dict, placements: dict) -> bool:
         if not match:
             continue
         floor, x, y = map(int, match.groups())
-        if (low["floor"] <= floor <= high["floor"] and low["x"] // 256 <= x <= high["x"] // 256
-                and low["y"] // 256 <= y <= high["y"] // 256 and region["tiles"] > 0):
+        if (
+            low["floor"] <= floor <= high["floor"]
+            and low["x"] // 256 <= x <= high["x"] // 256
+            and low["y"] // 256 <= y <= high["y"] // 256
+            and region["tiles"] > 0
+        ):
             area["regions"].append({"path": region["path"], "sha256": region["sha256"]})
     area["binding_source"] = PLACEMENTS
     area["transform_source"] = "tools/world-bundle-compiler/convert_spawns.py:88-104"
@@ -161,12 +241,18 @@ def source_bosses(sources: dict[str, dict]) -> dict[str, dict]:
         name = re.search(r'Game.createMonsterType\("([^\"]+)"\)', source["text"])
         boss = re.search(r"monster\.bosstiary\s*=|rewardBoss\s*=\s*true", source["text"])
         if name and boss:
-            result[slug(name.group(1))] = citation(source, source["text"].count("\n", 0, boss.start()) + 1)
+            result[slug(name.group(1))] = citation(
+                source, source["text"].count("\n", 0, boss.start()) + 1
+            )
     return result
 
 
-def xml_variant(source: dict, creatures: dict[str, bool], wiki_bosses: set[str],
-                donor_bosses: dict[str, dict] | None = None) -> dict:
+def xml_variant(
+    source: dict,
+    creatures: dict[str, bool],
+    wiki_bosses: set[str],
+    donor_bosses: dict[str, dict] | None = None,
+) -> dict:
     events = xml(source["text"])["children"]
     events = sorted(events, key=lambda e: int(e["attributes"].get("delay", 0)))
     announcements, waves, unknown = [], [], []
@@ -180,33 +266,64 @@ def xml_variant(source: dict, creatures: dict[str, bool], wiki_bosses: set[str],
         actual = delay if index == 0 else previous_actual + max(1000, delay - previous_source)
         previous_source, previous_actual = delay, actual
         if tag == "announce":
-            kind = {"warning": "warning", "event": "advance", "default": "advance"}.get(attrs.get("type", "event").lower())
+            kind = {"warning": "warning", "event": "advance", "default": "advance"}.get(
+                attrs.get("type", "event").lower()
+            )
             if kind is None:
                 unknown.append(f"unsupported_message_type:{attrs['type']}")
                 kind = "unknown"
-            announcements.append({"delay_ms": actual, "raw_delay_ms": int(attrs["delay"]),
-                                  "text": attrs["message"], "kind": kind, "source": citation(source, event["line"])})
+            announcements.append(
+                {
+                    "delay_ms": actual,
+                    "raw_delay_ms": int(attrs["delay"]),
+                    "text": attrs["message"],
+                    "kind": kind,
+                    "source": citation(source, event["line"]),
+                }
+            )
             continue
         area = rectangle(attrs)
         entries = []
-        for monster in ([event] if tag == "singlespawn" else event["children"]):
+        for monster in [event] if tag == "singlespawn" else event["children"]:
             values = monster["attributes"]
-            creature = "oteryn:creature." + slug(values["name"])
+            name = slug(values["name"])
+            creature = "oteryn:creature." + CRYSTAL_CREATURE_ALIASES.get(name, name)
+            if (source["path"], values["name"]) == (
+                "data-global/raids/venore/orc_sam_backpack.xml",
+                "Orc Sam Backpack",
+            ):
+                # Crystal 201189f8's two orc raid scripts differ only in the
+                # registered name. Use the existing definition with loot 3244.
+                creature = "oteryn:creature.orc_sambackpack"
             low = high = 1
             if tag == "areaspawn":
                 low, high = int(values.get("minamount", 0)), int(values.get("maxamount", 0))
                 if low == high == 0:
                     low = high = int(values["amount"])
             boss_source = (donor_bosses or {}).get(slug(values["name"]))
-            entries.append({"creature": creature, "source_name": values["name"], "amount": {"min": low, "max": high},
-                            "area_anchor": area_anchor(area), "area": copy.deepcopy(area),
-                            "spawn_mode": "single" if tag == "singlespawn" else "area",
-                            "boss": creatures.get(creature, False) or slug(values["name"]) in wiki_bosses or boss_source is not None,
-                            "boss_source": boss_source,
-                            "source": citation(source, monster["line"])})
+            entries.append(
+                {
+                    "creature": creature,
+                    "source_name": values["name"],
+                    "amount": {"min": low, "max": high},
+                    "area_anchor": area_anchor(area),
+                    "area": copy.deepcopy(area),
+                    "spawn_mode": "single" if tag == "singlespawn" else "area",
+                    "boss": creatures.get(creature, False)
+                    or slug(values["name"]) in wiki_bosses
+                    or boss_source is not None,
+                    "boss_source": boss_source,
+                    "source": citation(source, monster["line"]),
+                }
+            )
         waves.append({"delay_ms": actual, "raw_delay_ms": int(attrs["delay"]), "entries": entries})
-    return {"key": source["path"], "announcements": announcements, "waves": waves,
-            "sources": [citation(source, 1)], "unresolved": unknown}
+    return {
+        "key": source["path"],
+        "announcements": announcements,
+        "waves": waves,
+        "sources": [citation(source, 1)],
+        "unresolved": unknown,
+    }
 
 
 def raid_kind(record: dict) -> str:
@@ -214,7 +331,9 @@ def raid_kind(record: dict) -> str:
         return "calendar"
     if len(record["variants"]) > 1 or record.get("variant_group"):
         return "multi_variant"
-    if record.get("boss_names") or any(entry["boss"] for v in record["variants"] for w in v["waves"] for entry in w["entries"]):
+    if record.get("boss_names") or any(
+        entry["boss"] for v in record["variants"] for w in v["waves"] for entry in w["entries"]
+    ):
         return "boss"
     area = record.get("wiki_area", "").lower().removesuffix(" city").removesuffix(" centre")
     return "city" if area in CITY_NAMES else "area"
@@ -252,7 +371,8 @@ def creature_catalogue(root: Path) -> dict[str, bool]:
         for record in json.loads(path.read_bytes())["records"]:
             details = record["authoring"]["profile"]["details"]
             result[record["definition"]["identity"]["key"]] = (
-                details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"])
+                details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"]
+            )
     if not result:
         raise ValueError("RAID_CREATURE_CATALOGUE_EMPTY")
     return result
@@ -263,8 +383,15 @@ def normalized_messages(messages: list[str]) -> set[str]:
 
 
 def wiki_links(record: dict) -> list[str]:
-    return sorted({row["source"] for fact in record["facts"].values() if isinstance(fact, dict)
-                   for row in fact.get("sources", []) if row["source"].startswith("wiki:")})
+    return sorted(
+        {
+            row["source"]
+            for fact in record["facts"].values()
+            if isinstance(fact, dict)
+            for row in fact.get("sources", [])
+            if row["source"].startswith("wiki:")
+        }
+    )
 
 
 def wiki_milliseconds(offset: str) -> int | None:
@@ -300,7 +427,9 @@ def apply_global_timeline(variant: dict, timeline: list[dict], refs: list[dict])
     if len(known) != len(announcements) or not known or any(at is None for at in times):
         return False
     anchors = {event["raw_delay_ms"]: at for event, at in zip(announcements, times, strict=True)}
-    if len(anchors) != len(announcements) or any(w["raw_delay_ms"] not in anchors for w in variant["waves"]):
+    if len(anchors) != len(announcements) or any(
+        w["raw_delay_ms"] not in anchors for w in variant["waves"]
+    ):
         return False
     for event, observed, at in zip(announcements, known, times, strict=True):
         event["delay_ms"], event["text"] = at, observed["message"]
@@ -315,9 +444,21 @@ def apply_global_timeline(variant: dict, timeline: list[dict], refs: list[dict])
 
 def reconcile_global(record: dict, observed: dict) -> None:
     facts, variant = observed["facts"], record["variants"][0]
-    record.setdefault("global_observations", []).append({"key": observed["key"], "facts": {
-        key: facts[key] for key in ("broadcast_timeline", "schedule", "wave_count_observations", "wave_timing")
-        if key in facts}})
+    record.setdefault("global_observations", []).append(
+        {
+            "key": observed["key"],
+            "facts": {
+                key: facts[key]
+                for key in (
+                    "broadcast_timeline",
+                    "schedule",
+                    "wave_count_observations",
+                    "wave_timing",
+                )
+                if key in facts
+            },
+        }
+    )
     timeline = facts["broadcast_timeline"]["value"]
     known = [event for event in timeline if event.get("message")]
     announcements = variant["announcements"]
@@ -329,15 +470,23 @@ def reconcile_global(record: dict, observed: dict) -> None:
         # the Global source, rather than a string-similarity guess, supplies text.
         corrected_identity = record["key"] in {"raid:edron.orshabaal", "raid:libertybay.ferumbras"}
         if source_messages != global_messages and not corrected_identity:
-            record["inactive_reasons"].append("global_broadcast_sequence_conflict:" + observed["key"])
+            record["inactive_reasons"].append(
+                "global_broadcast_sequence_conflict:" + observed["key"]
+            )
         else:
             times = [wiki_milliseconds(event["offset"]) for event in known]
             if any(at is None for at in times):
-                record["inactive_reasons"].append("global_broadcast_time_unit_unresolved:" + observed["key"])
-            elif corrected_identity or any(max(1000, at) != event["raw_delay_ms"]
-                                           for at, event in zip(times, announcements, strict=True)):
+                record["inactive_reasons"].append(
+                    "global_broadcast_time_unit_unresolved:" + observed["key"]
+                )
+            elif corrected_identity or any(
+                max(1000, at) != event["raw_delay_ms"]
+                for at, event in zip(times, announcements, strict=True)
+            ):
                 if not apply_global_timeline(variant, timeline, refs):
-                    record["inactive_reasons"].append("global_timeline_conflict_unanchored_source_waves:" + observed["key"])
+                    record["inactive_reasons"].append(
+                        "global_timeline_conflict_unanchored_source_waves:" + observed["key"]
+                    )
     # These explicit Global observations contradict the source event counts or
     # require a separate native access/state owner. Approximate prose counts are
     # retained as evidence; they never become fabricated exact spawn entries.
@@ -359,37 +508,146 @@ def lua_flower(source: dict, placements: dict) -> dict:
     text = source["text"]
     amount = re.search(r"local DRYADS_PER_WAVE = (\d+)", text)
     interval = re.search(r"local WAVE_INTERVAL = (\d+) \* 60 \* 1000", text)
-    pattern = (r'message = "([^\"]+)",\s*from = \{ x = (\d+), y = (\d+), z = (\d+) \},'
-               r'\s*to = \{ x = (\d+), y = (\d+), z = (\d+) \}')
+    pattern = (
+        r'message = "([^\"]+)",\s*from = \{ x = (\d+), y = (\d+), z = (\d+) \},'
+        r"\s*to = \{ x = (\d+), y = (\d+), z = (\d+) \}"
+    )
     matches = list(re.finditer(pattern, text))
     if amount is None or interval is None or len(matches) != 4:
         raise ValueError("RAID_FLOWER_SOURCE_SHAPE")
     areas = []
     for match in matches:
-        area = {"from": dict(zip(("x", "y", "floor"), map(int, match.groups()[1:4]), strict=True)),
-                "to": dict(zip(("x", "y", "floor"), map(int, match.groups()[4:7]), strict=True))}
+        area = {
+            "from": dict(zip(("x", "y", "floor"), map(int, match.groups()[1:4]), strict=True)),
+            "to": dict(zip(("x", "y", "floor"), map(int, match.groups()[4:7]), strict=True)),
+        }
         bind_area(area, placements)
-        areas.append({"message": match.group(1), "kind": "advance", "area": area,
-                      "source": citation(source, text.count("\n", 0, match.start()) + 1)})
-    return {"requested_per_wave": int(amount.group(1)), "shared_attempt_budget": int(amount.group(1)) * 10,
-            "interval_ms": int(interval.group(1)) * 60_000, "month": 6,
-            "start": "startup", "repeat": "indefinite_four_area_cycle", "areas": areas,
-            "creature": "oteryn:creature.dryad", "sources": [citation(source, 1), citation(source, 28), citation(source, 49)]}
+        areas.append(
+            {
+                "message": match.group(1),
+                "kind": "advance",
+                "area": area,
+                "source": citation(source, text.count("\n", 0, match.start()) + 1),
+            }
+        )
+    return {
+        "requested_per_wave": int(amount.group(1)),
+        "shared_attempt_budget": int(amount.group(1)) * 10,
+        "interval_ms": int(interval.group(1)) * 60_000,
+        "month": 6,
+        "start": "startup",
+        "repeat": "indefinite_four_area_cycle",
+        "areas": areas,
+        "creature": "oteryn:creature.dryad",
+        "sources": [citation(source, 1), citation(source, 28), citation(source, 49)],
+    }
 
 
 def calendar_schedule(observation: dict) -> dict:
     # Inclusive World reset dates: the source end server-save belongs to the next
     # inactive reset date. Null times/frequency remain unknown, not midnight.
     result = {"kind": "calendar", "window": None, "interval_ms": None, "observations": observation}
-    windows = {"October 31": (10, 31, 10, 31), "October 31 server save": (10, 31, 11, 2),
-               "December 20 server save": (12, 20, 12, 27), "April 1 server save": (4, 1, 4, 14),
-               "June": (6, 1, 6, 30)}
+    windows = {
+        "October 31": (10, 31, 10, 31),
+        "October 31 server save": (10, 31, 11, 2),
+        "December 20 server save": (12, 20, 12, 27),
+        "April 1 server save": (4, 1, 4, 14),
+        "June": (6, 1, 6, 30),
+    }
     label = observation.get("start", observation.get("date", observation.get("season")))
     if label in windows:
-        result["window"] = dict(zip(("start_month", "start_day", "end_month", "end_day"), windows[label], strict=True))
+        result["window"] = dict(
+            zip(("start_month", "start_day", "end_month", "end_day"), windows[label], strict=True)
+        )
     if "interval_hours" in observation:
         result["interval_ms"] = observation["interval_hours"] * 3_600_000
     return result
+
+
+# Terrain cells from the archived Mapper Coords (region * 256 + cell offset).
+# Pumpkin's creature page gives three alternatives for the four-hour firing.
+HALLOWEEN = {
+    "oteryn:raid.kazordoon_raids.the_halloween_hare": (
+        24 * 3_600_000,
+        [(32624, 32018, 7)],
+        "wiki:20165:1135570",
+    ),
+    "oteryn:raid.northern_darama_raids.the_mutated_pumpkin": (
+        4 * 3_600_000,
+        [(33115, 32398, 7), (33095, 32381, 7), (33092, 32418, 7)],
+        "wiki:29889:1139122",
+    ),
+}
+
+
+def halloween_variant(record: dict, facts: dict) -> None:
+    interval, cells, cell_ref = HALLOWEEN[record["key"]]
+    (name,) = facts["creatures"]["value"]
+    observation = facts["schedule"]["value"]
+    timeline = facts["broadcast_timeline"]["value"]
+    if any(
+        wiki_milliseconds(event["offset"]) != index * interval
+        or event["message"] != timeline[0]["message"]
+        for index, event in enumerate(timeline)
+    ):
+        raise ValueError("HALLOWEEN_ARCHIVE_TIMELINE")
+    schedule = calendar_schedule(observation)
+    if not schedule["window"] or (schedule["interval_ms"] or interval) != interval:
+        raise ValueError("HALLOWEEN_ARCHIVE_SCHEDULE")
+    anchor = (
+        "immediate_post_save" if record["key"].endswith(".the_halloween_hare") else "server_open"
+    )
+    # Preserve the observed dates and waves for an owner that can prove the anchor.
+    schedule.update(interval_ms=None, repeat=False)
+    record.update(
+        schedule=schedule,
+        end={"kind": "until_reset", "despawn_after_ms": None},
+        inactive_reasons=[f"calendar_firing_anchor_unbound:{anchor}"],
+        variants=[],
+    )
+    message_source = {
+        "evidence": "TIBIAWIKI_STRUCTURED",
+        **facts["broadcast_timeline"]["sources"][0],
+    }
+    location_source = {
+        "evidence": "TIBIAWIKI_STRUCTURED",
+        "source": cell_ref,
+        "selector": "Mapper Coords",
+    }
+    for x, y, floor in cells:
+        cell = {"x": x, "y": y, "floor": floor}
+        area = {"from": dict(cell), "to": dict(cell)}
+        record["variants"].append(
+            {
+                "key": area_anchor(area),
+                "announcements": [
+                    {
+                        "delay_ms": 0,
+                        "text": timeline[0]["message"],
+                        "kind": "advance",
+                        "source": message_source,
+                    }
+                ],
+                "unresolved": [],
+                "waves": [
+                    {
+                        "delay_ms": 0,
+                        "entries": [
+                            {
+                                "creature": "oteryn:creature." + slug(name),
+                                "source_name": name,
+                                "amount": {"min": 1, "max": 1},
+                                "area_anchor": area_anchor(area),
+                                "area": area,
+                                "boss": name in record["boss_names"],
+                                "spawn_mode": "single",
+                                "source": location_source,
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
 
 
 def lua_sugar(source: dict, creatures: dict[str, bool]) -> dict:
@@ -397,43 +655,110 @@ def lua_sugar(source: dict, creatures: dict[str, bool]) -> dict:
     bounds = re.findall(r"Position\((\d+),\s*(\d+),\s*(\d+)\)", text)
     if len(bounds) != 2:
         raise ValueError("RAID_SUGAR_AREA")
-    area = {end: dict(zip(("x", "y", "floor"), map(int, point), strict=True))
-            for end, point in zip(("from", "to"), bounds, strict=True)}
+    area = {
+        end: dict(zip(("x", "y", "floor"), map(int, point), strict=True))
+        for end, point in zip(("from", "to"), bounds, strict=True)
+    }
+
     def number(name):
         match = re.search(rf"\b{name}\s*=\s*([\d.]+)", text)
         if not match:
             raise ValueError("RAID_SUGAR_CONFIG:" + name)
         return match.group(1)
+
     from decimal import Decimal
+
     days = re.search(r"allowedDays\s*=\s*\{([^}]+)\}", text)
     timeout = re.search(r'autoAdvance\("(\d+)h"\)', text)
     if days is None or timeout is None:
         raise ValueError("RAID_SUGAR_SCHEDULE")
     weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    schedule = {"kind": "lua", "allowed_weekdays": [weekdays.index(day) + 1 for day in re.findall(r'"([^\"]+)"', days.group(1))],
-                "min_active_players": int(number("minActivePlayers")), "check_interval_ms": 60_000,
-                "active_idle_ms": 300_000, "checks_per_day": 1380, "min_gap_ms": 0, "max_checks_per_day": None,
-                "initial_chance_milli_percent": int(Decimal(number("initialChance")) * 1000),
-                "target_chance_per_day_milli_percent": int(Decimal(number("targetChancePerDay")) * 1000),
-                "max_chance_per_check_milli_percent": int(Decimal(number("maxChancePerCheck")) * 1000)}
+    schedule = {
+        "kind": "lua",
+        "allowed_weekdays": [
+            weekdays.index(day) + 1 for day in re.findall(r'"([^\"]+)"', days.group(1))
+        ],
+        "min_active_players": int(number("minActivePlayers")),
+        "check_interval_ms": 60_000,
+        "active_idle_ms": 300_000,
+        "checks_per_day": 1380,
+        "min_gap_ms": 0,
+        "max_checks_per_day": None,
+        "initial_chance_milli_percent": int(Decimal(number("initialChance")) * 1000),
+        "target_chance_per_day_milli_percent": int(Decimal(number("targetChancePerDay")) * 1000),
+        "max_chance_per_check_milli_percent": int(Decimal(number("maxChancePerCheck")) * 1000),
+    }
     creature = "oteryn:creature.sugar_mommy"
-    return {"key": "raid:candia.sugarmommy", "name": "Sugar Mommy", "wiki_area": "Candia", "wiki_sources": [],
-            "schedule": schedule, "variant_group": None, "inactive_reasons": [],
-            "end": {"kind": "boss_death_or_timeout", "despawn_after_ms": int(timeout.group(1)) * 3_600_000},
-            "sources": [citation(source, 1)], "wiki_records": [],
-            "variants": [{"key": "candia.sugarmommy", "announcements": [], "unresolved": [],
-                          "sources": [citation(source, 1)], "waves": [{"delay_ms": 0, "raw_delay_ms": 0,
-                          "entries": [{"creature": creature, "source_name": "Sugar Mommy", "amount": {"min": 1, "max": 1},
-                                       "area_anchor": area_anchor(area), "area": area, "spawn_mode": "zone", "boss": True, "source": citation(source, 14)}]}]}]}
+    return {
+        "key": "raid:candia.sugarmommy",
+        "name": "Sugar Mommy",
+        "wiki_area": "Candia",
+        "wiki_sources": [],
+        "schedule": schedule,
+        "variant_group": None,
+        "inactive_reasons": [],
+        "end": {
+            "kind": "boss_death_or_timeout",
+            "despawn_after_ms": int(timeout.group(1)) * 3_600_000,
+        },
+        "sources": [citation(source, 1)],
+        "wiki_records": [],
+        "variants": [
+            {
+                "key": "candia.sugarmommy",
+                "announcements": [],
+                "unresolved": [],
+                "sources": [citation(source, 1)],
+                "waves": [
+                    {
+                        "delay_ms": 0,
+                        "raw_delay_ms": 0,
+                        "entries": [
+                            {
+                                "creature": creature,
+                                "source_name": "Sugar Mommy",
+                                "amount": {"min": 1, "max": 1},
+                                "area_anchor": area_anchor(area),
+                                "area": area,
+                                "spawn_mode": "zone",
+                                "boss": True,
+                                "source": citation(source, 14),
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
 
 
-def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict,
-                  creatures: dict[str, bool], placements: dict, root: Path = ROOT) -> list[dict]:
+def xml_schedule(node: dict, ordinal: int) -> dict:
+    attrs = node["attributes"]
+    return {
+        "kind": "legacy_xml",
+        "interval_s": int(attrs["interval2"]) * 60,
+        "margin_ms": int(attrs.get("margin", 0)) * 60_000,
+        "repeat": attrs.get("repeat", "false").lower() in {"true", "1", "yes"},
+        "source_order": ordinal,
+    }
+
+
+def build_records(
+    sources: dict[str, dict],
+    evidence: dict,
+    reconciliation: dict,
+    creatures: dict[str, bool],
+    placements: dict,
+    root: Path = ROOT,
+) -> list[dict]:
     wiki = {r["key"]: r for r in evidence["records"]}
     wiki_bosses = {slug(name) for r in wiki.values() for name in r["facts"]["boss"]["value"]}
     donor_bosses = source_bosses(sources)
-    variants = {path: xml_variant(source, creatures, wiki_bosses, donor_bosses) for path, source in sources.items()
-                if path.startswith("data-global/raids/") and path.endswith(".xml") and path != REGISTRY}
+    variants = {
+        path: xml_variant(source, creatures, wiki_bosses, donor_bosses)
+        for path, source in sources.items()
+        if path.startswith("data-global/raids/") and path.endswith(".xml") and path != REGISTRY
+    }
     matched, candidates = set(), {}
     definitions = reconciliation["source_raid_definitions"]
     for match in reconciliation["records"]:
@@ -465,20 +790,28 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
     badger = "oteryn:raid.ab_dendriel_raids.badger_raid_in_ab_dendriel"
     if badger in wiki:
         candidates["data-global/raids/abdendriel/badgers.xml"] = [badger]
-    registered = {"data-global/raids/" + row["attributes"]["file"]: (i, row)
-                  for i, row in enumerate(xml(sources[REGISTRY]["text"])["children"])}
+    registered = {
+        "data-global/raids/" + row["attributes"]["file"]: (i, row)
+        for i, row in enumerate(xml(sources[REGISTRY]["text"])["children"])
+    }
     absent = set(registered) - sources.keys()
     if absent:
         raise ValueError("RAID_REGISTRY_MISSING_FILES:" + ",".join(sorted(absent)))
     records = []
     for path, source in sorted(sources.items()):
-        if not path.startswith("data-global/raids/") or not path.endswith(".xml") or path == REGISTRY:
+        if (
+            not path.startswith("data-global/raids/")
+            or not path.endswith(".xml")
+            or path == REGISTRY
+        ):
             continue
         variant = variants[path]
         messages = normalized_messages([a["text"] for a in variant["announcements"]])
         identities = []
         for key in sorted(set(candidates.get(path, []))):
-            known = normalized_messages([v["message"] for v in wiki[key]["facts"]["broadcast_timeline"]["value"]])
+            known = normalized_messages(
+                [v["message"] for v in wiki[key]["facts"]["broadcast_timeline"]["value"]]
+            )
             if key == badger or key in exact_boss.get(path, set()) or (known and known <= messages):
                 identities.append(key)
                 matched.add(key)
@@ -487,22 +820,40 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
         if entry:
             ordinal, node = entry
             attrs = node["attributes"]
-            schedule = {"kind": "legacy_xml", "interval_s": int(attrs["interval2"]) * 60,
-                        "margin_ms": int(attrs.get("margin", 0)) * 60_000,
-                        "repeat": attrs.get("repeat", "false").lower() in {"true", "1", "yes"}, "source_order": ordinal}
-            key = "raid:badger" if path.endswith("/abdendriel/badgers.xml") else "raid:" + re.sub(r"[^a-zA-Z0-9:._/-]", "_", attrs["name"])
+            schedule = xml_schedule(node, ordinal)
+            key = (
+                "raid:badger"
+                if path.endswith("/abdendriel/badgers.xml")
+                else "raid:" + re.sub(r"[^a-zA-Z0-9:._/-]", "_", attrs["name"])
+            )
             refs = [citation(source, 1), citation(sources[REGISTRY], node["line"])]
         else:
-            key, schedule, refs = "raid:" + path.removeprefix("data-global/raids/").removesuffix(".xml").replace("/", "."), {"kind": "unknown"}, [citation(source, 1)]
+            key, schedule, refs = (
+                "raid:"
+                + path.removeprefix("data-global/raids/").removesuffix(".xml").replace("/", "."),
+                {"kind": "unknown"},
+                [citation(source, 1)],
+            )
         stem = Path(path).stem
         group = re.sub(r"\d+$", "", stem) if re.search(r"\d+$", stem) else None
-        record = {"key": key, "name": facts.get("name", {}).get("value", entry[1]["attributes"]["name"] if entry else stem),
-                  "wiki_area": facts.get("area", {}).get("value", ""),
-                  "boss_names": facts.get("boss", {}).get("value", []),
-                  "wiki_sources": sorted({s for identity in identities for s in wiki_links(wiki[identity])}),
-                  "wiki_records": identities, "sources": refs, "schedule": schedule,
-                  "variant_group": f"raid-group:{Path(path).parent.name}.{group}" if group else None,
-                  "variants": [variant], "end": {"kind": "until_reset", "despawn_after_ms": None}, "inactive_reasons": []}
+        record = {
+            "key": key,
+            "name": facts.get("name", {}).get(
+                "value", entry[1]["attributes"]["name"] if entry else stem
+            ),
+            "wiki_area": facts.get("area", {}).get("value", ""),
+            "boss_names": facts.get("boss", {}).get("value", []),
+            "wiki_sources": sorted(
+                {s for identity in identities for s in wiki_links(wiki[identity])}
+            ),
+            "wiki_records": identities,
+            "sources": refs,
+            "schedule": schedule,
+            "variant_group": f"raid-group:{Path(path).parent.name}.{group}" if group else None,
+            "variants": [variant],
+            "end": {"kind": "until_reset", "despawn_after_ms": None},
+            "inactive_reasons": [],
+        }
         if key == "raid:edron.feroxa":
             # Crystal 9f5a72c data-global/lib/quests/grimvale.lua:46-48:
             # the spawned boss has twenty hours, independently of server save.
@@ -510,16 +861,23 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             # boss position; the XML capture remains preserved as source evidence.
             record["variants"] = [feroxa_raid.variant(root, area_anchor)]
             record["requires_world_change"] = {"key": "grimvale", "variant": "full_moon"}
-            record["end"] = {"kind": "boss_death_or_timeout", "despawn_after_ms": 20 * 60 * 60 * 1000}
-            record["end_source"] = "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/quests/grimvale.lua:46-48"
+            record["end"] = {
+                "kind": "boss_death_or_timeout",
+                "despawn_after_ms": 20 * 60 * 60 * 1000,
+            }
+            record["end_source"] = (
+                "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/quests/grimvale.lua:46-48"
+            )
         if key == "raid:furyfate.furyosa":
             # Accepted EVENTS-WORLD-1 W6/W10:343permille entry availability also gates this raid.
             record["requires_world_change"] = {"key": "fury_gates", "variant": None}
-            record["world_change_binding"] = "EVENTS-WORLD-1 W6/W10; WORLD-SRC-1105 native activation"
+            record["world_change_binding"] = (
+                "EVENTS-WORLD-1 W6/W10; WORLD-SRC-1105 native activation"
+            )
         for identity in identities:
             reconcile_global(record, wiki[identity])
-        if key == "raid:abdendriel.chayenne":
-            record["inactive_reasons"].append("global_raid_membership_unproven:donor_chayenne_has_no_archived_global_identity")
+        if key in GLOBAL_RAID_HOLDS:
+            record["inactive_reasons"].append(GLOBAL_RAID_HOLDS[key])
         qualify(record, creatures, placements)
         records.append(record)
     for key, observed in sorted(wiki.items()):
@@ -527,15 +885,31 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             continue
         facts = observed["facts"]
         observation = facts["schedule"]["value"]
-        calendar = isinstance(observation, dict) and any(k in observation for k in ("start", "date", "season"))
-        record = {"key": key, "name": facts["name"]["value"], "wiki_area": facts["area"]["value"],
-                  "boss_names": facts["boss"]["value"],
-                  "wiki_records": [key], "wiki_sources": wiki_links(observed), "sources": [],
-                  "schedule": calendar_schedule(observation) if calendar else {"kind": "unknown"},
-                  "variants": [], "variant_group": None, "end": {"kind": "unknown", "despawn_after_ms": None},
-                  "inactive_reasons": ["wiki_donor_identity_unresolved", "native_wave_area_unknown", "message_kind_or_timing_unresolved"]}
+        calendar = isinstance(observation, dict) and any(
+            k in observation for k in ("start", "date", "season")
+        )
+        record = {
+            "key": key,
+            "name": facts["name"]["value"],
+            "wiki_area": facts["area"]["value"],
+            "boss_names": facts["boss"]["value"],
+            "wiki_records": [key],
+            "wiki_sources": wiki_links(observed),
+            "sources": [],
+            "schedule": calendar_schedule(observation) if calendar else {"kind": "unknown"},
+            "variants": [],
+            "variant_group": None,
+            "end": {"kind": "unknown", "despawn_after_ms": None},
+            "inactive_reasons": [
+                "wiki_donor_identity_unresolved",
+                "native_wave_area_unknown",
+                "message_kind_or_timing_unresolved",
+            ],
+        }
         if calendar:
             record["inactive_reasons"].append("calendar_firing_rule_unresolved")
+        if key in HALLOWEEN:
+            halloween_variant(record, facts)
         if key.endswith("dryad_invasion"):
             source = sources["data-global/scripts/raids/world_changes/flower_month.lua"]
             record["sources"] = [citation(source, 1)]
@@ -545,20 +919,62 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
                 record["inactive_reasons"].append("donor_flower_area_unbound")
             # WORLD-SRC owner2026-11-05 explicitly selects donor-following spawn admission.
             cycle = record["donor_cycle"]
-            record["schedule"].update(interval_ms=cycle["interval_ms"] * len(cycle["areas"]), repeat=True)
+            record["schedule"].update(
+                interval_ms=cycle["interval_ms"] * len(cycle["areas"]), repeat=True
+            )
             record["end"] = {"kind": "until_reset", "despawn_after_ms": None}
             announcements, waves = [], []
             for index, entry in enumerate(cycle["areas"]):
                 delay = index * cycle["interval_ms"]
-                announcements.append({"delay_ms": delay, "text": entry["message"], "kind": "advance", "source": entry["source"]})
-                waves.append({"delay_ms": delay, "entries": [{"creature": cycle["creature"], "source_name": "Dryad",
-                    "amount": {"min": cycle["requested_per_wave"], "max": cycle["requested_per_wave"]},
-                    "area_anchor": area_anchor(entry["area"]), "area": copy.deepcopy(entry["area"]),
-                    "boss": False, "spawn_mode": "shared_area", "source": entry["source"]}]})
-            record["variants"] = [{"key": "crystal:flower_month_cycle", "announcements": announcements, "waves": waves, "unresolved": []}]
-            record["inactive_reasons"] = [reason for reason in record["inactive_reasons"] if reason not in {
-                "wiki_donor_identity_unresolved", "message_kind_or_timing_unresolved", "calendar_firing_rule_unresolved"}]
-            record["compatibility_decision"] = "WORLD-SRC-1105: owner-authorized Crystal Flower Month cycle; archived Global conflict retained"
+                announcements.append(
+                    {
+                        "delay_ms": delay,
+                        "text": entry["message"],
+                        "kind": "advance",
+                        "source": entry["source"],
+                    }
+                )
+                waves.append(
+                    {
+                        "delay_ms": delay,
+                        "entries": [
+                            {
+                                "creature": cycle["creature"],
+                                "source_name": "Dryad",
+                                "amount": {
+                                    "min": cycle["requested_per_wave"],
+                                    "max": cycle["requested_per_wave"],
+                                },
+                                "area_anchor": area_anchor(entry["area"]),
+                                "area": copy.deepcopy(entry["area"]),
+                                "boss": False,
+                                "spawn_mode": "shared_area",
+                                "source": entry["source"],
+                            }
+                        ],
+                    }
+                )
+            record["variants"] = [
+                {
+                    "key": "crystal:flower_month_cycle",
+                    "announcements": announcements,
+                    "waves": waves,
+                    "unresolved": [],
+                }
+            ]
+            record["inactive_reasons"] = [
+                reason
+                for reason in record["inactive_reasons"]
+                if reason
+                not in {
+                    "wiki_donor_identity_unresolved",
+                    "message_kind_or_timing_unresolved",
+                    "calendar_firing_rule_unresolved",
+                }
+            ]
+            record["compatibility_decision"] = (
+                "WORLD-SRC-1105: owner-authorized Crystal Flower Month cycle; archived Global conflict retained"
+            )
         qualify(record, creatures, placements)
         records.append(record)
     sugar = lua_sugar(sources["data-global/scripts/raids/bosses/sugar_mommy.lua"], creatures)
@@ -575,7 +991,9 @@ def registered(project: dict, manifest: dict, lock: dict, count: int) -> tuple:
     project, manifest, lock = map(copy.deepcopy, (project, manifest, lock))
     if FAMILY not in project["migrated_families"]:
         project["migrated_families"].append(FAMILY)
-    project["next_population_families"] = [f for f in project["next_population_families"] if f != FAMILY]
+    project["next_population_families"] = [
+        f for f in project["next_population_families"] if f != FAMILY
+    ]
     manifest["families"][FAMILY] = {"records": count, "index": INDEX}
     paths = {row["path"] for row in manifest["managed_files"]} | {INDEX, CATALOGUE, EVIDENCE}
     manifest["managed_files"] = [{"path": path} for path in sorted(paths)]
@@ -587,29 +1005,66 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     staged = verified_apply_plan(root)
     sources = verified_sources(load(root, CAPTURE))
     evidence = json.loads(staged[EVIDENCE])
-    records = build_records(sources, evidence, load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
-                            creature_catalogue(root), load(root, PLACEMENTS), root)
+    records = build_records(
+        sources,
+        evidence,
+        load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
+        creature_catalogue(root),
+        load(root, PLACEMENTS),
+        root,
+    )
     if (root / seasonal_raids.CAPTURE).is_file():
-        records.extend(seasonal_raids.records(root, qualify, bind_area, citation, creature_catalogue(root), load(root, PLACEMENTS)))
+        records.extend(
+            seasonal_raids.records(
+                root, qualify, bind_area, citation, creature_catalogue(root), load(root, PLACEMENTS)
+            )
+        )
         records.sort(key=lambda record: record["key"])
-    totals = {kind: {"total": sum(r["kind"] == kind for r in records),
-                     "active": sum(r["kind"] == kind and r["active"] for r in records)}
-              for kind in ("city", "area", "boss", "multi_variant", "calendar")}
-    document = {"schema": SCHEMA, "generator": "tools/content-migration/raid_catalogue.py",
-                "source_revision": REVISION, "coordinate_frame": FRAME, "records": records, "totals": totals}
+    totals = {
+        kind: {
+            "total": sum(r["kind"] == kind for r in records),
+            "active": sum(r["kind"] == kind and r["active"] for r in records),
+        }
+        for kind in ("city", "area", "boss", "multi_variant", "calendar")
+    }
+    document = {
+        "schema": SCHEMA,
+        "generator": "tools/content-migration/raid_catalogue.py",
+        "source_revision": REVISION,
+        "coordinate_frame": FRAME,
+        "records": records,
+        "totals": totals,
+    }
     result = {EVIDENCE: staged[EVIDENCE], CATALOGUE: encoded(document)}
-    result[INDEX] = encoded({"schema": "OTERYN_FAMILY_INDEX/v1", "family": FAMILY,
-                             "record_count": len(records), "active_count": sum(r["active"] for r in records),
-                             "population_state": "POPULATED", "shards": [CATALOGUE], "evidence_shards": [EVIDENCE],
-                             "evidence_record_count": len(evidence["records"]), "totals": totals,
-                             "generator": "tools/content-migration/raid_catalogue.py",
-                             "catalogue_sha256": hashlib.sha256(result[CATALOGUE]).hexdigest(),
-                             "apply_plan_sha256": hashlib.sha256((root / APPLY_PLAN).read_bytes()).hexdigest(),
-                             "source_capture_sha256": hashlib.sha256((root / CAPTURE).read_bytes()).hexdigest(),
-                             "seasonal_source_capture_sha256": hashlib.sha256((root / seasonal_raids.CAPTURE).read_bytes()).hexdigest() if (root / seasonal_raids.CAPTURE).is_file() else None})
+    result[INDEX] = encoded(
+        {
+            "schema": "OTERYN_FAMILY_INDEX/v1",
+            "family": FAMILY,
+            "record_count": len(records),
+            "active_count": sum(r["active"] for r in records),
+            "population_state": "POPULATED",
+            "shards": [CATALOGUE],
+            "evidence_shards": [EVIDENCE],
+            "evidence_record_count": len(evidence["records"]),
+            "totals": totals,
+            "generator": "tools/content-migration/raid_catalogue.py",
+            "catalogue_sha256": hashlib.sha256(result[CATALOGUE]).hexdigest(),
+            "apply_plan_sha256": hashlib.sha256((root / APPLY_PLAN).read_bytes()).hexdigest(),
+            "source_capture_sha256": hashlib.sha256((root / CAPTURE).read_bytes()).hexdigest(),
+            "seasonal_source_capture_sha256": hashlib.sha256(
+                (root / seasonal_raids.CAPTURE).read_bytes()
+            ).hexdigest()
+            if (root / seasonal_raids.CAPTURE).is_file()
+            else None,
+        }
+    )
     if register:
         names = ("project", "manifest", "content.lock")
-        for name, value in zip(names, registered(*(load(root, f"content/{n}.json") for n in names), len(records)), strict=True):
+        for name, value in zip(
+            names,
+            registered(*(load(root, f"content/{n}.json") for n in names), len(records)),
+            strict=True,
+        ):
             result[f"content/{name}.json"] = encoded(value)
     return result
 
@@ -622,7 +1077,11 @@ def main() -> int:
     parser.add_argument("--no-register", action="store_true")
     args = parser.parse_args()
     generated = outputs(args.root, register=not args.no_register)
-    stale = [path for path, raw in generated.items() if not (args.root / path).is_file() or (args.root / path).read_bytes() != raw]
+    stale = [
+        path
+        for path, raw in generated.items()
+        if not (args.root / path).is_file() or (args.root / path).read_bytes() != raw
+    ]
     if args.check:
         print("raid catalogue check: " + ("FAIL " + ", ".join(stale) if stale else "ok"))
         return int(bool(stale))
@@ -631,7 +1090,9 @@ def main() -> int:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(raw)
     index = json.loads(generated[INDEX])
-    print(f"raid catalogue: total={index['record_count']} active={index['active_count']} kinds={index['totals']}")
+    print(
+        f"raid catalogue: total={index['record_count']} active={index['active_count']} kinds={index['totals']}"
+    )
     return 0
 
 

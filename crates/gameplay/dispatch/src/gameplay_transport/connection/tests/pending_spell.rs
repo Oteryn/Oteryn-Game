@@ -179,3 +179,173 @@ fn unknown_spell_commit_preserves_original_command_and_emits_no_terminal_result(
         Ok(())
     })
 }
+
+struct RescuedCastAuthority {
+    receipt: crate::gameplay_transport::spell_cooldowns::TestReceipt,
+}
+
+impl FreshAdmissionAuthority for RescuedCastAuthority {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+        Some(at(0))
+    }
+
+    async fn observe_join_vitals(
+        &self,
+        _: ExactActorRef,
+        admitted: AdmittedSession,
+        _: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        (Some((1, SERENE_VITALS)), Some(self.receipt.feed(admitted)))
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        7_000_000
+    }
+
+    async fn observe_vitals(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<(u64, ActorVitals)> {
+        self.receipt.rescued()
+    }
+
+    async fn cast_spell_completion(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+        _: u64,
+        _: SpellCastIntent,
+    ) -> Option<SpellCastOutcome> {
+        let vitals = ActorVitals {
+            health: 30,
+            mana: 1,
+            ..SERENE_VITALS
+        };
+        self.receipt.rescue((3, vitals))?;
+        Some(SpellCastOutcome {
+            disposition: oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Cast,
+            vitals: Some((2, SERENE_VITALS)),
+        })
+    }
+}
+
+#[test]
+fn accepted_cast_result_precedes_the_rescue_pair() -> Result<(), Box<dyn Error>> {
+    assert_rescue_cast_frames(true)
+}
+
+#[test]
+fn accepted_cast_result_precedes_legacy_cooldowns_and_rescued_vitals() -> Result<(), Box<dyn Error>>
+{
+    assert_rescue_cast_frames(false)
+}
+
+fn assert_rescue_cast_frames(sparse: bool) -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::{
+        MessageType, decode_state_delta, decode_wire_envelope, presentation,
+    };
+    run(async move {
+        let (_, actor, game_session_id) =
+            super::super::actor_spell::tests::runtime_with_player(0x73);
+        let mut continuity = SessionContinuity::FRESH;
+        let offered = super::super::native_cue_offer::offered(
+            super::super::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
+            true,
+        );
+        let mut supported = vec![6, presentation::CAPABILITY_PRESENTATION_V1];
+        if sparse {
+            supported.push(presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1);
+        }
+        continuity.selected_capabilities =
+            SelectedCapabilities::select(&offered, &supported).ok_or("presentation selection")?;
+        let admitted = AdmittedSession {
+            game_session_id,
+            world_id: WorldId::decode(&uuid_v7(0x60))?,
+            channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+            runtime_actor: Some(actor),
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
+            continuity,
+            item_fence: None,
+        };
+        let authority = RescuedCastAuthority {
+            receipt: Default::default(),
+        };
+        let payload = super::super::actor_spell::encode_spell_cast_intent(&SpellCastIntent {
+            spell: std::num::NonZeroU32::MIN,
+            target: oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
+            aim_at_target: false,
+        });
+        let (mut server, mut client) = tokio::io::duplex(1 << 16);
+        write_frame(&mut client, &cast_command(1, &payload)).await?;
+        client.shutdown().await?;
+        serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+        drop(server);
+        let mut bytes = Vec::new();
+        client.read_to_end(&mut bytes).await?;
+        let mut frames = Vec::new();
+        let mut bytes = bytes.as_slice();
+        while !bytes.is_empty() {
+            let prefix: [u8; 4] = bytes.get(..4).ok_or("prefix")?.try_into()?;
+            let length = usize::try_from(u32::from_be_bytes(prefix))?;
+            let envelope = decode_wire_envelope(bytes.get(4..4 + length).ok_or("frame")?)?;
+            match envelope.message_type() {
+                MessageType::CommandResult => {
+                    let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                    assert_eq!(
+                        result.status,
+                        oteryn_protocol_oteryn::CommandStatus::Accepted
+                    );
+                    frames.push((0, 0));
+                }
+                MessageType::StateDelta => {
+                    let delta = decode_state_delta(envelope.payload())?;
+                    if delta.domain_id == presentation::STATE_DOMAIN_ACTOR_COOLDOWNS {
+                        assert_eq!(
+                            delta.delta_type,
+                            if sparse {
+                                presentation::DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1
+                            } else {
+                                presentation::DELTA_TYPE_ACTOR_COOLDOWNS_V1
+                            },
+                        );
+                        let update = presentation::decode_actor_cooldowns(delta.payload)
+                            .map_err(|error| format!("{error:?}"))?;
+                        assert_eq!(update.server_now_ms, if sparse { 0 } else { 7_000 });
+                        assert_eq!(
+                            update.entries,
+                            [presentation::ActorCooldown {
+                                kind: presentation::ActorCooldownKind::Spell,
+                                id: 1,
+                                expires_at_ms: if sparse { 23_000 } else { 30_000 },
+                            }],
+                        );
+                    }
+                    frames.push((delta.domain_id, delta.new_revision));
+                }
+                _ => {}
+            }
+            bytes = bytes.get(4 + length..).ok_or("tail")?;
+        }
+        assert_eq!(
+            frames,
+            [
+                (0, 0),
+                (presentation::STATE_DOMAIN_ACTOR_COOLDOWNS, 1),
+                (
+                    oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    3
+                ),
+            ]
+        );
+        Ok(())
+    })
+}

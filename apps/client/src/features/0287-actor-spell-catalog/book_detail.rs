@@ -16,17 +16,11 @@ fn text_at(mailbox: &Mailbox, row: usize, now: Instant) -> String {
     let Some(index) = NonZeroU32::new(spell.spell.cast_index) else {
         return text;
     };
-    if panel.bar.cooldowns.is_none() {
+    if panel.bar.last_cooldown_observation().is_none() {
         text.push_str("\r\nCooldown remaining: unavailable (no server snapshot).");
         return text;
     }
-    let elapsed = panel.cooldown_received_at.map_or(0, |received| {
-        u64::try_from(now.saturating_duration_since(received).as_millis()).unwrap_or(u64::MAX)
-    });
-    let remaining = panel
-        .bar
-        .remaining_ms(index, &spell.spell.cooldown_groups)
-        .saturating_sub(elapsed);
+    let remaining = panel.remaining_ms_at(index, &spell.spell.cooldown_groups, now);
     use std::fmt::Write;
     let _ = write!(
         text,
@@ -83,37 +77,38 @@ mod tests {
             .ok_or("page")?,
         });
         assert!(text(&lock(&link.mailbox), 0).contains("no server snapshot"));
+        let received = Instant::now() - Duration::from_millis(400);
         outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
             server_sequence: 2,
             base_revision: 1,
             new_revision: 2,
-            value: ActorCooldowns {
-                server_now_ms: 100,
-                rtt_ms: None,
-                entries: vec![
-                    ActorCooldown {
-                        kind: ActorCooldownKind::Spell,
-                        id: 71,
-                        expires_at_ms: 600,
-                    },
-                    ActorCooldown {
-                        kind: ActorCooldownKind::Group,
-                        id: 2,
-                        expires_at_ms: 900,
-                    },
-                    ActorCooldown {
-                        kind: ActorCooldownKind::Group,
-                        id: 3,
-                        expires_at_ms: 5000,
-                    },
-                ],
+            value: oteryn_session::ActorCooldownUpdate {
+                value: ActorCooldowns {
+                    server_now_ms: 100,
+                    rtt_ms: None,
+                    entries: vec![
+                        ActorCooldown {
+                            kind: ActorCooldownKind::Spell,
+                            id: 71,
+                            expires_at_ms: 600,
+                        },
+                        ActorCooldown {
+                            kind: ActorCooldownKind::Group,
+                            id: 2,
+                            expires_at_ms: 900,
+                        },
+                        ActorCooldown {
+                            kind: ActorCooldownKind::Group,
+                            id: 3,
+                            expires_at_ms: 5000,
+                        },
+                    ],
+                },
+                received_at: received,
+                snapshot: true,
             },
         })]);
         let mailbox = lock(&link.mailbox);
-        let received = mailbox
-            .spell_bar
-            .cooldown_received_at
-            .ok_or("snapshot time")?;
         assert!(text_at(&mailbox, 0, received).contains("Cooldown remaining: 800 ms"));
         let projected = text_at(&mailbox, 0, received + Duration::from_millis(250));
         assert!(projected.contains("Cooldown remaining: 550 ms"));

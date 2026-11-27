@@ -308,6 +308,38 @@ pub(super) async fn progress(
     Ok(copy.tracks().get(track).copied().unwrap_or(0))
 }
 
+pub(super) async fn exercise_explorer_enrollment(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let [angus, uzgod] = install(owner, admitted, ["oteryn:npc.angus", "oteryn:npc.uzgod"]).await?;
+    let prefix = "oteryn:quest-progress/quest/u7_6/explorer_society/";
+    let stage = format!("{prefix}joining_the_explorers");
+    let door = format!("{prefix}dwacatra_door");
+    for (command, text) in [(1200, "hi"), (1201, "yes"), (1202, "join"), (1203, "yes")] {
+        talk(owner, admitted, angus, command, text).await?;
+    }
+    assert_eq!(progress(owner, admitted, authority, &stage).await?, 0);
+    talk(owner, admitted, angus, 1204, "yes").await?;
+    assert_eq!(progress(owner, admitted, authority, &stage).await?, 1);
+    assert_eq!(progress(owner, admitted, authority, &door).await?, 0);
+    talk(owner, admitted, angus, 1205, "bye").await?;
+    for (command, text) in [(1206, "hi"), (1207, "pickaxe"), (1208, "yes")] {
+        talk(owner, admitted, uzgod, command, text).await?;
+    }
+    assert_eq!(progress(owner, admitted, authority, &door).await?, 0);
+    let confirmation = talk(owner, admitted, uzgod, 1209, "yes").await?;
+    assert!(confirmation.iter().any(|line| line.contains("family brooch")));
+    assert_eq!(progress(owner, admitted, authority, &stage).await?, 2);
+    assert_eq!(progress(owner, admitted, authority, &door).await?, 1);
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{prefix}quest_line")).await?,
+        2
+    );
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

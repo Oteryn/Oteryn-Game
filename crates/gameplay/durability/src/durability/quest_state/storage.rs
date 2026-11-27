@@ -604,9 +604,20 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
                 });
             }
         }
-        for helper in [oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST, oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST] {
-            if oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(helper, track) {
-                return self.save_event_snapshot_valid.then(|| self.counter_quests.get(helper).and_then(|progress| progress.tracks.get(track)).copied().unwrap_or(0));
+        for helper in [
+            oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST,
+            oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST,
+        ] {
+            if oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(
+                helper, track,
+            ) {
+                return self.save_event_snapshot_valid.then(|| {
+                    self.counter_quests
+                        .get(helper)
+                        .and_then(|progress| progress.tracks.get(track))
+                        .copied()
+                        .unwrap_or(0)
+                });
             }
         }
         self.tracks().get(track).copied()
@@ -617,11 +628,25 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         quest: &str,
     ) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
         let state = self.states().get(quest)?;
-        let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest);
-        if let Some(helper) = helper {
-            return self.save_event_snapshot_valid.then(|| oteryn_gameplay_quests::quest::log::QuestLogState {
+        if let Some(helper) =
+            oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest)
+        {
+            let personal =
+                oteryn_gameplay_quests::quest::world_change_journals::hive_journal_completion(
+                    quest,
+                    self.tracks(),
+                );
+            if personal.is_none() && !self.save_event_snapshot_valid {
+                return None;
+            }
+            let shared = self.save_event_snapshot_valid
+                && self
+                    .counter_quests
+                    .get(helper)
+                    .is_some_and(|progress| progress.completed);
+            return Some(oteryn_gameplay_quests::quest::log::QuestLogState {
                 pinned_content_revision: &state.pinned_content_revision,
-                completed: self.counter_quests.get(helper).is_some_and(|progress| progress.completed),
+                completed: personal.unwrap_or(shared),
             });
         }
         let scoped = self.save_restart_defaults.contains_key(quest);
@@ -638,5 +663,63 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
                 state.completed
             },
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_gameplay_quests::quest::log::QuestLogFacts;
+
+    #[test]
+    fn hive_checkpoint_shows_the_unfinished_personal_journal() -> std::result::Result<(), String> {
+        let quest = "oteryn:quest.authored.hive_born_world_change";
+        let phase = "oteryn:quest-progress/world-change-journal/hive_born/phase";
+        let helper = oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST;
+        let mut copy = QuestStateCopy {
+            save_event_snapshot_valid: true,
+            ..QuestStateCopy::default()
+        };
+        copy.states.insert(
+            quest.into(),
+            QuestStateRecord {
+                pinned_content_revision: "content-1".into(),
+                definition_hash: [0; 32],
+                completed: false,
+            },
+        );
+        copy.counter_quests.insert(
+            helper.into(),
+            CounterQuestProgress {
+                occurrence_generation: 1,
+                completed: true,
+                tracks: BTreeMap::new(),
+            },
+        );
+        assert!(copy.quest_state(quest).is_some_and(|state| state.completed));
+        copy.tracks.insert(phase.into(), 4);
+        let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let logs = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&state)?;
+        let index = logs
+            .content
+            .titles(&copy)
+            .into_iter()
+            .find(|(_, title)| title.contains("Hive Born"))
+            .ok_or("Hive journal in the quest list")?
+            .0;
+        let line = logs.content.line(&copy, index).ok_or("Hive quest line")?;
+        assert!(line.missions.iter().any(|mission| !mission.done));
+        assert!(
+            !line.completed,
+            "shared completion cannot finish the personal journal"
+        );
+        copy.tracks.insert(phase.into(), 7);
+        assert!(
+            logs.content
+                .line(&copy, index)
+                .is_some_and(|line| line.completed)
+        );
+        Ok(())
     }
 }

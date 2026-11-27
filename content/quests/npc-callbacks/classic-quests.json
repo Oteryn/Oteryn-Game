@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/storage/30022",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maryza.lua:81-101:sha256:2679133985d89cc1b399f8d3ef9c0cb5079055a6ce0d115f4f0eca023581afcc"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/classic-amber-notebook",
+      "quest": "oteryn:quest.short_sword_quest",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 51,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i2821",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3294",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Excellent. Here, take this short sword as a reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/amber.lua:400-424:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "repeatable": true,
+      "failure_reply": [
+        "Mhm, whatever you have there, it is not my notebook."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/classic-willie-banana",
+      "quest": "oteryn:quest.studded_shield_quest",
+      "npc": "oteryn:npc.willie",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 51,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3587",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3426",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "A banana! Great. Here, take this shield, I don't need it anyway."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/willie.lua:257-281:sha256:f1afafbec633d3f2fcc156a8fab8623d77f99923016ab163f548004b1fdae5f0"
+      ],
+      "repeatable": true,
+      "failure_reply": [
+        "Are you trying to mess with me?!"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/marid-maryza-cookbook",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.maryza",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 51,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/storage/30022",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3234",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here you are. Happy cooking!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maryza.lua:81-101:sha256:2679133985d89cc1b399f8d3ef9c0cb5079055a6ce0d115f4f0eca023581afcc"
+      ],
+      "fee": {
+        "gold": 150,
+        "include_bank": true
+      },
+      "failure_reply": [
+        "No gold, no sale, that's it."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/marid-umar-passage",
+      "quest": "oteryn:quest.factions",
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 52,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh. Ok. Welcome then. You may pass. ...",
+        "And don't forget to kill some Efreets, now and then."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/umar.lua:113-149:sha256:392e2457a309053a4b12f27ea22368ec8a0b7b808e3151138d6791abcef91df7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    }
+  ]
+}

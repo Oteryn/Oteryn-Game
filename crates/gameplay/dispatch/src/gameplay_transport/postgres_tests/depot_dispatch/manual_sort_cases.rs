@@ -312,8 +312,14 @@ async fn stale_withdrawal_after_search(
         all: false,
     })
     .map_err(debug)?;
-    let (status, reply) =
-        send_command(client, generation, 6, depot_search::COMMAND_TYPE_DEPOT_SEARCH, &payload).await?;
+    let (status, reply) = send_command(
+        client,
+        generation,
+        6,
+        depot_search::COMMAND_TYPE_DEPOT_SEARCH,
+        &payload,
+    )
+    .await?;
     assert_eq!(status, CommandStatus::Accepted);
     let search = depot_search::decode_reply(&reply).map_err(debug)?;
     assert_eq!(
@@ -324,10 +330,14 @@ async fn stale_withdrawal_after_search(
     assert_eq!(shifted.len(), page_size);
     assert_eq!(shifted.last(), Some(target));
 
-    send(client, 7, DepotIntent {
-        action: DepotAction::Withdraw(ordinal),
-        ..browse
-    })
+    send(
+        client,
+        7,
+        DepotIntent {
+            action: DepotAction::Withdraw(ordinal),
+            ..browse
+        },
+    )
     .await?;
     assert_eq!(read_reply(client, 7).await?.outcome, DepotOutcome::Stale);
     assert_eq!(order(pool, PAGE_FIXTURE_BOX).await?, shifted);

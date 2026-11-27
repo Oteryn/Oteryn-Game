@@ -39,6 +39,9 @@ pub const STATE_DOMAIN_ITEM_EFFECTS: u32 = 104;
 pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] = [
     crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
 ];
+/// Negotiates per-key changes for ACTOR_COOLDOWNS, with PRESENTATION_V1 as its owner.
+pub const CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1: u32 = 618;
+pub const CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1_REQUIRES: [u32; 1] = [CAPABILITY_PRESENTATION_V1];
 /// Registered state domain `WORLD_PRESENTATION` (capability 23).
 pub const STATE_DOMAIN_WORLD_PRESENTATION: u32 = 19;
 /// Delta type 1 `WORLD_PRESENTATION_BATCH_V1`.
@@ -47,8 +50,12 @@ pub const DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1: u32 = 1;
 pub const SNAPSHOT_TYPE_WORLD_PRESENTATION_V1: u32 = 1;
 /// Registered state domain `ACTOR_COOLDOWNS` (capability 23).
 pub const STATE_DOMAIN_ACTOR_COOLDOWNS: u32 = 20;
-/// Delta type 1 `ACTOR_COOLDOWNS_DELTA_V1`.
+/// Delta type 1 `ACTOR_COOLDOWNS_DELTA_V1`: a complete view.
 pub const DELTA_TYPE_ACTOR_COOLDOWNS_V1: u32 = 1;
+/// Delta type 2 `ACTOR_COOLDOWNS_SPARSE_DELTA_V1`: changed keys only, requires capability 618.
+pub const DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1: u32 = 2;
+/// Delta type 3 follows negotiated cooldown semantics and requires an ACTOR_VITALS continuation.
+pub const DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1: u32 = 3;
 /// Snapshot type 1 `ACTOR_COOLDOWNS_SNAPSHOT_V1`.
 pub const SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1: u32 = 1;
 
@@ -229,7 +236,7 @@ pub struct ActorCooldown {
     pub expires_at_ms: u64,
 }
 
-/// `ActorCooldownsV1`: the snapshot (type 1) or delta (type 1) of domain 20.
+/// `ActorCooldownsV1`: the snapshot or a delta of domain 20.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActorCooldowns {
     pub server_now_ms: u64,
@@ -737,8 +744,8 @@ fn check_cooldowns(cooldowns: &ActorCooldowns) -> WireResult<()> {
     Ok(())
 }
 
-/// Encodes the domain 20 snapshot (type 1) or delta (type 1), entries in (kind, id) order. A value
-/// out of bounds or a repeated key is a server fault.
+/// Encodes a domain 20 cooldown payload, entries in (kind, id) order. A value out of bounds or
+/// a repeated key is a server fault.
 pub fn encode_actor_cooldowns(cooldowns: &ActorCooldowns) -> WireResult<Vec<u8>> {
     check_cooldowns(cooldowns)?;
     let mut entries = cooldowns.entries.clone();

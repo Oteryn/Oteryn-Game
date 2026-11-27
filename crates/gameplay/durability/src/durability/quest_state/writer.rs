@@ -1342,7 +1342,11 @@ impl DurabilityRoot {
                     let carrot = callback.as_ref().is_some_and(oteryn_gameplay_quests::quest::dreamer_carrot::shared_input);
                     let mut entrance_premium_denied = false;
                     if callback.as_ref().is_some_and(|c| c.requires_live_premium()) || arena.is_some_and(|rule| rule.requires_premium)
-                        || super::authored_admission::requires_premium(&catalogue, &transition.quest) {
+                        || super::authored_admission::requires_premium(
+                            &catalogue,
+                            transition,
+                            reward_callback.is_some() && matches!(request.cause, QuestCause::Command(_)),
+                        ) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -1640,6 +1644,8 @@ impl DurabilityRoot {
                         .map(|effect| effect.track.as_str())
                         .collect();
                     keys.extend(catalogue.completion_tracks(quest));
+                    let tower_rank = oteryn_gameplay_quests::quest::world_callbacks::tower_nightmare_rank(&transition.key);
+                    keys.extend(tower_rank);
                     if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
                         for key in oteryn_gameplay_quests::quest::shared_world_progress::hive_mission_tracks() {
                             keys.push(key);
@@ -1655,6 +1661,9 @@ impl DurabilityRoot {
                         keys.extend(callback.requires.iter().map(|r| r.track.as_str()));
                         keys.extend(callback.participants.iter().flat_map(oteryn_gameplay_quests::quest::reward_callbacks::QuestParticipant::tracks));
                     }
+                    if quest == venore_predecessor::QUEST {
+                        keys.extend([venore_predecessor::STAGE, venore_predecessor::LAST_REPORT]);
+                    }
                     keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
                         "SELECT track_key, quest_key, value FROM game_character_quest_tracks \
@@ -1669,7 +1678,7 @@ impl DurabilityRoot {
                     let mut stored = BTreeMap::new();
                     for row in &rows {
                         let key: String = row.try_get("track_key")?;
-                        let read_only = reward_callback.as_ref().is_some_and(|c|
+                        let read_only = tower_rank == Some(key.as_str()) || reward_callback.as_ref().is_some_and(|c|
                             c.requires.iter().any(|r| r.track == key) || c.participants.iter().any(|p| p.tracks().any(|track| track == key)));
                         let expected_owner: &str = if read_only {
                             &catalogue.track(&key).ok_or(DurabilityError::InvalidStoredState)?.quest
@@ -1781,8 +1790,9 @@ impl DurabilityRoot {
                     } else if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
                         transition.effects.iter().map(|effect|effect.track.as_str()).collect()
                     } else { grizzly_plan.as_ref().map_or_else(
-                        || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
+                        || keys.iter().copied().filter(|key| tower_rank != Some(*key) && reward_callback.as_ref().is_none_or(|c|
                             !c.requires.iter().any(|r| r.track == *key)))
+                            .filter(|key| ![venore_predecessor::STAGE, venore_predecessor::LAST_REPORT].contains(key))
                             .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
                                 || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),

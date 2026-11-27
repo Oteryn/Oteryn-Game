@@ -45,13 +45,12 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .map_err(fixture::debug)?;
     let catalogue = loaded.catalogue();
     let quest = "oteryn:quest.ancient_aucar_outfits_quest";
-    assert!(admission_probe::requires_premium(catalogue, quest));
+    let key = "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau";
+    let transition = catalogue.transition(key).ok_or("Ahau transition")?;
+    assert!(admission_probe::requires_premium(catalogue, transition));
     assert!(admission_probe::permits_level(catalogue, quest, 0));
-    let counter = oteryn_gameplay_quests::quest::native_kills::counter_for(
-        catalogue,
-        "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau",
-    )
-    .ok_or("Ahau binding")?;
+    let counter = oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, key)
+        .ok_or("Ahau binding")?;
     assert_eq!(counter.creature, "oteryn:creature.ahau");
     let parent = "oteryn:quest.adventures_of_galthen_quest";
     let character = fixture::id(fixture::CHARACTER);

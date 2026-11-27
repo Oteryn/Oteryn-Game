@@ -711,6 +711,15 @@ pub fn gate(key: &str) -> Option<&'static Gate> {
         .ok()?;
     GATES.get(index).filter(|_| key == gate_key(index))
 }
+
+/// Inner journal checkpoints observe the same stage and scent as their gates.
+pub fn checkpoint_stage(key: &str) -> Option<u8> {
+    match key {
+        "oteryn:quest-callback/worldchg-m31/hive_born/eastern-inner" => Some(2),
+        "oteryn:quest-callback/worldchg-m31/hive_born/western-inner" => Some(3),
+        _ => None,
+    }
+}
 /// The frozen actor is on the inner side; crossing moves toward the bound outer route.
 pub fn is_egress(key: &str, actor: Position) -> bool {
     let Some(gate) = gate(key) else {

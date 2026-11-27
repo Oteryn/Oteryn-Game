@@ -1150,7 +1150,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "preserve": true
@@ -1179,7 +1179,7 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "That is all the vampire dust I need. Ask me about your next mission."
+        "Ye've brought me 20 vampire dusts. Ask me for a mission to continue your quest."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:121-141:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
@@ -1192,7 +1192,7 @@
       "keywords": [
         "yes"
       ],
-      "topic": 10,
+      "topic": 9,
       "next_topic": 0,
       "storage": [
         {
@@ -1204,7 +1204,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "preserve": true
@@ -1235,7 +1235,7 @@
         "mission"
       ],
       "topic": 0,
-      "next_topic": 0,
+      "next_topic": 2,
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
@@ -1245,7 +1245,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 2
         },

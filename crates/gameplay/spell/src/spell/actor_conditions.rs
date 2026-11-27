@@ -790,6 +790,7 @@ pub fn stage_typed_hit_with_gate(
             HitDelivery::Ordinary
         },
     )
+    .map(|(next, damage, breakdown)| (next, damage, breakdown.hit_gate))
 }
 
 /// Same source block/final pipeline, at the destination already qualified by the
@@ -854,7 +855,8 @@ pub fn stage_preprocessed_player_hit(
     )
 }
 
-pub(crate) fn stage_preprocessed_player_components(
+/// Stages one qualified split hit and returns its applied primary health damage.
+pub fn stage_preprocessed_player_components(
     state: &PlayerSpellState,
     primary: u32,
     secondary: u32,
@@ -863,13 +865,14 @@ pub(crate) fn stage_preprocessed_player_components(
     (
         PlayerSpellState,
         crate::ability::creature_bite::FlooredDamage,
+        u32,
     ),
     SpellCastDisposition,
 > {
     let total = primary
         .checked_add(secondary)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_hit(
+    stage_hit_with_gate(
         state,
         total,
         now,
@@ -878,6 +881,7 @@ pub(crate) fn stage_preprocessed_player_components(
         Some((primary, secondary)),
         HitDelivery::Ordinary,
     )
+    .map(|(next, damage, breakdown)| (next, damage, breakdown.primary_applied))
 }
 
 /// Crystal creature.cpp:842-845 excludes life drain from base mitigation while keeping
@@ -1030,6 +1034,11 @@ fn stage_hit(
     .map(|(next, damage, _)| (next, damage))
 }
 
+struct HitBreakdown {
+    hit_gate: u32,
+    primary_applied: u32,
+}
+
 #[allow(clippy::too_many_arguments)]
 fn stage_hit_with_gate(
     state: &PlayerSpellState,
@@ -1043,7 +1052,7 @@ fn stage_hit_with_gate(
     (
         PlayerSpellState,
         crate::ability::creature_bite::FlooredDamage,
-        u32,
+        HitBreakdown,
     ),
     SpellCastDisposition,
 > {
@@ -1058,6 +1067,7 @@ fn stage_hit_with_gate(
     let mut next = state.clone();
     let direct_health = delivery == HitDelivery::DirectHealth;
     let mut remaining = magnitude;
+    let mut primary_remaining = 0;
     if mitigated
         && !preprocessed
         && let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
@@ -1084,12 +1094,18 @@ fn stage_hit_with_gate(
             (u64::from(value) * u64::from(100 - reduction) / 100) as u32
         };
         remaining = if let Some((primary, secondary)) = components {
-            reduce(primary)
+            primary_remaining = reduce(primary);
+            primary_remaining
                 .checked_add(reduce(secondary))
                 .ok_or(SpellCastDisposition::Rejected)?
         } else {
             reduce(remaining)
         };
+        if components.is_some() {
+            primary_remaining = state
+                .after_drome_incoming_bonus(primary_remaining, now)
+                .ok_or(SpellCastDisposition::Rejected)?;
+        }
         // Manual combat.md:276-278: only a live Drome status amplifies incoming
         // combat damage. Arena CURRENT-HP effects use their direct successor.
         remaining = state
@@ -1122,6 +1138,7 @@ fn stage_hit_with_gate(
             }
             next.mana -= mana_spent;
             remaining -= absorbed;
+            primary_remaining = primary_remaining.saturating_sub(absorbed);
         }
         // NULL-caster Lua health removes the condition only after a real
         // nonzero mana-damage pass (Crystal game.cpp:8159-8178).
@@ -1140,7 +1157,14 @@ fn stage_hit_with_gate(
     if next != *state {
         next.advance_batch_revision()?;
     }
-    Ok((next, damage, hit_gate))
+    Ok((
+        next,
+        damage,
+        HitBreakdown {
+            hit_gate,
+            primary_applied: primary_remaining.min(damage.applied),
+        },
+    ))
 }
 
 #[cfg(test)]

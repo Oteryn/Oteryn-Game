@@ -58,7 +58,8 @@ fn deferred(topic: Option<Topic>) -> Choice {
 
 /// Crystal data/npclib/npc.lua:13-20. `%w+keyword` anywhere vetoes the match;
 /// a right word boundary is deliberately not added to the donor's predicate.
-pub(super) fn contains(text: &str, keyword: &str) -> bool {
+#[must_use]
+pub fn contains(text: &str, keyword: &str) -> bool {
     let lower = text.to_ascii_lowercase();
     let occurrences: Vec<_> = lower
         .match_indices(keyword)

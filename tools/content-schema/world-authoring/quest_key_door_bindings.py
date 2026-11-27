@@ -6,6 +6,7 @@ import json
 import re
 import sys
 import tarfile
+from collections import Counter
 from pathlib import Path
 
 import world_region_codec as codec
@@ -18,7 +19,19 @@ CORPUS = (
     ROOT / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
 )
 REVISION = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
-SELECTED = ("ID3940", "ID3980")
+# Crystal’s 3301/3302 coordinates retain ordinary two-form gates (12035).
+# Only 3303/3304 have retained locked key-door appearances.
+EXPECTED_COUNTS = {
+    3303: 1,
+    3304: 1,
+    3800: 1,
+    3801: 1,
+    3802: 7,
+    3899: 1,
+    3940: 1,
+    3980: 1,
+}
+SELECTED = {f"Storage.Quest.Key.ID{number}" for number in EXPECTED_COUNTS}
 TABLE = "data-global/startup/tables/door_key.lua"
 STORAGES = "data-global/lib/core/storages.lua"
 sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
@@ -61,6 +74,14 @@ def document():
             )
             return raw.decode()
 
+        blobs = {
+            path: source(path)
+            for path in (
+                "data-global/startup/tables/teleport_item.lua",
+                "data-global/startup/tables/door_level.lua",
+                "data-global/startup/tables/tile_pick.lua",
+            )
+        }
         routes = []
         for path, group, action, selected in [
             (
@@ -75,8 +96,20 @@ def document():
                 1050,
                 {(32212, 32435, 10): 1648},
             ),
+            (
+                "data-global/startup/tables/door_level.lua",
+                "LevelDoorAction",
+                1060,
+                {(33085, 31650, 10): 5111},
+            ),
+            (
+                "data-global/startup/tables/tile_pick.lua",
+                "TilePickAction",
+                101,
+                {(33081, 31651, 11): 355},
+            ),
         ]:
-            fields = lua_tables.assignments(source(path), {group})[group]["fields"]
+            fields = lua_tables.assignments(blobs[path], {group})[group]["fields"]
             (field,) = [f for f in fields if f["key"] == action]
             values = lua_tables.as_python(field["value"])
             values = values if isinstance(values, list) else [values]
@@ -88,6 +121,8 @@ def document():
                 ):
                     xyz = tuple(position[k] for k in "xyz")
                     if xyz in selected:
+                        if value["itemId"] not in (False, selected[xyz]):
+                            raise ValueError("quest route source item differs")
                         routes.append(
                             {
                                 "position": list(xyz),
@@ -117,7 +152,7 @@ def document():
         expression = (
             field["key"].get("expr") if isinstance(field["key"], dict) else None
         )
-        if expression not in {"Storage.Quest.Key." + key for key in SELECTED}:
+        if expression not in SELECTED:
             continue
         number, storage_line = numbers[expression.rsplit(".", 1)[1]]
         group = lua_tables.as_python(field["value"])
@@ -158,7 +193,7 @@ def document():
                     "map_sha256": region["sha256"],
                 }
             )
-    if len(bindings) != len(SELECTED):
+    if Counter(binding["value"] for binding in bindings) != EXPECTED_COUNTS:
         raise ValueError("key door capture incomplete")
     for binding in routes:
         x, y, z = binding["position"]

@@ -101,6 +101,20 @@ class AuthoredQuestTimedCustody(unittest.TestCase):
                 with self.subTest(canonical_mutation=mutation), self.assertRaisesRegex(ValueError, 'CANONICAL_OMISSION'):
                     timed.omitted_expiry_contract(root, omitted_callbacks(), KEY, (1800, 3120))
 
+    def test_crystal_paid_replacement_preserves_the_delivery_stage(self):
+        authored = json.loads((ROOT / 'tools/content-schema/quest-authoring/chosen-route-rewards.json').read_bytes())
+        callbacks = [row for row in authored['callbacks']
+                     if row['quest'] == timed.OMISSION_QUEST]
+        contract = timed.omitted_expiry_contract(ROOT, callbacks, KEY, (1800, 3120))
+        self.assertEqual(contract.producer, 'oteryn:quest-reward/chosen/trader/buy-cheese')
+        replacement = next(row for row in callbacks if row['key'].endswith('/replace-cheese'))
+        self.assertEqual(replacement['give']['item'], KEY)
+        for change in ({'fee': None}, {'repeatable': False},
+                       {'storage': [{**replacement['storage'][0], 'maximum': 7}]}):
+            modified = [{**row, **change} if row is replacement else row for row in callbacks]
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'OMISSION_REPLACEMENT'):
+                timed.omitted_expiry_contract(ROOT, modified, KEY, (1800, 3120))
+
     def test_actual_source_and_custody_leave_food_and_inventory_decay_unqualified(self):
         before = copy.deepcopy(self.definition)
         self.assertEqual(timed.source_expiry(self.xml, 169), (1800, 3120))

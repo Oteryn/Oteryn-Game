@@ -10,9 +10,18 @@
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
     "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/{acolyte,adept,enlightened,novice}_of_the_cult.lua",
+    "imports/canary/items-xml/items.xml#36498,36540,36936,37349",
+    "imports/canary/items-xml/items.xml#4991-4993: Explorer Society Butterfly Hunt",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/raids/orc_sam_backpack.lua:20,66-77",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/novice_of_the_cult.lua:33,98",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/acolyte_of_the_cult.lua:32,97",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/adept_of_the_cult.lua:32,98",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/enlightened_of_the_cult.lua:32,103",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/vermins/cockroach.lua:17-41",
     "imports/canary/items-xml/items.xml#16388-16393",
-    "imports/canary/items-xml/items.xml#12686-12703",
-    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910"
+    "imports/canary/items-xml/items.xml#12686-12703"
   ],
   "capacity_projections": [
     {
@@ -110,8 +119,8 @@
       "source_capacity": 50,
       "native_capacity": 48,
       "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/adept_of_the_cult.lua#L32",
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36692"
+        "imports/canary/items-xml/items.xml#18030",
+        "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX"
       ]
     },
     {
@@ -128,8 +137,8 @@
       "source_capacity": 60,
       "native_capacity": 48,
       "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/enlightened_of_the_cult.lua#L32",
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37130"
+        "imports/canary/items-xml/items.xml#18110",
+        "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX"
       ]
     },
     {
@@ -286,6 +295,13 @@
     "oteryn:creature.tortoise": 6072,
     "oteryn:creature.undead_gladiator": 8909,
     "oteryn:creature.vashresamun": 6025,
-    "oteryn:creature.zugurosh": 7893
+    "oteryn:creature.zugurosh": 7893,
+    "oteryn:creature.acolyte_of_the_cult": 18038,
+    "oteryn:creature.blue_butterfly": 4993,
+    "oteryn:creature.novice_of_the_cult": 18186,
+    "oteryn:creature.purple_butterfly": 4992,
+    "oteryn:creature.red_butterfly": 4991,
+    "oteryn:creature.cockroach": 7763,
+    "oteryn:creature.orc_sambackpack": 5966
   }
 }

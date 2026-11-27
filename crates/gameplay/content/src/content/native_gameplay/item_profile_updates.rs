@@ -1,7 +1,7 @@
 //! Compose pinned Item corrections without rewriting the historical provider.
 use super::{
-    ContentError, ItemProfileRecord, ItemProfilesDocument, PinnedGameplayBytes, hex, invalid,
-    qualify, sha256,
+    ContentError, ItemProfileRecord, ItemProfilesDocument, PinnedGameplayBytes, invalid,
+    pin_composed_item_profiles, qualify,
 };
 use serde::Deserialize;
 use std::collections::BTreeSet;
@@ -58,17 +58,13 @@ pub(super) fn merge(
     if items.records.len() > super::MAX_ITEM_RECORDS {
         return Err(invalid("Item updates combined bounds"));
     }
-    let bytes = serde_json::to_vec(&items).map_err(|_| invalid("Item updates encoding"))?;
-    super::bounded(&bytes, super::MAX_ITEM_PROFILES)?;
-    Ok(Some(PinnedGameplayBytes {
-        sha256: hex(sha256(&bytes)),
-        bytes,
-    }))
+    pin_composed_item_profiles(&items).map(Some)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::content::native_gameplay::{hex, sha256};
     fn pin(bytes: &[u8]) -> PinnedGameplayBytes {
         PinnedGameplayBytes {
             bytes: bytes.to_vec(),

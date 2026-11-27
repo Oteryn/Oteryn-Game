@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Exercise the shared Item writer without native, Prey, or World generation."""
 
 import importlib.util
@@ -7,6 +6,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from collections import Counter
 from contextlib import ExitStack, contextmanager, redirect_stderr
 from io import StringIO
 from pathlib import Path
@@ -16,6 +16,7 @@ from unittest.mock import patch
 import boss_conditional_item_reference as conditional
 import item_tree_index
 import ranged_item_profiles as ranged
+from dispenser_item_profiles import APPEARANCES
 
 TOOL = Path(__file__).with_name("world_project_v2_to_tree.py")
 spec = importlib.util.spec_from_file_location("item_bootstrap_converter", TOOL)
@@ -52,9 +53,31 @@ def fixture(root):
     (root / capture).mkdir(parents=True)
     for name in ("items.jsonl", "manifest.json", "weight-corrections.json"):
         shutil.copyfile(TOOL.parents[2] / capture / name, root / capture / name)
+    project = TOOL.parents[2]
+    with patch.object(
+        sys, "path", [str(project / "tools/content-schema/native-gameplay"), *sys.path]
+    ):
+        import crystal_equipment_profiles as crystal
+        from lower_elemental_magic_modifier_packet import ENUM
+
+    for relative in (crystal.FACTS, crystal.BINDINGS, ENUM):
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(project / relative, root / relative)
+    source_rows = json.loads((root / crystal.FACTS).read_bytes())["records"]
+    bindings = {
+        row["external_id"]: row["target"]
+        for row in json.loads((root / crystal.BINDINGS).read_bytes())["bindings"]
+    }
+    identities = [identity(number) for number in (1, 2, 3)]
+    identities.extend(
+        bindings[str(row["id"])] for row in source_rows if "held" not in row
+    )
+    for relative in (APPEARANCES, "imports/tibiawiki/facts/items-stats.json"):
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(TOOL.parents[2] / relative, root / relative)
     records = [
-        {"kind": "Item", "identity": identity(number), "materializable": False}
-        for number in (1, 2, 3)
+        {"kind": "Item", "identity": target, "materializable": False}
+        for target in identities
     ]
     reference = {
         "schema": "fixture-reference",
@@ -120,6 +143,7 @@ def fixture(root):
         "content/creatures/definitions/creatures-00000-00001.json",
     ):
         write(root, relative, {"preserved": relative})
+    write(root, "imports/crystalserver/bindings/ordinary-doors.json", {"bindings": []})
     write(root, "fixture/census.json", {"family_assignments": {}})
     write(root, "fixture/wave.json", {})
     return reference, declarations, editor, sources
@@ -160,6 +184,8 @@ def input_helpers(root, *, real_conditional=False):
         apply_reference=lambda *_: None
     )
     with ExitStack() as stack:
+        native_tools = TOOL.parents[2] / "tools/content-schema/native-gameplay"
+        stack.enter_context(patch.object(sys, "path", [str(native_tools), *sys.path]))
         stack.enter_context(patch.dict(sys.modules, modules))
         stack.enter_context(
             patch.multiple(
@@ -220,18 +246,20 @@ class ItemBootstrapTests(unittest.TestCase):
     def test_dangling_index_repaired_with_exact_attachments_and_no_foreign_writes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            _reference, declarations, editor, sources = fixture(root)
+            reference, declarations, editor, sources = fixture(root)
             before = files(root)
             with input_helpers(root) as (_calls, ranged_call):
                 self.assertEqual(converter.cli(["--items-only"]), 0)
                 ranged_call.assert_called_once_with(root)
             index = json.loads((root / "content/items/index.json").read_bytes())
+            expected_identities = [row["identity"] for row in reference["records"]] + [identity(8748)]
+            count = len(expected_identities)
             expected_shards = [
-                "content/items/definitions/items-00000-00001.json",
-                "content/items/definitions/items-00002-00002.json",
+                f"content/items/definitions/items-{start:05d}-{min(start + 1, count - 1):05d}.json"
+                for start in range(0, count, 2)
             ]
             self.assertEqual(index["shards"], expected_shards)
-            self.assertEqual(index["record_count"], 3)
+            self.assertEqual(index["record_count"], count)
             self.assertEqual(
                 index["legacy_source"]["git_blob_sha"],
                 converter.git_blob_sha(
@@ -244,7 +272,7 @@ class ItemBootstrapTests(unittest.TestCase):
                     index["attached_source_bindings"],
                     index["attached_authoring_entries"],
                 ),
-                (1, 2, 1),
+                (1, 2, 133),
             )
             rows = [
                 row
@@ -252,10 +280,12 @@ class ItemBootstrapTests(unittest.TestCase):
                 for row in json.loads((root / path).read_bytes())["records"]
             ]
             self.assertEqual(
-                [row["definition"]["identity"] for row in rows],
-                [identity(1), identity(2), identity(3)],
+                [row["definition"]["identity"] for row in rows], expected_identities
             )
             self.assertTrue(rows[0]["definition"]["materializable"])
+            self.assertTrue(
+                all(row["definition"]["materializable"] for row in rows[3:])
+            )
             self.assertEqual(rows[0]["editor"], editor["entries"][0])
             self.assertEqual(
                 rows[0]["source_bindings"],
@@ -291,15 +321,24 @@ class ItemBootstrapTests(unittest.TestCase):
             allowed = added | {"content/items/index.json", lock}
             self.assertEqual(set(after) - set(before), added)
             self.assertEqual(json.loads(after[taxonomy])["records"], [])
-            self.assertEqual(json.loads(after[relations])["records"], [])
+            relation_rows = json.loads(after[relations])["records"]
+            self.assertEqual(len(relation_rows), 144)
+            self.assertEqual(
+                Counter(
+                    entry["basis"]
+                    for row in relation_rows
+                    for entry in row["relations"]
+                ),
+                {"forge": 132, "imbuement.slot_count>=1": 93},
+            )
             self.assertEqual(
                 json.loads(after[lock]),
                 {
                     **json.loads(before[lock]),
                     "item_authoring_counts": {
-                        "authoring": 1,
+                        "authoring": 133,
                         "taxonomy": 0,
-                        "relation_sources": 0,
+                        "relation_sources": 144,
                     },
                 },
             )

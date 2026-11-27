@@ -851,6 +851,1233 @@
         "content/quests/authoring/paradox-tower.md",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_fifth_floor_lever.lua:1-41"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-fifth-seal",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32192,
+          "y": 31938,
+          "floor": -14
+        },
+        "unique": 35017,
+        "action": null,
+        "appearance": 1959
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32268,
+        "y": 31856,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:580-584",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-5-fifth_seal_flame.lua:3-23"
+      ],
+      "failure_teleport": {
+        "x": 32185,
+        "y": 31939,
+        "floor": -14
+      },
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-logic-switch-30018",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32310,
+          "y": 31975,
+          "floor": -13
+        },
+        "unique": 30018,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32309,
+            "y": 31975,
+            "floor": -13
+          },
+          "appearance": 1998,
+          "replacement": 1996
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:78-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-logic-switch-30019",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32310,
+          "y": 31976,
+          "floor": -13
+        },
+        "unique": 30019,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32309,
+            "y": 31976,
+            "floor": -13
+          },
+          "appearance": 1998,
+          "replacement": 1996
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:78-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-logic-switch-30020",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32312,
+          "y": 31975,
+          "floor": -13
+        },
+        "unique": 30020,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32311,
+            "y": 31975,
+            "floor": -13
+          },
+          "appearance": 1998,
+          "replacement": 1996
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:78-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-logic-switch-30021",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32312,
+          "y": 31976,
+          "floor": -13
+        },
+        "unique": 30021,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32311,
+            "y": 31976,
+            "floor": -13
+          },
+          "appearance": 1998,
+          "replacement": 1996
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:78-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-logic-switch-30022",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32314,
+          "y": 31975,
+          "floor": -13
+        },
+        "unique": 30022,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32313,
+            "y": 31975,
+            "floor": -13
+          },
+          "appearance": 1998,
+          "replacement": 1996
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:78-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-logic-switch-30023",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32314,
+          "y": 31976,
+          "floor": -13
+        },
+        "unique": 30023,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32313,
+            "y": 31976,
+            "floor": -13
+          },
+          "appearance": 1998,
+          "replacement": 1996
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:78-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-sixth-seal",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32311,
+          "y": 31978,
+          "floor": -13
+        },
+        "unique": 35018,
+        "action": null,
+        "appearance": 1959
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32261,
+        "y": 31856,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:585-589",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:89-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-6-sixth_seal_flame.lua:3-32"
+      ],
+      "requires_world_admission": true,
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32309,
+            "y": 31975,
+            "floor": -13
+          },
+          "appearance": 1996
+        },
+        {
+          "position": {
+            "x": 32311,
+            "y": 31975,
+            "floor": -13
+          },
+          "appearance": 1996
+        },
+        {
+          "position": {
+            "x": 32313,
+            "y": 31975,
+            "floor": -13
+          },
+          "appearance": 1998
+        },
+        {
+          "position": {
+            "x": 32309,
+            "y": 31976,
+            "floor": -13
+          },
+          "appearance": 1996
+        },
+        {
+          "position": {
+            "x": 32311,
+            "y": 31976,
+            "floor": -13
+          },
+          "appearance": 1996
+        },
+        {
+          "position": {
+            "x": 32313,
+            "y": 31976,
+            "floor": -13
+          },
+          "appearance": 1998
+        }
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-true-path-advance",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25020,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
+          "minimum": 1,
+          "maximum": 8,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:895-930",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-5-fifth_seal_path.lua:3-22"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-true-path-reset",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25021,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
+          "minimum": -1,
+          "maximum": 9,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:895-930",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-5-fifth_seal_path.lua:3-22"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-forfeit-egg",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50308,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/egg",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:1266-1303",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_last_floor_reward.lua:1-39"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32477,
+            "y": 31900,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-forfeit-gold",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50309,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/gold",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:1266-1303",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_last_floor_reward.lua:1-39"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32478,
+            "y": 31900,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-forfeit-talon",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50310,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/talon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:1266-1303",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_last_floor_reward.lua:1-39"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32479,
+            "y": 31900,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-forfeit-wand",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50311,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/wand",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:1266-1303",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_last_floor_reward.lua:1-39"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32480,
+            "y": 31900,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-25031",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32477,
+          "y": 31905,
+          "floor": -7
+        },
+        "unique": 25031,
+        "action": null,
+        "appearance": 599
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32478,
+        "y": 31908,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2238-2262",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_strange_carvings_in _the_southeast.lua"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-25032",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32476,
+          "y": 31906,
+          "floor": -7
+        },
+        "unique": 25032,
+        "action": null,
+        "appearance": 599
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32478,
+        "y": 31908,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2238-2262",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_strange_carvings_in _the_southeast.lua"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-25034",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32486,
+          "y": 31927,
+          "floor": -7
+        },
+        "unique": 25034,
+        "action": null,
+        "appearance": 599
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32566,
+        "y": 31959,
+        "floor": -1
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2238-2262",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/move_let_the _quest.lua"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-25035",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32487,
+          "y": 31927,
+          "floor": -7
+        },
+        "unique": 25035,
+        "action": null,
+        "appearance": 599
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32566,
+        "y": 31959,
+        "floor": -1
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2238-2262",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/move_let_the _quest.lua"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-25036",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32486,
+          "y": 31928,
+          "floor": -7
+        },
+        "unique": 25036,
+        "action": null,
+        "appearance": 599
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32566,
+        "y": 31959,
+        "floor": -1
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2238-2262",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/move_let_the _quest.lua"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-25037",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32487,
+          "y": 31928,
+          "floor": -7
+        },
+        "unique": 25037,
+        "action": null,
+        "appearance": 599
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32566,
+        "y": 31959,
+        "floor": -1
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2238-2262",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/move_let_the _quest.lua"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-38018",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32476,
+          "y": 31904,
+          "floor": -5
+        },
+        "unique": 38018,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32476,
+        "y": 31904,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:727-756"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-38019",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32481,
+          "y": 31904,
+          "floor": -4
+        },
+        "unique": 38019,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32481,
+        "y": 31905,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:727-756"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-38020",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32476,
+          "y": 31904,
+          "floor": -3
+        },
+        "unique": 38020,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32476,
+        "y": 31904,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:727-756"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-38021",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31904,
+          "floor": -2
+        },
+        "unique": 38021,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32479,
+        "y": 31904,
+        "floor": -3
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:727-756"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-route-38022",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32481,
+          "y": 31905,
+          "floor": -1
+        },
+        "unique": 38022,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32480,
+        "y": 31905,
+        "floor": -2
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:727-756"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-claim-egg",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32477,
+          "y": 31900,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/egg",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/egg": -1
+      },
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The chest is empty.",
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1266"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3215",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-claim-gold",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32478,
+          "y": 31900,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/gold",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/gold": -1
+      },
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The chest is empty.",
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1273"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3035",
+          "count": 100,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-claim-talon",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31900,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/talon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/paradox-tower/talons",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/first_paradox_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/climb-complete",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/talon": -1,
+        "oteryn:quest-progress/authored/paradox-tower/talons": 0
+      },
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The chest is empty.",
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1280"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3034",
+          "count": 32,
+          "contents": []
+        }
+      },
+      "minimum_level": 30,
+      "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-claim-wand",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32480,
+          "y": 31900,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/wand",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/wand": -1
+      },
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The chest is empty.",
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1287"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3073",
+          "count": 1,
+          "contents": []
+        }
+      }
     }
   ]
 }

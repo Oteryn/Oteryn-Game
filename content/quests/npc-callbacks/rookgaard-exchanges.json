@@ -1,0 +1,225 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/rookgaard/billy-pan",
+      "quest": "oteryn:quest.small_health_potion",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy.lua:133-142"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/rookgaard/lee-delle-flower",
+      "quest": "oteryn:quest.studded_legs_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lee_delle.lua:141-148"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/billy-pan-first",
+      "quest": "oteryn:quest.small_health_potion",
+      "npc": "oteryn:npc.billy",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3466",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7876",
+        "count": 1,
+        "contents": []
+      },
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i3466",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "At last, a pan! Take this potion in case my cousin's cooking disagrees with you."
+      ],
+      "failure_reply": [
+        "You don't have a pan."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy.lua:133-142"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rookgaard/billy-pan",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/billy-pan-repeat",
+      "quest": "oteryn:quest.small_health_potion",
+      "npc": "oteryn:npc.billy",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3466",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7876",
+        "count": 1,
+        "contents": []
+      },
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i3466",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "At last, a pan! Take this potion in case my cousin's cooking disagrees with you."
+      ],
+      "failure_reply": [
+        "You don't have a pan."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy.lua:133-142"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rookgaard/billy-pan",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/lee-delle-flower-first",
+      "quest": "oteryn:quest.studded_legs_quest",
+      "npc": "oteryn:npc.lee_delle",
+      "keywords": [
+        "honey flower",
+        "honey flowers"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i2984",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3362",
+        "count": 1,
+        "contents": []
+      },
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i2984",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the flower! These studded legs are yours."
+      ],
+      "failure_reply": [
+        "Honey flowers are my favourite."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lee_delle.lua:141-148"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rookgaard/lee-delle-flower",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/lee-delle-flower-repeat",
+      "quest": "oteryn:quest.studded_legs_quest",
+      "npc": "oteryn:npc.lee_delle",
+      "keywords": [
+        "honey flower",
+        "honey flowers"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i2984",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3362",
+        "count": 1,
+        "contents": []
+      },
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i2984",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the flower! These studded legs are yours."
+      ],
+      "failure_reply": [
+        "Honey flowers are my favourite."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lee_delle.lua:141-148"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rookgaard/lee-delle-flower",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "repeatable": true
+    }
+  ]
+}

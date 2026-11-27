@@ -1,0 +1,3887 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/astral-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 55,
+          "maximum": 55,
+          "set": 55,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_astral_portals",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 56
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 55,
+          "maximum": 55,
+          "set": 56
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5021",
+        "count": 6,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i9605",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3035",
+            "count": 50
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The astral portals are ready. Each crossing consumes one orichalcum pearl."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/bonelord-secret-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 18,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 31,
+          "maximum": 31,
+          "set": 32
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 30,
+          "maximum": 30,
+          "set": 32
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i173",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/bonelord-secret-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 17,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/bonelords_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Recover a copy of the Bonelords’ writing from the dark pyramid."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/butterfly-blue-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4865",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/butterfly-blue-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4863",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next butterfly hunt sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/butterfly-purple-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4864",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/butterfly-purple-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 9
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4863",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Collect a purple butterfly with this conservation kit."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/butterfly-red-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4866",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/butterfly-red-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4863",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next butterfly hunt sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/ectoplasm-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 29,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4853",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/ectoplasm-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 28,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 44,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 45
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 45
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4852",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use this collector on a recently slain ghost."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/elven-poetry-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 22,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 37,
+          "maximum": 37,
+          "set": 38
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 36,
+          "maximum": 36,
+          "set": 38
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4844",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/elven-poetry-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 21,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 35,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/elven_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring back Songs of the Forest from Hellgate."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/enroll",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring Uzgod’s pickaxe back to either Explorer Society base."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/hammer-hand-in",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 34,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/giant_smith_hammer/hammer",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12510",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for bringing this back to the society."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/ice-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4837",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/ice-retry",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Try collecting another ice sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/ice-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4872",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use the ice pick on an icicle and bring the sample back before it melts."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/lizard-urn-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 16,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 28,
+          "maximum": 28,
+          "set": 29
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 29
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4847",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/lizard-urn-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 15,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 26,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/chorurn_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Look for the funeral urn in Chor."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/memory-stone-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 39,
+          "maximum": 39,
+          "set": 41
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4841",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/memory-stone-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 23,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 38,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/memory_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Recover a memory stone from the ruins northwest of Edron."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/orc-powder-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 20,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 34,
+          "maximum": 34,
+          "set": 35
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 33,
+          "maximum": 33,
+          "set": 35
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i13974",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/orc-powder-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 19,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 32,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/orc_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Look for the powder at the orcs’ training grounds."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/pickaxe-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4845",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/plant-bells-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 12,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4868",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/plant-bells-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 17,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 18
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 18
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4867",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use the botanist container on jungle bells."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/plant-cauldron-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4869",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/plant-cauldron-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4867",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next plant collection sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/plant-rose-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 14,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4870",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/plant-rose-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4867",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next plant collection sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/ratha-hand-in",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 33,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/skull_of_ratha/bag1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3207",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for bringing this back to the society."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/rune-writings-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 26,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4843",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/rune-writings-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 41,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 42
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 42
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4842",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take a tracing of the ancient runes underneath Banuta."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/spectral-dress-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 49,
+          "maximum": 49,
+          "set": 50
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 48,
+          "maximum": 48,
+          "set": 50
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4836",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/spectral-dress-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 30,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 47,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/banshee_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Travel to the Ghostlands and obtain a spectral dress."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/spectral-research-mail",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 51,
+          "maximum": 51,
+          "set": 52
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 51,
+          "maximum": 51,
+          "set": 52
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Our research is in the mail. Report back to your original contact."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/spectral-research-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 50,
+          "maximum": 50,
+          "set": 50,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 50,
+          "maximum": 50,
+          "set": 51
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 51
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Visit our other base for its latest research, then ask me about missions again."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/angus/spectral-stone-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 32,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4840",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Charge this base’s carving first, then charge the other base’s carving."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/lurik/dragon-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.lurik",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_islandof_dragons",
+          "minimum": 58,
+          "maximum": 58,
+          "set": 59
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 58,
+          "maximum": 58,
+          "set": 59
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7314",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "This scale will help our research. Here is your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:65-76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/lurik/dragon-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.lurik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_astral_portals",
+          "minimum": 56,
+          "maximum": 56,
+          "set": 56,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_islandof_dragons",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 57
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 56,
+          "maximum": 56,
+          "set": 57
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ask Buddel for passage to Okolnir and look for traces of the old dragons."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:61-66"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 44,
+          "maximum": 44
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/lurik/ice-music-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.lurik",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_music",
+          "minimum": 61,
+          "maximum": 61,
+          "set": 62
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 61,
+          "maximum": 61,
+          "set": 62
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/ice_music_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7315",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You can now use the astral bridge between Liberty Bay and Svargrond. Each crossing costs one orichalcum pearl."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:88-97"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/lurik/ice-music-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.lurik",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_islandof_dragons",
+          "minimum": 59,
+          "maximum": 59,
+          "set": 59,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_music",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 60
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 59,
+          "maximum": 59,
+          "set": 60
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7242",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use this resonance crystal on the icicles in the cave north of Krimhorn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:77-87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/astral-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 55,
+          "maximum": 55,
+          "set": 55,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_astral_portals",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 56
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 55,
+          "maximum": 55,
+          "set": 56
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5021",
+        "count": 6,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i9605",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3035",
+            "count": 50
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The astral portals are ready. Each crossing consumes one orichalcum pearl."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/bonelord-secret-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 18,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 31,
+          "maximum": 31,
+          "set": 32
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 30,
+          "maximum": 30,
+          "set": 32
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i173",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/bonelord-secret-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 17,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/bonelords_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Recover a copy of the Bonelords’ writing from the dark pyramid."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/butterfly-blue-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4865",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/butterfly-blue-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4863",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next butterfly hunt sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/butterfly-purple-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4864",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/butterfly-purple-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 9
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4863",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Collect a purple butterfly with this conservation kit."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/butterfly-red-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4866",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/butterfly-red-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4863",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next butterfly hunt sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/ectoplasm-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 29,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4853",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/ectoplasm-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 28,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 44,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 45
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 45
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4852",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use this collector on a recently slain ghost."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/elven-poetry-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 22,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 37,
+          "maximum": 37,
+          "set": 38
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 36,
+          "maximum": 36,
+          "set": 38
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4844",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/elven-poetry-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 21,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 35,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/elven_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring back Songs of the Forest from Hellgate."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/enroll",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring Uzgod’s pickaxe back to either Explorer Society base."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/hammer-hand-in",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 34,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/giant_smith_hammer/hammer",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12510",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for bringing this back to the society."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/ice-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4837",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/ice-retry",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Try collecting another ice sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/ice-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4872",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use the ice pick on an icicle and bring the sample back before it melts."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/lizard-urn-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 16,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 28,
+          "maximum": 28,
+          "set": 29
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 29
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4847",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/lizard-urn-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 15,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 26,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/chorurn_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Look for the funeral urn in Chor."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/memory-stone-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 39,
+          "maximum": 39,
+          "set": 41
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4841",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/memory-stone-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 23,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 38,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/memory_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Recover a memory stone from the ruins northwest of Edron."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/orc-powder-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 20,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 34,
+          "maximum": 34,
+          "set": 35
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 33,
+          "maximum": 33,
+          "set": 35
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i13974",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/orc-powder-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 19,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 32,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/orc_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Look for the powder at the orcs’ training grounds."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/pickaxe-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4845",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/plant-bells-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 12,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4868",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/plant-bells-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 17,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 18
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 18
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4867",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use the botanist container on jungle bells."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/plant-cauldron-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4869",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/plant-cauldron-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4867",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next plant collection sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/plant-rose-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 14,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4870",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/plant-rose-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4867",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a fresh kit for the next plant collection sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/ratha-hand-in",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 33,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/skull_of_ratha/bag1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3207",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for bringing this back to the society."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/rune-writings-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 26,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4843",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/rune-writings-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 41,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 42
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 42
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4842",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take a tracing of the ancient runes underneath Banuta."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/spectral-dress-report",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 49,
+          "maximum": 49,
+          "set": 50
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 48,
+          "maximum": 48,
+          "set": 50
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4836",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I have recorded your report."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "failure_reply": [
+        "Bring the requested item before reporting."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/spectral-dress-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 30,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 47,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/banshee_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Travel to the Ghostlands and obtain a spectral dress."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/spectral-research-mail",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 51,
+          "maximum": 51,
+          "set": 52
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 51,
+          "maximum": 51,
+          "set": 52
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Our research is in the mail. Report back to your original contact."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/spectral-research-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 50,
+          "maximum": 50,
+          "set": 50,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 50,
+          "maximum": 50,
+          "set": 51
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 51
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Visit our other base for its latest research, then ask me about missions again."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/mortimer/spectral-stone-start",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 32,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4840",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Charge this base’s carving first, then charge the other base’s carving."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/uzgod/brooch-errand",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/dwacatra_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "A prisoner took my family brooch into Dwacatra. Find the prison keys and bring my brooch back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/uzgod.lua:77-109"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/uzgod/brooch-turn-in",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/uzgod_brooch_received",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4834",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "My family brooch! Are you ready for your pickaxe?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/uzgod.lua:92-116"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/uzgod/pickaxe",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/uzgod_brooch_received",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4845",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is the society’s pickaxe."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/uzgod.lua:116-122"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/butterfly-purple",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4863",
+      "creature_target": "oteryn:creature.purple_butterfly",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4863",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4864",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_butterfly.lua:3-8"
+      ],
+      "corpse_target": {
+        "appearance": 4992,
+        "maximum_age_ms": 60000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/butterfly-blue",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4863",
+      "creature_target": "oteryn:creature.blue_butterfly",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4863",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4865",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_butterfly.lua:9-14"
+      ],
+      "corpse_target": {
+        "appearance": 4993,
+        "maximum_age_ms": 60000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/butterfly-red",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4863",
+      "creature_target": "oteryn:creature.red_butterfly",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4863",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4866",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_butterfly.lua:15-20"
+      ],
+      "corpse_target": {
+        "appearance": 4991,
+        "maximum_age_ms": 60000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/ectoplasm",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4852",
+      "creature_target": "oteryn:creature.ghost",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 45,
+          "maximum": 45,
+          "set": 46
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 45,
+          "maximum": 45,
+          "set": 46
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4852",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4853",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_ectoplasm_container.lua:13-20"
+      ],
+      "corpse_target": {
+        "appearance": 4094,
+        "maximum_age_ms": 310000
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "sources": [
+        "content/quests/authored-bindings/the-explorer-society.json"
+      ]
+    }
+  ]
+}

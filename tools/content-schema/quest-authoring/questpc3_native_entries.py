@@ -302,11 +302,60 @@ def build_draconia(root=ROOT):
         'stages':stages, 'sources':[path+':s1', capture_path]}]}
 
 
+
+def build_demon_wars(root=ROOT):
+    path = 'content/quests/definitions/quests-00200-00299.json'
+    quest = 'oteryn:quest.authored.demon_wars_world_change'
+    definition = next(row['definition'] for row in json.loads((root / path).read_bytes())['records']
+                      if row['definition']['identity']['key'] == quest)
+    recipe = definition['recipe']
+    expected = [('talk', 1, 'A Dark Priestess'), ('kill', 20, 'Shaburak Demon'),
+                ('kill', 1, 'Shaburak Lord'), ('kill', 1, 'Shaburak Prince'),
+                ('complete', 1, 'A Dark Priestess')]
+    if [(stage['kind'], stage['count'], stage['targets'][0]) for stage in recipe['stages']] != expected:
+        raise ValueError('Demon Wars chosen trial changed')
+    sources = [path + ': chosen Demon Wars trial',
+               'https://tibia.fandom.com/index.php?curid=54700&oldid=880733',
+               'content/encounters/world-changes/credited-kills.json: Demonwar Dungeon']
+    prefix = 'oteryn:quest-progress/demon-wars/trial/'
+    phase = prefix + 'phase'
+    tracks = [{'key': phase, 'initial': 0, 'minimum': 0, 'maximum': 5}]
+
+    def dialogue(stage, name, before, reply):
+        completes = name == 'report'
+        return {'key': stage, 'completes': completes,
+                'trigger': {'kind': 'npc_dialogue', 'callback': {
+                    'key': f'oteryn:quest-reward/demon-wars/{name}',
+                    'quest': quest, 'npc': 'oteryn:npc.a_dark_priestess',
+                    'keywords': [f'demon war {name}'], 'topic': 0, 'next_topic': 0,
+                    'storage': [{'track': phase, 'minimum': before, 'maximum': before, 'set': before + 1}],
+                    'requires_premium': True, 'take': [], 'give': None, 'outfit': None,
+                    'achievement': None, 'completes': completes, 'reply': [reply], 'sources': sources}}}
+
+    stages = [dialogue('s1', 'briefing', 0,
+        'In the west tower, defeat twenty Shaburak demons, then a lord, then a prince. Return to me to report.')]
+    for step, (creature, goal) in enumerate((('demon', 20), ('lord', 1), ('prince', 1)), 1):
+        track = prefix + creature
+        tracks.append({'key': track, 'initial': 0, 'minimum': 0, 'maximum': goal})
+        stages.append({'key': f's{step + 1}', 'completes': False, 'trigger': {
+            'kind': 'kill', 'counter': {
+                'key': f'oteryn:quest-transition/native-kills/demon-wars/{creature}',
+                'creature': f'oteryn:creature.shaburak_{creature}',
+                'track': track, 'gate': phase, 'gate_value': step, 'advance_gate_to': step + 1,
+                'maximum': goal, 'death_area': {'minimum': [33218, 31911, 12], 'maximum': [33307, 31959, 14]}}}})
+    stages.append(dialogue('s5', 'report', 4,
+        'You have completed the western tower trial. I have recorded your report.'))
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    return {'schema': 1, 'quests': [{'quest': quest, 'recipe_sha256': hashlib.sha256(raw).hexdigest(),
+        'admission': {'minimum_level': 0, 'premium': True}, 'tracks': tracks, 'stages': stages, 'sources': sources}]}
+
+
 def content(check=False):
     documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender()), (Path('content/quests/authored-bindings/qmech-m01c-illuminator.json'), build_illuminator())]
     documents.extend((Path(f'content/quests/authored-bindings/qmech-m01c-{slug}.json'), build_task_board(slug)) for slug in ('falconer', 'feral-trappers'))
     documents.append((Path('content/quests/authored-bindings/qmech-m01c-draconia.json'), build_draconia()))
     documents.append((Path('content/quests/authored-bindings/qmech-m01c-ancient-aucar.json'), build_ancient_aucar()))
+    documents.append((Path('content/quests/authored-bindings/demon-wars.json'), build_demon_wars()))
     for output, value in documents:
         path = ROOT / output
         if check:
@@ -315,7 +364,7 @@ def content(check=False):
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
-    print(f'PASS M01c native entry bindings={len(documents)}; completion/rewards remain held')
+    print(f'PASS native entry and trial bindings={len(documents)}')
 
 
 

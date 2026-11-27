@@ -4,12 +4,13 @@ import json
 from pathlib import Path
 import unittest
 from item_detail_source_facts import WEIGHT_FACTS
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def digest(value):
-    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(compact_item_record(value), sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
 class BossRewardBindingPolicyTests(unittest.TestCase):

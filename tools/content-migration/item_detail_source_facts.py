@@ -3,7 +3,7 @@
 import json
 from collections import Counter
 
-from import_cyclopedia_global import apply_stats, item_id, load_capture, load_weights
+from import_cyclopedia_global import apply_stats, item_id, load_weights
 
 WEIGHT_IDS = (
     43501,
@@ -118,5 +118,3 @@ def apply(root, profiles, weights):
         if semantics["skill_modifiers"] not in ({"state": "UNKNOWN"}, selected):
             raise ValueError(f"ITEM_DETAILS_MODIFIER_SOURCE_CONFLICT:{key}")
         semantics["skill_modifiers"] = selected
-
-    apply_capture_stats(profiles, load_capture(root))

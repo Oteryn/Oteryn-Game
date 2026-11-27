@@ -1,6 +1,7 @@
 use super::*;
 use crate::gameplay_transport::connection::UseCommand;
 use crate::gameplay_transport::item_view::ItemKey;
+use crate::gameplay_transport::world_map::{MapViewSource, resolve_map_target};
 use crate::map::overlay::TilePos;
 
 mod dropdown;
@@ -137,13 +138,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        let key = target
+            .placement
+            .get(32..40)
+            .and_then(|bytes| bytes.try_into().ok())
+            .map(u64::from_be_bytes);
+        let doors = map.facts.doors();
+        let permit = if key.and_then(|key| doors.opening_requirement(key)).is_some() {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return UseOutcome::rejected();
+            };
+            Some(permit)
+        } else {
+            None
+        };
+        let optional_pvp = if let Some(permit) = &permit {
+            self.special_movement_policy(permit, actor, session).await
+        } else {
+            None
+        };
         let mut runtime = self.runtime.lock().await;
         // Read the canonical actor-local Character facts through their owner, after taking the
         // runtime lock. `ChannelSpellStates::get` re-proves this exact actor/session against the
         // current runtime generation; a stale slot or superseded session therefore contributes
         // neither a level nor a door mutation. Keep the guard through the toggle so a level-up,
         // death or actor replacement cannot race the predicate.
-        let spell_states = self.states.spell_states.lock().await;
+        let mut spell_states = self.states.spell_states.lock().await;
         if spell_states.is_dead(actor) {
             return UseOutcome::rejected();
         }
@@ -156,37 +177,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseOutcome::rejected();
         }
-        // Missing canonical facts fail closed for a level door. Plain doors do not attach a
-        // required level, so zero remains immaterial to their rule.
         let actor_level = spell_states
             .get(&runtime, actor, session)
-            .map_or(0, |state| state.character_facts().level);
-        // Quest doors read only this admitted session's copy of the durable quest owner. A
-        // missing/failed copy cannot grant access. The action id is authored in the bundle.
-        let quest_storage_met = map
-            .facts
-            .action_at(
-                target
-                    .placement
-                    .get(32..40)
-                    .and_then(|bytes| {
-                        let bytes: [u8; 8] = bytes.try_into().ok()?;
-                        Some(u64::from_be_bytes(bytes))
-                    })
-                    .unwrap_or_default(),
-            )
-            .is_some_and(|action| {
-                self.states
-                    .quest_sessions
-                    .lock()
-                    .ok()
-                    .is_some_and(|sessions| {
-                        sessions
-                            .get(&session)
-                            .and_then(|quest| quest.copy.as_ref())
-                            .is_some_and(|copy| copy.meets_door_storage(action))
-                    })
-            });
+            .map(|state| state.character_facts().level);
+        // Missing or failed quest copies cannot grant access.
+        let quest_storage_met = key
+            .and_then(|key| map.facts.action_at(key))
+            .is_some_and(|action| self.states.door_storage_met(session, action));
         // Admission is taken under the owner lock that also covers the commit below, and the
         // owner pass resets the turn cap under the same lock, so an act is counted in the turn
         // that commits it and its order is the owner lock's.
@@ -236,6 +233,83 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             };
         }
+        let digest = runtime.content_pin().client_artifact_digest();
+        let source = MapViewSource {
+            overlay: &map.overlay,
+            facts: &map.facts,
+            content_generation: digest,
+            reset_epoch: 0,
+        };
+        if let Some(key) = key
+            && let Some(requirement) = doors.opening_requirement(key)
+            && let Ok(resolved) = resolve_map_target(&source, target, |_| None::<()>)
+            && map_door::reachable(actor_tile, resolved.pos)
+        {
+            let outcome = |disposition| UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            };
+            let Some(permit) = permit.as_ref() else {
+                return outcome(UseDisposition::StaleState);
+            };
+            if !self
+                .states
+                .admits_door_requirement(session, actor_level, requirement)
+            {
+                return outcome(UseDisposition::Locked);
+            }
+            let now = self.owner_now();
+            let used = map_door::use_owned_door(
+                map,
+                self.movement_cells(),
+                &mut runtime,
+                actor,
+                session,
+                expected,
+                actor_tile,
+                &spell_states,
+                quest_storage_met,
+                now,
+                target,
+                || self.states.player_trades.physical(session, None),
+            );
+            if used.disposition != UseDisposition::Committed {
+                return used;
+            }
+            let Ok(snapshot) = runtime.read_actor_position(actor) else {
+                return used;
+            };
+            spell_states.stage_special_movement_step(
+                &runtime,
+                map,
+                actor,
+                session,
+                now.get(),
+                Some(expected.position()),
+                snapshot.position(),
+                optional_pvp,
+            );
+            use crate::gameplay_transport::paced_movement::underwater_drown::underwater;
+            spell_states.stage_underwater_step(
+                &runtime,
+                actor,
+                session,
+                now.get(),
+                underwater(map, expected.position()),
+                underwater(map, snapshot.position()),
+            );
+            self.states.chat.close_out_of_range(&runtime, session);
+            drop((spell_states, runtime));
+            self.close_departed_door(
+                permit,
+                actor,
+                session,
+                expected.position(),
+                snapshot.revision(),
+            )
+            .await;
+            return outcome(UseDisposition::Committed);
+        }
         map_door::use_door(
             &map.overlay,
             &map.facts,
@@ -245,7 +319,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 map.overlay.has_added_item(door)
                     || map_door::doorway_occupied(&runtime, actor, actor_tile, door)
             },
-            actor_level,
+            actor_level.unwrap_or_default(),
             quest_storage_met,
             target,
         )
