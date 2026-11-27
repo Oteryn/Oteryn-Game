@@ -78,6 +78,36 @@ pub(super) use oteryn_gameplay_items::item_ref_admission::{
     definition_ref, generation_inbox_item_facts, generation_item_facts,
 };
 
+pub(super) async fn is_projected_non_container(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    definition: NonZeroU32,
+) -> bool {
+    let runtime = admission.runtime.lock().await;
+    let Some((key, revision)) = pinned_index(&runtime, admission.active_generation)
+        .and_then(|index| index.definition_at(definition))
+    else {
+        return false;
+    };
+    admission
+        .active_generation
+        .and_then(ActiveGeneration::native_gameplay)
+        .and_then(|native| native.item_policy(key, revision))
+        .is_some_and(|policy| {
+            use crate::content::{ReferenceItemConsumption, ReferenceItemField};
+            let semantics = &policy.record().semantics;
+            // Source potion profiles prove their consumption type but may leave
+            // the separate container field unset.
+            matches!(
+                (&semantics.container, &semantics.consumption),
+                (ReferenceItemField::NotApplicable, _)
+                    | (
+                        ReferenceItemField::Unknown,
+                        ReferenceItemField::Known(ReferenceItemConsumption::Potion(_))
+                    )
+            )
+        })
+}
+
 fn native_corpse_appearance(
     runtime: &ChannelRuntimeV1,
     generation: Option<&ActiveGeneration>,

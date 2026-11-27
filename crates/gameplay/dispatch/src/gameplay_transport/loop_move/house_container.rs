@@ -129,6 +129,7 @@ pub(super) async fn observe(
         })
         .collect::<Option<Vec<_>>>()?;
     Some(ContainerObservation::Container {
+        carried: !is_house,
         parent: read.parent.map(ItemKey::Instance),
         capacity,
         entries,

@@ -497,13 +497,31 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => {
                 let key = item_view.as_ref().and_then(|view| view.resolve(handle));
+                // A live carried projection can disqualify container opening without
+                // a durability read. Carried USE still validates current custody.
+                let projected_definition = match (item_view.as_ref(), key) {
+                    (Some(view), Some(key @ ItemKey::Instance(_)))
+                        if admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1)
+                            && !view.is_main_backpack(&key) && view.equipped_slot(&key).is_none() =>
+                    {
+                        view.backpack_entry_definition(key).or_else(|| {
+                            container_views.as_ref()?.carried_entry_definition(key)
+                        })
+                    }
+                    _ => None,
+                };
+                let projected_non_container = match projected_definition {
+                    Some(definition) => authority.is_projected_non_container(definition).await,
+                    None => false,
+                };
                 // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
                 // and one out of reach is TOO_FAR; anything else takes the corpse path.
                 let container = match (key, &*container_views) {
-                    (Some(key), Some(_)) => authority.observe_container_with_house_capacity(actor, admitted.item_fence, key, admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2)).await,
+                    (Some(key), Some(_)) if !projected_non_container => authority.observe_container_with_house_capacity(actor, admitted.item_fence, key, admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2)).await,
                     _ => None,
                 };
-                let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
+                let carried_entry = projected_non_container
+                    || matches!(container, Some(ContainerObservation::NotAContainer));
                 let container = container.filter(|observation| {
                     matches!(
                         observation,

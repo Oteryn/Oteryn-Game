@@ -187,6 +187,7 @@ pub use oteryn_gameplay_combat_rules::resolution::SwingWeapon;
 struct WeaponFacts {
     weapon: SwingWeapon,
     item_key: Option<String>,
+    talisman_equipped: bool,
     ranged: Option<Arc<ranged::RangedLoadout>>,
     content_digest: [u8; 32],
     read_at: SemanticTimeMicros,
@@ -1434,6 +1435,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             WeaponFacts {
                 weapon,
                 item_key,
+                talisman_equipped: equipment.items.iter().any(|item| {
+                    item.slot == 10
+                        && item.definition.family == "Item"
+                        && item.definition.production_key
+                            == oteryn_gameplay_quests::quest::task_board::TALISMAN_ITEM
+                }),
                 ranged,
                 content_digest: digest,
                 read_at,

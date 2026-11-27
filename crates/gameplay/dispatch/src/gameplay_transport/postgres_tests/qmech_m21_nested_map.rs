@@ -244,6 +244,7 @@ fn source_view(nested: bool, immovable: bool) -> TestResult {
                     parent: None,
                     capacity,
                     entries,
+                    ..
                 }) if capacity == if immovable { 1 } else { 20 } && entries.len() == usize::from(nested) => {}
                 other => {
                     return Err(format!(

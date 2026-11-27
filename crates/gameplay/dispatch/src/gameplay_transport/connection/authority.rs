@@ -1228,6 +1228,15 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Classify a server-projected Item definition using the active generation.
+    /// False keeps container observation for containers and unknown definitions.
+    fn is_projected_non_container(
+        &self,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = bool> {
+        std::future::ready(false)
+    }
+
     /// Legacy authorities keep capability14's original20 bound.
     fn observe_container_with_house_capacity(
         &self,

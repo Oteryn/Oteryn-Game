@@ -931,6 +931,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         result
     }
 
+    async fn is_projected_non_container(&self, definition: std::num::NonZeroU32) -> bool {
+        item_ref_admission::is_projected_non_container(self, definition).await
+    }
+
     async fn observe_container_with_house_capacity(
         &self,
         actor: ExactActorRef,

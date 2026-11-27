@@ -59,6 +59,7 @@ pub enum ContainerObservation {
     TooFar,
     /// A container in reach: its parent, its entry count and its direct entries in display order.
     Container {
+        carried: bool,
         parent: Option<ItemKey>,
         capacity: u8,
         entries: Vec<ViewItem>,
@@ -74,6 +75,7 @@ pub enum ContainerObservation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct OpenView {
+    carried: bool,
     container: ItemKey,
     parent: Option<ItemKey>,
     capacity: u8,
@@ -212,6 +214,15 @@ impl ContainerViewState {
         self
     }
 
+    pub(super) fn carried_entry_definition(&self, key: ItemKey) -> Option<std::num::NonZeroU32> {
+        self.views
+            .values()
+            .filter(|view| view.carried)
+            .flat_map(OpenView::page_entries)
+            .find(|entry| entry.key == key)
+            .map(|entry| entry.item_definition_ref)
+    }
+
     pub(super) fn container_for_view(&self, id: u8) -> Option<ItemKey> {
         self.views.get(&id).map(|view| view.container)
     }
@@ -273,10 +284,12 @@ impl ContainerViewState {
     ) -> Option<OpenView> {
         match observation {
             ContainerObservation::Container {
+                carried,
                 parent,
                 capacity,
                 entries,
             } => Some(OpenView {
+                carried: *carried,
                 container,
                 parent: parent
                     .filter(|p| self.browse_field || !matches!(p, ItemKey::BrowseField { .. })),
@@ -291,6 +304,7 @@ impl ContainerViewState {
                 entries,
                 lease,
             } if self.browse_field => Some(OpenView {
+                carried: false,
                 container,
                 parent: None,
                 capacity: BROWSE_FIELD_CAPACITY,

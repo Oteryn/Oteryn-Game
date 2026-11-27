@@ -1785,6 +1785,7 @@ async fn observe_container_with_house_capacity_inner(
         })
         .collect::<Option<Vec<_>>>()?;
     Some(ContainerObservation::Container {
+        carried: is_carried,
         parent: read.parent.map(ItemKey::Instance).or(browse_parent),
         capacity,
         entries,
