@@ -12,6 +12,7 @@ struct Replay {
     joined_view: Vec<u8>,
     leader_transfer: Option<[Vec<u8>; 5]>,
     toggle_binding: Option<(u64, u64)>,
+    leadership_request: Option<Vec<u8>>,
     passed_view: Vec<u8>,
     expected: String,
     statuses: [CommandStatus; 3],
@@ -136,6 +137,9 @@ fn load() -> Result<Replay, Error> {
             invitations,
             joined_op,
             joined_view,
+            leadership_request: Some(std::fs::read(
+                root.join(format!("{}.request", value(&expected, "leader_operation")?)),
+            )?),
             toggle_binding: Some((leader_replies[1].0, leader_replies[1].1)),
             leader_transfer: Some(leader_replies.map(|(_, _, payload)| payload)),
             passed_view,
@@ -159,6 +163,7 @@ fn load() -> Result<Replay, Error> {
         joined_view: joined,
         leader_transfer: None,
         toggle_binding: None,
+        leadership_request: None,
         passed_view: passed,
         expected:
             "inviter=Aurelia\njoiner=Berenike\nmembers=2\nshared_xp=false\nnew_leader=Berenike\n"
@@ -195,6 +200,26 @@ fn s01_rejects_a_noncanonical_toggle_receipt() {
     assert!(oteryn_protocol_oteryn::chat::decode_chat_intent_result(&[8, 1, 16, 0]).is_ok());
     assert!(exact_toggle_receipt(&[8, 1, 16, 0]).is_err());
     assert!(exact_toggle_receipt(&[8, 1]).is_ok());
+}
+
+fn verify_leadership_request(replay: &[u8], live: &[u8]) -> Result<(), Error> {
+    if replay != live {
+        return Err(
+            format!("S01 leadership request differs: replay={replay:?} live={live:?}").into(),
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn s01_replay_rejects_a_different_leadership_target() -> Result<(), Error> {
+    let sent = PartyCommand::intent(party::PartyIntent::PassLeadership(41))
+        .map_err(|error| format!("{error:?}"))?;
+    let wrong = PartyCommand::intent(party::PartyIntent::PassLeadership(42))
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(verify_leadership_request(&wrong.payload, &sent.payload).is_err());
+    assert!(verify_leadership_request(&sent.payload, &sent.payload).is_ok());
+    Ok(())
 }
 
 #[test]
@@ -366,6 +391,13 @@ fn party_replay_invite_join_and_leadership_pass() -> Result<(), Error> {
             party::decode_party_intent(&command.payload).map_err(|error| format!("{error:?}"))?,
             party::PartyIntent::PassLeadership(handle),
         );
+        verify_leadership_request(
+            &command.payload,
+            replay
+                .leadership_request
+                .as_deref()
+                .ok_or("live leadership request missing")?,
+        )?;
         assert_eq!(operation, encode(vec![], vec![])?);
         assert!(apply_result(
             &mut leader_panel,

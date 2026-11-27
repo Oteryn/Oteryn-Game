@@ -87,6 +87,14 @@ async fn capture_reply(
         )
         .into());
     }
+    if command.kind == runtime::party::COMMAND_TYPE_PARTY_INTENT
+        && matches!(
+            runtime::party::decode_party_intent(&command.payload),
+            Ok(PartyIntent::PassLeadership(_))
+        )
+    {
+        capture(&format!("{name}.request"), &command.payload)?;
+    }
     Ok((name, reply.payload))
 }
 
@@ -296,7 +304,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
 
     let peer_before_invite = peer.last_server_sequence();
-    send(&mut leader, Some(PartyIntent::Invite(own(&peer)?))).await?;
+    let inviter = send(&mut leader, Some(PartyIntent::Invite(own(&peer)?))).await?;
+    check_state(&inviter, &[("Packet One", true)], None)?;
     expect_notices(&mut peer, "peer", peer_before_invite, &[(Invited, clients.characters[0])]).await?;
     let invited = send(&mut peer, None).await?;
     check_state(&invited, &[], Some("Packet One"))?;
@@ -325,7 +334,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // Neither fixture character has contributed in combat, so both shared-XP shields blink.
     check_peer_shield(&mut leader, own(&peer)?, 7).await?;
     check_peer_shield(&mut peer, own(&leader)?, 8).await?;
-    let member = leader_view
+    let member = leader_shared
         .result
         .members
         .iter()
@@ -340,6 +349,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     check_state_with_xp(&passed, &after_pass, None, true)?;
     let peer_view = send(&mut peer, None).await?;
     check_state_with_xp(&peer_view, &after_pass, None, true)?;
+
+    check_peer_shield(&mut leader, own(&peer)?, 8).await?;
+    check_peer_shield(&mut peer, own(&leader)?, 7).await?;
 
     let leader_before_leave = leader.last_server_sequence();
     let peer_before_leave = peer.last_server_sequence();
@@ -367,12 +379,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     for (index, tag) in [(0, 0x49), (1, 0x4a)] {
         let mut client = connect_character(clients, tag, index).await?;
         check_state(&send(&mut client, None).await?, &[], None)?;
+        reject_extra_notices(&mut client)?;
         let logout = client.session_mut().logout().await?;
         if logout.status != runtime::CommandStatus::Accepted
             || logout.result != Some(LogoutResult::Accepted)
         {
             return Err(format!("S01 relog cleanup refused: {logout:?}").into());
         }
+        reject_extra_notices(&mut client)?;
     }
     let expected = format!(
         "inviter=Packet One\njoiner=Packet Two\nmembers=2\nshared_xp=false\nnew_leader=Packet Two\ninvitation={}\njoin={}\njoin_view={}\nleadership={}\nleader_before={}\ntoggle_receipt={}\nleader_shared={}\nleader_operation={}\nleader_after={}\n",
