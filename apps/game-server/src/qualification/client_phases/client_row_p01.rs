@@ -169,6 +169,7 @@ async fn verify_rat_kill(
 async fn logout_from_protected_ground(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let mut occupied = occupied_rat_route_tiles(client);
@@ -177,6 +178,14 @@ async fn logout_from_protected_ground(
         y: 32178,
         floor: -7,
     });
+    // Occupants outside the current view can still be on their authored spawn cells.
+    occupied.extend(spawns.sources.iter().flat_map(|source| {
+        source.points.iter().map(|point| TilePos {
+            x: point.x,
+            y: point.y,
+            floor: source.floor,
+        })
+    }));
     let protected = |at: TilePos| {
         world
             .base()
@@ -329,7 +338,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     evidence("P01_CHECK client-second-rat-delta PASS one-to-two exact-views");
     let old_session = client.join_snapshot().game_session_id;
-    logout_from_protected_ground(&mut client, world).await?;
+    logout_from_protected_ground(&mut client, world, &metadata.spawns).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0x22).await?;
     if fresh.join_snapshot().game_session_id == old_session {
