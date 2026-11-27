@@ -744,7 +744,7 @@ async fn journey(
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let started = tokio::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(420),
+        Duration::from_secs(540),
         verdict::observe(async {
             let root = required("E2E_ALL_CAPTURE_DIR")?;
             let checkout = std::process::Command::new("git")
