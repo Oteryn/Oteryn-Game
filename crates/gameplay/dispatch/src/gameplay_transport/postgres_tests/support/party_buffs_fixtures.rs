@@ -747,26 +747,24 @@ async fn check_contended_logout(
         probe.before_conditions.notified().await;
         // Keep a real semantic pass checked out until logout observes the contention.
         let held = owner.root.try_issue_semantic_pass()?;
-        let previous_saves = super::SAVES.get();
         probe.resume_conditions.notify_one();
         probe.retry_observed.notified().await;
         assert_eq!(
             probe.first_retry.get(),
             Some(&ReleaseRetryStage::Conditions)
         );
-        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-        Ok::<_, crate::durability::DurabilityError>(previous_saves)
+        held.run(|_, _| Box::pin(async { Ok(()) })).await
     };
     let (reply, returned) = tokio::time::timeout(Duration::from_secs(10), async {
         tokio::join!(logout, holder)
     })
     .await
     .map_err(|_| "logout did not settle condition-save contention")?;
-    let previous_saves = returned?;
+    returned?;
     assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted));
     assert_eq!(
-        super::SAVES.get(),
-        previous_saves,
+        probe.conditions_entries.load(std::sync::atomic::Ordering::Relaxed),
+        1,
         "retry replayed an earlier save"
     );
 
