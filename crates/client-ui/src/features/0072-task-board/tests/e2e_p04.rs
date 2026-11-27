@@ -354,6 +354,20 @@ fn verify_master_panel(
     Ok(())
 }
 
+fn verify_master_summary(text: &str, period: u64) -> Result<(), Error> {
+    let heading = format!("Task Board — week {period}");
+    if !text.lines().take(3).eq([
+        heading.as_str(),
+        "Points: 0  Bounty points: 0  Soulseals: 0",
+        "Weekly: started true, difficulty 3, expanded false, multiplier 1",
+    ]) {
+        return Err(
+            "P04 Master summary differs from the expected week, balances or weekly state".into(),
+        );
+    }
+    Ok(())
+}
+
 fn verify_master_replay(
     [query, start, after]: [GatedCommandResult; 3],
     baseline: &Reply,
@@ -406,11 +420,61 @@ fn verify_master_replay(
     assert_eq!(fresh.weekly.as_ref(), Some(active));
     assert!(!fresh.pending);
     assert!(fresh.feedback.is_none());
-    verify_master_experience(&panel_text(&panel))?;
-    verify_master_experience(&panel_text(&fresh))?;
-    verify_rendered_assignments(&panel_text(&panel), assignments)?;
-    verify_rendered_assignments(&panel_text(&fresh), assignments)?;
-    assert_eq!(panel_text(&fresh), panel_text(&panel));
+    let started_text = panel_text(&panel);
+    let relog_text = panel_text(&fresh);
+    verify_master_renderings(&started_text, &relog_text, baseline, assignments)?;
+    Ok(())
+}
+
+fn verify_master_renderings(
+    started: &str,
+    relog: &str,
+    baseline: &Reply,
+    assignments: &MasterAssignments,
+) -> Result<(), Error> {
+    for text in [started, relog] {
+        verify_master_summary(text, baseline.period)?;
+        verify_master_experience(text)?;
+        verify_rendered_assignments(text, assignments)?;
+        verify_rendered_shop(text, baseline)?;
+    }
+    assert_eq!(started, relog);
+    Ok(())
+}
+
+#[test]
+fn p04_master_rejects_identically_wrong_start_and_relog_renders() -> Result<(), Error> {
+    let mut reply = task_board::full::decode_reply(&fixture()?.query.payload)
+        .map_err(|error| format!("{error:?}"))?;
+    reply.points = 0;
+    reply.bounty_points = 0;
+    reply.soulseals = 0;
+    reply.weekly.started = true;
+    reply.weekly.difficulty = 3;
+    reply.weekly.kill_experience = 797603;
+    reply.weekly.delivery_experience = 797603;
+    let panel = TaskBoardPanel {
+        weekly: Some(reply.clone()),
+        ..TaskBoardPanel::default()
+    };
+    let text = panel_text(&panel);
+    let assignments = (vec![], vec![]);
+    verify_master_renderings(&text, &text, &reply, &assignments)?;
+    for (before, after) in [
+        ("multiplier 1", "multiplier 2"),
+        ("week 2913", "week 2914"),
+        ("started true", "started false"),
+        ("difficulty 3", "difficulty 2"),
+        ("expanded false", "expanded true"),
+        ("Points: 0", "Points: 1"),
+        ("Bounty points: 0", "Bounty points: 1"),
+        ("Soulseals: 0", "Soulseals: 1"),
+        ("Shop 24 —", "Shop 25 —"),
+    ] {
+        let wrong = text.replacen(before, after, 1);
+        assert_ne!(wrong, text);
+        assert!(verify_master_renderings(&wrong, &wrong, &reply, &assignments).is_err());
+    }
     Ok(())
 }
 
