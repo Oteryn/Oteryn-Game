@@ -5,10 +5,7 @@
 //!    containing the complete charm view and its current durable Bestiary rows.
 //! 2. Send ASSIGN for a still-locked major charm and a real Bestiary race;
 //!    expect the explicit `CharmLocked` refusal and no assignment/balance delta.
-//! 3. Walk to an authored creature spawn, send ATTACK, and wait for a credited
-//!    kill; send QUERY and expect that race's kill count to increase by exactly
-//!    one (repeating ordinary hunts until the final threshold awards enough
-//!    charm points for the selected charm).
+//! 3. Hunt a placed Rat and verify the final Bestiary kill and mastery award.
 //! 4. Send UNLOCK with the stage observed by QUERY; expect `Unlocked`, a
 //!    one-stage increase, and exactly the advertised charm-point debit.
 //! 5. Send ASSIGN for that unlocked charm and the completed race; expect
@@ -26,8 +23,10 @@ use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmUnlockDispositi
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
-use std::collections::BTreeSet;
 use std::num::NonZeroU32;
+
+#[path = "full_row_p01_charm_fixture.rs"]
+mod charm_fixture;
 
 const DEADLINE: Duration = Duration::from_secs(1_800);
 
@@ -152,74 +151,6 @@ fn count(reply: &CharmProgressionReply, race: NonZeroU32) -> u32 {
         .map_or(0, |entry| entry.kill_count)
 }
 
-fn mastery_plan(
-    current: &CharmProgressionReply,
-    reachable: impl Fn(&str) -> bool,
-) -> TestResult<Vec<(NonZeroU32, &'static str, u32, u32)>> {
-    let mut plan = Vec::new();
-    for (index, (definition, points)) in full_row_p05::canonical_races()?.iter().enumerate() {
-        let race = NonZeroU32::new(u32::try_from(index)? + 1).ok_or("zero race reference")?;
-        let remaining = definition
-            .final_kill_threshold()
-            .saturating_sub(count(current, race));
-        if remaining > 0 && *points > 0 && reachable(definition.key()) {
-            plan.push((race, definition.key(), remaining, *points));
-        }
-    }
-    plan.sort_by(|left, right| {
-        (u64::from(left.2) * u64::from(right.3)).cmp(&(u64::from(right.2) * u64::from(left.3)))
-    });
-    Ok(plan)
-}
-
-fn reachable_mastery_races<'a>(
-    world: &BundleWorld,
-    from: TilePos,
-    spawns: &'a oteryn_world_bundle::spawn::Table,
-) -> BTreeSet<&'a str> {
-    let reachable = std::cell::RefCell::new(BTreeSet::new());
-    // Use the route planner's normal landings and visit the whole reachable area once.
-    let _ = route(world, from, |at| {
-        if world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-        {
-            reachable.borrow_mut().insert(at);
-        }
-        false
-    });
-    let reachable = reachable.into_inner();
-    spawns
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source.points.iter().filter_map(|point| {
-                let approachable = (-1_i16..=1).any(|dx| {
-                    (-1_i16..=1).any(|dy| {
-                        (dx != 0 || dy != 0)
-                            && point
-                                .x
-                                .checked_add_signed(dx)
-                                .zip(point.y.checked_add_signed(dy))
-                                .is_some_and(|(x, y)| {
-                                    reachable.contains(&TilePos {
-                                        x,
-                                        y,
-                                        floor: source.floor,
-                                    })
-                                })
-                    })
-                });
-                approachable
-                    .then(|| spawns.creatures.get(point.creature as usize))
-                    .flatten()
-                    .map(|entry| entry.key.as_str())
-            })
-        })
-        .collect()
-}
-
 pub(super) fn rat_corpse_stage() -> TestResult<client_hunt::CorpseStage> {
     let items = provisioning::item_index()?;
     Ok(client_hunt::CorpseStage {
@@ -228,15 +159,270 @@ pub(super) fn rat_corpse_stage() -> TestResult<client_hunt::CorpseStage> {
     })
 }
 
-async fn hunt_race(
+pub(super) async fn prepare_rat_ground(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-    key: &str,
-    rat_stage: client_hunt::CorpseStage,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let occupied = client_row_p01::occupied_rat_route_tiles(client);
+    let open = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+            && !occupied.contains(&at)
+    };
+    let path = route_avoiding(
+        world,
+        from,
+        |at| {
+            open(at)
+                && [
+                    StepDirection::North,
+                    StepDirection::East,
+                    StepDirection::South,
+                    StepDirection::West,
+                ]
+                .into_iter()
+                .filter(|&direction| destination(world, at, direction).is_some_and(open))
+                .count()
+                    >= 2
+        },
+        |at| !occupied.contains(&at),
+    )
+    .ok_or("no reachable free ground for the Rat fixture")?;
+    client_row_p01::walk_rat_route(client, world, &path).await
+}
+
+pub(super) async fn place_rat(
+    client: &mut DevClientSession,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, "oteryn:creature.rat".to_owned()).await?;
+    let target = parse_spawned_entity(&answer)?;
+    evidence(&format!("P01_FIXTURE placed Rat {target:?}"));
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    verdict::Harness::global().bounded_wait(deadline, "fixture-rat-visibility");
+    loop {
+        if let Some(entity) = client
+            .world_entities()
+            .and_then(|view| view.get(&target))
+            .copied()
+        {
+            let actor = client.world_spatial().actor_position;
+            if entity.kind != oteryn_dev_client::EntityKind::Creature
+                || entity.position.floor != actor.floor
+                || entity
+                    .position
+                    .x
+                    .abs_diff(actor.x)
+                    .max(entity.position.y.abs_diff(actor.y))
+                    != 1
+            {
+                return Err(format!("incorrect Rat fixture placement: {entity:?}").into());
+            }
+            return Ok(entity);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("Rat fixture entity {target:?} absent from wire view").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+}
+
+async fn hunt_for_rat(
+    client: &mut DevClientSession,
+    race: NonZeroU32,
+    stage: client_hunt::CorpseStage,
 ) -> TestResult<full_row_p05::KillSample> {
-    let stage = (key == "oteryn:creature.rat").then_some(rat_stage);
-    full_row_p05::hunt_for_race_with_corpse_stage(client, world, spawns, key, stage).await
+    use oteryn_dev_client::{EntityKind, SessionEvent};
+    use oteryn_protocol_oteryn::analyser::AnalyserFact;
+    let target = place_rat(client).await?;
+    let old_corpses: Vec<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| {
+            entities
+                .iter()
+                .filter(|entity| entity.kind == EntityKind::Corpse)
+                .map(|entity| entity.entity)
+        })
+        .collect();
+    client.take_events();
+    let attack = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await?;
+    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("step=hunt-attack race={race} reply={attack:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(deadline, "targeted-combat-and-credit");
+    let mut last_position = target.position;
+    let mut kills = Vec::new();
+    let mut fire_damage = false;
+    let mut experience = Vec::new();
+    let (corpse, raw_xp, gained_xp) = loop {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        for event in client.take_events() {
+            let facts = match event {
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    if let Some(updated) = delta
+                        .value
+                        .update
+                        .iter()
+                        .find(|entry| entry.entity == target.entity)
+                    {
+                        last_position = updated.position;
+                    }
+                    continue;
+                }
+                SessionEvent::AnalyserFacts(delta) => delta.value,
+                SessionEvent::AnalyserAttributedFacts(delta) => {
+                    delta.value.into_iter().map(|fact| fact.fact).collect()
+                }
+                _ => continue,
+            };
+            for fact in facts {
+                match fact {
+                    AnalyserFact::Kill { race } => kills.push(race),
+                    AnalyserFact::Impact(
+                        oteryn_protocol_oteryn::analyser::AnalyserImpact::Damage {
+                            element: oteryn_protocol_oteryn::damage_element::DamageElement::Fire,
+                            ..
+                        },
+                    ) => fire_damage = true,
+                    AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
+                    _ => {}
+                }
+            }
+        }
+        if !kills.is_empty() && kills != [Some(race)] || experience.len() > 1 {
+            client.session_mut().attack_target(None).await?;
+            return Err(format!(
+                "step=hunt-credit expected=Rat/{race} observed={kills:?} experience={experience:?}"
+            )
+            .into());
+        }
+        if let [Some(_)] = kills.as_slice()
+            && let [(raw, gained)] = experience.as_slice()
+            && let Some(corpse) = client.world_entities().and_then(|entities| {
+                if entities.get(&target.entity).is_some() {
+                    return None;
+                }
+                entities
+                    .iter()
+                    .find(|entry| {
+                        entry.kind == EntityKind::Corpse
+                            && entry.position == last_position
+                            && !old_corpses.contains(&entry.entity)
+                            && matches!(
+                                entry.detail,
+                                oteryn_dev_client::EntityDetail::Object { item_definition_ref, .. }
+                                | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_definition_ref, .. }
+                                if item_definition_ref == stage.fresh_ref
+                            )
+                    })
+                    .copied()
+            })
+        {
+            break (corpse, *raw, *gained);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            client.session_mut().attack_target(None).await?;
+            return Err(format!("step=hunt-credit race={race} missing target corpse, kill credit or XP; kills={kills:?} experience={experience:?}").into());
+        }
+    };
+    client.session_mut().attack_target(None).await?;
+    let corpse = client_hunt::wait_for_corpse_stage(client, corpse, stage).await?;
+    let handle = match corpse.detail {
+        oteryn_dev_client::EntityDetail::Object { item_handle, .. }
+        | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+        _ => None,
+    }
+    .ok_or("Rat corpse has no server-issued item handle")?;
+    let used = client_hunt::use_rat_corpse(client, handle).await?;
+    if used.status != CommandStatus::Accepted
+        || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err("hunt corpse USE refused".into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client
+        .open_container()
+        .is_none_or(|view| view.container_handle != Some(handle))
+    {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+        if tokio::time::Instant::now() >= deadline {
+            return Err("hunt corpse container delta missing".into());
+        }
+    }
+    let entries = client
+        .open_container()
+        .ok_or("corpse view")?
+        .entries
+        .clone();
+    if let Some(item) = entries.first() {
+        let before = client
+            .inventory()
+            .ok_or("hunt backpack")?
+            .entries
+            .iter()
+            .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+            .map(|entry| u64::from(entry.count.get()))
+            .sum::<u64>();
+        let corpse_before = entries
+            .iter()
+            .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+            .map(|entry| u64::from(entry.count.get()))
+            .sum::<u64>();
+        let moved = client
+            .move_item(&oteryn_dev_client::ItemMoveIntent {
+                source: item.handle,
+                destination: oteryn_dev_client::ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+            return Err(format!("hunt loot move: {moved:?}").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let after = client
+                .inventory()
+                .ok_or("hunt inventory delta")?
+                .entries
+                .iter()
+                .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+                .map(|entry| u64::from(entry.count.get()))
+                .sum::<u64>();
+            let corpse_after = client
+                .open_container()
+                .ok_or("loot corpse delta")?
+                .entries
+                .iter()
+                .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+                .map(|entry| u64::from(entry.count.get()))
+                .sum::<u64>();
+            if after == before + u64::from(item.count.get())
+                && corpse_after + u64::from(item.count.get()) == corpse_before
+            {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("hunt loot inventory conservation failed".into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            client.take_events();
+        }
+    }
+    Ok(full_row_p05::KillSample {
+        race,
+        raw_xp,
+        gained_xp,
+        fire_damage,
+    })
 }
 
 pub(super) async fn prepare_hunter(
@@ -257,6 +443,12 @@ pub(super) async fn prepare_hunter(
     }
     .connect(clients, tag, 1)
     .await?;
+    if scenario == "P01.full" {
+        logout_when_ready(&mut client).await?;
+        drop(client);
+        charm_fixture::seed(clients).await?;
+        client = connect_world(clients, 0xa4).await?;
+    }
     let reply = client
         .session_mut()
         .gated_command(
@@ -324,7 +516,6 @@ pub(super) async fn prepare_hunter(
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -344,36 +535,41 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("player-earned-kill-count");
     let rat_stage = rat_corpse_stage()?;
-    let first_kill = hunt_race(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.rat",
-        rat_stage,
-    )
-    .await?;
-    let mut current = query(&mut client).await?;
-    let race = current
-        .bestiary
+    let (index, (rat, rat_points)) = full_row_p05::canonical_races()?
         .iter()
-        .find(|entry| count(&initial, entry.race) < entry.kill_count)
-        .map(|entry| entry.race)
-        .ok_or_else(|| {
-            format!(
-                "QUERY after credited ATTACK has no Bestiary delta; before={:?} after={:?}",
-                initial.bestiary, current.bestiary
-            )
-        })?;
-    if first_kill.race != race
-        || count(&initial, race).checked_add(1) != Some(count(&current, race))
+        .enumerate()
+        .find(|(_, (definition, _))| definition.key() == "oteryn:creature.rat")
+        .ok_or("Rat absent from Bestiary")?;
+    let race = NonZeroU32::new(u32::try_from(index)? + 1).ok_or("Rat race index")?;
+    if rat.final_kill_threshold() != 250
+        || *rat_points != 5
+        || count(&initial, race) != 249
+        || initial.charms.charm_points_available != 400
     {
-        return Err("credited kill did not increment Bestiary by exactly one".into());
+        return Err(format!(
+            "incorrect fixture baseline: Rat kills={} points={}",
+            count(&initial, race),
+            initial.charms.charm_points_available
+        )
+        .into());
     }
-    evidence(&format!(
-        "P01_CHECK kill-count PASS race={} count={}",
-        race,
-        count(&current, race)
-    ));
+    prepare_rat_ground(&mut client, world).await?;
+    let first_kill = hunt_for_rat(&mut client, race, rat_stage).await?;
+    let current = query(&mut client).await?;
+    if first_kill.race != race
+        || first_kill.raw_xp != 5
+        || first_kill.fire_damage
+        || count(&current, race) != 250
+        || current.charms.charm_points_available != 405
+    {
+        return Err(format!(
+            "incorrect Rat kill or mastery award: kill={first_kill:?} kills={} points={}",
+            count(&current, race),
+            current.charms.charm_points_available
+        )
+        .into());
+    }
+    evidence("P01_CHECK kill-count-and-mastery PASS kills=249->250 charm_points=400->405");
 
     let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
     let fire_charm = catalogue
@@ -409,44 +605,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
-    row.at("earn-unlock-currency");
-    let from = tile(client.world_spatial().actor_position)?;
-    let progress = current.clone();
-    let spawns = metadata.spawns.clone();
-    let planning = tokio::task::spawn_blocking(move || {
-        let reachable = reachable_mastery_races(world, from, &spawns);
-        mastery_plan(&progress, |key| reachable.contains(key)).map_err(|error| error.to_string())
-    });
-    while !planning.is_finished() {
-        client.service_liveness(Duration::from_millis(100)).await?;
-    }
-    let plan = planning.await??;
-    let reachable_points = plan.iter().map(|entry| u64::from(entry.3)).sum::<u64>();
-    if u64::from(current.charms.charm_points_available) + reachable_points < u64::from(cost) {
-        return Err(format!("step=earn-unlock-currency need={cost} balance={} reachable-mastery-points={reachable_points}", current.charms.charm_points_available).into());
-    }
-    let mut mastered = None;
-    for (candidate, key, remaining, _) in plan {
-        for _ in 0..remaining {
-            let kill = hunt_race(&mut client, world, &metadata.spawns, key, rat_stage).await?;
-            let next = query(&mut client).await?;
-            if kill.race != candidate
-                || count(&current, candidate).checked_add(1) != Some(count(&next, candidate))
-            {
-                return Err(format!(
-                    "step=earn-unlock-currency incorrect credited delta for {key}"
-                )
-                .into());
-            }
-            current = next;
-        }
-        mastered = Some((candidate, key));
-        if current.charms.charm_points_available >= cost {
-            break;
-        }
-    }
-    let (race, assigned_key) = mastered.ok_or("step=assign need=player-mastered-reachable-race")?;
-
     row.at("unlock-stage");
     let unlocked = command(
         &mut client,
@@ -462,6 +620,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .get(usize::try_from(charm.get() - 1)?)
         .ok_or("unlocked charm vanished")?;
     if unlocked.outcome != CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked)
+        || cost != 400
         || unlocked_state.unlocked_stage != stage + 1
         || unlocked.charms.charm_points_available + cost != current.charms.charm_points_available
     {
@@ -470,7 +629,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK unlock-stage PASS stage-and-balance-delta");
 
     row.at("assign-unlocked");
-    if unlocked_state.assigned_race.is_some() || unlocked_state.effect_active {
+    if unlocked_state.assigned_race.is_some() {
         return Err(format!("UNLOCK unexpectedly assigned the charm: {unlocked_state:?}").into());
     }
     let assigned = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
@@ -498,14 +657,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let mut observed_proc = false;
     for _ in 0..12 {
-        let kill = hunt_race(
-            &mut client,
-            world,
-            &metadata.spawns,
-            assigned_key,
-            rat_stage,
-        )
-        .await?;
+        let kill = hunt_for_rat(&mut client, race, rat_stage).await?;
         if kill.race != race {
             return Err(format!(
                 "step=assigned-combat expected-race={race} credited-race={}",
@@ -577,7 +729,7 @@ fn review_p01_guards_the_journey() {
     assert!(
         include_str!("full_row_p01.rs")
             .split_once("#[cfg(test)]")
-            .is_some_and(|(body, _)| body.contains("hunt_for_race"))
+            .is_some_and(|(body, _)| body.contains("hunt_for_rat"))
     );
 }
 
@@ -587,6 +739,6 @@ fn review_2_p01() {
     assert!(
         include_str!("full_row_p01.rs")
             .split_once("#[cfg(test)]")
-            .is_some_and(|(body, _)| body.contains("mastery_plan"))
+            .is_some_and(|(body, _)| body.contains("kill-count-and-mastery"))
     );
 }
