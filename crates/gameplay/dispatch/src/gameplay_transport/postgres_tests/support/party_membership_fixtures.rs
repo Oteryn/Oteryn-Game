@@ -26,23 +26,33 @@ use std::time::Duration;
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 pub(super) fn run(partyskull: bool) -> TestResult {
-    run_case(partyskull, false, false, false, false, None)
+    run_case(partyskull, false, false, None, false, None)
 }
 
 pub(super) fn run_reference_level() -> TestResult {
-    run_case(false, true, false, false, false, None)
+    run_case(false, true, false, None, false, None)
 }
 
 pub(super) fn run_chat() -> TestResult {
-    run_case(false, false, true, false, false, None)
+    run_case(false, false, true, None, false, None)
 }
 
 pub(super) fn run_busy_holder() -> TestResult {
-    run_case(false, false, false, true, false, None)
+    run_case(false, false, false, Some(BusyCase::Invite), false, None)
+}
+
+pub(super) fn run_join_visibility(admin: String) -> TestResult {
+    run_with_admin(admin, false, false, false, Some(BusyCase::JoinVisibility), false, None)
+}
+
+#[derive(Clone, Copy)]
+enum BusyCase {
+    Invite,
+    JoinVisibility,
 }
 
 pub(super) fn run_notices(admin: String) -> TestResult {
-    run_with_admin(admin, false, false, false, false, true, None)
+    run_with_admin(admin, false, false, false, None, true, None)
 }
 
 #[derive(Clone, Copy)]
@@ -53,14 +63,14 @@ pub(super) enum HuntCase {
 }
 
 pub(super) fn run_hunt(admin: String, case: HuntCase) -> TestResult {
-    run_with_admin(admin, false, false, false, false, false, Some(case))
+    run_with_admin(admin, false, false, false, None, false, Some(case))
 }
 
 fn run_case(
     partyskull: bool,
     reference_level: bool,
     chat: bool,
-    busy: bool,
+    busy: Option<BusyCase>,
     notices: bool,
     hunt: Option<HuntCase>,
 ) -> TestResult {
@@ -75,7 +85,7 @@ fn run_with_admin(
     partyskull: bool,
     reference_level: bool,
     chat: bool,
-    busy: bool,
+    busy: Option<BusyCase>,
     notices: bool,
     hunt: Option<HuntCase>,
 ) -> TestResult {
@@ -85,10 +95,10 @@ fn run_with_admin(
             fixture::runtime().map_err(debug)?.block_on(async move {
                 let h = Harness::create(
                     admin,
-                    if busy {
-                        "party_busy_holder"
-                    } else {
-                        "party_membership_wire"
+                    match busy {
+                        Some(BusyCase::Invite) => "party_busy_holder",
+                        Some(BusyCase::JoinVisibility) => "p11_party_join_visibility",
+                        None => "party_membership_wire",
                     },
                     false,
                 )
@@ -383,7 +393,7 @@ async fn scenario(
     partyskull: bool,
     reference_level: bool,
     chat: bool,
-    busy: bool,
+    busy: Option<BusyCase>,
     notices: bool,
     hunt: Option<HuntCase>,
 ) -> TestResult {
@@ -522,8 +532,11 @@ async fn scenario(
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42])
                 .ok_or("party offer")?;
     }
-    if busy {
-        return super::party_busy_holder_fixtures::check(&owner, &mut admitted, &targets, h).await;
+    if let Some(busy) = busy {
+        return match busy {
+            BusyCase::Invite => super::party_busy_holder_fixtures::check(&owner, &mut admitted, &targets, h).await,
+            BusyCase::JoinVisibility => super::party_busy_holder_fixtures::check_join(&owner, &mut admitted, &targets).await,
+        };
     }
     if partyskull {
         super::party_skull_fixtures::check(

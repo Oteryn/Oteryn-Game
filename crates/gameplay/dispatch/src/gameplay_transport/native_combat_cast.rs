@@ -469,6 +469,11 @@ fn restore_parked_native(
     }
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static INTERRUPT_NATIVE_CAST_AFTER_COMMIT: std::cell::Cell<bool>;
+}
+
 /// A resolution that a retry cannot complete keeps the lane fenced until a Channel reload.
 fn log_unresolved_spell_commit(
     emit: fn(&str, &oteryn_error_codes::Line<'_>),
@@ -2325,8 +2330,35 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         intent: &SpellCastIntent,
         access: &A,
     ) -> NativeCastDispatch {
+        let result = self
+            .cast_native_combat_inner(
+                actor, session, command_id, intent, None, None, None, &mut None, access, false,
+                None,
+            )
+            .await;
+        if !matches!(result, NativeCastDispatch::Pending)
+            || !self
+                .states
+                .spell_states
+                .lock()
+                .await
+                .pending_native
+                .iter()
+                .any(|marker| {
+                    marker.is_for(actor, session)
+                        && marker.command.command_id().get() == command_id
+                        && marker.intent == (*intent, None, None, None)
+                })
+        {
+            return result;
+        }
+
+        // SQL can commit before the physical batch (including a lethal hit) is
+        // installed. Resolve this command's retained occurrence before handing
+        // its result back. The lane resolver and physical replay share the
+        // original binding, so neither can pay, damage, or enqueue a kill twice.
         self.cast_native_combat_inner(
-            actor, session, command_id, intent, None, None, None, &mut None, access, false, None,
+            actor, session, command_id, intent, None, None, None, &mut None, access, true, None,
         )
         .await
     }
@@ -2493,8 +2525,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(_room) = self.rooms().gate_native_combat_cast() else {
             return rejected();
         };
-        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
+        let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root);
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let Ok((current, _)) = budget
+            .retry_durability("native_cast_session", || store.current_session_at(session))
             .await
         else {
             return NativeCastDispatch::Pending;
@@ -2507,13 +2541,21 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         else {
             return rejected();
         };
-        let Ok(root_record) = self
-            .root
-            .read_current_character(self.character, character)
+        let Ok(root_record) = budget
+            .retry_durability("native_cast_character", || async {
+                self.root
+                    .read_current_character(self.character, character)
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::character_authority::CharacterAuthorityError::Unavailable(error) => error,
+                        _ => DurabilityError::CommitRejected,
+                    })
+            })
             .await
         else {
             return NativeCastDispatch::Pending;
         };
+        drop(budget);
         let fence = CurrentCharacterGameplayFence {
             character_id: character,
             game_session_id: session,
@@ -2563,6 +2605,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter_output,
         ) {
             Ok(Some(replayed)) => {
+                states
+                    .pending_native
+                    .retain(|marker| !marker.is_for(actor, session) || marker.command != command);
                 self.record_spell_kills(&mut runtime, &states, std::iter::once(&replayed))
                     .await;
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
@@ -3060,6 +3105,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 }
             };
             let (committed,window)=committed;
+            #[cfg(test)]
+            if INTERRUPT_NATIVE_CAST_AFTER_COMMIT.try_with(|armed| armed.replace(false)) == Ok(true) {
+                return Err(DurabilityError::Unavailable);
+            }
             #[cfg(test)]
             if legacy.is_some() && super::super::rune_use_bridge::test_faults::take(
                 super::super::rune_use_bridge::test_faults::Point::AfterCommit) {

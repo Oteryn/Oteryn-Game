@@ -1689,6 +1689,15 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    async fn retry_join_observation<T>(
+        &self,
+        observe: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> Result<T, AdmissionRefusal> {
+        tokio::time::timeout_at(self.deadline, self.retry_unavailable(observe))
+            .await
+            .map_err(|_| AdmissionRefusal::Unavailable)?
+    }
+
     /// Retries errors that prove the operation could not acquire a holder.
     async fn retry_holder<T, E>(
         &self,

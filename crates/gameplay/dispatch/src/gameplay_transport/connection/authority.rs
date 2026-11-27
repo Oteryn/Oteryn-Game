@@ -335,6 +335,19 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// Retry only a typed transient failure of one join observation. Fixtures
+    /// have no durable holder to await, so the same admission budget backs off.
+    fn retry_join_observation<T>(
+        &self,
+        session: GameSessionId,
+        observe: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> impl Future<Output = Result<T, AdmissionRefusal>> {
+        async move {
+            let budget = crate::gameplay_transport::AdmissionRetryBudget::new(&session);
+            budget.retry_join_observation(observe).await
+        }
+    }
+
     /// S-ENTNAME: the same visibility read enriched with names for capability 286.
     fn observe_named_visible_entities(
         &self,

@@ -181,6 +181,24 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     })
 }
 
+/// Channel and House joins observe visibility before mutating client view
+/// state. Retry that read alone so no snapshot revision or handle is replayed.
+pub(super) async fn join_visibility<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &AdmittedSession,
+) -> Result<crate::gameplay_transport::world_spatial::ChannelEntities, ServeEnd> {
+    let selected = admitted.continuity.selected_capabilities;
+    Box::pin(
+        authority.retry_join_observation(admitted.game_session_id, async || {
+            crate::gameplay_transport::entity_names::observe_result(authority, actor, selected)
+                .await
+        }),
+    )
+    .await
+    .map_err(|refusal| super::setup::observation_failed("visibility", refusal))
+}
+
 pub(super) struct ItemSnapshot {
     pub(super) party_view: crate::gameplay_transport::party_command::SessionPartyView,
     pub(super) item_view: Option<SessionItemView>,
@@ -291,25 +309,14 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
     let mut appearances = SessionAppearance::new(selected_capabilities);
     let mut visibility = None;
     if selected_capabilities.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        let Some(channel) = crate::gameplay_transport::entity_names::observe(
-            authority,
-            actor,
-            selected_capabilities,
-        )
-        .await
-        else {
-            return Err(super::setup::failed(
-                "event=join_prepare_failed phase=visibility",
-                ServeEnd::Disconnected,
-            ));
-        };
+        let channel = join_visibility(authority, actor, admitted).await?;
         let mut view = SessionVisibility::with_objects(item_view.is_some())
             .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1))
             .with_motion(
                 selected_capabilities
                     .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
             );
-        let Some(encoded) = appearances
+        let encoded = appearances
             .initial(
                 authority,
                 actor,
@@ -319,12 +326,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
                 item_view.as_mut(),
             )
             .await
-        else {
-            return Err(super::setup::failed(
-                "event=join_prepare_failed phase=appearances",
-                ServeEnd::Disconnected,
-            ));
-        };
+            .map_err(|refusal| super::setup::observation_failed("appearances", refusal))?;
         if let Some(item_view) = &item_view {
             admitted.continuity.item_view = item_view.continuity();
         }

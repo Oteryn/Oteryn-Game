@@ -16,11 +16,20 @@ pub(super) async fn observe<A: FreshAdmissionAuthority>(
         .ok()
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static INTERRUPT_JOIN_VISIBILITY: std::cell::Cell<bool>;
+}
+
 pub(super) async fn observe_result<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     selected: SelectedCapabilities,
 ) -> Result<ChannelEntities, AdmissionRefusal> {
+    #[cfg(test)]
+    if INTERRUPT_JOIN_VISIBILITY.try_with(|armed| armed.replace(false)) == Ok(true) {
+        return Err(AdmissionRefusal::Unavailable);
+    }
     authority.observe_projected_entities(actor, selected).await
 }
 

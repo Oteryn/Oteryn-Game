@@ -981,6 +981,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    async fn retry_join_observation<T>(
+        &self,
+        session: GameSessionId,
+        observe: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> Result<T, AdmissionRefusal> {
+        AdmissionRetryBudget::for_foreground_root(&session, self.root)
+            .map_err(|_| AdmissionRefusal::Unavailable)?
+            .retry_join_observation(observe)
+            .await
+    }
+
     async fn observe_named_visible_entities(
         &self,
         actor: ExactActorRef,

@@ -77,3 +77,38 @@ pub(super) async fn check(
     assert_eq!(members, 2);
     Ok(())
 }
+
+pub(super) async fn check_join(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut [AdmittedSession],
+    targets: &[EntityRef],
+) -> TestResult {
+    use super::party_membership_fixtures::{Step, roundtrip};
+    use crate::gameplay_transport::capabilities::{
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+    };
+    use crate::gameplay_transport::entity_names::INTERRUPT_JOIN_VISIBILITY;
+    use oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2;
+
+    let invited = roundtrip(owner, &mut admitted[0], &[Step::Invite(targets[1])]).await?;
+    assert_eq!(invited[0].disposition, PartyDisposition::Ok);
+    // The invitee is already staged in the Channel. Its next connection must get
+    // the named snapshot and enter the existing invite/query/accept stream.
+    admitted[1].continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[6, 42, CAPABILITY_WORLD_SPATIAL_ENTITIES_V2],
+    )
+    .ok_or("party join visibility capabilities")?;
+    let result = INTERRUPT_JOIN_VISIBILITY
+        .scope(std::cell::Cell::new(true), async {
+            let result = roundtrip(owner, &mut admitted[1], &[Step::Query, Step::Accept]).await?;
+            assert!(!INTERRUPT_JOIN_VISIBILITY.with(std::cell::Cell::get));
+            Ok::<_, Box<dyn std::error::Error>>(result)
+        })
+        .await?;
+    assert_eq!(result[0].invitations.len(), 1);
+    assert_eq!(result[1].disposition, PartyDisposition::Ok);
+    assert_eq!(result[1].members.len(), 2);
+    eprintln!("P11 staged party member joined and accepted after a transient visibility miss");
+    Ok(())
+}

@@ -152,7 +152,7 @@ impl SessionAppearance {
         view: &mut SessionVisibility,
         channel: &ChannelEntities,
         item_view: Option<&mut SessionItemView>,
-    ) -> Option<(u32, Vec<u8>)> {
+    ) -> Result<(u32, Vec<u8>), AdmissionRefusal> {
         let mut item_view = item_view;
         let mut snapshot = note_none(
             view.snapshot(channel, &mut |entities| {
@@ -160,21 +160,32 @@ impl SessionAppearance {
             })
             .ok(),
             "mappings",
-        )?;
+        )
+        .ok_or(AdmissionRefusal::Rejected)?;
         if self.selected {
             self.select_hirelings(channel);
             let mut players = self.players(&snapshot.entities);
-            let observation = note_none(
-                authority
-                    .appearance_observation_projected(
-                        actor,
-                        admitted.game_session_id,
-                        self.empty_outfit,
-                        players.clone(),
-                    )
-                    .await,
-                "observation",
-            )?;
+            let observation = Box::pin(authority.retry_join_observation(
+                admitted.game_session_id,
+                async || {
+                    use crate::gameplay_transport::appearance_change::observation::ObservationError;
+                    authority
+                        .appearance_observation_projected_result(
+                            actor,
+                            admitted.game_session_id,
+                            self.empty_outfit,
+                            players.clone(),
+                        )
+                        .await
+                        .map_err(|error| match error {
+                            ObservationError::HolderBusy | ObservationError::RespawnPending => {
+                                AdmissionRefusal::Unavailable
+                            }
+                            ObservationError::Unavailable => AdmissionRefusal::Rejected,
+                        })
+                },
+            ))
+            .await?;
             players.retain(|entity| !observation.skipped.contains(entity));
             if !observation.skipped.is_empty() {
                 let mut channel = channel.clone();
@@ -190,20 +201,25 @@ impl SessionAppearance {
                     })
                     .ok(),
                     "mappings",
-                )?;
+                )
+                .ok_or(AdmissionRefusal::Rejected)?;
             }
-            note_none(self.upserts(observation, &players), "mappings")?;
-            note_none(self.attach(&mut snapshot.entities), "attach")?;
+            note_none(self.upserts(observation, &players), "mappings")
+                .ok_or(AdmissionRefusal::Rejected)?;
+            note_none(self.attach(&mut snapshot.entities), "attach")
+                .ok_or(AdmissionRefusal::Rejected)?;
             let payload = note_none(
                 wire::Snapshot {
-                    catalogue: note_none(self.catalogue.clone(), "encode")?,
+                    catalogue: note_none(self.catalogue.clone(), "encode")
+                        .ok_or(AdmissionRefusal::Rejected)?,
                     bindings: self.bindings.values().cloned().collect(),
                     high_water: self.high_water,
                 }
                 .encode()
                 .ok(),
                 "encode",
-            )?;
+            )
+            .ok_or(AdmissionRefusal::Rejected)?;
             self.snapshot = Some(payload.into());
             self.revision = 1;
         }
@@ -216,6 +232,7 @@ impl SessionAppearance {
             .ok(),
             "encode",
         )
+        .ok_or(AdmissionRefusal::Rejected)
     }
     pub(super) fn domain<'a>(&'a self, domains: &mut Vec<DomainSnapshot<'a>>) {
         if let Some(payload) = &self.snapshot {
