@@ -80,7 +80,7 @@ async fn exercise(harness: &fixture::Harness) -> fixture::TestResult {
                 .finalize();
             assert_eq!(
                 proof_key(harness, &plan, rule, session, command).await?,
-                format!("oteryn:reward-claim.npc-program.{digest:x}"),
+                digest_key("oteryn:reward-claim.npc-program.", digest.as_slice()),
                 "{rule}, command {command}"
             );
         }
@@ -92,7 +92,10 @@ async fn exercise(harness: &fixture::Harness) -> fixture::TestResult {
     for (session, command) in [(first, 1), (second, 2)] {
         assert_eq!(
             proof_key(harness, &plan, permanent, session, command).await?,
-            format!("oteryn:reward-claim.npc-program.{permanent_digest:x}")
+            digest_key(
+                "oteryn:reward-claim.npc-program.",
+                permanent_digest.as_slice(),
+            )
         );
     }
 
@@ -108,7 +111,10 @@ async fn exercise(harness: &fixture::Harness) -> fixture::TestResult {
     let cooking_digest = Sha256::digest(format!("{cooking}/2"));
     assert_eq!(
         proof_key(harness, &plan, cooking, first, 1).await?,
-        format!("oteryn:reward-claim.npc-program.{cooking_digest:x}")
+        digest_key(
+            "oteryn:reward-claim.npc-program.",
+            cooking_digest.as_slice(),
+        )
     );
 
     let bigfoot = "oteryn:quest-npc/bigfoot_s_burden_quest/commander_stone/branch-73-4-1-1";
@@ -121,9 +127,17 @@ async fn exercise(harness: &fixture::Harness) -> fixture::TestResult {
         .finalize();
     assert_eq!(
         proof_key(harness, &plan, bigfoot, first, 1).await?,
-        format!("oteryn:quest-exchange/{digest:x}")
+        digest_key("oteryn:quest-exchange/", digest.as_slice())
     );
     Ok(())
+}
+
+fn digest_key(prefix: &str, digest: &[u8]) -> String {
+    let hex = digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    format!("{prefix}{hex}")
 }
 
 async fn proof_key(
