@@ -4135,8 +4135,29 @@ async fn c16c_rat_corpse(
                         && *target == rat.entity
                         && *owner == attacker
                     {
-                        if primary.color != PresentationColor::Red || damage.replace(primary.value).is_some() {
-                            return Err("C16c expected one red damage value for the exact strike".into());
+                        if primary.color != PresentationColor::Red {
+                            // Client presentation uses the Tibia six-level RGB palette.
+                            use PresentationColor::*;
+                            let rgb = match primary.color {
+                                Red => [5, 0, 0],
+                                LightGreen => [2, 5, 2],
+                                LightGrey => [4, 4, 4],
+                                Orange => [5, 3, 0],
+                                Purple => [4, 1, 5],
+                                SkyBlue => [0, 4, 5],
+                                Yellow => [5, 5, 0],
+                                DarkRed => [3, 0, 0],
+                                LightBlue => [2, 3, 5],
+                                Blue => [0, 0, 5],
+                                PastelRed => [5, 2, 2],
+                                MayaBlue => [2, 4, 5],
+                                White => [5, 5, 5],
+                            }
+                            .map(|channel| channel * 51);
+                            return Err(format!("C16c colour != red, observed RGB {rgb:?} ({:?})", primary.color).into());
+                        }
+                        if damage.replace(primary.value).is_some() {
+                            return Err("C16c duplicate strike events n=2".into());
                         }
                     }
                 }
