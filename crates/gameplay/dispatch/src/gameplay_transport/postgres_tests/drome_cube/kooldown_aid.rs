@@ -29,7 +29,14 @@ pub(super) async fn run(
         ],
         &[4, 6, 14, 15, 23, 31],
     ).ok_or("cooldown capability selection")?;
-    let before = armed(owner.owner_now())?;
+    let keys = ["exura", "exura gran"].map(|words| {
+        owner.spells.spoken(words).map(|spoken| spoken.spell.key.as_str())
+    });
+    let [Some(light_healing), Some(intense_healing)] = keys else {
+        return Err("Aid fixture requires both starter healing spells".into());
+    };
+    let keys = [light_healing, intense_healing];
+    let before = armed(owner.owner_now(), keys)?;
     install(owner, actor, session, before.clone()).await?;
     let open = encode_use_item_intent(NonZeroU64::new(2).ok_or("bag handle")?);
     let used = encode_use_item_intent(NonZeroU64::new(3).ok_or("concoction handle")?);
@@ -115,11 +122,13 @@ pub(super) async fn run(
         return Err("Aid must send exactly one cooldown update".into());
     };
     let mut expected = Vec::new();
-    let spell_index = owner.spells.spells.iter()
-        .position(|spell| spell.key == "oteryn:spell.light_healing")
-        .ok_or("healing spell index")?;
     use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
-    expected.push((ActorCooldownKind::Spell, u32::try_from(spell_index + 1)?));
+    for key in keys {
+        let index = owner.spells.spells.iter()
+            .position(|spell| spell.key == key)
+            .ok_or("healing spell index")?;
+        expected.push((ActorCooldownKind::Spell, u32::try_from(index + 1)?));
+    }
     let groups = crate::gameplay_transport::spell_catalog::cooldown_group_keys().ok_or("group keys")?;
     for group in ["attack", "healing"] {
         let index = groups.iter().position(|key| key == group).ok_or("group index")?;
@@ -153,7 +162,7 @@ pub(super) async fn run(
     assert_eq!(harness.count("game_drome_cube_uses").await?, 0);
 
     // A settled historical result is not permission to reset a later spell.
-    let later = armed(after)?;
+    let later = armed(after, keys)?;
     install(owner, actor, session, later.clone()).await?;
     let replay = owner
         .use_drome_cube(actor, command(2)?, intent.clone(), None)
@@ -312,11 +321,12 @@ pub(super) async fn run(
     Ok(())
 }
 
-fn armed(now: SemanticTimeMicros) -> TestResult<Cooldowns> {
+fn armed(now: SemanticTimeMicros, [light, intense]: [&str; 2]) -> TestResult<Cooldowns> {
     let future = now.checked_add(3_600_000_000).map_err(debug)?;
     Ok(Cooldowns {
         spells: [
-            ("oteryn:spell.light_healing".into(), future),
+            (light.into(), future),
+            (intense.into(), future),
             ("other_unresolved_spell".into(), future),
         ]
         .into(),
