@@ -588,7 +588,10 @@ where
                     ServeEnd::Disconnected => "Disconnected".to_owned(),
                     ServeEnd::LoggedOut => "LoggedOut".to_owned(),
                     ServeEnd::Transferred(_) => "Transferred".to_owned(),
-                    ServeEnd::Transport(reason) => format!("Transport({reason:?})"),
+                    ServeEnd::Transport(end) => {
+                        let (path, reason) = end.fields();
+                        format!("Transport({path},{reason})")
+                    }
                 };
                 operator_event(&format!(
                     "event=serve_command_end error={error} next_command_id={}",
