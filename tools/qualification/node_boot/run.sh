@@ -894,15 +894,6 @@ TOML
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
   fi
-  if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
-    cat "$PORTAL_E2E_OUT/certs/clients/premium.pem" "$PORTAL_E2E_OUT/certs/clients/premium.key" \
-      | install_owned "$SERVICE_UID" -m 0600 /dev/stdin "$BASE/node/secrets/premium.pem"
-    NODE_GAMEPLAY_ENV+=(
-      "OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:$PORTAL_E2E_INTERNAL_PORT"
-      "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
-      "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
-    )
-  fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
 # Root/client writes an atomic offset; the service can only read it. Start at
@@ -923,6 +914,14 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
     "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
     "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
     "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  # Stage functions run in subshells. The node launch stages share this environment.
+  if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+    NODE_GAMEPLAY_ENV+=(
+      "OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:$PORTAL_E2E_INTERNAL_PORT"
+      "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+      "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
+    )
+  fi
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
