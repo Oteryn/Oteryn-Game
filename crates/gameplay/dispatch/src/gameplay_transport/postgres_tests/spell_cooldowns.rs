@@ -1,4 +1,4 @@
-use super::{TestResult, parameter_spell_fixtures::scenario};
+use super::{TestResult, parameter_spell_fixtures::{COOLDOWN_CASE, COOLDOWN_WITHOUT_PRESENTATION_CASE, scenario}};
 
 #[test]
 fn spell_cooldowns_start_with_remaining_ms_without_ack_correction() -> TestResult {
@@ -38,4 +38,14 @@ fn spell_cooldowns_legacy_client_keeps_magic_shield_after_light() -> TestResult 
 #[test]
 fn spell_cooldowns_negotiated_sparse_client_receives_only_changed_keys() -> TestResult {
     scenario(108)
+}
+
+#[test]
+fn spell_cooldowns_follow_committed_indexed_and_spoken_casts() -> TestResult {
+    scenario(COOLDOWN_CASE)
+}
+
+#[test]
+fn spell_cast_omits_cooldowns_without_negotiated_presentation() -> TestResult {
+    scenario(COOLDOWN_WITHOUT_PRESENTATION_CASE)
 }

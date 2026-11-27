@@ -79,7 +79,7 @@
       "source_line": 148,
       "storage_line": 362,
       "map_path": "content/world/placements/region-z08-x125-y126.b3",
-      "map_sha256": "47f087d7ecf6486346d7d9e90b985605176c9a48561ca492b90aa3f79bfff351"
+      "map_sha256": "6c981b532b4ee2451ca37490e19dd1ff8a5dbb0a817e9a6a5f3edb650f2ae25e"
     },
     {
       "position": [
@@ -93,7 +93,7 @@
       "source_path": "data-global/startup/tables/door_level.lua",
       "source_line": 116,
       "map_path": "content/world/placements/region-z10-x125-y126.b3",
-      "map_sha256": "cba140f5a7573b887791e58688f6754492d3d1c40a5e7a5ef4e782abde62e616"
+      "map_sha256": "5e549556141aadbd54406f35310730ee56e86ff1be83f8552d09dec3f6c19520"
     },
     {
       "position": [
@@ -107,7 +107,7 @@
       "source_line": 153,
       "storage_line": 363,
       "map_path": "content/world/placements/region-z10-x126-y126.b3",
-      "map_sha256": "fafd3cbbb3ae75bc87e3540660c1b14ac28d11834d906de29df8d55ed4946fb9"
+      "map_sha256": "19b0891e0997f601a4c2a370c4b5352544193493276727426cefeb2b1987b4d3"
     },
     {
       "position": [

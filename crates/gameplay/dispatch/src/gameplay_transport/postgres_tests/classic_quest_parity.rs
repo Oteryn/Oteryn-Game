@@ -6,17 +6,17 @@ use super::{
 
 #[test]
 fn outlaw_camp_key_3303_unlocks_the_mine_door() -> TestResult {
-    source_key_door(32614, 32175, -9, 3303)
+    source_key_door(32614, 32175, -9, 1631, 3303)
 }
 
 #[test]
 fn outlaw_camp_key_3304_unlocks_the_treasure_door() -> TestResult {
-    source_key_door(32620, 32199, -10, 3304)
+    source_key_door(32620, 32199, -10, 6251, 3304)
 }
 
 #[test]
 fn explorer_society_key_3802_unlocks_dwacatra_prison() -> TestResult {
-    source_key_door(32602, 31975, -14, 3802)
+    source_key_door(32602, 31975, -14, 7714, 3802)
 }
 
 #[test]

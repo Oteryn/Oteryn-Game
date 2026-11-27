@@ -7,6 +7,13 @@ use sha2::{Digest, Sha256};
 // other door on the tile authoritative; an overlay never opens its neighbours.
 impl crate::map::floor::CellBlocker for BundleFacts {
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        self.doors_block_player(cell, u32::MAX)
+    }
+}
+
+impl BundleFacts {
+    /// Player movement applies the authored level predicate even while the gate is open.
+    pub fn doors_block_player(&self, cell: crate::content::LogicalCell, level: u32) -> bool {
         let (Ok(x), Ok(y), Ok(z)) = (
             u16::try_from(cell.x),
             u16::try_from(cell.y),
@@ -25,7 +32,7 @@ impl crate::map::floor::CellBlocker for BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        self.doors.blocks_unless(pos, |key| {
+        self.doors.blocks_unless(pos, level, |key| {
             states.hidden.contains(&key) || states.passable.get(&key) == Some(&true)
         })
     }

@@ -906,8 +906,7 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
 }
 
 // Stored 1 means collection has started and 21 means twenty dust were paid.
-// "Mission" keeps the acceptance and report steps. "Vampire dust" can start
-// collection and deposit in one exchange, and advances the mission when paid.
+// Deposits update only the counter. The later mission report advances the quest.
 fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(), String> {
     const HAND_IN: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust";
     const COLLECT: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust/collect";
@@ -929,23 +928,6 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
     {
         return Err("Storkus dust counter bounds".into());
     }
-    let advance_mission = |callback: &mut RewardCallback| -> Result<(), String> {
-        for stage in &mut callback.storage[..2] {
-            stage.preserve = false;
-            stage.set = stage
-                .set
-                .checked_add(1)
-                .ok_or("Storkus dust stage bounds")?;
-        }
-        Ok(())
-    };
-    let mut full_hand_in = full.clone();
-    full_hand_in.key = HAND_IN.into();
-    full_hand_in.topic = 9;
-    full_hand_in.storage[2].minimum = 0;
-    advance_mission(&mut full_hand_in)?;
-    callbacks.push(full_hand_in);
-
     for saved in dust.minimum..dust.set {
         let remaining = payment
             .count
@@ -966,23 +948,24 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
             deposit.storage[2].minimum = saved;
             deposit.storage[2].maximum = saved;
             deposit.storage[2].set = saved + i64::from(count);
-            if !finished {
-                deposit.reply = vec!["Bring me more vampire dust when you have it.".into()];
-            }
-            let mut hand_in = deposit.clone();
-            hand_in.key = format!("{HAND_IN}/hand-in-{saved}-{count}");
-            hand_in.topic = 9;
-            if saved == dust.minimum {
-                hand_in.storage[2].minimum = 0;
-            }
-            if finished {
-                advance_mission(&mut hand_in)?;
-            }
+            deposit.reply = vec![storkus_dust_reply(count, deposit.storage[2].set)];
             callbacks.push(deposit);
-            callbacks.push(hand_in);
         }
     }
     Ok(())
+}
+
+/// The report unlocks at 21 because accepting the mission starts the counter at 1.
+#[must_use]
+pub fn storkus_dust_reply(count: u16, saved: i64) -> String {
+    let remaining = 21 - saved;
+    if remaining > 0 {
+        format!("Ye've brought me {count} vampire dusts. Ye' need to bring {remaining} more.")
+    } else {
+        format!(
+            "Ye've brought me {count} vampire dusts. Ask me for a mission to continue your quest."
+        )
+    }
 }
 
 pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
@@ -3327,14 +3310,12 @@ mod tests {
                 .key
                 .strip_suffix("/collect")
                 .ok_or("Storkus collect key")?;
-            assert!(expected.insert(hand_in.to_owned()));
             let payment = full.take.first().ok_or("Storkus payment")?;
             let dust = full.storage.last().ok_or("Storkus counter")?;
             for stored in dust.minimum..dust.set {
                 for count in 1..=dust.set - stored {
                     if (stored, count) != (dust.minimum, i64::from(payment.count)) {
                         assert!(expected.insert(format!("{hand_in}/deposit-{stored}-{count}")));
-                        assert!(expected.insert(format!("{hand_in}/hand-in-{stored}-{count}")));
                     }
                 }
             }
@@ -3343,6 +3324,68 @@ mod tests {
             assert!(expected.insert(callback.key));
         }
         let registered = load()?;
+        let storkus_dust = registered
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-reward/inquisition-vampire-hunt-dust")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(storkus_dust.len(), 212);
+        for callback in storkus_dust {
+            let [questline, mission, dust] = callback.storage.as_slice() else {
+                return Err(format!("missing Storkus stages for {}", callback.key));
+            };
+            let suffix = callback
+                .key
+                .strip_prefix("oteryn:quest-reward/inquisition-vampire-hunt-dust/")
+                .ok_or("Storkus callback prefix")?;
+            let (topic, keyword, saved, next, count, advances) = match suffix {
+                "accept" => (9, "yes", 0, 1, 0, false),
+                "collect" => (1, "yes", 1, 21, 20, false),
+                "already-paid" => (0, "mission", 21, 21, 0, true),
+                _ => {
+                    let (saved, count) = suffix
+                        .strip_prefix("deposit-")
+                        .and_then(|variant| variant.split_once('-'))
+                        .ok_or("Storkus deposit key")?;
+                    let saved = saved.parse::<i64>().map_err(|error| error.to_string())?;
+                    let count = count.parse::<u16>().map_err(|error| error.to_string())?;
+                    (1, "yes", saved, saved + i64::from(count), count, false)
+                }
+            };
+            assert_eq!(
+                (callback.topic, callback.keywords.as_slice()),
+                (topic, &[keyword.to_owned()][..])
+            );
+            assert_eq!((questline.minimum, questline.maximum), (6, 6));
+            assert_eq!(
+                (dust.minimum, dust.maximum, dust.set, dust.preserve),
+                (saved, saved, next, advances)
+            );
+            assert_eq!(
+                (questline.set, questline.preserve),
+                (if advances { 7 } else { 6 }, !advances)
+            );
+            if count == 0 {
+                assert!(callback.take.is_empty());
+            } else {
+                assert_eq!(callback.take.len(), 1);
+                assert_eq!(callback.take[0].item, "oteryn:item.tibia.i5905");
+                assert_eq!(callback.take[0].count, count);
+            }
+            assert_eq!(
+                (mission.minimum, mission.maximum),
+                (0, 1),
+                "{}",
+                callback.key
+            );
+            assert_eq!(
+                (mission.set, mission.preserve),
+                (if advances { 2 } else { 1 }, !advances)
+            );
+        }
         assert_eq!(registered.len(), expected.len());
         assert_eq!(
             registered

@@ -259,35 +259,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return outcome(UseDisposition::Locked);
             }
             let now = self.owner_now();
-            let blocked = pvp_live::pz_blocked(&spell_states, actor, session, now);
-            let Ok(proof) = crate::map::floor::prepare_quest_door_opening(
-                &runtime,
-                self.movement_cells(),
+            let used = map_door::use_owned_door(
                 map,
+                self.movement_cells(),
+                &mut runtime,
                 actor,
                 session,
                 expected,
-                key,
-                blocked,
-            ) else {
-                return outcome(UseDisposition::NotPossible);
-            };
-            if !self.states.player_trades.physical(session, None) {
-                return outcome(UseDisposition::Rejected);
+                actor_tile,
+                &spell_states,
+                quest_storage_met,
+                now,
+                target,
+                || self.states.player_trades.physical(session, None),
+            );
+            if used.disposition != UseDisposition::Committed {
+                return used;
             }
-            let Ok(snapshot) = runtime.commit_source_step_and_project(proof, || {
-                matches!(
-                    doors.toggle(
-                        key,
-                        target.expected_revision,
-                        false,
-                        actor_level.unwrap_or_default(),
-                        true
-                    ),
-                    Some(crate::map::door::DoorUse::Toggled { open: true, .. })
-                )
-            }) else {
-                return outcome(UseDisposition::Rejected);
+            let Ok(snapshot) = runtime.read_actor_position(actor) else {
+                return used;
             };
             spell_states.stage_special_movement_step(
                 &runtime,
