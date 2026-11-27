@@ -86,7 +86,7 @@ const INVENTORY: &[Entry] = &[
         key: "",
         state: COMBAT_ENABLE,
         calls: &[
-            ("gameplay_transport/composed_admission/combat.rs", 1),
+            ("gameplay_transport/composed_admission/combat.rs", 2),
             ("gameplay_transport/player_trade/observation.rs", 1),
         ],
     },

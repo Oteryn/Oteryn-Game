@@ -624,24 +624,14 @@ where
             else {
                 return Ok(());
             };
-            let Some(change) = session.admitted.continuity.combat.delta(
-                session.generation,
-                session.sequence,
-                state,
-            ) else {
-                return Err(command::disconnect(
-                    command,
-                    "combat_delta",
-                    "encode_failed",
-                ));
-            };
-            if let Some((delta_sequence, frame)) = change {
-                session.sequence = delta_sequence;
-                session.admitted.continuity.server_sequence = session.sequence;
-                write_frame(stream, &frame)
-                    .await
-                    .map_err(|error| command::disconnect(command, "combat_write", error.kind()))?;
-            }
+            let cancel = command.command_type
+                == oteryn_protocol_oteryn::attack::COMMAND_TYPE_ATTACK_TARGET_INTENT
+                && matches!(decode_attack_target_intent(command.payload), Ok(None));
+            refresh::publish_combat(stream, authority, session, state, !cancel)
+                .await
+                .map_err(|end| {
+                    command::disconnect_at(command, "combat_delta", "emit_failed", end)
+                })?;
         }
         Dispatch::Guild(_) if command.command_type == 73 && command.payload.first() == Some(&4) => {
             if let Some(view) = session.item_view.as_mut()

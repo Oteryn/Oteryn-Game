@@ -263,6 +263,37 @@ impl ChannelRuntimeV1 {
         self.carrier.retains_corpse_projection(actor)
     }
 
+    /// Death evidence for an opaque placement reference, including lethal slots whose
+    /// corpses have not been bound to a durable item yet.
+    pub fn knows_creature_death(&self, identity: [u8; 16], generation: u64) -> bool {
+        let matches = |actor: ExactActorRef| {
+            actor.actor_local_generation() == generation && actor.placement_identity() == identity
+        };
+        self.carrier
+            .corpse_projections
+            .iter()
+            .any(|corpse| matches(corpse.occurrence.actor))
+            || self.carrier.occupied.iter().any(|index| {
+                let Some(Slot::CreatureOccupied {
+                    health,
+                    position: Some(position),
+                    ..
+                }) = usize::try_from(*index)
+                    .ok()
+                    .and_then(|index| self.carrier.slots.get(index))
+                else {
+                    return false;
+                };
+                *health <= 0
+                    && matches(ExactActorRef(ActorRef::from_scoped_owner_parts(
+                        self.carrier.runtime_scope,
+                        self.carrier.scope_generation,
+                        position.actor_local_id,
+                        position.actor_local_generation,
+                    )))
+            })
+    }
+
     /// MAP-ITEM-REF-1 Part B: every bound corpse of this generation under the pinned Movement
     /// context, in projection order. A corpse without a binding, or whose projection is gone, is
     /// left out. Read-only.

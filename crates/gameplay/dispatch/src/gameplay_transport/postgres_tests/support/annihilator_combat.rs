@@ -194,6 +194,18 @@ pub(super) async fn clear_corridor(
             encode_attack_target_intent(Some(&entity)).map_err(debug)?,
         )
         .await?;
+        let state = owner
+            .observe_actor_combat_state(player, member.game_session_id)
+            .await
+            .ok_or("combat state after selection")?;
+        assert_eq!(state.target, Some(entity), "the on-screen demon stays selected");
+        command(
+            owner,
+            member,
+            COMMAND_TYPE_ATTACK_TARGET_INTENT,
+            encode_attack_target_intent(Some(&entity)).map_err(debug)?,
+        )
+        .await?;
         let mut killed = false;
         let mut observed_outgoing_damage = false;
         for pass in 0..512 {
@@ -269,6 +281,11 @@ pub(super) async fn clear_corridor(
                 killed = true;
                 break;
             }
+            let state = owner
+                .observe_actor_combat_state(player, member.game_session_id)
+                .await
+                .ok_or("combat state while the demon is alive")?;
+            assert_eq!(state.target, Some(entity), "the living corridor demon stays selected");
             if needs_healing {
                 heal(owner, member, KNIGHT_POTION).await?;
             }

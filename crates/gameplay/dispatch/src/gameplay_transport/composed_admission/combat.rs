@@ -48,8 +48,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let room = self.rooms().gate_attack_target();
-        if target.is_some_and(|target| states.player_ref_hidden_from(&runtime, actor, target, now))
+        if let Some(target) = target
+            && states.player_ref_hidden_from(&runtime, actor, target, now)
         {
+            super::super::attack::log_target_reason(
+                "refuse",
+                command_id,
+                target,
+                super::super::attack::AttackTargetReason::Invisible,
+            );
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::TargetNotVisible;
         }
         if let Some(permit) = permit.as_ref()
@@ -113,6 +120,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut attack = self.states.attack.lock().await;
         attack.settle_pacified_target(&runtime, &states, actor, game_session_id);
         attack.settle_invisible_target(&runtime, &states, actor, game_session_id, now);
+        if let Some(room) = self.rooms().gate_attack_target() {
+            attack.settle_held_target(&runtime, room, actor, game_session_id, now);
+        }
         let mut state = attack.combat_state(actor, game_session_id, now);
         state.in_fight |= pvp_live::logout_blocked(&states, actor, game_session_id, now);
         Some(state)

@@ -234,6 +234,34 @@ struct ActorAttack {
 }
 
 impl ActorAttack {
+    fn settle_held_target(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        now: SemanticTimeMicros,
+    ) {
+        if let Some(target) = self.state.target() {
+            match target_facts(runtime, room, self.actor, self.session, target, now) {
+                Ok(facts) if !facts.attackable_kind => {
+                    self.clear_target_for(AttackTargetReason::NotAttackable);
+                }
+                Err(reason) if reason != AttackTargetReason::ObservationUnavailable => {
+                    self.clear_target_for(reason);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn clear_target_for(&mut self, reason: AttackTargetReason) {
+        if let (Some((_, lineage)), Some(target)) =
+            (self.state.held_target_lineage(), self.target_ref)
+        {
+            log_target_reason("clear", lineage.command_id().get(), target, reason);
+        }
+        self.clear_target();
+    }
+
     fn clear_target(&mut self) {
         self.state.clear_target();
         self.target_ref = None;
@@ -370,18 +398,72 @@ fn pacified_applied_since(
         .is_ok_and(|store| store.pacified_applied_since(since.get()))
 }
 
-/// Why an `ATTACK_TARGET` intent was refused before any owner state changed.
-fn refusal_disposition(refusal: TargetRefusal) -> AttackIntentDisposition {
-    match refusal {
-        TargetRefusal::NotVisible | TargetRefusal::Dead => {
-            AttackIntentDisposition::TargetNotVisible
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum AttackTargetReason {
+    Dead,
+    OutOfVisibilityRange,
+    OtherFloor,
+    ProtectionZone,
+    IdentityChanged,
+    UnknownCreature,
+    Invisible,
+    NotAttackable,
+    ReentryProtected,
+    ObservationUnavailable,
+}
+
+impl AttackTargetReason {
+    const fn key(self) -> &'static str {
+        match self {
+            Self::Dead => "dead",
+            Self::OutOfVisibilityRange => "out_of_visibility_range",
+            Self::OtherFloor => "other_floor",
+            Self::ProtectionZone => "protection_zone",
+            Self::IdentityChanged => "identity_or_generation_changed",
+            Self::UnknownCreature => "unknown_creature",
+            Self::Invisible => "invisible",
+            Self::NotAttackable => "not_attackable",
+            Self::ReentryProtected => "reentry_protected",
+            Self::ObservationUnavailable => "observation_unavailable",
         }
-        TargetRefusal::NotAttackableKind => AttackIntentDisposition::TargetNotACreature,
+    }
+
+    const fn disposition(self) -> AttackIntentDisposition {
+        match self {
+            Self::ProtectionZone => AttackIntentDisposition::ProtectionZone,
+            Self::NotAttackable => AttackIntentDisposition::TargetNotACreature,
+            Self::ReentryProtected => AttackIntentDisposition::ReentryProtected,
+            Self::ObservationUnavailable => AttackIntentDisposition::Rejected,
+            _ => AttackIntentDisposition::TargetNotVisible,
+        }
+    }
+}
+
+pub(super) fn log_target_reason(
+    action: &str,
+    command_id: u64,
+    target: EntityRef,
+    reason: AttackTargetReason,
+) {
+    super::operator_event(&format!(
+        "event=attack_target_resolution action={action} command_id={command_id} target_identity={:032x} target_generation={} reason={}",
+        u128::from_be_bytes(target.identity),
+        target.generation,
+        reason.key(),
+    ));
+}
+
+/// Why an `ATTACK_TARGET` intent was refused before any owner state changed.
+fn refusal_reason(refusal: TargetRefusal) -> AttackTargetReason {
+    match refusal {
+        TargetRefusal::NotVisible => AttackTargetReason::OutOfVisibilityRange,
+        TargetRefusal::Dead => AttackTargetReason::Dead,
+        TargetRefusal::NotAttackableKind => AttackTargetReason::NotAttackable,
         TargetRefusal::TargetInProtectionZone | TargetRefusal::AttackerInProtectionZone => {
-            AttackIntentDisposition::ProtectionZone
+            AttackTargetReason::ProtectionZone
         }
         TargetRefusal::ReentryProtected | TargetRefusal::TargetReentryProtected => {
-            AttackIntentDisposition::ReentryProtected
+            AttackTargetReason::ReentryProtected
         }
     }
 }
@@ -422,8 +504,8 @@ pub(super) fn sees(from: MovementLocalPosition, to: MovementLocalPosition) -> bo
     }
 }
 
-/// The §3/§4 facts of `target` for `attacker` at `now`. `None` when the attacker's own facts
-/// cannot be read; the caller fails closed.
+/// Current §3/§4 target facts under the runtime owner. An unreadable observation
+/// defers a held attack. Only current evidence can establish loss of the target.
 fn target_facts(
     runtime: &ChannelRuntimeV1,
     room: &QualifiedNativeEntryRoom,
@@ -431,73 +513,75 @@ fn target_facts(
     session: GameSessionId,
     target: ExactActorRef,
     now: SemanticTimeMicros,
-) -> Option<TargetFacts> {
-    let attacker_snapshot = runtime.read_actor_position(attacker).ok()?;
+) -> Result<TargetFacts, AttackTargetReason> {
+    use AttackTargetReason as Reason;
+    use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+
+    let attacker_snapshot = runtime
+        .read_actor_position(attacker)
+        .map_err(|_| Reason::ObservationUnavailable)?;
     let from = attacker_snapshot.position();
-    let attacker_in_protection_zone = in_protection_zone(room, from)?;
+    let attacker_in_protection_zone =
+        in_protection_zone(room, from).ok_or(Reason::ObservationUnavailable)?;
     let attacker_reentry_protected = runtime
         .current_player_reentry_protection(attacker, session, now.get())
-        .ok()?;
-    let absent = TargetFacts {
-        present_and_visible: false,
-        attackable_kind: false,
-        alive: false,
-        same_floor: false,
-        distance: u32::MAX,
-        attacker_in_protection_zone,
-        target_in_protection_zone: false,
-        attacker_reentry_protected,
-        target_reentry_protected: false,
-    };
-    if runtime
-        .visible_entities()
-        .players
-        .iter()
-        .any(|p| p.actor == target)
-        && target != attacker
+        .map_err(|_| Reason::ObservationUnavailable)?;
+
+    let creature = runtime.contains_live_creature(target);
+    if !creature
+        && runtime
+            .knows_creature_death(target.placement_identity(), target.actor_local_generation())
     {
-        let to = runtime.read_actor_position(target).ok()?.position();
-        return Some(TargetFacts {
-            present_and_visible: sees(from, to),
-            attackable_kind: true,
-            alive: true,
-            same_floor: to.floor == from.floor,
-            distance: from.x.abs_diff(to.x).max(from.y.abs_diff(to.y)),
-            attacker_in_protection_zone,
-            target_in_protection_zone: in_protection_zone(room, to)?,
-            attacker_reentry_protected: false,
-            target_reentry_protected: false,
+        return Err(Reason::Dead);
+    }
+    let snapshot = runtime
+        .read_actor_position(target)
+        .map_err(|error| match error {
+            CarrierError::StaleActorGeneration | CarrierError::WrongScope => {
+                Reason::IdentityChanged
+            }
+            CarrierError::InvalidActorIdentity => Reason::UnknownCreature,
+            _ => Reason::ObservationUnavailable,
+        })?;
+    if snapshot.context() != attacker_snapshot.context()
+        || runtime.is_tibiadrome(attacker) != runtime.is_tibiadrome(target)
+    {
+        return Err(Reason::IdentityChanged);
+    }
+    let to = snapshot.position();
+    if !sees(from, to) {
+        return Err(if to.floor != from.floor {
+            Reason::OtherFloor
+        } else {
+            Reason::OutOfVisibilityRange
         });
     }
-    if runtime.is_tibiadrome(attacker) != runtime.is_tibiadrome(target) {
-        return Some(absent);
-    }
-    if !runtime.contains_live_creature(target) {
-        return Some(absent);
-    }
-    let Ok(target_snapshot) = runtime.read_actor_position(target) else {
-        return Some(absent);
+    let attackable_kind = if creature {
+        let companion = runtime
+            .companion_snapshot(target)
+            .map_err(|_| Reason::ObservationUnavailable)?;
+        companion.state.master.is_none() && !companion.state.policy.is_familiar
+    } else {
+        if !runtime
+            .visible_entities()
+            .players
+            .iter()
+            .any(|p| p.actor == target)
+        {
+            return Err(Reason::UnknownCreature);
+        }
+        target != attacker
     };
-    let to = target_snapshot.position();
-    let visible = target_snapshot.context() == attacker_snapshot.context() && sees(from, to);
-    let (attackable_kind, alive) = match runtime.companion_snapshot(target) {
-        Ok(snapshot) => (
-            snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar,
-            snapshot.health > 0,
-        ),
-        Err(_) => (true, false),
-    };
-    let dx = (i64::from(to.x) - i64::from(from.x)).unsigned_abs();
-    let dy = (i64::from(to.y) - i64::from(from.y)).unsigned_abs();
-    Some(TargetFacts {
-        present_and_visible: visible,
+    Ok(TargetFacts {
+        present_and_visible: true,
         attackable_kind,
-        alive,
+        alive: true,
         same_floor: to.floor == from.floor,
-        distance: u32::try_from(dx.max(dy)).unwrap_or(u32::MAX),
+        distance: from.x.abs_diff(to.x).max(from.y.abs_diff(to.y)),
         attacker_in_protection_zone,
-        target_in_protection_zone: in_protection_zone(room, to)?,
-        attacker_reentry_protected,
+        target_in_protection_zone: in_protection_zone(room, to)
+            .ok_or(Reason::ObservationUnavailable)?,
+        attacker_reentry_protected: creature && attacker_reentry_protected,
         target_reentry_protected: false,
     })
 }
@@ -669,23 +753,31 @@ impl ChannelAttackStates {
         {
             return AttackIntentDisposition::TargetNotACreature;
         }
-        let Some(creature) = visible
+        let candidate = visible
             .creatures
             .iter()
-            .find(|c| named(c.actor, c.generation))
-            .map(|c| c.actor)
-            .or_else(|| {
-                visible
-                    .players
-                    .iter()
-                    .find(|p| named(p.actor, p.generation))
-                    .map(|p| p.actor)
-            })
-        else {
-            return AttackIntentDisposition::TargetNotVisible;
+            .chain(&visible.players)
+            .find(|row| row.actor.placement_identity() == target_ref.identity);
+        let refuse = |reason: AttackTargetReason| {
+            log_target_reason("refuse", command_id, target_ref, reason);
+            reason.disposition()
         };
-        let Some(facts) = target_facts(runtime, room, actor, session, creature, now) else {
-            return AttackIntentDisposition::Rejected;
+        let Some(candidate) = candidate else {
+            return refuse(
+                if runtime.knows_creature_death(target_ref.identity, target_ref.generation) {
+                    AttackTargetReason::Dead
+                } else {
+                    AttackTargetReason::UnknownCreature
+                },
+            );
+        };
+        if candidate.generation != target_ref.generation {
+            return refuse(AttackTargetReason::IdentityChanged);
+        }
+        let creature = candidate.actor;
+        let facts = match target_facts(runtime, room, actor, session, creature, now) {
+            Ok(facts) => facts,
+            Err(reason) => return refuse(reason),
         };
         let previous = entry.state.target();
         match entry
@@ -703,7 +795,7 @@ impl ChannelAttackStates {
                 }
                 AttackIntentDisposition::Ok
             }
-            Err(refusal) => refusal_disposition(refusal),
+            Err(refusal) => refuse(refusal_reason(refusal)),
         }
     }
 
@@ -849,7 +941,20 @@ impl ChannelAttackStates {
                 .target()
                 .is_some_and(|target| states.player_hidden_from(runtime, actor, target, now))
         {
-            self.entries[index].clear_target();
+            self.entries[index].clear_target_for(AttackTargetReason::Invisible);
+        }
+    }
+
+    pub(super) fn settle_held_target(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
+        if let Some(index) = self.index(actor, session) {
+            self.entries[index].settle_held_target(runtime, room, now);
         }
     }
 
@@ -994,7 +1099,7 @@ fn chase_ends(
 ) -> Option<(MovementLocalPosition, MovementLocalPosition)> {
     let from = runtime.read_actor_position(actor).ok()?.position();
     let to = runtime.read_actor_position(target).ok()?.position();
-    let facts = target_facts(runtime, room, actor, session, target, now)?;
+    let facts = target_facts(runtime, room, actor, session, target, now).ok()?;
     let runs = facts.present_and_visible
         && facts.attackable_kind
         && facts.alive
