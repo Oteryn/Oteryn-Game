@@ -108,6 +108,9 @@ const AUDIT_RUN_CAP: u32 = 64;
 /// The longest valid control line: `spawn <36-byte session> <key of at most 128 bytes>\n`
 /// (172 bytes); `qualify` and operation ids are shorter. A longer line is refused unread.
 const CONTROL_REQUEST_BYTES: usize = 6 + 36 + 1 + 128 + 1;
+/// `spawn-at` adds a signed i32/i32/i16 coordinate triple and a space.
+#[cfg(any(test, feature = "qualification-spawn"))]
+const EXACT_SPAWN_REQUEST_BYTES: usize = CONTROL_REQUEST_BYTES + 3 + 11 + 1 + 11 + 1 + 6 + 1;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 
@@ -2998,10 +3001,16 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
 }
 
 async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
-    let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
-    let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
+    #[cfg(any(test, feature = "qualification-spawn"))]
+    let limit = EXACT_SPAWN_REQUEST_BYTES;
+    #[cfg(not(any(test, feature = "qualification-spawn")))]
+    let limit = CONTROL_REQUEST_BYTES;
+    let mut request = Vec::with_capacity(limit);
+    let mut limited = (&mut *stream).take(limit as u64 + 1);
     limited.read_to_end(&mut request).await.ok()?;
-    if request.len() > CONTROL_REQUEST_BYTES {
+    if request.len() > limit
+        || (request.len() > CONTROL_REQUEST_BYTES && !request.starts_with(b"spawn-at "))
+    {
         return None;
     }
     Some(request)
@@ -3134,13 +3143,19 @@ async fn control_loop(
                     .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
                     "qualification_damage",
                 ),
-                Some(request) if request.starts_with(b"spawn ") => (
-                    Box::pin(qualification_fixture::spawn(
-                        root, authority, proof, config, native, spawn, &request,
-                    ))
-                    .await,
-                    "character_bootstrap",
-                ),
+                Some(request)
+                    if request.starts_with(b"spawn ")
+                        || (cfg!(any(test, feature = "qualification-spawn"))
+                            && request.starts_with(b"spawn-at ")) =>
+                {
+                    (
+                        Box::pin(qualification_fixture::spawn(
+                            root, authority, proof, config, native, spawn, &request,
+                        ))
+                        .await,
+                        "character_bootstrap",
+                    )
+                }
                 Some(request) if parse_operation_id(&request).is_some() => {
                     let Some(operation) = parse_operation_id(&request) else {
                         return;
