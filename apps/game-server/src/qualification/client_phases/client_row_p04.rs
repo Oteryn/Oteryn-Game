@@ -667,6 +667,24 @@ async fn stash_quantity(
     .await?)
 }
 
+async fn stash_command(
+    client: &mut DevClientSession,
+    action: oteryn_protocol_oteryn::stash::StashAction,
+) -> TestResult<oteryn_protocol_oteryn::stash::StashReply> {
+    use oteryn_protocol_oteryn::stash;
+    let payload = stash::encode_stash_intent(stash::StashIntent { page: 0, action })
+        .map_err(|error| format!("P04 Stash encoder: {error:?}"))?;
+    let result = client
+        .session_mut()
+        .gated_command(stash::CAPABILITY_STASH_V1, stash::COMMAND_TYPE_STASH_INTENT, &payload)
+        .await?;
+    if result.status != CommandStatus::Accepted {
+        return Err(format!("P04 Stash transport status {:?}", result.status).into());
+    }
+    stash::decode_stash_reply(&result.payload)
+        .map_err(|error| format!("P04 Stash decoder: {error:?}").into())
+}
+
 async fn observe_positive_delivery(
     mut client: DevClientSession,
     database: &mut sqlx::PgConnection,
@@ -728,15 +746,15 @@ async fn observe_positive_delivery(
     {
         return Err("P04 availability fixture did not provision exactly one carried item".into());
     }
-    let payload = stash::encode_stash_intent(stash::StashIntent {
-        page: 0,
-        action: stash::StashAction::Stow(entry.handle),
-    }).map_err(|error| format!("P04 Stash encoder: {error:?}"))?;
-    let result = client.session_mut().gated_command(stash::CAPABILITY_STASH_V1,
-        stash::COMMAND_TYPE_STASH_INTENT, &payload).await?;
-    let reply = stash::decode_stash_reply(&result.payload).map_err(|error| format!("P04 Stash decoder: {error:?}"))?;
-    if result.status != CommandStatus::Accepted
-        || (reply.outcome, reply.stowed_quantity) != (stash::StashOutcome::Committed, 1)
+    let handle = entry.handle;
+    let opened = stash_command(&mut client, stash::StashAction::Browse).await?;
+    if opened.outcome != stash::StashOutcome::Opened || opened.page != 0
+        || opened.has_more || !opened.rows.is_empty()
+    {
+        return Err(format!("P04 Stash did not open as empty: {opened:?}").into());
+    }
+    let reply = stash_command(&mut client, stash::StashAction::Stow(handle)).await?;
+    if (reply.outcome, reply.stowed_quantity) != (stash::StashOutcome::Committed, 1)
         || stash_quantity(database, scope, item).await? != 1
     {
         return Err(format!("P04 Stash stow did not durably move one item {item}: {reply:?}").into());
@@ -791,9 +809,6 @@ async fn verify_boundary(
         case.profile.into(),
     )
     .await?;
-    if case.level == 400 {
-        character_prep::grant_premium(&setup).await?;
-    }
     logout_released(&mut setup, database).await?;
     drop(setup);
     let mut client = connect_character_once(&clients, 0x26, 0).await?;
