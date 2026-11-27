@@ -56,6 +56,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
+        "w09-aid-audit" => Some(("sorcerer", 50)),
         "w09-kooldown" => Some(("sorcerer", 41)),
         "w10-primal" => Some(("knight", 500)),
         "w20b-light" => Some(("sorcerer", 26)),
@@ -772,6 +773,7 @@ async fn prepare_build(
             | "c12-monk"
             | "c06-sorcerer"
             | "s13-party"
+            | "w09-aid-audit"
             | "w09-kooldown"
             | "w10-primal"
             | "w20b-light"
@@ -817,6 +819,7 @@ async fn prepare_build(
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
+            | ("w09-aid-audit", "01934f10-7c00-7000-8000-000000000021")
             | ("w09-kooldown", "01934f10-7c00-7000-8000-000000000021")
             | ("w10-primal", "01934f10-7c00-7000-8000-000000000020")
             | ("w20b-light", LIGHT_ACCOUNT)
@@ -871,6 +874,35 @@ async fn prepare_build(
         deadline,
     )
     .await?;
+    #[cfg(feature = "qualification-spawn")]
+    if profile == "w09-aid-audit" {
+        use crate::durability::character_wheel::WheelOccurrence;
+        use crate::durability::item_transfer::CurrentCharacterItemFence;
+
+        let fence = CurrentCharacterItemFence {
+            character_id: character,
+            game_session_id: current.current_game_session_id(),
+            connection_generation: current.current_connection_generation(),
+            character_lease_generation: current.current_character_lease().generation(),
+            runtime_scope: current.current_runtime_scope(),
+            scope_ownership_generation: current.current_scope_generation(),
+        };
+        let occurrence = WheelOccurrence::from_bytes(fixture_occurrence(
+            character.as_bytes(),
+            profile,
+            b"gift-of-life-input",
+        ))?;
+        qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::progression_busy,
+            async || {
+                root.save_character_wheel_gift(authority, proof, fence, occurrence, 3_600_000_000)
+                    .await
+            },
+        )
+        .await?;
+    }
     #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
