@@ -892,7 +892,10 @@ async fn selected_item_cases(
                     send_click(&mut client, command_id, handle).await?;
                     assert_eq!(
                         command_reply(&mut client, command_id).await?,
-                        (CommandStatus::Rejected, vec![16, 2])
+                        (
+                            CommandStatus::Rejected,
+                            encode_quick_loot_refusal(QuickLootRefusal::Stale),
+                        )
                     );
                 }
                 assert_eq!(corpse_items(pool, corpse).await?, items);
@@ -929,7 +932,10 @@ async fn selected_item_cases(
                 send_click(&mut client, command_id, take.handle).await?;
                 assert_eq!(
                     command_reply(&mut client, command_id).await?,
-                    (CommandStatus::Rejected, vec![16, 2])
+                    (
+                        CommandStatus::Rejected,
+                        encode_quick_loot_refusal(QuickLootRefusal::Stale),
+                    )
                 );
             }
             Ok(())
