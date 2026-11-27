@@ -1,7 +1,7 @@
 //! W09 exercises the real USE owner with two seeded Kooldown Aids and one Drome Cube.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_gameplay_items::concoctions::{ALL, Concoction};
+use oteryn_gameplay_items::concoctions::Concoction;
 use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::presentation::{self, ActorCooldown, ActorCooldownKind};
@@ -83,15 +83,15 @@ async fn wait_inventory(
     Ok(())
 }
 
-async fn cast_wand(client: &mut DevClientSession, spell: NonZeroU32) -> TestResult {
+async fn cast_paid(client: &mut DevClientSession, spell: NonZeroU32, mana_cost: u32) -> TestResult {
     let before = client
         .actor_vitals()
         .copied()
         .ok_or("W09 caster vitals missing")?;
     let expected_mana = before
         .mana
-        .checked_sub(250)
-        .ok_or("W09 insufficient mana for Conjure Wand of Darkness")?;
+        .checked_sub(mana_cost)
+        .ok_or("W09 insufficient mana for cooldown probe")?;
     let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
     if cast.status != CommandStatus::Accepted
         || cast.disposition != SpellCastDisposition::Cast
@@ -102,17 +102,18 @@ async fn cast_wand(client: &mut DevClientSession, spell: NonZeroU32) -> TestResu
             != Some(expected_mana)
     {
         return Err(format!(
-            "W09 Conjure Wand of Darkness did not spend 250 mana: before={before:?} cast={cast:?}"
+            "W09 spell {spell} did not spend {mana_cost} mana: before={before:?} cast={cast:?}"
         )
         .into());
     }
     Ok(())
 }
 
-async fn assert_conjure_cooldowns(
+async fn assert_cast_cooldowns(
     client: &mut DevClientSession,
     spell: NonZeroU32,
     cast_started: tokio::time::Instant,
+    spell_ms: u64,
 ) -> TestResult<[ActorCooldown; 2]> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
@@ -137,7 +138,7 @@ async fn assert_conjure_cooldowns(
                     || spell_entry
                         .expires_at_ms
                         .checked_sub(group_entry.expires_at_ms)
-                        != Some(1_798_000)
+                        != spell_ms.checked_sub(2_000)
                     || !group_remaining.is_some_and(|ms| {
                         ms > 0 && (2_000_u64.saturating_sub(elapsed_ms)..=2_000).contains(&ms)
                     })
@@ -148,7 +149,7 @@ async fn assert_conjure_cooldowns(
                     ).into());
                 }
                 evidence(&format!(
-                    "W09_CHECK cooldown-update sequence={} spell_ms=1800000 support_ms=2000",
+                    "W09_CHECK cooldown-update sequence={} spell_ms={spell_ms} support_ms=2000",
                     frame.server_sequence
                 ));
                 return Ok([*spell_entry, *group_entry]);
@@ -250,15 +251,40 @@ async fn reconnect_cooldowns(
     Ok(resumed)
 }
 
+async fn assert_cooling_down(
+    client: &mut DevClientSession,
+    spell: NonZeroU32,
+    expected: &BTreeMap<NonZeroU32, u64>,
+) -> TestResult {
+    let before = client
+        .actor_vitals()
+        .copied()
+        .ok_or("W09 caster vitals missing")?;
+    let blocked = client.cast_spell(spell, SpellTarget::None, false).await?;
+    if blocked.status != CommandStatus::Accepted
+        || blocked.disposition != SpellCastDisposition::CoolingDown
+        || blocked.actor_vitals_delta.is_some()
+        || client.actor_vitals().copied() != Some(before)
+        || &quantities(client)? != expected
+    {
+        return Err(format!(
+            "W09 Conjure Wand of Darkness was not a resource-free cooldown refusal: {blocked:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let cube_id = character_prep::item_id(DROME_CUBE_KEY)?;
     let aid_id = Concoction::KooldownAid.item_id();
     let index = provisioning::item_index()?;
     let cube = provisioning::item_reference(&index, cube_id)?;
     let aid = provisioning::item_reference(&index, aid_id)?;
-    let pool = ALL
-        .iter()
-        .map(|kind| provisioning::item_reference(&index, kind.item_id()))
+    // Global pool: https://www.tibiawiki.com.br/wiki/Drome_Cube.
+    // Item IDs for those twenty names: Crystal 201189f8, data/scripts/actions/items/drome_cube.lua.
+    let pool = (36723..=36742)
+        .map(|id| provisioning::item_reference(&index, id))
         .collect::<TestResult<Vec<_>>>()?;
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W09_ACCOUNT").await?;
     let scope = dedicated.clients(clients);
@@ -333,33 +359,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     client.take_events();
     let first_cast = tokio::time::Instant::now();
-    cast_wand(&mut client, spell).await?;
+    cast_paid(&mut client, spell, 250).await?;
     *expected.entry(wand).or_default() += 1;
-    let cooldowns = assert_conjure_cooldowns(&mut client, spell, first_cast).await?;
+    let cooldowns = assert_cast_cooldowns(&mut client, spell, first_cast, 1_800_000).await?;
     wait_inventory(&mut client, &expected).await?;
     let mut client = reconnect_cooldowns(client, &scope, cooldowns).await?;
     if quantities(&client)? != expected {
         return Err("W09 reconnect changed the first conjure inventory".into());
     }
-    let before = client
-        .actor_vitals()
-        .copied()
-        .ok_or("W09 caster vitals missing")?;
-    let blocked = client.cast_spell(spell, SpellTarget::None, false).await?;
-    if blocked.status != CommandStatus::Accepted
-        || blocked.disposition != SpellCastDisposition::CoolingDown
-        || blocked.actor_vitals_delta.is_some()
-        || client.actor_vitals().copied() != Some(before)
-        || quantities(&client)? != expected
-    {
-        return Err(format!(
-            "W09 Conjure Wand of Darkness pre-state was not a resource-free cooldown refusal: {blocked:?}"
-        )
-        .into());
-    }
+    assert_cooling_down(&mut client, spell, &expected).await?;
+    // Global: https://www.tibiawiki.com.br/wiki/Magic_Shield
+    // Arm a second spell and a fresh Support deadline immediately before using the Aid.
+    let shield = crate::qualification::client_spell_journey::spell_index(book, "utamo vita")?;
     client.take_events();
+    let shield_cast = tokio::time::Instant::now();
+    cast_paid(&mut client, shield, 50).await?;
+    let shield_cooldowns = assert_cast_cooldowns(&mut client, shield, shield_cast, 14_000).await?;
+    let mut reset_prestate = [cooldowns[0], shield_cooldowns[0], shield_cooldowns[1]];
+    reset_prestate.sort_by_key(|entry| (entry.kind, entry.id));
     let used_at = tokio::time::Instant::now();
     use_item(&mut client, aid, committed).await?;
+    let committed_at = tokio::time::Instant::now();
     let reset_until = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut saw_reset = false;
     let mut saw_clear = false;
@@ -367,15 +387,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         for event in client.take_events() {
             match event {
                 SessionEvent::ActorCooldowns(frame) => {
-                    let expected_clear = cooldowns
+                    let expected_clear = reset_prestate
                         .iter()
-                        .filter(|entry| entry.expires_at_ms > frame.value.server_now_ms)
                         .map(|entry| ActorCooldown {
                             expires_at_ms: 0,
                             ..*entry
                         })
                         .collect::<Vec<_>>();
-                    if expected_clear.is_empty() || frame.value.entries != expected_clear {
+                    if reset_prestate
+                        .iter()
+                        .any(|entry| entry.expires_at_ms <= frame.value.server_now_ms)
+                        || frame.value.entries != expected_clear
+                    {
                         return Err(format!("W09 Aid clearance mismatch sequence={} expected={expected_clear:?} frame={:?}", frame.server_sequence, frame.value).into());
                     }
                     saw_clear = true;
@@ -402,8 +425,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
     }
     let second_cast = tokio::time::Instant::now();
-    cast_wand(&mut client, spell).await?;
-    let [durable_spell, _] = assert_conjure_cooldowns(&mut client, spell, second_cast).await?;
+    cast_paid(&mut client, spell, 250).await?;
+    let durable_cooldowns =
+        assert_cast_cooldowns(&mut client, spell, second_cast, 1_800_000).await?;
     if first_cast.elapsed() >= natural_cooldown {
         return Err(
             "W09 Conjure Wand of Darkness recast did not precede natural cooldown expiry".into(),
@@ -453,6 +477,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("W09 missing Cube refusal changed inventory".into());
     }
     fresh.take_events();
+    let minimum_age = committed_at.elapsed().as_secs();
+    let upper = 86_400_u64.saturating_sub(minimum_age);
     use_item(
         &mut fresh,
         aid,
@@ -479,9 +505,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         });
         if let Some(seconds) = remaining {
             let lower = 86_400_u64.saturating_sub(used_at.elapsed().as_secs().saturating_add(1));
-            if !(lower..=86_400).contains(&seconds) {
+            if upper == 86_400 || !(lower..=upper).contains(&seconds) {
                 return Err(
-                    format!("W09 Aid remaining seconds {seconds} outside {lower}..=86400").into(),
+                    format!("W09 Aid remaining seconds {seconds} outside elapsed-time bounds {lower}..={upper}").into(),
                 );
             }
             evidence(&format!(
@@ -515,15 +541,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             presentation::decode_actor_cooldowns(&snapshot.payload)
                 .map_err(|_| "W09 full relog sent malformed ACTOR_COOLDOWNS")
         })?;
-    if !cooldowns
-        .entries
+    let active: Vec<_> = durable_cooldowns
+        .into_iter()
+        .filter(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
+        .collect();
+    if !active
         .iter()
-        .any(|entry| *entry == durable_spell && entry.expires_at_ms > cooldowns.server_now_ms)
+        .any(|entry| entry.kind == ActorCooldownKind::Spell)
+        || cooldowns.entries != active
     {
         return Err(format!(
-            "W09 full relog changed the active spell deadline sequence={sequence} expected={durable_spell:?} frame={cooldowns:?}"
+            "W09 full relog changed the active deadlines sequence={sequence} expected={active:?} frame={cooldowns:?}"
         ).into());
     }
+    evidence("FIXTURE row=W09.full input=premium purpose=post-relog-cast");
+    character_prep::grant_premium(&verified).await?;
+    assert_cooling_down(&mut verified, spell, &settled).await?;
     logout(&mut verified).await?;
     evidence(
         "W09_CHECK spell-reset=paid-recast durable-inventory=verified cooldown-refusal=observed",
