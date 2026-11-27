@@ -58,19 +58,31 @@ fn frame_envelope(session: &[u8; 16], result: &GatedCommandResult) -> serde_json
     }))
 }
 
-async fn expected_period(clients: &SeamClients<'_>) -> TestResult<u64> {
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+async fn global_period(database: &mut sqlx::PgConnection, at: Option<&str>) -> TestResult<u64> {
+    // Global Weekly Tasks reset on Monday at 10:00 local server time.
     let period: i64 = sqlx::query_scalar(
-        "SELECT (date_trunc('week', (e.activated_at AT TIME ZONE 'Europe/Berlin')
-                    - interval '6 hours')::date - DATE '1970-01-01')::bigint
-           FROM game_world_reset_active a
-           JOIN game_world_reset_epochs e USING (world_id, reset_epoch)
-          WHERE a.world_id = $1::uuid AND e.calendar = 'TIBIA_SERVER_SAVE_BERLIN_06'",
+        "SELECT (date_trunc('week', (COALESCE($1::text::timestamptz, clock_timestamp())
+                    AT TIME ZONE 'Europe/Berlin') - interval '10 hours')::date
+                    - DATE '1970-01-01')::bigint",
     )
-    .bind(uuid_text(&clients.world))
-    .fetch_one(&mut connection)
+    .bind(at)
+    .fetch_one(database)
     .await?;
     Ok(u64::try_from(period)?)
+}
+
+async fn expected_period(database: &mut sqlx::PgConnection) -> TestResult<u64> {
+    for (before, after) in [
+        ("2026-11-23 08:59:59+00", "2026-11-23 09:00:00+00"),
+        ("2026-07-20 07:59:59+00", "2026-07-20 08:00:00+00"),
+    ] {
+        if global_period(database, Some(before)).await? + 7
+            != global_period(database, Some(after)).await?
+        {
+            return Err("P04 calendar oracle did not reset at Monday 10:00 Berlin".into());
+        }
+    }
+    global_period(database, None).await
 }
 
 fn expected_shop() -> Vec<ShopOffer> {
@@ -304,36 +316,10 @@ struct MasterCatalogue {
 
 impl MasterCatalogue {
     fn load() -> TestResult<Self> {
-        use oteryn_gameplay_content::content::{
-            ProjectV2AuthoringProfileData, native_gameplay::CreatureProfilesDocument,
-        };
-        let pinned = native_input()?;
-        let source: CreatureProfilesDocument =
-            serde_json::from_slice(&pinned.creature_profiles.bytes)?;
-        let races = source
-            .records
-            .into_iter()
-            .filter_map(|record| {
-                let ProjectV2AuthoringProfileData::Creature(profile) = record.profile.data else {
-                    return None;
-                };
-                let details = profile.details?;
-                let bestiary = profile.bestiary?;
-                let master = details
-                    .bestiary
-                    .as_ref()
-                    .and_then(|value| value.stars)
-                    .map_or(
-                        matches!(bestiary.difficulty.as_str(), "hard" | "challenging"),
-                        |stars| stars >= 4,
-                    );
-                (master
-                    && profile.experience.unwrap_or(0) > 0
-                    && details.system_eligibility.prey
-                    && !details.system_eligibility.exclusive_prey
-                    && record.profile.target.key.starts_with("oteryn:creature."))
-                .then_some(record.profile.target.key)
-            })
+        let races = include_str!("p04_master_creature_oracle.txt")
+            .lines()
+            .filter(|line| !line.starts_with('#'))
+            .map(str::to_owned)
             .collect();
         let amounts = delivery_oracle()?;
         Ok(Self { races, amounts })
@@ -365,57 +351,78 @@ impl MasterCatalogue {
 type DeliveryPool = std::collections::BTreeMap<u32, (u32, u32)>;
 
 fn delivery_oracle() -> TestResult<DeliveryPool> {
-     include_str!("p04_master_delivery_oracle.txt")
-            .lines()
-            .filter(|line| !line.starts_with('#'))
-            .map(|line| -> TestResult<_> {
-                let mut fields = line.split(',');
-                let mut number = || -> TestResult<u32> {
-                    Ok(fields
-                        .next()
-                        .ok_or("incomplete P04 delivery oracle")?
-                        .parse()?)
-                };
-                Ok((number()?, (number()?, number()?)))
-            })
-            .collect()
-}
-
-fn production_delivery_pool() -> DeliveryPool {
-    oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS
-        .iter()
-        .map(|item| (u32::from(item.item_id), (*item.quantity.start(), *item.quantity.end())))
+    include_str!("p04_master_delivery_oracle.txt")
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+        .map(|line| -> TestResult<_> {
+            let mut fields = line.split(',');
+            let mut number = || -> TestResult<u32> {
+                Ok(fields
+                    .next()
+                    .ok_or("incomplete P04 delivery oracle")?
+                    .parse()?)
+            };
+            Ok((number()?, (number()?, number()?)))
+        })
         .collect()
 }
 
+fn production_delivery_pool() -> TestResult<DeliveryPool> {
+    let mut pool = DeliveryPool::new();
+    for item in oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS {
+        insert_delivery_range(
+            &mut pool,
+            u32::from(item.item_id),
+            (*item.quantity.start(), *item.quantity.end()),
+        )?;
+    }
+    Ok(pool)
+}
+
+fn insert_delivery_range(pool: &mut DeliveryPool, id: u32, range: (u32, u32)) -> TestResult {
+    if pool.insert(id, range).is_some() {
+        return Err(format!("P04 duplicate delivery pool entry: {id}").into());
+    }
+    Ok(())
+}
+
 fn verify_delivery_pool(expected: &DeliveryPool, actual: &DeliveryPool) -> TestResult {
-    let missing_or_wrong: Vec<_> = expected.iter().filter(|(id, range)| actual.get(id) != Some(*range)).collect();
-    let extra: Vec<_> = actual.keys().filter(|id| !expected.contains_key(id)).collect();
+    let missing_or_wrong: Vec<_> = expected
+        .iter()
+        .filter(|(id, range)| actual.get(id) != Some(*range))
+        .collect();
+    let extra: Vec<_> = actual
+        .keys()
+        .filter(|id| !expected.contains_key(id))
+        .collect();
     if !missing_or_wrong.is_empty() || !extra.is_empty() {
         return Err(format!("P04 Master delivery pool mismatch missing_or_wrong={missing_or_wrong:?} extra={extra:?}").into());
     }
     Ok(())
 }
 
-type Custody = Vec<(String, Option<String>, i16, String, String, i64, i16)>;
+type Custody = Vec<(String, Option<String>, String, String, String, i64, i16)>;
 
-async fn durable_carried(database: &mut sqlx::PgConnection, character: &[u8; 16]) -> TestResult<Custody> {
+async fn durable_carried(
+    database: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+) -> TestResult<Custody> {
     let rows = sqlx::query_as(
         "WITH RECURSIVE tree(item, parent, slot, depth) AS (
-             SELECT item_instance_id, NULL::uuid, 0::smallint, 0
+             SELECT item_instance_id, NULL::uuid, '0'::text, 0
                FROM game_item_container_slots WHERE character_id=$1::uuid
              UNION ALL
-             SELECT e.item_instance_id, e.parent_item_instance_id, 0::smallint, t.depth+1
+             SELECT e.item_instance_id, e.parent_item_instance_id, e.placement_ordinal::text, t.depth+1
                FROM tree t JOIN (
-                 SELECT item_instance_id,parent_item_instance_id
+                 SELECT item_instance_id,parent_item_instance_id,placement_ordinal
                    FROM game_item_container_entries WHERE character_id=$1::uuid
                  UNION ALL
-                 SELECT item_instance_id,parent_item_instance_id FROM game_item_nested_entries
+                 SELECT item_instance_id,parent_item_instance_id,placement_ordinal FROM game_item_nested_entries
                ) e ON e.parent_item_instance_id=t.item WHERE t.depth < 9
          ), carried AS (
              SELECT * FROM tree
              UNION ALL
-             SELECT item_instance_id,NULL::uuid,slot,0
+             SELECT item_instance_id,NULL::uuid,slot::text,0
                FROM game_character_equipment_slots WHERE character_id=$1::uuid
          )
          SELECT c.item::text,c.parent::text,c.slot,i.definition_production_key,
@@ -435,6 +442,88 @@ async fn durable_carried(database: &mut sqlx::PgConnection, character: &[u8; 16]
 fn verify_durable_carried(before: &Custody, after: &Custody) -> TestResult {
     if before != after {
         return Err("P04 Master start changed durable carried inventory".into());
+    }
+    Ok(())
+}
+
+async fn capture_master_assignments(
+    database: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    session: &[u8; 16],
+    command_id: u64,
+    available: &std::collections::BTreeMap<u32, u32>,
+    week: &Weekly,
+) -> TestResult {
+    let persisted: serde_json::Value = sqlx::query_scalar(
+        "SELECT body->'weekly' FROM game_character_task_boards
+         WHERE character_id=$1::uuid AND cause_id=$2::uuid AND cause_ordinal=$3::text::numeric",
+    )
+    .bind(uuid_text(character))
+    .bind(uuid_text(session))
+    .bind(command_id.to_string())
+    .fetch_one(database)
+    .await?;
+    let persisted: oteryn_gameplay_quests::quest::task_board::full::WeeklyBoard =
+        serde_json::from_value(persisted)?;
+    let mut kills = persisted
+        .kills
+        .iter()
+        .map(|task| (&*task.race, task.required, task.current))
+        .collect::<Vec<_>>();
+    kills.push(("", persisted.any_required, persisted.any_kills));
+    let deliveries = persisted
+        .deliveries
+        .iter()
+        .map(|task| {
+            let item = u32::from(task.item_id);
+            (
+                item,
+                task.required,
+                available.get(&item).copied().unwrap_or(0),
+                task.delivered,
+            )
+        })
+        .collect::<Vec<_>>();
+    let expected = serde_json::json!([kills, deliveries]);
+    let actual = serde_json::json!([
+        week.kills
+            .iter()
+            .map(|task| (&task.race, task.required, task.current))
+            .collect::<Vec<_>>(),
+        week.deliveries
+            .iter()
+            .map(|task| (task.item, task.required, task.current, task.delivered))
+            .collect::<Vec<_>>(),
+    ]);
+    if actual != expected {
+        return Err(format!(
+            "P04 wire assignments differ from the committed board: {actual} vs {expected}"
+        )
+        .into());
+    }
+    capture(
+        "p04-master-assignments.json",
+        &serde_json::to_vec(&expected)?,
+    )
+}
+
+async fn durable_experience(
+    database: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT total_experience FROM game_character_progression_state WHERE character_id=$1::uuid",
+    )
+    .bind(uuid_text(character))
+    .fetch_one(database)
+    .await?)
+}
+
+fn verify_experience(before: i64, after: i64) -> TestResult {
+    if before != after {
+        return Err(
+            format!("P04 StartWeekly changed actual experience from {before} to {after}").into(),
+        );
     }
     Ok(())
 }
@@ -515,38 +604,50 @@ async fn verify_boundary(
     let session = client.join_snapshot().game_session_id;
     let (initial, query) = send(&mut client, 4, 0, case.files[0]).await?;
     verify_fresh_query(&initial, period, shop)?;
-    let available = if case.level == 400 {
-        if client
-            .selected_capabilities()
-            .contains(&task_board::task_board::full::CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1)
-        {
-            return Err(
-                "P04 authored delivery oracle requires legacy Task Board identifiers".into(),
-            );
-        }
-        Some(seeded_carried(&client)?)
-    } else {
-        None
-    };
-    let durable_before = if available.is_some() {
-        Some(durable_carried(database, &clients.characters[0]).await?)
-    } else {
-        None
-    };
-    let catalogue = available.as_ref().map(|_| MasterCatalogue::load()).transpose()?;
+    if client
+        .selected_capabilities()
+        .contains(&task_board::task_board::full::CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1)
+    {
+        return Err("P04 authored delivery oracle requires legacy Task Board identifiers".into());
+    }
+    let available = seeded_carried(&client)?;
+    let character = &clients.characters[0];
+    let durable_before = durable_carried(database, character).await?;
+    let experience_before = durable_experience(database, character).await?;
+    let catalogue = (case.level == 400)
+        .then(MasterCatalogue::load)
+        .transpose()?;
     let (start, frame) = send(&mut client, 5, 3, case.files[1]).await?;
     verify_start(&initial, &start, case.level)?;
-    if let (Some(available), Some(catalogue)) = (available, catalogue.as_ref()) {
+    if let Some(catalogue) = &catalogue {
         catalogue.verify(&start.weekly, &available)?;
-        if seeded_carried(&client)? != available {
-            return Err("P04 Master start changed the delivery inventory".into());
-        }
+        capture_master_assignments(
+            database,
+            character,
+            session.as_bytes(),
+            frame.command_id,
+            &available,
+            &start.weekly,
+        )
+        .await?;
     }
+    if seeded_carried(&client)? != available {
+        return Err("P04 StartWeekly changed the delivery inventory".into());
+    }
+    verify_durable_carried(
+        &durable_before,
+        &durable_carried(database, character).await?,
+    )?;
+    verify_experience(
+        experience_before,
+        durable_experience(database, character).await?,
+    )?;
     logout_released(&mut client, database).await?;
     drop(client);
     let mut fresh = connect_character_once(&clients, 0x27, 0).await?;
     let readmission = fresh.join_snapshot().game_session_id;
     let (after, after_frame) = send(&mut fresh, 4, 0, case.files[2]).await?;
+    let start_refusal = start.refusal;
     let mut expected_after = start;
     expected_after.refusal = 0;
     if readmission == session || after != expected_after {
@@ -556,13 +657,25 @@ async fn verify_boundary(
         )
         .into());
     }
-    if let Some(before) = durable_before {
-        verify_durable_carried(&before, &durable_carried(database, &clients.characters[0]).await?)?;
-    }
+    verify_durable_carried(
+        &durable_before,
+        &durable_carried(database, character).await?,
+    )?;
+    verify_experience(
+        experience_before,
+        durable_experience(database, character).await?,
+    )?;
     logout_released(&mut fresh, database).await?;
     if let Some(catalogue) = catalogue {
-        verify_delivery_pool(&catalogue.amounts, &production_delivery_pool())?;
+        verify_delivery_pool(&catalogue.amounts, &production_delivery_pool()?)?;
     }
+    evidence(&format!(
+        "P04_DURABLE_ASSERTIONS level={} custody_entries={} total_experience={} refusal={}",
+        case.level,
+        durable_before.len(),
+        experience_before,
+        start_refusal,
+    ));
     Ok(format!(
         "{},{},{},{},{},{},{},{}",
         uuid_text(session.as_bytes()),
@@ -583,9 +696,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "sorcerer-level-399,400",
         "Global Master boundary",
     );
-    let period = expected_period(clients).await?;
-    let shop = expected_shop();
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let period = expected_period(&mut database).await?;
+    let shop = expected_shop();
     let below = verify_boundary(
         clients,
         &mut database,
@@ -656,7 +769,9 @@ mod tests {
         legacy.remove(&28568);
         legacy.remove(&43859);
         legacy.insert(3509, (50, 50));
-        let message = verify_delivery_pool(&oracle, &legacy).unwrap_err().to_string();
+        let message = verify_delivery_pool(&oracle, &legacy)
+            .unwrap_err()
+            .to_string();
         for id in ["28568", "43859", "3509"] {
             assert!(message.contains(id), "{message}");
         }
@@ -665,12 +780,80 @@ mod tests {
 
     #[test]
     fn p04_durable_inventory_rejects_a_debit_hidden_by_an_unchanged_projection() -> TestResult {
-        let before = vec![("instance".into(), None, 1, "item".into(), "r1".into(), 2, 1)];
+        let before = vec![(
+            "instance".into(),
+            None,
+            "1".into(),
+            "item".into(),
+            "r1".into(),
+            2,
+            1,
+        )];
         verify_durable_carried(&before, &before)?;
         let mut debited = before.clone();
         debited[0].5 -= 1;
         assert!(verify_durable_carried(&before, &debited).is_err());
         verify_durable_carried(&before, &before[..0].to_vec()).unwrap_err();
+        Ok(())
+    }
+
+    #[test]
+    fn p04_rejects_duplicate_delivery_rows() -> TestResult {
+        let mut pool = DeliveryPool::new();
+        insert_delivery_range(&mut pool, 28568, (250, 500))?;
+        assert!(insert_delivery_range(&mut pool, 28568, (250, 500)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn p04_master_creature_oracle_rejects_a_medium_assignment() -> TestResult {
+        let catalogue = MasterCatalogue::load()?;
+        let mut week = fresh_weekly();
+        week.kills.push(KillTask {
+            race: "oteryn:creature.demon".into(),
+            required: 300,
+            current: 0,
+        });
+        let available = std::collections::BTreeMap::new();
+        catalogue.verify(&week, &available)?;
+        for ineligible in [
+            "oteryn:creature.dragon",
+            "oteryn:creature.moonspawn_juggernaut",
+        ] {
+            week.kills[0].race = ineligible.into();
+            assert!(catalogue.verify(&week, &available).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn p04_rejects_reordered_inventory_and_a_real_xp_award() -> TestResult {
+        let before = vec![
+            (
+                "first".into(),
+                Some("backpack".into()),
+                "1".into(),
+                "item".into(),
+                "r1".into(),
+                2,
+                1,
+            ),
+            (
+                "second".into(),
+                Some("backpack".into()),
+                "2".into(),
+                "item".into(),
+                "r1".into(),
+                2,
+                1,
+            ),
+        ];
+        let mut reordered = before.clone();
+        reordered[0].2 = "2".into();
+        reordered[1].2 = "1".into();
+        assert!(verify_durable_carried(&before, &reordered).is_err());
+        verify_experience(1000, 1000)?;
+        assert!(verify_experience(1000, 1001).is_err());
         Ok(())
     }
 

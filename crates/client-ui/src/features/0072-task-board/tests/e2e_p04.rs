@@ -5,13 +5,14 @@ use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
 use task_board::full::{Bounty, Reply, Weekly, decode_request, encode_reply};
 
 type Error = Box<dyn std::error::Error>;
+type MasterAssignments = (Vec<(String, u32, u32)>, Vec<(u32, u32, u32, bool)>);
 
 struct Captured {
     query: GatedCommandResult,
     refused: GatedCommandResult,
     readmission: GatedCommandResult,
     expected: String,
-    master: Option<[GatedCommandResult; 3]>,
+    master: Option<([GatedCommandResult; 3], MasterAssignments)>,
 }
 
 fn fixture() -> Result<Captured, Error> {
@@ -94,7 +95,10 @@ fn captured() -> Result<Captured, Error> {
         query,
         refused,
         readmission,
-        master: Some(master),
+        master: Some((
+            master,
+            serde_json::from_slice(&std::fs::read(path.join("p04-master-assignments.json"))?)?,
+        )),
         expected: std::fs::read_to_string(path.join("p04-expected.txt"))?,
     })
 }
@@ -286,37 +290,66 @@ fn verify_master_experience(text: &str) -> Result<(), Error> {
     Ok(())
 }
 
-fn verify_rendered_assignments(text: &str, reply: &Reply) -> Result<(), Error> {
-    let rendered = text
-        .lines()
-        .filter(|line| {
-            line.starts_with("Kill ") && !line.starts_with("Kill XP:")
-                || line.starts_with("Delivery ")
-        })
-        .collect::<Vec<_>>();
-    let kills = reply.weekly.kills.iter().enumerate().map(|(i, task)| {
-        let race = if task.race.is_empty() {
-            "Any creature".to_owned()
-        } else {
-            task.race
-                .strip_prefix("oteryn:creature.")
-                .unwrap_or(&task.race)
-                .replace('_', " ")
-        };
-        format!("Kill {}. {race}: {}/{}", i + 1, task.current, task.required)
+fn verify_rendered_assignments(text: &str, assignments: &MasterAssignments) -> Result<(), Error> {
+    let rendered = text.lines().filter(|line| {
+        line.starts_with("Kill ") && !line.starts_with("Kill XP:") || line.starts_with("Delivery ")
     });
-    let deliveries = reply.weekly.deliveries.iter().enumerate().map(|(i, task)| {
-        format!(
-            "Delivery {}. {}: {}/{}  delivered: {}",
-            i + 1,
-            task.item,
-            task.current,
-            task.required,
-            task.delivered
-        )
-    });
-    if !rendered.into_iter().eq(kills.chain(deliveries)) {
-        return Err("P04 Master assignment text differs from the captured assignments".into());
+    let kills = assignments
+        .0
+        .iter()
+        .enumerate()
+        .map(|(i, (race, required, current))| {
+            let race = if race.is_empty() {
+                "Any creature".to_owned()
+            } else {
+                race.strip_prefix("oteryn:creature.")
+                    .unwrap_or(race)
+                    .replace('_', " ")
+            };
+            format!("Kill {}. {race}: {current}/{required}", i + 1)
+        });
+    let deliveries =
+        assignments
+            .1
+            .iter()
+            .enumerate()
+            .map(|(i, (item, required, current, delivered))| {
+                format!(
+                    "Delivery {}. {item}: {current}/{required}  delivered: {delivered}",
+                    i + 1
+                )
+            });
+    if !rendered.eq(kills.chain(deliveries)) {
+        return Err("P04 Master assignment text differs from the committed assignments".into());
+    }
+    Ok(())
+}
+
+fn verify_master_panel(
+    panel: &TaskBoardPanel,
+    assignments: &MasterAssignments,
+) -> Result<(), Error> {
+    if panel.pending {
+        return Err("P04 Master panel stayed pending after its result".into());
+    }
+    let reply = panel.weekly.as_ref().ok_or("started Master board")?;
+    let kills = reply
+        .weekly
+        .kills
+        .iter()
+        .map(|task| (&task.race, task.required, task.current));
+    let deliveries = reply
+        .weekly
+        .deliveries
+        .iter()
+        .map(|task| (task.item, task.required, task.current, task.delivered));
+    if !kills.eq(assignments
+        .0
+        .iter()
+        .map(|(race, required, current)| (race, *required, *current)))
+        || !deliveries.eq(assignments.1.iter().copied())
+    {
+        return Err("P04 Master panel assignments differ from the committed board".into());
     }
     Ok(())
 }
@@ -324,6 +357,7 @@ fn verify_rendered_assignments(text: &str, reply: &Reply) -> Result<(), Error> {
 fn verify_master_replay(
     [query, start, after]: [GatedCommandResult; 3],
     baseline: &Reply,
+    assignments: &MasterAssignments,
 ) -> Result<(), Error> {
     let mut panel = TaskBoardPanel {
         selected: true,
@@ -343,6 +377,7 @@ fn verify_master_replay(
     let sent = decode_request(&request.payload).map_err(|e| format!("{e:?}"))?;
     assert_eq!((sent.action, sent.selection), (5, 3));
     apply_full_result(&mut panel, &start);
+    verify_master_panel(&panel, assignments)?;
     let active = panel.weekly.as_ref().ok_or("started Master board")?;
     assert_eq!(
         (
@@ -367,13 +402,14 @@ fn verify_master_replay(
         task_board::full::Request::query()
     );
     apply_full_result(&mut fresh, &after);
+    verify_master_panel(&fresh, assignments)?;
     assert_eq!(fresh.weekly.as_ref(), Some(active));
     assert!(!fresh.pending);
     assert!(fresh.feedback.is_none());
     verify_master_experience(&panel_text(&panel))?;
     verify_master_experience(&panel_text(&fresh))?;
-    verify_rendered_assignments(&panel_text(&panel), active)?;
-    verify_rendered_assignments(&panel_text(&fresh), active)?;
+    verify_rendered_assignments(&panel_text(&panel), assignments)?;
+    verify_rendered_assignments(&panel_text(&fresh), assignments)?;
     assert_eq!(panel_text(&fresh), panel_text(&panel));
     Ok(())
 }
@@ -430,6 +466,7 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     let sent = decode_request(&start.payload).map_err(|e| format!("{e:?}"))?;
     assert_eq!((sent.action, sent.selection), (5, 3));
     apply_full_result(&mut panel, &captured.refused);
+    assert!(!panel.pending);
     assert_eq!(
         panel.feedback,
         Some("The server refused: level too low for this difficulty")
@@ -458,8 +495,8 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert_eq!(fresh.feedback, None);
     assert_eq!(fresh.weekly.as_ref(), Some(&weekly));
 
-    if let Some(master) = captured.master {
-        verify_master_replay(master, &weekly)?;
+    if let Some((master, assignments)) = captured.master {
+        verify_master_replay(master, &weekly, &assignments)?;
     }
     assert_invalid_results(&mut panel, &refused)
 }
@@ -467,6 +504,49 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
 #[test]
 fn p04_unit_projection_checks_rendering_and_invalid_results() -> Result<(), Error> {
     verify_replay(fixture()?)
+}
+
+#[test]
+fn p04_master_panels_reject_pending_and_corrupted_assignments() -> Result<(), Error> {
+    let mut reply = task_board::full::decode_reply(&fixture()?.query.payload)
+        .map_err(|error| format!("{error:?}"))?;
+    reply.weekly.kills.push(task_board::full::KillTask {
+        race: "oteryn:creature.demon".into(),
+        required: 300,
+        current: 0,
+    });
+    reply
+        .weekly
+        .deliveries
+        .push(task_board::full::DeliveryTask {
+            item: 813,
+            required: 100,
+            current: 0,
+            delivered: false,
+        });
+    let committed = (
+        vec![("oteryn:creature.demon".into(), 300, 0)],
+        vec![(813, 100, 0, false)],
+    );
+    let mut panel = TaskBoardPanel {
+        weekly: Some(reply.clone()),
+        ..TaskBoardPanel::default()
+    };
+    verify_master_panel(&panel, &committed)?;
+    panel.pending = true;
+    assert!(verify_master_panel(&panel, &committed).is_err());
+    panel.pending = false;
+    for mutate in [
+        (|reply: &mut Reply| reply.weekly.kills[0].required += 1) as fn(&mut Reply),
+        |reply| reply.weekly.deliveries[0].item += 1,
+        |reply| reply.weekly.deliveries[0].required += 1,
+    ] {
+        let mut corrupted = reply.clone();
+        mutate(&mut corrupted);
+        panel.weekly = Some(corrupted);
+        assert!(verify_master_panel(&panel, &committed).is_err());
+    }
+    Ok(())
 }
 
 #[test]
@@ -485,26 +565,14 @@ fn p04_master_xp_rejects_identically_wrong_or_missing_rendering() -> Result<(), 
 
 #[test]
 fn p04_master_text_rejects_consistent_omission_and_misrendering() -> Result<(), Error> {
-    let mut board = task_board::full::decode_reply(&fixture()?.query.payload)
-        .map_err(|error| format!("{error:?}"))?;
-    board.weekly.kills.push(task_board::full::KillTask {
-        race: "oteryn:creature.demon".into(),
-        required: 300,
-        current: 0,
-    });
-    board
-        .weekly
-        .deliveries
-        .push(task_board::full::DeliveryTask {
-            item: 813,
-            required: 100,
-            current: 0,
-            delivered: false,
-        });
+    let assignments = (
+        vec![("oteryn:creature.demon".into(), 300, 0)],
+        vec![(813, 100, 0, false)],
+    );
     let expected = "Kill 1. demon: 0/300\nDelivery 1. 813: 0/100  delivered: false";
-    verify_rendered_assignments(expected, &board)?;
-    assert!(verify_rendered_assignments("Kill 1. demon: 0/300", &board).is_err());
-    assert!(verify_rendered_assignments(&expected.replace("0/100", "0/99"), &board).is_err());
+    verify_rendered_assignments(expected, &assignments)?;
+    assert!(verify_rendered_assignments("Kill 1. demon: 0/300", &assignments).is_err());
+    assert!(verify_rendered_assignments(&expected.replace("0/100", "0/99"), &assignments).is_err());
     Ok(())
 }
 
