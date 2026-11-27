@@ -40,7 +40,7 @@ impl CloseTrace {
         }
     }
 
-    fn report(&self, mut error: Option<&dyn std::error::Error>) {
+    fn report(&self, mut error: Option<&(dyn std::error::Error + 'static)>) {
         let detail = error.map(ToString::to_string);
         let mut side = if self.finished || detail.is_some() {
             "local_scope_exit"
