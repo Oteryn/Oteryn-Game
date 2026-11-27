@@ -125,6 +125,7 @@ pub struct ChannelSessionStates {
     /// predicate; refreshed on the actor's cadence like `level_refresh`. A leaf lock.
     pub(super) title_refresh: level_up_live::LevelRefresh,
     pub(super) training: super::loop_training::TrainingRuntime,
+    pub(super) training_checkpoint_due: tokio::sync::Notify,
     pub(super) tutorial_sessions: tutorial_session::TutorialSessions,
     /// Committed Atelier gems and grades, with the current Wheel vessel overlay.
     pub atelier_sessions: std::sync::Mutex<

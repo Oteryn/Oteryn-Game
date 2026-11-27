@@ -15,6 +15,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         shutdown: &oteryn_foundation::CancellationToken,
     ) {
+        let _ = super::first(
+            Box::pin(self.run_source_cycles(shutdown)),
+            crate::durability::DurabilityRoot::with_background_holder(async {
+                self.run_training_checkpoints(shutdown).await;
+                // Training shutdown must not cancel an in-flight world owner turn.
+                std::future::pending().await
+            }),
+        )
+        .await;
+    }
+
+    async fn run_source_cycles(&self, shutdown: &oteryn_foundation::CancellationToken) {
         if self
             .active_generation
             .and_then(|active| active.native_gameplay())

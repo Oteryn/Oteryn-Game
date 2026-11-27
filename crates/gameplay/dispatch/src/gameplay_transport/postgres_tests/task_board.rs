@@ -247,6 +247,11 @@ fn task_board_production_mount_offers_purchase_and_unlock() -> TestResult {
 enum BoardUpdateCase {
     CanonicalDelivery,
     DailyBounty,
+    TrainingHolderBusy,
+}
+
+pub(super) fn training_holder_contention_scenario() -> TestResult {
+    scenario_with_bootstrap(None, false, Bootstrap::Default, Some(BoardUpdateCase::TrainingHolderBusy))
 }
 
 #[test]
@@ -284,6 +289,7 @@ fn scenario_with_bootstrap(
         let tag = match update_case {
             Some(BoardUpdateCase::CanonicalDelivery) => "task_board_canonical_delivery",
             Some(BoardUpdateCase::DailyBounty) => "task_board_daily_bounty",
+            Some(BoardUpdateCase::TrainingHolderBusy) => "p04_training_holder_busy",
             None => fault.map_or("task_board_e2e", RollbackFault::tag),
         };
         let harness = Harness::create_with_admission_seed(admin, tag, false, false).await?;
@@ -634,6 +640,9 @@ fn scenario_with_bootstrap(
                 }
                 BoardUpdateCase::DailyBounty => {
                     daily_bounty_token_dispatch_claims_once_per_reset(&owner, &harness, &mut admitted).await?;
+                }
+                BoardUpdateCase::TrainingHolderBusy => {
+                    super::p04_training_holder::exercise(&owner, &harness, (actor, session), (rat, rat_actor)).await?;
                 }
             }
             drop(owner);

@@ -1127,7 +1127,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         #[cfg(test)]
         trace.set("ai_save");
-        self.save_trained_levels(trained).await;
+        if !trained.is_empty() {
+            self.states.training_checkpoint_due.notify_one();
+        }
         #[cfg(test)]
         trace.set("ai_complete");
     }

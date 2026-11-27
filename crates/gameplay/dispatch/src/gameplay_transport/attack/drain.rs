@@ -1524,7 +1524,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // No later Item command can overtake the normal hit's source callback.
         let _ = self.drain_cloak_blood_with_permit(&pvp_permit).await;
         drop(pvp_permit);
-        self.save_trained_levels(trained).await;
+        if !trained.is_empty() {
+            self.states.training_checkpoint_due.notify_one();
+        }
         let _ = self.drain_native_quest_hits().await;
     }
 }
