@@ -12,6 +12,7 @@ use super::{
 pub(super) enum Dispatch {
     /// A complete command result with no subsequent mechanic-specific effects.
     Reply(crate::foundation::CommandStatus, Vec<u8>),
+    CommandRefused,
     /// A rule callback may acknowledge a committed release or close on uncertainty.
     ServerModal(crate::gameplay_transport::server_modal::ServerModalOutcome),
     Vip(Option<Vec<u8>>),
@@ -78,11 +79,23 @@ pub(super) fn refuse_use(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     reason: &'static str,
 ) -> Dispatch {
+    log_use_refusal(command, reason);
+    Dispatch::Use(UseOutcome::rejected())
+}
+
+pub(super) fn refuse_unavailable_use(
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    reason: &'static str,
+) -> Dispatch {
+    log_use_refusal(command, reason);
+    Dispatch::CommandRefused
+}
+
+fn log_use_refusal(command: oteryn_protocol_oteryn::ClientCommandView<'_>, reason: &'static str) {
     super::super::operator_event(&format!(
         "event=use_dispatch_refused reason={reason} command_id={}",
         command.command_id,
     ));
-    Dispatch::Use(UseOutcome::rejected())
 }
 
 pub(super) fn log_unresolved_use(

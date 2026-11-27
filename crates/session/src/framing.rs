@@ -3,6 +3,7 @@ use super::*;
 
 /// A validated, correlated `CommandResult` with its typed payload still undecoded.
 pub(super) struct ReceivedResult {
+    pub(super) error_code: u32,
     pub(super) command_id: u64,
     pub(super) status: CommandStatus,
     pub(super) server_sequence: u64,

@@ -363,7 +363,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(value)) => value,
-            _ => return Some(outcome(UseDisposition::StaleState)),
+            Ok(None) => return Some(outcome(UseDisposition::StaleState)),
+            Err(_) => return Some(outcome(UseDisposition::Rejected)),
         };
         let native = match self.active_generation.and_then(|g| g.native_gameplay()) {
             Some(native) => native,

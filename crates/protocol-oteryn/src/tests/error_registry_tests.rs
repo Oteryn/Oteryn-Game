@@ -65,6 +65,7 @@ fn error_codes_match_the_registry() {
         (E::SessionJoinUnavailable, "SESSION_JOIN_UNAVAILABLE"),
         (E::NotSupported, "NOT_SUPPORTED"),
         (E::SnapshotExpired, "SNAPSHOT_EXPIRED"),
+        (E::CommandRefused, "COMMAND_REFUSED"),
         (E::AdmissionGrantMalformed, "ADMISSION_GRANT_MALFORMED"),
         (
             E::AdmissionGrantAuthenticationFailed,

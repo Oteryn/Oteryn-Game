@@ -1155,21 +1155,21 @@ mod connection {
                             None,
                             ItemHandle::MAX,
                             CommandStatus::Accepted,
-                            UseDisposition::StaleState,
+                            Some(UseDisposition::StaleState),
                             1,
                         ),
                         (
                             Some(CorpseOpenRefusal::CorpseAbsent),
                             live,
                             CommandStatus::Accepted,
-                            UseDisposition::StaleState,
+                            Some(UseDisposition::StaleState),
                             2,
                         ),
                         (
                             Some(CorpseOpenRefusal::HolderBusy),
                             live,
-                            CommandStatus::Accepted,
-                            UseDisposition::StaleState,
+                            CommandStatus::Rejected,
+                            None,
                             2,
                         ),
                         (
@@ -1177,15 +1177,15 @@ mod connection {
                                 ItemTransferError::Unavailable(DurabilityError::InvalidStoredState),
                             )),
                             live,
-                            CommandStatus::Accepted,
-                            UseDisposition::StaleState,
+                            CommandStatus::Rejected,
+                            None,
                             2,
                         ),
                         (
                             Some(CorpseOpenRefusal::NotOwner),
                             live,
                             CommandStatus::Rejected,
-                            UseDisposition::Rejected,
+                            Some(UseDisposition::Rejected),
                             2,
                         ),
                     ] {
@@ -1199,13 +1199,21 @@ mod connection {
                         )
                         .await?;
                         let mut expected = snapshot(Some(&domains));
-                        expected.push(encode_command_result(
-                            1,
-                            1,
-                            1,
-                            status,
-                            &encode_use_result(disposition).expect("USE disposition"),
-                        )?);
+                        expected.push(match disposition {
+                            Some(disposition) => encode_command_result(
+                                1,
+                                1,
+                                1,
+                                status,
+                                &encode_use_result(disposition).expect("USE disposition"),
+                            )?,
+                            None => oteryn_protocol_oteryn::encode_command_error_result(
+                                1,
+                                1,
+                                1,
+                                oteryn_protocol_oteryn::FoundationProtocolError::CommandRefused,
+                            )?,
+                        });
                         assert_eq!(frames, expected, "{disposition:?}");
                         assert_eq!(authority.target_reads.borrow().len(), reads);
                         assert!(authority.corpse_refusal.borrow().is_none());

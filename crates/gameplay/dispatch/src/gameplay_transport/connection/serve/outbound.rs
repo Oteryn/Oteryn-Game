@@ -125,6 +125,9 @@ where
     write_frame(stream, &result)
         .await
         .map_err(|error| command::disconnect(command, "command_result_write", error.kind()))?;
+    if matches!(dispatch, Dispatch::CommandRefused) {
+        return Ok(());
+    }
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing
     // scope barrier before observing any destination-owned state.
@@ -662,6 +665,7 @@ where
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
         | Dispatch::Reply(..)
+        | Dispatch::CommandRefused
         | Dispatch::ServerModal(_)
         | Dispatch::Vip(_)
         | Dispatch::Appearance(_)

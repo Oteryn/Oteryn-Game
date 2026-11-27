@@ -834,6 +834,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let viewer_id = viewer.map(|(character, _)| *character.as_bytes());
+                    // The receipt names the world of the death; custody names the item's world.
                     let corpse = sqlx::query(
                         "SELECT r.corpse_top_damage_character_id::text AS owner, r.materialized_at,
                                 floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS db_now,
@@ -842,8 +843,10 @@ impl DurabilityRoot {
                                         WHERE a.character_id = r.corpse_top_damage_character_id
                                           AND b.character_id = encode($3,'hex')::uuid) AS party
                            FROM game_item_mint_receipts r
-                           JOIN game_item_ground_locations g USING (item_instance_id, world_id)
-                           JOIN game_item_instances i USING (item_instance_id, world_id)
+                           JOIN game_item_ground_locations g
+                             ON g.item_instance_id = r.item_instance_id AND g.world_id = r.death_world_id
+                           JOIN game_item_instances i
+                             ON i.item_instance_id = g.item_instance_id AND i.world_id = g.world_id
                           WHERE r.item_instance_id = encode($1,'hex')::uuid
                             AND r.loot_purpose_key = $2 AND r.draw_ordinal = 0 AND i.lifecycle = 1",
                     )

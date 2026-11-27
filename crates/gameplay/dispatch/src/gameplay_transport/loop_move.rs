@@ -1687,7 +1687,7 @@ pub(super) async fn observe_container_for_use(
     house_capacity_v2: bool,
 ) -> Result<Option<ContainerObservation>, crate::durability::DurabilityError> {
     let budget = super::AdmissionRetryBudget::for_command(admission.root);
-    observe_container_with_house_capacity_inner(
+    let observation = observe_container_with_house_capacity_inner(
         admission,
         actor,
         fence,
@@ -1695,7 +1695,19 @@ pub(super) async fn observe_container_for_use(
         house_capacity_v2,
         Some(&budget),
     )
-    .await
+    .await?;
+    // These owners return Gone on confirmed disappearance. A missing observation
+    // on the foreground path cannot establish that the current handle went stale.
+    if observation.is_none()
+        && fence.is_some()
+        && matches!(
+            target,
+            ItemKey::Instance(_) | ItemKey::MapBase { .. } | ItemKey::BrowseField { .. }
+        )
+    {
+        return Err(crate::durability::DurabilityError::Unavailable);
+    }
+    Ok(observation)
 }
 
 async fn observe_container_with_house_capacity_inner(
@@ -1738,9 +1750,13 @@ async fn observe_container_with_house_capacity_inner(
         return Ok(None);
     };
     let carried_present = if let Some(budget) = budget {
-        admission
-            .root
-            .item_loop_carried_present(fence.character_id, container, budget.deadline)
+        budget
+            .retry_command_guard(async || {
+                admission
+                    .root
+                    .item_loop_carried_present(fence.character_id, container, budget.deadline)
+                    .await
+            })
             .await?
     } else {
         true

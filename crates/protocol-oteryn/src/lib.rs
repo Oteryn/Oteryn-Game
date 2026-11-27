@@ -214,6 +214,8 @@ pub enum FoundationProtocolError {
     /// HIGHSCORES0 §6 (HS-WIRE-1): the echoed snapshot token is no longer retained; the client
     /// starts the list again at page 1 with token 0.
     SnapshotExpired = 1201,
+    /// The selected command could not be completed and has no mechanic-specific refusal.
+    CommandRefused = 1202,
     // FND-04A §11 fresh-admission refusal rows (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2, N8): written
     // once before admission with generation 0, then the server closes. `admission_refusal_class`
     // gives each its progression and public class.
@@ -295,6 +297,7 @@ impl FoundationProtocolError {
             | Self::AccountDataIntegrity
             | Self::NotSupported
             | Self::SnapshotExpired
+            | Self::CommandRefused
             | Self::ReconnectCapabilityRequired
             | Self::RecoveryCapabilityRequired => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
@@ -332,6 +335,7 @@ impl Display for FoundationProtocolError {
             Self::SessionJoinUnavailable => "session join is temporarily unavailable",
             Self::NotSupported => "query is not supported",
             Self::SnapshotExpired => "snapshot is no longer retained",
+            Self::CommandRefused => "command was refused",
             Self::AdmissionGrantMalformed => "admission grant is malformed",
             Self::AdmissionGrantAuthenticationFailed => "admission grant authentication failed",
             Self::AdmissionGrantBindingMismatch => "admission grant binding mismatch",

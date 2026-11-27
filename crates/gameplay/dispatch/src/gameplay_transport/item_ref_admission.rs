@@ -406,6 +406,12 @@ pub(super) async fn observe_corpse_for_use(
     observe_corpse(admission, actor, target, Some(command)).await
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static CORPSE_USE_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
 async fn observe_corpse(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -471,6 +477,15 @@ async fn observe_corpse(
             });
         }
         let budget = super::AdmissionRetryBudget::for_command(admission.root);
+        #[cfg(test)]
+        let probe = CORPSE_USE_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
         let mut waited = false;
         loop {
             match admission
@@ -487,6 +502,10 @@ async fn observe_corpse(
                 Ok(CorpseContents::Absent) => return Err(CorpseAbsent),
                 Ok(CorpseContents::NotOwner) => return Err(NotOwner),
                 Err(ItemTransferError::Unavailable(DurabilityError::RootUnavailable)) => {
+                    #[cfg(test)]
+                    if let Some(probe) = &probe {
+                        probe.blocked();
+                    }
                     if !waited && command.command_id != 0 {
                         super::operator_event(&format!(
                             "event=corpse_open_wait command_id={} cause=holder_busy budget_ms={}",
