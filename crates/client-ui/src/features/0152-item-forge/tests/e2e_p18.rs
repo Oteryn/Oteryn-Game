@@ -98,8 +98,8 @@ fn check_paid_confirmation(
     } else {
         (
             Operation::DustLimit,
-            (false, 40, 15, 100, 101, 0, 0),
-            "Raise the dust limit?\n\nDust: 40 → 15\nDust limit: 100 → 101",
+            (false, 40, 15, 100, 120, 0, 0),
+            "Raise the dust limit?\n\nDust: 40 → 15\nDust limit: 100 → 120",
         )
     };
     let Some(
@@ -287,7 +287,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                     "Server-verified pair: target tier 1\n",
                     "Base cost before outcome bonuses: 25000 gold, 100 dust, 0 cores\n",
                     "Success: 50%; tier-loss protection: 0%\n",
-                    "Available: 30050 carried gold; 0 bank gold; 15 / 101 dust; 0 cores; 3 slivers\n",
+                    "Available: 30050 carried gold; 0 bank gold; 15 / 120 dust; 0 cores; 3 slivers\n",
                     "The original server writer independently rechecks the current state."
                 );
                 let quote = panel
@@ -406,15 +406,15 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         let dialog_text = |row| crate::item_forge::resource_dialog::dialog_text(dialog, row);
         if index == 7 {
             if panel.resource_dialog.serial == previous_dialog
-                || dialog_text(0) != "Current dust: 15 / 101"
-                || !text.lines().any(|line| line == "Current dust: 15 / 101")
+                || dialog_text(0) != "Current dust: 15 / 120"
+                || !text.lines().any(|line| line == "Current dust: 15 / 120")
             {
                 return Err("Forge current dust dialog rendered incorrect resources".into());
             }
             continue;
         }
         const CAP_COMPLETED: &str =
-            "Raise the dust limit: Completed\nDust after operation: 15 / 101";
+            "Raise the dust limit: Completed\nDust after operation: 15 / 120";
         const CONVERSION_COMPLETED: &str = "Convert dust to slivers: Completed\nDust after operation: 40 / 100\nCreated: 3 slivers";
         if index == 6 {
             let Some(reply::Reply::History(rows)) = &panel.decoded else {
@@ -430,7 +430,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                     .split_once("History #2\n")
                     .and_then(|(_, rows)| rows.split_once("History #1\n"))
                     .is_some_and(|(cap, conversion)| {
-                        cap.contains("Dust: 15 / 101")
+                        cap.contains("Dust: 15 / 120")
                             && conversion.contains("Dust: 40 / 100")
                             && conversion.contains("Created: 3 slivers")
                     })
@@ -453,7 +453,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         }
         let expected_resources = match index {
             1 => &["Dust: 40 / 100", "Created: 3 slivers, 0 cores"][..],
-            2 => &["Dust: 15 / 101"][..],
+            2 => &["Dust: 15 / 120"][..],
             _ => &[],
         };
         if !expected_resources

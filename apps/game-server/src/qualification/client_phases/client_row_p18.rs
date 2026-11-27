@@ -4,7 +4,9 @@
 use super::*;
 use crate::map::view::MapFacts;
 use oteryn_dev_client::DevClientSession;
-use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicCommand;
+use oteryn_dev_client::client_runtime::{
+    server_mechanic::ServerMechanicCommand, world_interaction,
+};
 use oteryn_dev_client::client_ui::item_forge::{self as forge_ui, ItemForgePanel};
 use oteryn_protocol_oteryn::forge_preview as wire;
 use oteryn_protocol_oteryn::item_forge::{
@@ -25,6 +27,9 @@ const FORGE_APPROACH: TilePos = TilePos {
     floor: -7,
 };
 
+// Global 15.33 probe: docs/reference/content-prep/forge-content-1/live-client-forge-probe.json
+const GLOBAL_FIRST_DUST_CAP: u64 = 120;
+
 const ADVENTURERS_STONE: u32 = 16277;
 const THAIS_TEMPLE: TilePos = TilePos {
     x: 32369,
@@ -39,8 +44,8 @@ const GUILD_LANDING: TilePos = TilePos {
 
 pub(super) async fn prepare_station_travel(client: &DevClientSession, row: &str) -> TestResult {
     let position = tile(client.world_spatial().actor_position)?;
-    if position == FORGE_APPROACH {
-        // The dust-cap preparation can already have completed the Guild entry.
+    if row == "P18.full" && position == FORGE_APPROACH {
+        // Full can continue with the same character after its first Stone trip.
         return Ok(());
     }
     if position != THAIS_TEMPLE {
@@ -136,9 +141,35 @@ fn p18_station_requires_the_actual_forge_open_disposition() {
     ));
 }
 
+fn first_station_entry(position: TilePos) -> TestResult {
+    if position != THAIS_TEMPLE {
+        return Err(format!(
+            "P18 expected the Thais temple before Stone USE, observed {position:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn p18_first_station_entry_requires_the_temple() {
+    assert!(first_station_entry(THAIS_TEMPLE).is_ok());
+    assert!(first_station_entry(FORGE_APPROACH).is_err());
+}
+
 pub(super) async fn open_station(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    continuing: bool,
+) -> TestResult {
+    walk_to_station(client, clients, continuing, None).await
+}
+
+async fn walk_to_station(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    continuing: bool,
+    panel: Option<&mut ItemForgePanel>,
 ) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -173,13 +204,9 @@ pub(super) async fn open_station(
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let position = tile(client.world_spatial().actor_position)?;
-    if position == THAIS_TEMPLE {
+    if !continuing || position != FORGE_APPROACH {
+        first_station_entry(position)?;
         enter_guild(client).await?;
-    } else if position != FORGE_APPROACH {
-        return Err(format!(
-            "P18 expected the Thais temple or the persisted Forge approach, observed {position:?}"
-        )
-        .into());
     }
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| at == FORGE_APPROACH)
@@ -197,11 +224,52 @@ pub(super) async fn open_station(
         client.take_events();
         verdict::Harness::global().progress("forge-walk");
     }
-    let reply = client
-        .use_object(&placement, world.facts().object_revision(key))
-        .await?;
-    if !station_opened(reply.status, reply.disposition) {
-        return Err(format!("P18 Forge USE did not open the station: {reply:?}").into());
+    let expected_revision = world.facts().object_revision(key);
+    if let Some(panel) = panel {
+        let session = client.session_mut();
+        let header = session
+            .world_map_snapshot()
+            .ok_or("P18 Forge absent from client map snapshot")?
+            .header;
+        let command = world_interaction::Command {
+            action: world_interaction::Action::Use,
+            target: world_interaction::Target::Object(
+                world_interaction::world_object::WorldObjectTarget {
+                    placement,
+                    expected_revision,
+                },
+            ),
+            selection: Some(world_interaction::Selection {
+                position: oteryn_session::ActorPosition {
+                    x: FORGE_STATION.x.into(),
+                    y: FORGE_STATION.y.into(),
+                    floor: -i16::from(FORGE_STATION.floor),
+                },
+                binding: Some((
+                    header.content_generation,
+                    header.bundle_digest,
+                    header.reset_epoch,
+                )),
+            }),
+        };
+        let reply = world_interaction::send_framed_reply(session, &command, true).await?;
+        if !matches!(reply, world_interaction::Reply::ForgeOpened) {
+            return Err(format!("P18 native Forge USE: {}", reply.feedback()).into());
+        }
+        let browse = forge_ui::begin_open(panel).ok_or("P18 native Forge browse did not start")?;
+        let response = session
+            .gated_command(browse.capability, browse.kind, &browse.payload)
+            .await?;
+        forge_ui::preview::apply(panel, &browse, &response);
+        if response.status != CommandStatus::Accepted || !panel.open || panel.preview.page.is_none()
+        {
+            return Err("P18 native Forge panel did not open with the browse page".into());
+        }
+    } else {
+        let reply = client.use_object(&placement, expected_revision).await?;
+        if !station_opened(reply.status, reply.disposition) {
+            return Err(format!("P18 Forge USE did not open the station: {reply:?}").into());
+        }
     }
     verdict::Harness::global().progress("forge-open");
     evidence(&format!(
@@ -465,7 +533,7 @@ fn check_funded(body: &serde_json::Value, operation: Operation) -> TestResult {
             "slivers_spent":0,"slivers_created":3,"cores_created":0}
         }),
         Operation::DustLimit => serde_json::json!({
-            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":101}
+            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":GLOBAL_FIRST_DUST_CAP}
         }),
         _ => return Err("unexpected funded Forge action".into()),
     };
@@ -513,7 +581,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     drop(fixture);
     seed_dust("P18.client", clients).await?;
     let mut client = connect_character(clients, 0x44, 0).await?;
-    open_station(&mut client, clients).await?;
+    let mut confirmation_panel = ItemForgePanel {
+        selected: true,
+        ..Default::default()
+    };
+    confirmation_panel.preview.selected = true;
+    walk_to_station(&mut client, clients, false, Some(&mut confirmation_panel)).await?;
     let session = client.join_snapshot().game_session_id;
     let definitions = provisioning::item_index()?;
     let dagger = provisioning::item_reference(&definitions, 3267)?;
@@ -553,17 +626,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("fresh Forge fixture has unexpected bank gold".into());
     }
     let mut expected_inventory = baseline.clone();
-    let mut confirmation_panel = ItemForgePanel {
-        selected: true,
-        ..Default::default()
-    };
-    confirmation_panel.preview.selected = true;
     let mut quotes = Vec::new();
     let mut applied = Vec::new();
     let mut parity_failure = None;
     for (ordinal, operation, expected_balance) in [
         (10, Operation::DustToSlivers, (40, 100)),
-        (11, Operation::DustLimit, (15, 101)),
+        (11, Operation::DustLimit, (15, GLOBAL_FIRST_DUST_CAP)),
     ] {
         client.service_liveness(Duration::from_millis(490)).await?;
         let before = client
@@ -686,7 +754,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    let balance = (15, 101);
+    let balance = (15, GLOBAL_FIRST_DUST_CAP);
     let inventory = client
         .inventory()
         .cloned()
@@ -745,7 +813,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             bank_gold: 0,
             bank_spendable: true,
             dust: 15,
-            dust_limit: 101,
+            dust_limit: u32::try_from(GLOBAL_FIRST_DUST_CAP)?,
             cores: 0,
             slivers: 3,
         },
@@ -947,12 +1015,12 @@ mod tests {
     }
 
     #[test]
-    fn funded_cap_requires_global_single_point_increase() {
+    fn funded_cap_requires_global_first_increase() {
         let mut receipt = serde_json::json!({
-            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":101}
+            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":GLOBAL_FIRST_DUST_CAP}
         });
         assert!(check_funded(&receipt, Operation::DustLimit).is_ok());
-        receipt["result"]["dust_limit"] = 120.into();
+        receipt["result"]["dust_limit"] = 101.into();
         assert!(check_funded(&receipt, Operation::DustLimit).is_err());
     }
 

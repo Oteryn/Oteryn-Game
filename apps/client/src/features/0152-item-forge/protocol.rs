@@ -13,25 +13,7 @@ impl Outbox {
         &self,
         session: &mut impl crate::play::Stepper,
     ) -> Result<(), oteryn_session::SessionError> {
-        use oteryn_client_runtime::{cui3::item_forge::Operation, forge_preview::Selection};
-        let browse = {
-            let mut mailbox = lock(&self.0);
-            let panel = &mut mailbox.item_forge;
-            if !panel.selected {
-                return Ok(());
-            }
-            if !panel.operation.requires_pair() && panel.retry.is_none() {
-                panel.operation = Operation::Fusion;
-            }
-            panel.open = true;
-            if panel.pending {
-                return Ok(());
-            }
-            panel.preview.invalidate();
-            panel.preview.items.clear();
-            panel.preview.page = None;
-            oteryn_client_ui::item_forge::preview_request(panel, Selection::Browse { after: 0 })
-        };
+        let browse = oteryn_client_ui::item_forge::begin_open(&mut lock(&self.0).item_forge);
         if let Some(command) = browse {
             let result = session.feature(&command).await?;
             oteryn_client_ui::item_forge::preview::apply(
