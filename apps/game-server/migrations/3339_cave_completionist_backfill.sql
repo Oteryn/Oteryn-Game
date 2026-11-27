@@ -17,21 +17,15 @@ BEGIN
            AND current_user = (
                SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid = TG_RELID
            )
-           AND (
-               EXISTS (
-                   SELECT 1 FROM game_character_roots r
-                    WHERE r.character_id = NEW.character_id AND r.account_id = NEW.account_id
-               )
-               OR EXISTS (
-                   SELECT 1 FROM game_account_appearance_unlocks u
-                   JOIN game_account_appearance_unlock_receipts r
-                     USING (grant_occurrence_id, account_id, unlock_key)
-                    WHERE u.account_id = NEW.account_id
-                      AND u.unlock_key = 'oteryn:outfit.cave_explorer/quest-grant/2'
-                      AND r.granting_character_id = NEW.character_id
-                      AND r.source_kind = 'quest'
-                      AND r.content_revision = 'crystal-9f5a72c-quest-rewards-v1'
-               )
+           AND EXISTS (
+               SELECT 1 FROM game_account_appearance_unlocks u
+               JOIN game_account_appearance_unlock_receipts r
+                 USING (grant_occurrence_id, account_id, unlock_key)
+                WHERE u.account_id = NEW.account_id
+                  AND u.unlock_key = 'oteryn:outfit.cave_explorer/quest-grant/2'
+                  AND r.granting_character_id = NEW.character_id
+                  AND r.source_kind = 'quest'
+                  AND r.content_revision = 'crystal-9f5a72c-quest-rewards-v1'
            )
        )
 $proof$ || anchor);
