@@ -1128,13 +1128,14 @@ pub trait FreshAdmissionAuthority {
     }
 
     /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
-    /// actor's position, read together. `None` when it cannot be observed (`STALE_STATE`).
+    /// actor's position. An absent observation is stale; a failed durable read is a refusal.
     fn observe_item_target(
         &self,
         _actor: ExactActorRef,
         _target: ItemKey,
-    ) -> impl Future<Output = Option<ItemTargetObservation>> {
-        async { None }
+        _command_id: Option<u64>,
+    ) -> impl Future<Output = Result<Option<ItemTargetObservation>, ItemTransferError>> {
+        async { Ok(None) }
     }
 
     fn look_item(

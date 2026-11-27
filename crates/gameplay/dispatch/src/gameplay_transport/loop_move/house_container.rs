@@ -16,15 +16,19 @@ pub(super) async fn observe(
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
     house_capacity_v2: bool,
-) -> Option<ContainerObservation> {
-    let fence = fence?;
+) -> Result<Option<ContainerObservation>, crate::durability::DurabilityError> {
+    let Some(fence) = fence else {
+        return Ok(None);
+    };
     if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
-        return None;
+        return Ok(None);
     }
     let ItemKey::Instance(container) = target else {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     };
-    let _lane = admission.spell_lane_permit().await?;
+    let Some(_lane) = admission.spell_lane_permit().await else {
+        return Err(crate::durability::DurabilityError::RootUnavailable);
+    };
     let (context, index) = {
         let runtime = admission.runtime.lock().await;
         let context = match HouseActionContext::from_native_owner(
@@ -34,28 +38,26 @@ pub(super) async fn observe(
             fence,
         ) {
             Ok(context) => context,
-            Err(_) => return Some(ContainerObservation::Gone),
+            Err(_) => return Ok(Some(ContainerObservation::Gone)),
         };
-        (
-            context,
-            pinned_index(&runtime, admission.active_generation)?,
-        )
+        let Some(index) = pinned_index(&runtime, admission.active_generation) else {
+            return Ok(None);
+        };
+        (context, index)
     };
     if !admission
         .root
         .house_action_current(admission.holder, &context)
-        .await
-        .ok()?
+        .await?
     {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
     // Preserve carried custody; only the actual same-House owner may supply a
     // separate bounded House graph. Neither path falls through to Channel Ground.
     let carried = admission
         .root
         .read_item_loop_container(admission.character, fence.character_id, container)
-        .await
-        .ok()?;
+        .await?;
     let (read, is_house) = match carried {
         Some(read) => (Some(read), false),
         None => (
@@ -68,21 +70,19 @@ pub(super) async fn observe(
                     container,
                     house_capacity_v2,
                 )
-                .await
-                .ok()?,
+                .await?,
             true,
         ),
     };
     let Some(read) = read else {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     };
     if !admission
         .root
         .house_action_current(admission.holder, &context)
-        .await
-        .ok()?
+        .await?
     {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
     {
         let runtime = admission.runtime.lock().await;
@@ -90,10 +90,15 @@ pub(super) async fn observe(
             .is_ok_and(|current| current.position() == context.position())
             || pinned_index(&runtime, admission.active_generation).is_none()
         {
-            return Some(ContainerObservation::Gone);
+            return Ok(Some(ContainerObservation::Gone));
         }
     }
-    let native = admission.active_generation?.native_gameplay()?;
+    let Some(native) = admission
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+    else {
+        return Ok(None);
+    };
     let limit = if is_house && house_capacity_v2 {
         oteryn_protocol_oteryn::container_tree::MAX_HOUSE_CONTAINER_VIEW_ENTRIES
     } else {
@@ -105,12 +110,12 @@ pub(super) async fn observe(
         .and_then(|capacity| u8::try_from(capacity).ok())
         .filter(|capacity| (1..=limit).contains(&usize::from(*capacity)));
     let Some(capacity) = capacity else {
-        return Some(ContainerObservation::NotAContainer);
+        return Ok(Some(ContainerObservation::NotAContainer));
     };
     if read.entries.len() > usize::from(capacity) {
-        return Some(ContainerObservation::Gone);
+        return Ok(Some(ContainerObservation::Gone));
     }
-    let entries = read
+    let Some(entries) = read
         .entries
         .iter()
         .take(usize::from(capacity))
@@ -127,12 +132,15 @@ pub(super) async fn observe(
                     .map_or(0, u32::from),
             })
         })
-        .collect::<Option<Vec<_>>>()?;
-    Some(ContainerObservation::Container {
+        .collect::<Option<Vec<_>>>()
+    else {
+        return Ok(None);
+    };
+    Ok(Some(ContainerObservation::Container {
         parent: read.parent.map(ItemKey::Instance),
         capacity,
         entries,
-    })
+    }))
 }
 
 pub(super) async fn move_item(

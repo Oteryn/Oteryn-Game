@@ -78,11 +78,10 @@ pub(super) fn refuse_use(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     reason: &'static str,
 ) -> Dispatch {
-    super::super::operator_event(&format!(
-        "event=use_dispatch_refused reason={reason} command_id={}",
+    Dispatch::Use(super::super::use_dispatch_refused(
         command.command_id,
-    ));
-    Dispatch::Use(UseOutcome::rejected())
+        reason,
+    ))
 }
 
 pub(super) fn log_unresolved_use(

@@ -1392,6 +1392,13 @@ fn operator_event(line: &str) {
     operator_event_with_trace(line, connection::diagnostic_connection_trace());
 }
 
+fn use_dispatch_refused(command_id: u64, reason: &'static str) -> connection::UseOutcome {
+    operator_event(&format!(
+        "event=use_dispatch_refused reason={reason} command_id={command_id}"
+    ));
+    connection::UseOutcome::rejected()
+}
+
 fn use_receipt_refused(
     command: connection::UseCommand,
     stage: &'static str,
@@ -1536,6 +1543,30 @@ impl<'r> AdmissionRetryBudget<'r> {
             root: Some(root),
             _foreground: root.foreground_demand().ok(),
             waiter: std::sync::OnceLock::new(),
+        }
+    }
+
+    /// Keep one normal pass available before the idle liveness interval expires.
+    fn holder_wait_limit() -> tokio::time::Instant {
+        tokio::time::Instant::now()
+            + connection::IDLE_LIVENESS
+                .interval
+                .saturating_sub(crate::durability::DB_PASS_DEADLINE)
+    }
+
+    /// Allow a bounded final checkout after the pass that was already in flight.
+    /// Callers consume the limit on extension so later holders cannot renew it.
+    fn wait_for_checked_out_pass(
+        &mut self,
+        limit: &mut Option<tokio::time::Instant>,
+        pass_deadline: tokio::time::Instant,
+    ) {
+        if let Some(cap) = *limit {
+            let deadline = (pass_deadline + self.backoff).min(cap);
+            if deadline > self.deadline {
+                self.deadline = deadline;
+                *limit = None;
+            }
         }
     }
 

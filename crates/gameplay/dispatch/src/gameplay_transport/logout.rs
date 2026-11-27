@@ -97,7 +97,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// them is settled by the release's own saves, as for a closed client whose deadline just
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
-        self.logout_session_as(admitted, false)
+        self.logout_session_for_command(admitted, None).await
+    }
+
+    pub(super) async fn logout_session_for_command(
+        &self,
+        admitted: AdmittedSession,
+        command_id: Option<u64>,
+    ) -> LogoutReply {
+        self.logout_session_inner(admitted, false, command_id)
             .await
             .unwrap_or(LogoutReply::Result(LogoutResult::Busy))
     }
@@ -108,6 +116,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
         channel_switch: bool,
+    ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
+        self.logout_session_inner(admitted, channel_switch, None)
+            .await
+    }
+
+    async fn logout_session_inner(
+        &self,
+        admitted: AdmittedSession,
+        channel_switch: bool,
+        command_id: Option<u64>,
     ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
         let _trade_hold = channel_switch
             .then(|| {
@@ -133,7 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=logout_busy stage=activity_scope");
             return Ok(LogoutReply::Result(LogoutResult::Busy));
         }
-        self.release_logout(admitted, actor, controller, channel_switch)
+        self.release_logout(admitted, actor, controller, channel_switch, command_id)
             .await
     }
 
@@ -305,6 +323,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         controller: ControllerBinding,
         channel_switch: bool,
+        command_id: Option<u64>,
     ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
@@ -331,9 +350,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
         let mut kills = None;
-        let budget = AdmissionRetryBudget::for_command(self.root);
+        let mut budget = AdmissionRetryBudget::for_command(self.root);
+        let mut holder_limit = Some(AdmissionRetryBudget::holder_wait_limit());
         let started = tokio::time::Instant::now();
+        let mut attempt = 0;
         let step = loop {
+            attempt += 1;
             let step = self
                 .release_attempt(
                     &admitted,
@@ -344,12 +366,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &mut kills,
                 )
                 .await;
-            let ReleaseAttempt::Retry(stage) = step else {
-                break step;
+            let stage = match step {
+                ReleaseAttempt::Retry(stage) => stage,
+                ReleaseAttempt::Done(_) | ReleaseAttempt::Unknown => {
+                    let kind = match step {
+                        ReleaseAttempt::Done(GraceExpiryResult::Released) => "released",
+                        ReleaseAttempt::Done(GraceExpiryResult::NotApplicable) => "not_applicable",
+                        _ => "unknown",
+                    };
+                    operator_event(&format!(
+                        "event=logout_release_completed command_id={} attempt={attempt} holder=none kind={kind}",
+                        command_id.unwrap_or_default(),
+                    ));
+                    break step;
+                }
             };
+            let holder = self.root.checked_out_pass();
+            if let Some((_, deadline)) = holder {
+                budget.wait_for_checked_out_pass(&mut holder_limit, deadline);
+            }
+            let holder = holder.map_or_else(|| "none".to_owned(), |(site, _)| site.to_string());
             operator_event(&format!(
-                "event=logout_release_retry stage={stage} ms={}",
-                started.elapsed().as_millis()
+                "event=logout_release_retry stage={stage} ms={} command_id={} attempt={attempt} holder={holder}",
+                started.elapsed().as_millis(),
+                command_id.unwrap_or_default(),
             ));
             if !budget
                 .retries_unavailable(AdmissionRefusal::Unavailable)
