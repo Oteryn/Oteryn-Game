@@ -558,17 +558,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .and_then(|npc| npc.placements.first())
         .ok_or("W09 compiled King Tibianus placement absent")?;
     let king_tile = TilePos { x: placement.x, y: placement.y, floor: placement.floor };
-    let mut nearest = cast_tile;
+    let nearest = std::cell::Cell::new(cast_tile);
     let goal_distance = |at: TilePos| (
         at.floor.abs_diff(king_tile.floor),
         at.x.abs_diff(king_tile.x).max(at.y.abs_diff(king_tile.y)),
     );
     let original_route = find_route(cast_tile, |at| goal_distance(at) <= (0, 3), |at, direction| {
-        if goal_distance(at) < goal_distance(nearest) {
-            nearest = at;
+        if goal_distance(at) < goal_distance(nearest.get()) {
+            nearest.set(at);
         }
         destination(world, at, direction).filter(|next| map_journey::in_town(*next, cast_tile))
     });
+    let nearest = nearest.get();
     let frontier = [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
         .map(|direction| (direction, destination(world, nearest, direction)));
     evidence(&format!("W09_ROUTE start={cast_tile:?} king={king_tile:?} nearest={nearest:?} frontier={frontier:?} search={:?}", original_route.as_ref().map(Vec::len)));
