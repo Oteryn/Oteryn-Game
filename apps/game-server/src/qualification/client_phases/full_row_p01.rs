@@ -918,6 +918,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("P01_CHECK assigned-race-kill PASS analyser-credit-and-active-assignment");
 
+    const ENFLAME_CONTRACT_BLOCKER: &str = "BLOCKED-CONTRACT AnalyserImpactV1 requires optional target and charm_key for Enflame hit attribution";
+    evidence(&format!(
+        "P01_CHECK enflame-attribution {ENFLAME_CONTRACT_BLOCKER} target={:?} unscoped_fire_impact={}",
+        troll.entity, kill.fire_damage,
+    ));
+
     row.at("leave-troll-spawn");
     let from = tile(client.world_spatial().actor_position)?;
     let troll_position = tile(troll.position)?;
@@ -966,10 +972,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     writeln!(frames, "charm={charm}")?;
     client_row_p01::capture("p01-full-expected.txt", frames.as_bytes())?;
     close_relog_fixture(&mut fresh).await?;
-    Err(format!(
-        "BLOCKED-SERVER Enflame lacks target-and-charm attribution on wire: target={:?} unscoped_fire_impact={}",
-        troll.entity, kill.fire_damage,
-    ).into())
+    row.at("enflame-attribution");
+    Err(ENFLAME_CONTRACT_BLOCKER.into())
 }
 
 #[cfg(test)]
