@@ -605,6 +605,7 @@ struct CacheState {
     epoch: u64,
     current: Option<Arc<LoopGroundOverlay>>,
     cask_collision: Option<CaskCollisionPin>,
+    movement_ground: Option<HashSet<[u8; 10]>>,
     pending_origins: std::collections::BTreeMap<u64, CommandRef>,
 }
 
@@ -640,6 +641,28 @@ impl LoopGroundCache {
         if let Ok(mut state) = self.state.lock() {
             state.epoch = state.epoch.wrapping_add(1);
             state.current = None;
+            state.movement_ground = None;
+        }
+    }
+
+    /// A Ground-creating spell transaction can invalidate a negative census.
+    /// Call after obtaining the SQL holder and before applying the item operations.
+    pub(super) fn spell_ground_write(
+        &self,
+        operations: &[crate::durability::spell_items_abi::SpellItemOperation],
+    ) {
+        use crate::durability::spell_items_abi::SpellItemOperation;
+        if operations.iter().any(|operation| {
+            matches!(
+                operation,
+                SpellItemOperation::MintGround { .. }
+                    | SpellItemOperation::MintInventory {
+                        allow_ground_overflow: true,
+                        ..
+                    }
+            )
+        }) {
+            self.invalidate();
         }
     }
 
@@ -672,6 +695,35 @@ impl LoopGroundCache {
                 )
                 && current.overlay.runtime_scope() == runtime.binding().runtime_scope()
                 && current.overlay.base().digest() == base.digest()
+        })
+    }
+
+    /// This is independent of the visual Ground overlay, which can omit unknown items.
+    /// Read it only while holding the Channel turn that excludes Ground writers.
+    pub(super) fn proves_clear_movement_ground(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        base: &WorldBase,
+        reset_epoch: u64,
+        destination: crate::foundation::MovementLocalPosition,
+    ) -> bool {
+        self.state.lock().is_ok_and(|state| {
+            let pin = CaskCollisionPin {
+                scope: runtime.binding().runtime_scope(),
+                generation: runtime.binding().scope_generation().get(),
+                bundle: base.digest(),
+                reset_epoch,
+                cache_epoch: state.epoch,
+            };
+            let mut address = [0; 10];
+            address[..4].copy_from_slice(&destination.x.to_be_bytes());
+            address[4..8].copy_from_slice(&destination.y.to_be_bytes());
+            address[8..].copy_from_slice(&destination.floor.to_be_bytes());
+            state.cask_collision.as_ref() == Some(&pin)
+                && state
+                    .movement_ground
+                    .as_ref()
+                    .is_some_and(|cells| !cells.contains(&address))
         })
     }
 
@@ -750,15 +802,8 @@ pub(super) async fn reconcile_cask_collision(
             runtime.binding().scope_generation().get(),
         )
     };
-    let crate::foundation::RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = scope
-    else {
-        return Some(());
-    };
     let cache = &admission.states.loop_ground;
-    let pin = {
+    let (pin, casks_current, ground_current) = {
         let state = cache.state.lock().ok()?;
         let pin = CaskCollisionPin {
             scope,
@@ -767,35 +812,49 @@ pub(super) async fn reconcile_cask_collision(
             reset_epoch: admission.reset_epoch,
             cache_epoch: state.epoch,
         };
-        if state.cask_collision.as_ref() == Some(&pin) {
-            return Some(());
-        }
-        pin
+        let casks_current = state.cask_collision.as_ref() == Some(&pin);
+        let ground_current = casks_current && state.movement_ground.is_some();
+        (pin, casks_current, ground_current)
     };
-    let retired = projection_read(
-        admission.root,
-        async || {
-            admission
-                .root
-                .read_retired_map_cask_placements(
-                    world_id,
-                    channel_id,
-                    pin.bundle,
-                    pin.reset_epoch,
-                    base.entry_count(),
+    if ground_current {
+        return Some(());
+    }
+    let retired = if !casks_current
+        && let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = scope
+    {
+        projection_read(
+            admission.root,
+            async || {
+                admission
+                    .root
+                    .read_retired_map_cask_placements(
+                        world_id,
+                        channel_id,
+                        pin.bundle,
+                        pin.reset_epoch,
+                        base.entry_count(),
+                    )
+                    .await
+            },
+            |error| {
+                matches!(
+                    error,
+                    crate::durability::map_item_mint::MapItemMintError::Unavailable(
+                        crate::durability::DurabilityError::RootUnavailable
+                    )
                 )
-                .await
-        },
-        |error| {
-            matches!(
-                error,
-                crate::durability::map_item_mint::MapItemMintError::Unavailable(
-                    crate::durability::DurabilityError::RootUnavailable
-                )
-            )
-        },
-    )
-    .await?;
+            },
+        )
+        .await?
+    } else {
+        Vec::new()
+    };
+    // A failed census leaves this namespace unknown for movement. Existing cask
+    // reconciliation can still succeed using its independently proven read.
+    let ground = admission.root.read_movement_ground_cells(scope).await.ok();
     let runtime = admission.runtime.lock().await;
     if runtime.owner_fence().is_err()
         || runtime.binding().runtime_scope() != scope
@@ -809,6 +868,9 @@ pub(super) async fn reconcile_cask_collision(
     let mut state = cache.state.lock().ok()?;
     if state.epoch == pin.cache_epoch {
         state.cask_collision = Some(pin);
+        if !casks_current || ground.is_some() {
+            state.movement_ground = ground;
+        }
     }
     Some(())
 }

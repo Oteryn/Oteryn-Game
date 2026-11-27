@@ -312,7 +312,7 @@ impl StepIngressRead<'_, '_> {
     }
 }
 #[allow(clippy::too_many_arguments)]
-pub(super) fn destination(
+pub(in crate::gameplay_transport) fn destination(
     runtime: &ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,

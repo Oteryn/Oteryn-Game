@@ -1,5 +1,6 @@
 //! Tutorial step interception around the existing owner movement path.
 use super::*;
+use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 
 mod autowalk;
 mod blocking;
@@ -124,71 +125,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.refresh_cyclopedia_speed(actor, session).await;
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
-        // Checkout may wait for background durability work. Never wait under
-        // the Channel runtime or spell-state guards; SQL work itself runs once.
-        // Source-qualified blood callbacks also need this read without optional
-        // field capability 30. This is only checkout routing; the locked owner
-        // still proves the current runtime pin and exact scoped Ground custody.
-        let field_pass = if self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-            .is_some_and(|native| {
-                self.bundle_map().is_none()
-                    || self
-                        .required_capabilities
-                        .effective()
-                        .binary_search(&30)
-                        .is_ok()
-                    || native.qualifies_soul_war_callbacks(native.source_digest())
-            }) {
-            self.acquire_field_step_pass().await
-        } else {
-            Err(crate::gameplay_transport::connection::AdmissionRefusal::Rejected)
-        };
-        // Lock order (§1.2): the lane before any Channel guard.
+        // Lock order (§1.2): the lane before any Channel guard. These guards
+        // freeze steering and the actual bundle landing for the ordinary turn.
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        // A periodic condition turn may finish while this step waits for the
-        // lane or Channel locks. Sample time only after acquiring its owners;
-        // field entry must not predate the condition predecessor it observes.
-        let now = self.owner_now().get();
-        // Every refusal below returns the field holder observably, after the
-        // Channel guards: a dropped pass returns it only after this task yields,
-        // so the session's next non-blocking checkout would find it busy.
-        if runtime.note_rotten_movement_time(now).is_err() {
-            #[cfg(test)]
-            eprintln!("M25 movement preflight rejected at {}", line!());
-            operator_event("event=step_rejected_movement kind=OwnerClock");
-            drop((states, runtime));
-            let _ = Self::return_unused_field_step_pass(field_pass).await;
-            return (StepOutcome::rejected(), None);
-        }
+        let mut now = self.owner_now().get();
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
-        // Compare while holding the same owner lock as the movement commit.
-        if follow.is_some_and(|(target, expected)| {
-            states.is_dead(target)
-                || (!runtime.contains_live_creature(target)
-                    && !runtime
-                        .visible_entities()
-                        .players
-                        .iter()
-                        .any(|player| player.actor == target))
-                || runtime.borrow_movement_position().read(target) != Ok(expected)
-        }) || states.is_dead(actor)
-            || expected.is_some_and(|expected| {
-                runtime.borrow_movement_position().read(actor) != Ok(expected)
-            })
-        {
-            #[cfg(test)]
-            eprintln!("M25 movement preflight rejected at {}", line!());
+        let stale = |runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates| {
+            follow.is_some_and(|(target, expected)| {
+                states.is_dead(target)
+                    || (!runtime.contains_live_creature(target)
+                        && !runtime
+                            .visible_entities()
+                            .players
+                            .iter()
+                            .any(|player| player.actor == target))
+                    || runtime.borrow_movement_position().read(target) != Ok(expected)
+            }) || states.is_dead(actor)
+                || expected.is_some_and(|expected| {
+                    runtime.borrow_movement_position().read(actor) != Ok(expected)
+                })
+        };
+        if stale(&mut runtime, &states) {
             operator_event("event=step_rejected_stale_position");
-            drop((states, runtime));
-            let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
         // The lane settles real parked commits. A marker for an unrelated
         // pending spell effect does not own the walking position.
-        let cardinal = match direction {
+        let requested_cardinal = match direction {
             StepDirection::North => CardinalStep::North,
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
@@ -201,15 +165,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Resolve steering before any direction-dependent field/floor read. Pass
         // this same frozen `now` to the common movement owner after preflight.
         let cardinal = match if runtime.forced_player_step_current(actor, session) {
-            Ok(cardinal)
+            Ok(requested_cardinal)
         } else {
-            states.drome_step_direction(&runtime, actor, session, now, cardinal)
+            states.drome_step_direction(&runtime, actor, session, now, requested_cardinal)
         } {
             Ok(direction) => direction,
             Err(MovementError::Blocked) => {
                 operator_event("event=step_blocked cause=movement_condition");
-                drop((states, runtime));
-                let _ = Self::return_unused_field_step_pass(field_pass).await;
                 return (
                     StepOutcome {
                         disposition: StepDisposition::Blocked,
@@ -220,8 +182,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => {
                 operator_event("event=step_rejected_drome");
-                drop((states, runtime));
-                let _ = Self::return_unused_field_step_pass(field_pass).await;
                 return (StepOutcome::rejected(), None);
             }
         };
@@ -240,7 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now)
         };
-        let cardinal = match direction {
+        let mut cardinal = match direction {
             StepDirection::North => CardinalStep::North,
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
@@ -250,14 +210,93 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::SouthWest => CardinalStep::SouthWest,
             StepDirection::NorthWest => CardinalStep::NorthWest,
         };
-        // The closed bundle doors are read live per candidate cell, not collected per step: a
-        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
-        let (none, bundle_doors, legacy);
-        let blocking: &dyn crate::map::floor::CellBlocker = if self
+        let captured_source = self
             .rooms()
             .gate_source_world()
-            .is_some_and(|room| room.source_world().is_some())
-        {
+            .is_some_and(|room| room.source_world().is_some());
+        let origin = runtime.read_actor_position(actor).ok();
+        let room = self.rooms().gate_field_step_ingress();
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay());
+        let field_ingress = native.is_some()
+            && (room.is_some()
+                || self.bundle_map().is_none()
+                || self
+                    .required_capabilities
+                    .effective()
+                    .binary_search(&30)
+                    .is_ok());
+        let clear = field_ingress
+            && !captured_source
+            && native.is_some_and(|native| native.source_digest() == runtime.content_pin().server_artifact_digest())
+            && (runtime.forced_player_step_current(actor, session)
+                || states.drome_step_direction(&runtime, actor, session, now, cardinal) == Ok(cardinal))
+            && !crate::movement::source_floor_change::is_source_profile(self.movement_cells())
+            && self.bundle_map().zip(room).is_some_and(|(map, room)| {
+                let doors = crate::map::floor::BundleDoors(&map.facts);
+                let pvp_blocking = protection_zone::StepBlocker::new(
+                    &doors, self.movement_cells(), origin, &states, (actor, session), now, pz_probe,
+                );
+                let portals = super::quest_callbacks::CallbackPortals {
+                    inner: &pvp_blocking,
+                    map: Some(map),
+                    callbacks: self.callback_content(),
+                };
+                origin.and_then(|origin| {
+                    super::actor_spell::field_step_destination(
+                        &runtime, self.movement_cells(), actor, session, origin, cardinal, &portals,
+                    ).ok()
+                }).is_some_and(|destination| {
+                    !states.cloak_blood_cells.contains(&(destination.x, destination.y, destination.floor))
+                        && crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+                        room, &runtime, destination,
+                    ).is_ok()
+                        && self.states.loop_ground.proves_clear_movement_ground(
+                            &runtime, map.overlay.base(), self.reset_epoch, destination,
+                        )
+                })
+            });
+        let field_pass = if field_ingress && !clear {
+            // A busy holder waits outside the runtime and spell-state guards.
+            // The lane stays owned, and the durable path requalifies its landing.
+            drop((states, runtime));
+            let pass = self.acquire_field_step_pass().await;
+            runtime = self.runtime.lock().await;
+            states = self.states.spell_states.lock().await;
+            now = self.owner_now().get();
+            if runtime.read_actor_position(actor).ok() != origin || stale(&mut runtime, &states) {
+                operator_event("event=step_rejected_stale_position");
+                drop((states, runtime));
+                let _ = Self::return_unused_field_step_pass(pass).await;
+                return (StepOutcome::rejected(), None);
+            }
+            // Drome steering samples owner time. Read the durable tile for the
+            // same direction the common movement owner will use after the wait.
+            if runtime.is_tibiadrome(actor)
+                && !runtime.forced_player_step_current(actor, session)
+                && let Ok(steered) =
+                    states.drome_step_direction(&runtime, actor, session, now, requested_cardinal)
+            {
+                cardinal = steered;
+            }
+            Some(pass)
+        } else {
+            None
+        };
+        if runtime.note_rotten_movement_time(now).is_err() {
+            operator_event("event=step_rejected_movement kind=OwnerClock");
+            drop((states, runtime));
+            if let Some(pass) = field_pass {
+                let _ = Self::return_unused_field_step_pass(pass).await;
+            }
+            return (StepOutcome::rejected(), None);
+        }
+
+        // Re-read legacy doors after any checkout wait. Bundle doors and the
+        // teleport landing are always resolved from the current collision facts.
+        let (none, bundle_doors, legacy);
+        let blocking: &dyn crate::map::floor::CellBlocker = if captured_source {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
@@ -267,7 +306,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy = self.door.lock().await.blocking_cells().clone();
             &legacy
         };
-        let origin = runtime.read_actor_position(actor).ok();
         let pvp_blocking = protection_zone::StepBlocker::new(
             blocking,
             self.movement_cells(),
@@ -286,43 +324,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        // Environmental StepIn callbacks survive both a missing optional field
-        // capability and loss of volatile MINT hints on owner reconstruction.
-        // The reader and Item writer still prove actual scoped Ground custody.
-        // Field ingress cannot qualify without its registered field-step room
-        // (field_step_ingress.rs); such Worlds keep the ordinary STEP owner.
-        let field_step_room = self.rooms().gate_field_step_ingress().is_some();
-        let native_blood_listener = field_step_room
-            && self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-                .is_some_and(|native| {
-                    super::soul_war_callbacks::qualifies_source(&runtime, native)
-                });
         let snow_origin = self.bundle_map().is_some_and(|map| {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
-        let outcome = if self.bundle_map().is_some()
-            && !native_blood_listener
-            && !(field_step_room
-                && origin.is_some_and(|origin| {
-                    states.cloak_blood_ingress_needed(
-                        &runtime,
-                        self.movement_cells(),
-                        actor,
-                        session,
-                        origin,
-                        cardinal,
-                        blocking,
-                    )
-                }))
-            && self
-                .required_capabilities
-                .effective()
-                .binary_search(&30)
-                .is_err()
-        {
-            let _ = Self::return_unused_field_step_pass(field_pass).await;
+        let outcome = if let Some(pass) = field_pass {
+            self.step_with_field_ingress(
+                &mut permit,
+                pass,
+                &mut runtime,
+                &mut states,
+                actor,
+                session,
+                now,
+                cardinal,
+                blocking,
+                equipped_speed_delta,
+            )
+            .await
+        } else {
             states.step_with_non_player_field_contact(
                 &mut runtime,
                 self.movement_cells(),
@@ -335,20 +354,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None,
                 None,
             )
-        } else {
-            self.step_with_field_ingress(
-                &mut permit,
-                field_pass,
-                &mut runtime,
-                &mut states,
-                actor,
-                session,
-                now,
-                cardinal,
-                blocking,
-                equipped_speed_delta,
-            )
-            .await
         };
         if hicks
             && matches!(

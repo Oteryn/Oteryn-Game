@@ -105,6 +105,25 @@ fn nbroute_field_step_busy_holder_postgres() -> TestResult {
 }
 
 #[test]
+fn p11_field_step_keeps_durable_holder_check_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("p11-field-step-holder", move || {
+        let mut result = Ok(());
+        let evidence = oteryn_error_codes::capture(|| {
+            result = run(async |_| {
+                field_scenario(admin, 3188, 1, 2118, true, false, false, Scenario::HolderBusyPacedStep)
+                    .await
+            });
+        });
+        result?;
+        assert!(evidence.iter().any(|line| line.contains("event=step_rejected_holder_busy")), "{evidence:?}");
+        Ok(())
+    })
+}
+
+#[test]
 fn p11_single_step_waits_for_late_holder_return_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -380,6 +399,7 @@ enum Scenario {
     Thais,
     HolderBusy,
     HolderBusyLateReturn,
+    HolderBusyPacedStep,
     DestroyField,
     DestroyFar,
     DestroyBlocked,
@@ -2910,6 +2930,29 @@ async fn drive_player_field(
                 },
             )
             .map_err(debug)?;
+    }
+    if scenario == Scenario::HolderBusyPacedStep {
+        assert!(owner.ensure_source_map_initialized().await);
+        assert!(crate::gameplay_transport::loop_move::reconcile_cask_collision(owner).await.is_some());
+        let origin = owner.runtime.lock().await.read_actor_position(target).map_err(debug)?;
+        let origin_cell = origin.position();
+        let mut field_cell = [0; 10];
+        field_cell[..4].copy_from_slice(&(origin_cell.x - 1).to_be_bytes());
+        field_cell[4..8].copy_from_slice(&origin_cell.y.to_be_bytes());
+        field_cell[8..].copy_from_slice(&origin_cell.floor.to_be_bytes());
+        let ground = harness.root.read_movement_ground_cells(
+            target.runtime_scope(),
+        ).await?;
+        assert!(ground.contains(&field_cell), "the west step enters the committed field");
+        harness.root.await_ready().await?;
+        let holder = harness.root.try_issue_semantic_pass()?;
+        let (blocked, _) = owner.ordinary_paced_step(target, session, StepDirection::West, None, None).await;
+        assert_eq!(blocked.disposition, StepDisposition::Rejected);
+        assert_eq!(owner.runtime.lock().await.read_actor_position(target).map_err(debug)?, origin);
+        holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let (moved, _) = owner.ordinary_paced_step(target, session, StepDirection::West, None, None).await;
+        assert_eq!(moved.disposition, StepDisposition::Moved);
+        return Ok(());
     }
     if matches!(
         scenario,

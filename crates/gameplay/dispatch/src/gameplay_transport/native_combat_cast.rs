@@ -2995,6 +2995,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
+            owner.states.loop_ground.spell_ground_write(&attempt.request.operations);
             let items=match item_tx::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict,&crate::gameplay_transport::world_required_field_guard::player_origin(&owner.required_capabilities)).await {
                 Ok(items)=>items,
                 Err(item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED) | item_tx::SpellItemError::FieldCapabilityRefused)=>{

@@ -61,6 +61,7 @@ pub(super) async fn execute(
             runtime, fence, stamp, native, creature, proposal,
         ) {
             Ok(scheduled) => {
+                owner.states.loop_ground.invalidate();
                 owner
                     .root
                     .commit_creature_source_items(

@@ -347,7 +347,7 @@ const INVENTORY: &[Entry] = &[
         calls: &[
             ("gameplay_transport/field_removal.rs", 1),
             ("gameplay_transport/field_step_ingress.rs", 2),
-            // Paced movement admits the native blood listener only through this field gate.
+            // Paced movement sends unresolved Ground and native blood through this field gate.
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/postgres_tests/field_runes.rs", 2),
             // SRX-3: source-owned Primal Pod creation and expiry use the existing Ground gate.

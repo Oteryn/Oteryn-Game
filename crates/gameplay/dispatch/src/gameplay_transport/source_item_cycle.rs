@@ -388,6 +388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         stage("owner_sql_committed");
         // Only a real SQL COMMIT sets this physical owner's readiness. Tile
         // reads still inspect current custody; this never restores moved items.
+        self.states.loop_ground.invalidate();
         states.source_map_initialized = Some(binding);
         true
     }

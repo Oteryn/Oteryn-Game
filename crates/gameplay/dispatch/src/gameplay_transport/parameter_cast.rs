@@ -1200,6 +1200,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let _=window.install();
                 return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition,vitals:None}),result:Some(private_result)})
             };
+            owner.states.loop_ground.spell_ground_write(&installation.request.operations);
             let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&installation.request,verdict,&crate::gameplay_transport::world_required_field_guard::player_origin(&owner.required_capabilities)).await{
                 Ok(outcome)=>outcome,
                 Err(items::SpellItemError::Rejected(PARAMETER_NEW_GRANT_REFUSED) | items::SpellItemError::FieldCapabilityRefused)=>{
