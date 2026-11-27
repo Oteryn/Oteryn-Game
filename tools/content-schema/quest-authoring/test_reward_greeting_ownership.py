@@ -18,6 +18,7 @@ CALLBACK_DOCUMENTS = (
     "content/quests/npc-callbacks/m39-stories.json",
     "content/quests/npc-callbacks/l2-ready-stories.json",
     "content/quests/npc-callbacks/l13-outfits.json",
+    "content/quests/npc-callbacks/numbered-keys.json",
     "content/quests/npc-callbacks/questpc7-programmes.json",
 )
 
