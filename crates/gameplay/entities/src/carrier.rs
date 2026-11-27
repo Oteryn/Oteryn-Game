@@ -769,6 +769,8 @@ pub struct VisibleRuntimeActor {
 pub struct VisibleRuntimeEntities {
     pub players: Vec<VisibleRuntimeActor>,
     pub creatures: Vec<VisibleRuntimeActor>,
+    /// Committed lethal slots before corpse projection or while native death handlers run.
+    pub settling_creatures: Vec<VisibleRuntimeActor>,
     /// NPC-RT-1: the placed NPC actors (`EntityKind::Npc`).
     pub npcs: Vec<VisibleRuntimeActor>,
 }

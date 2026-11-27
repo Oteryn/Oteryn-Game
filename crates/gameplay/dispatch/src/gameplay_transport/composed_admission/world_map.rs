@@ -148,6 +148,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::movement::interest::VisibilitySettings::REFERENCE.can_see(origin, position)
             })
         };
+        let corpses = item_ref_admission::visible_corpses(&runtime, self.active_generation);
+        let corpse_identities: std::collections::BTreeSet<_> =
+            corpses.iter().map(|corpse| corpse.identity).collect();
+        let held_targets = self.states.attack.lock().await.kills().held_targets();
+        // A lethal slot can reach visibility before reward ingress. After projection,
+        // the reward queue or native source pin owns it until the committed body is bound.
+        let mut pending_deaths = std::collections::BTreeMap::new();
+        for entry in held_targets
+            .into_iter()
+            .chain(runtime.pending_source_corpse_actor())
+            .filter_map(|target| runtime.projected_death_actor(target))
+            .chain(visible.settling_creatures.iter().copied().filter(|entry| {
+                let target = entry.actor;
+                in_view(entry.position)
+                    && !runtime.is_tibiadrome(target)
+                    && runtime.soulpit_variant(target).is_none()
+                    && (runtime
+                        .source_creature_death_pending(target)
+                        .unwrap_or(false)
+                        || runtime.companion_snapshot_including_dead(target).is_ok_and(
+                            |creature| {
+                                let policy = &creature.state.policy;
+                                let rewards = self.reward_table();
+                                creature.state.master.is_none()
+                                    && !policy.is_familiar
+                                    && rewards
+                                        .row(&policy.definition_key)
+                                        .ok()
+                                        .or_else(|| {
+                                            rewards.reward_boss_corpse(&policy.definition_key)
+                                        })
+                                        .is_some_and(|row| row.corpse_item.is_some())
+                            },
+                        ))
+            }))
+        {
+            if in_view(entry.position)
+                && !corpse_identities.contains(&entry.actor.corpse_identity())
+                && !runtime.contains_live_creature(entry.actor)
+            {
+                pending_deaths.insert(entry.actor.placement_identity(), entry);
+            }
+        }
         // Use the wire interest owner's exact floor/rectangle rules before cloning
         // health/policy and reading conditions. A full World has tens of thousands
         // of distant creatures; none need per-connection enrichment.
@@ -163,6 +206,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .creatures
                 .iter()
                 .map(|entry| (VisibleKind::Creature, entry)),
+        )
+        .chain(
+            pending_deaths
+                .values()
+                .map(|entry| (VisibleKind::PendingDeath, entry)),
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .filter(|(_, entry)| in_view(entry.position))
@@ -220,10 +268,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             revision: entry.revision,
         })
-        .chain(item_ref_admission::visible_corpses(
-            &runtime,
-            self.active_generation,
-        ))
+        .chain(corpses)
         .chain(self.source_volatile_entities(&runtime))
         .map(|entry| frame.project_entity(entry))
         .collect::<Option<Vec<_>>>()?;
