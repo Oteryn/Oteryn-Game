@@ -101,6 +101,7 @@ pub(super) async fn chest_guards(
                 operation.outputs = json!([operation.outputs[0], extra]);
             }
             "non-chest" => operation.outputs[0]["key"] = json!("oteryn:item.tibia.i3264"),
+            "tier" => operation.inputs[0]["tier_after"] = json!(9),
             _ => {}
         }
         let mut tx = h.pool.begin().await?;
@@ -145,7 +146,7 @@ pub(super) async fn chest_guards(
             assert!(
                 database
                     .message()
-                    .contains("Forge transition or nominal resources"),
+                    .contains("runtime tier mutation requires its own Forge action"),
                 "{database}"
             );
         }
