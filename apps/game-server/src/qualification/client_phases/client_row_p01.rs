@@ -108,12 +108,13 @@ async fn approach_rat(
     world: &BundleWorld,
     approach: TilePos,
     spawn: TilePos,
+    can_land: impl Fn(TilePos) -> bool,
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     use oteryn_dev_client::EntityKind;
 
     let from = tile(client.world_spatial().actor_position)?;
-    let path =
-        route(world, from, |at| at == approach).ok_or("authored Rat approach is unreachable")?;
+    let path = route_avoiding(world, from, |at| at == approach, &can_land)
+        .ok_or("authored Rat approach is unreachable")?;
     walk_rat_route(client, world, &path).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let target = loop {
@@ -141,9 +142,12 @@ async fn approach_rat(
         client.take_events();
     };
     let target_position = tile(target.position)?;
-    let path = route(world, approach, |at| {
-        at != target_position && same_floor_within(at, target_position, 1)
-    })
+    let path = route_avoiding(
+        world,
+        approach,
+        |at| at != target_position && same_floor_within(at, target_position, 1),
+        |at| can_land(at) && at != target_position,
+    )
     .ok_or("selected Rat is unreachable")?;
     walk_rat_route(client, world, &path).await?;
     let current = client
@@ -195,6 +199,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("P01 Rat selection requires wire entity names".into());
     }
+    // The static map admits creature spawn tiles, but a live creature can
+    // occupy its authored tile and refuse a STEP into it.
+    let spawn_tiles: std::collections::HashSet<_> = metadata
+        .spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source
+                .points
+                .iter()
+                .map(move |point| (point.x, point.y, source.floor))
+        })
+        .collect();
+    let can_land = |at: TilePos| !spawn_tiles.contains(&(at.x, at.y, at.floor));
+
     let rat_points: Vec<_> = metadata
         .spawns
         .sources
@@ -218,15 +237,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .collect();
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-            && rat_points
-                .iter()
-                .any(|(point, _)| at != *point && same_floor_within(at, *point, 1))
-    })
+    let path = route_avoiding(
+        world,
+        from,
+        |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && rat_points
+                    .iter()
+                    .any(|(point, _)| at != *point && same_floor_within(at, *point, 1))
+        },
+        &can_land,
+    )
     .ok_or("no reachable authored Rat spawn")?;
     let approach = path
         .iter()
@@ -236,7 +260,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .iter()
         .find(|(point, _)| approach != *point && same_floor_within(approach, *point, 1))
         .ok_or("Rat approach has no authored spawn")?;
-    let target = approach_rat(&mut client, world, approach, spawn).await?;
+    let target = approach_rat(&mut client, world, approach, spawn, &can_land).await?;
     verdict::Harness::global().bounded_wait(
         tokio::time::Instant::now() + Duration::from_secs(125),
         "baseline-rat-combat",
@@ -279,11 +303,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // Leave this same spawn's view for its authored respawn interval before
     // the second hunt. A player in view would defer the spawn.
     let from = tile(client.world_spatial().actor_position)?;
-    let retreat = route(world, from, |at| {
-        at.floor == spawn.floor
-            && (!(-8..=9).contains(&(i32::from(spawn.x) - i32::from(at.x)))
-                || !(-6..=7).contains(&(i32::from(spawn.y) - i32::from(at.y))))
-    })
+    let retreat = route_avoiding(
+        world,
+        from,
+        |at| {
+            at.floor == spawn.floor
+                && (!(-8..=9).contains(&(i32::from(spawn.x) - i32::from(at.x)))
+                    || !(-6..=7).contains(&(i32::from(spawn.y) - i32::from(at.y))))
+        },
+        &can_land,
+    )
     .ok_or("authored Rat spawn has no offscreen waiting tile")?;
     walk_rat_route(&mut client, world, &retreat).await?;
     let respawn = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms));
@@ -292,7 +321,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
-    let target = approach_rat(&mut client, world, approach, spawn).await?;
+    let target = approach_rat(&mut client, world, approach, spawn, &can_land).await?;
     verdict::Harness::global().bounded_wait(
         tokio::time::Instant::now() + Duration::from_secs(125),
         "captured-rat-combat",
