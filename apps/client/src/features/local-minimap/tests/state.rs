@@ -66,6 +66,12 @@ fn camera_and_marker_validation_do_not_change_gameplay_positions()
     assert!(map.edit_marker(0, 0, -2, "x".into(), 0).is_err());
     assert!(map.edit_marker(0, 0, 7, "\0".into(), 0).is_err());
     map.edit_marker(100, 200, 7, "Gate".into(), 2)?;
+    let kept = map.markers.clone();
+    assert!(
+        map.edit_marker(100, 200, -5, "Invalid floor".into(), 0)
+            .is_err()
+    );
+    assert_eq!(map.markers, kept);
     map.edit_marker(100, 200, 7, "Exit".into(), 3)?;
     assert_eq!(map.markers.len(), 1);
     assert_eq!(map.markers[0].label, "Exit");

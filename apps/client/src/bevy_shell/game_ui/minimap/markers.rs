@@ -22,6 +22,7 @@ struct Control {
 }
 #[derive(Clone, Copy)]
 enum Action {
+    Icon(u8),
     Save,
     Remove,
     Cancel,
@@ -166,11 +167,62 @@ fn project(
     if label.is_empty() {
         label = "Mark".into();
     }
+    let icons = commands
+        .spawn(Node {
+            column_gap: px(6.),
+            ..default()
+        })
+        .id();
+    commands.entity(root).add_child(icons);
+    use crate::play::feature_local_minimap::view::MARKER_COLORS;
+    for (icon, (palette, name)) in MARKER_COLORS
+        .into_iter()
+        .zip(["Red", "Blue", "Green", "Yellow"])
+        .enumerate()
+    {
+        let icon = icon as u8;
+        let choice = commands
+            .spawn((
+                Name::new(format!("{name} mark icon")),
+                bevy::ui_widgets::Button,
+                Node {
+                    width: px(26.),
+                    height: px(26.),
+                    padding: px(3.).all(),
+                    border: px(2.).all(),
+                    ..default()
+                },
+                icon_border(icon == editor.color),
+                Control {
+                    key,
+                    action: Action::Icon(icon),
+                },
+            ))
+            .observe(activate)
+            .id();
+        let swatch = commands
+            .spawn((
+                Node {
+                    flex_grow: 1.,
+                    ..default()
+                },
+                BackgroundColor(palette_color(palette)),
+                Pickable::IGNORE,
+            ))
+            .id();
+        commands.entity(choice).add_child(swatch);
+        commands.entity(icons).add_child(choice);
+    }
+    let description = commands
+        .spawn(source::button_caption("Description", skin.font.clone()))
+        .id();
+    commands.entity(root).add_child(description);
     let mut text = EditableText::new(label);
     text.max_characters = Some(128);
     let field = commands
         .spawn((
             Field,
+            Name::new("Mark description"),
             TextInput,
             text,
             source::font(skin.font.clone(), false),
@@ -185,10 +237,10 @@ fn project(
         .id();
     commands.entity(root).add_child(field);
     focus.set(field, bevy::input_focus::FocusCause::Navigated);
-    for (action, label) in [
-        (Action::Save, "Save mark"),
-        (Action::Remove, "Remove mark"),
-        (Action::Cancel, "Cancel"),
+    for (action, name, label) in [
+        (Action::Save, "Save mark", "Save mark"),
+        (Action::Remove, "Remove mark", "Remove mark"),
+        (Action::Cancel, "Cancel mark", "Cancel"),
     ] {
         if matches!(action, Action::Remove) && !existing {
             continue;
@@ -196,6 +248,7 @@ fn project(
         let button = commands
             .spawn((
                 source::button(skin.buttons.clone(), 110.),
+                Name::new(name),
                 Control { key, action },
             ))
             .observe(activate)
@@ -208,9 +261,14 @@ fn project(
     }
     editor.root = Some((key, root));
 }
+fn icon_border(selected: bool) -> BorderColor {
+    BorderColor::all(if selected { Color::WHITE } else { Color::BLACK })
+}
+
 fn activate(
     event: On<Activate>,
     controls: Query<&Control>,
+    mut borders: Query<(&Control, &mut BorderColor)>,
     guard: super::super::modal::ModalGuard,
     mut editor: ResMut<Editor>,
     mut owner: NonSendMut<HostOwner>,
@@ -222,6 +280,16 @@ fn activate(
         return;
     }
     match control.action {
+        Action::Icon(selected) => {
+            editor.color = selected;
+            for (choice, mut border) in &mut borders {
+                if choice.key == control.key
+                    && let Action::Icon(icon) = choice.action
+                {
+                    *border = icon_border(icon == selected);
+                }
+            }
+        }
         Action::Save => editor.pending = Some(event.entity),
         Action::Cancel => {
             editor.at = None;

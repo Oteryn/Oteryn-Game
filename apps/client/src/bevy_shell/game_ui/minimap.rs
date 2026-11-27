@@ -1,6 +1,8 @@
 //! Sidebar projection of the existing Scene minimap, rendered through an upstream image target.
 mod markers;
 mod mouse;
+#[cfg(test)]
+pub(in crate::bevy_shell) mod replay;
 use super::{
     super::{
         owner::HostOwner,
@@ -11,7 +13,10 @@ use super::{
 use bevy::{
     camera::{RenderTarget, visibility::RenderLayers},
     prelude::*,
-    render::render_resource::TextureFormat,
+    render::{
+        render_resource::{TextureFormat, TextureUsages},
+        view::screenshot::Screenshot,
+    },
     ui::RelativeCursorPosition,
 };
 use oteryn_client_ui_bevy as source;
@@ -24,9 +29,19 @@ pub(super) fn palette_color(index: u8) -> Color {
         (index % 6) * 51,
     )
 }
+/// The offscreen texture shared by the sidebar camera and its UI image.
 #[derive(Resource)]
+pub struct MinimapRenderTarget(Handle<Image>);
+
+impl MinimapRenderTarget {
+    /// Spawn this request and observe Bevy's `ScreenshotCaptured` event for the rendered pixels.
+    pub fn screenshot(&self) -> Screenshot {
+        Screenshot::image(self.0.clone())
+    }
+}
+
+#[derive(Resource, Default)]
 struct State {
-    image: Handle<Image>,
     panel: Option<Entity>,
     generation: Option<u64>,
 }
@@ -38,12 +53,9 @@ pub(super) fn install(app: &mut App) {
         .add_systems(Update, (project, shortcuts, camera_label).chain());
 }
 fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    let image = images.add(Image::new_target_texture(
-        SIZE.x,
-        SIZE.y,
-        TextureFormat::Rgba8UnormSrgb,
-        None,
-    ));
+    let mut target = Image::new_target_texture(SIZE.x, SIZE.y, TextureFormat::Rgba8UnormSrgb, None);
+    target.texture_descriptor.usage |= TextureUsages::COPY_SRC;
+    let image = images.add(target);
     commands.spawn((
         Camera2d,
         Camera {
@@ -51,18 +63,17 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
             ..default()
         },
         RenderTarget::Image(image.clone().into()),
+        bevy::render::view::Tonemapping::None,
         RenderLayers::layer(2),
     ));
-    commands.insert_resource(State {
-        image,
-        panel: None,
-        generation: None,
-    });
+    commands.insert_resource(MinimapRenderTarget(image));
+    commands.init_resource::<State>();
 }
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
+    target: Res<MinimapRenderTarget>,
     regions: Res<GameRegions>,
     skins: Res<Skins>,
 ) {
@@ -120,7 +131,7 @@ fn project(
         .spawn((
             MiniImage(generation),
             mouse::DragState::default(),
-            ImageNode::new(state.image.clone()),
+            ImageNode::new(target.0.clone()),
             RelativeCursorPosition::default(),
             Scaled {
                 width: Some(SIZE.x as f32),

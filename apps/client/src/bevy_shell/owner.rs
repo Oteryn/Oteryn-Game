@@ -580,64 +580,106 @@ mod admission_tests;
 mod reentry_tests;
 
 #[cfg(test)]
-pub(crate) struct N07dHost(HostOwner);
+pub(crate) struct N07dHost(bevy::prelude::App);
 
 #[cfg(test)]
 impl N07dHost {
-    pub(crate) fn new() -> Result<Self, String> {
+    pub(crate) fn new(render: bool) -> Result<Self, String> {
         bevy_tasks::IoTaskPool::get_or_init(|| {
             bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
         });
-        HostOwner::new(None)
-            .map(Self)
-            .map_err(|error| error.to_string())
+        let owner = HostOwner::new(None).map_err(|error| error.to_string())?;
+        super::game_ui::minimap::replay::app(owner, render).map(Self)
     }
 
     pub(crate) fn admit(&mut self, view: PlayView, link: PlayLink) {
-        self.0.finish_admission(Ok((view, link)), None);
-        assert_eq!(self.0.phase, Phase::Playing);
+        let mut owner = self.0.world_mut().non_send_mut::<HostOwner>();
+        owner.finish_admission(Ok((view, link)), None);
+        assert_eq!(owner.phase, Phase::Playing);
+        self.0.update();
     }
 
-    pub(crate) fn view(&self) -> &PlayView {
-        &self.0.play.as_ref().expect("N07d active play").view
+    pub(crate) fn view(&self) -> Result<&PlayView, String> {
+        Ok(&self.active_play()?.view)
     }
 
-    pub(crate) fn view_mut(&mut self) -> &mut PlayView {
-        &mut self.0.play.as_mut().expect("N07d active play").view
+    pub(crate) fn view_mut(&mut self) -> Result<bevy::prelude::Mut<'_, PlayView>, String> {
+        self.0
+            .world_mut()
+            .non_send_mut::<HostOwner>()
+            .filter_map_unchanged(|owner| owner.play.as_mut().map(|play| &mut play.view))
+            .ok_or_else(|| "N07d has no active play".into())
     }
 
     pub(crate) fn poll(&mut self) {
-        self.0.poll([800, 600]);
+        self.0
+            .world_mut()
+            .non_send_mut::<HostOwner>()
+            .poll([800, 600]);
+        self.0.update();
     }
 
-    pub(crate) fn step_east(&self) {
-        self.0
-            .play
-            .as_ref()
-            .expect("N07d active play")
+    pub(crate) fn step_east(&self) -> Result<(), String> {
+        self.active_play()?
             .link
             .request(crate::input::StepDir::East);
+        Ok(())
     }
 
-    pub(crate) fn logout(&self) {
+    pub(crate) fn logout(&self) -> Result<(), String> {
+        self.active_play()?.link.request_logout();
+        Ok(())
+    }
+
+    fn active_play(&self) -> Result<&ActivePlay, String> {
         self.0
+            .world()
+            .non_send::<HostOwner>()
             .play
             .as_ref()
-            .expect("N07d active play")
-            .link
-            .request_logout();
+            .ok_or_else(|| "N07d has no active play".into())
     }
 
     pub(crate) fn route(&mut self, key: oteryn_input_actions::NormalizedInputEvent) {
-        self.0.route_input(&[key], false);
+        self.0
+            .world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(&[key], false);
+        self.0.update();
     }
 
     pub(crate) fn logged_out(&self) -> bool {
-        assert!(self.0.play.is_some() || self.0.status.contains("Logged out."));
-        self.0.play.is_none()
+        let owner = self.0.world().non_send::<HostOwner>();
+        assert!(owner.play.is_some() || owner.status.contains("Logged out."));
+        owner.play.is_none()
     }
 
     pub(crate) fn has_retired_saves(&self) -> bool {
-        !self.0.retired_minimaps.is_empty()
+        !self
+            .0
+            .world()
+            .non_send::<HostOwner>()
+            .retired_minimaps
+            .is_empty()
+    }
+
+    pub(crate) fn click_minimap_button(&mut self, name: &str) -> Result<(), String> {
+        super::game_ui::minimap::replay::activate(&mut self.0, name)
+    }
+
+    pub(crate) fn edit_mark_at_cell(&mut self, cell: [i32; 2]) -> Result<(), String> {
+        super::game_ui::minimap::replay::edit(&mut self.0, cell)
+    }
+
+    pub(crate) fn enter_mark_description(&mut self, label: &str) -> Result<(), String> {
+        super::game_ui::minimap::replay::description(&mut self.0, label)
+    }
+
+    pub(crate) fn drag_minimap(&mut self, tiles: [i32; 2]) -> Result<(), String> {
+        super::game_ui::minimap::replay::pan(&mut self.0, tiles)
+    }
+
+    pub(crate) fn minimap_pixels(&mut self) -> Result<Vec<[u8; 4]>, String> {
+        super::game_ui::minimap::replay::pixels(&mut self.0)
     }
 }
