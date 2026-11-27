@@ -1847,10 +1847,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import forge_item_profiles
 
     forge_item_profiles.project(items, forge_item_profiles.owners(root))
+    import verified_loot_corpses
+
+    new_corpses = verified_loot_corpses.admit_native(
+        root, items, json.loads(generated[creature_path]), provider_order
+    )
+    house_decoration_actions.apply_top_order(new_corpses, house_top_order)
     task_board_item_profiles.validate_global_delivery_profiles(root, items)
-    # The complete source closure must fit native_gameplay's existing 8 MiB
-    # Item-profile input bound. Only the final active serialization is compact;
-    # record order/values are unchanged and donor captures stay readable.
+    # Serialize the final composed provider compactly. Donor captures stay readable.
     generated[item_path] = spell_import.canonical_bytes(items)
     # Late custody sources may still carry writable facts with unresolved targets.
     writable_item_profiles.apply_native(
