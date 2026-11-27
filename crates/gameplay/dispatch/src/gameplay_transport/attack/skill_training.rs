@@ -1,7 +1,7 @@
 //! SKILL-TRAIN-1 (SKILLS-0 §2, §3.4): a player's melee swing at a creature trains the swing's
 //! skill (`WeaponMelee::getSkillType`, `Weapon::useFist`) and a creature hit the player blocks
 //! trains shielding (`Player::onBlockHit`), by the `hit_training` rules. Tries that reach a level
-//! are saved in the same owner pass once its locks are released, never left to the cadence.
+//! wake the live training checkpoint worker.
 
 use super::*;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;

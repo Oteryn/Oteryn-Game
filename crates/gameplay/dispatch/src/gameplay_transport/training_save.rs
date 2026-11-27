@@ -25,6 +25,80 @@ pub(in crate::gameplay_transport) enum TrainingSave {
     Unknown,
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Poll separately from combat and source timers. Runtime entries supply
+    /// the bounded work set, so a refusal leaves the same actor's training
+    /// bank eligible on the next cadence without allocating a retry job.
+    pub(in crate::gameplay_transport) async fn run_training_checkpoints(
+        &self,
+        shutdown: &oteryn_foundation::CancellationToken,
+    ) {
+        let Some(formula) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.training_formula())
+        else {
+            shutdown.cancelled().await;
+            return;
+        };
+        let mut cadence = tokio::time::interval(std::time::Duration::from_secs(1));
+        cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        loop {
+            tokio::select! {
+                biased;
+                () = shutdown.cancelled() => return,
+                _ = cadence.tick() => {}
+                () = self.states.training_checkpoint_due.notified() => {}
+            }
+            let now = self.owner_now().get();
+            let pending: Vec<_> = self
+                .states
+                .spell_states
+                .lock()
+                .await
+                .actors
+                .iter()
+                .filter(|(_, _, state)| state.training_checkpoint_due_at(formula, now, false))
+                .map(|(actor, session, _)| (*actor, *session))
+                .collect();
+            for (actor, session) in pending {
+                if shutdown.is_cancelled() {
+                    return;
+                }
+                let _ = self.run_training_checkpoint_attempt(actor, session).await;
+            }
+        }
+    }
+
+    pub(in crate::gameplay_transport) async fn run_training_checkpoint_attempt(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> TrainingSave {
+        self.root
+            .with_background_operation(async {
+                // A background retry uses its own fixed window with plain backoff.
+                // It takes no foreground preference or FIFO waiter from a command.
+                let budget = AdmissionRetryBudget {
+                    deadline: tokio::time::Instant::now() + super::super::COMMAND_HOLDER_WINDOW,
+                    ..AdmissionRetryBudget::new(&session)
+                };
+                self.save_training_checkpoint(actor, session, false, &budget)
+                    .await
+            })
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn save_cadence_training_support(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let _ = self
+            .save_training_support(actor, session, false, &budget)
+            .await;
+    }
+
     pub(in crate::gameplay_transport) async fn save_spell_training(
         &self,
         actor: ExactActorRef,
@@ -52,12 +126,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         force: bool,
         budget: &AdmissionRetryBudget<'_>,
     ) -> TrainingSave {
+        if let Err(save) = self
+            .save_training_support(actor, session, force, budget)
+            .await
+        {
+            return save;
+        }
+        self.save_training_checkpoint(actor, session, force, budget)
+            .await
+    }
+
+    async fn save_training_support(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> Result<(), TrainingSave> {
         match self
             .save_weapon_proficiency_with_budget(actor, session, force, budget)
             .await
         {
-            TrainingSave::Unknown => return TrainingSave::Unknown,
-            TrainingSave::FencedOut => return TrainingSave::FencedOut,
+            TrainingSave::Unknown => return Err(TrainingSave::Unknown),
+            TrainingSave::FencedOut => return Err(TrainingSave::FencedOut),
             TrainingSave::NotApplicable | TrainingSave::Saved => {}
         }
         // Resting gains use their own retained occurrence and must be acknowledged before
@@ -68,8 +159,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .save_resting_stamina_with_budget(actor, session, budget)
                 .await
             {
-                TrainingSave::Unknown => return TrainingSave::Unknown,
-                TrainingSave::FencedOut => return TrainingSave::FencedOut,
+                TrainingSave::Unknown => return Err(TrainingSave::Unknown),
+                TrainingSave::FencedOut => return Err(TrainingSave::FencedOut),
                 TrainingSave::NotApplicable => break,
                 TrainingSave::Saved => {}
             }
@@ -81,8 +172,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .save_hunting_stamina_with_budget(actor, session, budget)
                 .await
             {
-                TrainingSave::Unknown => return TrainingSave::Unknown,
-                TrainingSave::FencedOut => return TrainingSave::FencedOut,
+                TrainingSave::Unknown => return Err(TrainingSave::Unknown),
+                TrainingSave::FencedOut => return Err(TrainingSave::FencedOut),
                 TrainingSave::NotApplicable => break,
                 TrainingSave::Saved => {}
             }
@@ -95,11 +186,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .stamina_to_flush(actor, session)
         {
-            return TrainingSave::Unknown;
+            return Err(TrainingSave::Unknown);
         }
         if !self.training_before_save(actor, session, force).await {
-            return TrainingSave::Unknown;
+            return Err(TrainingSave::Unknown);
         }
+        Ok(())
+    }
+
+    async fn save_training_checkpoint(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> TrainingSave {
         let saved = self
             .save_spell_training_once(actor, session, force, budget)
             .await;
@@ -154,10 +255,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(formula) = formula else {
             return TrainingSave::NotApplicable;
         };
+        {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if !states.get(&runtime, actor, session).is_some_and(|state| {
+                state.training_checkpoint_due_at(formula, self.owner_now().get(), force)
+            }) {
+                return TrainingSave::NotApplicable;
+            }
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok((current, _)) = budget
+        let Ok(current) = budget
             .retry_durability("training_session", async || {
-                store.current_session_at(session).await
+                store.try_current_session(session).await
             })
             .await
         else {
@@ -171,18 +281,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return TrainingSave::Unknown;
         };
-        // CHAR-REV-SEQ-1: this Character's revision writer, held across the save and its
-        // reconciliation and taken before the runtime lock.
-        let mut slot = self.revision_sequencer.acquire(character).await;
-        let Ok(root) = budget
-            .retry_durability("training_character", async || {
-                self.root
-                    .read_current_character(self.character, character)
-                    .await
-                    .map_err(character_read_error)
-            })
-            .await
-        else {
+        // Live enrichment never waits for a revision owner or holds the slot
+        // while retrying a refused checkout. Forced end-path saves retain the
+        // original bounded read retry and ordering.
+        let mut slot = if force {
+            self.revision_sequencer.acquire(character).await
+        } else if let Some(slot) = self.revision_sequencer.try_acquire(character) {
+            slot
+        } else {
+            return TrainingSave::Unknown;
+        };
+        let read_character = async || {
+            self.root
+                .read_current_character(self.character, character)
+                .await
+                .map_err(character_read_error)
+        };
+        let root = if force {
+            budget
+                .retry_durability("training_character", read_character)
+                .await
+        } else {
+            read_character().await
+        };
+        let Ok(root) = root else {
             return TrainingSave::Unknown;
         };
         let current_fence = CurrentCharacterGameplayFence {
@@ -207,6 +329,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(state) = states.get_mut(&runtime, actor, session) else {
             return TrainingSave::NotApplicable;
         };
+        let mut newly_retained = false;
         let retained = if let Some(retained) = state.pending_training_checkpoint() {
             if retained.formula_digest != formula.digest() {
                 return TrainingSave::Unknown;
@@ -238,11 +361,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if state.retain_training_checkpoint(retained.clone()).is_err() {
                 return TrainingSave::Unknown;
             }
+            newly_retained = true;
             retained
         };
-        // The Channel lock preserves this exact actor/training predecessor through
-        // one bounded semantic pass; all current DB fences are independently read.
-        // A retained checkpoint replays at the exact revision it was prepared for.
+        // The retained occurrence preserves the predecessor while SQL independently
+        // checks the fences. Neither combat nor another actor's tick waits on these guards.
+        drop(states);
+        drop(runtime);
         let outcome = slot
             .commit_build(
                 self.root,
@@ -254,11 +379,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(retained.fence.expected_character_revision),
             )
             .await;
-        // The write is never part of the retry. Its readback may yield only
-        // after the runtime/state guards are gone; each read-only attempt
-        // revalidates the retained occurrence under newly acquired guards.
-        drop(states);
-        drop(runtime);
+        // A refused checkout on the first attempt proves this occurrence never
+        // reached the writer. Unfreeze it and keep any hits banked meanwhile.
+        if newly_retained
+            && outcome
+                .as_ref()
+                .is_err_and(super::super::progression_holder_busy)
+        {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            if let Some(state) = states.get_mut(&runtime, actor, session) {
+                state.release_unissued_training_checkpoint(&retained);
+            }
+            return TrainingSave::Unknown;
+        }
+        // The write is never part of readback retries.
         if matches!(outcome, Err(CharacterProgressionError::RespawnPending)) {
             return TrainingSave::FencedOut;
         }
@@ -267,13 +402,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             barrier.0.notify_one();
             barrier.1.notified().await;
         }
-        budget
-            .retry_durability("training_readback", async || {
-                self.finish_training_checkpoint_once(actor, session, &store, &retained, &outcome)
-                    .await
-            })
-            .await
-            .unwrap_or(TrainingSave::Unknown)
+        let readback = async || {
+            self.finish_training_checkpoint_once(actor, session, &store, &retained, &outcome)
+                .await
+        };
+        let result = if force {
+            budget.retry_durability("training_readback", readback).await
+        } else {
+            readback().await
+        };
+        result.unwrap_or(TrainingSave::Unknown)
     }
 
     /// One readback attempt after a single write. Root acquisition misses leave
@@ -286,13 +424,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected: &RetainedTrainingCheckpoint,
         outcome: &Result<BuildCommitOutcome, CharacterProgressionError>,
     ) -> Result<TrainingSave, DurabilityError> {
+        let mut refreshed = None;
+        let receipt = match outcome {
+            Ok(
+                BuildCommitOutcome::Committed(receipt)
+                | BuildCommitOutcome::AlreadyCommitted(receipt),
+            ) => Some(receipt.clone()),
+            Err(CharacterProgressionError::RespawnPending) => return Ok(TrainingSave::FencedOut),
+            Err(error) => {
+                let receipt = self
+                    .root
+                    .reconcile_character_build(self.character, expected.prepared.request.occurrence)
+                    .await
+                    .map_err(progression_read_error)?;
+                if receipt.is_none()
+                    && matches!(
+                        error,
+                        CharacterProgressionError::CharacterRevisionMismatch
+                            | CharacterProgressionError::AuthorityRejected
+                    )
+                {
+                    refreshed = match self
+                        .uncommitted_checkpoint_fence(store, session, expected)
+                        .await
+                    {
+                        Err(error)
+                            if matches!(
+                                outcome,
+                                Err(CharacterProgressionError::AuthorityRejected)
+                            ) && !matches!(error, DurabilityError::RootUnavailable) =>
+                        {
+                            return Ok(TrainingSave::FencedOut);
+                        }
+                        result => result?,
+                    };
+                }
+                receipt
+            }
+        };
+        // A receipt is history. Resolve current authority before re-proving the
+        // exact runtime actor and retained occurrence at live installation.
+        let fresh = if receipt.is_some() {
+            Some(store.try_current_session(session).await?)
+        } else {
+            None
+        };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err() || runtime.player_control_facts(actor, session).is_err() {
             return Ok(TrainingSave::FencedOut);
         }
         let Some(state) = states.get_mut(&runtime, actor, session) else {
-            // A newly reserved spell is not proof of stale authority.
             return Ok(TrainingSave::Unknown);
         };
         let Some(retained) = state.pending_training_checkpoint() else {
@@ -304,87 +486,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(TrainingSave::Unknown);
         }
-        // Hits may bank while the readback waits. Keep their current retained
-        // copy; the physical request, formula and authority above must not move.
         let retained = retained.clone();
         let binding = runtime.binding();
-        let receipt = match outcome {
-            Ok(
-                BuildCommitOutcome::Committed(receipt)
-                | BuildCommitOutcome::AlreadyCommitted(receipt),
-            ) => receipt.clone(),
-            Err(CharacterProgressionError::CharacterRevisionMismatch) => {
-                match self
-                    .root
-                    .reconcile_character_build(self.character, retained.prepared.request.occurrence)
-                    .await
-                    .map_err(progression_read_error)?
+        let (Some(receipt), Some(fresh)) = (receipt, fresh) else {
+            let authority_rejected =
+                matches!(outcome, Err(CharacterProgressionError::AuthorityRejected));
+            let Some(refreshed) = refreshed.filter(|fence| {
+                fence.runtime_scope == binding.runtime_scope()
+                    && fence.scope_ownership_generation == binding.scope_generation()
+            }) else {
+                return Ok(if authority_rejected {
+                    TrainingSave::FencedOut
+                } else {
+                    TrainingSave::Unknown
+                });
+            };
+            if authority_rejected {
+                if state
+                    .refence_uncommitted_training_checkpoint(&retained, refreshed)
+                    .is_err()
                 {
-                    Some(receipt) => receipt,
-                    None => {
-                        let Some(refreshed) = self
-                            .uncommitted_checkpoint_fence(store, session, &retained)
-                            .await?
-                        else {
-                            return Ok(TrainingSave::Unknown);
-                        };
-                        if refreshed.runtime_scope != binding.runtime_scope()
-                            || refreshed.scope_ownership_generation != binding.scope_generation()
-                        {
-                            return Ok(TrainingSave::Unknown);
-                        }
-                        let _ = state.refresh_training_checkpoint_revision(&retained, refreshed);
-                        return Ok(TrainingSave::Unknown);
-                    }
+                    return Ok(TrainingSave::FencedOut);
                 }
+            } else {
+                let _ = state.refresh_training_checkpoint_revision(&retained, refreshed);
             }
-            Err(CharacterProgressionError::RespawnPending) => return Ok(TrainingSave::FencedOut),
-            Err(CharacterProgressionError::AuthorityRejected) => {
-                // A proven absent receipt permits the existing re-fence only.
-                // No readback retry issues this checkpoint's write again.
-                match self
-                    .root
-                    .reconcile_character_build(self.character, retained.prepared.request.occurrence)
-                    .await
-                    .map_err(progression_read_error)?
-                {
-                    Some(receipt) => receipt,
-                    None => {
-                        let current = match self
-                            .uncommitted_checkpoint_fence(store, session, &retained)
-                            .await
-                        {
-                            Ok(Some(current)) => current,
-                            Err(DurabilityError::RootUnavailable) => {
-                                return Err(DurabilityError::RootUnavailable);
-                            }
-                            Ok(None) | Err(_) => return Ok(TrainingSave::FencedOut),
-                        };
-                        if current.runtime_scope != binding.runtime_scope()
-                            || current.scope_ownership_generation != binding.scope_generation()
-                            || state
-                                .refence_uncommitted_training_checkpoint(&retained, current)
-                                .is_err()
-                        {
-                            return Ok(TrainingSave::FencedOut);
-                        }
-                        return Ok(TrainingSave::Unknown);
-                    }
-                }
-            }
-            Err(_) => match self
-                .root
-                .reconcile_character_build(self.character, retained.prepared.request.occurrence)
-                .await
-                .map_err(progression_read_error)?
-            {
-                Some(receipt) => receipt,
-                None => return Ok(TrainingSave::Unknown),
-            },
+            return Ok(TrainingSave::Unknown);
         };
-        // A receipt is history. Resolve current authority while the same locks
-        // still protect the actor and retained occurrence selected above.
-        let (fresh, _) = store.current_session_at(session).await?;
         if fresh.session_state() == GameSessionState::Terminal
             || fresh.current_connection_generation() != retained.fence.connection_generation
             || fresh.current_character_lease().generation()

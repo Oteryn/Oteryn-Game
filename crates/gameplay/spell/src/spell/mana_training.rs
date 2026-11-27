@@ -175,7 +175,7 @@ impl LiveManaTraining {
                 *skill = next;
             }
         }
-        if !force && !advanced && now.saturating_sub(started) < 60_000_000 {
+        if !force && !advanced && now.saturating_sub(started) < CHECKPOINT_CADENCE_MICROS {
             return Ok(TrainingStage::Live(live));
         }
         let after = DurableBuildState::new(vocation, magic, skills)
@@ -209,6 +209,8 @@ impl LiveManaTraining {
         }))
     }
 }
+const CHECKPOINT_CADENCE_MICROS: u64 = 60_000_000;
+
 impl LiveManaTraining {
     pub fn prepare_checkpoint(
         &self,
@@ -247,7 +249,10 @@ impl PreparedManaTraining {
     }
     /// `after` with the hits resolved since this checkpoint was prepared.
     fn after_with_post_checkpoint(&self) -> LiveManaTraining {
-        let mut next = self.after.clone();
+        self.with_post_checkpoint(self.after.clone())
+    }
+
+    fn with_post_checkpoint(&self, mut next: LiveManaTraining) -> LiveManaTraining {
         if let Some(post) = self.post_checkpoint {
             for (pending, tries) in next.pending_skills.iter_mut().zip(post.pending_skills) {
                 *pending = pending.saturating_add(tries).min(MAX_BUILD_PROGRESS);
@@ -1137,9 +1142,45 @@ impl super::cast::PlayerSpellState {
                     .is_some_and(|value| value.level_due(formula))
             }
     }
+    /// Local preflight for a due checkpoint, before any holder checkout.
+    pub fn training_checkpoint_due_at(
+        &self,
+        formula: &CompiledTrainingFormula,
+        now: u64,
+        force: bool,
+    ) -> bool {
+        self.training_checkpoint.is_some()
+            || (self.has_training_to_flush()
+                && (force
+                    || self.training.as_ref().is_some_and(|training| {
+                        training.level_due(formula)
+                            || training.checkpoint_started_micros.is_some_and(|started| {
+                                now.saturating_sub(started) >= CHECKPOINT_CADENCE_MICROS
+                            })
+                    })))
+    }
+
     pub fn pending_training_checkpoint(&self) -> Option<&RetainedTrainingCheckpoint> {
         self.training_checkpoint.as_deref()
     }
+    /// Return a newly prepared occurrence to the live bank after the caller
+    /// proves its first write could not check out a holder.
+    pub fn release_unissued_training_checkpoint(&mut self, expected: &RetainedTrainingCheckpoint) {
+        if let Some(retained) = &self.training_checkpoint
+            && retained.fence == expected.fence
+            && retained.formula_digest == expected.formula_digest
+            && retained.prepared.request == expected.prepared.request
+            && self.training.as_ref() == Some(&retained.prepared.before)
+        {
+            self.training = Some(
+                retained
+                    .prepared
+                    .with_post_checkpoint(retained.prepared.before.clone()),
+            );
+            self.training_checkpoint = None;
+        }
+    }
+
     pub fn retain_training_checkpoint(
         &mut self,
         value: RetainedTrainingCheckpoint,

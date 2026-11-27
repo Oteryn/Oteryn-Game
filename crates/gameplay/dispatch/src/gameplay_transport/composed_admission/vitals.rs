@@ -259,8 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None
             }
         };
-        let _ = self
-            .save_spell_training(actor, game_session_id, false)
+        self.save_cadence_training_support(actor, game_session_id)
             .await;
         let cleanup_access = self.refresh_spell_access(actor, game_session_id).await;
         let _ = self
