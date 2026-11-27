@@ -24,6 +24,17 @@ async fn send(
     selection: u16,
     name: &str,
 ) -> TestResult<(Reply, GatedCommandResult)> {
+    let (reply, result) = send_live(client, action, selection).await?;
+    let session = client.join_snapshot().game_session_id;
+    capture(name, &frame_envelope(session.as_bytes(), &result)?)?;
+    Ok((reply, result))
+}
+
+async fn send_live(
+    client: &mut DevClientSession,
+    action: u8,
+    selection: u16,
+) -> TestResult<(Reply, GatedCommandResult)> {
     let payload = encode_request(&Request {
         action,
         selection,
@@ -41,8 +52,6 @@ async fn send(
     if result.status != CommandStatus::Accepted {
         return Err(format!("task-board action={action} status={:?}", result.status).into());
     }
-    let session = client.join_snapshot().game_session_id;
-    capture(name, &frame_envelope(session.as_bytes(), &result)?)?;
     let reply =
         decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}"))?;
     Ok((reply, result))
@@ -58,57 +67,45 @@ fn frame_envelope(session: &[u8; 16], result: &GatedCommandResult) -> serde_json
     }))
 }
 
-async fn global_period(database: &mut sqlx::PgConnection) -> TestResult<u64> {
+async fn global_period(
+    database: &mut sqlx::PgConnection,
+    world: &[u8; 16],
+) -> TestResult<u64> {
     // Global Weekly Tasks reset on Monday at 10:00 local server time.
     let period: i64 = sqlx::query_scalar(
         "SELECT (date_trunc('week', (clock_timestamp()
                     AT TIME ZONE 'Europe/Berlin') - interval '10 hours')::date
                     - DATE '1970-01-01')::bigint",
     )
-    .fetch_one(database)
+    .fetch_one(&mut *database)
     .await?;
-    Ok(u64::try_from(period)?)
-}
-
-async fn expected_period(database: &mut sqlx::PgConnection) -> TestResult<u64> {
-    use sqlx::Connection as _;
-
-    // Each historical probe uses a private World publication rolled back before live play.
-    const WORLD: &str = "01934f10-7c02-7001-805b-3b1122334499";
+    let (epoch, legacy, published): (String, bool, i64) = sqlx::query_as(
+        "SELECT active.reset_epoch::text, epoch.legacy_six_am, game_task_board_period(active.world_id)
+         FROM game_world_reset_active active JOIN game_world_reset_epochs epoch USING(world_id, reset_epoch)
+         WHERE active.world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_slice())
+    .fetch_one(&mut *database)
+    .await?;
+    if legacy || published != period {
+        return Err(format!("P04 published reset epoch={epoch} legacy={legacy} period={published}; expected period={period}").into());
+    }
     for (instant, expected) in [
         ("2026-11-23 08:59:59+00", 20773),
         ("2026-11-23 09:00:00+00", 20780),
         ("2026-07-20 07:59:59+00", 20647),
         ("2026-07-20 08:00:00+00", 20654),
     ] {
-        let mut tx = database.begin().await?;
-        sqlx::query(
-            "INSERT INTO game_world_reset_epochs
-              (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,
-               frame_digest,calendar,calendar_revision,activated_at,reset_month)
-             VALUES($1::uuid,0,$2,'map-1',$2,$2,$2,
-               'TIBIA_SERVER_SAVE_BERLIN_06',1,$3::text::timestamptz,'2026-11')",
-        )
-        .bind(WORLD)
-        .bind([9_u8; 32].as_slice())
-        .bind(instant)
-        .execute(&mut *tx)
-        .await?;
-        sqlx::query("INSERT INTO game_world_reset_active VALUES($1::uuid,0)")
-            .bind(WORLD)
-            .execute(&mut *tx)
-            .await?;
-        let actual: i64 = sqlx::query_scalar("SELECT game_task_board_period($1::uuid)")
-            .bind(WORLD)
-            .fetch_one(&mut *tx)
-            .await?;
-        tx.rollback().await?;
+        let actual: i32 = sqlx::query_scalar(
+            "SELECT date_trunc('week',game_server_save_day($1::text::timestamptz)::timestamp)::date
+             - DATE '1970-01-01'",
+        ).bind(instant).fetch_one(&mut *database).await?;
         if actual != expected {
-            return Err(format!("P04 production period at {instant}: expected {expected}, got {actual}").into());
+            return Err(format!("P04 production calendar at {instant}: expected {expected}, got {actual}").into());
         }
-        evidence(&format!("P04_PRODUCTION_PERIOD instant={instant:?} period={actual}"));
     }
-    global_period(database).await
+    evidence(&format!("P04_ACTIVE_RESET epoch={epoch} legacy={legacy} period={published}"));
+    Ok(u64::try_from(period)?)
 }
 
 fn expected_shop() -> Vec<ShopOffer> {
@@ -241,6 +238,7 @@ fn verify_start(before: &Reply, reply: &Reply, level: u32) -> TestResult {
                 && kills.len() == 5
                 && kills.iter().all(|task| {
                     !task.race.is_empty()
+                        // Crystal 201189f8, ioweeklytasks.cpp:963-982 (Weekly, not Bounty).
                         && (300..=600).contains(&task.required)
                         && task.current == 0
                 })
@@ -371,17 +369,14 @@ const PRODUCTION_MASTER_CREATURES: &str = include_str!("../../../../../content/q
 
 fn master_creature_keys(source: &str) -> std::collections::BTreeSet<String> {
     source.lines().filter(|line| !line.starts_with('#'))
-        .map(|key| match key {
-            "oteryn:creature.sabretooth_creature" => "oteryn:creature.sabretooth",
-            key => key,
-        })
         .map(str::to_owned)
         .collect()
 }
 
 fn verify_master_pool(expected: &std::collections::BTreeSet<String>, production: &str) -> TestResult {
     let actual = master_creature_keys(production);
-    if actual != *expected {
+    let rows = production.lines().filter(|line| !line.starts_with('#')).count();
+    if rows != actual.len() || actual != *expected {
         return Err(format!(
             "P04 Master pool differs from Global; missing={:?} ineligible={:?}",
             expected.difference(&actual).collect::<Vec<_>>(),
@@ -399,7 +394,6 @@ struct MasterCatalogue {
 impl MasterCatalogue {
     fn load() -> TestResult<Self> {
         let races = master_creature_keys(include_str!("p04_master_creature_oracle.txt"));
-        verify_master_pool(&races, PRODUCTION_MASTER_CREATURES)?;
         let amounts = delivery_oracle()?;
         Ok(Self { races, amounts })
     }
@@ -651,34 +645,125 @@ fn verify_delivery_availability(before: &Reply, after: &Reply, item: u32) -> Tes
         .ok_or("P04 availability fixture requires a zero-count assigned item")?;
     assignment.current = 1;
     if *after != expected {
-        return Err(format!("P04 availability query did not expose the one carried item {item}: {:?}", after.weekly.deliveries).into());
+        return Err(format!("P04 availability query did not expose the one stashed item {item}: {:?}", after.weekly.deliveries).into());
     }
     Ok(())
 }
 
-async fn observe_positive_delivery(
-    client: &mut DevClientSession,
+async fn stash_quantity(
     database: &mut sqlx::PgConnection,
-    character: &[u8; 16],
+    scope: &SeamClients<'_>,
+    item: u32,
+) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE(sum(quantity),0)::bigint FROM game_character_stash_balances
+          WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid
+            AND definition_key=$3",
+    )
+    .bind(scope.characters[0].as_slice())
+    .bind(scope.world.as_slice())
+    .bind(format!("oteryn:item.tibia.i{item}"))
+    .fetch_one(database)
+    .await?)
+}
+
+async fn observe_positive_delivery(
+    mut client: DevClientSession,
+    database: &mut sqlx::PgConnection,
+    scope: &SeamClients<'_>,
     board: &Reply,
 ) -> TestResult<String> {
+    use crate::content::ReferenceItemField::Known;
+    use crate::content::native_gameplay::ItemProfilesDocument;
+    use oteryn_protocol_oteryn::stash;
+
+    let source = native_input()?.item_profiles.as_ref().ok_or("P04 Item profiles missing")?;
+    let profiles: ItemProfilesDocument = serde_json::from_slice(&source.bytes)?;
     let item = board.weekly.deliveries.iter()
-        .find(|assignment| assignment.current == 0 && assignment.required > 1)
-        .ok_or("P04 positive availability needs an unfulfilled delivery assignment")?.item;
+        .filter(|assignment| assignment.current == 0 && assignment.required > 1)
+        .find(|assignment| {
+            let key = format!("oteryn:item.tibia.i{}", assignment.item);
+            profiles.records.iter().any(|profile| {
+                profile.production_definition.production_key == key
+                    && matches!(&profile.semantics.trade_restrictions, Known(trade) if trade.marketable == Known(true))
+                    && !matches!(&profile.semantics.container, Known(_))
+            })
+        })
+        .ok_or("P04 positive availability needs a stashable unfulfilled assignment")?.item;
+    let character = &scope.characters[0];
+    let carried = durable_carried(database, character).await?;
+    if stash_quantity(database, scope, item).await? != 0
+        || durable_delivery_amounts(&carried)?.contains_key(&item)
+    {
+        return Err("P04 availability fixture item already in custody".into());
+    }
+
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&scope.world)?, ChannelId::decode(&scope.channel)?)?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| near_locker(world, at))
+        .ok_or("P04 no route to an authored Stash locker")?;
+    walk(&mut client, world, &path).await?;
+
+    let session = client.join_snapshot().game_session_id;
     request_fixture_control_at(
         "NODE_BOOT_CONTROL_SOCKET",
-        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        uuid_text(session.as_bytes()),
         "--profile",
         format!("item-{item}-1"),
     ).await?;
-    let available = durable_delivery_amounts(&durable_carried(database, character).await?)?;
-    if available.get(&item) != Some(&1) {
-        return Err(format!("P04 availability fixture did not commit exactly one item {item}").into());
+    logout_released(&mut client, database).await?;
+    drop(client);
+    let mut client = connect_character_once(scope, 0x28, 0).await?;
+    let stow_session = client.join_snapshot().game_session_id;
+    if stow_session == session {
+        return Err("P04 stash preparation reused the mint session".into());
     }
-    let (after, frame) = send(client, 4, 0, "p04-master-availability.json").await?;
+    let item_ref = provisioning::item_reference(&provisioning::item_index()?, item)?;
+    let entry = client.inventory()
+        .and_then(|inventory| inventory.entries.iter().find(|entry| entry.item_definition_ref == item_ref))
+        .ok_or("P04 provisioned item missing from the reloaded backpack projection")?;
+    if entry.count.get() != 1
+        || durable_delivery_amounts(&durable_carried(database, character).await?)?.get(&item) != Some(&1)
+    {
+        return Err("P04 availability fixture did not provision exactly one carried item".into());
+    }
+    let payload = stash::encode_stash_intent(stash::StashIntent {
+        page: 0,
+        action: stash::StashAction::Stow(entry.handle),
+    }).map_err(|error| format!("P04 Stash encoder: {error:?}"))?;
+    let result = client.session_mut().gated_command(stash::CAPABILITY_STASH_V1,
+        stash::COMMAND_TYPE_STASH_INTENT, &payload).await?;
+    let reply = stash::decode_stash_reply(&result.payload).map_err(|error| format!("P04 Stash decoder: {error:?}"))?;
+    if result.status != CommandStatus::Accepted
+        || (reply.outcome, reply.stowed_quantity) != (stash::StashOutcome::Committed, 1)
+        || stash_quantity(database, scope, item).await? != 1
+    {
+        return Err(format!("P04 Stash stow did not durably move one item {item}: {reply:?}").into());
+    }
+    verify_durable_carried(&carried, &durable_carried(database, character).await?)?;
+    logout_released(&mut client, database).await?;
+    drop(client);
+    let mut fresh = connect_character_once(scope, 0x27, 0).await?;
+    let fresh_session = fresh.join_snapshot().game_session_id;
+    if fresh_session == session || fresh_session == stow_session || stash_quantity(database, scope, item).await? != 1 {
+        return Err("P04 Stash amount did not survive distinct readmission".into());
+    }
+    verify_durable_carried(&carried, &durable_carried(database, character).await?)?;
+    let (after, frame) = send(&mut fresh, 4, 0, "p04-master-availability.json").await?;
     verify_delivery_availability(board, &after, item)?;
-    evidence(&format!("P04_DELIVERY_AVAILABILITY item={item} before=0 after=1"));
-    Ok(format!("{},{},{item}", frame.command_id, frame.server_sequence))
+    logout_released(&mut fresh, database).await?;
+    evidence(&format!("P04_DELIVERY_AVAILABILITY item={item} stash=1 carried=0 after_relog=1"));
+    Ok(format!("{},{},{},{item}", uuid_text(fresh_session.as_bytes()), frame.command_id, frame.server_sequence))
+}
+
+fn verify_locked_difficulty(started: &Reply, refused: &Reply) -> TestResult {
+    let mut expected = started.clone();
+    expected.refusal = 2;
+    if *refused != expected {
+        return Err("P04 changing Weekly difficulty must refuse with WrongState and preserve the board".into());
+    }
+    Ok(())
 }
 
 struct Boundary {
@@ -706,6 +791,9 @@ async fn verify_boundary(
         case.profile.into(),
     )
     .await?;
+    if case.level == 400 {
+        character_prep::grant_premium(&setup).await?;
+    }
     logout_released(&mut setup, database).await?;
     drop(setup);
     let mut client = connect_character_once(&clients, 0x26, 0).await?;
@@ -761,6 +849,11 @@ async fn verify_boundary(
         )
         .await?;
     }
+    if catalogue.is_some() {
+        let (refused, _) = send_live(&mut client, 5, 2).await?;
+        verify_locked_difficulty(&start, &refused)?;
+        evidence("P04_WEEKLY_DIFFICULTY_LOCKED selected=2 difficulty=3 refusal=2");
+    }
     if seeded_carried(&client)? != projected_before {
         return Err("P04 StartWeekly changed the delivery inventory".into());
     }
@@ -796,13 +889,14 @@ async fn verify_boundary(
         durable_experience(database, character).await?,
     )?;
     let availability = if let Some(catalogue) = catalogue {
-        let proof = observe_positive_delivery(&mut fresh, database, character, &after).await?;
+        let proof = observe_positive_delivery(fresh, database, &clients, &after).await?;
         verify_delivery_pool(&catalogue.amounts, &production_delivery_pool()?)?;
+        verify_master_pool(&catalogue.races, PRODUCTION_MASTER_CREATURES)?;
         format!(";availability={proof}")
     } else {
+        logout_released(&mut fresh, database).await?;
         String::new()
     };
-    logout_released(&mut fresh, database).await?;
     evidence(&format!(
         "P04_DURABLE_ASSERTIONS level={} custody_entries={} total_experience={} refusal={}",
         case.level,
@@ -831,7 +925,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "Global Master boundary",
     );
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let period = expected_period(&mut database).await?;
+    let period = global_period(&mut database, &clients.world).await?;
     let shop = expected_shop();
     let below = verify_boundary(
         clients,
@@ -1007,8 +1101,14 @@ mod tests {
     #[test]
     fn p04_master_pool_rejects_an_ineligible_candidate_even_when_undrawn() -> TestResult {
         let expected = master_creature_keys(include_str!("p04_master_creature_oracle.txt"));
-        verify_master_pool(&expected, PRODUCTION_MASTER_CREATURES)?;
-        assert!(verify_master_pool(&expected, &PRODUCTION_MASTER_CREATURES.replace(
+        let valid = PRODUCTION_MASTER_CREATURES.replace("oteryn:creature.day_night_harpy\n", "");
+        verify_master_pool(&expected, &valid)?;
+        assert!(verify_master_pool(&expected, &format!("{valid}oteryn:creature.day_night_harpy\n")).is_err());
+        assert!(verify_master_pool(&expected, &valid.replace(
+            "oteryn:creature.sabretooth",
+            "oteryn:creature.sabretooth_creature",
+        )).is_err());
+        assert!(verify_master_pool(&expected, &valid.replace(
             "oteryn:creature.cliff_strider",
             "oteryn:creature.moonspawn_juggernaut",
         )).is_err());

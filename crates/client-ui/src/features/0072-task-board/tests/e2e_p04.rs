@@ -104,20 +104,16 @@ fn captured() -> Result<Captured, Error> {
         ],
         &mut sessions,
     )?;
-    let readmitted_session = at
-        .split(',')
-        .nth(1)
-        .ok_or("missing Master readmission session")?;
-    let availability = read_live_result(
-        &path.join("p04-master-availability.json"),
-        readmitted_session,
-        frame,
-    )?;
-    if boundary[2].command_id.checked_add(1) != Some(availability.command_id)
-        || boundary[2].server_sequence >= availability.server_sequence
-        || availability.status != CommandStatus::Accepted
-    {
-        return Err("P04 availability must follow the readmission Query".into());
+    let (session, frame) = frame
+        .split_once(',')
+        .ok_or("missing Stash readmission session")?;
+    if !is_uuid7(session) || !sessions.insert(session) {
+        return Err("P04 Stash readmission requires a distinct UUIDv7 session".into());
+    }
+    let availability =
+        read_live_result(&path.join("p04-master-availability.json"), session, frame)?;
+    if availability.status != CommandStatus::Accepted {
+        return Err("P04 Stash readmission Query was refused".into());
     }
     Ok(Captured {
         query,
@@ -461,16 +457,20 @@ fn verify_master_replay(master: MasterCapture, baseline: &Reply) -> Result<(), E
         .find(|task| task.0 == master.available_item && task.2 == 0)
         .ok_or("P04 availability assignment must begin at zero")?;
     task.2 = 1;
-    let request =
-        full_request(&mut fresh, FullIntent::Refresh).ok_or("Master availability query request")?;
+    let mut stash_relog = TaskBoardPanel {
+        selected: true,
+        ..TaskBoardPanel::default()
+    };
+    let request = full_request(&mut stash_relog, FullIntent::Refresh)
+        .ok_or("Master availability query request")?;
     verify_route(&request);
     assert_eq!(
         decode_request(&request.payload).map_err(|e| format!("{e:?}"))?,
         task_board::full::Request::query()
     );
-    apply_full_result(&mut fresh, &master.availability);
-    verify_master_panel(&fresh, &available)?;
-    let text = panel_text(&fresh);
+    apply_full_result(&mut stash_relog, &master.availability);
+    verify_master_panel(&stash_relog, &available)?;
+    let text = panel_text(&stash_relog);
     verify_master_summary(&text, baseline.period)?;
     verify_master_experience(&text)?;
     verify_rendered_shop(&text, baseline)?;

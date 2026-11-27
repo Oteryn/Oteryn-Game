@@ -110,7 +110,7 @@ P04_FRAME = r"[1-9][0-9]*"
 P04_BOUNDARY = rf"{UUID7},{UUID7}(?:,{P04_FRAME}){{6}}"
 P04_BINDING = re.compile(
     r"^SEAM_EVIDENCE e2e_capture scenario=P04[.]client status=CAPTURED evidence="
-    rf"(?P<binding>below={P04_BOUNDARY};at={P04_BOUNDARY};availability={P04_FRAME},{P04_FRAME},{P04_FRAME});",
+    rf"(?P<binding>below={P04_BOUNDARY};at={P04_BOUNDARY};availability={UUID7},{P04_FRAME},{P04_FRAME},{P04_FRAME});",
     re.MULTILINE,
 )
 

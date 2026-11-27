@@ -1,6 +1,6 @@
-# Global Tibia Fandom archive, Task Board Master eligibility table and creature infoboxes.
-# Hard or Challenging, Common, Uncommon or Rare.
-# Native aliases: day_night_harpy is Harpy/Night Harpy; sabretooth is Sabretooth (Creature).
+# Canonical native keys mapped to Global creature identities in the retained archive.
+# The Global Bounty table does not establish the Weekly Master kill range.
+# Night Harpy uses night_harpy; Sabretooth (Creature) uses sabretooth.
 oteryn:creature.adult_goanna
 oteryn:creature.afflicted_strider
 oteryn:creature.angry_sugar_fairy
@@ -69,7 +69,6 @@ oteryn:creature.darklight_matter
 oteryn:creature.darklight_source
 oteryn:creature.darklight_striker
 oteryn:creature.dawnfire_asura
-oteryn:creature.day_night_harpy
 oteryn:creature.deathling_scout
 oteryn:creature.deathling_spellsinger
 oteryn:creature.deepling_tyrant
@@ -223,7 +222,6 @@ oteryn:creature.rootthing_nutshell
 oteryn:creature.rotten_golem
 oteryn:creature.rotten_man_maggot
 oteryn:creature.sabretooth
-oteryn:creature.sabretooth_creature
 oteryn:creature.seacrest_serpent
 oteryn:creature.shell_drake
 oteryn:creature.shock_head
