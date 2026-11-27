@@ -133,6 +133,10 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) pending_gourmet: Vec<super::item_use::gourmet::PendingUse>,
     pub(in crate::gameplay_transport) pending_hireling_lamps: Vec<super::hireling::PendingLampUse>,
     pub(super) prey: Vec<super::prey::LivePrey>,
+    pub(super) swing_talismans: std::collections::BTreeMap<
+        GameSessionId,
+        (ExactActorRef, crate::durability::task_board::BountyTalismanSnapshot),
+    >,
     pub(in crate::gameplay_transport) elite_bounties: Vec<(ExactActorRef, GameSessionId, String)>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
@@ -340,6 +344,7 @@ impl Default for ChannelSpellStates {
             pending_gourmet: Vec::new(),
             pending_hireling_lamps: Vec::new(),
             prey: Vec::new(),
+            swing_talismans: std::collections::BTreeMap::new(),
             elite_bounties: Vec::new(),
             hunting_stamina: Vec::new(),
             analyser: Default::default(),
@@ -681,6 +686,8 @@ impl ChannelSpellStates {
                 runtime,
             ));
         }
+        self.swing_talismans
+            .retain(|session, (actor, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.elite_bounties
             .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.actors.retain(|(present, session, _)| {

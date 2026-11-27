@@ -15,6 +15,72 @@ pub struct DailyBoostView {
     pub boss_key: String,
 }
 
+/// Payload of a rejected Daily Boost query. Accepted replies still carry a DailyBoostView.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum DailyBoostRefusal {
+    MissingFence = 1,
+    SessionMismatch = 2,
+    ConnectionGenerationMismatch = 3,
+    InvalidCommandId = 4,
+    WrongCommand = 5,
+    CapabilityNotSelected = 6,
+    MalformedQuery = 7,
+    RuntimeBusy = 8,
+    OwnerUnavailable = 9,
+    ScopeMismatch = 10,
+    ScopeGenerationMismatch = 11,
+    WorldMismatch = 12,
+    ChannelMismatch = 13,
+    MissingActor = 14,
+    ActorNotCurrent = 15,
+    ControlLost = 16,
+    HolderBusy = 17,
+    DeadlineExceeded = 18,
+    SelectionUnavailable = 19,
+    SelectionMissing = 20,
+    ViewEncoding = 21,
+    Unavailable = 22,
+    InputUnavailable = 23,
+    InputGuardDeferred = 24,
+}
+
+impl DailyBoostRefusal {
+    pub const fn encode(self) -> [u8; 1] {
+        [self as u8]
+    }
+
+    pub fn decode(bytes: &[u8]) -> Result<Self, DailyBoostCodecError> {
+        match bytes {
+            [1] => Ok(Self::MissingFence),
+            [2] => Ok(Self::SessionMismatch),
+            [3] => Ok(Self::ConnectionGenerationMismatch),
+            [4] => Ok(Self::InvalidCommandId),
+            [5] => Ok(Self::WrongCommand),
+            [6] => Ok(Self::CapabilityNotSelected),
+            [7] => Ok(Self::MalformedQuery),
+            [8] => Ok(Self::RuntimeBusy),
+            [9] => Ok(Self::OwnerUnavailable),
+            [10] => Ok(Self::ScopeMismatch),
+            [11] => Ok(Self::ScopeGenerationMismatch),
+            [12] => Ok(Self::WorldMismatch),
+            [13] => Ok(Self::ChannelMismatch),
+            [14] => Ok(Self::MissingActor),
+            [15] => Ok(Self::ActorNotCurrent),
+            [16] => Ok(Self::ControlLost),
+            [17] => Ok(Self::HolderBusy),
+            [18] => Ok(Self::DeadlineExceeded),
+            [19] => Ok(Self::SelectionUnavailable),
+            [20] => Ok(Self::SelectionMissing),
+            [21] => Ok(Self::ViewEncoding),
+            [22] => Ok(Self::Unavailable),
+            [23] => Ok(Self::InputUnavailable),
+            [24] => Ok(Self::InputGuardDeferred),
+            _ => Err(DailyBoostCodecError),
+        }
+    }
+}
+
 pub fn decode_query(bytes: &[u8]) -> Result<(), DailyBoostCodecError> {
     bytes.is_empty().then_some(()).ok_or(DailyBoostCodecError)
 }

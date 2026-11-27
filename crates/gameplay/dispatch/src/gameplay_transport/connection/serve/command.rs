@@ -364,6 +364,25 @@ where
                 "input_unavailable"
             },
         )
+    } else if command.command_type
+        == oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
+        && (input_permit.is_none()
+            || !session
+                .selected_capabilities
+                .command_selected(command.command_type))
+    {
+        use oteryn_protocol_oteryn::daily_boost::DailyBoostRefusal;
+        let reason = if !session
+            .selected_capabilities
+            .command_selected(command.command_type)
+        {
+            DailyBoostRefusal::CapabilityNotSelected
+        } else if guard_deferred {
+            DailyBoostRefusal::InputGuardDeferred
+        } else {
+            DailyBoostRefusal::InputUnavailable
+        };
+        routing::daily_boost::refuse(&session.admitted, command, reason)
     } else if input_permit.is_none()
         || !session
             .admitted

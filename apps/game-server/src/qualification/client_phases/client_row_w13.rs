@@ -10,7 +10,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W13_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W13_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -50,7 +52,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             &[0],
         )
         .await?;
-    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
+    if refused.status != CommandStatus::Rejected
+        || wire::DailyBoostRefusal::decode(&refused.payload)
+            != Ok(wire::DailyBoostRefusal::MalformedQuery)
+    {
         return Err(format!("malformed query was not refused: {refused:?}").into());
     }
     capture("w13-boost.bin", &reply.payload);
@@ -69,7 +74,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W13.client status=CAPTURED evidence={observed}"
         )),

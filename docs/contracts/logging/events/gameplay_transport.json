@@ -67,6 +67,18 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "auto_attack_swing_skipped",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "target",
+        "reason"
+      ],
+      "codes": [],
+      "note": "Typed auto-attack deferral with the held command and exact target placement identity when available."
+    },
+    {
       "event": "bloodjaw_target_refused",
       "level": "warn",
       "span": false,
@@ -219,6 +231,18 @@
       ],
       "codes": [],
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "daily_boost_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "seq",
+        "reason"
+      ],
+      "codes": [],
+      "note": "Daily Boost typed refusal with its command identity and result sequence."
     },
     {
       "event": "drome_use_probe_failed",

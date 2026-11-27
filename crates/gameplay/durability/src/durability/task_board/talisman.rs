@@ -23,6 +23,7 @@ use super::super::{DurabilityError, DurabilityRoot};
 pub struct BountyTalismanSnapshot {
     race: Option<String>,
     bonuses: [i64; 4],
+    equipped: bool,
     elite: bool,
     completion_dust: u32,
     selection_serial: u64,
@@ -51,7 +52,8 @@ impl BountyTalismanSnapshot {
             } else {
                 0
             },
-            bonuses: data.active_talisman_bonuses(tracks, &active.race, equipped),
+            bonuses: data.active_talisman_bonuses(tracks, &active.race, true),
+            equipped,
         }
     }
 
@@ -72,9 +74,14 @@ impl BountyTalismanSnapshot {
         }
     }
 
+    /// Project the latest qualified equipment over the committed bounty tracks.
+    pub fn set_equipped(&mut self, equipped: bool) {
+        self.equipped = equipped;
+    }
+
     #[must_use]
     pub fn bonuses(&self, race: &str) -> [i64; 4] {
-        if self.race.as_deref() == Some(race) {
+        if self.equipped && self.race.as_deref() == Some(race) {
             self.bonuses
         } else {
             [0; 4]

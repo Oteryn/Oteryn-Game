@@ -64,9 +64,13 @@ async fn required_hunt(
         .inventory()
         .cloned()
         .ok_or_else(|| format!("step-{step}: {target} hunt had no inventory before combat"))?;
-    client_hunt::hunt(client)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-{step}: {target} combat/loot observed {error}"), error) })?;
+    client_hunt::hunt(client).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        verdict::context(
+            format!("step-{step}: {target} combat/loot observed {error}"),
+            error,
+        )
+    })?;
     let after = client
         .inventory()
         .cloned()
@@ -119,37 +123,48 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             &[0],
         )
         .await?;
-    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
+    if refused.status != CommandStatus::Rejected
+        || wire::DailyBoostRefusal::decode(&refused.payload)
+            != Ok(wire::DailyBoostRefusal::MalformedQuery)
+    {
         return Err(format!("step-3: malformed query observed reply {refused:?}").into());
     }
     evidence("W13_CHECK step=3 malformed-query-rejected");
 
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        &selected.creature_key,
-    )
-    .await
-    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-4: selected creature route/spawn observed {error}"), error) })?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.creature_key)
+        .await
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!("step-4: selected creature route/spawn observed {error}"),
+                error,
+            )
+        })?;
     required_hunt(&mut client, 4, "selected creature").await?;
     evidence("W13_CHECK step=4 selected-creature-killed-and-looted");
 
     // A second real approach waits through the owner's respawn mechanism rather
     // than manufacturing an actor. The bounded helper reports the missing actor.
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        &selected.creature_key,
-    )
-    .await
-    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-5: boosted creature respawn observed {error}"), error) })?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.creature_key)
+        .await
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!("step-5: boosted creature respawn observed {error}"),
+                error,
+            )
+        })?;
     let step_5_observed = required_hunt(&mut client, 5, "respawned selected creature").await?;
 
     travel_to_spawn(&mut client, world, &metadata.spawns, &selected.boss_key)
         .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-6: selected boss route/spawn observed {error}"), error) })?;
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!("step-6: selected boss route/spawn observed {error}"),
+                error,
+            )
+        })?;
     let step_6_observed = required_hunt(&mut client, 6, "selected boss").await?;
 
     // The player protocol currently exposes neither the XP award nor which
@@ -184,7 +199,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
+            .await;
     let (status, gap) = match result {
         Ok(Ok(())) => ("PASS", None),
         Ok(Err(error)) => ("FAIL", Some(error.to_string())),

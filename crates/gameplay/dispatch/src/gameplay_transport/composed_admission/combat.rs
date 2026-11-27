@@ -68,7 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
         }
-        self.states.attack.lock().await.set_target(
+        let disposition = self.states.attack.lock().await.set_target(
             &runtime,
             room,
             actor,
@@ -76,7 +76,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             now,
             target,
             command_id,
-        )
+        );
+        drop(states);
+        drop(runtime);
+        drop(permit);
+        if target.is_some()
+            && disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        {
+            self.refresh_attack_weapon(actor, game_session_id).await;
+        }
+        disposition
     }
 
     pub(in crate::gameplay_transport) async fn set_fight_modes(
@@ -123,10 +132,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
-        if !self.ensure_source_map_initialized().await {
-            return None;
-        }
-        self.refresh_attack_weapon(actor, game_session_id).await;
+        self.refresh_swing_weapon(actor, game_session_id).await;
         self.drain_auto_attacks().await;
         let _ = self.drain_kill_rewards(game_session_id).await;
         self.observe_combat_state(actor, game_session_id).await

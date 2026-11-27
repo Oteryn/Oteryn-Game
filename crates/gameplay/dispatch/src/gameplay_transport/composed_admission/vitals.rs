@@ -126,7 +126,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Creature work belongs to the shared source-owner cycle. A connection's
         // vitals refresh must not census or qualify the world's monster population.
         let _ = self.save_wheel_gift(actor, game_session_id, false).await;
-        self.refresh_attack_weapon(actor, game_session_id).await;
+        self.refresh_swing_weapon(actor, game_session_id).await;
         self.drain_auto_attacks().await;
         let _ = self.drain_kill_rewards(game_session_id).await;
         self.apply_soul_kills(actor, game_session_id).await;

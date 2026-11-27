@@ -236,7 +236,9 @@ pub(super) async fn readmit_after_logout(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     previous: crate::gameplay_transport::connection::AdmittedSession,
 ) -> TestResult<crate::gameplay_transport::connection::AdmittedSession> {
-    use crate::gameplay_transport::connection::{AdmittedSession, ControllerBinding, SessionContinuity};
+    use crate::gameplay_transport::connection::{
+        AdmittedSession, ControllerBinding, SessionContinuity,
+    };
     let (session, request) = relogin_request(harness).await?;
     let store = FreshAdmissionStore::from_root(harness.root.clone());
     let transport = store
@@ -402,6 +404,9 @@ pub(super) async fn relogin_into(
 // their setup in one macro preserves those lifetimes without copying setup into each case.
 macro_rules! world_scenario {
     ($tag:literal, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
+        world_scenario!($tag, 4, crate::spell::Vocation::Monk, 50, |$h, $request, $seal, $authority, $world_id, $native, $world, $cells, $room, $pin, $deps, $actor, $session, $owner, $fence, $admitted| $body)
+    }};
+    ($tag:literal, $actor_capacity:expr, $vocation:expr, $level:expr, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
         use $crate::gameplay_transport::monk_save::postgres_tests::full_world_support::*;
         run(async |admin| {
         reset();
@@ -549,7 +554,7 @@ macro_rules! world_scenario {
             1,
             1,
             "runtime-scope-assignment:1",
-            4,
+            $actor_capacity,
             $pin.clone(),
         )
         .map_err(debug)?;
@@ -615,9 +620,8 @@ macro_rules! world_scenario {
                         $actor,
                         $session,
                         crate::spell::cast::CharacterCastFacts {
-                            vocation: crate::spell::Vocation::Monk,
-                            // Minimum fist damage stays above the rat's defence and armor.
-                            level: 50,
+                            vocation: $vocation,
+                            level: $level,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (3, 7_000_000),
