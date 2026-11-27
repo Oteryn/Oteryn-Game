@@ -670,12 +670,8 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
-        // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        // Knightwatch adds the shared tower permit and the diamond lever claim.
-        // Main contributes its 44 native tracks, including the two Vampire Hunter tracks.
-        // Hairycles' missing-moss reply owns one recovery counter.
-        assert_eq!(before.tracks.len(), 2_237 + 44 + 1 + 5 + 1);
+        // The lowerer includes the expanded native programme and route inventory.
+        assert_eq!(before.tracks.len(), 2_316);
         for (name, max) in [("rank", 6), ("door", 1)] {
             let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
             assert_eq!(

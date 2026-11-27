@@ -26,9 +26,81 @@ const GRAVE_DANGER_PRE_ZELOS: DefinitionHash =
 const PUBLISHED_GRAVE_DANGER_LIVE: DefinitionHash =
     hash(b"286f3e0a4fdaff0ae2a14494889fe2d3492c5bbd4d8668a4f9b2cdaa48e37e7e");
 
+const HERO_OF_RATHLETON_PRE_NPC: DefinitionHash =
+    hash(b"cab96523f101dda9dea22ea0b0c6b3a88054c5c5f71949e5f93f205fac1495f6");
+
+const TROLL_SABOTAGE_PRE_NPC: DefinitionHash =
+    hash(b"f20fac3b939f0dbc0553079fd2894eb82c2e098e82944370cfecf0c150c49d96");
+
 // A canonical citation can change when a different quest in its definition shard is
 // edited. For these exact citation-only refreshes, keep the published save identity.
 const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
+    // 7b refreshed the canonical definition shards in unchanged World and death plans.
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"cfbe0f34f479cd65636e04cb2b29c1c9b5d27500ea7a4d9c4100761ae3fbfa18"),
+        hash(b"e612ad0f379b601b86b10d7c2b46d8e8ac7ce64c828cc12c5e4d686b9bf49620"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"0c69e186ec786f3ac69f39b5946d86e9817b4271cf993be0d00e0cfc11013c28"),
+        hash(b"2c3b037dd13d724ea7b0371afc5756318c94d91285bfc6620aa710bb3005899f"),
+    ),
+    (
+        "oteryn:quest.formogar_mine_hoist",
+        hash(b"ff6592b450f3109f26b747d2eb5716504b4e9c7ccc01ebe86a3b219e9f2aecd1"),
+        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        hash(b"e39d95544d44880af493fb7011a1a6f581d157232be7973057dcde3949ef4f97"),
+        hash(b"4242553063eec3ce16dd533c848c3f6a5cd716943b713c53a713ff42d8c80ce1"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        hash(b"87a062b9d364b343b206b5ed38e835aeba5ceb0f0e030576ec61a7cbf639ad6a"),
+        hash(b"52f34079861497c5687b92fc1b02cc48bfd5072af466ca308c112c946c25f81f"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"784168195dd16ec7cd1007cb17ce8362cfaec1fd0bc37737e3a6c6e2eae6c27d"),
+        hash(b"d1cdf6655a94744e239e485b9051f8e7d073be20d228a64e2fd1e19eda40840a"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"63810fbc7b8de4d1f7c62d775c969c01d60cd158ff60544ce1ff346443ee222c"),
+        GRAVE_DANGER_PRE_ZELOS,
+    ),
+    (
+        "oteryn:quest.grimvale_quest",
+        hash(b"11eb9d299865b29402a774cf752b6dcadd66db2b04df9539457c9ea55c9c65fa"),
+        hash(b"a12ba535924a59362bc81815385cc2164cd29b0a666f71c94340ff98a5a3970d"),
+    ),
+    (
+        "oteryn:quest.heart_of_destruction_quest",
+        hash(b"d4edc7d6010986c505e3a5cbe11596ebe3cf60a962abc2bafdcb27508fd3898e"),
+        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"3cf3eecbf26c1bd552d8bd24499ab1f044a87533da7fd017dc345f440911e63b"),
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"bc71c65afaa505bbb8ca100d48dc12bab970190172e04e3a11c8620f9b8870a5"),
+        HERO_OF_RATHLETON_PRE_NPC,
+    ),
+    (
+        "oteryn:quest.hidden_threats_quest",
+        hash(b"f6ac5ee5cc728e9d470d405b4ff0bb13cddf40105dca8726058804139bd4bc77"),
+        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
+    ),
+    (
+        "oteryn:quest.hydra_egg_quest",
+        hash(b"15c20041a1cc64224322050b8af47c6eb623d682897a6fc8c18224bb9da17035"),
+        hash(b"ae002be99d3196b93a23087bd929766e6160482da9fc3f36e054d91e5acc32e6"),
+    ),
     (
         "oteryn:quest.factions",
         hash(b"443998012475d3e1daf6d0f0decc60f51d56fc03408583c6fd5c4927f86f5106"),
@@ -436,7 +508,7 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
         hash(b"d21062c47e89ef2ed8ce2a3a73c505a8e0e0beb710aeb3ed8d99af3d04f79d51"),
         &[
             hash(b"2f409e8112005dd200f7c6dcb80bbb77b756e32555b8acc0ce56f25c65d3bb7f"),
-            hash(b"f20fac3b939f0dbc0553079fd2894eb82c2e098e82944370cfecf0c150c49d96"),
+            TROLL_SABOTAGE_PRE_NPC,
         ],
     ),
     // Captured by quest_definition_hashes on main 9295760b3 and the reviewed route definitions.
@@ -811,6 +883,11 @@ const TIBIA_TALES_WITHOUT_ARITO_REFERRAL: DefinitionHash =
 // hashes remain valid predecessors for their own quest.
 const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
+        "oteryn:quest.hero_of_rathleton_quest",
+        HERO_OF_RATHLETON_PRE_NPC,
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+    ),
+    (
         "oteryn:quest.mad_mage_room_quest",
         hash(b"cfa1db835dd1b1ef55b513276870506dd0cf38587ee1667b32f8d062243486f6"),
         hash(b"6d5f8a2f8c0f362b64b94a955a9a6865bf621280db4f0d3a050c73a1cdfb0f1f"),
@@ -1029,6 +1106,38 @@ mod tests {
     }
 
     #[test]
+    fn hero_of_rathleton_retains_the_pre_npc_defaults() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let quest = "oteryn:quest.hero_of_rathleton_quest";
+        assert_eq!(
+            npc_rules::legacy_definition_hash(catalogue, quest),
+            Some(HERO_OF_RATHLETON_PRE_NPC)
+        );
+        let expected = [
+            ("chosen-source/hero_of_rathleton_quest/s1", 0),
+            ("chosen-source/hero_of_rathleton_quest/s1/visited/entry", 0),
+            ("chosen-source/hero_of_rathleton_quest/s2", 0),
+            ("chosen-source/hero_of_rathleton_quest/s3", 0),
+            ("chosen-source/hero_of_rathleton_quest/s3/visited/entry", 0),
+            ("hero_rathleton/access_door", 0),
+            ("questpc7/hero/constructs", -1),
+            ("questpc7/hero/maxxen", -1),
+            ("questpc7/hero/programme", -1),
+            ("storage/24850", 0),
+        ]
+        .into_iter()
+        .map(|(track, value)| (format!("oteryn:quest-progress/{track}"), value))
+        .collect();
+        assert_eq!(
+            npc_rules::legacy_defaults(catalogue, quest, &HERO_OF_RATHLETON_PRE_NPC),
+            Some(&expected)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn brotherhood_preserves_the_definition_for_existing_death_dealers() -> Result<(), String> {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
@@ -1119,6 +1228,20 @@ mod tests {
                         .filter(|track| track.quest == quest)
                         .map(|track| (track.key.clone(), track.initial))
                         .collect()
+                } else if pin == TROLL_SABOTAGE_PRE_NPC {
+                    [
+                        (
+                            "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/jump_timer"
+                                .into(),
+                            0,
+                        ),
+                        (
+                            "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline"
+                                .into(),
+                            0,
+                        ),
+                    ]
+                    .into()
                 } else {
                     Default::default()
                 };
@@ -1150,10 +1273,7 @@ mod tests {
                 "oteryn:quest.tower_defence_quest",
                 hash(b"e83857acbdc70f0e3398417dd50fb1a0cae5d864dd580a6653dea645cd2f2a32"),
             ),
-            (
-                "oteryn:quest.troll_sabotage_quest",
-                hash(b"f20fac3b939f0dbc0553079fd2894eb82c2e098e82944370cfecf0c150c49d96"),
-            ),
+            ("oteryn:quest.troll_sabotage_quest", TROLL_SABOTAGE_PRE_NPC),
         ] {
             assert_ne!(loaded.catalogue().definition_hash(quest), Some(saved));
             assert!(

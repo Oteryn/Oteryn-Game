@@ -2274,6 +2274,7 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
                 ("oteryn:quest-progress/questpc7/friends/yarn-uses", 0),
             ],
         ),
+        // Keep the published pre-journey pin with its existing absent-track defaults.
         (
             "oteryn:quest.koshei_the_deathless_quest",
             [
@@ -2281,38 +2282,7 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
                 0x22, 0x4b, 0x73, 0x23, 0x24, 0x3a, 0xce, 0x53, 0xfa, 0x5e, 0xb1, 0x42, 0xe6, 0x76,
                 0x36, 0x1f, 0xc4, 0x20,
             ],
-            &[
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
-                    0,
-                ),
-                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 0),
-                ("oteryn:quest-progress/qnpcfx/koshei/amulet_started_at", 0),
-                (
-                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/claimed",
-                    0,
-                ),
-                (
-                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/claimed",
-                    0,
-                ),
-            ],
+            &[],
         ),
         (
             "oteryn:quest.koshei_the_deathless_quest",
