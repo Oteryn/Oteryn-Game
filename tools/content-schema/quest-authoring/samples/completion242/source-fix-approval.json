@@ -494,7 +494,7 @@
     },
     {
       "path": "content/quests/world-callbacks.json",
-      "sha256": "885a7c2b06b9ffcbc5f5e35b5fdd699bb8cab11601ed6100292a1dd76baedbce"
+      "sha256": "74cc1f3c1a4b011b269ac8e1d9ea055d5feeb9d609fad61bc2e00a2a096f563c"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",

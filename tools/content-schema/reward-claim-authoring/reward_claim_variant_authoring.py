@@ -207,21 +207,13 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
             if (source['identity']['key'] == 'canary:reward-claim/quest/key/id3667'
                     and placement['position'] == {'x': 32576, 'y': 32216, 'z': 15}):
                 # Crystal 201189f chest.lua:492-498 and the retained tile use corpse 4240.
-                if appearance != 3204:
+                if appearance != 3204 or ('crystalserver', 5016) not in uids:
                     raise ValueError('KEY_3667_SOURCE_APPEARANCE_DRIFT')
                 appearance = 4240
             p = {'appearance_tibia_id': appearance,
                 'source_binding': {'project_position': copy.deepcopy(placement['position']),
                     'legacy_unique_ids': [{'server': server, 'unique_id': uid} for server, uid in uids]},
                 'reward': reward}
-            # Crystal 201189f8 chest.lua:491-498 uses the broken crate at this
-            # position. Retain Canary's original corpse in source_variant.
-            if source['identity']['key'] == 'canary:reward-claim/quest/key/id3667':
-                if (p['appearance_tibia_id'] != 3204
-                        or p['source_binding']['project_position'] != {'x': 32576, 'y': 32216, 'z': 15}
-                        or ('crystalserver', 5016) not in uids):
-                    raise ValueError('KEY_3667_SOURCE_SELECTOR_DRIFT')
-                p['appearance_tibia_id'] = 4240
             grants = [g for g in row['achievement_grants'] if g['placement_index'] == pi]
             if grants:
                 if len(grants) != 1:
