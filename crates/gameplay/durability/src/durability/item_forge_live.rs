@@ -2,7 +2,6 @@
 //! share one session-fenced Type-2 transaction; reservation fixes every random draw.
 use super::*;
 use crate::domain::forge::ItemTier;
-use crate::durability::db::commit_semantic_read;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
