@@ -300,6 +300,18 @@ class ConvertAndValidateTest(unittest.TestCase):
             },
         )
 
+    def test_overlaid_teleport_shards_match_index(self):
+        capture = self.root / convert.CLASSIC_QUEST_CAPTURE
+        capture.parent.mkdir(parents=True, exist_ok=True)
+        capture.write_bytes((convert.ROOT / convert.CLASSIC_QUEST_CAPTURE).read_bytes())
+        out = convert.build({convert.OTBM: fixture_map()}, self.root, scripts=())
+        directory = "content/world/transitions/"
+        index = directory + "index.json"
+        self.assertEqual(
+            {path for path in out if path.startswith(directory) and path != index},
+            set(json.loads(out[index])["shards"]),
+        )
+
     def teleport_object(self, catalogue, items=()):
         with tempfile.TemporaryDirectory() as empty:
             add_areas(Path(empty), catalogue, items)

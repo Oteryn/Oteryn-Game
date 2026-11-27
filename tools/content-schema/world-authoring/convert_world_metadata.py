@@ -473,8 +473,6 @@ def build(
     tp_records, object_families = teleports(
         candidates + scripted, present, item_keys(root), rejected, catalogue_keys(root)
     )
-    out = {}
-    out.update(shard_files("Transition.Teleport", tp_records, source_of(scripts)))
     summary = {
         "families": {"Transition.Teleport": len(tp_records)},
         "map": {
@@ -493,9 +491,10 @@ def build(
         "source": source_of(scripts),
         "teleport_object_families": object_families,
     }
-    out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
     if (root / CLASSIC_QUEST_CAPTURE).is_file():
-        out.update(classic_quest_teleports(root, tp_records, summary))
+        return classic_quest_teleports(root, tp_records, summary)
+    out = shard_files("Transition.Teleport", tp_records, summary["source"])
+    out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
     return out
 
 
