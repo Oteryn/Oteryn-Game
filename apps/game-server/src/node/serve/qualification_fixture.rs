@@ -246,6 +246,10 @@ pub(super) async fn spawn(
 ) -> String {
     let refuse = |reason: &'static str, detail: Option<&str>| {
         emit(PROCESS, &spawn_refusal_warning(reason, detail));
+        if let ("holder_busy", Some(owner)) = (reason, detail) {
+            let owner = owner.replace(char::is_whitespace, "_");
+            return format!("rejected reason=holder_busy owner={owner}");
+        }
         spawn_rejected(reason)
     };
     let (session, key) = match spawn_request(config.qualification_fixture, bytes) {
@@ -508,9 +512,7 @@ async fn acquire_spawn_holder(
 ) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, wild_spawn::SpawnRefusal> {
     let mut waiting = None;
     let mut owner = "durability_root".to_owned();
-    let busy = |owner: &str| {
-        wild_spawn::SpawnRefusal::HolderBusy(format!("qualification spawn holder: {owner}"))
-    };
+    let busy = |owner: &str| wild_spawn::SpawnRefusal::HolderBusy(owner.to_owned());
     loop {
         if tokio::time::Instant::now() >= deadline {
             return Err(busy(&owner));
@@ -2020,7 +2022,7 @@ mod tests {
             )
             .await;
             assert!(
-                matches!(refused, Err(wild_spawn::SpawnRefusal::HolderBusy(owner)) if owner.contains("durability_root"))
+                matches!(refused, Err(wild_spawn::SpawnRefusal::HolderBusy(owner)) if owner == "durability_root")
             );
             assert_eq!(
                 busy.return_to_pool_observed().await,
