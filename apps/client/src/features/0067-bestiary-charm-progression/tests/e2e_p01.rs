@@ -258,7 +258,8 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
         troll.kill_count = 250;
         expected_mastery.charms.charm_points_available = 5;
         assert_eq!(replies.points_before, 5);
-        assert_eq!(replies.charm, 1);
+        // The canonical key-ordered charm catalogue places Enflame at wire index 9.
+        assert_eq!(replies.charm, 9);
         let (mut admitted, query) = pending(&panel, Intent::Query)?;
         apply(&mut admitted, &query, initial);
         assert_eq!(admitted.feedback, "Completed: Query; fee: 0 gold");
@@ -340,6 +341,12 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
         .find(|state| state.charm.get() == replies.charm)
         .ok_or("locked charm absent")?;
     assert_eq!((state.unlocked_stage, state.assigned_race), (0, None));
+    if replies.initial.is_some() {
+        assert_eq!(
+            (state.kind, state.next_stage_cost, state.effect_active),
+            (CharmKind::Major, 400, true)
+        );
+    }
     assert_eq!(
         race_line(&refusing, replies.race)?,
         line(replies.kills_before)
