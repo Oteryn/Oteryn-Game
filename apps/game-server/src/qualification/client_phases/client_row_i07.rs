@@ -716,10 +716,43 @@ pub(super) async fn journey(
     let expected_filters = [FILTERS[0], (true, "oteryn:item.tibia.i3031"), FILTERS[1]];
     let original_session = client.join_snapshot().game_session_id;
     let session = uuid_text(original_session.as_bytes());
+    use oteryn_protocol_oteryn::store as store_wire;
+    let inbox_request = store_wire::encode_inbox_query(None);
+    let inbox_reply = client
+        .session_mut()
+        .gated_command(
+            store_wire::CAPABILITY_STORE_V1,
+            store_wire::COMMAND_TYPE_STORE_INBOX_CLAIM,
+            &inbox_request,
+        )
+        .await?;
+    let inbox_page = store_wire::decode_inbox_page(&inbox_reply.payload)
+        .map_err(|error| format!("I07 Store Inbox page: {error:?}"))?;
+    if inbox_reply.status != CommandStatus::Accepted
+        || !inbox_page
+            .entries
+            .iter()
+            .any(|entry| entry.item_id == 23721 && entry.fulfilment_unit_id == fulfilment)
+    {
+        return Err(
+            "I07 authenticated Store Inbox omitted the fixture Gold Pouch fulfilment".into(),
+        );
+    }
+    write_capture(&capture_dir.join("i07-inbox-request.bin"), &inbox_request)?;
+    write_capture(
+        &capture_dir.join("i07-inbox.json"),
+        &capture_envelope(
+            original_session.as_bytes(),
+            inbox_reply.command_id,
+            inbox_reply.server_sequence,
+            inbox_reply.status,
+            &inbox_reply.payload,
+        )?,
+    )?;
     let mut capture = Capture {
         directory: capture_dir,
         full,
-        previous: (0, 0),
+        previous: (inbox_reply.command_id, inbox_reply.server_sequence),
     };
     let route = |category, recipient, recipient_id, fallback_to_main| QuickLootRequest {
         category,
@@ -732,7 +765,7 @@ pub(super) async fn journey(
         route(
             Some(QuickLootCategory::Armor),
             QuickLootRecipient::GoldPouch,
-            Some(pouch),
+            Some(fulfilment),
             fallback,
         )
     };
@@ -1064,7 +1097,7 @@ pub(super) async fn journey(
         route(
             Some(QuickLootCategory::Food),
             QuickLootRecipient::GoldPouch,
-            Some(pouch),
+            Some(fulfilment),
             false,
         )
     } else {
@@ -1218,7 +1251,7 @@ pub(super) async fn journey(
             route(
                 Some(QuickLootCategory::Gold),
                 QuickLootRecipient::GoldPouch,
-                Some(pouch),
+                Some(fulfilment),
                 false,
             ),
             &[],

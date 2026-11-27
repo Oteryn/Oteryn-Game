@@ -69,6 +69,7 @@ pub(super) fn render(
     widgets: &mut Widgets,
     key: Key,
     panel: &Panel,
+    (pouch, store_selected, inbox_has_next): (Option<[u8; 16]>, bool, bool),
 ) {
     if let Some(content) = widgets.content.take() {
         commands.entity(content).despawn();
@@ -103,21 +104,33 @@ pub(super) fn render(
         .id();
     commands.entity(body).add_child(destinations);
     text(commands, skins, destinations, "Loot containers");
-    for (category, label) in [
-        (None, "Default"),
-        (Some(Category::Gold), "Gold"),
-        (Some(Category::CreatureProduct), "Creature products"),
-        (Some(Category::Equipment), "Equipment"),
-        (Some(Category::Consumable), "Consumables"),
-        (Some(Category::Other), "Other"),
-        (Some(Category::Armor), "Armors"),
-        (Some(Category::Food), "Food"),
-    ] {
-        if matches!(category, Some(Category::Armor | Category::Food))
-            && !panel.destinations_selected
+    if panel.destinations_selected && store_selected && pouch.is_none() {
+        let kind = if inbox_has_next {
+            Kind::NextInboxPage
+        } else {
+            Kind::RefreshInbox
+        };
+        let label = if inbox_has_next {
+            "Next Store Inbox page"
+        } else {
+            "Check Store Inbox"
+        };
+        button(commands, skins, destinations, key, kind, label, 190., panel);
+    }
+    for category in std::iter::once(None).chain(Category::ALL.into_iter().map(Some)) {
+        if !panel.destinations_selected
+            && category.is_some_and(|category| category as u8 > Category::Other as u8)
         {
             continue;
         }
+        let label = match category {
+            None => "Unassigned".into(),
+            Some(Category::CreatureProduct) => "Creature products".into(),
+            Some(Category::DistanceWeapon) => "Distance weapons".into(),
+            Some(Category::FistWeapon) => "Fist weapons".into(),
+            Some(Category::Armor) => "Armors".into(),
+            Some(category) => format!("{category:?}"),
+        };
         let row = column(commands, destinations);
         text(commands, skins, row, label);
         let confirmed = panel
@@ -183,26 +196,21 @@ pub(super) fn render(
                 panel,
             );
         }
-        if category == Some(Category::Gold)
-            && !matches!(
-                confirmed,
-                Some(Action::Destination {
-                    recipient: Recipient::GoldPouch,
-                    ..
-                })
-            )
-            && let Some(assignment) = quick_loot_pouch_route(panel)
-        {
-            button(
-                commands,
-                skins,
-                row,
-                key,
-                Kind::Request(assignment),
-                "Use gold pouch",
-                130.,
-                panel,
-            );
+        for (fallback, label) in [(false, "Use gold pouch"), (true, "Gold pouch + fallback")] {
+            if let Some(assignment) = quick_loot_pouch_route(panel, pouch, category, fallback)
+                && confirmed != Some(&assignment)
+            {
+                button(
+                    commands,
+                    skins,
+                    row,
+                    key,
+                    Kind::Request(assignment),
+                    label,
+                    175.,
+                    panel,
+                );
+            }
         }
         if let Some(Action::Destination {
             category,

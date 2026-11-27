@@ -864,3 +864,84 @@ fn loot_navigation_opens_catalogue_and_store_from_panel() -> TestResult {
     }
     Ok(())
 }
+
+pub(crate) fn click_inbox_refresh(app: &mut App) -> TestResult {
+    app.update();
+    let button = control(app, Kind::RefreshInbox)?;
+    click(app, button);
+    Ok(())
+}
+
+#[test]
+fn quick_loot_initial_inbox_pouch_renders_and_sends_managed_assignment() -> TestResult {
+    use oteryn_client_runtime::cui3::store as wire;
+    use oteryn_client_ui::quick_loot as loot;
+
+    for (category, fallback) in [(None, false), (Some(Category::FistWeapon), true)] {
+        let (mut app, mut commands, outbox) = fixture(true)?;
+        app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+        outbox.bevy_store_initialize();
+        outbox.bevy_quick_loot_managed_selected();
+        open(&mut app)?;
+        let pouch = [7; 16];
+        let action = Action::Destination {
+            category,
+            recipient: Recipient::GoldPouch,
+            id: Some(pouch),
+            fallback,
+        };
+        assert!(panel(&app)?.destinations.is_empty());
+        assert!(control(&mut app, Kind::Request(action.clone())).is_err());
+        click_inbox_refresh(&mut app)?;
+        let PlayCommand::ServerMechanic(query) = commands.try_recv()? else {
+            return Err("expected Store Inbox query".into());
+        };
+        assert_eq!(query.payload, wire::encode_inbox_query(None));
+        let page = wire::StoreInboxPage {
+            entries: vec![
+                wire::StoreInboxEntry {
+                    fulfilment_unit_id: [1; 16],
+                    item_id: 28552,
+                },
+                wire::StoreInboxEntry {
+                    fulfilment_unit_id: pouch,
+                    item_id: 23721,
+                },
+            ],
+            ..Default::default()
+        };
+        outbox.bevy_store_reply(&ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_inbox_page(&page).map_err(|error| format!("{error:?}"))?,
+        });
+        assert!(panel(&app)?.destinations.is_empty());
+        click_action(&mut app, action)?;
+        let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+            return Err("expected Quick Loot assignment".into());
+        };
+        let expected = loot::QuickLootRequest {
+            action: QuickLootAction::AssignLoot,
+            corpse: None,
+            selected_item: None,
+            review_filters: false,
+            category,
+            recipient: Some(Recipient::GoldPouch),
+            recipient_id: Some(pouch),
+            fallback_to_main: fallback,
+            filter_mode: None,
+            filter_definition_ref: None,
+        };
+        assert_eq!(
+            (command.capability, command.command_type),
+            (607, loot::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS)
+        );
+        assert_eq!(
+            command.payload,
+            loot::encode_quick_loot_request(&expected).map_err(|error| format!("{error:?}"))?
+        );
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}

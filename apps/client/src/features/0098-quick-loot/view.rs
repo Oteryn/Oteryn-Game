@@ -84,32 +84,54 @@ fn loot_panel(mailbox: &crate::play::mailbox::Mailbox) -> oteryn_client_ui::quic
 }
 
 #[cfg(bevy_shell)]
+fn inbox_gold_pouch(store: &oteryn_client_ui::store::StorePanel) -> Option<[u8; 16]> {
+    const GOLD_POUCH_ITEM_ID: u16 = 23721;
+    store
+        .selected
+        .then(|| {
+            store
+                .inbox
+                .entries
+                .iter()
+                .find(|entry| entry.item_id == GOLD_POUCH_ITEM_ID)
+                .map(|entry| entry.fulfilment_unit_id)
+        })
+        .flatten()
+}
+
+#[cfg(bevy_shell)]
 pub(crate) fn quick_loot_pouch_route(
     panel: &oteryn_client_ui::quick_loot::Panel,
+    inbox_pouch: Option<[u8; 16]>,
+    category: Option<oteryn_client_ui::quick_loot::QuickLootCategory>,
+    fallback: bool,
 ) -> Option<oteryn_client_ui::quick_loot::Action> {
-    use oteryn_client_ui::quick_loot::{Action, QuickLootCategory, QuickLootRecipient};
-
-    // Fallback is global, so keep the value from the most recent confirmed assignment.
-    let Action::Destination { fallback, .. } = panel.destinations.last()? else {
+    use oteryn_client_ui::quick_loot::{Action, QuickLootRecipient};
+    if !panel.destinations_selected
+        && category != Some(oteryn_client_ui::quick_loot::QuickLootCategory::Gold)
+    {
         return None;
-    };
-    let id = panel
-        .destinations
-        .iter()
-        .rev()
-        .find_map(|route| match route {
-            Action::Destination {
-                recipient: QuickLootRecipient::GoldPouch,
-                id,
-                ..
-            } => *id,
-            _ => None,
-        })?;
+    }
+    let inbox_pouch = inbox_pouch.filter(|_| panel.destinations_selected);
+    let id = inbox_pouch.or_else(|| {
+        panel
+            .destinations
+            .iter()
+            .rev()
+            .find_map(|route| match route {
+                Action::Destination {
+                    recipient: QuickLootRecipient::GoldPouch,
+                    id,
+                    ..
+                } => *id,
+                _ => None,
+            })
+    })?;
     Some(Action::Destination {
-        category: Some(QuickLootCategory::Gold),
+        category,
         recipient: QuickLootRecipient::GoldPouch,
         id: Some(id),
-        fallback: *fallback,
+        fallback,
     })
 }
 
@@ -118,6 +140,8 @@ pub(crate) fn quick_loot_pouch_route(
 pub enum QuickLootControl {
     Request(oteryn_client_ui::quick_loot::Action),
     OpenDestination(Option<oteryn_client_ui::quick_loot::QuickLootCategory>),
+    RefreshInbox,
+    NextInboxPage,
     Catalogue,
     Store,
     Close,
@@ -126,6 +150,16 @@ impl PlayLink {
     #[must_use]
     pub fn quick_loot_panel(&self) -> oteryn_client_ui::quick_loot::Panel {
         loot_panel(&lock(&self.mailbox))
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn quick_loot_inbox(&self) -> (Option<[u8; 16]>, bool, bool) {
+        let mailbox = lock(&self.mailbox);
+        let store = &mailbox.store;
+        (
+            inbox_gold_pouch(store),
+            store.selected,
+            store.inbox.next.is_some(),
+        )
     }
     #[cfg(bevy_shell)]
     pub fn quick_loot_dispatch_bound(
@@ -138,6 +172,7 @@ impl PlayLink {
         if loot_panel(&mailbox) != *expected || !mailbox.discovery.loot.open {
             return false;
         }
+        let pouch = inbox_gold_pouch(&mailbox.store);
         let panel = &mut mailbox.discovery.loot;
         let action = match control {
             QuickLootControl::OpenDestination(category) => {
@@ -164,6 +199,18 @@ impl PlayLink {
                 }
                 return true;
             }
+            QuickLootControl::RefreshInbox | QuickLootControl::NextInboxPage => {
+                if !panel.selected || !panel.destinations_selected || panel.pending.is_some() {
+                    return false;
+                }
+                drop(mailbox);
+                if control == QuickLootControl::RefreshInbox {
+                    self.store_inbox_refresh();
+                } else {
+                    self.store_inbox_next_claim_page();
+                }
+                return true;
+            }
             QuickLootControl::Request(action) => action,
         };
         if !panel.selected || panel.pending.is_some() {
@@ -171,9 +218,9 @@ impl PlayLink {
         }
         let allowed = match &action {
             Action::LootAll | Action::Select(_) | Action::Clear(_) => true,
-            Action::Destination { category, recipient, id, .. } =>
+            Action::Destination { category, recipient, id, fallback } =>
                 (*recipient == QuickLootRecipient::MainContainer && id.is_none())
-                || quick_loot_pouch_route(panel).as_ref() == Some(&action)
+                || quick_loot_pouch_route(panel, pouch, *category, *fallback).as_ref() == Some(&action)
                 || panel.destinations.iter().any(|current| matches!(current,
                     Action::Destination {category: c,recipient: r,id: i,..} if c==category && r==recipient && i==id)),
             _ => false,
@@ -204,6 +251,9 @@ impl crate::play::Outbox {
     }
     pub(crate) fn bevy_quick_loot_selected(&self, selected: bool) {
         lock(&self.0).discovery.loot.selected = selected;
+    }
+    pub(crate) fn bevy_quick_loot_managed_selected(&self) {
+        lock(&self.0).discovery.loot.destinations_selected = true;
     }
     pub(crate) fn bevy_quick_loot_corpse(&self, entity: oteryn_session::WorldSpatialEntity) {
         self.entities(vec![entity]);

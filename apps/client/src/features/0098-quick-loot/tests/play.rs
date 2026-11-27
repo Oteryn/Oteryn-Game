@@ -585,14 +585,15 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         false,
     );
     let full = directory.file_name().is_some_and(|name| name == "i07-full");
-    let armor = |fallback| {
+    let armor_route = |id, fallback| {
         route(
             Some(QuickLootCategory::Armor),
             QuickLootRecipient::GoldPouch,
-            Some(expected.pouch),
+            Some(id),
             fallback,
         )
     };
+    let armor = |fallback| armor_route(expected.fulfilment, fallback);
     let main = route(None, QuickLootRecipient::MainContainer, None, false);
     let selected = oteryn_session::ItemHandle::new(expected.selected_handle)
         .ok_or("I07 selected handle must be nonzero")?;
@@ -812,7 +813,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 route(
                     Some(QuickLootCategory::Food),
                     QuickLootRecipient::GoldPouch,
-                    Some(expected.pouch),
+                    Some(expected.fulfilment),
                     false,
                 )
             } else {
@@ -863,8 +864,41 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         [expected.skip, expected.gold, expected.accept],
     )?;
     ui::open(&mut app)?;
+    use oteryn_client_runtime::cui3::store as store_wire;
+    outbox.bevy_store_initialize();
+    ui::click_inbox_refresh(&mut app)?;
+    let crate::combat_input::PlayCommand::ServerMechanic(inbox_command) = commands.try_recv()?
+    else {
+        return Err("I07 client queued the wrong Store Inbox command".into());
+    };
+    assert_eq!(inbox_command.capability, store_wire::CAPABILITY_STORE_V1);
+    assert_eq!(
+        inbox_command.command_type,
+        store_wire::COMMAND_TYPE_STORE_INBOX_CLAIM
+    );
+    assert_eq!(
+        inbox_command.payload,
+        std::fs::read(directory.join("i07-inbox-request.bin"))?
+    );
+    let inbox: Reply = serde_json::from_slice(&std::fs::read(directory.join("i07-inbox.json"))?)?;
+    assert_eq!(inbox.game_session_id, first.game_session_id);
+    assert_eq!(inbox.status, CommandStatus::Accepted as u32);
+    crate::play::session_loop::route_server_mechanic_reply(
+        &outbox,
+        &inbox_command,
+        &GatedCommandResult {
+            command_id: inbox.command_id,
+            server_sequence: inbox.server_sequence,
+            status: CommandStatus::Accepted,
+            payload: inbox.payload,
+        },
+    );
+    assert_eq!(
+        ui::link(&app)?.quick_loot_inbox().0,
+        Some(expected.fulfilment)
+    );
     let mut sessions = [String::new(), String::new()];
-    let mut previous = (0, 0);
+    let mut previous = (inbox.command_id, inbox.server_sequence);
     let mut probes: Vec<_> = (1..=20).zip(steps).collect();
     if full {
         probes.splice(
@@ -913,7 +947,19 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         Some(expected.pouch),
         false,
     );
-    probes.push((24, (gold_pouch.clone(), &[][..], None)));
+    probes.push((
+        24,
+        (
+            route(
+                Some(QuickLootCategory::Gold),
+                QuickLootRecipient::GoldPouch,
+                Some(expected.fulfilment),
+                false,
+            ),
+            &[][..],
+            None,
+        ),
+    ));
     for (key, (action, expected_items, notice)) in probes {
         let session_index = usize::from(key >= 12);
         let reply: Reply =
@@ -956,7 +1002,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                         None,
                         true
                     ),
-                    armor(true),
+                    armor_route(expected.pouch, true),
                 ]
             );
             crate::play::mailbox::lock(&ui::link(&app)?.mailbox)
@@ -1206,7 +1252,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         panel.accepted,
         [expected.accept, expected.gold].into_iter().collect()
     );
-    let mut routes = vec![main.clone(), gold_pouch, armor(false)];
+    let mut routes = vec![main.clone(), gold_pouch, armor_route(expected.pouch, false)];
     if full {
         routes.push(route(
             Some(QuickLootCategory::Food),

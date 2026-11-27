@@ -32,6 +32,7 @@ struct Overlay;
 #[derive(Resource, Default)]
 struct State {
     snapshot: Option<(Key, Panel)>,
+    inbox: (Option<[u8; 16]>, bool, bool),
     revision: u64,
     widgets: Option<widgets::Widgets>,
 }
@@ -57,8 +58,11 @@ fn project(
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
 ) {
-    let panel = owner.play.as_ref().map(|play| play.link.quick_loot_panel());
-    let Some(panel) = panel.filter(|panel| panel.open) else {
+    let Some(play) = owner
+        .play
+        .as_ref()
+        .filter(|play| play.link.quick_loot_panel().open)
+    else {
         if let Some(widgets) = state.widgets.take() {
             if inside(focus.get(), widgets.overlay, &parents) {
                 focus.clear();
@@ -68,10 +72,13 @@ fn project(
         state.snapshot = None;
         return;
     };
-    if state
-        .snapshot
-        .as_ref()
-        .is_some_and(|(key, old)| key.generation == owner.generation() && old == &panel)
+    let panel = play.link.quick_loot_panel();
+    let inbox = play.link.quick_loot_inbox();
+    if state.inbox == inbox
+        && state
+            .snapshot
+            .as_ref()
+            .is_some_and(|(key, old)| key.generation == owner.generation() && old == &panel)
     {
         return;
     }
@@ -103,7 +110,8 @@ fn project(
     {
         focus.set(widgets.panel, FocusCause::Navigated);
     }
-    widgets::render(&mut commands, &skins, widgets, key, &panel);
+    widgets::render(&mut commands, &skins, widgets, key, &panel, inbox);
+    state.inbox = inbox;
     state.snapshot = Some((key, panel));
 }
 fn perform(owner: &HostOwner, state: &State, control: &Control) {
