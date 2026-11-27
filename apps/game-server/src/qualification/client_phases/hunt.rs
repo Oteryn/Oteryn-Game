@@ -1,7 +1,7 @@
 //! Hunt through network attack, visibility, corpse USE and item-move replies.
 use super::*;
 pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
-    use oteryn_dev_client::{EntityDetail, EntityKind};
+    use oteryn_dev_client::EntityKind;
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
@@ -26,6 +26,25 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         })
         .copied()
         .ok_or("hunt route has no visible monster")?;
+    hunt_target(client, target, None).await
+}
+
+pub(super) async fn hunt_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: oteryn_dev_client::WorldSpatialEntity,
+    bounded_corpse_wait: Option<Duration>,
+) -> TestResult<()> {
+    use oteryn_dev_client::{EntityDetail, EntityKind};
+
+    let previous_corpses = bounded_corpse_wait.map(|_| {
+        client
+            .world_entities()
+            .into_iter()
+            .flat_map(|view| view.iter())
+            .filter(|entry| entry.kind == EntityKind::Corpse)
+            .map(|entry| entry.entity)
+            .collect::<std::collections::BTreeSet<_>>()
+    });
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -33,7 +52,8 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("hunt attack: {attack:?}").into());
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    let deadline =
+        tokio::time::Instant::now() + bounded_corpse_wait.unwrap_or(Duration::from_secs(120));
     let mut damaged = false;
     let mut last_position = target.position;
     let corpse = loop {
@@ -55,7 +75,11 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
             .world_entities()
             .and_then(|entities| {
                 entities.iter().find(|entry| {
-                    entry.kind == EntityKind::Corpse && entry.position == last_position
+                    entry.kind == EntityKind::Corpse
+                        && entry.position == last_position
+                        && previous_corpses
+                            .as_ref()
+                            .is_none_or(|previous| !previous.contains(&entry.entity))
                 })
             })
             .copied()
@@ -63,7 +87,16 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
             break corpse;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("hunt produced no corpse before deadline".into());
+            if bounded_corpse_wait.is_none() {
+                return Err("hunt produced no corpse before deadline".into());
+            }
+            let observed = client
+                .world_entities()
+                .and_then(|entities| entities.get(&target.entity));
+            return Err(format!(
+                "hunt deadline waiting for target removal and corpse: target={:?} last_position={last_position:?} damaged={damaged} observed={observed:?}",
+                target.entity
+            ).into());
         }
     };
     if !damaged

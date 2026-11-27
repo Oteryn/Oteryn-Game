@@ -4,7 +4,7 @@
 //!    accepted view naming the day's creature, boss, and reset epoch.
 //! 2. Send the query again; expect the identical selection (the stable-day path).
 //! 3. Send a malformed DAILY_BOOST_QUERY payload; expect a rejected reply and no view.
-//! 4. Walk to the selected creature's authored spawn, attack it until death, open
+//! 4. Admit a dedicated creature through the spawn fixture, attack it until death, open
 //!    its corpse and move real loot; expect combat/entity/container/inventory deltas.
 //! 5. Observe the selected creature respawn, kill and loot it again; the owner must
 //!    apply boosted creature XP and extra loot rolls without a player shortcut.
@@ -230,6 +230,7 @@ async fn required_hunt(
     client: &mut oteryn_dev_client::DevClientSession,
     step: u8,
     target: &str,
+    exact: Option<oteryn_dev_client::WorldSpatialEntity>,
 ) -> TestResult<String> {
     if !client
         .selected_capabilities()
@@ -244,7 +245,34 @@ async fn required_hunt(
         .inventory()
         .cloned()
         .ok_or_else(|| format!("step-{step}: {target} hunt had no inventory before combat"))?;
-    client_hunt::hunt(client).await.map_err(|error| {
+    let result = match exact {
+        Some(entity) => {
+            let position = tile(entity.position)?;
+            let active = client.world_entities()
+                .and_then(|view| view.get(&entity.entity))
+                .copied()
+                .ok_or_else(|| format!("W13 hunt expected visible identity={:?} position={position:?} health=100%; observed absent", entity.entity))?;
+            confirm_braindeath(&active, entity.entity, position)?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(85);
+            match tokio::time::timeout_at(
+                deadline,
+                client_hunt::hunt_target(client, entity, Some(Duration::from_secs(75))),
+            )
+            .await
+            {
+                Ok(result) => result,
+                Err(_) => {
+                    let observed = client
+                        .world_entities()
+                        .and_then(|view| view.get(&entity.entity));
+                    Err(format!("hunt deadline waiting for damage, death and loot: target={:?} observed={observed:?} player={:?} open_container={:?}",
+                        entity.entity, client.world_spatial().actor_position, client.open_container()).into())
+                }
+            }
+        }
+        None => client_hunt::hunt(client).await,
+    };
+    result.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         verdict::context(
             format!("step-{step}: {target} combat/loot observed {error}"),
@@ -266,38 +294,83 @@ async fn required_hunt(
     ))
 }
 
-fn braindeath_at_home(client: &DevClientSession) -> TestResult<impl PartialEq + use<>> {
-    let position = client.world_spatial().actor_position;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.position.floor == position.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(position.x)
-                        .max(entry.position.y.abs_diff(position.y))
-                        <= 1
-            })
-        })
-        .ok_or("W13 no adjacent creature at the staged position")?;
-    if tile(actor.position)? != BRAINDEATH_HOME
-        || !actor
-            .display_name
-            .is_some_and(|name| name.as_str() == Ok("Braindeath"))
-        || !matches!(
-            actor.detail,
-            oteryn_dev_client::EntityDetail::Actor {
-                health_percent: 100,
-                ..
-            }
-        )
+fn confirm_braindeath(
+    actor: &oteryn_dev_client::WorldSpatialEntity,
+    identity: oteryn_dev_client::EntityRef,
+    expected: TilePos,
+) -> TestResult {
+    let observed = tile(actor.position)?;
+    let name = actor
+        .display_name
+        .as_ref()
+        .and_then(|name| name.as_str().ok());
+    let health = match actor.detail {
+        oteryn_dev_client::EntityDetail::Actor { health_percent, .. } => Some(health_percent),
+        _ => None,
+    };
+    if actor.entity != identity
+        || actor.kind != EntityKind::Creature
+        || name != Some("Braindeath")
+        || observed != expected
+        || health != Some(100)
     {
-        return Err("W13 hunt target was not a full-health Braindeath at the authored home".into());
+        return Err(format!(
+            "W13 Braindeath target expected identity={identity:?} kind=Creature name=Braindeath position={expected:?} health=100%; observed identity={:?} kind={:?} name={name:?} position={observed:?} health={health:?}",
+            actor.entity, actor.kind
+        ).into());
     }
-    Ok(actor.entity)
+    Ok(())
+}
+
+async fn fixture_braindeath(
+    client: &mut DevClientSession,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    client.take_events();
+    let player = tile(client.world_spatial().actor_position)?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, BRAINDEATH.into()).await?;
+    let target = parse_spawned_entity(&answer)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    loop {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        for event in client.take_events() {
+            let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event else {
+                continue;
+            };
+            for actor in delta.value.enter {
+                if actor.entity != target {
+                    continue;
+                }
+                let position = tile(actor.position)?;
+                confirm_braindeath(&actor, target, position)?;
+                if position.floor != player.floor
+                    || position
+                        .x
+                        .abs_diff(player.x)
+                        .max(position.y.abs_diff(player.y))
+                        != 1
+                    || spawns.sources.iter().any(|source| {
+                        source.floor == position.floor
+                            && source
+                                .points
+                                .iter()
+                                .any(|point| point.x == position.x && point.y == position.y)
+                    })
+                {
+                    return Err(format!("W13 fixture expected clear adjacent position to {player:?}; observed {position:?} target={target:?}").into());
+                }
+                evidence(&format!(
+                    "FIXTURE row=W13.full kind=spawn creature={BRAINDEATH} target={target:?} position={position:?}"
+                ));
+                return Ok(actor);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            let observed = client.world_entities().and_then(|view| view.get(&target));
+            return Err(format!("W13 deadline waiting for dedicated Braindeath enter frame: target={target:?} observed={observed:?} player={player:?}").into());
+        }
+    }
 }
 
 async fn prepare_hunter(
@@ -407,28 +480,48 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     verdict::Harness::global().progress("daily-boost-verified");
-    let first = braindeath_at_home(&client)?;
-    required_hunt(&mut client, 4, "selected creature").await?;
+    let first = fixture_braindeath(&mut client, &metadata.spawns).await?;
+    let home = tile(first.position)?;
+    verdict::Harness::global().progress("dedicated-braindeath-visible");
+    required_hunt(&mut client, 4, "selected creature", Some(first)).await?;
     verdict::Harness::global().progress("braindeath-killed-and-looted");
     evidence("W13_CHECK step=4 selected-creature-killed-and-looted");
 
-    // Observe a new identity at the same authored home. Do not send a combat
-    // command until the spawn has actually respawned.
+    // The fixture owns this cell. Require a new live enter there after the first kill.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
-    loop {
-        if let Ok(respawned) = braindeath_at_home(&client) {
-            if respawned == first {
-                return Err("W13 respawn reused the removed actor".into());
+    verdict::Harness::global().bounded_wait(deadline, "dedicated-braindeath-respawn");
+    let respawned = 'respawn: loop {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        for event in client.take_events() {
+            let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event else {
+                continue;
+            };
+            for actor in delta.value.enter {
+                if actor.kind == EntityKind::Creature && tile(actor.position)? == home {
+                    if actor.entity == first.entity {
+                        return Err(format!(
+                            "W13 respawn expected a new identity; observed {:?}",
+                            actor.entity
+                        )
+                        .into());
+                    }
+                    confirm_braindeath(&actor, actor.entity, home)?;
+                    break 'respawn actor;
+                }
             }
-            verdict::Harness::global().progress("braindeath-respawned");
-            break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("W13 selected Braindeath did not respawn at its authored home".into());
+            return Err(format!("W13 deadline waiting for dedicated Braindeath respawn at {home:?}; previous identity={:?}", first.entity).into());
         }
-        client.service_liveness(Duration::from_millis(100)).await?;
-    }
-    let step_5_observed = required_hunt(&mut client, 5, "respawned selected creature").await?;
+    };
+    verdict::Harness::global().progress("braindeath-respawned");
+    let step_5_observed = required_hunt(
+        &mut client,
+        5,
+        "respawned selected creature",
+        Some(respawned),
+    )
+    .await?;
     verdict::Harness::global().progress("respawned-braindeath-killed-and-looted");
 
     if matches!(selected.boss_key.as_str(), BAELOC | NICTROS) {
@@ -443,7 +536,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 error,
             )
         })?;
-    let step_6_observed = required_hunt(&mut client, 6, "selected boss").await?;
+    let step_6_observed = required_hunt(&mut client, 6, "selected boss", None).await?;
 
     // The player protocol currently exposes neither the XP award nor which
     // loot rolls were bonus/unique, and it publishes no boss-respawn clock.
