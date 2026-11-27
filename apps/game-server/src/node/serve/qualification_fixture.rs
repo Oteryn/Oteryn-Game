@@ -385,6 +385,55 @@ async fn spawn_with_watchdog<T>(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+enum SpawnHolder {
+    Root(crate::durability::DurabilityHolder),
+    // The release fault tests inject SQLx hooks into their own pool.
+    #[cfg(test)]
+    Fixture(sqlx::pool::PoolConnection<sqlx::Postgres>),
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+impl SpawnHolder {
+    fn connection(&mut self) -> &mut sqlx::pool::PoolConnection<sqlx::Postgres> {
+        match self {
+            Self::Root(holder) => holder.pool_connection(),
+            #[cfg(test)]
+            Self::Fixture(holder) => holder,
+        }
+    }
+
+    fn retire(self) {
+        match self {
+            Self::Root(holder) => holder.retire(),
+            #[cfg(test)]
+            Self::Fixture(holder) => drop(holder.detach()),
+        }
+    }
+
+    async fn release(
+        self,
+        deadline: std::time::Instant,
+    ) -> (
+        sqlx::pool::PoolConnectionReturnDisposition,
+        Option<&'static str>,
+    ) {
+        match self {
+            Self::Root(mut holder) => {
+                holder
+                    .return_to_pool_observed_until_with_cause(deadline)
+                    .await
+            }
+            #[cfg(test)]
+            Self::Fixture(mut holder) => {
+                holder
+                    .return_to_pool_observed_until_with_cause(deadline)
+                    .await
+            }
+        }
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 #[allow(clippy::too_many_arguments)]
 async fn place(
     root: &DurabilityRoot,
@@ -416,7 +465,7 @@ async fn place(
             .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))
     };
     let mut holder = acquire_holder().await?;
-    let eligible = spawn_transaction(&mut holder, budget, true, async |tx| {
+    let eligible = spawn_transaction(holder.connection(), budget, true, async |tx| {
         let plan = plan
             .as_ref()
             .ok_or_else(|| fence("missing qualification spawn plan".into()))?;
@@ -487,7 +536,7 @@ async fn place(
 async fn acquire_spawn_holder(
     root: &DurabilityRoot,
     deadline: tokio::time::Instant,
-) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, DurabilityError> {
+) -> Result<SpawnHolder, DurabilityError> {
     let mut waiting = None;
     loop {
         if tokio::time::Instant::now() >= deadline {
@@ -495,7 +544,7 @@ async fn acquire_spawn_holder(
         }
         match root.try_acquire_ready() {
             Err(DurabilityError::RootUnavailable) => {}
-            outcome => return outcome,
+            outcome => return outcome.map(SpawnHolder::Root),
         }
         // Hold priority and a FIFO turn only while retrying the checkout.
         if waiting.is_none() {
@@ -543,13 +592,10 @@ enum SpawnTransaction<T> {
 
 #[cfg(any(test, feature = "qualification-spawn"))]
 async fn retry_spawn_collisions<T>(
-    mut holder: sqlx::pool::PoolConnection<sqlx::Postgres>,
+    mut holder: SpawnHolder,
     budget: SpawnBudget,
     published: &mut Option<T>,
-    mut reacquire: impl AsyncFnMut() -> Result<
-        sqlx::pool::PoolConnection<sqlx::Postgres>,
-        wild_spawn::SpawnRefusal,
-    >,
+    mut reacquire: impl AsyncFnMut() -> Result<SpawnHolder, wild_spawn::SpawnRefusal>,
     mut attempt: impl AsyncFnMut(
         &mut sqlx::Transaction<'_, sqlx::Postgres>,
     ) -> Result<Option<T>, wild_spawn::SpawnRefusal>,
@@ -607,14 +653,14 @@ async fn spawn_transaction<T>(
 
 #[cfg(any(test, feature = "qualification-spawn"))]
 async fn spawn_collision<T>(
-    mut holder: sqlx::pool::PoolConnection<sqlx::Postgres>,
+    mut holder: SpawnHolder,
     budget: SpawnBudget,
     published: &mut Option<T>,
     operation: impl AsyncFnOnce(
         &mut sqlx::Transaction<'_, sqlx::Postgres>,
     ) -> Result<Option<T>, wild_spawn::SpawnRefusal>,
 ) -> Result<(), wild_spawn::SpawnRefusal> {
-    let result = spawn_transaction(&mut holder, budget, false, async |tx| {
+    let result = spawn_transaction(holder.connection(), budget, false, async |tx| {
         *published = operation(tx).await?;
         Ok(())
     })
@@ -624,7 +670,7 @@ async fn spawn_collision<T>(
 
 #[cfg(any(test, feature = "qualification-spawn"))]
 async fn finish_spawn_holder<T>(
-    mut holder: sqlx::pool::PoolConnection<sqlx::Postgres>,
+    holder: SpawnHolder,
     budget: SpawnBudget,
     transaction: SpawnTransaction<T>,
 ) -> Result<T, wild_spawn::SpawnRefusal> {
@@ -634,14 +680,12 @@ async fn finish_spawn_holder<T>(
         SpawnTransaction::Uncertain(error) => {
             // An unacknowledged BEGIN can leave a live transaction that SQLx
             // has not recorded. Retire the socket before releasing the slot.
-            drop(holder.detach());
+            holder.retire();
             spawn_cleanup_warning("holder_retired", error.detail().unwrap_or(error.token()));
             return Err(error);
         }
     };
-    let (disposition, cause) = holder
-        .return_to_pool_observed_until_with_cause(budget.release_deadline.into_std())
-        .await;
+    let (disposition, cause) = holder.release(budget.release_deadline.into_std()).await;
     match disposition {
         PoolConnectionReturnDisposition::ReturnedToIdle => result,
         _ => {
@@ -1280,7 +1324,7 @@ mod tests {
     fn qualification_spawn_keeps_collision_fence_until_publication() -> Result<(), &'static str> {
         let source = control_spawn_source()?;
         let probe = source
-            .find("spawn_transaction(&mut holder, budget, true")
+            .find("spawn_transaction(holder.connection(), budget, true")
             .ok_or("missing committed probe")?;
         let guard = source
             .find("retry_spawn_collisions(")
@@ -1512,7 +1556,7 @@ mod tests {
             .await;
             assert!(matches!(probe, SpawnTransaction::Clean(Ok(()))));
             let mut published = None;
-            spawn_collision(holder, budget, &mut published, async |tx| {
+            spawn_collision(SpawnHolder::Fixture(holder), budget, &mut published, async |tx| {
                 let committed: bool = sqlx::query_scalar(
                     "SELECT to_regclass('pg_temp.qualification_spawn_committed_probe') IS NOT NULL",
                 )
@@ -1555,7 +1599,7 @@ mod tests {
             // recorded transaction depth. The failure path must retire this PID.
             sqlx::query("BEGIN").execute(&mut *holder).await?;
             let failed = finish_spawn_holder::<()>(
-                holder, budget, SpawnTransaction::Uncertain(wild_spawn::SpawnRefusal::Fence("late BEGIN".into())),
+                SpawnHolder::Fixture(holder), budget, SpawnTransaction::Uncertain(wild_spawn::SpawnRefusal::Fence("late BEGIN".into())),
             ).await;
             assert!(failed.is_err());
             let mut holder = pool.acquire().await?;
@@ -1565,7 +1609,7 @@ mod tests {
 
             // A refused collision rolls back cleanly and retains the exact holder.
             let mut published = None::<()>;
-            let refusal = spawn_collision(holder, budget, &mut published, async |_| {
+            let refusal = spawn_collision(SpawnHolder::Fixture(holder), budget, &mut published, async |_| {
                 Err(wild_spawn::SpawnRefusal::NoFreeTile("blocked".into()))
             }).await;
             assert!(matches!(refusal, Err(wild_spawn::SpawnRefusal::NoFreeTile(_))));
@@ -1583,10 +1627,10 @@ mod tests {
             };
             let mut attempt = 0;
             let mut published = None;
-            retry_spawn_collisions(holder, late, &mut published, async || {
+            retry_spawn_collisions(SpawnHolder::Fixture(holder), late, &mut published, async || {
                 // Simulate contention for the runtime on the first attempt.
                 tokio::time::sleep(Duration::from_millis(250)).await;
-                pool.acquire().await.map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))
+                pool.acquire().await.map(SpawnHolder::Fixture).map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))
             }, async |tx| {
                 attempt += 1;
                 if attempt == 1 {
@@ -1650,7 +1694,7 @@ mod tests {
                 reply_deadline: start + Duration::from_millis(1250),
             };
             let reply = spawn_with_watchdog(budget.reply_deadline, async |published| {
-                let result = spawn_collision(holder, budget, published, async |_| {
+                let result = spawn_collision(SpawnHolder::Fixture(holder), budget, published, async |_| {
                     stall.store(true, std::sync::atomic::Ordering::Relaxed);
                     Ok(Some(17))
                 }).await;
@@ -1667,7 +1711,7 @@ mod tests {
                 .bind(victim).fetch_one(&mut writer).await?;
             assert!(terminated);
             let outcome = finish_spawn_holder(
-                holder, SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
+                SpawnHolder::Fixture(holder), SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
             ).await;
             assert!(matches!(outcome, Err(error) if error.detail()
                 == Some("qualification spawn pool return: ping_failed")));
@@ -1676,7 +1720,7 @@ mod tests {
             let returned = empty.return_to_pool_observed().await;
             assert_eq!(returned, sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle);
             let outcome = finish_spawn_holder(
-                empty, SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
+                SpawnHolder::Fixture(empty), SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
             ).await;
             assert!(matches!(outcome, Err(error) if error.detail()
                 == Some("qualification spawn pool return: no_evidence")));
@@ -1708,7 +1752,7 @@ mod tests {
     fn qualification_spawn_commits_before_placement() -> Result<(), &'static str> {
         let place = control_spawn_source()?;
         let probe = place
-            .find("spawn_transaction(&mut holder, budget, true")
+            .find("spawn_transaction(holder.connection(), budget, true")
             .ok_or("missing committed fence probe")?;
         let publish = place
             .find("publish_spawn(")

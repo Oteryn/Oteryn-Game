@@ -28,11 +28,11 @@ use crate::foundation::{
 use harness::{CHANNEL, CHARACTER, Harness, SESSION, TestResult, WORLD, debug, id, item_fence};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
-use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
+use sqlx::pool::PoolConnectionReturnDisposition;
 use std::time::{Duration, Instant};
 
 pub(super) async fn return_connection(
-    mut connection: PoolConnection<sqlx::Postgres>,
+    mut connection: crate::durability::DurabilityHolder,
 ) -> TestResult {
     let disposition = connection
         .return_to_pool_observed_until(Instant::now() + Duration::from_secs(5))

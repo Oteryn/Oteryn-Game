@@ -43,19 +43,18 @@ const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
 // The separately configured CHAT-2B relay can open up to four chat connections.
 const ROOT_HOLDER_CONNECTIONS: u32 = 1;
 const RETAINED_RECEIPT_PUBLISHER_CONNECTIONS: u32 = 1;
-/// How often maintenance looks again for a checked-out holder's return (NBHOG-2); a pass that
-/// drops its holder without a semantic-pass guard sends no return notification.
+/// Fallback for SQLx idle-pool maintenance and expiry of abandoned FIFO tickets.
 const HOLDER_RETURN_POLL: Duration = Duration::from_millis(10);
 /// A semantic pass that keeps the single holder at least this long is reported on stderr
 /// (NBDIAG-3): every other owner's non-blocking checkout fails meanwhile.
 const SLOW_PASS_REPORT: Duration = Duration::from_millis(1_000);
 
-/// The semantic pass holding the single checkout, with its issue time, deadline, and
-/// connection trace.
+/// The current checkout site, with its issue time, semantic deadline when applicable,
+/// and connection trace.
 type HolderOwner = Option<(
     &'static std::panic::Location<'static>,
     Instant,
-    TokioInstant,
+    Option<TokioInstant>,
     Option<[u8; 16]>,
 )>;
 
@@ -254,15 +253,6 @@ fn record_checkout(waiter: Site, now: Instant, trace: Option<[u8; 16]>) {
     oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
 }
 
-/// Records the maintenance window's own checkout of the holder when it ends (NBDIAG-5).
-struct MaintenanceUsage(Instant);
-
-impl Drop for MaintenanceUsage {
-    fn drop(&mut self) {
-        record_holder_usage(None, Some(self.0.elapsed()));
-    }
-}
-
 /// How long a holder usage report covers (NBDIAG-5).
 const HOLDER_USAGE_WINDOW: Duration = Duration::from_secs(10);
 
@@ -397,6 +387,9 @@ struct PassOwner {
     caller: &'static std::panic::Location<'static>,
     issued: Instant,
     finished: bool,
+    request_ready_on_retirement: bool,
+    running: bool,
+    deadline: TokioInstant,
     /// The connection trace of the issuing task, when it has one (LOGDBG-C).
     trace: Option<[u8; 16]>,
 }
@@ -410,7 +403,7 @@ impl PassOwner {
     ) -> Self {
         let trace = holder_trace();
         if let Ok(mut owner) = slot.lock() {
-            *owner = Some((caller, issued, deadline, trace));
+            *owner = Some((caller, issued, Some(deadline), trace));
         }
         record_checkout(caller, issued, trace);
         Self {
@@ -418,8 +411,37 @@ impl PassOwner {
             caller,
             issued,
             finished: false,
+            request_ready_on_retirement: false,
+            running: false,
+            deadline,
             trace,
         }
+    }
+
+    fn checkout_ready(
+        root: &DurabilityRoot,
+        caller: Site,
+        deadline: TokioInstant,
+        semantic: bool,
+    ) -> Option<DurabilityHolder> {
+        let mut slot = root.holder_owner.lock().ok()?;
+        let holder = root.pool.try_acquire()?;
+        let issued = Instant::now();
+        let trace = holder_trace();
+        *slot = Some((caller, issued, semantic.then_some(deadline), trace));
+        drop(slot);
+        record_checkout(caller, issued, trace);
+        let owner = Self {
+            slot: Arc::clone(&root.holder_owner),
+            caller,
+            issued,
+            finished: !semantic,
+            request_ready_on_retirement: true,
+            running: false,
+            deadline,
+            trace,
+        };
+        Some(DurabilityHolder::new(root, holder, owner))
     }
 
     /// `line` with this pass's connection trace, when it has one.
@@ -459,6 +481,146 @@ impl Drop for PassOwner {
         }
     }
 }
+/// A checked-out root connection. Its owner stays visible through SQLx's cleanup.
+pub struct DurabilityHolder {
+    holder: Option<PoolConnection<Postgres>>,
+    owner: Option<PassOwner>,
+    root: DurabilityRoot,
+}
+
+impl DurabilityHolder {
+    fn new(root: &DurabilityRoot, holder: PoolConnection<Postgres>, owner: PassOwner) -> Self {
+        Self {
+            holder: Some(holder),
+            owner: Some(owner),
+            root: root.clone(),
+        }
+    }
+
+    /// Borrow the underlying SQLx connection for transaction owners.
+    pub fn pool_connection(&mut self) -> &mut PoolConnection<Postgres> {
+        self.holder.as_mut().expect("live durability holder")
+    }
+
+    pub async fn return_to_pool_observed(&mut self) -> PoolConnectionReturnDisposition {
+        self.return_to_pool_observed_until(Instant::now() + ROOT_RECOVERY_WINDOW)
+            .await
+    }
+
+    pub async fn return_to_pool_observed_until(
+        &mut self,
+        deadline: Instant,
+    ) -> PoolConnectionReturnDisposition {
+        self.return_to_pool_observed_until_with_cause(deadline).await.0
+    }
+
+    pub async fn return_to_pool_observed_until_with_cause(
+        &mut self,
+        deadline: Instant,
+    ) -> (PoolConnectionReturnDisposition, Option<&'static str>) {
+        let Some(mut holder) = self.holder.take() else {
+            return (PoolConnectionReturnDisposition::NoEvidence, Some("no_evidence"));
+        };
+        let release = HolderRelease::new(&self.root, self.owner.take());
+        let result = holder.return_to_pool_observed_until_with_cause(deadline).await;
+        drop(release);
+        result
+    }
+
+    pub async fn close(mut self) -> Result<(), sqlx::Error> {
+        let release = HolderRelease::new(&self.root, self.owner.take());
+        let result = self.holder.take().expect("live durability holder").close().await;
+        drop(release);
+        result
+    }
+
+    /// Retire a connection whose transaction state cannot be proved.
+    pub fn retire(mut self) {
+        let release = HolderRelease::new(&self.root, self.owner.take());
+        if let Some(holder) = self.holder.take() {
+            drop(holder.detach());
+        }
+        drop(release);
+    }
+}
+
+impl std::ops::Deref for DurabilityHolder {
+    type Target = sqlx::PgConnection;
+
+    fn deref(&self) -> &Self::Target {
+        self.holder.as_deref().expect("live durability holder")
+    }
+}
+
+impl std::ops::DerefMut for DurabilityHolder {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.pool_connection()
+    }
+}
+
+impl Drop for DurabilityHolder {
+    fn drop(&mut self) {
+        let Some(mut holder) = self.holder.take() else { return };
+        let owner = self.owner.take().expect("checkout owner");
+        let deadline = owner.deadline;
+        let running = owner.running;
+        let release = HolderRelease::new(&self.root, Some(owner));
+        if running {
+            // Cancellation can interrupt a BEGIN or COMMIT before SQLx can
+            // account for it. Retire the socket before handing off the slot.
+            drop(holder.detach());
+            drop(release);
+            return;
+        }
+        let deadline = Instant::now() + deadline.saturating_duration_since(TokioInstant::now());
+        let returned = holder.return_to_pool_observed_until(deadline);
+        self.root.spawn_on_runtime(ObservedHolderReturn { returned, release }.finish());
+    }
+}
+
+/// Field order matters if the cleanup task is cancelled before its first poll:
+/// first drop SQLx's floated connection and its permit, then publish the release.
+struct ObservedHolderReturn<F> {
+    returned: F,
+    release: HolderRelease,
+}
+
+impl<F: Future> ObservedHolderReturn<F> {
+    async fn finish(self) {
+        let _release = self.release;
+        let _ = self.returned.await;
+    }
+}
+
+struct HolderRelease {
+    owner: Option<PassOwner>,
+    returned: Arc<Notify>,
+    demand: Arc<AtomicBool>,
+    pool: PgPool,
+}
+
+impl HolderRelease {
+    fn new(root: &DurabilityRoot, owner: Option<PassOwner>) -> Self {
+        Self {
+            owner,
+            returned: Arc::clone(&root.holder_returned),
+            demand: Arc::clone(&root.ready_demand),
+            pool: root.pool.clone(),
+        }
+    }
+}
+
+impl Drop for HolderRelease {
+    fn drop(&mut self) {
+        let request_ready = self.owner.as_ref().is_some_and(|owner| owner.request_ready_on_retirement);
+        drop(self.owner.take());
+        if request_ready && self.pool.size() == 0 {
+            self.demand.store(true, Ordering::Release);
+        }
+        self.returned.notify_waiters();
+    }
+}
+
 const WP3_RUNTIME_WORKER_THREADS: usize = 1;
 const WP3_RUNTIME_MAX_BLOCKING_THREADS: usize = 1;
 const WP3_RUNTIME_WORKER_STACK_BYTES: usize = 2 * 1024 * 1024;
@@ -1763,9 +1925,23 @@ impl DurabilityRoot {
     /// While an owner refused earlier still waits, a later owner is refused too, so the idle
     /// holder goes to the oldest waiting owner (see [`HolderWaiter`]).
     /// A scheduled owner instead observes the bounded background preference policy.
-    pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+    #[track_caller]
+    pub fn try_acquire_ready(&self) -> Result<DurabilityHolder, DurabilityError> {
+        self.try_checkout_ready(
+            std::panic::Location::caller(),
+            TokioInstant::now() + ROOT_RECOVERY_WINDOW,
+            false,
+        )
+    }
+
+    fn try_checkout_ready(
+        &self,
+        caller: Site,
+        deadline: TokioInstant,
+        semantic: bool,
+    ) -> Result<DurabilityHolder, DurabilityError> {
         if holder_queue::is_background() {
-            return self.try_acquire_background_ready();
+            return self.try_acquire_background_ready(caller, deadline, semantic);
         }
         let owner = holder_queue::current_owner();
         let now = Instant::now();
@@ -1774,7 +1950,7 @@ impl DurabilityRoot {
             .lock()
             .map_err(|_| DurabilityError::RootUnavailable)?;
         if queue.turn(owner, now) != Turn::Kept
-            && let Some(holder) = self.pool.try_acquire()
+            && let Some(holder) = PassOwner::checkout_ready(self, caller, deadline, semantic)
         {
             queue.served(owner);
             return Ok(holder);
@@ -1790,13 +1966,13 @@ impl DurabilityRoot {
     }
 
     /// The checked-out semantic pass's own deadline, including its observed return.
-    /// An idle holder or a raw checkout has no semantic-pass deadline to wait for.
+    /// An idle holder or raw checkout has no semantic-pass deadline to wait for.
     pub fn checked_out_pass_deadline(&self) -> Option<TokioInstant> {
         let owner = self.holder_owner.lock().ok()?;
         if self.is_ready() {
             return None;
         }
-        owner.map(|(_, _, deadline, _)| deadline)
+        owner.and_then(|(_, _, deadline, _)| deadline)
     }
 
     /// Takes the current owner's place in the holder queue after a refused checkout that it
@@ -1807,6 +1983,25 @@ impl DurabilityRoot {
             return None;
         }
         HolderWaiter::enqueue(&self.holder_queue, &self.holder_returned)
+    }
+
+    /// Wait for an admission checkout that already failed. A release that raced
+    /// the failed attempt is immediately usable. The caller keeps its ticket
+    /// live under the shared join deadline while it waits.
+    pub async fn wait_join_holder_turn(&self, deadline: TokioInstant) -> bool {
+        loop {
+            let mut returned = std::pin::pin!(self.holder_returned.notified());
+            returned.as_mut().enable();
+            let now = TokioInstant::now();
+            if self.pool.size() == 0 || now >= deadline {
+                return false;
+            }
+            if self.is_ready() && self.holder_turn() != Turn::Kept {
+                return true;
+            }
+            let poll = (now + HOLDER_RETURN_POLL).min(deadline);
+            let _ = tokio::time::timeout_at(poll, returned).await;
+        }
     }
 
     /// Waits for the retry of a step that found the holder busy, for an owner holding a
@@ -1842,8 +2037,7 @@ impl DurabilityRoot {
                     Turn::Kept => {}
                 }
             }
-            // A holder dropped without a semantic-pass guard, or a stale older waiter, sends no
-            // notification: look again on the maintenance poll.
+            // Check expiry of abandoned FIFO tickets and SQLx idle maintenance on the poll.
             let poll = (tokio::time::Instant::now() + HOLDER_RETURN_POLL).min(latest);
             if tokio::time::timeout_at(poll, returned).await.is_err()
                 && tokio::time::Instant::now() >= latest
@@ -1918,41 +2112,47 @@ impl DurabilityRoot {
         if self.pool.size() > 0 {
             return Ok(true);
         }
-        let fresh = self.pool.size() == 0;
+        let mut owner = PassOwner::checked_out(
+            &self.holder_owner,
+            std::panic::Location::caller(),
+            Instant::now(),
+            TokioInstant::from_std(deadline),
+        );
+        owner.finished = true;
+        owner.running = true;
+        let mut release = HolderRelease::new(self, Some(owner));
         let remaining = deadline.saturating_duration_since(Instant::now());
-        let acquired = tokio::time::timeout(remaining, self.pool.acquire())
+        let holder = tokio::time::timeout(remaining, self.pool.acquire())
             .await
-            .map_err(|_| DurabilityError::RootUnavailable)?;
-        let mut holder = match acquired {
-            Ok(holder) => holder,
-            Err(error) => return Err(DurabilityError::from(error)),
-        };
-        let _usage = MaintenanceUsage(Instant::now());
+            .map_err(|_| DurabilityError::RootUnavailable)??;
+        let mut holder = DurabilityHolder::new(
+            self,
+            holder,
+            release.owner.take().expect("maintenance owner"),
+        );
 
         let remaining = deadline.saturating_duration_since(Instant::now());
         let compatibility =
-            match tokio::time::timeout(remaining, schema::inspect_connection(&mut holder)).await {
+            match tokio::time::timeout(remaining, schema::inspect_connection(holder.pool_connection())).await {
                 Ok(Ok(compatibility)) => compatibility,
                 Ok(Err(error)) => {
-                    holder.close_on_drop();
+                    holder.retire();
                     return Err(error);
                 }
                 Err(_) => {
-                    holder.close_on_drop();
+                    holder.retire();
                     return Err(DurabilityError::RootUnavailable);
                 }
             };
         if compatibility != SchemaCompatibility::Compatible {
-            holder.close_on_drop();
+            holder.retire();
             return Err(DurabilityError::SchemaIncompatible(compatibility));
         }
 
+        holder.owner.as_mut().expect("maintenance owner").running = false;
         match holder.return_to_pool_observed_until(deadline).await {
             PoolConnectionReturnDisposition::ReturnedToIdle => {
-                if fresh {
-                    eprintln!("DURABILITY_ROOT_REESTABLISHED");
-                }
-                self.holder_returned.notify_waiters();
+                eprintln!("DURABILITY_ROOT_REESTABLISHED");
                 Ok(true)
             }
             PoolConnectionReturnDisposition::RetiredClosed
@@ -1986,23 +2186,46 @@ impl DurabilityRoot {
 
     /// Report the holder at a failed wait, even when no checkout was attempted (for
     /// example a snapshot blocked on a runtime lock). The trace belongs to the waiter.
-    pub fn report_holder_wait_timeout(&self, phase: &'static str, cause: &'static str) {
-        use oteryn_error_codes::{FieldValue, Level, Line};
+    pub fn report_holder_wait_timeout(
+        &self,
+        phase: &'static str,
+        cause: &'static str,
+    ) -> Option<&'static std::panic::Location<'static>> {
+        use oteryn_error_codes::{Level, Line};
+        self.report_join_holder(Line::new(Level::Warn, "durability", "holder_wait_timeout"), phase, cause)
+    }
 
-        let current = self.holder_owner.lock().ok().and_then(|owner| *owner);
+    /// Record the owner which a join is waiting for, including short holds.
+    pub fn report_join_holder_wait(&self, phase: &'static str) {
+        use oteryn_error_codes::{Level, Line};
+        let _ = self.report_join_holder(Line::new(Level::Warn, "durability", "holder_wait_begin"), phase, "holder_busy");
+    }
+
+    fn report_join_holder(
+        &self,
+        line: oteryn_error_codes::Line<'_>,
+        phase: &'static str,
+        cause: &'static str,
+    ) -> Option<Site> {
+        use oteryn_error_codes::FieldValue;
+
+        // Checkout and owner publication use this same lock.
+        let current = self.holder_owner.lock();
         let (state, owner) = if self.is_ready() {
             ("idle", None)
-        } else if let Some(owner) = current {
+        } else if let Some(owner) = current.as_deref().ok().and_then(|slot| *slot) {
             ("checked_out", Some(owner))
         } else if self.pool.size() == 0 {
             ("retired", None)
         } else {
-            ("untracked", None)
+            // SQLx's idle reaper can briefly float an idle connection for its
+            // lifetime check. All application checkouts have an owner above.
+            ("pool_maintenance", None)
         };
+        drop(current);
         let owner_trace = owner.and_then(|(.., trace)| trace).map(format_trace);
         let trace = holder_trace().map(format_trace);
-        let mut line = Line::new(Level::Warn, "durability", "holder_wait_timeout")
-            .field("phase", FieldValue::Token(phase))
+        let mut line = line.field("phase", FieldValue::Token(phase))
             .field("cause", FieldValue::Token(cause))
             .field("state", FieldValue::Token(state));
         if let Some((site, since, ..)) = owner {
@@ -2017,10 +2240,10 @@ impl DurabilityRoot {
             line = line.trace(trace);
         }
         oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
+        owner.map(|(site, ..)| site)
     }
 
-    /// Call site of the in-flight semantic pass, if one has the holder. A
-    /// background or raw checkout can make the holder busy without this evidence.
+    /// Call site of the current root checkout, if one is active.
     pub fn checked_out_pass_site(&self) -> Option<&'static std::panic::Location<'static>> {
         let owner = self.holder_owner.lock().ok()?;
         owner.filter(|_| !self.is_ready()).map(|(site, ..)| site)
@@ -2112,29 +2335,28 @@ impl DurabilityRoot {
     /// A scheduled pass yields to waiting foreground work without creating a
     /// connection or a maintenance demand. A real ready miss keeps its old demand.
     #[track_caller]
-    pub fn try_issue_background_semantic_pass(
-        &self,
-    ) -> Result<IssuedSemanticPass, DurabilityError> {
+    pub fn try_issue_background_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
-        let holder = self.try_acquire_background_ready().inspect_err(|_| {
+        let deadline = TokioInstant::now() + self.pass_deadline();
+        let holder = self.try_acquire_background_ready(caller, deadline, true).inspect_err(|_| {
             record_holder_usage(Some(caller), None);
         })?;
-        let issued = Instant::now();
-        let deadline = TokioInstant::now() + self.pass_deadline();
-        Ok(IssuedSemanticPass {
-            root: self.clone(),
-            holder,
-            deadline,
-            owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
-        })
+        Ok(IssuedSemanticPass { holder, deadline })
     }
 
-    fn try_acquire_background_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+    fn try_acquire_background_ready(
+        &self,
+        caller: Site,
+        deadline: TokioInstant,
+        semantic: bool,
+    ) -> Result<DurabilityHolder, DurabilityError> {
         self.holder_priority
             .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
-                // Priority already granted this operation its fairness turn. The ticket
-                // queue must not reserve an idle holder against that grant.
-                let holder = self.pool.try_acquire();
+                let queue = self.holder_queue.lock().ok()?;
+                if queue.join_waiting(Instant::now()) {
+                    return None;
+                }
+                let holder = PassOwner::checkout_ready(self, caller, deadline, semantic);
                 if holder.is_none() {
                     self.request_ready();
                 }
@@ -2145,45 +2367,27 @@ impl DurabilityRoot {
 
     #[track_caller]
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
-        let caller = std::panic::Location::caller();
-        let holder = self.try_acquire_ready().inspect_err(|_| {
-            record_refused_checkout(&self.holder_owner, caller);
-        })?;
-        let issued = Instant::now();
-        let deadline = TokioInstant::now() + self.pass_deadline();
-        Ok(IssuedSemanticPass {
-            root: self.clone(),
-            holder,
-            deadline,
-            owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
-        })
+        self.try_issue_semantic_pass_by(TokioInstant::now() + self.pass_deadline())
     }
 
-    /// [`Self::try_issue_semantic_pass`] for work owed to an outer operation
-    /// budget: the pass deadline is the earlier of the ordinary one and
-    /// `deadline`, and an already expired budget issues nothing.
+    /// Issue a semantic pass no later than the earlier of its normal and outer deadlines.
     #[track_caller]
     pub fn try_issue_semantic_pass_by(
         &self,
         deadline: TokioInstant,
     ) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
-        let issued = Instant::now();
         let now = TokioInstant::now();
         if deadline <= now {
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
-        let holder = self.try_acquire_ready().inspect_err(|_| {
+        let deadline = bounded_pass_deadline(now, self.pass_deadline(), deadline);
+        let holder = self.try_checkout_ready(caller, deadline, true).inspect_err(|_| {
             record_refused_checkout(&self.holder_owner, caller);
         })?;
-        let deadline = bounded_pass_deadline(now, self.pass_deadline(), deadline);
-        Ok(IssuedSemanticPass {
-            root: self.clone(),
-            holder,
-            deadline,
-            owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
-        })
+        Ok(IssuedSemanticPass { holder, deadline })
     }
+
 }
 
 async fn observe_receipt_probe<T>(
@@ -2230,11 +2434,8 @@ where
 }
 
 pub struct IssuedSemanticPass {
-    root: DurabilityRoot,
-    holder: PoolConnection<Postgres>,
+    holder: DurabilityHolder,
     deadline: TokioInstant,
-    /// When the holder was checked out, and by which call site (NBDIAG-3, NBDIAG-4).
-    owner: PassOwner,
 }
 
 impl IssuedSemanticPass {
@@ -2275,60 +2476,59 @@ impl IssuedSemanticPass {
                 -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
             + Send,
     {
+        let owner = self.holder.owner.as_mut().expect("semantic pass owner");
+        owner.running = true;
         let result = match tokio::time::timeout_at(
             self.deadline,
-            operation(&mut self.holder, self.deadline, context),
+            operation(self.holder.pool_connection(), self.deadline, context),
         )
         .await
         {
             Ok(result) => result,
             Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
         };
-        self.owner.finished = true;
+        let owner = self.holder.owner.as_mut().expect("semantic pass owner");
+        owner.running = false;
+        owner.finished = true;
 
-        let held = self.owner.issued.elapsed();
+        let held = owner.issued.elapsed();
         let deadline_exceeded = matches!(&result, Err(DurabilityError::RootPassDeadlineExceeded));
         if deadline_exceeded || held >= SLOW_PASS_REPORT {
             // The text line stays until node boot's run.sh selects the event instead (LOGDBG-C).
             eprintln!(
                 "DURABILITY_PASS_SLOW caller={} held_ms={} deadline_exceeded={deadline_exceeded}",
-                self.owner.caller,
+                owner.caller,
                 held.as_millis(),
             );
-            self.owner
-                .emit(pass_slow_line(self.owner.caller, held, deadline_exceeded));
+            owner.emit(pass_slow_line(owner.caller, held, deadline_exceeded));
         }
 
         if matches!(&result, Err(DurabilityError::CommitOutcomeUnknown)) {
             eprintln!(
                 "DURABILITY_PASS_RETIRED caller={} reason=commit_outcome_unknown",
-                self.owner.caller
+                owner.caller
             );
-            drop(self.holder.detach());
-            self.root.request_ready();
+            self.holder.retire();
             return result;
         }
 
         // SQLx takes a system-clock deadline, so transfer only the remaining budget.
         let release_deadline = Instant::now()
             + self.deadline.saturating_duration_since(TokioInstant::now());
+        let caller = owner.caller;
         match self.holder.return_to_pool_observed_until(release_deadline).await {
-            PoolConnectionReturnDisposition::ReturnedToIdle => {
-                self.root.holder_returned.notify_waiters();
-                result
-            }
+            PoolConnectionReturnDisposition::ReturnedToIdle => result,
             PoolConnectionReturnDisposition::RetiredClosed => {
                 eprintln!(
                     "DURABILITY_PASS_RETIRED caller={} reason=closed",
-                    self.owner.caller
+                    caller
                 );
-                self.root.request_ready();
                 result
             }
             PoolConnectionReturnDisposition::NoEvidence => {
                 eprintln!(
                     "DURABILITY_PASS_RETIRED caller={} reason=no_evidence",
-                    self.owner.caller
+                    caller
                 );
                 Err(DurabilityError::InvalidStoredState)
             }

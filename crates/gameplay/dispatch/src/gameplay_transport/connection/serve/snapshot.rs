@@ -20,6 +20,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     admitted: &mut AdmittedSession,
     domains: &mut Vec<OwnedDomain>,
 ) -> Result<InitialSnapshot, ServeEnd> {
+    note_admission_phase("analyser");
     super::analyser::snapshot(authority, admitted, domains).await?;
     if admitted
         .continuity
@@ -43,6 +44,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         .continuity
         .selected_capabilities
         .domain_selected(STATE_DOMAIN_WORLD_OBJECT_OVERLAY);
+    note_admission_phase("world_object_overlay");
     let overlay = authority.observe_world_object_overlay().await;
     match (&overlay, admitted.continuity.overlay_revision) {
         // Overlay state for a session with 18 has no domain 17 form: fail closed rather than
@@ -57,6 +59,9 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         _ => {}
     }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
+    note_admission_phase("actor_vitals");
+    #[cfg(test)]
+    before_join_phase("actor_vitals").await;
     let vitals = authority
         .observe_vitals(actor, admitted.game_session_id)
         .await;
@@ -170,6 +175,9 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
             payload,
         });
     }
+    note_admission_phase("spell_catalog");
+    #[cfg(test)]
+    before_join_phase("spell_catalog").await;
     let spell_catalog =
         super::spell_catalog::SessionCatalog::initial(authority, actor, admitted, domains)
             .await
@@ -531,6 +539,9 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
         .selected_capabilities
         .domain_selected(oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES)
     {
+        note_admission_phase("expert_fight_modes");
+        #[cfg(test)]
+        before_join_phase("expert_fight_modes").await;
         let state = authority
             .observe_expert_modes(actor, admitted.game_session_id)
             .await

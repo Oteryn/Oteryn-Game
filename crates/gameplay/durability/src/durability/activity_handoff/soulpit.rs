@@ -112,7 +112,7 @@ impl ActivityHandoffOwner {
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        let rows = self.root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
@@ -138,17 +138,20 @@ impl ActivityHandoffOwner {
                 .bind(world.as_bytes().as_slice()).bind(SOULPIT_ACTIVITY_KEY)
                 .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
                 .bind(after.as_ref().map(|id| id.as_slice())).fetch_all(&mut *tx).await?;
-            let mut result = Vec::with_capacity(rows.len());
-            for row in rows {
-                let scope = RuntimeScopeRefV1::instance(world, bytes16(row.try_get("instance")?)?).map_err(|_| DurabilityError::InvalidStoredState)?;
-                let generation = ScopeOwnershipGeneration::new(parse_u64(row.try_get("generation")?)?).map_err(|_| DurabilityError::InvalidStoredState)?;
-                if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
-                    return Err(DurabilityError::Unavailable);
-                }
-                result.push(SoulpitBinding { handoff_id: bytes16(row.try_get("handoff")?)?, scope, generation });
-            }
-            Ok(result)
-        })).await
+            // The history and incarnation above, and this query's locked
+            // assignment and ready-guard rows, already prove the page.
+            tx.rollback().await?;
+            Ok(rows)
+        })).await?;
+        rows.into_iter()
+            .map(|row| {
+                let scope = RuntimeScopeRefV1::instance(world, bytes16(row.try_get("instance")?)?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                let generation = ScopeOwnershipGeneration::new(parse_u64(row.try_get("generation")?)?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                Ok(SoulpitBinding { handoff_id: bytes16(row.try_get("handoff")?)?, scope, generation })
+            })
+            .collect()
     }
 
     pub async fn soulpit_members(

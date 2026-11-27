@@ -39,8 +39,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }
-    fn report_join_holder_timeout(&self, phase: &'static str, cause: &'static str) {
-        self.root.report_holder_wait_timeout(phase, cause);
+    fn report_join_holder_timeout(
+        &self,
+        phase: &'static str,
+        cause: &'static str,
+    ) -> Option<&'static std::panic::Location<'static>> {
+        self.root.report_holder_wait_timeout(phase, cause)
     }
 
     #[cfg(test)]

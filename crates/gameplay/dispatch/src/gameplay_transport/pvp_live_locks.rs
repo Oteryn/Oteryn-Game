@@ -64,11 +64,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::{
             DurabilityError, character_progression::CharacterProgressionError,
         };
-        let Ok(budget) =
-            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
-        else {
-            return false;
-        };
+        let budget = crate::gameplay_transport::AdmissionRetryBudget::for_join_read(
+            self.root,
+            "pvp_refresh",
+        );
         let Ok((fence, stored, house_scope)) = budget
             .retry_durability("pvp_refresh", async || {
                 let fence = self
