@@ -116,11 +116,6 @@ where
             RejectionStage::Throttled.log(command.command_id);
         }
         let mut dispatch = integrity::refusal(session, command.command_type);
-        session.sequence = session
-            .sequence
-            .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
-        session.admitted.continuity.server_sequence = session.sequence;
         let result = result::encode(session, command, &mut dispatch)?;
         return outbound::finish(
             stream,
@@ -361,7 +356,7 @@ where
         match walked {
             autowalk::WalkOutcome::Arrived if input_permit.is_some() => {
                 // The walk already published its steps. Only relocation by the retried USE
-                // needs another spatial update after its result.
+                // needs a spatial update before its result.
                 if before_use.is_some() {
                     before_use = authority.observe(session.actor).await;
                 }
@@ -408,11 +403,6 @@ where
     if matches!(dispatch, Dispatch::Vip(None)) {
         return Err(ServeEnd::Disconnected);
     }
-    let Some(result_sequence) = session.sequence.checked_add(1) else {
-        return Err(ServeEnd::Disconnected);
-    };
-    session.sequence = result_sequence;
-    session.admitted.continuity.server_sequence = session.sequence;
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
     // Encode a typed refusal without running STEP or CHAT post-dispatch effects.
