@@ -148,6 +148,7 @@ fn scenario() -> TestResult {
                     context: policy.context.clone(),
                     xp_occurrence: id(183),
                     build_occurrence: id(184),
+                    magic_seed: None,
                 },
                 policy,
             )
