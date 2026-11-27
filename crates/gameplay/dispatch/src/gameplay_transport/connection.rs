@@ -575,8 +575,9 @@ pub enum AccountAchievementsReply {
     /// `PAYLOAD_LIMIT_EXCEEDED` for a reply over its bounds, `ACCOUNT_DATA_INTEGRITY` for a fact
     /// under a key the catalogue lacks.
     Terminal(FoundationProtocolError),
-    /// No controller, a malformed query, unreadable storage or a malformed row: `REJECTED`, no
-    /// rows, no code.
+    /// The account read could not complete. The existing wire has no storage-unavailable status.
+    Unavailable,
+    /// No controller, an authority refusal, a malformed query or row: `REJECTED`, no rows or code.
     Rejected,
 }
 

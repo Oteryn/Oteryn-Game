@@ -85,16 +85,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         request: AccountAchievementsRequest,
     ) -> AccountAchievementsReply {
+        use crate::durability::{
+            DurabilityError, account_achievement::AccountAchievementReadError,
+        };
+
+        // This query reads committed account facts directly. The holder is
+        // shared with reconnect and with background reads; checkout can fail
+        // before any SQL or authority decision has happened.
+        let budget = AdmissionRetryBudget::for_command(self.root);
         let limit = self.achievements.len().saturating_add(1);
-        match self
-            .root
-            .read_account_achievements(self.character, request.account_id, limit)
-            .await
-        {
-            Ok(facts) => {
-                account_achievements_reply(self.achievements, &facts, &request, &mut operator_event)
+        loop {
+            match self
+                .root
+                .read_account_achievements(self.character, request.account_id, limit)
+                .await
+            {
+                Ok(facts) => {
+                    return account_achievements_reply(
+                        self.achievements,
+                        &facts,
+                        &request,
+                        &mut operator_event,
+                    );
+                }
+                Err(AccountAchievementReadError::Unavailable(DurabilityError::RootUnavailable)) => {
+                    if !budget.retries_holder_checkout().await {
+                        operator_event(
+                            "event=achievement_page_read_failed kind=holder_unavailable",
+                        );
+                        return AccountAchievementsReply::Unavailable;
+                    }
+                }
+                Err(AccountAchievementReadError::AuthorityRejected) => {
+                    operator_event("event=achievement_page_read_failed kind=authority_rejected");
+                    return AccountAchievementsReply::Rejected;
+                }
+                Err(AccountAchievementReadError::Unavailable(error)) => {
+                    operator_event(match error {
+                        DurabilityError::RootPassDeadlineExceeded
+                        | DurabilityError::CommitTransactionTimeout => {
+                            "event=achievement_page_read_failed kind=deadline"
+                        }
+                        DurabilityError::InvalidStoredState => {
+                            "event=achievement_page_read_failed kind=invalid_state"
+                        }
+                        _ => "event=achievement_page_read_failed kind=storage_unavailable",
+                    });
+                    return AccountAchievementsReply::Unavailable;
+                }
             }
-            Err(_) => AccountAchievementsReply::Rejected,
         }
     }
 }

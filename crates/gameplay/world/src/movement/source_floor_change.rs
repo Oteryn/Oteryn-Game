@@ -1106,7 +1106,7 @@ pub async fn collect_current_source_step<'room>(
             let transaction_id: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
                 .fetch_one(&mut **tx)
                 .await
-                .map_err(|_| MovementError::NotQualified)?;
+                .map_err(|_| MovementError::FieldAuthorityUnavailable)?;
             return Ok(PreparedCurrentSourceStep {
                 cells,
                 actor,
@@ -1138,7 +1138,16 @@ pub async fn collect_current_source_step<'room>(
             actor,
         )
         .await
-        .map_err(|_| MovementError::NotQualified)?;
+        .map_err(|error| match error {
+            crate::durability::spell_item_transaction::SpellItemError::Durability(
+                crate::durability::DurabilityError::RootUnavailable,
+            ) => MovementError::HolderUnavailable,
+            crate::durability::spell_item_transaction::SpellItemError::Database(_)
+            | crate::durability::spell_item_transaction::SpellItemError::Durability(_) => {
+                MovementError::FieldAuthorityUnavailable
+            }
+            _ => MovementError::NotQualified,
+        })?;
         let logical = LogicalCell {
             x: position.x,
             y: position.y,

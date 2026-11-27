@@ -103,6 +103,34 @@ fn nbroute_field_step_busy_holder_postgres() -> TestResult {
 }
 
 #[test]
+fn p11_single_step_waits_for_late_holder_return_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            run(async |_| {
+                field_scenario(
+                    admin,
+                    3188,
+                    1,
+                    2118,
+                    true,
+                    false,
+                    false,
+                    Scenario::HolderBusyLateReturn,
+                )
+                .await
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "P11 field STEP scenario panicked")??;
+    Ok(())
+}
+
+#[test]
 fn field_runes_postgres_player_contact_ticks_and_incidental_skull() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -302,6 +330,7 @@ fn destroy_scenario(scenario: Scenario) -> bool {
 enum Scenario {
     Ordinary,
     HolderBusy,
+    HolderBusyLateReturn,
     DestroyField,
     DestroyFar,
     DestroyBlocked,
@@ -2772,7 +2801,10 @@ async fn drive_player_field(
             )
             .map_err(debug)?;
     }
-    if scenario == Scenario::HolderBusy {
+    if matches!(
+        scenario,
+        Scenario::HolderBusy | Scenario::HolderBusyLateReturn
+    ) {
         use std::time::{Duration, Instant};
         let mut permit = owner.spell_lane_permit().await.ok_or("field lane")?;
         let origin = owner
@@ -2781,59 +2813,81 @@ async fn drive_player_field(
             .await
             .read_actor_position(target)
             .map_err(debug)?;
-        // Retain checkout for the entire command budget. No SQL transaction is
-        // open while waiting and neither Channel guard is held.
-        let held = owner.root.try_issue_semantic_pass()?;
-        let started = Instant::now();
-        let unavailable = owner.acquire_field_step_pass().await;
-        assert!(
-            matches!(
-                unavailable,
-                Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)
-            ),
-            "persistent contention must refuse"
-        );
-        assert!(
-            started.elapsed() >= Duration::from_millis(500),
-            "command retry budget executed"
-        );
-        {
-            let mut runtime = owner.runtime.lock().await;
-            let mut states = owner.states.spell_states.lock().await;
-            let blocking = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
-            let now = owner.owner_now().get();
-            let result = owner
-                .step_with_field_ingress(
-                    &mut permit,
+        if scenario == Scenario::HolderBusy {
+            // Retain checkout for the entire command budget. No SQL transaction is
+            // open while waiting and neither Channel guard is held.
+            let held = owner.root.try_issue_semantic_pass()?;
+            let started = Instant::now();
+            let unavailable = owner.acquire_field_step_pass().await;
+            assert!(
+                matches!(
                     unavailable,
-                    &mut runtime,
-                    &mut states,
-                    target,
-                    session,
-                    now,
-                    crate::movement::CardinalStep::West,
-                    &blocking,
-                    None,
-                )
-                .await;
-            assert!(matches!(
-                result,
-                Err(crate::movement::MovementError::NotQualified)
-            ));
-            assert_eq!(runtime.read_actor_position(target).map_err(debug)?, origin);
+                    Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)
+                ),
+                "persistent contention must refuse"
+            );
+            assert!(
+                started.elapsed() >= Duration::from_millis(500),
+                "command retry budget executed"
+            );
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let blocking = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
+                let now = owner.owner_now().get();
+                let result = owner
+                    .step_with_field_ingress(
+                        &mut permit,
+                        unavailable,
+                        &mut runtime,
+                        &mut states,
+                        target,
+                        session,
+                        now,
+                        crate::movement::CardinalStep::West,
+                        &blocking,
+                        None,
+                    )
+                    .await;
+                assert!(matches!(
+                    result,
+                    Err(crate::movement::MovementError::HolderUnavailable)
+                ));
+                assert_eq!(runtime.read_actor_position(target).map_err(debug)?, origin);
+            }
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         }
-        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         let held = owner.root.try_issue_semantic_pass()?;
         // Poll checkout once while occupied, then release on that observation.
         // This condition-driven handshake makes the regression red without relying
         // on a guessed sleep, and proves both Channel locks remain available.
-        let pass = owner.acquire_field_step_pass();
-        tokio::pin!(pass);
+        let late = scenario == Scenario::HolderBusyLateReturn;
+        if late {
+            tokio::time::pause();
+        }
+        let mut pass = std::pin::pin!(owner.acquire_field_step_pass());
         let polled = std::future::poll_fn(|cx| {
             std::task::Poll::Ready(std::future::Future::poll(pass.as_mut(), cx))
         })
         .await;
         assert!(polled.is_pending(), "busy field checkout must wait");
+        if late {
+            // The old loop gave up here because its whole next backoff did not
+            // fit. The existing command deadline still has 150 ms left.
+            tokio::time::advance(
+                crate::gameplay_transport::COMMAND_HOLDER_WINDOW - Duration::from_millis(150),
+            )
+            .await;
+            let polled = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(pass.as_mut(), cx))
+            })
+            .await;
+            tokio::time::resume();
+            assert!(
+                polled.is_pending(),
+                "checkout must wait within the remaining budget"
+            );
+        }
         assert!(owner.runtime.try_lock().is_ok());
         assert!(owner.states.spell_states.try_lock().is_ok());
         held.run(|_, _| Box::pin(async { Ok(()) })).await?;
@@ -2857,8 +2911,16 @@ async fn drive_player_field(
             )
             .await;
         assert!(result.is_ok(), "released holder must move: {result:?}");
-        assert_ne!(runtime.read_actor_position(target).map_err(debug)?, origin);
-        eprintln!("NBROUTE-3 executed persistent rejection and released-holder field STEP");
+        let position = runtime.read_actor_position(target).map_err(debug)?;
+        assert_ne!(position, origin);
+        if late {
+            assert_eq!(position.position().x, origin.position().x - 1);
+            assert_eq!(position.position().y, origin.position().y);
+            assert_eq!(position.position().floor, origin.position().floor);
+            eprintln!("P11 executed one field STEP after the late holder handoff");
+        } else {
+            eprintln!("NBROUTE-3 executed persistent rejection and released-holder field STEP");
+        }
         return Ok(());
     }
     let original = player_health(owner, target, session).await?;
