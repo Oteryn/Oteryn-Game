@@ -121,30 +121,16 @@ fn visible(client: &DevClientSession, target: oteryn_dev_client::EntityRef) -> b
         .world_entities()
         .is_some_and(|entities| entities.iter().any(|e| e.entity == target))
 }
-fn damage_sequence(client: &mut DevClientSession, rat: oteryn_dev_client::EntityRef) -> u64 {
+fn rat_damage(client: &mut DevClientSession, rat: oteryn_dev_client::EntityRef) -> Option<(u64, u32)> {
     use oteryn_protocol_oteryn::analyser::{AnalyserDamageSource, AnalyserFact};
-    client
-        .take_events()
-        .into_iter()
-        .filter_map(|event| match event {
-            SessionEvent::AnalyserAttributedFacts(delta)
-                if delta.value.iter().any(|event| {
-                    event.attacker == Some(rat)
-                        && matches!(
-                            event.fact,
-                            AnalyserFact::DamageInput {
-                                source: AnalyserDamageSource::Creature(_),
-                                ..
-                            }
-                        )
-                }) =>
-            {
-                Some(delta.server_sequence)
-            }
+    client.take_events().into_iter().find_map(|event| {
+        let SessionEvent::AnalyserAttributedFacts(delta) = event else { return None };
+        delta.value.iter().find_map(|event| match event.fact {
+            AnalyserFact::DamageInput { value, source: AnalyserDamageSource::Creature(_), .. }
+                if event.attacker == Some(rat) => Some((delta.server_sequence, value.get())),
             _ => None,
         })
-        .max()
-        .unwrap_or(0)
+    })
 }
 pub(super) async fn wait_visible(
     client: &mut DevClientSession,
@@ -239,6 +225,18 @@ pub(super) async fn seeded_caster(
     tag: u8,
     spell: &crate::spell::SpellDefinition,
 ) -> TestResult<DevClientSession> {
+    prepare_caster(clients, row, tag, spell, None).await
+}
+
+const SPEAR: u32 = 3277;
+
+async fn prepare_caster(
+    clients: &SeamClients<'_>,
+    row: &str,
+    tag: u8,
+    spell: &crate::spell::SpellDefinition,
+    weapon: Option<u32>,
+) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(row, "sorcerer-level-35", "Invisibility cast prerequisites");
     let mut initial = connect_character(clients, tag, 0).await?;
     let previous = initial.join_snapshot().game_session_id;
@@ -248,6 +246,9 @@ pub(super) async fn seeded_caster(
         "c17b-sorcerer".into(),
     )
     .await?;
+    if let Some(id) = weapon {
+        character_prep::grant_item(&initial, id, 1).await?;
+    }
     logout(&mut initial).await?;
     drop(initial);
     let mut caster = connect_character(clients, tag, 0).await?;
@@ -549,6 +550,20 @@ fn in_return_search(at: TilePos, from: TilePos) -> bool {
 pub(super) async fn place_rat(
     caster: &mut DevClientSession,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    if caster.inventory().is_none_or(|inventory| !inventory.equipment.is_empty()) {
+        return Err("FIXTURE C17b requires a caster with empty equipment slots".into());
+    }
+    let defence = read_defence(caster).await?;
+    spawn_rat(caster, defence).await
+}
+
+struct Defence {
+    armour: i64,
+    total: Option<i64>,
+    equipment: Option<i64>,
+}
+
+async fn read_defence(caster: &mut DevClientSession) -> TestResult<Defence> {
     use oteryn_dev_client::client_ui::cyclopedia_character::{
         CyclopediaCharacterPanel, Intent, request,
     };
@@ -556,9 +571,6 @@ pub(super) async fn place_rat(
         CharacterTab,
         combat::{CombatStat, CombatStats},
     };
-    if caster.inventory().is_none_or(|inventory| !inventory.equipment.is_empty()) {
-        return Err("FIXTURE C17b requires a caster with empty equipment slots".into());
-    }
     let mut panel = CyclopediaCharacterPanel {
         selected: true,
         tab: CharacterTab::Defence,
@@ -569,18 +581,32 @@ pub(super) async fn place_rat(
         .session_mut()
         .gated_command(command.capability, command.kind, &command.payload)
         .await?;
-    require_mechanic_acceptance(reply.status, "FIXTURE C17b defence tab")?;
+    let receipt = format!(
+        "FIXTURE C17b defence tab status={:?} command={} sequence={} payload_bytes={}",
+        reply.status, reply.command_id, reply.server_sequence, reply.payload.len()
+    );
+    evidence(&receipt);
+    require_mechanic_acceptance(reply.status, &receipt)?;
     let stats = CombatStats::decode(&reply.payload)
         .map_err(|error| format!("C17b defence tab decode: {error:?}"))?;
     if stats.tab() != CharacterTab::Defence {
         return Err(format!("C17b expected defence tab, received {:?}", stats.tab()).into());
     }
-    let armor = stats.get(CombatStat::Armor).ok_or("C17b armour stat absent")?;
-    let defence = stats.get(CombatStat::DefenceTotal);
-    let equipment_defence = stats.get(CombatStat::DefenceEquipment);
-    if armor != 0 {
-        return Err(format!("FIXTURE C17b unarmoured caster has armour={armor}").into());
+    let armour = stats.get(CombatStat::Armor).ok_or("C17b armour stat absent")?;
+    if armour != 0 {
+        return Err(format!("FIXTURE C17b unarmoured caster has armour={armour}").into());
     }
+    Ok(Defence {
+        armour,
+        total: stats.get(CombatStat::DefenceTotal),
+        equipment: stats.get(CombatStat::DefenceEquipment),
+    })
+}
+
+async fn spawn_rat(
+    caster: &DevClientSession,
+    Defence { armour, total, equipment }: Defence,
+) -> TestResult<oteryn_dev_client::EntityRef> {
     let caster_site = tile(caster.world_spatial().actor_position)?;
     let placement = request_spawn(
         uuid_text(caster.join_snapshot().game_session_id.as_bytes()),
@@ -590,7 +616,7 @@ pub(super) async fn place_rat(
     .map_err(|error| format!("FIXTURE_PLACEMENT C17b Rat failed: {error}"))?;
     let rat = parse_spawned_entity(&placement)?;
     evidence(&format!(
-        "FIXTURE_PLACEMENT C17b caster={caster_site:?} rat={rat:?} armour={armor} defence={defence:?} equipment_defence={equipment_defence:?}"
+        "FIXTURE_PLACEMENT C17b caster={caster_site:?} rat={rat:?} armour={armour} defence={total:?} equipment_defence={equipment:?}"
     ));
     Ok(rat)
 }
@@ -612,7 +638,7 @@ pub(super) async fn wait_for_rat_hit(
         .ok_or("C17b visible caster vitals absent")?
         .health;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    let mut damage = 0;
+    let mut damage = None;
     let mut saw_adjacent = false;
     let wire = oteryn_dev_client::native_session::test_support::WireCapture::default();
     loop {
@@ -631,16 +657,19 @@ pub(super) async fn wait_for_rat_hit(
                     .max(at.y.abs_diff(caster_tile.y))
                     == 1
         });
-        damage = damage.max(damage_sequence(caster, rat));
+        if let Some(hit) = rat_damage(caster, rat) {
+            damage.get_or_insert(hit);
+        }
         let health = caster
             .actor_vitals()
             .ok_or("C17b visible caster vitals absent")?
             .health;
-        if saw_adjacent && damage != 0 && health < visible_health {
+        if let Some((sequence, amount)) = damage
+            && saw_adjacent && visible_health.checked_sub(health) == Some(amount) {
             evidence(&format!(
-                "FIXTURE C17b attributed_rat_damage sequence={damage} health_before={visible_health} health_after={health}"
+                "FIXTURE C17b attributed_rat_damage sequence={sequence} damage={amount} health_before={visible_health} health_after={health}"
             ));
-            return Ok(damage);
+            return Ok(sequence);
         }
         if tokio::time::Instant::now() >= deadline {
             let (received, _) = wire.take();
@@ -660,7 +689,7 @@ pub(super) async fn wait_for_rat_hit(
                     "C17B_RAT_LAST_ANALYSER_FRAME sequence={sequence} frame={hex}"
                 ));
             }
-            return Err(format!("FIXTURE_PLACEMENT C17b Rat timeout exact_rat={rat:?} last_tile={rat_tile:?} saw_adjacent={saw_adjacent} attributed_hit={damage} health_before={visible_health} health_after={health}").into());
+            return Err(format!("FIXTURE_PLACEMENT C17b Rat timeout exact_rat={rat:?} last_tile={rat_tile:?} saw_adjacent={saw_adjacent} attributed_hit={damage:?} health_before={visible_health} health_after={health}").into());
         }
     }
 }
@@ -676,7 +705,7 @@ pub(super) async fn require_rat_stops(
     let no_damage_until = tokio::time::Instant::now() + Duration::from_secs(3);
     while tokio::time::Instant::now() < no_damage_until {
         caster.service_liveness(Duration::from_millis(100)).await?;
-        if damage_sequence(caster, rat) != 0
+        if rat_damage(caster, rat).is_some()
             || caster
                 .actor_vitals()
                 .is_none_or(|vitals| vitals.health < hidden_health)
@@ -685,6 +714,41 @@ pub(super) async fn require_rat_stops(
         }
     }
     Ok(())
+}
+
+// The full-row caster wears no armour or shield. A plain spear replaces
+// fist defence with zero without changing the Rat or its damage rolls.
+async fn full_caster_loadout(caster: &mut DevClientSession) -> TestResult<Defence> {
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+    let spear = provisioning::item_reference(&provisioning::item_index()?, SPEAR)?;
+    let source = caster.inventory()
+        .and_then(|inventory| inventory.entries.iter().find(|item| item.item_definition_ref == spear))
+        .ok_or("FIXTURE C17b spear absent after admission")?.handle;
+    let result = caster.move_item(&ItemMoveIntent {
+        source,
+        destination: ItemMoveDestination::Equipment(EquipmentSlot::RightHand),
+    }).await?;
+    if result.outcome != ItemMoveOutcome::Moved {
+        return Err(format!("FIXTURE C17b spear equip refused: {result:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if caster.inventory().is_some_and(|inventory| {
+            matches!(inventory.equipment.as_slice(), [entry]
+                if entry.slot == EquipmentSlot::RightHand && entry.item.item_definition_ref == spear)
+        }) {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("FIXTURE C17b expected only the spear in the right hand".into());
+        }
+        caster.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let defence = read_defence(caster).await?;
+    if defence.total != Some(0) || defence.equipment != Some(0) {
+        return Err(format!("FIXTURE C17b spear defence total={:?} equipment={:?}", defence.total, defence.equipment).into());
+    }
+    Ok(defence)
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -710,15 +774,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if cost != 440 {
         return Err(format!("C17b served mana cost={cost} expected=440 per Global Tibia").into());
     }
-    let mut caster = seeded_caster(&caster_clients, "C17b.full", 0xb1, spell)
+    let mut caster = prepare_caster(&caster_clients, "C17b.full", 0xb1, spell, Some(SPEAR))
         .await
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
+    let defence = full_caster_loadout(&mut caster).await?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
     let staging = Staging::new(world, &metadata.spawns);
     let capture = oteryn_dev_client::native_session::test_support::WireCapture::default();
     staging.encounter(&mut caster, &mut observer, &capture).await?;
     drop(capture);
-    let rat = place_rat(&mut caster).await?;
+    let rat = spawn_rat(&caster, defence).await?;
     let caster_ref = own(&caster)?;
     let pre_damage =
         provisioning::with_peer_liveness(&mut observer, wait_for_rat_hit(&mut caster, rat)).await?;
