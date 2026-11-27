@@ -259,7 +259,54 @@ fn verify_rendered_shop(text: &str, reply: &Reply) -> Result<(), Error> {
             offer.index + 1, offer.primary, offer.secondary, offer.addon, offer.price)
     }).collect::<String>();
     if shop != expected {
-        return Err("P04 rendered shop differs from the authored offer sequence".into());
+        let mismatch = shop
+            .lines()
+            .zip(expected.lines())
+            .find(|(actual, wanted)| actual != wanted);
+        return Err(match mismatch {
+            Some((actual, wanted)) => format!("P04 shop expected {wanted:?}, rendered {actual:?}"),
+            None => format!(
+                "P04 shop expected {} lines, rendered {}",
+                expected.lines().count(),
+                shop.lines().count()
+            ),
+        }
+        .into());
+    }
+    Ok(())
+}
+
+fn verify_rendered_assignments(text: &str, reply: &Reply) -> Result<(), Error> {
+    let rendered = text
+        .lines()
+        .filter(|line| {
+            line.starts_with("Kill ") && !line.starts_with("Kill XP:")
+                || line.starts_with("Delivery ")
+        })
+        .collect::<Vec<_>>();
+    let kills = reply.weekly.kills.iter().enumerate().map(|(i, task)| {
+        let race = if task.race.is_empty() {
+            "Any creature".to_owned()
+        } else {
+            task.race
+                .strip_prefix("oteryn:creature.")
+                .unwrap_or(&task.race)
+                .replace('_', " ")
+        };
+        format!("Kill {}. {race}: {}/{}", i + 1, task.current, task.required)
+    });
+    let deliveries = reply.weekly.deliveries.iter().enumerate().map(|(i, task)| {
+        format!(
+            "Delivery {}. {}: {}/{}  delivered: {}",
+            i + 1,
+            task.item,
+            task.current,
+            task.required,
+            task.delivered
+        )
+    });
+    if !rendered.into_iter().eq(kills.chain(deliveries)) {
+        return Err("P04 Master assignment text differs from the captured assignments".into());
     }
     Ok(())
 }
@@ -313,6 +360,8 @@ fn verify_master_replay(
     assert_eq!(fresh.weekly.as_ref(), Some(active));
     assert!(!fresh.pending);
     assert!(fresh.feedback.is_none());
+    verify_rendered_assignments(&panel_text(&panel), active)?;
+    verify_rendered_assignments(&panel_text(&fresh), active)?;
     assert_eq!(panel_text(&fresh), panel_text(&panel));
     Ok(())
 }
@@ -406,6 +455,31 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
 #[test]
 fn p04_unit_projection_checks_rendering_and_invalid_results() -> Result<(), Error> {
     verify_replay(fixture()?)
+}
+
+#[test]
+fn p04_master_text_rejects_consistent_omission_and_misrendering() -> Result<(), Error> {
+    let mut board = task_board::full::decode_reply(&fixture()?.query.payload)
+        .map_err(|error| format!("{error:?}"))?;
+    board.weekly.kills.push(task_board::full::KillTask {
+        race: "oteryn:creature.demon".into(),
+        required: 300,
+        current: 0,
+    });
+    board
+        .weekly
+        .deliveries
+        .push(task_board::full::DeliveryTask {
+            item: 813,
+            required: 100,
+            current: 0,
+            delivered: false,
+        });
+    let expected = "Kill 1. demon: 0/300\nDelivery 1. 813: 0/100  delivered: false";
+    verify_rendered_assignments(expected, &board)?;
+    assert!(verify_rendered_assignments("Kill 1. demon: 0/300", &board).is_err());
+    assert!(verify_rendered_assignments(&expected.replace("0/100", "0/99"), &board).is_err());
+    Ok(())
 }
 
 #[test]

@@ -103,16 +103,18 @@ fn expected_shop() -> Vec<ShopOffer> {
         (23, 4, 0, 0, 0, 100),
     ]
     .into_iter()
-    .map(|(index, kind, primary, secondary, addon, price)| ShopOffer {
-        index,
-        kind,
-        primary,
-        secondary,
-        addon,
-        price,
-        bought: false,
-    })
-        .collect()
+    .map(
+        |(index, kind, primary, secondary, addon, price)| ShopOffer {
+            index,
+            kind,
+            primary,
+            secondary,
+            addon,
+            price,
+            bought: false,
+        },
+    )
+    .collect()
 }
 
 fn fresh_weekly() -> Weekly {
@@ -141,11 +143,13 @@ fn fresh_bounty() -> Bounty {
         daily_reroll_at: 0,
         offers: Vec::new(),
         active: None,
-        lists: (0..5).map(|i| ListSlot {
-            unlocked: i == 0,
-            preferred: String::new(),
-            unwanted: String::new(),
-        }).collect(),
+        lists: (0..5)
+            .map(|i| ListSlot {
+                unlocked: i == 0,
+                preferred: String::new(),
+                unwanted: String::new(),
+            })
+            .collect(),
     }
 }
 
@@ -197,11 +201,29 @@ fn verify_start(before: &Reply, reply: &Reply, level: u32) -> TestResult {
                 && (week.pending_points, week.pending_soulseals) == (0, 0)
                 && (any.race.as_str(), any.required, any.current) == ("", 4000, 0)
                 && kills.len() == 5
-                && kills.iter().all(|task| !task.race.is_empty() && (300..=600).contains(&task.required) && task.current == 0)
-                && kills.iter().map(|task| &task.race).collect::<std::collections::BTreeSet<_>>().len() == 5
+                && kills.iter().all(|task| {
+                    !task.race.is_empty()
+                        && (300..=600).contains(&task.required)
+                        && task.current == 0
+                })
+                && kills
+                    .iter()
+                    .map(|task| &task.race)
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len()
+                    == 5
                 && week.deliveries.len() == 6
-                && week.deliveries.iter().all(|task| task.item != 0 && task.required > 0 && !task.delivered)
-                && week.deliveries.iter().map(|task| task.item).collect::<std::collections::BTreeSet<_>>().len() == 6
+                && week
+                    .deliveries
+                    .iter()
+                    .all(|task| task.item != 0 && task.required > 0 && !task.delivered)
+                && week
+                    .deliveries
+                    .iter()
+                    .map(|task| task.item)
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len()
+                    == 6
         }
         _ => false,
     };
@@ -254,7 +276,9 @@ async fn logout_released(
         return Err("P04 first logout was refused".into());
     }
     let acknowledged_at = i64::try_from(
-        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_micros()
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_micros(),
     )?;
     // Read once before dropping the transport or issuing a grant. The committing
     // transaction also cleared both guards. Its time must precede wire acceptance.
@@ -263,10 +287,116 @@ async fn logout_released(
 }
 
 fn verify_release(after: Release, acknowledged_at: i64) -> TestResult {
-    if !matches!(after, (3, false, true, Some(committed), false, false) if committed <= acknowledged_at) {
-        return Err(format!("P04 accepted logout without committed orderly release on first observation: {after:?}").into());
+    if !matches!(after, (3, false, true, Some(committed), false, false) if committed <= acknowledged_at)
+    {
+        return Err(format!(
+            "P04 accepted logout without committed orderly release on first observation: {after:?}"
+        )
+        .into());
     }
     Ok(())
+}
+
+struct MasterCatalogue {
+    races: std::collections::BTreeSet<String>,
+    amounts: std::collections::BTreeMap<u32, (u32, u32)>,
+}
+
+impl MasterCatalogue {
+    fn load() -> TestResult<Self> {
+        use oteryn_gameplay_content::content::{
+            ProjectV2AuthoringProfileData, native_gameplay::CreatureProfilesDocument,
+        };
+        let pinned = native_input()?;
+        let source: CreatureProfilesDocument =
+            serde_json::from_slice(&pinned.creature_profiles.bytes)?;
+        let races = source
+            .records
+            .into_iter()
+            .filter_map(|record| {
+                let ProjectV2AuthoringProfileData::Creature(profile) = record.profile.data else {
+                    return None;
+                };
+                let details = profile.details?;
+                let bestiary = profile.bestiary?;
+                let master = details
+                    .bestiary
+                    .as_ref()
+                    .and_then(|value| value.stars)
+                    .map_or(
+                        matches!(bestiary.difficulty.as_str(), "hard" | "challenging"),
+                        |stars| stars >= 4,
+                    );
+                (master
+                    && profile.experience.unwrap_or(0) > 0
+                    && details.system_eligibility.prey
+                    && !details.system_eligibility.exclusive_prey
+                    && record.profile.target.key.starts_with("oteryn:creature."))
+                .then_some(record.profile.target.key)
+            })
+            .collect();
+        let amounts = include_str!("p04_master_delivery_oracle.txt")
+            .lines()
+            .filter(|line| !line.starts_with('#'))
+            .map(|line| -> TestResult<_> {
+                let mut fields = line.split(',');
+                let mut number = || -> TestResult<u32> {
+                    Ok(fields
+                        .next()
+                        .ok_or("incomplete P04 delivery oracle")?
+                        .parse()?)
+                };
+                Ok((number()?, (number()?, number()?)))
+            })
+            .collect::<Result<_, _>>()?;
+        Ok(Self { races, amounts })
+    }
+
+    fn verify(
+        &self,
+        week: &Weekly,
+        available: &std::collections::BTreeMap<u32, u32>,
+    ) -> TestResult {
+        for kill in week.kills.iter().filter(|kill| !kill.race.is_empty()) {
+            if !self.races.contains(&kill.race) {
+                return Err(format!("P04 Master ineligible creature assignment: {kill:?}").into());
+            }
+        }
+        for delivery in &week.deliveries {
+            let expected = self.amounts.get(&delivery.item);
+            let current = available.get(&delivery.item).copied().unwrap_or(0);
+            if !expected.is_some_and(|&(min, max)| (min..=max).contains(&delivery.required))
+                || delivery.current != current
+            {
+                return Err(format!("P04 Master delivery outside authored eligibility: {delivery:?}; expected amount={expected:?} carried={current}").into());
+            }
+        }
+        Ok(())
+    }
+}
+
+fn seeded_carried(client: &DevClientSession) -> TestResult<std::collections::BTreeMap<u32, u32>> {
+    let inventory = client.inventory().ok_or("P04 seed inventory absent")?;
+    let index = provisioning::item_index()?;
+    let mut amounts = std::collections::BTreeMap::<u32, u32>::new();
+    // Fresh accounts enter with a starter backpack and no prior stash, depot or nested bags.
+    for item in inventory
+        .entries
+        .iter()
+        .chain(inventory.main_backpack.iter())
+        .chain(inventory.equipment.iter().map(|slot| &slot.item))
+    {
+        let (key, _) = index
+            .definition_at(item.item_definition_ref)
+            .ok_or("P04 carried reference absent")?;
+        if let Some(id) = key.strip_prefix("oteryn:item.tibia.i") {
+            let total = amounts.entry(id.parse()?).or_default();
+            *total = total
+                .checked_add(item.count.get())
+                .ok_or("P04 inventory quantity overflow")?;
+        }
+    }
+    Ok(amounts)
 }
 
 struct Boundary {
@@ -285,24 +415,63 @@ async fn verify_boundary(
 ) -> TestResult<String> {
     let identity = character_prep::dedicated_character(scope, case.account).await?;
     let clients = identity.clients(scope);
-    let mut client = character_prep::Seeded {
-        profile: case.profile,
-        reason: "Global Master eligibility at level 400",
-    }.connect(&clients, 0x26, 0).await?;
+    let mut setup = connect_character_once(&clients, 0x26, 0).await?;
+    let setup_session = setup.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(setup_session.as_bytes()),
+        "--profile",
+        case.profile.into(),
+    )
+    .await?;
+    logout_released(&mut setup, database).await?;
+    drop(setup);
+    let mut client = connect_character_once(&clients, 0x26, 0).await?;
+    if client.join_snapshot().game_session_id == setup_session {
+        return Err("P04 seed readmission reused the setup session".into());
+    }
     let (hp, mana, _) = oteryn_gameplay_characters::vitals::maxima(
-        "sorcerer", case.level, oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        "sorcerer",
+        case.level,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
         oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
-    ).ok_or("P04 fixture maxima")?;
+    )
+    .ok_or("P04 fixture maxima")?;
     if full_e2ef7::player_level(&mut client).await? != case.level
-        || !client.actor_vitals().is_some_and(|v| (v.max_health, v.max_mana) == (hp, mana))
+        || !client
+            .actor_vitals()
+            .is_some_and(|v| (v.max_health, v.max_mana) == (hp, mana))
     {
-        return Err(format!("P04 fixture did not admit at level {} with derived vitals", case.level).into());
+        return Err(format!(
+            "P04 fixture did not admit at level {} with derived vitals",
+            case.level
+        )
+        .into());
     }
     let session = client.join_snapshot().game_session_id;
     let (initial, query) = send(&mut client, 4, 0, case.files[0]).await?;
     verify_fresh_query(&initial, period, shop)?;
+    let available = if case.level == 400 {
+        if client
+            .selected_capabilities()
+            .contains(&task_board::task_board::full::CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1)
+        {
+            return Err(
+                "P04 authored delivery oracle requires legacy Task Board identifiers".into(),
+            );
+        }
+        Some(seeded_carried(&client)?)
+    } else {
+        None
+    };
     let (start, frame) = send(&mut client, 5, 3, case.files[1]).await?;
     verify_start(&initial, &start, case.level)?;
+    if let Some(available) = available {
+        MasterCatalogue::load()?.verify(&start.weekly, &available)?;
+        if seeded_carried(&client)? != available {
+            return Err("P04 Master start changed the delivery inventory".into());
+        }
+    }
     logout_released(&mut client, database).await?;
     drop(client);
     let mut fresh = connect_character_once(&clients, 0x27, 0).await?;
@@ -311,34 +480,74 @@ async fn verify_boundary(
     let mut expected_after = start;
     expected_after.refusal = 0;
     if readmission == session || after != expected_after {
-        return Err(format!("P04 Master board at level {} changed after relog", case.level).into());
+        return Err(format!(
+            "P04 Master board at level {} changed after relog",
+            case.level
+        )
+        .into());
     }
     logout_released(&mut fresh, database).await?;
-    Ok(format!("{},{},{},{},{},{},{},{}",
-        uuid_text(session.as_bytes()), uuid_text(readmission.as_bytes()),
-        query.command_id, query.server_sequence, frame.command_id, frame.server_sequence,
-        after_frame.command_id, after_frame.server_sequence))
+    Ok(format!(
+        "{},{},{},{},{},{},{},{}",
+        uuid_text(session.as_bytes()),
+        uuid_text(readmission.as_bytes()),
+        query.command_id,
+        query.server_sequence,
+        frame.command_id,
+        frame.server_sequence,
+        after_frame.command_id,
+        after_frame.server_sequence
+    ))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // Global Weekly Tasks: https://www.tibiawiki.com.br/wiki/Weekly_Tasks
-    character_prep::declare_seeded("P04.client", "sorcerer-level-399,400", "Global Master boundary");
+    character_prep::declare_seeded(
+        "P04.client",
+        "sorcerer-level-399,400",
+        "Global Master boundary",
+    );
     let period = expected_period(clients).await?;
     let shop = expected_shop();
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let below = verify_boundary(clients, &mut database, period, &shop, Boundary {
-        level: 399, account: "NODE_BOOT_Q_P04_399_ACCOUNT", profile: "p04-master-399",
-        files: ["p04-query.json", "p04-refused.json", "p04-readmission.json"],
-    }).await?;
-    let at = verify_boundary(clients, &mut database, period, &shop, Boundary {
-        level: 400, account: "NODE_BOOT_Q_P04_400_ACCOUNT", profile: "p04-master-400",
-        files: ["p04-master-query.json", "p04-master-start.json", "p04-master-readmission.json"],
-    }).await?;
+    let below = verify_boundary(
+        clients,
+        &mut database,
+        period,
+        &shop,
+        Boundary {
+            level: 399,
+            account: "NODE_BOOT_Q_P04_399_ACCOUNT",
+            profile: "p04-master-399",
+            files: ["p04-query.json", "p04-refused.json", "p04-readmission.json"],
+        },
+    )
+    .await?;
+    let at = verify_boundary(
+        clients,
+        &mut database,
+        period,
+        &shop,
+        Boundary {
+            level: 400,
+            account: "NODE_BOOT_Q_P04_400_ACCOUNT",
+            profile: "p04-master-400",
+            files: [
+                "p04-master-query.json",
+                "p04-master-start.json",
+                "p04-master-readmission.json",
+            ],
+        },
+    )
+    .await?;
     let expected = format!(
         "period={period}\npoints=0\nbounty_points=0\nsoulseals=0\nstarted=false\nkills=0\ndeliveries=0\nshop_count=24\nrefusal=3\n"
     );
     capture("p04-expected.txt", expected.as_bytes())?;
-    Ok(format!("below={below};at={at};{}", expected.replace('\n', ";")))
+    Ok(format!(
+        "below={below};at={at};{}",
+        expected.replace('\n', ";")
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -396,6 +605,41 @@ mod tests {
             (3, false, true, Some(12), false, false),
         ] {
             assert!(verify_release(wrong, 11).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn p04_master_catalogue_rejects_unknown_creatures_wrong_quantities_and_progress() -> TestResult
+    {
+        let catalogue = MasterCatalogue {
+            races: ["oteryn:creature.demon".into()].into_iter().collect(),
+            amounts: [(813, (100, 200))].into_iter().collect(),
+        };
+        let mut week = fresh_weekly();
+        week.kills.push(KillTask {
+            race: "oteryn:creature.demon".into(),
+            required: 300,
+            current: 0,
+        });
+        week.deliveries.push(DeliveryTask {
+            item: 813,
+            required: 100,
+            current: 0,
+            delivered: false,
+        });
+        let available = std::collections::BTreeMap::new();
+        catalogue.verify(&week, &available)?;
+        for mutate in [
+            (|week: &mut Weekly| week.kills[0].race = "oteryn:creature.rat".into())
+                as fn(&mut Weekly),
+            |week| week.deliveries[0].item = 999_999,
+            |week| week.deliveries[0].required = 20,
+            |week| week.deliveries[0].current = 1,
+        ] {
+            let mut reply = week.clone();
+            mutate(&mut reply);
+            assert!(catalogue.verify(&reply, &available).is_err());
         }
         Ok(())
     }
