@@ -414,6 +414,12 @@ struct RefusedSourceDrop {
     reason: SourceDropRefusalReason,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(super) struct CapturedLethalHit {
+    pub(super) actor: oteryn_gameplay_entities::carrier::VisibleRuntimeActor,
+    pub(super) hit: super::world_spatial::LethalHit,
+}
+
 #[derive(Debug, Default)]
 struct KillQueueState {
     /// Advisory deduplication follows the already bounded, exact corpse projections.
@@ -428,7 +434,7 @@ struct KillQueueState {
     /// deaths whose original command may still replay. Pruned on every capture.
     death_clocks: Vec<(ExactActorRef, CapturedActivityDeath)>,
     // Publication has the same retention bound as the exact corpse projection.
-    lethal_hits: Vec<(ExactActorRef, super::world_spatial::LethalHit)>,
+    lethal_hits: Vec<CapturedLethalHit>,
     /// Same retained-projection bound as death_clocks; no uncommitted death is
     /// recovered across a lost scope incarnation (D52).
     tutorial_loot: Vec<(
@@ -1502,17 +1508,17 @@ impl KillSettlementQueue {
             if effect
                 .health
                 .is_some_and(|health| health.applied && health.health_after == 0)
-                && let Some((_, hit)) = state
+                && let Some(lethal) = state
                     .lethal_hits
                     .iter_mut()
-                    .find(|(actor, _)| *actor == effect.target)
+                    .find(|entry| entry.actor.actor == effect.target)
             {
-                hit.color = color;
+                lethal.hit.color = color;
             }
         }
     }
 
-    pub(super) fn lethal_hits(&self) -> Vec<(ExactActorRef, super::world_spatial::LethalHit)> {
+    pub(super) fn lethal_hits(&self) -> Vec<CapturedLethalHit> {
         self.state().lethal_hits.clone()
     }
 
@@ -2094,36 +2100,48 @@ pub fn record_creature_kill(
         .map(|identity| identity.firing_id);
     let daily_boost = runtime.daily_boost().cloned();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
-    let value = {
+    let (value, death_actor) = {
         let mut owner = runtime.borrow_combat_death();
         let Ok(projected) = crate::combat::project_fixed_one_creature_death(&mut owner, target)
         else {
             return;
         };
         // The lethal receipt's starting HP is exactly what the hit removed.
-        u64::try_from(projected.occurrence().health_before())
-            .ok()
-            .and_then(std::num::NonZeroU64::new)
+        (
+            u64::try_from(projected.occurrence().health_before())
+                .ok()
+                .and_then(std::num::NonZeroU64::new),
+            oteryn_gameplay_entities::carrier::VisibleRuntimeActor {
+                actor: target,
+                generation: target.actor_local_generation(),
+                position: projected.position(),
+                revision: projected.position_revision(),
+            },
+        )
     };
     if let Some(value) = value {
         let mut state = sink.queue.state();
         state
             .lethal_hits
-            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
-        if !state.lethal_hits.iter().any(|(actor, _)| *actor == target) {
+            .retain(|entry| runtime.retains_corpse_projection(entry.actor.actor));
+        if !state
+            .lethal_hits
+            .iter()
+            .any(|entry| entry.actor.actor == target)
+        {
             let entity = |actor: ExactActorRef| super::world_spatial::EntityRef {
                 identity: actor.placement_identity(),
                 generation: actor.actor_local_generation(),
             };
-            state.lethal_hits.push((
-                target,
-                super::world_spatial::LethalHit {
+            state.lethal_hits.push(CapturedLethalHit {
+                actor: death_actor,
+                hit: super::world_spatial::LethalHit {
                     target: entity(target),
                     attacker: entity(lethal.actor),
                     value,
                     color: oteryn_protocol_oteryn::presentation::PresentationColor::Red,
                 },
-            ));
+            });
         }
     }
     if let Some(boss) = defeated {

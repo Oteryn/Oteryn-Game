@@ -423,7 +423,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3152 | 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 17512,
+                        item: 3152 | 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 3203 | 17512,
                         ..
                     }
                 )
@@ -535,17 +535,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .pending_native
                     .iter()
-                    .find(|marker| marker.is_for(actor, command.game_session_id))
+                    .find(|marker| {
+                        marker.is_for(actor, command.game_session_id)
+                            && marker.command.command_id().get() == command.command_id
+                    })
                     .and_then(|marker| marker.intent.1);
-                let Some(retained) = retained else {
-                    return Some(UseOutcome::rejected());
-                };
+                // A failed read before preparation leaves no marker. Retry
+                // the same ingress with its original handle and fence.
+                let retry_rune = retained.unwrap_or(rune);
                 result = self
                     .cast_rune_item(
                         actor,
                         command.game_session_id,
                         command.command_id,
-                        &retained,
+                        &retry_rune,
                         legacy.clone(),
                         &access,
                     )

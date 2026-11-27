@@ -164,23 +164,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (attack.kills().lethal_hits(), attack.kills().held_targets())
         };
         let mut pending_deaths = Vec::new();
-        for (target, hit) in &lethal_hits {
+        for lethal in lethal_hits {
+            let target = lethal.actor.actor;
             if let Some(corpse) = corpses
                 .iter_mut()
                 .find(|corpse| corpse.identity == target.corpse_identity())
                 && let VisibleKind::Corpse { lethal_hit, .. } = &mut corpse.kind
             {
-                *lethal_hit = Some(*hit);
-            } else if held_targets.contains(target)
-                && let Ok(at) = runtime.read_actor_position(*target)
-                && in_view(at.position())
-            {
-                pending_deaths.push(oteryn_gameplay_entities::carrier::VisibleRuntimeActor {
-                    actor: *target,
-                    generation: target.actor_local_generation(),
-                    position: at.position(),
-                    revision: at.revision(),
-                });
+                *lethal_hit = Some(lethal.hit);
+            } else if held_targets.contains(&target) && in_view(lethal.actor.position) {
+                pending_deaths.push(lethal.actor);
             }
         }
         // Use the wire interest owner's exact floor/rectangle rules before cloning

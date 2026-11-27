@@ -3195,25 +3195,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         drop(guards);
         // Holder return cannot retract a result that installed after COMMIT.
         let result = completed.map_or(result, |outcome| Ok(NativeCastDispatch::Outcome(outcome)));
-        // On a fresh corpse cast, only a parked attempt can have crossed
-        // COMMIT. Release a staged physical reservation after a definite failure.
-        let mut runtime = if fresh_corpse_cast && result.is_err() {
-            Some(self.runtime.lock().await)
-        } else {
-            None
-        };
         let mut states = self.states.spell_states.lock().await;
-        let (mut leftover, parked) = writer.finish();
-        let mut refused = fresh_corpse_cast && result.is_err() && !parked;
-        if let (Some(runtime), Some(attempt)) = (runtime.as_deref_mut(), leftover.as_ref()) {
-            refused = attempt
-                .prepared
-                .release_uncommitted(runtime, &mut states)
-                .is_ok();
-            if refused {
-                leftover = None;
-            }
-        }
+        // The transaction's explicit refusals already proved rollback and
+        // released their reservations. An infrastructure error may still be
+        // retryable even when the first attempt provably did not commit.
+        let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_native,
             actor,
@@ -3224,10 +3210,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parked,
         );
         drop(states);
-        drop(runtime);
-        if refused {
-            return rejected();
-        }
         let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,

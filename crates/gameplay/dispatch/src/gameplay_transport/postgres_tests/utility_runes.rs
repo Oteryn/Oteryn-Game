@@ -26,7 +26,7 @@ use crate::gameplay_transport::capabilities::{
 use crate::gameplay_transport::connection::{
     ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
 };
-use crate::gameplay_transport::rune_use_bridge::test_faults::watch_contention;
+use crate::gameplay_transport::rune_use_bridge::test_faults::{self, Point, watch_contention};
 use crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities;
 use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use crate::spell::cast::CharacterCastFacts;
@@ -60,6 +60,8 @@ enum Case {
     SummonLimit,
     Animate,
     AnimateBusy,
+    AnimateBeforeCommit,
+    AnimateAfterCommit,
     AnimateBlackSkull,
     NonCorpse,
 }
@@ -83,6 +85,28 @@ fn utility_runes_animate_real_dispatch_owns_skeleton_and_consumes_corpse() -> Te
 #[test]
 fn utility_runes_animate_waits_for_busy_holder_and_keeps_connection() -> TestResult {
     scenario(Case::AnimateBusy)
+}
+
+#[test]
+fn utility_runes_animate_retries_a_rolled_back_write() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        run_case(admin, Case::AnimateBeforeCommit).await
+    })
+}
+
+#[test]
+fn utility_runes_animate_reports_committed_after_lost_commit_response() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        run_case(admin, Case::AnimateAfterCommit).await
+    })
 }
 
 #[test]
@@ -112,9 +136,11 @@ fn scenario(case: Case) -> TestResult {
 async fn run_case(admin: String, case: Case) -> TestResult {
     let animate = matches!(
         case,
-        Case::Animate | Case::AnimateBusy | Case::AnimateBlackSkull | Case::NonCorpse
+        Case::Animate | Case::AnimateBusy | Case::AnimateBeforeCommit | Case::AnimateAfterCommit
+            | Case::AnimateBlackSkull | Case::NonCorpse
     );
-    let committed = matches!(case, Case::Convince | Case::Animate | Case::AnimateBusy);
+    let committed = matches!(case, Case::Convince | Case::Animate | Case::AnimateBusy
+        | Case::AnimateBeforeCommit | Case::AnimateAfterCommit);
     let harness = Harness::create_with_admission_seed(admin, "utility_runes", true, false).await?;
     prepare_current_session(&harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -359,9 +385,16 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?;
     }
 
+    // Animate Dead is ordinary Rune USE and its commit can be reconciled even
+    // on a connection that did not negotiate field creation.
+    let supported = if case == Case::AnimateAfterCommit {
+        &[4, 6, 11, 15, 18, 22, 30][..]
+    } else {
+        &[4, 6, 11, 15, 18, 22, 30, 91][..]
+    };
     admitted.continuity.selected_capabilities = owner
         .required_capabilities
-        .authenticate_support(&[4, 6, 11, 15, 18, 22, 30, 91])
+        .authenticate_support(supported)
         .map_err(debug)?
         .selected();
     // Fixture data only. Admission, source policy, caster facts and payment below
@@ -491,6 +524,11 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         } else {
             None
         };
+        match case {
+            Case::AnimateBeforeCommit => test_faults::arm(Point::BeforeCommit),
+            Case::AnimateAfterCommit => test_faults::arm(Point::AfterCommit),
+            _ => (),
+        }
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
         if let Some((door, observed)) = door_busy {
