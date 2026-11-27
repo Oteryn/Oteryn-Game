@@ -700,7 +700,7 @@ async fn cast_checked<S: SessionStream>(
     .ok_or("C12 unexpected mana change before the cast delta")?;
     if reply.disposition != SpellCastDisposition::Cast
         || mana_before.checked_sub(50) != Some(vitals.mana)
-        || !frame_capture::spent_harmony(before.harmony, vitals.harmony)
+        || vitals.harmony != 0
         || session.actor_vitals() != Some(&vitals)
     {
         return Err(format!("C12 cast must apply exact mana and Harmony debits: before={before:?} mana_at_cast={mana_before} after={vitals:?}").into());
