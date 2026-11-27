@@ -234,6 +234,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         evidence(&format!("P19 live-marker fresh admission entity={exact:?} stacks={stacks}"));
         }
         let mut before = before;
+    let mut dead = Vec::new();
     for (classification, stacks, exact) in encounters {
         let approach = route(world, tile(client.world_spatial().actor_position)?, |at| at == combat_tile)
             .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile")?;
@@ -243,21 +244,30 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
         }
         let corpse = kill_and_observe_clear(&mut client, exact).await?;
+        let killed = rewards(&mut client).await?;
+        dead.push(exact);
+        require_dead_markers_absent(&mut client, &dead)?;
         let stopped = client.session_mut().attack_target(None).await?;
         require_mechanic_acceptance(stopped.status, "P19 stop attack")?;
         if stopped.disposition != AttackIntentDisposition::Ok {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
-        let killed = rewards(&mut client).await?;
-        let (expected_items, expected_slivers) =
-            corpse_contents(&mut client, corpse, sliver).await?;
-        quick_loot_corpse(&mut client, corpse, expected_items).await?;
+        let source = corpse_contents(&mut client, corpse).await?;
+        let expected_slivers: u64 = source.iter().filter(|item| item.item_definition_ref == sliver)
+            .map(|item| u64::from(item.count.get())).sum();
+        let mut destination = backpack_quantities(&client)?;
+        add_quantities(&mut destination, &source);
+        let expected_items = corpse_item_ids(clients, corpse, source.len()).await?;
+        quick_loot_corpse(&mut client, corpse, &expected_items).await?;
         let after = rewards(&mut client).await?;
-        let (remaining_items, _) = corpse_contents(&mut client, corpse, sliver).await?;
+        let remaining_items = corpse_contents(&mut client, corpse).await?.len();
         if remaining_items != 0 {
             return Err(format!("P19 Quick Loot left {remaining_items} stacks in exact corpse {corpse:?}").into());
         }
-        evidence(&format!("P19 Quick Loot source depleted corpse={corpse:?} before={expected_items} after=0"));
+        if backpack_quantities(&client)? != destination {
+            return Err("P19 Quick Loot backpack quantities do not match all source stacks".into());
+        }
+        evidence(&format!("P19 Quick Loot source depleted corpse={corpse:?} before={} after=0", source.len()));
         let looted = after
             .slivers
             .checked_sub(killed.slivers)
@@ -289,7 +299,10 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             );
         }
         let restored = rewards(&mut client).await?;
-        if restored != after || sliver_count(&client, sliver)? != restored.slivers {
+        require_dead_markers_absent(&mut client, &dead)?;
+        if restored != after || sliver_count(&client, sliver)? != restored.slivers
+            || backpack_quantities(&client)? != destination
+        {
             return Err(format!(
                 "P19 fresh rewards mismatch: expected={after:?} observed={restored:?}"
             )
@@ -645,10 +658,86 @@ async fn kill_and_observe_clear(
     .map_err(|_| format!("P19 exact kill, corpse or marker clear missing for {target:?}"))?
 }
 
+fn require_dead_markers_absent(client: &mut DevClientSession, dead: &[EntityRef]) -> TestResult {
+    if client.session_mut().visible_appearances().iter()
+        .any(|entry| dead.contains(&entry.entity.entity))
+    {
+        return Err("P19 appearance binding reappeared for a dead Forge creature".into());
+    }
+    Ok(())
+}
+
+type ItemQuantities = std::collections::BTreeMap<(NonZeroU32, u32), u64>;
+
+fn add_quantities(
+    quantities: &mut ItemQuantities,
+    entries: &[oteryn_protocol_oteryn::item_view::ItemEntry],
+) {
+    for item in entries {
+        *quantities.entry((item.item_definition_ref, item.sub_type)).or_default() +=
+            u64::from(item.count.get());
+    }
+}
+
+fn backpack_quantities(client: &DevClientSession) -> TestResult<ItemQuantities> {
+    let mut quantities = ItemQuantities::new();
+    add_quantities(&mut quantities, &client.inventory().ok_or("P19 inventory absent")?.entries);
+    Ok(quantities)
+}
+
+async fn corpse_item_ids(
+    clients: &SeamClients<'_>,
+    corpse: [u8; 16],
+    expected_count: usize,
+) -> TestResult<std::collections::BTreeSet<[u8; 16]>> {
+    // The legacy corpse projection exposes session handles. The Quick Loot
+    // receipt uses durable IDs, so read the exact fixture source before moving it.
+    let ids = tokio::time::timeout(Duration::from_secs(5), async {
+        let mut db = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_scalar::<_, Vec<u8>>(
+            "SELECT uuid_send(e.item_instance_id) FROM game_item_corpse_container_entries e
+             JOIN game_item_instances i USING(item_instance_id)
+             WHERE e.world_id=encode($1,'hex')::uuid
+               AND e.parent_item_instance_id=encode($2,'hex')::uuid
+             AND i.lifecycle=1 ORDER BY e.item_instance_id LIMIT $3",
+        )
+        .bind(clients.world.as_slice())
+        .bind(corpse.as_slice())
+        .bind(i64::try_from(expected_count).unwrap_or(i64::MAX - 1).saturating_add(1))
+        .fetch_all(&mut db)
+        .await
+    }).await??;
+    if ids.len() != expected_count {
+        return Err(format!("P19 corpse wire stack count {expected_count} disagrees with {} durable source items", ids.len()).into());
+    }
+    ids.into_iter()
+        .map(|id| id.try_into().map_err(|_| "P19 malformed corpse source item ID".into()))
+        .collect()
+}
+
+fn exact_loot_receipt(
+    expected: &std::collections::BTreeSet<[u8; 16]>,
+    items: &[quick_loot::QuickLootItemResult],
+) -> bool {
+    items.len() == expected.len()
+        && items.iter().all(|item| item.accepted)
+        && items.iter().map(|item| item.item).collect::<std::collections::BTreeSet<_>>() == *expected
+}
+
+#[test]
+fn quick_loot_receipt_rejects_duplicate_wrong_or_refused_items() {
+    let expected = [[1; 16], [2; 16]].into_iter().collect();
+    let item = |id, accepted| quick_loot::QuickLootItemResult { item: [id; 16], accepted };
+    assert!(exact_loot_receipt(&expected, &[item(2, true), item(1, true)]));
+    assert!(!exact_loot_receipt(&expected, &[item(1, true), item(1, true)]));
+    assert!(!exact_loot_receipt(&expected, &[item(1, true), item(3, true)]));
+    assert!(!exact_loot_receipt(&expected, &[item(1, true), item(2, false)]));
+}
+
 async fn quick_loot_corpse(
     client: &mut DevClientSession,
     corpse: [u8; 16],
-    expected_items: usize,
+    expected_items: &std::collections::BTreeSet<[u8; 16]>,
 ) -> TestResult {
     let payload = quick_loot::encode_quick_loot_request(&quick_loot::QuickLootRequest {
         action: quick_loot::QuickLootAction::Click,
@@ -674,7 +763,7 @@ async fn quick_loot_corpse(
         .map_err(|error| format!("P19 Quick Loot result: {error:?}"))?;
     // Global grants slivers only to fiendish creatures, with quantity based on difficulty.
     // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
-    if result.items.len() != expected_items || result.items.iter().any(|item| !item.accepted) {
+    if !exact_loot_receipt(expected_items, &result.items) {
         return Err(
             format!("P19 first Quick Loot did not collect the corpse items: {result:?}").into(),
         );
@@ -685,8 +774,7 @@ async fn quick_loot_corpse(
 async fn corpse_contents(
     client: &mut DevClientSession,
     identity: [u8; 16],
-    sliver: NonZeroU32,
-) -> TestResult<(usize, u64)> {
+) -> TestResult<Vec<oteryn_protocol_oteryn::item_view::ItemEntry>> {
     let corpse = client
         .world_entities()
         .and_then(|entities| {
@@ -724,13 +812,7 @@ async fn corpse_contents(
                 {
                     continue;
                 }
-                let quantity = container
-                    .entries
-                    .iter()
-                    .filter(|entry| entry.item_definition_ref == sliver)
-                    .map(|entry| u64::from(entry.count.get()))
-                    .sum();
-                return TestResult::Ok((container.entries.len(), quantity));
+                return TestResult::Ok(container.entries);
             }
         }
     })
