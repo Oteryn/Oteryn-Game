@@ -730,7 +730,7 @@ async fn pouch_relog_logout(
     use crate::gameplay_transport::connection::{ControllerBinding, SessionContinuity};
     use crate::gameplay_transport::logout::LogoutReply;
     use oteryn_protocol_oteryn::logout::{
-        COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+        CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
     };
     use std::{cell::Cell, sync::Arc, time::Duration};
 
@@ -767,7 +767,11 @@ async fn pouch_relog_logout(
             account_id: id(40),
         }),
         continuity: SessionContinuity {
-            selected_capabilities: previous.continuity.selected_capabilities,
+            selected_capabilities: SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, CAPABILITY_LOGOUT_V1, 98],
+            )
+            .ok_or("pouch relog logout capabilities")?,
             ..SessionContinuity::FRESH
         },
         first_entry,
