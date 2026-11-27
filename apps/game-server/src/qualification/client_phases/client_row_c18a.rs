@@ -121,6 +121,12 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     }
     .connect(clients, 0xca, 0)
     .await?;
+    let diagnostic_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let diagnostic_sequence = client.last_server_sequence();
+    evidence(&format!(
+        "c18a_lock_trace_start at_ms={} session={diagnostic_session} sequence={diagnostic_sequence} combat={:?}",
+        lock_trace_time_ms(), client.session_mut().combat_state(),
+    ));
     let settled = client.actor_vitals().ok_or("C18a seeded vitals absent")?;
     if (settled.max_health, settled.max_mana, settled.soul) != (220, 300, 100) {
         return Err(format!("C18a expected level-15 Sorcerer stats: {settled:?}").into());
@@ -204,7 +210,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         .iter()
         .try_fold(TOWN, |at, &step| destination(world, at, step))
         .ok_or("C18a cast approach has an invalid landing")?;
-    walk_path(
+    let mut aggressors = walk_path(
         &mut client,
         world,
         &spawn_cells,
@@ -214,6 +220,10 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         clock_before.as_mut(),
     )
     .await?;
+    clear_travel_combat(
+        &mut client, world, &spawn_cells, approach_goal, &mut aggressors,
+        clock_before.as_mut(),
+    ).await?;
     let meat = provisioning::item_reference(&item_index, MEAT)?;
     if item_count(&client, meat)? != 1 {
         return Err("C18a expected one meat before the combat setup".into());
@@ -253,16 +263,6 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(20)).await?;
         collect_events(&mut client, None, clock_before.as_mut())?;
-    }
-    // Let travel combat expire before placing the live Rat.
-    let quiet_deadline = tokio::time::Instant::now() + Duration::from_secs(65);
-    while client.session_mut().combat_state().ok_or("C18a missing approach combat state")?.in_fight {
-        let frame = collect_events(&mut client, None, clock_before.as_mut())?;
-        evidence(&format!("c18a_precast_lock_wait last_frame={} combat_frame={frame:?}", client.last_server_sequence()));
-        if tokio::time::Instant::now() >= quiet_deadline {
-            return Err("C18a pre-cast combat lock did not clear after travel".into());
-        }
-        client.service_liveness(Duration::from_secs(1)).await?;
     }
     let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
     walk_path(
@@ -397,7 +397,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     if combat_before.target != Some(target) || combat_before.modes != initial_combat.modes {
         return Err("C18a did not retain the exact selected Rat while facing away".into());
     }
-    let precast_frame = collect_events(&mut client, None, clock_before.as_mut())?;
+    let precast_frame = collect_events(&mut client, None, clock_before.as_mut())?.combat;
     let cast_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     evidence(&format!(
         "c18a_precast_lock session={cast_session} last_frame={} combat_frame={precast_frame:?} state={combat_before:?}",
@@ -1038,6 +1038,66 @@ fn fixed_cast_route(
     .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}").into())
 }
 
+async fn clear_travel_combat(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawn_cells: &std::collections::BTreeSet<TilePos>,
+    approach: TilePos,
+    aggressors: &mut Aggressors,
+    mut clock: Option<&mut (u64, Vec<u8>)>,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    let mut escapes = 0;
+    loop {
+        let frames = collect_events(client, None, clock.as_deref_mut())?;
+        aggressors.extend(frames.aggressors);
+        let from = tile(client.world_spatial().actor_position)?;
+        let state = *client.session_mut().combat_state()
+            .ok_or("C18a missing approach combat state")?;
+        let view = client.world_entities().ok_or("C18a missing approach visibility")?;
+        let threats: Vec<_> = aggressors.iter().filter_map(|id| {
+            view.get(id).and_then(|row| tile(row.position).ok().map(|position| (*id, position)))
+        }).collect();
+        let safe = |tile| threats.iter().all(|(_, threat)| beyond_travel_attack_reach(tile, *threat));
+        evidence(&format!(
+            "c18a_travel_lock at_ms={} sequence={} caster={from:?} state={state:?} frame={:?} attackers={threats:?}",
+            lock_trace_time_ms(), client.last_server_sequence(), frames.combat,
+        ));
+        if !state.in_fight && from == approach {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C18a travel combat did not clear at {from:?}: attackers={threats:?} state={state:?}").into());
+        }
+        let escape = !safe(from);
+        if escape || !state.in_fight {
+            let available = |at: TilePos| !spawn_cells.contains(&at)
+                && view.iter().all(|row| &row.entity.identity == view.own_identity()
+                    || actor_state(row.detail).is_none() || tile(row.position).ok() != Some(at))
+                && (escape || safe(at));
+            let path = route_avoiding(world, from, |at| if escape { safe(at) } else { at == approach }, available)
+                .ok_or_else(|| format!("C18a no travel combat route: from={from:?} escape={escape} attackers={threats:?}"))?;
+            if path.is_empty() || path.len() > 48 || escapes >= 4 {
+                return Err(format!("C18a travel combat route exceeded its bound: from={from:?} steps={} escapes={escapes} attackers={threats:?}", path.len()).into());
+            }
+            let end = path.iter().try_fold(from, |at, &step| destination(world, at, step))
+                .ok_or("C18a invalid travel combat route")?;
+            escapes += 1;
+            evidence(&format!("c18a_travel_escape attempt={escapes} from={from:?} to={end:?} attackers={threats:?} route={path:?}"));
+            aggressors.extend(tokio::time::timeout_at(deadline,
+                walk_path(client, world, spawn_cells, &path, end, None, clock.as_deref_mut()),
+            ).await.map_err(|_| "C18a travel combat route timed out")??);
+        } else {
+            client.service_liveness(Duration::from_secs(1)).await?;
+            verdict::Harness::global().progress("wait-for-travel-combat");
+        }
+    }
+}
+
+fn beyond_travel_attack_reach(caster: TilePos, attacker: TilePos) -> bool {
+    caster.floor != attacker.floor || caster.x.abs_diff(attacker.x).max(caster.y.abs_diff(attacker.y)) >= 12
+}
+
 async fn walk_once(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -1046,7 +1106,7 @@ async fn walk_once(
     clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     let path = fixed_cast_route(client, world, spawn_cells, goal)?;
-    walk_path(client, world, spawn_cells, &path, goal, None, clock).await
+    walk_path(client, world, spawn_cells, &path, goal, None, clock).await.map(drop)
 }
 
 async fn walk_path(
@@ -1057,7 +1117,8 @@ async fn walk_path(
     goal: TilePos,
     mut vitals: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
-) -> TestResult {
+) -> TestResult<Aggressors> {
+    let mut aggressors = Aggressors::new();
     let started = tokio::time::Instant::now();
     let mut path = VecDeque::from(path.to_vec());
     let mut detours = 0;
@@ -1139,7 +1200,7 @@ async fn walk_path(
         }
         index += 1;
         verdict::Harness::global().progress("walk");
-        collect_events(client, vitals.as_deref_mut(), clock.as_deref_mut())?;
+        aggressors.extend(collect_events(client, vitals.as_deref_mut(), clock.as_deref_mut())?.aggressors);
         if outcome.step_wait_ms != 0
             && let Err(error) = client
                 .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
@@ -1156,11 +1217,11 @@ async fn walk_path(
                 return Err(error.into());
         }
     }
-    collect_events(client, vitals, clock)?;
+    aggressors.extend(collect_events(client, vitals, clock)?.aggressors);
     if tile(client.world_spatial().actor_position)? != goal {
         return Err("C18a fixed route did not reach its goal".into());
     }
-    Ok(())
+    Ok(aggressors)
 }
 
 async fn last_sent_command(mut outbound: &[u8]) -> Option<u64> {
@@ -1375,15 +1436,113 @@ async fn first_cast_vitals(
     Ok(None)
 }
 
+fn lock_trace_time_ms() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis()
+}
+
+fn trace_setup_combat(client: &oteryn_dev_client::DevClientSession, event: &SessionEvent) {
+    use oteryn_protocol_oteryn::analyser::AnalyserFact;
+    use presentation::PresentationEventKind as Kind;
+    let Some(view) = client.world_entities() else {
+        return;
+    };
+    let own = view.own_identity();
+    let position = client.world_spatial().actor_position;
+    let at = lock_trace_time_ms();
+    match event {
+        SessionEvent::ActorCombatState(delta) => evidence(&format!(
+            "c18a_lock_condition at_ms={at} sequence={} base={} revision={} caster={own:?} position={position:?} state={:?}",
+            delta.server_sequence, delta.base_revision, delta.new_revision, delta.value,
+        )),
+        SessionEvent::ActorVitals(delta) => evidence(&format!(
+            "c18a_lock_vitals at_ms={at} sequence={} caster={own:?} position={position:?} health={} mana={}",
+            delta.server_sequence, delta.value.health, delta.value.mana,
+        )),
+        SessionEvent::WorldSpatialEntities(delta) => {
+            for row in delta.value.enter.iter().chain(&delta.value.update) {
+                if &row.entity.identity == own {
+                    evidence(&format!(
+                        "c18a_lock_own_entity at_ms={at} sequence={} caster={:?} position={:?} detail={:?}",
+                        delta.server_sequence, row.entity, row.position, row.detail,
+                    ));
+                }
+            }
+        }
+        SessionEvent::Presentation(delta) | SessionEvent::ItemEffects(delta) => {
+            for cue in &delta.value {
+                match cue.kind {
+                    Kind::ValueText { target, attacker, .. }
+                        if &target.identity == own || attacker.is_some_and(|actor| &actor.identity == own) =>
+                    {
+                        let attacker_position = attacker.and_then(|actor| view.get(&actor)).map(|row| row.position);
+                        evidence(&format!(
+                            "c18a_lock_contact at_ms={at} sequence={} caster={own:?} position={position:?} attacker_position={attacker_position:?} cue={cue:?}",
+                            delta.server_sequence,
+                        ));
+                    }
+                    Kind::SpellWords { caster, .. } if &caster.identity == own => evidence(&format!(
+                        "c18a_lock_cast at_ms={at} sequence={} cue={cue:?}", delta.server_sequence
+                    )),
+                    Kind::Missile { from, to, .. } if from == position || to == position => evidence(&format!(
+                        "c18a_lock_missile at_ms={at} sequence={} cue={cue:?}", delta.server_sequence
+                    )),
+                    _ => {}
+                }
+            }
+        }
+        SessionEvent::AnalyserAttributedFacts(delta) => {
+            for fact in &delta.value {
+                if matches!(fact.fact, AnalyserFact::DamageInput { .. } | AnalyserFact::Impact(_)) {
+                    let attacker = fact.attacker.and_then(|actor| view.get(&actor));
+                    evidence(&format!(
+                        "c18a_lock_analyser at_ms={at} sequence={} caster={own:?} position={position:?} fact={fact:?} attacker_position={:?} attacker_name={:?}",
+                        delta.server_sequence, attacker.map(|row| row.position), attacker.and_then(|row| row.display_name),
+                    ));
+                }
+            }
+        }
+        SessionEvent::AnalyserFacts(delta) => {
+            for fact in &delta.value {
+                if matches!(fact, AnalyserFact::DamageInput { .. } | AnalyserFact::Impact(_)) {
+                    evidence(&format!(
+                        "c18a_lock_analyser at_ms={at} sequence={} caster={own:?} position={position:?} fact={fact:?}",
+                        delta.server_sequence,
+                    ));
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+type Aggressors = std::collections::BTreeSet<oteryn_dev_client::EntityRef>;
+
+#[derive(Default)]
+struct SetupCombatFrames {
+    combat: Option<(u64, attack::ActorCombatState)>,
+    aggressors: Aggressors,
+}
+
 fn collect_events(
     client: &mut oteryn_dev_client::DevClientSession,
     mut history: Option<&mut CastObservation>,
     mut clock: Option<&mut (u64, Vec<u8>)>,
-) -> TestResult<Option<(u64, attack::ActorCombatState)>> {
-    let mut combat = None;
+) -> TestResult<SetupCombatFrames> {
+    let mut frames = SetupCombatFrames::default();
     for event in client.take_events() {
         if let Some(history) = history.as_deref_mut() {
             history.record(&event);
+        } else {
+            trace_setup_combat(client, &event);
+            if let SessionEvent::AnalyserAttributedFacts(delta) = &event {
+                frames.aggressors.extend(delta.value.iter().filter_map(|fact| {
+                    fact.attacker.filter(|_| matches!(fact.fact,
+                        oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput { .. }))
+                }));
+            }
         }
         match event {
             SessionEvent::WorldClock(delta) => {
@@ -1396,12 +1555,12 @@ fn collect_events(
                 }
             }
             SessionEvent::ActorCombatState(delta) => {
-                combat = Some((delta.server_sequence, delta.value));
+                frames.combat = Some((delta.server_sequence, delta.value));
             }
             _ => {}
         }
     }
-    Ok(combat)
+    Ok(frames)
 }
 
 async fn wait_for_walk_tile(
@@ -1550,6 +1709,15 @@ fn actor_state(detail: EntityDetail) -> Option<(StepDirection, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn c18a_travel_escape_requires_distance_from_the_live_attacker() {
+        let near = TilePos { x: CAST_TILE.x - 11, ..CAST_TILE };
+        let far = TilePos { x: CAST_TILE.x - 12, ..CAST_TILE };
+        assert!(!beyond_travel_attack_reach(CAST_TILE, near));
+        assert!(beyond_travel_attack_reach(CAST_TILE, far));
+        assert!(beyond_travel_attack_reach(CAST_TILE, TilePos { floor: CAST_TILE.floor + 1, ..near }));
+    }
 
     #[test]
     fn c18a_rejects_multiple_actors_on_the_rat_tile() {
