@@ -441,6 +441,9 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         generation,
         visible_after: witness.before_bytes,
     }));
+    let builder_before = *session
+        .actor_vitals()
+        .ok_or("C12 builder pre-state missing")?;
     let builder = session
         .cast_spell(witness.builder, SpellTarget::AttackTarget, true)
         .await?;
@@ -450,12 +453,27 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     assert_eq!(
         builder
             .actor_vitals_delta
+            .as_ref()
             .ok_or("C12 builder delta missing")?
             .value
             .harmony,
         1
     );
     let builder_events = drain_boundary(&mut session, &consumed, witness.before_bytes).await?;
+    let builder_delta = builder
+        .actor_vitals_delta
+        .ok_or("C12 builder vitals missing")?;
+    let builder_mana = frame_capture::mana_before_cast(
+        builder_events.iter().filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) => Some((update.server_sequence, update.value.mana)),
+            _ => None,
+        }),
+        builder_before.mana,
+        builder_before.max_mana,
+        builder_delta.server_sequence,
+    )
+    .ok_or("C12 unexpected mana change before replay Swift Jab")?;
+    assert_eq!(builder_mana.checked_sub(3), Some(builder_delta.value.mana));
     let mut builder_hits = Vec::new();
     for event in builder_events {
         if let SessionEvent::Presentation(delta) = event {

@@ -163,7 +163,8 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     let attack_id = session.next_command_id() - 1;
     let builder_start = wire_boundary(&received)?;
     let builder_sequence = session.last_server_sequence();
-    let builder_damage = build_harmony(&mut session, own, target, position, builder, 0).await?;
+    let builder_damage =
+        build_harmony(&mut session, own, target, position, builder, 0, false).await?;
     let before_sequence = session.last_server_sequence();
     let before_bytes = wire_boundary(&received)?;
     let mut cast = cast_checked(
@@ -209,6 +210,7 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         position,
         fresh_builder,
         0,
+        true,
     )
     .await?;
     let mut durable_cast = cast_checked(
@@ -221,7 +223,9 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         full_row_c12::AUGMENT_BPS,
     )
     .await?;
-    // Keep the entire authored cooldown free of another Greater Tiger Clash.
+    // Once the two-second attack group ends, the eight-second spell cooldown still applies.
+    fresh.service_liveness(Duration::from_secs(2)).await?;
+    require_cooldown(fresh.session_mut(), fresh_spell).await?;
     fresh.service_liveness(Duration::from_secs(8)).await?;
     collect_hits(
         &fresh.take_events(),
@@ -276,6 +280,7 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         position,
         fresh_builder,
         0,
+        false,
     )
     .await?;
     let mut baseline = cast_checked(
@@ -413,7 +418,16 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         // A five-Harmony roll makes each 4% contribution observable after rounding.
         let harmony = if active_level == 0 { 1 } else { 5 };
         for before in 0..harmony {
-            build_harmony(fresh.session_mut(), own, target, position, builder, before).await?;
+            build_harmony(
+                fresh.session_mut(),
+                own,
+                target,
+                position,
+                builder,
+                before,
+                false,
+            )
+            .await?;
         }
         let bps = if active_level == 0 { 0 } else { 400 };
         let mut control = cast_checked(
@@ -592,14 +606,13 @@ async fn build_harmony<S: SessionStream>(
     position: ActorPosition,
     spell: NonZeroU32,
     harmony_before: u32,
+    probe_cooldown: bool,
 ) -> TestResult<u64> {
     check_target(session, target, position)?;
-    if session
+    let before = *session
         .actor_vitals()
-        .ok_or("C12 builder pre-state missing")?
-        .harmony
-        != harmony_before
-    {
+        .ok_or("C12 builder pre-state missing")?;
+    if before.harmony != harmony_before {
         return Err(format!("C12 Swift Jab requires Harmony {harmony_before} before cast").into());
     }
     let path = PathBuf::from(required("NODE_BOOT_CAST_EVIDENCE_LOG")?);
@@ -609,19 +622,34 @@ async fn build_harmony<S: SessionStream>(
         .cast_spell(spell, SpellTarget::AttackTarget, true)
         .await?;
     require_mechanic_acceptance(reply.status, "C12.client Swift Jab")?;
+    let delta = reply
+        .actor_vitals_delta
+        .ok_or("C12 Swift Jab vitals missing")?;
+    let events = session.take_events();
+    let mana_before = frame_capture::mana_before_cast(
+        events.iter().filter_map(|event| match event {
+            SessionEvent::ActorVitals(update) => Some((update.server_sequence, update.value.mana)),
+            _ => None,
+        }),
+        before.mana,
+        before.max_mana,
+        delta.server_sequence,
+    )
+    .ok_or("C12 unexpected mana change before Swift Jab")?;
     if reply.disposition != SpellCastDisposition::Cast
-        || reply
-            .actor_vitals_delta
-            .is_none_or(|delta| delta.value.harmony != harmony_before + 1)
+        || delta.value.harmony != harmony_before + 1
+        || mana_before.checked_sub(3) != Some(delta.value.mana)
     {
         return Err(format!(
-            "C12 Swift Jab did not publish Harmony {harmony_before} -> {}",
-            harmony_before + 1
-        )
-        .into());
+            "C12 Swift Jab expected 3 mana and Harmony {harmony_before} -> {}, observed mana={mana_before}->{} Harmony={}",
+            harmony_before + 1, delta.value.mana, delta.value.harmony
+        ).into());
     }
     let mut hits = Vec::new();
-    collect_hits(&session.take_events(), own, target, spell, &mut hits);
+    collect_hits(&events, own, target, spell, &mut hits);
+    if probe_cooldown {
+        require_cooldown(session, spell).await?;
+    }
     // Swift Jab's authored attack-group cooldown is two seconds.
     session.service_liveness(Duration::from_secs(2)).await?;
     collect_hits(&session.take_events(), own, target, spell, &mut hits);
@@ -633,6 +661,33 @@ async fn build_harmony<S: SessionStream>(
         .into());
     }
     Ok(damage)
+}
+
+async fn require_cooldown<S: SessionStream>(
+    session: &mut Session<S>,
+    spell: NonZeroU32,
+) -> TestResult {
+    let before = *session
+        .actor_vitals()
+        .ok_or("C12 cooldown pre-state missing")?;
+    let reply = session
+        .cast_spell(spell, SpellTarget::AttackTarget, true)
+        .await?;
+    require_mechanic_acceptance(reply.status, "C12 cooldown probe")?;
+    let after = session
+        .actor_vitals()
+        .ok_or("C12 cooldown post-state missing")?;
+    if reply.disposition != SpellCastDisposition::CoolingDown
+        || reply.actor_vitals_delta.is_some()
+        || after.harmony != before.harmony
+        || after.mana < before.mana
+    {
+        return Err(format!("C12 CAST during cooldown must refuse without cost: {reply:?}").into());
+    }
+    evidence(&format!(
+        "C12_CLIENT_COOLDOWN spell={spell} disposition=CoolingDown"
+    ));
+    Ok(())
 }
 
 struct CheckedCast {
@@ -706,6 +761,13 @@ async fn cast_checked<S: SessionStream>(
         return Err(format!("C12 cast must apply exact mana and Harmony debits: before={before:?} mana_at_cast={mana_before} after={vitals:?}").into());
     }
     let damage = committed_damage(session, target, reply.command_id, &path, offset, bps)?;
+    if expected_harmony == 5 && !frame_capture::five_harmony_damage(damage.before) {
+        return Err(format!(
+            "C12 five Harmony damage outside independent fixture range: {}",
+            damage.before
+        )
+        .into());
+    }
     let mut hits = Vec::new();
     collect_hits(&events, own, target, spell, &mut hits);
     let until = tokio::time::Instant::now() + COMMAND_BUDGET;

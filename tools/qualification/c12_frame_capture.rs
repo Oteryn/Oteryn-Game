@@ -155,6 +155,13 @@ pub fn exact_target(origin: ActorPosition, target: ActorPosition, expected: Acto
         && target.y.checked_add(1) == Some(origin.y)
 }
 
+/// The level-80 Monk's 23-attack Fists and 10 fist skill put the unscaled
+/// Greater Tiger Clash roll near 26. Five Harmony multiplies it by 2.184.
+/// The guard leaves room for integer rounding and excludes every one-charge roll.
+pub fn five_harmony_damage(roll: u64) -> bool {
+    (45..=70).contains(&roll)
+}
+
 pub fn spent_harmony(before: u32, after: u32) -> bool {
     before == 1 && after == 0
 }
@@ -204,10 +211,6 @@ pub fn attributed_hits(
             let has_spell_cue = events.iter().any(|part| part.decision_ordinal == event.decision_ordinal
                 && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. }
                     if source == caster && cue == spell));
-            // The isolated target's counterattack is the only unrelated damage in this window.
-            if target == caster && attacker == Some(victim) && !has_spell_cue {
-                continue;
-            }
             let attributed = target == victim
                 && attacker == Some(caster)
                 && primary.color == PresentationColor::Red
@@ -380,5 +383,25 @@ mod tests {
         attributed_hits(&[wrong_target], caster, target, 42, &mut hits);
         assert_eq!(hits, [33, 0]);
         assert!(!exact_hit(&hits, 33));
+        let mut reversed = late[1];
+        if let PresentationEventKind::ValueText {
+            target: hit,
+            attacker,
+            ..
+        } = &mut reversed.kind
+        {
+            *hit = caster;
+            *attacker = Some(target);
+        }
+        let mut hits = Vec::new();
+        attributed_hits(&first, caster, target, 42, &mut hits);
+        attributed_hits(&[reversed], caster, target, 42, &mut hits);
+        assert_eq!(hits, [33, 0]);
+    }
+
+    #[test]
+    fn five_harmony_rejects_one_charge_damage() {
+        assert!(five_harmony_damage(55));
+        assert!(!five_harmony_damage(31));
     }
 }
