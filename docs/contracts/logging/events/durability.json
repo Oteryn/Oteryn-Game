@@ -26,6 +26,14 @@
       "note": "First row the character revision-chain integrity check finds in violation (LOGDBG-C): receipt family table or receipt_chain, violation gap|fork|latest_mismatch|missing_typed_state|orphan_state, revision numbers (gap/fork over receipt_chain: receipts counted, root revision); no identities."
     },
     {
+      "event": "corpse_use_checkout_attempt",
+      "level": "debug",
+      "span": false,
+      "fields": ["attempt", "waited_ms", "outcome"],
+      "codes": [],
+      "note": "Each attempt to acquire the holder before the single corpse USE read."
+    },
+    {
       "event": "db_pool",
       "level": "info",
       "span": false,

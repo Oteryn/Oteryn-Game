@@ -322,7 +322,7 @@ impl DurabilityRoot {
                                 None
                             } else {
                                 let mut target = assignment(request)?;
-                                if let (QuickLootAction::Assign, Recipient::GoldPouch(id)) = (request.action, target) {
+                                if let Recipient::GoldPouch(id) = target {
                                     target = Recipient::GoldPouch(resolve_inbox_pouch(&mut tx, &fence, id).await?);
                                 }
                                 recipient(&mut tx, fence.character_id, world, content, target).await?;
@@ -380,18 +380,34 @@ impl DurabilityRoot {
                         _ => return refuse(LoopMoveRefusal::Rejected),
                     }
                 }
-                // A bounded tile query, ordered before LIMIT so distant corpses cannot mask nearby ones.
-                let x=i32::from_be_bytes(cell[0..4].try_into().map_err(|_| DurabilityError::InvalidStoredState)?);
-                let y=i32::from_be_bytes(cell[4..8].try_into().map_err(|_| DurabilityError::InvalidStoredState)?);
-                let mut cells=Vec::new();
-                for dx in -1_i32..=1 { for dy in -1_i32..=1 {
-                    if let (Some(x),Some(y))=(x.checked_add(dx),y.checked_add(dy)) {
-                        cells.push([x.to_be_bytes().as_slice(),y.to_be_bytes().as_slice(),&cell[8..10]].concat());
-                    }
-                }}
-                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
+                let mut cells = nearby_corpse_cells(cell);
+                if request.action == QuickLootAction::LootAll && let Some(anchor) = selected_corpse {
+                    // The clicked corpse must itself be reachable on the actor's floor.
+                    // Its durable cell then anchors the neighborhood, including stacked corpses.
+                    let centre: Option<Vec<u8>> = sqlx::query_scalar(
+                        "SELECT g.spatial_position FROM game_item_ground_locations g
+                         JOIN game_item_instances i USING(item_instance_id)
+                         JOIN game_item_mint_receipts r USING(item_instance_id)
+                         WHERE i.item_instance_id=encode($1,'hex')::uuid
+                           AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid
+                           AND g.runtime_scope_ownership_generation=$4::text::numeric
+                           AND g.spatial_position=ANY($5) AND i.lifecycle=1
+                           AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0",
+                    )
+                    .bind(anchor.as_slice()).bind(world.as_slice()).bind(channel.as_bytes().as_slice())
+                    .bind(fence.scope_ownership_generation.get().to_string()).bind(&cells)
+                    .fetch_optional(&mut *tx).await?;
+                    cells = match centre {
+                        Some(cell) => nearby_corpse_cells(cell.try_into().map_err(|_| DurabilityError::InvalidStoredState)?),
+                        None => Vec::new(),
+                    };
+                }
+                let exact = selected_corpse.filter(|_| request.action == QuickLootAction::Click);
+                // Try the selected corpse first even when the neighborhood reaches the batch cap.
+                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY (i.item_instance_id=encode($8,'hex')::uuid) DESC NULLS LAST, i.item_instance_id LIMIT $6 FOR UPDATE OF i")
                     .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
-                    .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+                    .bind(exact.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice())
+                    .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).fetch_all(&mut *tx).await?;
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
@@ -441,6 +457,23 @@ impl DurabilityRoot {
             }
         })).await
     }
+}
+
+/// The centre and its eight neighboring cells on the same floor.
+fn nearby_corpse_cells(cell: [u8; 10]) -> Vec<Vec<u8>> {
+    let [x0, x1, x2, x3, y0, y1, y2, y3, z0, z1] = cell;
+    let x = i32::from_be_bytes([x0, x1, x2, x3]);
+    let y = i32::from_be_bytes([y0, y1, y2, y3]);
+    let floor = [z0, z1];
+    let mut cells = Vec::with_capacity(9);
+    for dx in -1..=1 {
+        for dy in -1..=1 {
+            if let (Some(x), Some(y)) = (x.checked_add(dx), y.checked_add(dy)) {
+                cells.push([x.to_be_bytes().as_slice(), y.to_be_bytes().as_slice(), &floor].concat());
+            }
+        }
+    }
+    cells
 }
 
 fn filter_references<C: ItemLoopContent>(

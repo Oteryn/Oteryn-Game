@@ -68,7 +68,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             note_stale("item_observation");
             return Some(Dispatch::UseItem(OpenDecision::StaleState, None));
         };
-        let (decision, delta) = view.open(key, observation).ok()?;
+        let (decision, delta) = match view.open(key, observation) {
+            Ok(opened) => opened,
+            Err(error) => {
+                transport::operator_event(&format!(
+                    "event=corpse_use_read_refused reason={error:?}"
+                ));
+                return None;
+            }
+        };
         admitted.continuity.item_view = view.continuity();
         if decision == OpenDecision::StaleState {
             note_stale("corpse_gone");

@@ -786,12 +786,34 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         corpse_item_instance_id: [u8; 16],
     ) -> Result<Option<Vec<BackpackEntry>>> {
+        self.read_corpse_contents_checked(authority, corpse_item_instance_id, None).await
+    }
+
+    /// USE may wait for a checkout. Once issued, the read runs exactly once.
+    pub async fn read_corpse_contents_for_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        corpse_item_instance_id: [u8; 16],
+        checkout_deadline: tokio::time::Instant,
+    ) -> Result<Option<Vec<BackpackEntry>>> {
+        self.read_corpse_contents_checked(authority, corpse_item_instance_id, Some(checkout_deadline)).await
+    }
+
+    async fn read_corpse_contents_checked(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        corpse_item_instance_id: [u8; 16],
+        checkout_deadline: Option<tokio::time::Instant>,
+    ) -> Result<Option<Vec<BackpackEntry>>> {
         use super::item_mint::CORPSE_CONTAINER_ENTRIES_MAX;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemTransferError::AuthorityRejected)?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+        let pass = match checkout_deadline {
+            Some(deadline) => self.checkout_corpse_read(deadline).await?,
+            None => self.try_issue_semantic_pass()?,
+        };
+        let contents = pass.run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -851,8 +873,50 @@ impl DurabilityRoot {
                     Ok(Ok(Some(entries)))
                 })
             })
-            .await?
+            .await?;
+        #[cfg(any(test, feature = "test-support"))]
+        if contents.is_ok() && matches!(REFUSE_FIRST_CORPSE_READ.try_with(|fault| fault.replace(false)), Ok(true)) {
+            return Err(DurabilityError::RootUnavailable.into());
+        }
+        contents
     }
+
+    async fn checkout_corpse_read(
+        &self,
+        deadline: tokio::time::Instant,
+    ) -> std::result::Result<super::db::IssuedSemanticPass, DurabilityError> {
+        let started = tokio::time::Instant::now();
+        let mut attempt = 0_u64;
+        self.retry_foreground_holder(
+            deadline,
+            |error| matches!(error, DurabilityError::RootUnavailable),
+            async || {
+                attempt = attempt.saturating_add(1);
+                let checkout = self.try_issue_semantic_pass();
+                let line = oteryn_error_codes::Line::new(
+                    oteryn_error_codes::Level::Debug,
+                    "durability",
+                    "corpse_use_checkout_attempt",
+                )
+                .field("attempt", oteryn_error_codes::FieldValue::U64(attempt))
+                .field("waited_ms", oteryn_error_codes::FieldValue::U64(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX)))
+                .field("outcome", oteryn_error_codes::FieldValue::Token(if checkout.is_ok() { "acquired" } else { "busy" }));
+                oteryn_error_codes::emit("oteryn-game-server", &line);
+                checkout
+            }
+        ).await
+    }
+}
+
+#[cfg(any(test, feature = "test-support"))]
+tokio::task_local! {
+    static REFUSE_FIRST_CORPSE_READ: std::cell::Cell<bool>;
+}
+
+/// Inject one retryable failure after a real read completed on the test connection.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn with_refused_first_corpse_read<F: std::future::Future>(work: F) -> F::Output {
+    REFUSE_FIRST_CORPSE_READ.scope(std::cell::Cell::new(true), work).await
 }
 
 /// The durable reservation row of one CommandRef.
