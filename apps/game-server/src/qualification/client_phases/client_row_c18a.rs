@@ -728,7 +728,14 @@ async fn walk_path(
             || outcome.world_spatial_delta.is_none()
             || actual != expected
         {
-            return Err(format!("C18a first step failed: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?}").into());
+            let occupants: Vec<_> = client
+                .world_entities()
+                .into_iter()
+                .flat_map(|view| view.iter())
+                .filter(|entity| tile(entity.position).ok() == Some(expected))
+                .map(|entity| (entity.entity, entity.kind, entity.display_name))
+                .collect();
+            return Err(format!("C18a first step failed: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?} observed_destination_occupants={occupants:?}").into());
         }
         verdict::Harness::global().progress("walk");
         collect_vitals(client, vitals.as_deref_mut());
