@@ -422,7 +422,9 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         targets.push(target);
     }
     let potion = provisioning::item_reference(&provisioning::item_index()?, POTION_ID)?;
-    for target in targets {
+    let mut targets = targets.into_iter().peekable();
+    let mut next_step_x = u16::try_from(targets.peek().ok_or("P11 corridor target missing")?.position.x)?;
+    while let Some(target) = targets.next() {
         let existing_corpses: Vec<_> = client
             .world_entities()
             .ok_or("P11 corridor entities absent")?
@@ -545,13 +547,23 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
                 .await?;
             }
         }
-        corridor_step(
-            client,
-            StepDirection::East,
-            u16::try_from(target.position.x)?,
-            CORRIDOR_Y,
-        )
-        .await?;
+        let entities = client.world_entities().ok_or("P11 corridor entity state missing")?;
+        if let Some(next_target) = targets.peek()
+            && entities
+                .get(&next_target.entity)
+                .is_some_and(|entity| entity.position == target.position)
+        {
+            evidence(&format!(
+                "P11_ROUTE fight_before_step tile={:?} blocker={:?}",
+                target.position, next_target.entity
+            ));
+            continue;
+        }
+        let reached_x = u16::try_from(target.position.x)?;
+        for x in next_step_x..=reached_x {
+            corridor_step(client, StepDirection::East, x, CORRIDOR_Y).await?;
+        }
+        next_step_x = reached_x + 1;
     }
     Ok(())
 }
