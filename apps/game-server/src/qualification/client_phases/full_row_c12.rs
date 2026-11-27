@@ -515,6 +515,7 @@ impl Hunt {
             "C12 committed_cast command={} damage={damage} owner={paired:?} expected_bps={bps} harmony={}->{} mana={mana_before_cast}->{}",
             outcome.command_id, before.harmony, vitals.harmony, vitals.mana
         ));
+        verdict::Harness::global().progress("c12-verified-cast");
         Ok((damage, vitals))
     }
 }
