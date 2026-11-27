@@ -883,7 +883,11 @@ fn quick_loot_initial_inbox_pouch_renders_and_sends_managed_assignment() -> Test
         outbox.bevy_store_initialize();
         outbox.bevy_quick_loot_managed_selected();
         open(&mut app)?;
-        let pouch = [7; 16];
+        let mut pouch = [7; 16];
+        pouch[6] = 0x70;
+        pouch[8] = 0x80;
+        let mut other = pouch;
+        other[15] = 1;
         let action = Action::Destination {
             category,
             recipient: Recipient::GoldPouch,
@@ -900,7 +904,7 @@ fn quick_loot_initial_inbox_pouch_renders_and_sends_managed_assignment() -> Test
         let page = wire::StoreInboxPage {
             entries: vec![
                 wire::StoreInboxEntry {
-                    fulfilment_unit_id: [1; 16],
+                    fulfilment_unit_id: other,
                     item_id: 28552,
                 },
                 wire::StoreInboxEntry {
