@@ -262,8 +262,8 @@ def checked_boss_corpse_capture():
             or capture['source_revision'] != corpses.PIN
             or capture['sources'] != sources
             or capture['roots'] != sorted(corpses.ROOT_IDS)
-            or len(capture['decay_chains']) != 55
-            or len(capture['records']) != 199):
+            or len(capture['decay_chains']) != 56
+            or len(capture['records']) != 203):
         raise ValueError('Elder terminal source capture authority mismatch')
     chains = capture['decay_chains']
     if any(not isinstance(chain, list) or not 1 <= len(chain) <= 8
@@ -273,7 +273,7 @@ def checked_boss_corpse_capture():
     wanted = {item for chain in chains for item in chain}
     identifiers = [row['production_binding']['external_id'] for row in capture['records']]
     if ([chain[0] for chain in chains] != capture['roots']
-            or len(wanted) != 199 or len(set(identifiers)) != 199
+            or len(wanted) != 203 or len(set(identifiers)) != 203
             or set(identifiers) != {str(item) for item in wanted}):
         raise ValueError('Elder terminal source capture authority mismatch')
     return capture
@@ -718,6 +718,20 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         import loot_slice_one
         slice_creatures = loot_slice_one.creatures(ROOT)
         loot_slice_one.project_tables(definitions, tables, facts)
+        # Crystal 201189f8 data-global/monster/humans/*_of_the_cult.lua
+        # binds the four Hunter verses to the cultist ranks in order.
+        for rank, source_id, ppm in (
+            ('novice', 6087, 9700),
+            ('acolyte', 6088, 4800),
+            ('adept', 6089, 7000),
+            ('enlightened', 6090, 4900),
+        ):
+            key = f'oteryn:loot.creature.{rank}_of_the_cult'
+            entries = [entry for entry in tables[key]['entries']
+                       if entry['item']['key'] == f'oteryn:item.tibia.i{source_id}']
+            if len(entries) != 1 or (entries[0]['min_count'], entries[0]['max_count']) != (1, 1):
+                raise ValueError(f'Hunter music sheet source binding differs: {key}')
+            entries[0]['probability_ppm'] = ppm
         import nrwicked_profiles
         nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
         import cloot3_item_profiles
@@ -828,7 +842,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     # These exact quest yields already have admitted native pickup and carried
     # profiles. Keep source tables and rates as authored.
     quest_yields = quest_yields | {f'oteryn:item.tibia.i{i}' for i in (
-        3235, 3236, 3237, 3238, 3239, 3240, 3241, 3348, 3403, 5893, 5899, 5925,
+        3235, 3236, 3237, 3238, 3239, 3240, 3241, 3244, 3348, 3403, 5893, 5899, 5925,
+        6087, 6088, 6089, 6090,
     )}
     for key in sorted(quest_yields & yield_keys):
         if not facts[key]['materializable']:

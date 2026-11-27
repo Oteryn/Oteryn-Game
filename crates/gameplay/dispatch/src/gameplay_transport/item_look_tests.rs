@@ -711,10 +711,11 @@ fn with_reading_map(
         oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ),
 ) {
-    with_reading_map_entries(text, 0, test);
+    with_reading_map_entries("oteryn:item.tibia.i2012", text, 0, test);
 }
 
 fn with_reading_map_entries(
+    sign_key: &str,
     text: &str,
     extra_entries: usize,
     test: impl FnOnce(
@@ -736,10 +737,7 @@ fn with_reading_map_entries(
             "oteryn:item.tibia.i2854",
             reference("oteryn:item.tibia.i2854").get() - 1,
         ),
-        (
-            "oteryn:item.tibia.i2012",
-            reference("oteryn:item.tibia.i2012").get() - 1,
-        ),
+        (sign_key, reference(sign_key).get() - 1),
     );
     let mut decoded = oteryn_world_bundle::bundle::read(&bytes).unwrap();
     // The non-distance-readable box is also text-bound, so it is a genuine
@@ -911,6 +909,57 @@ fn reading_map_base_is_readable_without_materialization_or_a_handle() {
 }
 
 #[test]
+fn crystal_distance_readable_sign_uses_placement_text() {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            with_reading_map_entries(
+                "oteryn:item.tibia.i17866",
+                "To Kazordoon Shops",
+                0,
+                |generation, map, target| {
+                    use crate::content::ReferenceItemField as F;
+                    let native = generation.native_gameplay().unwrap();
+                    for id in (1979..=1982)
+                        .chain(5331..=5388)
+                        .chain(17725..=17800)
+                        .chain(17862..=17867)
+                        .chain([54133])
+                    {
+                        let record = native
+                            .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                            .unwrap()
+                            .record();
+                        assert!(!record.admission.materializable, "{id}");
+                        assert!(
+                            matches!(&record.semantics.readable_writeable,
+                        F::Known(text) if text.distance_read == F::Known(true)),
+                            "{id}"
+                        );
+                    }
+                    for (x, suffix) in [
+                        (3, "You read: To Kazordoon Shops"),
+                        (2, "You are too far away to read it"),
+                    ] {
+                        assert_eq!(
+                            read_map_sign(
+                                generation,
+                                &map,
+                                &target,
+                                ActorPosition { x, y: 0, floor: -7 }
+                            ),
+                            Ok(ItemLookResult::Text(format!("You see sign.\n{suffix}")))
+                        );
+                    }
+                },
+            );
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+#[test]
 fn reading_map_five_and_visible_other_floor_are_too_far() {
     with_reading_map("North!", |generation, map, target| {
         for at in [
@@ -1037,21 +1086,26 @@ fn reading_map_forged_stale_hidden_and_not_visible_are_refused() {
 
 #[test]
 fn reading_map_placement_outside_the_published_stack_cut_is_not_visible() {
-    with_reading_map_entries("North!", 10, |generation, map, target| {
-        assert_eq!(
-            read_map_sign(
-                generation,
-                &map,
-                &target,
-                ActorPosition {
-                    x: 7,
-                    y: 0,
-                    floor: -7
-                }
-            ),
-            Err(ItemLookRefusal::NotVisible)
-        );
-    });
+    with_reading_map_entries(
+        "oteryn:item.tibia.i2012",
+        "North!",
+        10,
+        |generation, map, target| {
+            assert_eq!(
+                read_map_sign(
+                    generation,
+                    &map,
+                    &target,
+                    ActorPosition {
+                        x: 7,
+                        y: 0,
+                        floor: -7
+                    }
+                ),
+                Err(ItemLookRefusal::NotVisible)
+            );
+        },
+    );
 }
 
 #[test]
@@ -1104,4 +1158,46 @@ fn reading_map_non_distance_item_keeps_existing_look() {
             Err(ItemLookRefusal::NotAvailable)
         );
     });
+}
+
+#[test]
+fn butterfly_ground_items_show_their_source_name() {
+    let world = WorldId::decode(&id(1)).unwrap();
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let generation = controller.active().unwrap();
+    let pinned = runtime(generation, true);
+    let index = pinned_index(&pinned, Some(generation)).unwrap();
+
+    for appearance_id in [4378, 4991, 4992, 4993] {
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: format!("oteryn:item.tibia.i{appearance_id}"),
+            revision_ref: "definition-r1".into(),
+        };
+        let item = ViewItem {
+            appearance_id,
+            key: ItemKey::Instance(id(3)),
+            item_definition_ref: index
+                .definition_ref("Item", &definition.production_key, &definition.revision_ref)
+                .unwrap(),
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        };
+        let mut views = SessionItemView::resume(Default::default()).with_map_view();
+        let target = views
+            .map_view(&[item.key], |table| Ok(table.handle(&item.key)))
+            .unwrap()
+            .unwrap();
+        let observed = ObservedLookItem {
+            item,
+            definition: &definition,
+            look_distance: 1,
+        };
+        let result =
+            examine_observed_item(&pinned, Some(generation), &views, target, Some(observed));
+        let ItemLookOutcome::Text(text) = result else {
+            panic!("ground item {appearance_id} cannot be examined: {result:?}");
+        };
+        assert_eq!(text.lines().next(), Some("You see dead butterfly."));
+    }
 }

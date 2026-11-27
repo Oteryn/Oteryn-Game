@@ -9,12 +9,12 @@ pub(super) async fn commit_keys(
     actor: ExactActorRef,
     command: UseCommand,
     keys: Vec<String>,
-) {
+) -> bool {
     let Some(catalogue) = owner.quest_catalogue.as_ref() else {
-        return;
+        return true;
     };
     if keys.is_empty() {
-        return;
+        return true;
     }
     if owner
         .runtime
@@ -23,17 +23,17 @@ pub(super) async fn commit_keys(
         .player_control_facts(actor, command.game_session_id)
         .is_err()
     {
-        return;
+        return false;
     }
     let Ok(ordinal) = CommandId::new(command.command_id) else {
-        return;
+        return false;
     };
     for key in keys {
         let Ok(Some(fence)) = owner.current_quest_fence(command.game_session_id).await else {
-            return;
+            return false;
         };
         if command.item_fence != Some(fence.item_fence()) {
-            return;
+            return false;
         }
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let outcome = slot
@@ -63,8 +63,9 @@ pub(super) async fn commit_keys(
             Err(error) => {
                 super::operator_event(&format!("quest_stage_observation_refused reason={error:?}"));
                 owner.schedule_quest_refresh(command.game_session_id);
-                return;
+                return false;
             }
         }
     }
+    true
 }

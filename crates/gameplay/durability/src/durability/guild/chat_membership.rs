@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::*;
 impl DurabilityRoot {
     /// Server-selected current membership for send/login; absence is not permission to send.
@@ -50,7 +51,7 @@ impl DurabilityRoot {
                     .await
                     {
                         Ok(data) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            commit_semantic_read(tx, deadline).await?;
                             Ok(Ok(data))
                         }
                         Err(GuildError::Unavailable(error)) => Err(error),

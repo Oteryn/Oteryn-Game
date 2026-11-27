@@ -4,6 +4,8 @@ mod account_achievements_tests;
 mod activity_handoff_tests;
 #[path = "tests/activity_scope.rs"]
 mod activity_scope_tests;
+#[path = "tests/actor_cooldowns.rs"]
+mod actor_cooldowns_tests;
 #[path = "tests/admission_snapshot_tests.rs"]
 mod admission_snapshot_tests;
 #[path = "tests/analyser.rs"]

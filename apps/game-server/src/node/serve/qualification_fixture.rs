@@ -14,21 +14,25 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
-    matches!(
-        profile,
-        "c16c-sorcerer"
-            | "druid"
-            | "explorer"
-            | "i12"
-            | "knight"
-            | "knight-underlevel"
-            | "monk"
-            | "paladin"
-            | "premium"
-            | "sorcerer"
-            | "w10-primal"
-    )
-    .then_some((session, profile))
+    if !matches!(profile, "i12" | "premium") {
+        spell_build(profile)?;
+    }
+    Some((session, profile))
+}
+
+fn spell_build(profile: &str) -> Option<(&str, u32, bool)> {
+    match profile {
+        "c16c-sorcerer" => Some(("sorcerer", 100, false)),
+        "w10-primal" => Some(("knight", 1000, false)),
+        "explorer" => Some(("knight", 100, false)),
+        "knight-underlevel" => Some(("knight", 66, false)),
+        "levitate" => Some(("sorcerer", 12, true)),
+        "magic-rope" => Some(("sorcerer", 9, true)),
+        vocation if qualification_build::PLAYABLE_VOCATIONS.contains(&vocation) => {
+            Some((vocation, 100, false))
+        }
+        _ => None,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -568,7 +572,7 @@ async fn begin_spawn_transaction(
     // cutoff. A slower setup may have armed the timer late, so take no locks.
     let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
         holder,
-        (backend_deadline - setup).into_std(),
+        backend_deadline - setup,
     )
     .await
     .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
@@ -853,39 +857,10 @@ async fn prepare_build(
         .progression()
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
-    let context = policy.context.clone();
-    let (vocation, level) = match profile {
-        "knight-underlevel" => ("knight", 66),
-        "w10-primal" => ("knight", 1000),
-        "explorer" => ("knight", 100),
-        "c16c-sorcerer" => ("sorcerer", 100),
-        _ => (profile, 100),
-    };
-    let occurrence_profile = if level == 100 { vocation } else { profile };
+    let spec = fixture_build_spec(profile, character.as_bytes(), policy.context.clone())
+        .ok_or("qualification build profile unavailable")?;
     qualification_build::prepare_character_with_policy_until(
-        root,
-        authority,
-        proof,
-        &current,
-        qualification_build::QualificationBuildSpec {
-            vocation,
-            level,
-            magic_seed: (profile == "c16c-sorcerer").then(|| {
-                (
-                    4,
-                    fixture_occurrence(character.as_bytes(), profile, b"magic"),
-                )
-            }),
-            context,
-            xp_occurrence: fixture_occurrence(character.as_bytes(), occurrence_profile, b"xp"),
-            build_occurrence: fixture_occurrence(
-                character.as_bytes(),
-                occurrence_profile,
-                b"vocation",
-            ),
-        },
-        policy,
-        deadline,
+        root, authority, proof, &current, spec, policy, deadline,
     )
     .await?;
     let gear: &[(u32, u32)] = if profile == "w10-primal" {
@@ -906,6 +881,25 @@ async fn prepare_build(
         &[(3276, 1), (3003, 1), (3457, 1)]
     };
     prepare_items(root, authority, proof, &current, native, deadline, gear).await
+}
+
+pub(crate) fn fixture_build_spec<'a>(
+    profile: &'a str,
+    character: &[u8; 16],
+    context: crate::domain::progression::ProgressionRevisionContext<String>,
+) -> Option<qualification_build::QualificationBuildSpec<'a>> {
+    let (vocation, level, exact_level) = spell_build(profile)?;
+    let occurrence_profile = if level == 100 { vocation } else { profile };
+    Some(qualification_build::QualificationBuildSpec {
+        vocation,
+        level,
+        exact_level,
+        magic_seed: (profile == "c16c-sorcerer")
+            .then(|| (4, fixture_occurrence(character, profile, b"magic"))),
+        context,
+        xp_occurrence: fixture_occurrence(character, occurrence_profile, b"xp"),
+        build_occurrence: fixture_occurrence(character, occurrence_profile, b"vocation"),
+    })
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -1769,9 +1763,16 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            for profile in [
+                                "knight",
+                                "druid",
+                                "paladin",
+                                "sorcerer",
+                                "explorer",
+                                "monk",
+                                "levitate",
+                                "magic-rope",
+                            ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();
@@ -1988,6 +1989,8 @@ mod tests {
         }
         for text in [
             format!("qualify {id} master_sorcerer"),
+            format!("qualify {id} levitate 13"),
+            format!("qualify {id} magic-rope 10"),
             format!("qualify {id} knight extra"),
             format!("qualify {id} knight\nqualify {id} druid"),
             "qualify 01890f4c-3b2a-4c01-8d11-9a321b7c0004 knight".into(),

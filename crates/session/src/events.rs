@@ -1,8 +1,24 @@
 //! Validated pushed domain updates exposed by the client session.
 use super::*;
 
-/// A server-sequenced delta that no command outcome claimed, already validated and applied to the
-/// session's domain store (FND-02 §14, §15), in the order it was applied.
+/// An own-actor cooldown frame and the local monotonic instant it was decoded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActorCooldownUpdate {
+    pub value: oteryn_protocol_oteryn::presentation::ActorCooldowns,
+    pub received_at: std::time::Instant,
+    pub snapshot: bool,
+}
+
+impl std::ops::Deref for ActorCooldownUpdate {
+    type Target = oteryn_protocol_oteryn::presentation::ActorCooldowns;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+/// Server-sequenced updates, already validated and applied to the session's domain store
+/// (FND-02 §14, §15), in the order they were applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
     CastCasterLine(AppliedDelta<cast_chat::CasterLine>),
@@ -22,7 +38,12 @@ pub enum SessionEvent {
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ItemEffects(AppliedDelta<Vec<PresentationEvent>>),
-    ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
+    ActorCooldowns(AppliedDelta<ActorCooldownUpdate>),
+    /// One rescue publication. Its vitals can also satisfy a cast's required follow-up.
+    GiftOfLife {
+        cooldowns: AppliedDelta<ActorCooldownUpdate>,
+        vitals: AppliedDelta<ActorVitals>,
+    },
     PlayerTrade(AppliedDelta<player_trade::State>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),
@@ -85,6 +106,15 @@ pub enum SessionEvent {
 }
 
 impl SessionEvent {
+    /// Applied own-actor vitals, including updates paired with rescue cooldowns.
+    #[must_use]
+    pub const fn actor_vitals(&self) -> Option<&AppliedDelta<ActorVitals>> {
+        match self {
+            Self::ActorVitals(vitals) | Self::GiftOfLife { vitals, .. } => Some(vitals),
+            _ => None,
+        }
+    }
+
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
@@ -105,7 +135,7 @@ impl SessionEvent {
             Self::WorldWeather(_) => 22,
             Self::Presentation(_) => 19,
             Self::ItemEffects(_) => oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS,
-            Self::ActorCooldowns(_) => 20,
+            Self::ActorCooldowns(_) | Self::GiftOfLife { .. } => 20,
             Self::ServerSaveCountdown(_) => 40,
             Self::AchievementEarned(_) => {
                 oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES

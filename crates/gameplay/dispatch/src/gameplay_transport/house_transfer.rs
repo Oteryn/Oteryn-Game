@@ -737,24 +737,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.reserve_precondition().await?;
         let _lane = self.spell_lane_permit().await.ok_or(Unavailable)?;
         let mut runtime = self.runtime.lock().await;
-        let loss = if let Some((actor, _)) = runtime
+        let (retained_actor, loss) = if let Some((actor, _)) = runtime
             .house_player_for_session(retained_destination)
             .map_err(|_| Unavailable)?
         {
-            runtime
-                .house_player_control_facts(actor, retained_destination)
-                .map_err(|_| Unavailable)?
-                .control_loss
+            (
+                Some(actor),
+                runtime
+                    .house_player_control_facts(actor, retained_destination)
+                    .map_err(|_| Unavailable)?
+                    .control_loss,
+            )
         } else if let Some((actor, _)) = runtime
             .positioned_player_for_session(retained_destination)
             .map_err(|_| Unavailable)?
         {
-            runtime
-                .player_control_facts(actor, retained_destination)
-                .map_err(|_| Unavailable)?
-                .control_loss
+            (
+                Some(actor),
+                runtime
+                    .player_control_facts(actor, retained_destination)
+                    .map_err(|_| Unavailable)?
+                    .control_loss,
+            )
         } else {
-            None
+            (None, None)
         };
         if loss.is_some() {
             return Ok(None);
@@ -775,6 +781,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| Unavailable)?;
         let destination = crate::foundation::GameSessionId::decode(&recovered.ack.session)
             .map_err(|_| Unavailable)?;
+        // Replace the transport fence while runtime custody is still locked.
+        // A live lost-ACK recovery can retain the previous actor and lease.
+        if let Some(actor) = retained_actor {
+            self.states
+                .spell_states
+                .lock()
+                .await
+                .replace_cooldown_transport(
+                    actor,
+                    destination,
+                    recovered.ack.connection_generation,
+                );
+        }
         let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(destination)
             .await
@@ -940,6 +959,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             spells
                 .commit_house_transfer_views(&runtime, &mut attack, views)
                 .ok_or(Unavailable)?;
+        }
+        if retained_actor != Some(actor) {
+            spells.replace_cooldown_transport(
+                actor,
+                destination,
+                recovered.ack.connection_generation,
+            );
         }
         drop(attack);
         drop(spells);

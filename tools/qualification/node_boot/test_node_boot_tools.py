@@ -106,7 +106,7 @@ class ClassARowWiringTests(unittest.TestCase):
                       (self.phases / 'client_row_c16c.rs').read_text())
         for row in ('client_row_w10.rs', 'full_row_w10.rs'):
             self.assertIn(', W10_CHARACTER)', (self.phases / row).read_text())
-        self.assertIn('"$LIGHT_ACCOUNT_ID" "$W10_ACCOUNT_ID" "$C16C_ACCOUNT_ID")', RUN_TEXT)
+        self.assertIn('"$LIGHT_ACCOUNT_ID" "$W10_ACCOUNT_ID" "$C16C_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT")', RUN_TEXT)
         self.assertIn('NODE_BOOT_W10_ACCOUNT_ID=$W10_ACCOUNT_ID', RUN_TEXT)
 
 class KnobTests(unittest.TestCase):
@@ -339,7 +339,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 13)
+        self.assertEqual(len(accounts), 15)
         self.assertEqual(len(set(accounts)), len(accounts))
 
 

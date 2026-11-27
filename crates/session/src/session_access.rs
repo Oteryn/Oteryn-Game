@@ -302,6 +302,11 @@ impl<S: SessionStream> Session<S> {
         std::mem::take(&mut self.duplicates)
     }
 
+    /// The cooldown snapshot and the instant it was decoded.
+    pub fn actor_cooldown_snapshot(&self) -> Option<&ActorCooldownUpdate> {
+        self.actor_cooldown_snapshot.as_ref()
+    }
+
     /// Returns (and clears) the pushed deltas applied since the last call, in order.
     pub fn take_events(&mut self) -> Vec<SessionEvent> {
         std::mem::take(&mut self.events)
@@ -388,7 +393,9 @@ impl<S: SessionStream> Session<S> {
                 MessageType::SnapshotBegin => self.replace_snapshot(envelope.payload()).await?,
                 MessageType::StateDelta => {
                     let server_sequence = self.next_sequence(&envelope)?;
-                    let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    let event = self
+                        .apply_pushed_delta(server_sequence, envelope.payload())
+                        .await?;
                     self.queue_event(event)?;
                 }
                 actual => {

@@ -14,7 +14,7 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 pub use super::stepper::Stepper;
 
 mod scope_transition;
-use scope_transition::{initialize, publish_scope_transition, query_initial_returner, reset_modal};
+use scope_transition::{publish_scope_transition, query_initial_returner, reset_modal};
 
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
@@ -45,7 +45,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     if outbox.session_cancelled() {
         return;
     }
-    if let Err(error) = initialize(&session, &outbox) {
+    if let Err(error) = super::session_initialize::initialize_admission(&session, &outbox) {
         outbox.end(public_class(&error));
         return;
     }
@@ -56,6 +56,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     let mut personal_marks_refresh = std::time::Instant::now();
     let mut read_initial_features = !outbox.scope_waiting();
     let mut query_returner = true;
+    let mut bar_fallback = None;
     'session: loop {
         if outbox.session_cancelled() {
             return;
@@ -64,7 +65,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             reset_modal(&session, &outbox, &mut modal);
         }
         if outbox.scope_needs_initialize() {
-            if let Err(error) = initialize(&session, &outbox) {
+            if let Err(error) = super::session_initialize::initialize_scope(&session, &outbox) {
                 outbox.end(public_class(&error));
                 return;
             }
@@ -198,8 +199,12 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             }
             publish(&mut session, &outbox, &mut held);
         }
+        let command = bar_fallback
+            .take()
+            .and_then(|fallback| outbox.resume_bar_cast(fallback))
+            .map_or_else(|| outbox.scope_command(&commands), Ok);
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
-            outbox.scope_command(&commands), session, outbox, held, publish;
+            command, session, outbox, held, publish;
             Ok(command @ (PlayCommand::SkillsCombat(_) | PlayCommand::HudStamina)) => match outbox.hud_character_query(&mut session, command).await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
@@ -294,48 +299,44 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             }},
-            Ok(PlayCommand::BrowseFieldMove(intent)) => {
-                match session.move_item(oteryn_client_runtime::inventory::MoveRequest {source:intent.source,destination:intent.destination,count:None}).await {
-                    Ok(response) => {
-                        outbox.browse_field_moved(response);
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+            Ok(PlayCommand::BrowseFieldMove(intent)) => match session.move_item(oteryn_client_runtime::inventory::MoveRequest {source:intent.source,destination:intent.destination,count:None}).await {
+                Ok(response) => {
+                    outbox.browse_field_moved(response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
-            Ok(PlayCommand::ServerMechanic(request)) => {
-                match session.server_mechanic(&request).await {
-                    Ok(response) => {
-                        match request.capability {
-                            290 if request.command_type==505 => outbox.cast_chat_result(&response),
-                            290 => outbox.cast_control_result(&response),
-                            291 => outbox.cast_chat_result(&response),
-                            292 => outbox.cast_consent_result(&response),
-                            63 if request.command_type==oteryn_client_runtime::coin_market::COMMAND => outbox.coin_market_result(&response),
-                            64 => outbox.target_move_result(&request, &response),
-                            82 => outbox.creature_push_result(&response),
-                            98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
-                            9 | 507 => outbox.highscores_result(&response),
-                            17 if request.command_type == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY => outbox.battle_metadata_result(&response),
-                            14 => outbox.browse_field_result(&response),
-                            152 => outbox.item_forge_result(&response),
-                            153 => outbox.depot_search_result(&response),
-                            154 if request.command_type==oteryn_client_runtime::coin_transfer::COMMAND => outbox.coin_gift_result(&response),
-                            154 | 479 => outbox.store_result(&response),
-                            15 if request.command_type == oteryn_client_runtime::world_interaction::world_object::COMMAND_TYPE_USE_INTENT =>
-                                outbox.store_lamp_result(&response),
-                            450 if request.command_type == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION => outbox.store_result(&response),
-                            179 => outbox.hotkey_equip_result(&response),
-                            230 => outbox.browse_field_result(&response),
-                            _ => {}
-                        }
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
+                Err(error) => error,
+            },
+            Ok(PlayCommand::ServerMechanic(request)) => match session.server_mechanic(&request).await {
+                Ok(response) => {
+                    match request.capability {
+                        290 if request.command_type==505 => outbox.cast_chat_result(&response),
+                        290 => outbox.cast_control_result(&response),
+                        291 => outbox.cast_chat_result(&response),
+                        292 => outbox.cast_consent_result(&response),
+                        63 if request.command_type==oteryn_client_runtime::coin_market::COMMAND => outbox.coin_market_result(&response),
+                        64 => outbox.target_move_result(&request, &response),
+                        82 => outbox.creature_push_result(&response),
+                        98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
+                        9 | 507 => outbox.highscores_result(&response),
+                        17 if request.command_type == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY => outbox.battle_metadata_result(&response),
+                        14 => outbox.browse_field_result(&response),
+                        152 => outbox.item_forge_result(&response),
+                        153 => outbox.depot_search_result(&response),
+                        154 if request.command_type==oteryn_client_runtime::coin_transfer::COMMAND => outbox.coin_gift_result(&response),
+                        154 | 479 => outbox.store_result(&response),
+                        15 if request.command_type == oteryn_client_runtime::world_interaction::world_object::COMMAND_TYPE_USE_INTENT =>
+                            outbox.store_lamp_result(&response),
+                        450 if request.command_type == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION => outbox.store_result(&response),
+                        179 => outbox.hotkey_equip_result(&response),
+                        230 => outbox.browse_field_result(&response),
+                        _ => {}
                     }
-                    Err(error) => error,
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Animus(payload)) => match session.animus(&payload).await {
                 Ok(result) => {
                     outbox.animus_result(&result);
@@ -352,8 +353,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Exiva(payload)) => match outbox.exiva_run(&mut session, &payload).await
-            {
+            Ok(PlayCommand::Exiva(payload)) => match outbox.exiva_run(&mut session, &payload).await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
@@ -375,8 +375,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::LoyaltySkills(payload)) => match session.loyalty_skills(&payload).await
-            {
+            Ok(PlayCommand::LoyaltySkills(payload)) => match session.loyalty_skills(&payload).await {
                 Ok(result) => {
                     outbox.loyalty_skills_result(&result);
                     publish(&mut session, &outbox, &mut held);
@@ -392,15 +391,13 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::TargetWalk(position)) => {
-                match outbox.target_walk_run(&mut session, position).await {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+            Ok(PlayCommand::TargetWalk(position)) => match outbox.target_walk_run(&mut session, position).await {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Step(direction)) => {
                 let started = std::time::Instant::now();
                 match session.step(step_direction(direction)).await {
@@ -414,15 +411,22 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                     Err(error) => error,
                 }
             }
-            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_) | PlayCommand::StopAttacking(_))) => {
-                match outbox.battle_run(&mut session, command).await {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_) | PlayCommand::StopAttacking(_))) => match outbox.battle_run(&mut session, command).await {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::BarCast(command, fallback)) => match outbox.bar_cast_run(&mut session, command, *fallback).await {
+                Ok(next) => {
+                    publish(&mut session, &outbox, &mut held);
+                    outbox.push(session.drain());
+                    bar_fallback = next;
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Logout) => match session.logout().await {
                 Ok(Some(LogoutResult::Accepted)) => {
                     // The server ended the session and closes the transport.
@@ -444,33 +448,27 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::NpcTalk(intent)) => {
-                match outbox.dialogue_run(&mut session, &intent).await {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+            Ok(PlayCommand::NpcTalk(intent)) => match outbox.dialogue_run(&mut session, &intent).await {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
-            Ok(PlayCommand::NpcTrade(intent)) => {
-                match outbox.npc_trade_run(&mut session, &intent).await {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+                Err(error) => error,
+            },
+            Ok(PlayCommand::NpcTrade(intent)) => match outbox.npc_trade_run(&mut session, &intent).await {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
-            Ok(PlayCommand::NpcShop(command)) => {
-                match outbox.npc_shop_run(&mut session, &command).await {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+                Err(error) => error,
+            },
+            Ok(PlayCommand::NpcShop(command)) => match outbox.npc_shop_run(&mut session, &command).await {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
             Ok(PlayCommand::BossRewards(command)) => match session.boss_rewards(&command).await {
                 Ok(response) => {
                     outbox.boss_rewards_result(&response);
@@ -518,16 +516,14 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Guild(command)) => match outbox.guild_run(&mut session, &command).await
-            {
+            Ok(PlayCommand::Guild(command)) => match outbox.guild_run(&mut session, &command).await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Party(request)) => match outbox.party_run(&mut session, &request).await
-            {
+            Ok(PlayCommand::Party(request)) => match outbox.party_run(&mut session, &request).await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
@@ -542,25 +538,21 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
-                match session.serve(IDLE_SLICE).await {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => match session.serve(IDLE_SLICE).await {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
             Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => return,
-            Ok(PlayCommand::Market(request)) => {
-                match outbox.market_execute(&mut session, &request).await {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+            Ok(PlayCommand::Market(request)) => match outbox.market_execute(&mut session, &request).await {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
             Ok(PlayCommand::MovementSpeech(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
                     outbox.chat_public_result(&intent, &outcome);

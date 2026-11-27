@@ -117,6 +117,123 @@ fn fixture_session() -> TestResult<
     ))
 }
 
+#[test]
+fn exact_spell_profiles_build_and_refuse_level_drift() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            runtime()
+                .map_err(debug)?
+                .block_on(async {
+                    for (profile, expected_level, words) in [
+                        ("levitate", 12, "exani hur up"),
+                        ("magic-rope", 9, "exani tera"),
+                    ] {
+                        let h = Harness::create(
+                            admin.clone(),
+                            profile.replace('-', "_").as_str(),
+                            false,
+                        )
+                        .await?;
+                        let result = exercise_exact_spell(&h, profile, expected_level, words).await;
+                        h.cleanup().await?;
+                        result?;
+                    }
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "exact spell profile thread failed")?
+        .map_err(Into::into)
+}
+
+async fn exercise_exact_spell(
+    h: &Harness,
+    profile: &str,
+    expected_level: u32,
+    words: &str,
+) -> TestResult {
+    use crate::node::serve::fixture_build_spec;
+    use crate::qualification_spell_character::{advance_source_level, fixture_policy};
+
+    let initial = fence(1)?;
+    let current = fixture_session()?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let policy = fixture_policy(context())?;
+    let prepare = async || {
+        let spec = fixture_build_spec(profile, initial.character_id.as_bytes(), context())
+            .ok_or("exact spell profile missing")?;
+        prepare_character_with_policy(&h.root, &authority, &h.node, &current, spec, policy.clone())
+            .await
+    };
+    prepare().await?;
+    prepare().await?;
+
+    let state = h
+        .root
+        .read_character_progression(&authority, initial.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("spell progression absent")?;
+    let build = h
+        .root
+        .read_character_build_state(&authority, initial.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(state.level, expected_level);
+    let manifest =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json");
+    let room = crate::content::qualify_native_entry_room_from_gameplay_manifest(
+        initial.runtime_scope.world_id(),
+        &manifest,
+    )?;
+    let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
+    let vocation = crate::spell::Vocation::from_key(build.vocation()).ok_or("spell vocation")?;
+    let spell = native
+        .spell_book()
+        .spoken(words)
+        .ok_or("compiled spell absent")?
+        .spell;
+    assert_eq!(spell.level, state.level);
+    assert!(spell.vocations.contains(&vocation));
+    assert!(!spell.learning_required && !spell.premium);
+
+    advance_source_level(
+        &h.root,
+        &authority,
+        &h.node,
+        &current,
+        expected_level + 1,
+        id(86),
+    )
+    .await?;
+    let error = prepare()
+        .await
+        .err()
+        .ok_or("fixture accepted the wrong level")?;
+    assert_eq!(
+        error.to_string(),
+        "qualification fixture XP checkpoint has changed"
+    );
+    let state = h
+        .root
+        .read_character_progression(&authority, initial.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("advanced progression absent")?;
+    assert_eq!(state.level, expected_level + 1);
+    Ok(())
+}
+
 async fn exercise(h: &Harness, case: Case) -> TestResult {
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -348,6 +465,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             magic_seed: None,
             vocation: "knight",
             level: 2,
+            exact_level: false,
             context: served.context.clone(),
             xp_occurrence: id(83),
             build_occurrence: id(84),

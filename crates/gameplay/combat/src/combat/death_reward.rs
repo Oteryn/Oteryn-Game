@@ -231,8 +231,12 @@ impl<const N: usize> RewardProgressionBinding<N> {
 /// Complete semantic input of one death's reward composition.
 #[derive(Debug, Clone)]
 pub struct CreatureDeathRewardInput<const N: usize> {
+    /// Roster ready once this death's final physical rewards materialize.
+    pub boss_achievement: Option<crate::durability::account_achievement::BossDeathAchievementWork>,
     /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
     pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+    /// The retained Bakragore callback selected a child that must commit with the corpse.
+    pub atomic_source_loot: bool,
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
     /// as the loot definitions are (Content binding of `i00005801` waits on
     /// the Content revision, D3-7).
@@ -471,6 +475,8 @@ async fn settle_loot(
     corpse_source: Option<TypedDefinitionRef>,
     bank_robbery: Option<[u8; 16]>,
     tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+    atomic_source_loot: bool,
+    boss_achievement: Option<crate::durability::account_achievement::BossDeathAchievementWork>,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
         (None, None) if loot_table.entries.is_empty() && tutorial_corruptor.is_none() => {
@@ -590,6 +596,8 @@ async fn settle_loot(
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
     if bank_robbery.is_some()
+        || boss_achievement.is_some()
+        || atomic_source_loot
         || tutorial_corruptor.is_some()
         || plan.entries.iter().any(|entry| entry.parent.is_some())
     {
@@ -645,6 +653,7 @@ async fn settle_loot(
                 ground.boss_spawn.clone(),
                 tutorial_corruptor,
                 bank_robbery,
+                boss_achievement.map(|work| (death, work)),
             )
             .await
             .map_err(CombatDeathRewardLootError::Corpse)?;
@@ -896,6 +905,8 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         corpse_source,
         facts.bank_robbery,
         input.tutorial_corruptor.clone(),
+        input.atomic_source_loot,
+        input.boss_achievement,
     )
     .await;
 

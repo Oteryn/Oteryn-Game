@@ -81,6 +81,64 @@ class QuestAccessBindings(unittest.TestCase):
         access.overlay_outputs(outputs, access.canonical({"bindings": [row]}))
         self.assertEqual(outputs, before)
 
+    def test_paradox_and_banshee_startup_selectors_are_projected(self):
+        capture = json.loads((ROOT / access.CAPTURE).read_bytes())
+        index = json.loads((ROOT / access.INDEX).read_bytes())
+        for position, item, attribute, value in (
+            ((32477, 31905, 7), 599, "unique", 25031),
+            ((32487, 31928, 7), 599, "unique", 25037),
+            ((32481, 31905, 1), 1949, "unique", 38022),
+            ((32477, 31902, 1), 431, "action", 50311),
+            ((32266, 31898, 12), 353, "action", 25019),
+            ((32171, 31853, 15), 1959, "unique", 35014),
+            ((32191, 31938, 14), 431, "action", 25020),
+            ((32190, 31938, 14), 431, "action", 25021),
+            ((32311, 31978, 13), 1959, "unique", 35018),
+            ((32219, 31913, 15), 1949, "unique", 35019),
+        ):
+            x, y, z = position
+            path = (
+                ROOT
+                / "content/world/placements"
+                / codec.region_name(z, x // 256, y // 256)
+            )
+            raw, matched = access.overlay_region(
+                path.read_bytes(), index["palette"], capture["bindings"]
+            )
+            self.assertEqual(matched.get(position), attribute, position)
+            self.assertIn(
+                (item, value),
+                [
+                    (
+                        index["palette"][i]["source_item_id"],
+                        (attrs or {}).get(attribute),
+                    )
+                    for _, tiles in codec.decode_region(raw)[3]
+                    for tx, ty, _, _, _, entries in tiles
+                    if (tx, ty) == (x, y)
+                    for i, depth, attrs in entries
+                    if depth == 0
+                ],
+            )
+
+    def test_paradox_door_projects_key_3899_on_the_fourth_floor(self):
+        index = json.loads((ROOT / access.INDEX).read_bytes())
+        capture = json.loads(
+            (
+                ROOT
+                / "tools/content-schema/world-authoring/samples/quest-key-door-bindings.json"
+            ).read_bytes()
+        )
+        path = ROOT / "content/world/placements/region-z04-x126-y124.b3"
+        _, matched = access.overlay_region(
+            path.read_bytes(), index["palette"], capture["bindings"]
+        )
+        self.assertEqual(matched.get((32479, 31903, 4)), "action")
+        (row,) = [
+            row for row in capture["bindings"] if row["position"] == [32479, 31903, 4]
+        ]
+        self.assertEqual((row["item"], row["value"]), (1631, 3899))
+
     def test_committed_source_quest_access_selectors(self):
         index = json.loads((ROOT / "content/world/placements/index.json").read_bytes())
         capture = json.loads(

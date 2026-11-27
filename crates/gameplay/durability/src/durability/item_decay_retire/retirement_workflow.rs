@@ -1,4 +1,5 @@
 //! The shared frozen one-item retirement workflow for both admitted causes.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 #[cfg(any(test, feature = "test-support"))]
 use crate::durability::world_reset::test_support::{RetirementPhase, RetirementProbe};
@@ -442,7 +443,7 @@ impl DurabilityRoot {
                         return Ok(Err(DecayRetireError::AuthorityRejected));
                     }
                     let Some(row) = load_receipt(&mut tx, step.item_instance_id).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let committed = decode_receipt(&row)?;
@@ -451,7 +452,7 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(DecayRetireError::ConflictingCause));
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })
@@ -552,7 +553,7 @@ impl DurabilityRoot {
                             decay_at_unix_ms: row.try_get("deadline")?,
                         });
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(CorpseDecaySchedule {
                         database_now_unix_ms,
                         corpses,

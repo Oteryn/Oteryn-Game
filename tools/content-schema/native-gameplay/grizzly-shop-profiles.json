@@ -51,15 +51,15 @@
     },
     {
       "path": "content/items/definitions/items-15500-15999.json",
-      "sha256": "6c798e36edb21c9a2c0ad1a8ade50e6d10f9ae4585682229a054b186c2310070"
+      "sha256": "ae9f28c33d917c57001ca39fe1c252b44453ee7ae57b84c9eac8b18ae5dff9fd"
     },
     {
       "path": "content/items/definitions/items-20500-20999.json",
-      "sha256": "0536c87d65aad4ade8aca511e0a1f1d39ea98cc154cdc92e69a9a155642e94d6"
+      "sha256": "3e4b0d9c8601d809fc551b1b1c6d13d6028cef60d9a7810e59cc37d7a8a2da58"
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "ab3b8e9e8c8238e067d3086a2a34d22de4460ce54edf94c337cf29958f44da6a"
+      "sha256": "d21c488995a8f126f9a2d15ec47d8c53964f345b92348ef24a8421a4003256fd"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",

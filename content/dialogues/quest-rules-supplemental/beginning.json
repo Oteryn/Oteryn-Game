@@ -1,0 +1,2499 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_beginning_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 8,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:85-118"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:174-224"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 8,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:88-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 13,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:67-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 11,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:69-235"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 8,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 8,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:109-157"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/report-legs-6",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i7882",
+          "count": 3,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Three cockroach legs! You earned 100 experience. Did your level go up?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 7
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 5
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i7882",
+          "count": 3
+        },
+        {
+          "kind": "experience",
+          "amount": 100
+        },
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:88-99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-0",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Welcome to Rookgaard! Could you help me? Say yes if you can."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:67-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-1",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Good to see you again. Can you help me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:72-74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-2",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Look in the chest upstairs in my house, then come back."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:75-78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Did you put on the coat from the chest?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:79-81"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "I can give you a weapon. Are you ready?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:82-84"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-5",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Bring back three cockroach legs from my cellar."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:85-87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-7",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Did you see your level go up?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:101-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-8",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Did the cockroaches hurt you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:101-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-9",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Ready to learn about taking damage?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:101-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-10",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "Shall we talk about recovering health?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:101-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-11",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "Did you try to eat the fish?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:101-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-12",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "Have you seen Zirella?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:101-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-13",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "Good to see you again. You can find Zirella down the hill to the east."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:101-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/offer-chest",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Go to my house south of here. Open the chest upstairs, keep what you find and come back. Understood?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        0
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:133-135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/start-chest",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You can follow your progress in the Quest Log. See you soon."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 2
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:137-143"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/replace-coat-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "Here is a spare coat. Put it on, then tell me when you are ready for action."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 4
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:145-159"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/confirm-coat-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Now that you\u2019re equipped, are you ready for action?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:145-150"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/replace-coat-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "Here is a spare coat. Put it on, then tell me when you are ready for action."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 4
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:145-159"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/confirm-coat-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Now that you\u2019re equipped, are you ready for action?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:145-150"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/issue-club",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok",
+        "action"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Take this club, then go down the ladder in my house to reach the cellar."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        3
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 4
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3270",
+          "count": 1
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:161-168"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/greet-6",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "I need at least three cockroach legs from the cellar."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:96-99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/level-lesson",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Extra levels improve your health, carrying capacity, and speed. Did the cockroaches hurt you?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        4
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 8
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 6
+        },
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:170-173"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/health-lesson",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Check your health in the status bar. Shall I explain how to recover it?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        5
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 9
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:175-181"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/health-recovery",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok",
+        "hurt"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Keep an eye on your health after combat. I can show you how to recover it."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        6
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 10
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:181-188"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/fish",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "Eat this fish to help recover your health. Did that make sense?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        7
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 11
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 9
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3578",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:190-197"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/food-lesson",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok",
+        "easy"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "You can also get food from animals in the forest. Have you seen Zirella?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        8
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 12
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 10
+        },
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:198-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/santiago/finish-santiago",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "Zirella lives down the mountain to the east. Go see if she needs help."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        9
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "value": 13
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "value": 11
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:203-209"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-0",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I could use your help with a quest. Will you listen?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-1",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Can you help me find firewood?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-2",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Shall I tell you how to use the dead trees?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Shall I explain what to do with the branch?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Shall I explain how to move the branch?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-5",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Shall I explain how to use the cart?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-6",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Do you need me to explain the task again?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-7",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Thank you for bringing the firewood. Are you ready for your reward?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/greet-8",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Welcome back. You can take the contents of the chest by my bed."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:66-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/explain-quests",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Quest is a word many NPCs recognise. Are you ready to hear what I need?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        0
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:106-108"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/offer-firewood",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I need firewood for my oven. Can you help?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:109-113"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/wood-lesson-1",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Look for a dead tree in the forest south of here."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:115-119"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/wood-lesson-2",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Use the tree to break off a branch."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        3
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:120-124"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/wood-lesson-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Bring the branch near my cart, then use the branch with the cart."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        4
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:125-129"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/wood-lesson-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Drag the branch along the ground to move it."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        5
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:130-134"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/wood-lesson-5",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Bring the branches over to the cart beside me and let me know when you\u2019re done."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        6
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "value": 6
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "value": 6
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:135-147"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/wood-reminder",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Use a dead tree to break off a branch. Drag it back to my cart, then use the branch with the cart."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        7
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:148-154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/zirella/wood-report",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "You earned 50 experience. Take what is in the chest beside my bed."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        8
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "value": 8
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "value": 8
+        },
+        {
+          "kind": "experience",
+          "amount": 50
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zirella.lua:155-162"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-0",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Welcome! I\u2019m a tailor and a merchant. Shall I show you how to change your outfit?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:85-89"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-1",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Welcome back. Want to learn how to change your outfit?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:90-120"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-2",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Can you help me with a favour?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:90-120"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Could you find me something to eat? I\u2019ll pay for it."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:90-120"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Will you bring me some meat or ham?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:90-120"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-5",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Did you find any meat or ham?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:90-120"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-6",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Ask for a trade when you have meat or ham to sell."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:90-120"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-8",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Follow the bridge to Rookgaard village."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:90-120"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/greet-7",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "You are ready to cross the bridge to Rookgaard. Take care!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 8
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:111-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/lesson-1",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Right-click yourself and choose Set Outfit to pick an outfit and colours. Come back when you\u2019re ready."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:140-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/lesson-2",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "I\u2019m hungry. Can you get some food for me?"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:140-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/lesson-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Hunt a rabbit or deer and bring me one piece of meat or ham."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        3
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:140-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/lesson-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "I\u2019ll be here when you return. Chase Opponent can help you catch a running animal."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        4
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 5
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:140-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/hunt-reminder",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Come back once you have meat or ham from a rabbit or deer."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        5
+      ],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:177-181"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/finish-carlos",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "say",
+      "keywords": [
+        "yes",
+        "help",
+        "ok",
+        "ready"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Follow the path northwest and cross the bridge to Rookgaard."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        7
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 8
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 7
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:182-191"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/beginning/carlos/outfit-shortcut",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "trigger": "say",
+      "keywords": [
+        "outfit"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Follow the path northwest to Rookgaard."
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "value": 8
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "value": 7
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:193-205"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/carlos.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "0893e67944b91900a4cc5fb2e803895f63b1b436ab8556aa78097e00559f94fb"
+    },
+    {
+      "path": "data-global/npc/santiago.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd"
+    },
+    {
+      "path": "data-global/npc/zirella.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "d38ed72ad6088b832d09380ca10e79d0e3f8abd9c06bef34c9fa6308d1046380"
+    }
+  ]
+}

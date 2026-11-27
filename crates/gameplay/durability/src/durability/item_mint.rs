@@ -28,6 +28,7 @@
 //! the pass's work, so the budget is shared by every holder of the cause and
 //! survives restarts; the fourth unit is rejected before the pass's work.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
@@ -1103,6 +1104,7 @@ impl DurabilityRoot {
                 boss,
                 None,
                 None,
+                None,
             )
             .await?;
         outcomes.pop().ok_or(ItemMintError::InvalidInput)
@@ -1125,6 +1127,7 @@ impl DurabilityRoot {
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
         bank_robbery: Option<[u8; 16]>,
+        achievement: Option<(crate::foundation::CreatureDeathOccurrenceKey, super::account_achievement::BossDeathAchievementWork)>,
     ) -> Result<Vec<ItemMintOutcome>> {
         self.commit_kill_loot_mints_inner(
             permit,
@@ -1136,6 +1139,7 @@ impl DurabilityRoot {
             boss,
             tutorial_corruptor,
             bank_robbery,
+            achievement,
             None,
         )
         .await
@@ -1158,6 +1162,7 @@ impl DurabilityRoot {
                 node,
                 candidate,
                 &mut [],
+                None,
                 None,
                 None,
                 None,
@@ -1189,6 +1194,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             Some(source),
         )
         .await
@@ -1209,6 +1215,7 @@ impl DurabilityRoot {
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
         bank_robbery: Option<[u8; 16]>,
+        achievement: Option<(crate::foundation::CreatureDeathOccurrenceKey, super::account_achievement::BossDeathAchievementWork)>,
         source: Option<source_death::SourceCorpseMintProof<'_>>,
     ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
@@ -1306,6 +1313,16 @@ impl DurabilityRoot {
                 return Err(ItemMintError::InvalidInput);
             }
         }
+        if let Some((death, _)) = &achievement {
+            let cause = candidate.request.cause.death;
+            if death.runtime_scope() != cause.runtime_scope
+                || death.scope_ownership_generation() != cause.scope_ownership_generation
+                || death.actor_local_id() != cause.actor_local_id
+                || death.actor_local_generation() != cause.actor_local_generation
+            {
+                return Err(ItemMintError::InvalidInput);
+            }
+        }
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
         let mut context = permit;
@@ -1354,6 +1371,14 @@ impl DurabilityRoot {
                                 return Ok(Err(ItemMintError::ConflictingCause));
                             }
                             outcomes.push(ItemMintOutcome::AlreadyCommitted(decode_receipt(&row)?));
+                        }
+                        if let Some((death, work)) = achievement {
+                            // A retained corpse may predate the achievement roster.
+                            // Replaying loot is historical; creating work needs the live fence.
+                            if !fence_is_live(&mut tx, &frozen.request.cause.death, &node).await? {
+                                return Ok(Err(ItemMintError::AuthorityRejected));
+                            }
+                            work.retain(&mut tx, death).await?;
                         }
                         tx.commit(deadline).await?;
                         return Ok(Ok(outcomes));
@@ -1547,6 +1572,9 @@ impl DurabilityRoot {
                         super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim)
                             .await?;
                     }
+                    if let Some((death, work)) = achievement {
+                        work.retain(&mut tx, death).await?;
+                    }
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -1691,7 +1719,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, &cause).await?;
                     let Some(row) = load_receipt(&mut tx, &cause).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let stored: Vec<u8> = row.try_get("intent_binding")?;
@@ -1699,7 +1727,7 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::ConflictingCause));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })
@@ -1737,7 +1765,7 @@ impl DurabilityRoot {
                     .fetch_optional(&mut *tx)
                     .await?;
                     let item = row.as_ref().map(decode_instance).transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(item))
                 })
             })

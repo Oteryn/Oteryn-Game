@@ -260,7 +260,7 @@
     },
     {
       "path": "content/items/definitions/items-15500-15999.json",
-      "sha256": "6c798e36edb21c9a2c0ad1a8ade50e6d10f9ae4585682229a054b186c2310070"
+      "sha256": "ae9f28c33d917c57001ca39fe1c252b44453ee7ae57b84c9eac8b18ae5dff9fd"
     },
     {
       "path": "content/items/definitions/items-16000-16499.json",
@@ -268,15 +268,15 @@
     },
     {
       "path": "content/items/definitions/items-16500-16999.json",
-      "sha256": "723dfd9a68090fca19c606f06943636095e716854684ecf58fd58c7f0eaa766a"
+      "sha256": "f8ff0bb02817f6eb8dc5cb9b3a19b1a47e30ec71f565f51a108ca641255abfb5"
     },
     {
       "path": "content/items/definitions/items-17000-17499.json",
-      "sha256": "ff55d7c6ade116ee59217e95f17ee48c306151940cc3da6dae1f4d813635553a"
+      "sha256": "74565d5918b3dc2da3a6000dd1447e7c7b57e5f0e66a0cacf20911e3bce93a85"
     },
     {
       "path": "content/items/definitions/items-17500-17999.json",
-      "sha256": "580de25d26f56518ea2693dae7ac622f2bf4e4380ec56fb182b8648e9f020b32"
+      "sha256": "2f0269fdee7322061b9d23263c77ad59184445bb65fdb1596829e0a035cd6e5a"
     },
     {
       "path": "content/items/definitions/items-18000-18499.json",
@@ -284,35 +284,35 @@
     },
     {
       "path": "content/items/definitions/items-18500-18999.json",
-      "sha256": "3038d4b1021c6dec1524a5712ccb7cb0bc573ebf52598ddf2338205e9455db8a"
+      "sha256": "630a42eb830ef17a367d3dd70babebc0e95007adf2171efc2fe02618ebe0cd62"
     },
     {
       "path": "content/items/definitions/items-19500-19999.json",
-      "sha256": "220283e62b60afbe7c6c3bca6a490c78434feaab7542fdeffcadf687a79a4f52"
+      "sha256": "8704c3691e113e6686beb06e03de2374b05ededc6adc777c227ed607134cb446"
     },
     {
       "path": "content/items/definitions/items-20500-20999.json",
-      "sha256": "0536c87d65aad4ade8aca511e0a1f1d39ea98cc154cdc92e69a9a155642e94d6"
+      "sha256": "3e4b0d9c8601d809fc551b1b1c6d13d6028cef60d9a7810e59cc37d7a8a2da58"
     },
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "7c955b4c305887c55e49855c58d62d6cc4d6fa1c83dc70fffedb84117a36f81e"
+      "sha256": "0a2df67424a91ac1a83bfba465788156e2192a18255fdf6e585856c0a6fe7c55"
     },
     {
       "path": "content/items/definitions/items-21500-21999.json",
-      "sha256": "7dd5868d501c907b8758cd987a2e5e5380586c952b34ae9cbb4ca9c8f82401e5"
+      "sha256": "fcf7a12f9e327b72557f622551e20e37831061d223f2c3239508942714f75833"
     },
     {
       "path": "content/items/definitions/items-22000-22499.json",
-      "sha256": "3923f4a7c827469917c85c179fe196f96c561c6b4c5cbb8bb661a6fc04e03014"
+      "sha256": "e824054c6f00da672deaaa412aa288bf9c3b0bf7d4de1569a491e9301f00f6ed"
     },
     {
       "path": "content/items/definitions/items-22500-22999.json",
-      "sha256": "279d42e6f32bfdbf6fb50ecc67051f85b9a086389ed779545ab8efedc0ce7542"
+      "sha256": "cd191e688b85b221b368bc56520c6858ca57ac24d86eff13049484409132cf64"
     },
     {
       "path": "content/items/definitions/items-24500-24999.json",
-      "sha256": "9823280a73e949bd335d89d47b9355b3cbc73433d0e8f1d3550d0cf41d11d34c"
+      "sha256": "9450e685f38a25be617b76bf078d3594f9c863c8309aef55d1073669172722cf"
     },
     {
       "path": "content/items/definitions/items-25000-25499.json",
@@ -324,7 +324,7 @@
     },
     {
       "path": "content/items/definitions/items-27500-27999.json",
-      "sha256": "bb68a10ed52f552b13b8229a26b4dc43903936ac1fd91ad4b8ccaee5f75f7549"
+      "sha256": "3db10e22f9be5adeddc03703df08252ebe176a2956e6cb3dbd0ee8db99cf85d4"
     },
     {
       "path": "content/items/definitions/items-28000-28499.json",
@@ -340,7 +340,7 @@
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "ab3b8e9e8c8238e067d3086a2a34d22de4460ce54edf94c337cf29958f44da6a"
+      "sha256": "d21c488995a8f126f9a2d15ec47d8c53964f345b92348ef24a8421a4003256fd"
     },
     {
       "path": "content/items/definitions/items-30000-30499.json",

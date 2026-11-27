@@ -8,7 +8,10 @@ import time
 import uuid
 
 
-PROFILES = ("c16c-sorcerer", "druid", "explorer", "i12", "knight", "knight-underlevel", "monk", "paladin", "premium", "sorcerer", "w10-primal")
+PROFILES = (
+    "c16c-sorcerer", "druid", "explorer", "i12", "knight", "knight-underlevel",
+    "levitate", "magic-rope", "monk", "paladin", "premium", "sorcerer", "w10-primal",
+)
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
 FORGE_SPAWN = re.compile(

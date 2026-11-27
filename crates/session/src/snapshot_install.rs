@@ -24,6 +24,7 @@ impl SnapshotState {
             container_revision: session.container_revision,
             admission_snapshots: session.admission_snapshots.clone(),
             gated_snapshots: session.gated_snapshots.clone(),
+            actor_cooldown_snapshot: session.actor_cooldown_snapshot.clone(),
             gated_revisions: session.gated_revisions.clone(),
             appearance: session.appearance.clone(),
             map_header: session.map_header,
@@ -54,6 +55,7 @@ impl SnapshotState {
         session.container_revision = self.container_revision;
         session.admission_snapshots = self.admission_snapshots;
         session.gated_snapshots = self.gated_snapshots;
+        session.actor_cooldown_snapshot = self.actor_cooldown_snapshot;
         session.gated_revisions = self.gated_revisions;
         session.appearance = self.appearance;
         session.map_header = self.map_header;

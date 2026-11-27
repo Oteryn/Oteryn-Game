@@ -10,7 +10,11 @@
 
 use super::connection::{EarnedNotice, UseOutcome};
 use super::world_map::{MapTargetRefusal, MapViewSource, resolve_map_target};
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
+use crate::content::NativeEntryMovementCells;
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
+};
+use crate::map::boot::BundleMap;
 use crate::map::door::{DoorUse, KeyDoorOpening};
 use crate::map::facts::BundleFacts;
 use crate::map::overlay::ChannelOverlay;
@@ -173,18 +177,14 @@ pub(super) fn doorway_occupied(
             .unwrap_or(true)
 }
 
-/// Decides one `USE` of `target` by an actor on `actor`. `occupied` says whether an actor stands
-/// on a tile or a movable item occupies it; it is read under the same lock as the toggle.
-#[allow(clippy::too_many_arguments)]
-pub(super) fn use_door(
+/// Resolves the same map target, revision and reach for every native door use.
+fn use_resolved_door(
     overlay: &ChannelOverlay,
     facts: &BundleFacts,
     content_generation: [u8; 32],
     actor: TilePos,
-    occupied: impl FnOnce(TilePos) -> bool,
-    actor_level: u32,
-    quest_storage_met: bool,
     target: &WorldObjectTarget,
+    commit: impl FnOnce(u64, TilePos) -> UseOutcome,
 ) -> UseOutcome {
     let source = MapViewSource {
         overlay,
@@ -213,14 +213,125 @@ pub(super) fn use_door(
             ..outcome(UseDisposition::TooFar)
         };
     }
-    let occupied = occupied(resolved.pos);
-    match doors.toggle(
-        resolved.placement_key,
-        target.expected_revision,
-        occupied,
-        actor_level,
-        quest_storage_met,
-    ) {
+    commit(resolved.placement_key, resolved.pos)
+}
+
+/// Gated-door USE moves the authorized player onto the newly open doorway in
+/// the same owner turn. If the relocation or door CAS fails, neither commits.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the move and door toggle bind the same current owner inputs"
+)]
+pub(super) fn use_owned_door(
+    map: &BundleMap,
+    cells: &NativeEntryMovementCells,
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    actor_tile: TilePos,
+    states: &super::actor_spell::ChannelSpellStates,
+    quest_storage_met: bool,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+    target: &WorldObjectTarget,
+    authorize_step: impl FnOnce() -> bool,
+) -> UseOutcome {
+    let actor_level = states
+        .get(runtime, actor, session)
+        .map_or(0, |state| state.character_facts().level);
+    let doors = map.facts.doors();
+    use_resolved_door(
+        &map.overlay,
+        &map.facts,
+        runtime.content_pin().client_artifact_digest(),
+        actor_tile,
+        target,
+        |key, pos| {
+            let occupied = map.overlay.has_added_item(pos)
+                || doorway_occupied(runtime, actor, actor_tile, pos);
+            if doors.opening_requirement(key).is_some_and(|requirement| {
+                use crate::map::door::DoorEntryRequirement;
+                match requirement {
+                    DoorEntryRequirement::Level(level) => actor_level >= level,
+                    DoorEntryRequirement::Storage(_) => quest_storage_met,
+                    DoorEntryRequirement::MissingAction => false,
+                }
+            }) {
+                if (pos != actor_tile && occupied) || map.overlay.has_added_item(pos) {
+                    return outcome(UseDisposition::NotPossible);
+                }
+                if states.has_pending_spell_commit(actor, session) {
+                    return UseOutcome::rejected();
+                }
+                let pz_blocked = super::pvp_live::pz_blocked(states, actor, session, now);
+                let Ok(proof) = crate::map::floor::prepare_quest_door_opening(
+                    runtime, cells, map, actor, session, expected, key, pz_blocked,
+                ) else {
+                    return outcome(UseDisposition::NotPossible);
+                };
+                if !authorize_step() {
+                    return UseOutcome::rejected();
+                }
+                let moved = runtime.commit_source_step_and_project(proof, || {
+                    matches!(
+                        doors.toggle(
+                            key,
+                            target.expected_revision,
+                            false,
+                            actor_level,
+                            quest_storage_met
+                        ),
+                        Some(DoorUse::Toggled { open: true, .. })
+                    )
+                });
+                return if moved.is_ok() {
+                    outcome(UseDisposition::Committed)
+                } else {
+                    UseOutcome::rejected()
+                };
+            }
+            door_result(doors.toggle(
+                key,
+                target.expected_revision,
+                occupied,
+                actor_level,
+                quest_storage_met,
+            ))
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn use_door(
+    overlay: &ChannelOverlay,
+    facts: &BundleFacts,
+    content_generation: [u8; 32],
+    actor: TilePos,
+    occupied: impl FnOnce(TilePos) -> bool,
+    actor_level: u32,
+    quest_storage_met: bool,
+    target: &WorldObjectTarget,
+) -> UseOutcome {
+    use_resolved_door(
+        overlay,
+        facts,
+        content_generation,
+        actor,
+        target,
+        |key, pos| {
+            door_result(facts.doors().toggle(
+                key,
+                target.expected_revision,
+                occupied(pos),
+                actor_level,
+                quest_storage_met,
+            ))
+        },
+    )
+}
+
+fn door_result(result: Option<DoorUse>) -> UseOutcome {
+    match result {
         Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
         Some(DoorUse::Locked) => outcome(UseDisposition::Locked),
         Some(DoorUse::Stale) => outcome(UseDisposition::StaleState),

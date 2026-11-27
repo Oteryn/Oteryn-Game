@@ -1,9 +1,7 @@
 //! VIP0 section 8: current consent, privacy and World-session truth in one fenced read.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::assert_session_fence;
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::db::{begin_semantic_transaction, commit_semantic_read, lock_admission_relations};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -107,7 +105,7 @@ impl DurabilityRoot {
                         status,
                     });
                 }
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(values)
             })
         }).await
