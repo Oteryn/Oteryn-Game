@@ -42,14 +42,14 @@ async fn boundaries(pool: &sqlx::PgPool) -> TestResult {
         .bind(format!("{date} {utc_hour}:00:00+00"))
         .fetch_one(&mut *tx)
         .await?;
-        insert_epoch(&mut tx, world, 0, &before, false).await?;
+        insert_epoch(&mut tx, world, 0, &before).await?;
         sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
             .bind(world.as_slice())
             .execute(&mut *tx)
             .await?;
         assert_periods(&mut tx, world, date, old_monday, true).await?;
 
-        insert_epoch(&mut tx, world, 1, &at, false).await?;
+        insert_epoch(&mut tx, world, 1, &at).await?;
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1 WHERE world_id=encode($1,'hex')::uuid")
             .bind(world.as_slice()).execute(&mut *tx).await?;
         assert_periods(&mut tx, world, date, monday, false).await?;
@@ -87,10 +87,10 @@ async fn boundaries(pool: &sqlx::PgPool) -> TestResult {
     let mut tx = pool.begin().await?;
     let world = id(77);
     // Simulate an epoch already published under 0562 before migration 3328.
-    sqlx::query("ALTER TABLE game_world_reset_epochs DISABLE TRIGGER world_reset_server_save_policy")
+    sqlx::query("ALTER TABLE game_world_reset_epochs DISABLE TRIGGER world_reset_server_save_policy, ALTER COLUMN legacy_six_am SET DEFAULT TRUE")
         .execute(&mut *tx).await?;
-    insert_epoch(&mut tx, world, 0, "2026-11-23 06:00 Europe/Berlin", true).await?;
-    sqlx::query("ALTER TABLE game_world_reset_epochs ENABLE TRIGGER world_reset_server_save_policy")
+    insert_epoch(&mut tx, world, 0, "2026-11-23 06:00 Europe/Berlin").await?;
+    sqlx::query("ALTER TABLE game_world_reset_epochs ENABLE TRIGGER world_reset_server_save_policy, ALTER COLUMN legacy_six_am SET DEFAULT FALSE")
         .execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
         .bind(world.as_slice()).execute(&mut *tx).await?;
@@ -101,7 +101,7 @@ async fn boundaries(pool: &sqlx::PgPool) -> TestResult {
         (2, "2026-11-23 10:00 Europe/Berlin", false),
     ] {
         if epoch != 0 {
-            insert_epoch(&mut tx, world, epoch, instant, false).await?;
+            insert_epoch(&mut tx, world, epoch, instant).await?;
             sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
                 .bind(world.as_slice()).bind(epoch.to_string()).execute(&mut *tx).await?;
         }
@@ -128,20 +128,18 @@ async fn insert_epoch(
     world: [u8; 16],
     epoch: i32,
     instant: &str,
-    legacy: bool,
 ) -> TestResult {
     sqlx::query(
         "INSERT INTO game_world_reset_epochs
           (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,
-           frame_digest,calendar,calendar_revision,activated_at,reset_month,legacy_six_am)
+           frame_digest,calendar,calendar_revision,activated_at,reset_month)
          VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'map-1',$3,$3,$3,
-           'TIBIA_SERVER_SAVE_BERLIN_06',1,$4::text::timestamptz,'2026-11',$5)",
+           'TIBIA_SERVER_SAVE_BERLIN_06',1,$4::text::timestamptz,'2026-11')",
     )
     .bind(world.as_slice())
     .bind(epoch.to_string())
     .bind([9_u8; 32].as_slice())
     .bind(instant)
-    .bind(legacy)
     .execute(tx)
     .await?;
     Ok(())
