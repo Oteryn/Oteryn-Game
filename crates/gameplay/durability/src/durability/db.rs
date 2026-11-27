@@ -2079,12 +2079,12 @@ impl DurabilityRoot {
             .ok_or(DurabilityError::RootUnavailable)
     }
 
-    /// Diagnostic call site for a competing semantic pass, when it is still checked out.
-    pub fn checked_out_semantic_caller(&self) -> Option<&'static std::panic::Location<'static>> {
+    /// Diagnostic call site and elapsed time for a competing checked-out semantic pass.
+    pub fn checked_out_semantic_pass(&self) -> Option<(&'static std::panic::Location<'static>, Duration)> {
         self.holder_owner
             .lock()
             .ok()
-            .and_then(|owner| owner.map(|(caller, ..)| caller))
+            .and_then(|owner| owner.map(|(caller, issued, _)| (caller, issued.elapsed())))
     }
 
     #[track_caller]
