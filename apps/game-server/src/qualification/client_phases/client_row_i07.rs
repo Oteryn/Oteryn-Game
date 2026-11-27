@@ -374,7 +374,8 @@ impl Capture<'_> {
                 "actor_x": actor.x, "x": x, "y": actor.y, "floor": actor.floor,
                 "corpses": nearby,
             }))?,
-        )
+        )?;
+        Ok(())
     }
 
     async fn probe(
