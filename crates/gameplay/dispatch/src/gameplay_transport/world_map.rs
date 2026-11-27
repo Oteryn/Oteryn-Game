@@ -85,6 +85,8 @@ impl<F: MapFacts> MapViewSource<'_, F> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MapViewError {
+    /// A periodic observation found its durable holder or spell lane busy.
+    HolderBusy,
     /// The actor is not at a native map position.
     Position,
     View(ViewError),

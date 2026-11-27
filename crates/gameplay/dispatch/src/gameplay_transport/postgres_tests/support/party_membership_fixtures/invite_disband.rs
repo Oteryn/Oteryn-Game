@@ -353,8 +353,8 @@ async fn wait_for_busy_drain(h: &Harness, member_id: [u8; 16]) -> TestResult {
 pub(super) async fn check_joined_eligibility(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut [AdmittedSession],
-    target: EntityRef,
-    [leader_id, member_id]: [[u8; 16]; 2],
+    [first_target, second_target]: [EntityRef; 2],
+    [first_id, second_id]: [[u8; 16]; 2],
     h: &Harness,
 ) -> TestResult {
     use oteryn_protocol_oteryn::party_skull::{
@@ -363,7 +363,7 @@ pub(super) async fn check_joined_eligibility(
     const ITERATIONS: u32 = 20;
     let selected = SelectedCapabilities::select(
         owner.offered_capabilities(),
-        &[6, 21, 42, 92, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1, CAPABILITY_PARTY_SKULL_V1],
+        &[6, 21, 42, 92, CAPABILITY_PARTY_SKULL_V1, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1],
     )
     .filter(|caps| caps.contains(CAPABILITY_PARTY_SKULL_V1)
                 && caps.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1))
@@ -379,7 +379,14 @@ pub(super) async fn check_joined_eligibility(
         a.ready().await?;
         b.ready().await?;
         for iteration in 0..ITERATIONS {
-            a.command(Some(PartyIntent::Invite(target))).await?;
+            // The durable writer permits ten invites per character per minute.
+            // Both characters lead ten cycles without changing the policy or the clock.
+            let (leader, member, leader_id, member_id, target) = if iteration % 2 == 0 {
+                (&mut a, &mut b, first_id, second_id, second_target)
+            } else {
+                (&mut b, &mut a, second_id, first_id, first_target)
+            };
+            leader.command(Some(PartyIntent::Invite(target))).await?;
             // Set the durable preference while the leader is alone, so the
             // first command after Joined can be the eligibility read itself.
             let updated = sqlx::query(
@@ -391,14 +398,14 @@ pub(super) async fn check_joined_eligibility(
             .await?;
             assert_eq!(updated.rows_affected(), 1);
 
-            let invitations = b.command(None).await?.invitations;
+            let invitations = member.command(None).await?.invitations;
             let [invitation] = invitations.as_slice() else {
                 return Err("expected one invitation".into());
             };
-            b.command(Some(PartyIntent::Accept(invitation.handle))).await?;
-            assert_notice(&mut b, leader_id, PartyMembershipChange::Invited).await?;
-            assert_notice(&mut b, member_id, PartyMembershipChange::Joined).await?;
-            assert_notice(&mut a, member_id, PartyMembershipChange::Joined).await?;
+            member.command(Some(PartyIntent::Accept(invitation.handle))).await?;
+            assert_notice(member, leader_id, PartyMembershipChange::Invited).await?;
+            assert_notice(member, member_id, PartyMembershipChange::Joined).await?;
+            assert_notice(leader, member_id, PartyMembershipChange::Joined).await?;
 
             if iteration < 2 {
                 // Suppress unrelated background checkouts while deliberately owning
@@ -409,9 +416,9 @@ pub(super) async fn check_joined_eligibility(
                     h.root.maintain_ready_once().await?;
                 }
                 let held = h.root.try_issue_semantic_pass()?;
-                let command = a.send(COMMAND_TYPE_PARTY_SKULL_QUERY, &[]).await?;
+                let command = leader.send(COMMAND_TYPE_PARTY_SKULL_QUERY, &[]).await?;
                 if iteration == 0 {
-                    let (status, payload) = a.receive(command).await?;
+                    let (status, payload) = leader.receive(command).await?;
                     assert_eq!(status, CommandStatus::Rejected);
                     assert_eq!(
                         payload.as_slice(),
@@ -428,18 +435,18 @@ pub(super) async fn check_joined_eligibility(
                         }
                     }).await?;
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-                    let (status, payload) = a.receive(command).await?;
+                    let (status, payload) = leader.receive(command).await?;
                     assert_eq!(status, CommandStatus::Accepted, "transient holder refusal");
                     assert_blinking_member(target, &payload)?;
                 }
                 drop(foreground);
             }
-            let (status, payload) = a.exchange(COMMAND_TYPE_PARTY_SKULL_QUERY, &[]).await?;
+            let (status, payload) = leader.exchange(COMMAND_TYPE_PARTY_SKULL_QUERY, &[]).await?;
             assert_eq!(status, CommandStatus::Accepted, "iteration {iteration}");
             assert_blinking_member(target, &payload)?;
 
-            b.command(Some(PartyIntent::Leave)).await?;
-            for peer in [&mut a, &mut b] {
+            member.command(Some(PartyIntent::Leave)).await?;
+            for peer in [leader, member] {
                 assert_notice(peer, member_id, PartyMembershipChange::Left).await?;
                 assert_notice(peer, leader_id, PartyMembershipChange::Disbanded).await?;
             }

@@ -45,6 +45,9 @@ struct SlowOwner {
     idle_cue: Cell<bool>,
     slow_browse: Cell<bool>,
     named_refusal: Cell<Option<AdmissionRefusal>>,
+    map_busy: Cell<bool>,
+    map_refresh_reads: Cell<usize>,
+    party_departure: Cell<bool>,
     refuse_browse: Cell<bool>,
     visibility_delay: Cell<std::time::Duration>,
     vitals_delay: Cell<std::time::Duration>,
@@ -258,6 +261,23 @@ impl FreshAdmissionAuthority for SlowOwner {
         })
     }
 
+    async fn take_party_membership_notices(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> Option<Vec<crate::durability::world_party::MembershipNotice>> {
+        use oteryn_protocol_oteryn::party::PartyMembershipChange::{Disbanded, Left};
+        Some(if self.party_departure.replace(false) {
+            [Left, Disbanded]
+                .map(|change| crate::durability::world_party::MembershipNotice {
+                    character: [0x35; 16],
+                    change,
+                })
+                .into()
+        } else {
+            Vec::new()
+        })
+    }
+
     async fn observe_world_map(
         &self,
         _actor: ExactActorRef,
@@ -265,7 +285,12 @@ impl FreshAdmissionAuthority for SlowOwner {
         _items: &mut SessionItemView,
     ) -> Option<Result<Option<MapUpdate>, MapViewError>> {
         if view.revision() != 0 {
-            return Some(Ok(None));
+            self.map_refresh_reads.set(self.map_refresh_reads.get() + 1);
+            return Some(if self.map_busy.get() {
+                Err(MapViewError::HolderBusy)
+            } else {
+                Ok(None)
+            });
         }
         // This fixed map owner serves a valid empty snapshot, then no changes. The test
         // exercises the real admission setup with all browse capability dependencies.
@@ -514,6 +539,82 @@ fn periodic_named_visibility_holder_busy_keeps_admitted_peer_live() -> TestResul
         })?
         .join()
         .map_err(|_| "named visibility fixture thread panicked")?
+}
+
+#[test]
+fn busy_periodic_map_keeps_peer_live_and_delivers_party_departure() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> TestResult {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()?
+                .block_on(async {
+                    use oteryn_protocol_oteryn::party::{
+                        CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
+                        DELTA_TYPE_PARTY_MEMBERSHIP_NOTICE_V1, PartyMembershipChange,
+                        decode_party_membership_notice,
+                    };
+                    let authority = SlowOwner::default();
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(true)?;
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                        &[4, 6, 12, 14, 18, 42, 92, 230, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1],
+                    ).ok_or("Party notice and map capabilities")?;
+                    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+                    let mut session = setup::prepare(
+                        &mut server, &mut admitted, &authority, IDLE_LIVENESS,
+                        actor, observation(), integrity::Integrity::default(),
+                    ).await.map_err(|_| "prepare map connection")?;
+                    assert_eq!(session.world_map.as_ref().map(SessionMapView::revision), Some(1));
+                    let sequence = session.sequence;
+
+                    authority.map_busy.set(true);
+                    authority.party_departure.set(true);
+                    assert!(receive(&mut server, &authority, &mut session, Next::Visibility)
+                        .await.map_err(|_| "busy Ground read closed the peer")?.is_none());
+                    assert_eq!(authority.map_refresh_reads.get(), 1);
+                    assert_eq!(session.sequence, sequence);
+                    assert_eq!(session.world_map.as_ref().map(SessionMapView::revision), Some(1));
+                    assert!(receive(&mut server, &authority, &mut session, Next::PartyNotice)
+                        .await.map_err(|_| "drain Party notices")?.is_none());
+                    assert_eq!(session.sequence, sequence + 2);
+                    for expected in [PartyMembershipChange::Left, PartyMembershipChange::Disbanded] {
+                        loop {
+                            let frame = tokio::time::timeout(IDLE_LIVENESS.interval, read_frame(&mut client)).await??;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            if envelope.message_type() != MessageType::StateDelta {
+                                continue;
+                            }
+                            let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                            if delta.domain_id == oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
+                                && delta.delta_type == DELTA_TYPE_PARTY_MEMBERSHIP_NOTICE_V1
+                            {
+                                assert_eq!(envelope.connection_generation(), admitted.continuity.connection_generation);
+                                let notice = decode_party_membership_notice(delta.payload)
+                                    .map_err(|error| format!("{error:?}"))?;
+                                assert_eq!(notice.change, expected);
+                                break;
+                            }
+                        }
+                    }
+                    authority.map_busy.set(false);
+                    assert!(receive(&mut server, &authority, &mut session, Next::Visibility)
+                        .await.map_err(|_| "map refresh did not recover")?.is_none());
+                    assert_eq!(authority.map_refresh_reads.get(), 2);
+
+                    let close = encode_container_view_intent(&ContainerViewIntent::Close { view_id: 15 })
+                        .map_err(|error| format!("{error:?}"))?;
+                    write_frame(&mut client, &command_frame(1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, &close)?).await?;
+                    execute_ready_frame(&mut server, &authority, &mut session).await?;
+                    assert_eq!(session.admitted.continuity.next_command_id, 2);
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "Party departure fixture thread panicked")?
 }
 
 #[test]

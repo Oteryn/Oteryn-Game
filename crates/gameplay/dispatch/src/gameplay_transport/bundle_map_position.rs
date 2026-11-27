@@ -96,10 +96,22 @@ pub(super) async fn observe(
     view: &mut world_map::SessionMapView,
     items: &mut item_view::SessionItemView,
 ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+    observe_with_mode(admission, actor, view, items, false).await
+}
+
+pub(super) async fn observe_with_mode(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    view: &mut world_map::SessionMapView,
+    items: &mut item_view::SessionItemView,
+    periodic: bool,
+) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
     // The view reads the same Ground owner as field casts, retirement and
     // expiry. Resolve an uncertain writer and serialize cache rebuilds before
     // borrowing runtime or issuing the bounded durable read.
-    let _permit = admission.spell_lane_permit().await?;
+    let Some(_permit) = admission.spell_lane_permit().await else {
+        return periodic.then_some(Err(world_map::MapViewError::HolderBusy));
+    };
     let (at, index) = {
         let mut runtime = admission.runtime.lock().await;
         let index = item_ref_admission::pinned_index(&runtime, admission.active_generation);
@@ -109,6 +121,15 @@ pub(super) async fn observe(
         )
     };
     // ITEM-LOOP-1: the dropped items, read after the runtime lock is released.
-    let ground = loop_move::loop_ground(admission, at.map.overlay.base(), index).await?;
+    let ground =
+        match loop_move::loop_ground_projection(admission, at.map.overlay.base(), index, !periodic)
+            .await
+        {
+            Ok(ground) => ground,
+            Err(loop_move::GroundProjectionError::HolderBusy) => {
+                return Some(Err(world_map::MapViewError::HolderBusy));
+            }
+            Err(loop_move::GroundProjectionError::Unavailable) => return None,
+        };
     Some(at.update(view, items, Some(&ground), admission.reset_epoch))
 }

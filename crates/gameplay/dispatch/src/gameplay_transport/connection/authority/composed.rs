@@ -774,6 +774,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         bundle_map_position::observe(self, actor, view, items).await
     }
 
+    async fn refresh_world_map(
+        &self,
+        actor: ExactActorRef,
+        view: &mut world_map::SessionMapView,
+        items: &mut item_view::SessionItemView,
+    ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+        bundle_map_position::observe_with_mode(self, actor, view, items, true).await
+    }
+
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         self.observe_actor_position(actor).await
     }

@@ -705,28 +705,45 @@ impl LoopGroundCache {
         }
     }
 }
-/// A view may overlap the same connection's inventory refresh on the bounded
-/// durability holder. Retry only that temporary resource refusal, within one
-/// deadline; stored-state and authority errors still close the view.
-async fn projection_read<T, E, F, Fut>(mut read: F, busy: impl Fn(&E) -> bool) -> Option<T>
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum GroundProjectionError {
+    HolderBusy,
+    Unavailable,
+}
+
+/// A foreground view retries holder contention within one deadline. A periodic
+/// view defers immediately so it can continue serving the connection.
+async fn projection_read<T, E, F, Fut>(
+    mut read: F,
+    busy: impl Fn(&E) -> bool,
+    retry_busy: bool,
+) -> Result<T, GroundProjectionError>
 where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = Result<T, E>>,
 {
+    if !retry_busy {
+        return read().await.map_err(|error| {
+            if busy(&error) {
+                GroundProjectionError::HolderBusy
+            } else {
+                GroundProjectionError::Unavailable
+            }
+        });
+    }
     tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             match read().await {
-                Ok(value) => return Some(value),
+                Ok(value) => return Ok(value),
                 Err(error) if busy(&error) => {
                     tokio::time::sleep(std::time::Duration::from_millis(5)).await
                 }
-                Err(_) => return None,
+                Err(_) => return Err(GroundProjectionError::Unavailable),
             }
         }
     })
     .await
-    .ok()
-    .flatten()
+    .unwrap_or(Err(GroundProjectionError::Unavailable))
 }
 
 /// Movement shares the runtime's static collision index with Ground USE-WITH.
@@ -784,8 +801,10 @@ pub(super) async fn reconcile_cask_collision(
                 )
             )
         },
+        true,
     )
-    .await?;
+    .await
+    .ok()?;
     let runtime = admission.runtime.lock().await;
     if runtime.owner_fence().is_err()
         || runtime.binding().runtime_scope() != scope
@@ -810,6 +829,17 @@ pub async fn loop_ground(
     base: &Arc<WorldBase>,
     index: Option<&ItemDefinitionIndex>,
 ) -> Option<Arc<LoopGroundOverlay>> {
+    loop_ground_projection(admission, base, index, true)
+        .await
+        .ok()
+}
+
+pub(super) async fn loop_ground_projection(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    base: &Arc<WorldBase>,
+    index: Option<&ItemDefinitionIndex>,
+    retry_busy: bool,
+) -> Result<Arc<LoopGroundOverlay>, GroundProjectionError> {
     let (scope, field_pin) = {
         let runtime = admission.runtime.lock().await;
         (
@@ -827,12 +857,13 @@ pub async fn loop_ground(
             && cached.overlay.runtime_scope() == scope
             && cached.overlay.base().digest() == base.digest()
     }) {
-        return Some(cached);
+        return Ok(cached);
     }
-    let index = index?;
+    let index = index.ok_or(GroundProjectionError::Unavailable)?;
     let items = projection_read(
         || admission.root.read_item_loop_ground_for_scope(scope),
         |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
+        retry_busy,
     )
     .await?;
     let taken = if let crate::foundation::RuntimeScopeRefV1::Channel {
@@ -858,6 +889,7 @@ pub async fn loop_ground(
                     )
                 )
             },
+            retry_busy,
         )
         .await?
     } else {
@@ -880,7 +912,7 @@ pub async fn loop_ground(
                 .is_some_and(|map| map.facts.captured_map_item(key).is_some())
     };
     if taken.iter().any(|(key, _)| !valid_source(*key)) {
-        return None;
+        return Err(GroundProjectionError::Unavailable);
     }
     if taken.iter().any(|(_, retired_cask)| *retired_cask) {
         let runtime = admission.runtime.lock().await;
@@ -888,15 +920,18 @@ pub async fn loop_ground(
             || runtime.binding().runtime_scope() != scope
             || runtime.binding().scope_generation().get() != field_pin.2
         {
-            return None;
+            return Err(GroundProjectionError::Unavailable);
         }
-        let map = admission.bundle_map()?;
+        let map = admission
+            .bundle_map()
+            .ok_or(GroundProjectionError::Unavailable)?;
         if map.overlay.base().digest() != base.digest() {
-            return None;
+            return Err(GroundProjectionError::Unavailable);
         }
         for &(key, retired_cask) in &taken {
             if retired_cask {
-                map_sources::hide_retired_cask(map, key)?;
+                map_sources::hide_retired_cask(map, key)
+                    .ok_or(GroundProjectionError::Unavailable)?;
             }
         }
     }
@@ -908,26 +943,28 @@ pub async fn loop_ground(
         .map(|(key, _)| key)
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots)
+        .map_err(|_| GroundProjectionError::Unavailable)?;
     let pending: Vec<_> = admission
         .states
         .loop_ground
         .state
         .lock()
-        .ok()?
+        .map_err(|_| GroundProjectionError::Unavailable)?
         .pending_origins
         .keys()
         .copied()
         .collect();
     if pending.iter().any(|key| !valid_source(*key)) {
-        return None;
+        return Err(GroundProjectionError::Unavailable);
     }
     built.taken_sources.extend(pending.iter().copied());
     let roots: Vec<_> = pending
         .into_iter()
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots)
+        .map_err(|_| GroundProjectionError::Unavailable)?;
     {
         let runtime = admission.runtime.lock().await;
         super::echo_warden::append_portals(
@@ -939,7 +976,7 @@ pub async fn loop_ground(
     }
     let built = Arc::new(built);
     admission.states.loop_ground.store(epoch, &built);
-    Some(built)
+    Ok(built)
 }
 /// The loop item receipt of command 9's CommandRef. A session without an item fence has none.
 pub(super) async fn committed_loop_move(
@@ -1973,14 +2010,27 @@ mod tests {
                 let attempts = std::cell::Cell::new(0);
                 let result = projection_read(
                     || {
+                        attempts.set(attempts.get() + 1);
+                        std::future::ready(Err::<u8, _>(true))
+                    },
+                    |temporary| *temporary,
+                    false,
+                )
+                .await;
+                assert_eq!(result, Err(GroundProjectionError::HolderBusy));
+                assert_eq!(attempts.get(), 1);
+                let attempts = std::cell::Cell::new(0);
+                let result = projection_read(
+                    || {
                         let attempt = attempts.get() + 1;
                         attempts.set(attempt);
                         std::future::ready(if attempt < 3 { Err(true) } else { Ok(42) })
                     },
                     |temporary| *temporary,
+                    true,
                 )
                 .await;
-                assert_eq!(result, Some(42));
+                assert_eq!(result, Ok(42));
                 assert_eq!(attempts.get(), 3);
                 let attempts = std::cell::Cell::new(0);
                 let result = projection_read(
@@ -1989,9 +2039,10 @@ mod tests {
                         std::future::ready(Err::<u8, _>(false))
                     },
                     |temporary| *temporary,
+                    true,
                 )
                 .await;
-                assert_eq!(result, None);
+                assert_eq!(result, Err(GroundProjectionError::Unavailable));
                 assert_eq!(
                     attempts.get(),
                     1,
