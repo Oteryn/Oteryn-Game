@@ -875,35 +875,6 @@ async fn prepare_build(
     )
     .await?;
     #[cfg(feature = "qualification-spawn")]
-    if profile == "w09-aid-audit" {
-        use crate::durability::character_wheel::WheelOccurrence;
-        use crate::durability::item_transfer::CurrentCharacterItemFence;
-
-        let fence = CurrentCharacterItemFence {
-            character_id: character,
-            game_session_id: current.current_game_session_id(),
-            connection_generation: current.current_connection_generation(),
-            character_lease_generation: current.current_character_lease().generation(),
-            runtime_scope: current.current_runtime_scope(),
-            scope_ownership_generation: current.current_scope_generation(),
-        };
-        let occurrence = WheelOccurrence::from_bytes(fixture_occurrence(
-            character.as_bytes(),
-            profile,
-            b"gift-of-life-input",
-        ))?;
-        qualification_build::retry_holder(
-            Some(root),
-            deadline,
-            qualification_build::progression_busy,
-            async || {
-                root.save_character_wheel_gift(authority, proof, fence, occurrence, 3_600_000_000)
-                    .await
-            },
-        )
-        .await?;
-    }
-    #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
     }
