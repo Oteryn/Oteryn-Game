@@ -2,7 +2,7 @@
 use super::TestResult;
 use super::full_world_support::world_scenario;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ControllerBinding, SessionContinuity, regression_item_use_with_busy_holder,
+    AdmittedSession, ControllerBinding, ItemUseContention, SessionContinuity, regression_item_use_with_busy_holder,
 };
 use oteryn_protocol_oteryn::{self as protocol, container_tree, world_object};
 
@@ -11,7 +11,7 @@ fn bag_use_after_readmission_opens_container_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e_fixtures::scenario_thread::run("bag-readmission", || scenario(false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("bag-readmission", || scenario(ItemUseContention::ContainerRead))
 }
 
 #[test]
@@ -19,10 +19,22 @@ fn potion_use_after_readmission_under_contention_returns_result_postgres() -> Te
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e_fixtures::scenario_thread::run("potion-readmission", || scenario(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("potion-readmission", || scenario(ItemUseContention::PotionRead))
 }
 
-fn scenario(use_potion: bool) -> TestResult {
+#[test]
+fn first_use_after_readmission_bypasses_absent_grizzly_visit_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("p04-first-use-input", || {
+        scenario(ItemUseContention::InputOnly)
+    })
+}
+
+fn scenario(contention: ItemUseContention) -> TestResult {
+    let use_potion = matches!(contention, ItemUseContention::PotionRead);
     world_scenario!(
         "bag_readmission",
         |h,
@@ -159,6 +171,7 @@ fn scenario(use_potion: bool) -> TestResult {
                 .await?
             };
             let item: [u8; 16] = item.try_into().map_err(|_| "invalid item identity")?;
+            assert_eq!(readmitted.continuity.next_command_id, 1);
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let handle = tokio::time::timeout(
                 Duration::from_secs(20),
@@ -167,6 +180,7 @@ fn scenario(use_potion: bool) -> TestResult {
                     readmitted,
                     &mut server,
                     ItemKey::Instance(item),
+                    contention,
                 ),
             )
             .await??;
