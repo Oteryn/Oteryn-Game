@@ -26,6 +26,7 @@ use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmUnlockDispositi
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
+use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 
 const DEADLINE: Duration = Duration::from_secs(1_800);
@@ -169,6 +170,54 @@ fn mastery_plan(
         (u64::from(left.2) * u64::from(right.3)).cmp(&(u64::from(right.2) * u64::from(left.3)))
     });
     Ok(plan)
+}
+
+fn reachable_mastery_races<'a>(
+    world: &BundleWorld,
+    from: TilePos,
+    spawns: &'a oteryn_world_bundle::spawn::Table,
+) -> BTreeSet<&'a str> {
+    let reachable = std::cell::RefCell::new(BTreeSet::new());
+    // Use the route planner's normal landings and visit the whole reachable area once.
+    let _ = route(world, from, |at| {
+        if world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+        {
+            reachable.borrow_mut().insert(at);
+        }
+        false
+    });
+    let reachable = reachable.into_inner();
+    spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source.points.iter().filter_map(|point| {
+                let approachable = (-1_i16..=1).any(|dx| {
+                    (-1_i16..=1).any(|dy| {
+                        (dx != 0 || dy != 0)
+                            && point
+                                .x
+                                .checked_add_signed(dx)
+                                .zip(point.y.checked_add_signed(dy))
+                                .is_some_and(|(x, y)| {
+                                    reachable.contains(&TilePos {
+                                        x,
+                                        y,
+                                        floor: source.floor,
+                                    })
+                                })
+                    })
+                });
+                approachable
+                    .then(|| spawns.creatures.get(point.creature as usize))
+                    .flatten()
+                    .map(|entry| entry.key.as_str())
+            })
+        })
+        .collect()
 }
 
 pub(super) fn rat_corpse_stage() -> TestResult<client_hunt::CorpseStage> {
@@ -362,9 +411,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("earn-unlock-currency");
     let from = tile(client.world_spatial().actor_position)?;
-    let plan = mastery_plan(&current, |key| {
-        full_row_p05::has_reachable_spawn(world, from, &metadata.spawns, key)
-    })?;
+    let progress = current.clone();
+    let spawns = metadata.spawns.clone();
+    let planning = tokio::task::spawn_blocking(move || {
+        let reachable = reachable_mastery_races(world, from, &spawns);
+        mastery_plan(&progress, |key| reachable.contains(key)).map_err(|error| error.to_string())
+    });
+    while !planning.is_finished() {
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    let plan = planning.await??;
     let reachable_points = plan.iter().map(|entry| u64::from(entry.3)).sum::<u64>();
     if u64::from(current.charms.charm_points_available) + reachable_points < u64::from(cost) {
         return Err(format!("step=earn-unlock-currency need={cost} balance={} reachable-mastery-points={reachable_points}", current.charms.charm_points_available).into());

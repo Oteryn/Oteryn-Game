@@ -82,6 +82,23 @@ async fn walk_rat_route(
         let before = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, before, direction).ok_or("Rat route step has no landing")?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        while client.world_entities().is_some_and(|entities| {
+            entities.iter().any(|entity| {
+                matches!(
+                    entity.kind,
+                    oteryn_dev_client::EntityKind::Player
+                        | oteryn_dev_client::EntityKind::Creature
+                        | oteryn_dev_client::EntityKind::Npc
+                ) && tile(entity.position).is_ok_and(|at| at == expected)
+            })
+        }) {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("Rat route landing {expected:?} remained occupied").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            client.take_events();
+        }
         let step = client.step(direction).await?;
         if step.status != CommandStatus::Accepted
             || step.disposition != StepDisposition::Moved
@@ -94,7 +111,9 @@ async fn walk_rat_route(
         }
         verdict::Harness::global().progress("rat-walk");
         client.take_events();
-        tokio::time::sleep(Duration::from_millis(u64::from(step.step_wait_ms))).await;
+        client
+            .service_liveness(Duration::from_millis(u64::from(step.step_wait_ms)))
+            .await?;
     }
     Ok(())
 }
