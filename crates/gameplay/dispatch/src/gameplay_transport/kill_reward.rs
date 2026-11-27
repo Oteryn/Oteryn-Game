@@ -427,6 +427,8 @@ struct KillQueueState {
     /// At most one clock per bounded native corpse projection, including settled
     /// deaths whose original command may still replay. Pruned on every capture.
     death_clocks: Vec<(ExactActorRef, CapturedActivityDeath)>,
+    // Publication has the same retention bound as the exact corpse projection.
+    lethal_hits: Vec<(ExactActorRef, super::world_spatial::LethalHit)>,
     /// Same retained-projection bound as death_clocks; no uncommitted death is
     /// recovered across a lost scope incarnation (D52).
     tutorial_loot: Vec<(
@@ -1477,7 +1479,11 @@ impl KillSettlementQueue {
 
     /// The killed actor of every queued, parked or in-flight entry: the corpse projections the
     /// queue still binds to (Codex 4248192466).
-    fn held_targets(&self) -> Vec<ExactActorRef> {
+    pub(super) fn lethal_hits(&self) -> Vec<(ExactActorRef, super::world_spatial::LethalHit)> {
+        self.state().lethal_hits.clone()
+    }
+
+    pub(super) fn held_targets(&self) -> Vec<ExactActorRef> {
         let state = self.state();
         state
             .in_flight
@@ -2049,10 +2055,36 @@ pub fn record_creature_kill(
         .map(|identity| identity.firing_id);
     let daily_boost = runtime.daily_boost().cloned();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
-    if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
-        .is_err()
-    {
-        return;
+    let value = {
+        let mut owner = runtime.borrow_combat_death();
+        let Ok(projected) = crate::combat::project_fixed_one_creature_death(&mut owner, target)
+        else {
+            return;
+        };
+        // The lethal receipt's starting HP is exactly what the hit removed.
+        u64::try_from(projected.occurrence().health_before())
+            .ok()
+            .and_then(std::num::NonZeroU64::new)
+    };
+    if let Some(value) = value {
+        let mut state = sink.queue.state();
+        state
+            .lethal_hits
+            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
+        if !state.lethal_hits.iter().any(|(actor, _)| *actor == target) {
+            let entity = |actor: ExactActorRef| super::world_spatial::EntityRef {
+                identity: actor.placement_identity(),
+                generation: actor.actor_local_generation(),
+            };
+            state.lethal_hits.push((
+                target,
+                super::world_spatial::LethalHit {
+                    target: entity(target),
+                    attacker: entity(lethal.actor),
+                    value,
+                },
+            ));
+        }
     }
     if let Some(boss) = defeated {
         sink.queue

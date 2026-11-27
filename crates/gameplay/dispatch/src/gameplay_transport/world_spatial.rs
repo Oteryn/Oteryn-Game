@@ -117,6 +117,13 @@ pub const PLACEHOLDER_HEALTH_PERCENT: u8 = 100;
 /// D85: an NPC entity always carries full health.
 const NPC_HEALTH_PERCENT: u8 = 100;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LethalHit {
+    pub target: EntityRef,
+    pub attacker: EntityRef,
+    pub value: std::num::NonZeroU64,
+}
+
 /// VIS-3: the kind of one Channel entity, as the Channel owner reads it.
 ///
 /// MAP-ITEM-REF-1: a corpse is shown only once its corpse Item is bound and its definition maps
@@ -125,6 +132,8 @@ const NPC_HEALTH_PERCENT: u8 = 100;
 pub enum VisibleKind {
     Player,
     Creature,
+    /// Preserve an already shown creature while its durable corpse settles.
+    PendingDeath,
     /// NPC-RT-1: a placed NPC actor (NPC-BEHAVIOUR-0 §3.1). It has no health; the wire always
     /// carries 100 for it.
     Npc,
@@ -134,6 +143,7 @@ pub enum VisibleKind {
     Corpse {
         item_definition_ref: std::num::NonZeroU32,
         native_appearance_id: Option<std::num::NonZeroU16>,
+        lethal_hit: Option<LethalHit>,
     },
     /// An immovable Source-owned volatile Item, never a durable corpse.
     GroundItem {
@@ -188,7 +198,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     };
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
-        VisibleKind::Creature => (EntityKind::Creature, actor),
+        VisibleKind::Creature | VisibleKind::PendingDeath => (EntityKind::Creature, actor),
         VisibleKind::Npc | VisibleKind::Hireling => (
             EntityKind::Npc,
             EntityDetail::Actor {
@@ -201,6 +211,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         VisibleKind::Corpse {
             item_definition_ref,
             native_appearance_id,
+            ..
         } => (
             EntityKind::Corpse,
             match native_appearance_id {
@@ -283,6 +294,12 @@ pub struct SessionVisibility {
 }
 
 impl SessionVisibility {
+    pub(super) fn shows_corpse(&self, entity: EntityRef) -> bool {
+        self.entities
+            .get(&entity.identity)
+            .is_some_and(|shown| shown.entity == entity && shown.kind == EntityKind::Corpse)
+    }
+
     /// Only an actor incarnation actually sent in this session's view can be examined.
     pub(crate) fn shows(&self, entity: EntityRef) -> bool {
         self.entities.get(&entity.identity).is_some_and(|shown| {
@@ -304,7 +321,9 @@ impl SessionVisibility {
         channel.entities.retain_mut(|entity| {
             if matches!(
                 entity.kind,
-                VisibleKind::Corpse { .. } | VisibleKind::GroundItem { .. }
+                VisibleKind::Corpse { .. }
+                    | VisibleKind::GroundItem { .. }
+                    | VisibleKind::PendingDeath
             ) {
                 return true;
             }
@@ -411,6 +430,14 @@ impl SessionVisibility {
         let mut index = InterestIndex::new();
         let mut by_identity = BTreeMap::new();
         for entity in &channel.entities {
+            if entity.kind == VisibleKind::PendingDeath
+                && !self.shows(EntityRef {
+                    identity: entity.identity,
+                    generation: entity.generation,
+                })
+            {
+                continue;
+            }
             if !self.objects
                 && matches!(
                     entity.kind,
@@ -443,7 +470,13 @@ impl SessionVisibility {
             .map(|entity| {
                 by_identity
                     .get(&entity.identity)
-                    .map(|entity| wire_entity(entity))
+                    .and_then(|entry| {
+                        if entry.kind == VisibleKind::PendingDeath {
+                            self.entities.get(&entry.identity).copied()
+                        } else {
+                            Some(wire_entity(entry))
+                        }
+                    })
                     .ok_or(WorldSpatialError::Malformed)
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -729,6 +762,7 @@ mod tests {
                 3,
                 VisibleKind::Corpse {
                     native_appearance_id: None,
+                    lethal_hit: None,
                     item_definition_ref: std::num::NonZeroU32::MIN,
                 },
                 103,
@@ -1248,6 +1282,7 @@ mod tests {
             1,
             VisibleKind::Corpse {
                 native_appearance_id: None,
+                lethal_hit: None,
                 item_definition_ref: std::num::NonZeroU32::MIN,
             },
             101,
@@ -1258,6 +1293,7 @@ mod tests {
             .expect("snapshot");
         corpse.kind = VisibleKind::Corpse {
             native_appearance_id: None,
+            lethal_hit: None,
             item_definition_ref: std::num::NonZeroU32::new(2).expect("spent Item ref"),
         };
         let changed = view
@@ -1522,6 +1558,7 @@ mod tests {
     fn objects_are_shown_only_to_a_session_with_capability_4() {
         let corpse = VisibleKind::Corpse {
             native_appearance_id: None,
+            lethal_hit: None,
             item_definition_ref: std::num::NonZeroU32::new(4240).expect("ref"),
         };
         let mut corpse_at = at(2, corpse, 101, 100, 7);

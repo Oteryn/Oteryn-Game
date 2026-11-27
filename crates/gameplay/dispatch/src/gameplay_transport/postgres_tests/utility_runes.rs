@@ -58,6 +58,7 @@ enum Case {
     NotConvinceable,
     SummonLimit,
     Animate,
+    AnimateBusy,
     AnimateBlackSkull,
     NonCorpse,
 }
@@ -78,6 +79,11 @@ fn utility_runes_convince_real_dispatch_refuses_summon_limit() -> TestResult {
 fn utility_runes_animate_real_dispatch_owns_skeleton_and_consumes_corpse() -> TestResult {
     scenario(Case::Animate)
 }
+#[test]
+fn utility_runes_animate_waits_for_busy_holder_and_keeps_connection() -> TestResult {
+    scenario(Case::AnimateBusy)
+}
+
 #[test]
 fn utility_runes_animate_real_dispatch_refuses_non_corpse() -> TestResult {
     scenario(Case::NonCorpse)
@@ -105,9 +111,9 @@ fn scenario(case: Case) -> TestResult {
 async fn run_case(admin: String, case: Case) -> TestResult {
     let animate = matches!(
         case,
-        Case::Animate | Case::AnimateBlackSkull | Case::NonCorpse
+        Case::Animate | Case::AnimateBusy | Case::AnimateBlackSkull | Case::NonCorpse
     );
-    let committed = matches!(case, Case::Convince | Case::Animate);
+    let committed = matches!(case, Case::Convince | Case::Animate | Case::AnimateBusy);
     let harness = Harness::create_with_admission_seed(admin, "utility_runes", true, false).await?;
     prepare_current_session(&harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -479,8 +485,30 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             COMMAND_TYPE_USE_INTENT,
             &payload,
         );
+        let held = if case == Case::AnimateBusy {
+            Some(owner.root.try_issue_semantic_pass().map_err(debug)?)
+        } else {
+            None
+        };
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
+        if let Some(held) = held {
+            // Keep the real owner busy long enough for the original USE to
+            // encounter it. A closed peer or premature typed reply fails here.
+            let early = tokio::time::timeout(std::time::Duration::from_millis(50), async {
+                loop {
+                    let frame = read_frame(&mut client).await?;
+                    if decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                        == MessageType::CommandResult
+                    {
+                        return Ok::<_, Box<dyn std::error::Error>>(());
+                    }
+                }
+            })
+            .await;
+            assert!(early.is_err(), "cast settled or lost its peer while the holder was busy: {early:?}");
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        }
         loop {
             let frame = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
@@ -586,6 +614,13 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         let body: (i16, i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(180).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(body, if committed { (2, 0) } else { (1, 1) });
+        let receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_spell_companion_acquisition_receipts WHERE corpse_item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(180).as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(receipts, i64::from(committed));
     }
     drop(owner);
     drop(authority);

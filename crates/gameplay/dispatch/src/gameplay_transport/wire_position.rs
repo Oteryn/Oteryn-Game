@@ -354,6 +354,7 @@ mod tests {
             VisibleKind::Corpse {
                 item_definition_ref,
                 native_appearance_id: None,
+                lethal_hit: None,
             },
             VisibleKind::GroundItem {
                 item_definition_ref,

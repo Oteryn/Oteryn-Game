@@ -17,6 +17,7 @@ use super::{
 use crate::ability::AbilityOccurrence;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{QualifiedNativeEntryRoom, SpellTileLookupError};
+use crate::durability::DurabilityError;
 use crate::durability::character_build::{
     BuildChangeRequest, BuildOccurrence, CommittedBuildChange,
 };
@@ -57,6 +58,10 @@ use oteryn_protocol_oteryn::actor_spell_v2::{
 use oteryn_simulation_determinism::SemanticTimeMicros;
 #[path = "native_companion_item_cast.rs"]
 mod native_companion_item_cast;
+
+pub(in crate::gameplay_transport) fn corpse_companion_spell(spell: &SpellDefinition) -> bool {
+    native_companion_item_cast::applicable(spell)
+}
 
 pub(super) fn direct_companion_spell(spell: &SpellDefinition) -> bool {
     native_companion_item_cast::direct_applicable(spell)
@@ -550,6 +555,38 @@ struct PreparedOwnerInstallation {
     paid: PlayerSpellState,
 }
 impl PreparedNativeCombatCast {
+    fn release_uncommitted(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+    ) -> Result<(), DurabilityError> {
+        if let Some(companion) = &self.direct_companion {
+            companion
+                .reservation
+                .rollback_physical(runtime)
+                .map_err(|_| DurabilityError::Unavailable)?;
+        }
+        if let Some(companion) = &self.corpse_companion {
+            companion
+                .spawn
+                .rollback_physical(runtime)
+                .map_err(|_| DurabilityError::Unavailable)?;
+        }
+        if let Some(installation) = &self.installation {
+            runtime
+                .release_definitely_uncommitted_spell_batch(&installation.physical)
+                .map_err(|_| DurabilityError::Unavailable)?;
+        }
+        if let Some(presentation) = &self.presentation {
+            states
+                .presentations
+                .as_mut()
+                .ok_or(DurabilityError::Unavailable)?
+                .release_definitely_uncommitted(presentation);
+        }
+        Ok(())
+    }
+
     #[allow(
         clippy::expect_used,
         reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
@@ -2129,6 +2166,25 @@ fn source_cost_request(
     })
 }
 
+pub(in crate::gameplay_transport) async fn retry_native_checkout(
+    budget: Option<&super::super::AdmissionRetryBudget<'_>>,
+    error: Option<&DurabilityError>,
+) -> bool {
+    if let Some(budget) = budget
+        && matches!(
+            error,
+            Some(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded)
+        )
+    {
+        return budget
+            .retries_unavailable(
+                crate::gameplay_transport::connection::AdmissionRefusal::Unavailable,
+            )
+            .await;
+    }
+    false
+}
+
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// Retry the retained original before durable control loss removes its current
     /// source authority. Pending keeps the actor and original command outstanding. The lane
@@ -2412,11 +2468,19 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(_room) = self.rooms().gate_native_combat_cast() else {
             return rejected();
         };
-        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
-            .await
-        else {
-            return NativeCastDispatch::Pending;
+        let corpse_cast = corpse_companion_spell(spell);
+        let retry = corpse_cast.then(|| super::super::AdmissionRetryBudget::for_command(self.root));
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let current = loop {
+            let result = store.current_session_at(session).await;
+            if !retry_native_checkout(retry.as_ref(), result.as_ref().err()).await {
+                break result;
+            }
+        };
+        let Ok((current, _)) = current else {
+            return self
+                .native_preflight_refusal(actor, session, corpse_cast)
+                .await;
         };
         if current.session_state() != GameSessionState::Active {
             return rejected();
@@ -2426,12 +2490,27 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         else {
             return rejected();
         };
-        let Ok(root_record) = self
-            .root
-            .read_current_character(self.character, character)
-            .await
-        else {
-            return NativeCastDispatch::Pending;
+        let root_record = loop {
+            let result = self
+                .root
+                .read_current_character(self.character, character)
+                .await;
+            let error = match &result {
+                Err(
+                    crate::durability::character_authority::CharacterAuthorityError::Unavailable(
+                        error,
+                    ),
+                ) => Some(error),
+                _ => None,
+            };
+            if !retry_native_checkout(retry.as_ref(), error).await {
+                break result;
+            }
+        };
+        let Ok(root_record) = root_record else {
+            return self
+                .native_preflight_refusal(actor, session, corpse_cast)
+                .await;
         };
         let fence = CurrentCharacterGameplayFence {
             character_id: character,
@@ -2496,10 +2575,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         }
         // Known replay above needs no new spectator/name read. An unresolved
         // original attempt likewise keeps its original numeric observation.
-        let native_health_observations = if states
-            .pending_native
-            .iter()
-            .any(|marker| marker.is_for(actor, session))
+        let native_health_observations = if corpse_cast || states.has_pending_native(actor, session)
         {
             Vec::new()
         } else {
@@ -2534,6 +2610,71 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker_intent: NativeMarkerIntent = (*intent, rune, parameter.clone(), legacy.clone());
+        // Finish waiting for the map and the holder before creating a fresh
+        // marker. An existing marker still owns its original attempt.
+        let fresh_corpse_cast = corpse_cast && !states.has_pending_native(actor, session);
+        let unavailable = || {
+            if fresh_corpse_cast {
+                rejected()
+            } else {
+                NativeCastDispatch::Pending
+            }
+        };
+        let (objects, pass) = loop {
+            let objects = if let Some(retry) = &retry {
+                match tokio::time::timeout_at(retry.deadline, self.door.lock()).await {
+                    Ok(objects) => objects,
+                    Err(_) => return unavailable(),
+                }
+            } else {
+                self.door.lock().await
+            };
+            match self.root.try_issue_semantic_pass() {
+                Ok(pass) => break (objects, pass),
+                Err(_) if retry.is_none() => return unavailable(),
+                Err(_) => {
+                    // The pass which took the holder may need one of these
+                    // guards to finish. Give it back the Channel turn.
+                    drop(objects);
+                    drop(states);
+                    drop(runtime);
+                    let Some(retry) = &retry else {
+                        return unavailable();
+                    };
+                    if !retry
+                        .retries_unavailable(
+                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable,
+                        )
+                        .await
+                    {
+                        return unavailable();
+                    }
+                    runtime = self.runtime.lock().await;
+                    states = self.states.spell_states.lock().await;
+                    if runtime.player_control_facts(actor, session).is_err()
+                        || runtime.owner_fence().is_err()
+                        || runtime.content_pin().server_artifact_digest() != native.source_digest()
+                    {
+                        return unavailable();
+                    }
+                }
+            }
+        };
+        let intent = *intent;
+        // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
+        let (attack_target, pvp_modes) = {
+            let mut attack = self.states.attack.lock().await;
+            // Best-effort allocation before SQL/installation; failure grants no activity.
+            attack.prepare_shared_experience_record(&runtime, actor, session);
+            // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
+            attack.settle_pacified_target(&runtime, &states, actor, session);
+            attack.settle_invisible_target(&runtime, &states, actor, session, self.owner_now());
+            let state = attack.combat_state(actor, session, self.owner_now());
+            (
+                legacy.as_ref().and_then(|r| r.creature).or(state.target),
+                attack.expert_modes(actor, session),
+            )
+        };
         // The marker (§1.4) stays for the whole pass; the pass holds the attempt itself.
         let retained = match states
             .pending_native
@@ -2587,36 +2728,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             UnresolvedSpellCommit::park_native,
             UnresolvedSpellCommit::park_vacant(ParkedMarkerKind::Native, actor, session),
         );
-        let objects = self.door.lock().await;
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            drop(objects);
-            let (leftover, parked) = writer.finish();
-            super::PendingSpellMarker::settle(
-                &mut states.pending_native,
-                actor,
-                session,
-                command,
-                marker_intent,
-                leftover,
-                parked,
-            );
-            return NativeCastDispatch::Pending;
-        };
-        let intent = *intent;
-        // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
-        let (attack_target, pvp_modes) = {
-            let mut attack = self.states.attack.lock().await;
-            // Best-effort allocation before SQL/installation; failure grants no activity.
-            attack.prepare_shared_experience_record(&runtime, actor, session);
-            // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
-            attack.settle_pacified_target(&runtime, &states, actor, session);
-            attack.settle_invisible_target(&runtime, &states, actor, session, self.owner_now());
-            let state = attack.combat_state(actor, session, self.owner_now());
-            (
-                legacy.as_ref().and_then(|r| r.creature).or(state.target),
-                attack.expert_modes(actor, session),
-            )
-        };
         // The attempt lives in the external context before any committing await. Deadline
         // cancellation cannot discard the original normalized occurrence: before the commit
         // window it stays in the context, after it the window parks it in the lane.
@@ -2855,20 +2966,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
                     let mut runtime=owner.runtime.lock().await;
                     let mut states=owner.states.spell_states.lock().await;
-                    if let Some(companion)=attempt.prepared.direct_companion.as_ref(){
-                        companion.reservation.rollback_physical(&mut runtime).map_err(|_|DurabilityError::Unavailable)?;
-                    }
-                    if let Some(companion)=attempt.prepared.corpse_companion.as_ref(){
-                        companion.spawn.rollback_physical(&mut runtime).map_err(|_|DurabilityError::Unavailable)?;
-                    }
-                    if let Some(installation)=attempt.prepared.installation.as_ref(){
-                        runtime.release_definitely_uncommitted_spell_batch(&installation.physical)
-                            .map_err(|_|DurabilityError::Unavailable)?;
-                    }
-                    if let Some(presentation)=attempt.prepared.presentation.as_ref(){
-                        states.presentations.as_mut().ok_or(DurabilityError::Unavailable)?
-                            .release_definitely_uncommitted(presentation);
-                    }
+                    attempt.prepared.release_uncommitted(&mut runtime,&mut states)?;
                     *pending=None;
                     return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{
                         disposition:SpellCastDisposition::Rejected,
@@ -3063,8 +3161,25 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         })).await;
         let (_, _, writer, guards, _, _) = context;
         drop(guards);
+        // On a fresh corpse cast, only a parked attempt can have crossed
+        // COMMIT. Release a staged physical reservation after a definite failure.
+        let mut runtime = if fresh_corpse_cast && result.is_err() {
+            Some(self.runtime.lock().await)
+        } else {
+            None
+        };
         let mut states = self.states.spell_states.lock().await;
-        let (leftover, parked) = writer.finish();
+        let (mut leftover, parked) = writer.finish();
+        let mut refused = fresh_corpse_cast && result.is_err() && !parked;
+        if let (Some(runtime), Some(attempt)) = (runtime.as_deref_mut(), leftover.as_ref()) {
+            refused = attempt
+                .prepared
+                .release_uncommitted(runtime, &mut states)
+                .is_ok();
+            if refused {
+                leftover = None;
+            }
+        }
         super::PendingSpellMarker::settle(
             &mut states.pending_native,
             actor,
@@ -3075,10 +3190,34 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parked,
         );
         drop(states);
+        drop(runtime);
+        if refused {
+            return rejected();
+        }
         let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,
             Err(_) => NativeCastDispatch::Pending,
+        }
+    }
+
+    async fn native_preflight_refusal(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        corpse_cast: bool,
+    ) -> NativeCastDispatch {
+        if corpse_cast
+            && !self
+                .states
+                .spell_states
+                .lock()
+                .await
+                .has_pending_native(actor, session)
+        {
+            NativeCastDispatch::Outcome(super::SpellCastOutcome::rejected())
+        } else {
+            NativeCastDispatch::Pending
         }
     }
 }

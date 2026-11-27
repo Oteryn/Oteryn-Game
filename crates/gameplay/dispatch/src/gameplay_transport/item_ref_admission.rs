@@ -147,6 +147,7 @@ pub(super) fn visible_corpses(
                 health_percent: 100,
                 direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                 kind: VisibleKind::Corpse {
+                    lethal_hit: None,
                     native_appearance_id: native_corpse_appearance(
                         runtime,
                         generation,
