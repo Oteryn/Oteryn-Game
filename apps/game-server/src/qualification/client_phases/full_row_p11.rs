@@ -11,7 +11,10 @@ use oteryn_dev_client::client_runtime::account_achievements::{
     AccountAchievementsResult, Response,
 };
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
+use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::account_achievements as wire;
+use oteryn_protocol_oteryn::item_view::{ItemEntry, ItemHandle};
+use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
 
 // The live sword-350 run took 36.5 seconds to remove the first 35% of a demon's
 // health. Allow 150 seconds per target for damage variation and server ticks, then
@@ -361,6 +364,8 @@ fn corridor_target_lost(
 
 async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::EntityDetail;
+    let item_index = provisioning::item_index()?;
+    let corpse_item = provisioning::item_reference(&item_index, 5995)?;
     let mut targets = Vec::new();
     let entities = client
         .world_entities()
@@ -421,7 +426,7 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         }
         targets.push(target);
     }
-    let potion = provisioning::item_reference(&provisioning::item_index()?, POTION_ID)?;
+    let potion = provisioning::item_reference(&item_index, POTION_ID)?;
     let mut targets = targets.into_iter().peekable();
     let mut next_step_x = u16::try_from(targets.peek().ok_or("P11 corridor target missing")?.position.x)?;
     while let Some(target) = targets.next() {
@@ -441,11 +446,23 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         let mut lowest_health = last_health;
         let attack_started = std::time::Instant::now();
         let mut last = target.position;
+        let mut loot_report = String::new();
         loop {
             client.service_liveness(Duration::from_millis(100)).await?;
             let mut target_observation = None;
             for event in client.take_events() {
                 check_unexpected_notice(&event)?;
+                if let SessionEvent::ServerMessage(delta) = &event
+                    && delta.server_sequence > attack_sequence
+                    && let ServerMessage::StatusText(text) = &delta.value
+                    && (text.starts_with("Loot of ")
+                        || (!loot_report.is_empty() && !loot_report.ends_with('.')))
+                {
+                    if !loot_report.is_empty() {
+                        loot_report.push(' ');
+                    }
+                    loot_report.push_str(text);
+                }
                 if let SessionEvent::ActorCombatState(delta) = &event {
                     target_observation = Some((delta.server_sequence, delta.value.target));
                 }
@@ -478,14 +495,26 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             let visible = client
                 .world_entities()
                 .ok_or("P11 corridor entity state disappeared")?;
-            if damaged
-                && visible.get(&target.entity).is_none()
-                && visible.iter().any(|row| {
-                    row.kind == EntityKind::Corpse
-                        && row.position == last
-                        && !existing_corpses.contains(&row.entity)
+            let corpse_handle = if damaged && visible.get(&target.entity).is_none() && loot_report.ends_with('.') {
+                visible.iter().find_map(|row| {
+                    if row.kind != EntityKind::Corpse
+                        || row.position != last
+                        || existing_corpses.contains(&row.entity)
+                    {
+                        return None;
+                    }
+                    match row.detail {
+                        EntityDetail::Object { item_definition_ref, item_handle, .. }
+                        | EntityDetail::ObjectWithAppearance { item_definition_ref, item_handle, .. }
+                            if item_definition_ref == corpse_item.get() => item_handle,
+                        _ => None,
+                    }
                 })
-            {
+            } else {
+                None
+            };
+            if let Some(handle) = corpse_handle {
+                assert_corridor_loot(client, handle, &item_index, &loot_report).await?;
                 evidence(&format!(
                     "P11_COMBAT killed={:?} corpse_at={last:?}",
                     target.entity
@@ -496,7 +525,7 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
             if vitals.health == 0 || tokio::time::Instant::now() >= deadline {
                 let lock = client.session_mut().combat_state().and_then(|state| state.target);
                 return Err(format!(
-                    "P11 corridor kill failed target={:?} lock={lock:?} attack_sequence={attack_sequence} recovered_target={recovered_target} damaged={damaged} remaining_percent={last_health} vitals={vitals:?}",
+                    "P11 corridor kill failed target={:?} lock={lock:?} attack_sequence={attack_sequence} recovered_target={recovered_target} damaged={damaged} remaining_percent={last_health} loot_report={loot_report:?} vitals={vitals:?}",
                     target.entity
                 )
                 .into());
@@ -566,6 +595,59 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         next_step_x = reached_x + 1;
     }
     Ok(())
+}
+
+async fn assert_corridor_loot(
+    client: &mut DevClientSession,
+    handle: ItemHandle,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    observed: &str,
+) -> TestResult {
+    let reply = client.use_item(handle).await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("P11 corpse owner USE refused: {reply:?}").into());
+    }
+    wait_for_inventory(client, "P11 corpse view", |client| {
+        client.open_container().is_some_and(|view| view.container_handle == Some(handle))
+    }).await?;
+    let entries = &client.open_container().ok_or("P11 corpse view missing")?.entries;
+    let descriptions = entries.iter().map(|entry| corridor_loot_description(index, entry))
+        .collect::<Result<Vec<_>, _>>()?;
+    let loot = if descriptions.is_empty() { "nothing".to_owned() } else { descriptions.join(", ") };
+    let expected = format!("Loot of an angry demon: {loot}.");
+    if observed != expected {
+        return Err(format!("P11 corpse loot report expected={expected:?} observed={observed:?}").into());
+    }
+    evidence(&format!("P11_LOOT {observed}"));
+    Ok(())
+}
+
+fn corridor_loot_description(
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    entry: &ItemEntry,
+) -> TestResult<String> {
+    let (key, _) = index.definition_at(entry.item_definition_ref).ok_or("P11 corpse item ref missing")?;
+    let id = key.strip_prefix("oteryn:item.tibia.i").ok_or("P11 corpse item lacks Global ID")?;
+    let names = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../crates/gameplay/dispatch/src/gameplay_transport/kill_reward/loot_item_names.tsv"
+    ));
+    let forms = names.lines().find_map(|line| {
+        let (row_id, forms) = line.split_once('\t')?;
+        (row_id == id).then_some(forms)
+    }).ok_or_else(|| format!("P11 Global loot item name missing for {key}"))?;
+    let mut forms = forms.split('\t');
+    let (Some(name), Some(article), Some(plural)) = (forms.next(), forms.next(), forms.next()) else {
+        return Err(format!("P11 invalid Global loot item forms for {key}").into());
+    };
+    Ok(match (entry.count.get(), article, plural) {
+        (1, "-", _) => name.to_owned(),
+        (1, article, _) => format!("{article} {name}"),
+        (count, _, "-") => format!("{count} {name}"),
+        (count, _, plural) => format!("{count} {plural}"),
+    })
 }
 
 async fn operate_lever(
