@@ -298,7 +298,8 @@ mod tests {
             }
             assert!(tracks.get(saved_stage).is_some_and(|stage| *stage > 0));
             assert_eq!(
-                unique_eligible([supplemental, authored], &tracks).map(|callback| &callback.key),
+                unique_eligible([supplemental, authored], &tracks, None)
+                    .map(|callback| &callback.key),
                 Some(&authored.key),
                 "{} must own the authored save",
                 authored.key
@@ -307,13 +308,14 @@ mod tests {
                 let lever = "oteryn:quest-progress/chosen/ape-city/lever-1";
                 tracks.insert(lever.into(), 0);
                 assert!(
-                    unique_eligible([authored, supplemental], &tracks).is_none(),
+                    unique_eligible([authored, supplemental], &tracks, None).is_none(),
                     "the supplemental gate must not bypass the authored switches"
                 );
             }
             tracks.insert(saved_stage.into(), 0);
             assert_eq!(
-                unique_eligible([authored, supplemental], &tracks).map(|callback| &callback.key),
+                unique_eligible([authored, supplemental], &tracks, None)
+                    .map(|callback| &callback.key),
                 Some(&supplemental.key),
                 "{} must own the supplemental save",
                 supplemental.key

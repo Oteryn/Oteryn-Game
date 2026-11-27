@@ -1555,9 +1555,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             selection_deadline = Some(deadline);
         }
         let callback = if let [callback] = selected.as_slice() {
-            self.serpentine_journey_opening(callback, map, &resolved, command.game_session_id)
-                .await
-                .unwrap_or(callback)
+            self.serpentine_journey_opening(
+                callback,
+                map,
+                &resolved,
+                actor,
+                command.game_session_id,
+            )
+            .await
+            .unwrap_or(callback)
         } else {
             if selected.is_empty() {
                 return None;
