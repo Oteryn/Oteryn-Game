@@ -6,6 +6,8 @@ use super::*;
 tokio::task_local! {
     pub(super) static FRESH_SPELL_ADMISSION_BARRIER:
         std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+    pub(super) static RELOG_CONDITIONS_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
 #[cfg(test)]

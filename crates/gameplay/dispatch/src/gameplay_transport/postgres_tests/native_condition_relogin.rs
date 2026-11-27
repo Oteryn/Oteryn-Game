@@ -255,9 +255,26 @@ async fn scenario(
         &frame,
         &fresh_owner,
         &FreshIds,
-    )
-    .await
-    .map_err(debug)?;
+    );
+    let fresh = if contend_conditions {
+        use crate::gameplay_transport::composed_admission::RELOG_CONDITIONS_BARRIER;
+        let barrier = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+        let hold = async {
+            barrier.0.notified().await;
+            let held = h.root.try_issue_semantic_pass()?;
+            barrier.1.notify_one();
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await
+        };
+        let (admitted, held) = tokio::time::timeout(Duration::from_secs(15), async {
+            tokio::join!(RELOG_CONDITIONS_BARRIER.scope(barrier.clone(), admit), hold)
+        }).await?;
+        held?;
+        // A full first-entry retry would hit the barrier a second time and time out.
+        admitted.map_err(debug)?
+    } else {
+        admit.await.map_err(debug)?
+    };
     assert_ne!(fresh.game_session_id, session);
     assert!(
         matches!(

@@ -95,7 +95,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(probe) = &probe {
             probe.pause().await;
         }
-        let current = match store.reconcile(request.operation()).await {
+        let current = match budget
+            .retry_logged_holder(
+                "first_entry_session",
+                async || store.observe_committed_admission(request.operation()).await,
+                |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
+            )
+            .await
+        {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
             Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
             Err(_error) => {
@@ -124,9 +131,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
             };
         phase.set("conditions");
-        let saved_conditions = match self
-            .root
-            .read_character_conditions(self.character, character_id)
+        #[cfg(test)]
+        if let Ok(barrier) = RELOG_CONDITIONS_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        let saved_conditions = match budget
+            .retry_logged_holder(
+                "first_entry_conditions",
+                async || {
+                    self.root
+                        .read_character_conditions(self.character, character_id)
+                        .await
+                },
+                |error| {
+                    matches!(
+                        error,
+                        crate::durability::item_use::ItemUseError::Unavailable(
+                            crate::durability::DurabilityError::RootUnavailable
+                        )
+                    )
+                },
+            )
             .await
         {
             Ok(saved) => saved,
@@ -292,7 +318,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
         }
         phase.set("revalidate_session");
-        let current = match store.reconcile(request.operation()).await {
+        let current = match budget
+            .retry_logged_holder(
+                "first_entry_session",
+                async || store.observe_committed_admission(request.operation()).await,
+                |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
+            )
+            .await
+        {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
             Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),

@@ -269,6 +269,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The coalesced monster scheduler must not retake the returned holder
         // ahead of a waiting foreground owner (notably logout during world boot).
+        // Do not check out the holder or begin SQL while waiting for a door
+        // operation. Its local view remains stable through this profile turn.
+        let objects = self.door.try_lock().map_err(|_| ())?;
         let pass = self
             .root
             .try_issue_background_semantic_pass()
@@ -293,10 +296,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 primal_pending.as_ref(),
                 native_pending.as_ref(),
                 native_health_names,
+                &*objects,
             );
             pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
-                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
+                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names, objects) =
                     context;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
@@ -351,9 +355,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         native_owner_turn(room, "profile_transaction", "taints_refused");
                     }).map_err(|_| crate::durability::DurabilityError::Unavailable)?
                 } else { Vec::new() };
-                let objects = owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let mut map =
-                    CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
+                    CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
                     .inspect_err(|_| {
                         #[cfg(test)]
@@ -762,7 +765,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
                 let mut map =
-                    CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
+                    CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 map.link_source_ground_steps_to_pass(&pending)
@@ -811,6 +814,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .map_err(|_| ())?
         };
+        drop(objects);
         // A due-only turn can finish while an older cancelled pass already owns
         // its Item suffix. Do not acknowledge that suffix with empty results.
         if !ran_profile {

@@ -657,6 +657,234 @@ fn logout_commits_terminal_saves_the_position_and_retires_the_actor() -> TestRes
 }
 
 #[test]
+fn logout_after_peer_guild_lookup_is_accepted_on_first_attempt() -> TestResult {
+    logout_during_peer_durability(false)
+}
+
+#[test]
+fn peer_logout_after_committed_party_spell_is_accepted_on_first_attempt() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::party_buffs_fixtures::run_party_spell_logout(admin)
+}
+
+#[test]
+fn logout_after_dagger_grant_retries_conditions_in_place_and_releases() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::party_buffs_fixtures::run_dagger_grant_logout(admin)
+}
+
+#[test]
+fn logout_refuses_and_keeps_session_live_when_conditions_holder_exhausts() -> TestResult {
+    logout_during_peer_durability(true)
+}
+
+fn logout_during_peer_durability(hold_past_retry_window: bool) -> TestResult {
+    use crate::domain::{CharacterId, guild::GuildId};
+    use crate::durability::{DurabilityError, guild_chat_fixture as guild};
+    use crate::gameplay_transport::item_fence_of;
+    use crate::gameplay_transport::logout::{
+        LOGOUT_RELEASE_PROBE, LogoutReleaseProbe, ReleaseRetryStage,
+    };
+    use std::time::Duration;
+
+    run(async move |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_peer_guild", true, false).await?;
+        prepare_current_session(&harness).await?;
+        guild::prepare(&harness.pool).await?;
+        let peer = CharacterId::from_bytes(guild::sid(90, 1))?;
+        let peer_account = guild::sid(90, 2);
+        let guild_id = GuildId::from_bytes(guild::sid(90, 3))?;
+        guild::historical_character(&harness.pool, 90, peer, peer_account, id(42), "Guild Peer")
+            .await?;
+        guild::initial_guild(
+            &harness.pool,
+            guild_id,
+            id(42),
+            "Logout Guild",
+            peer,
+            peer_account,
+        )
+        .await?;
+        let character = CharacterId::from_bytes(id(41))?;
+        guild::initial_member(&harness.pool, guild_id, character, id(40), 3).await?;
+
+        let dependencies = Dependencies::new()?;
+        let store = FreshAdmissionStore::from_root(harness.root.clone());
+        let session = dependencies.admitted.game_session_id;
+        let fence = item_fence_of(store.current_session(session).await?).ok_or("viewer fence")?;
+        let peer_fence = guild::historical_session(&harness.pool, 90, fence).await?;
+        guild::guard(&harness.pool).await?;
+
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        assert_eq!(
+            owner
+                .root
+                .read_battle_guild_allies(&authority, &harness.node, fence, &[*peer.as_bytes()])
+                .await?,
+            [true],
+        );
+
+        let mut admitted = dependencies.admitted;
+        admitted.item_fence = Some(fence);
+        let probe = std::sync::Arc::new(LogoutReleaseProbe::default());
+        // Keep the fixture's paused query valid through the retry window and the final
+        // readback window, so the same checked-out pass can finish even on exhaustion.
+        let _pass_deadline = owner.root.boot_pass_deadline(Duration::from_secs(5));
+        let peer_targets = [*character.as_bytes()];
+        let peer_lookup = async {
+            probe.before_conditions.notified().await;
+            let lookup = owner.root.read_battle_guild_allies(
+                &authority,
+                &harness.node,
+                peer_fence,
+                &peer_targets,
+            );
+            tokio::pin!(lookup);
+            // Poll the real peer's lookup once. It checks out the holder before its first
+            // database await. Suspend its future until the logout has observed that checkout.
+            let progress = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(lookup.as_mut(), cx))
+            })
+            .await;
+            assert!(progress.is_pending());
+            assert!(matches!(
+                owner.root.try_issue_semantic_pass(),
+                Err(DurabilityError::RootUnavailable)
+            ));
+            probe.resume_conditions.notify_one();
+            probe.retry_observed.notified().await;
+            assert_eq!(
+                probe.first_retry.get(),
+                Some(&ReleaseRetryStage::ConditionsHolder)
+            );
+            if hold_past_retry_window {
+                probe.logout_finished.notified().await;
+            }
+            assert_eq!(lookup.await?, [true]);
+            Ok::<(), Box<dyn std::error::Error>>(())
+        };
+        let logout = async {
+            let command = LOGOUT_RELEASE_PROBE.scope(probe.clone(), owner.logout_session(admitted));
+            tokio::pin!(command);
+            let mut logs = Vec::new();
+            let reply = std::future::poll_fn(|cx| {
+                let mut result = std::task::Poll::Pending;
+                logs.extend(oteryn_error_codes::capture(|| {
+                    result = std::future::Future::poll(command.as_mut(), cx);
+                }));
+                result
+            })
+            .await;
+            probe.logout_finished.notify_one();
+            (reply, logs)
+        };
+        let ((reply, logs), peer_result) = tokio::time::timeout(Duration::from_secs(10), async {
+            tokio::join!(logout, peer_lookup)
+        })
+        .await?;
+        peer_result?;
+        if hold_past_retry_window {
+            assert!(
+                logs.iter().any(|line| {
+                    let mut fields = line.split_whitespace();
+                    fields
+                        .clone()
+                        .any(|word| word == "event=logout_release_retry")
+                        && fields.any(|word| {
+                            word.starts_with("holder=") && word.contains("/battle_filter.rs:")
+                        })
+                }),
+                "a deferred release must name the real competing pass: {logs:?}"
+            );
+            assert!(
+                logs.iter().any(|line| {
+                    let has = |field| line.split_whitespace().any(|word| word == field);
+                    has("event=logout_busy")
+                        && has("stage=release_retry_exhausted")
+                        && has("phase=condition_save")
+                }),
+                "exhaustion must name the actual release phase: {logs:?}"
+            );
+            assert_eq!(reply, LogoutReply::Result(LogoutResult::Busy));
+            assert!(probe.retry_count.load(std::sync::atomic::Ordering::Relaxed) > 1);
+            assert_eq!(
+                session_state(&harness, &dependencies).await?,
+                GameSessionState::Active
+            );
+            assert!(actor_present(&owner, &dependencies).await);
+            assert_eq!(last_positions(&harness).await?, 0);
+        } else {
+            assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted));
+            assert_eq!(
+                session_state(&harness, &dependencies).await?,
+                GameSessionState::Terminal
+            );
+            assert!(!actor_present(&owner, &dependencies).await);
+            assert_eq!(last_positions(&harness).await?, 1);
+        }
+        eprintln!("LOGOUT_PEER_GUILD completed condition_save contention case");
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn logout_with_a_pz_lock_is_refused_and_keeps_the_actor() -> TestResult {
+    run(async |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_pz_lock", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        let session = dependencies.admitted.game_session_id;
+        crate::gameplay_transport::pvp_live::lock_mut(
+            &mut *owner.states.spell_states.lock().await,
+            dependencies.actor,
+            session,
+        )
+        .on_aggression(owner.owner_now());
+        assert!(matches!(
+            owner.logout_session(dependencies.admitted).await,
+            LogoutReply::Result(LogoutResult::InFight { .. })
+        ));
+        assert_eq!(
+            session_state(&harness, &dependencies).await?,
+            GameSessionState::Active
+        );
+        assert!(actor_present(&owner, &dependencies).await);
+        assert_eq!(last_positions(&harness).await?, 0);
+        eprintln!("LOGOUT_PZ_LOCK completed refusal case");
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
 fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
     run(async |admin| {
         reset();
