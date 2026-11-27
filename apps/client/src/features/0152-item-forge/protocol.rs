@@ -24,6 +24,9 @@ impl Outbox {
                 panel.operation = Operation::Fusion;
             }
             panel.open = true;
+            if panel.pending {
+                return Ok(());
+            }
             panel.preview.invalidate();
             panel.preview.items.clear();
             panel.preview.page = None;

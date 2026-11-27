@@ -96,6 +96,8 @@ enum UseDispositionV1 {
   USE_DISPOSITION_BED_OCCUPIED = 21;
   USE_DISPOSITION_BED_WOKEN = 22;
   USE_DISPOSITION_OFFLINE_TRAINING = 23;
+  // Capability 152 ITEM_FORGE_V1. The current actor used a reachable Forge station.
+  USE_DISPOSITION_FORGE_OPENED = 24;
 }
 
 // CommandResult.payload of command type 2. At most 4 bytes without capability 594, otherwise 20.

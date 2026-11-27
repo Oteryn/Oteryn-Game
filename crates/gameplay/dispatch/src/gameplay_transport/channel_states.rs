@@ -46,11 +46,11 @@ pub struct ChannelSessionStates {
     pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
+    pub(super) forge_stations: super::item_forge::Stations,
     /// IDLEKICK: operator thresholds, shared by every connection served by this owner.
     pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
     /// RAIDS-GLOBAL: copies of the idle owner's facts, removed with the session.
     pub(super) gameplay_idle_presence: super::gameplay_idle_presence::GameplayIdlePresence,
-    pub(super) forge_stations: super::item_forge::Stations,
     pub(super) grizzly_boss: super::grizzly_boss::GrizzlyBossSessions,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
     pub(super) kill_source_owner: super::public_kill_statistics::ActivityKillSourceOwner,

@@ -140,6 +140,7 @@ pub(super) async fn admit_successor(
     assert_eq!(successor.first_entry, FirstEntryOutcome::Positioned);
     assert_eq!(successor.continuity.next_command_id, 1);
     assert_eq!(successor.continuity.server_sequence, 0);
+    super::support::open_fixture_station(owner, successor).await?;
     *admitted = successor;
     Ok(())
 }

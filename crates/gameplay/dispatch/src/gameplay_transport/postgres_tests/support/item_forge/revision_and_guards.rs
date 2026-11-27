@@ -96,7 +96,9 @@ pub(super) async fn revision_changed(
         previous.0.as_slice(),
         next.identity().server_artifact_digest().as_slice()
     );
+    let next_cells = support::station_cells(&next_deps, next)?;
     let mut next_owner = next_deps.owner(h, owner.character);
+    next_owner.movement_cells = (&next_cells).into();
     next_owner.active_generation = Some(next);
     super::recovery::admit_successor(h, &next_owner, &next_deps, admitted, old_lease, 110).await?;
     let (status, refused) = exchange(&next_owner, admitted, action).await?;
@@ -133,7 +135,9 @@ pub(super) async fn revision_changed(
             .frame_binding_digest()
             .as_slice()
     );
+    let restored_cells = support::station_cells(&restored_deps, restored)?;
     let mut restored_owner = restored_deps.owner(h, owner.character);
+    restored_owner.movement_cells = (&restored_cells).into();
     restored_owner.active_generation = Some(restored);
     super::recovery::admit_successor(
         h,

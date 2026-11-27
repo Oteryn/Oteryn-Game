@@ -435,6 +435,22 @@ macro_rules! world_scenario {
         };
         sector.tiles.extend((8..=12).map(|x| grass(x, 0)));
         sector.tiles.extend((6..=12).map(|x| grass(x, 1)));
+        if $tag == "xmech_s5" {
+            let key = $crate::gameplay_transport::monk_save::postgres_tests::item_forge_fixtures::support::STATION;
+            let palette = u32::try_from(bundle.manifest.palette.len())?;
+            bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
+                key: key.into(),
+                id: wire_id(key)?,
+                family: oteryn_world_bundle::writer::Family::Item,
+                terrain: None,
+            });
+            sector.tiles.iter_mut().find(|tile| (tile.x, tile.y) == (7, 1))
+                .ok_or("Forge station tile")?.items.push(oteryn_world_bundle::sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+        }
         sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
         let bytes =
             oteryn_world_bundle::writer::write(&bundle.manifest, &bundle.sectors, &bundle.spawns)

@@ -12,6 +12,7 @@ use oteryn_client_runtime::{
     cui3::item_forge::Operation,
     forge_preview as wire,
     raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult},
+    world_interaction as world,
 };
 use oteryn_session::{LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome};
 use std::{
@@ -56,6 +57,15 @@ impl Stepper for Peer {
             }
         }
         items
+    }
+    async fn world_context(
+        &mut self,
+        command: &world::Command,
+        _: bool,
+    ) -> Result<world::Reply, SessionError> {
+        assert_eq!(command.action, world::Action::Use);
+        assert!(matches!(command.target, world::Target::Object(_)));
+        Ok(world::Reply::ForgeOpened)
     }
     async fn feature(
         &mut self,
@@ -163,13 +173,24 @@ fn exaltation_actual_session_effects_and_receipt_reach_native_dialog() -> Result
                 })
                 .await?;
                 assert!(link.item_forge_panel().preview.selected);
-                activate(&mut lock(&link.mailbox), &link.commands, Action::Refresh);
+                assert!(!link.item_forge_panel().open);
+                link.commands.send(crate::combat_input::PlayCommand::WorldContext(
+                    world::Command {
+                        target: world::Target::Object(world::world_object::WorldObjectTarget {
+                            placement: vec![0; 40],
+                            expected_revision: 0,
+                        }),
+                        action: world::Action::Use,
+                        selection: None,
+                    },
+                ))?;
                 tokio::time::timeout(Duration::from_secs(3), async {
                     while link.item_forge_panel().preview.items.len() != 2 {
                         tokio::task::yield_now().await;
                     }
                 })
                 .await?;
+                assert!(link.item_forge_panel().open);
                 assert_eq!(
                     link.item_forge_panel().preview.items[0].name,
                     "Native practice sword"

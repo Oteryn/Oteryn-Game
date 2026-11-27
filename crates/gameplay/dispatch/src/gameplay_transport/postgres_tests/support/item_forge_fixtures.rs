@@ -374,6 +374,9 @@ async fn fences(
     );
     admitted.continuity.connection_generation = current_fence.connection_generation.get();
     admitted.item_fence = Some(current_fence);
+    let (_, missing_station) = exchange(owner, admitted, action).await?;
+    assert_eq!(missing_station["reason"], "FORGE_STATION_REQUIRED");
+    support::open_fixture_station(owner, *admitted).await?;
     assert_eq!(exchange(owner, admitted, action).await?, original);
     assert_eq!(balances(h).await?, after);
     let after_receipts: i64 = sqlx::query_scalar(

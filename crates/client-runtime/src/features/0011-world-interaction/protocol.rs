@@ -227,7 +227,10 @@ pub async fn send_framed_reply<S: SessionStream>(
     };
     let text = match disposition {
         UseDisposition::Committed => "completed",
-        UseDisposition::ForgeOpened => return Ok(Reply::ForgeOpened),
+        UseDisposition::ForgeOpened if result.status == oteryn_session::CommandStatus::Accepted => {
+            return Ok(Reply::ForgeOpened);
+        }
+        UseDisposition::ForgeOpened => "completed",
         UseDisposition::BedChooseSkill => "choose an offline training skill in the server dialog",
         UseDisposition::BedOccupied => "this bed is occupied",
         UseDisposition::BedWoken => "sleeper woke",
