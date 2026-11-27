@@ -429,22 +429,20 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     assert_eq!(mana_before, witness.mana_before);
     assert_eq!(mana_before.checked_sub(50), Some(delta.value.mana));
 
-    drain_boundary(&mut session, &consumed, witness.clear_start).await?;
+    events.extend(drain_boundary(&mut session, &consumed, witness.clear_start).await?);
     assert_eq!(session.last_server_sequence(), witness.clear_sequence);
-    events.extend(session.take_events());
     visible.set(witness.logout_start);
     let clear = session.attack_target(None).await?;
     assert_eq!(clear.command_id, witness.command + 1);
     assert_eq!(clear.status, CommandStatus::Accepted);
     assert_eq!(clear.disposition, AttackIntentDisposition::Ok);
-    drain_boundary(&mut session, &consumed, witness.logout_start).await?;
+    events.extend(drain_boundary(&mut session, &consumed, witness.logout_start).await?);
     assert_eq!(session.last_server_sequence(), witness.logout_sequence);
     assert!(
         session
             .combat_state()
             .is_some_and(|state| state.target.is_none() && !state.in_fight)
     );
-    events.extend(session.take_events());
     let unchanged = *session.actor_vitals().ok_or("C12 actor vitals absent")?;
     assert!(actor_spell::decode_actor_vitals(&[0x38, 0x02]).is_err());
     assert_eq!(session.actor_vitals(), Some(&unchanged));
@@ -490,18 +488,26 @@ async fn drain_boundary(
     session: &mut Session<ReplayWire>,
     consumed: &Cell<usize>,
     boundary: usize,
-) -> Result<(), BoxError> {
-    if consumed.get() < boundary {
-        session.service_liveness(Duration::from_millis(50)).await?;
+) -> Result<Vec<SessionEvent>, BoxError> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    let mut events = session.take_events();
+    while consumed.get() < boundary {
+        let Some(remaining) = deadline.checked_duration_since(tokio::time::Instant::now()) else {
+            break;
+        };
+        session
+            .service_liveness(remaining.min(Duration::from_millis(50)))
+            .await?;
+        events.extend(session.take_events());
     }
     if consumed.get() != boundary {
         return Err(format!(
             "C12 did not replay the complete boundary: {} != {boundary}",
-            consumed.get()
+            consumed.get(),
         )
         .into());
     }
-    Ok(())
+    Ok(events)
 }
 
 fn check_cast_target(session: &Session<ReplayWire>, witness: &Witness) -> Result<(), BoxError> {
