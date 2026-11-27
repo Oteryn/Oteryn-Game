@@ -200,19 +200,30 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         || observer.world_entities().is_none_or(|view| view.get(&caster_ref).is_none()) {
         return Err("Global parity: Invisible removed the caster from the other player's view".into());
     }
+    let caster_session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
+    let position = caster.world_spatial().actor_position;
+    use tokio::time::Instant;
+    capture.observe(full_e2ef5::with_observer_liveness(
+        &mut observer,
+        caster_capture.observe(full_row_c17b::wait_rat_combat_end(&mut caster)),
+    )).await?;
+    let before_sent = Instant::now();
+    let (before, before_sequence) = capture.observe(full_e2ef5::with_observer_liveness(
+        &mut observer,
+        caster_capture.observe(full_row_c17b::invisibility_sample(&mut caster)),
+    )).await?;
+    let before_received = Instant::now();
+    let before = before.ok_or("C17b Invisible absent before logout")?;
+    if observer.take_events().into_iter().any(|event| matches!(event,
+        SessionEvent::WorldSpatialEntities(delta) if delta.value.leave.iter().any(|entity| entity.identity == caster_ref.identity)))
+        || observer.world_entities().is_none_or(|view| view.get(&caster_ref).is_none()) {
+        return Err("C17b caster left the observer view before logout was sent".into());
+    }
     let observer_sequence = observer.last_server_sequence();
     let observer_session = uuid_text(observer.join_snapshot().game_session_id.as_bytes());
     let (received, commands) = capture.take();
-    let caster_session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
-    let position = caster.world_spatial().actor_position;
-    observer.take_events();
-    use tokio::time::Instant;
-    let (durable_vitals, before, before_sequence, before_sent, before_received, logout_sent, logout_received, logout_sequence) =
+    let (durable_vitals, logout_sent, logout_received, logout_sequence) =
         capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
-            full_row_c17b::wait_rat_combat_end(&mut caster).await?;
-            let sent = Instant::now();
-            let (before, sequence) = full_row_c17b::invisibility_sample(&mut caster).await?;
-            let received = Instant::now();
             let vitals = caster.actor_vitals().ok_or("C17b logout vitals absent")?;
             let durable = (vitals.mana, vitals.soul);
             let logout_sent = Instant::now();
@@ -220,10 +231,10 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
             let logout_received = Instant::now();
             require_mechanic_acceptance(result.status, "C17b first logout")?;
             if result.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-                || result.result_server_sequence <= sequence {
-                return Err(format!("C17b first logout invalid after condition sequence {sequence}: {result:?}").into());
+                || result.result_server_sequence <= before_sequence {
+                return Err(format!("C17b first logout invalid after condition sequence {before_sequence}: {result:?}").into());
             }
-            Ok((durable, before.ok_or("C17b Invisible absent before logout")?, sequence, sent, received, logout_sent, logout_received, result.result_server_sequence))
+            Ok((durable, logout_sent, logout_received, result.result_server_sequence))
         }))).await?;
     if durable_vitals.0 >= mana_before {
         return Err("C17b spent mana did not persist until logout".into());
