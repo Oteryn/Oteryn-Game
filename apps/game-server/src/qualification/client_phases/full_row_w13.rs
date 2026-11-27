@@ -123,6 +123,17 @@ const BRAINDEATH_HOME: TilePos = TilePos {
     floor: -9,
 };
 
+const BRAINDEATH_POCKET: TilePos = TilePos {
+    x: 32093,
+    y: 31842,
+    floor: -9,
+};
+const BRAINDEATH_APPROACH: TilePos = TilePos {
+    x: 32092,
+    y: 31842,
+    floor: -9,
+};
+
 fn fixture_approach(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
@@ -145,32 +156,48 @@ fn fixture_approach(
     {
         return Err("W13 authored Braindeath spawn point absent from served bundle".into());
     }
-    // Select one fixture cell from the map before admission or any combat.
-    // Cardinal neighbors avoid an attack across a diagonal wall.
-    [(0, -1), (1, 0), (0, 1), (-1, 0)]
-        .into_iter()
-        .map(|(dx, dy)| TilePos {
-            x: home.x.saturating_add_signed(dx),
-            y: home.y.saturating_add_signed(dy),
-            floor: home.floor,
-        })
-        .find(|at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|ground| ground.walkable() && !ground.protection_zone())
-                && world.enterable(*at)
-                && !spawns.sources.iter().any(|source| {
-                    source.floor == at.floor
-                        && source
-                            .points
-                            .iter()
-                            .any(|point| point.x == at.x && point.y == at.y)
-                })
-        })
-        .ok_or_else(|| {
-            "W13 authored Braindeath has no walkable unoccupied cardinal approach".into()
-        })
+
+    let walkable = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|ground| ground.walkable() && !ground.protection_zone())
+            && world.enterable(at)
+    };
+    for at in [BRAINDEATH_POCKET, BRAINDEATH_APPROACH] {
+        if !walkable(at)
+            || spawns.sources.iter().any(|source| {
+                source.floor == at.floor
+                    && source
+                        .points
+                        .iter()
+                        .any(|point| point.x == at.x && point.y == at.y)
+            })
+        {
+            return Err(format!(
+                "W13 fixture cell {at:?} must be walkable and clear of authored spawns"
+            )
+            .into());
+        }
+    }
+
+    // The hunter occupies the pocket's only exit. Validate every neighbor
+    // against the served map before staging the fixture.
+    for dy in -1..=1 {
+        for dx in -1..=1 {
+            let at = TilePos {
+                x: BRAINDEATH_POCKET.x.saturating_add_signed(dx),
+                y: BRAINDEATH_POCKET.y.saturating_add_signed(dy),
+                floor: BRAINDEATH_POCKET.floor,
+            };
+            if at != BRAINDEATH_POCKET && at != BRAINDEATH_APPROACH && walkable(at) {
+                return Err(
+                    format!("W13 fixture pocket has another walkable exit at {at:?}").into(),
+                );
+            }
+        }
+    }
+    Ok(BRAINDEATH_APPROACH)
 }
 
 async fn stage_hunter(clients: &SeamClients<'_>, approach: TilePos) -> TestResult {
@@ -360,10 +387,15 @@ async fn enable_chase(client: &mut DevClientSession) -> TestResult {
 
 async fn fixture_braindeath(
     client: &mut DevClientSession,
-    spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     client.take_events();
     let player = tile(client.world_spatial().actor_position)?;
+    if player != BRAINDEATH_APPROACH {
+        return Err(format!(
+            "W13 fixture approach expected {BRAINDEATH_APPROACH:?}; observed {player:?}"
+        )
+        .into());
+    }
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, BRAINDEATH.into()).await?;
     let target = parse_spawned_entity(&answer)?;
@@ -379,25 +411,9 @@ async fn fixture_braindeath(
                     continue;
                 }
                 let position = tile(actor.position)?;
-                confirm_braindeath(&actor, target, position)?;
-                if position.floor != player.floor
-                    || position
-                        .x
-                        .abs_diff(player.x)
-                        .max(position.y.abs_diff(player.y))
-                        != 1
-                    || spawns.sources.iter().any(|source| {
-                        source.floor == position.floor
-                            && source
-                                .points
-                                .iter()
-                                .any(|point| point.x == position.x && point.y == position.y)
-                    })
-                {
-                    return Err(format!("W13 fixture expected clear adjacent position to {player:?}; observed {position:?} target={target:?}").into());
-                }
+                confirm_braindeath(&actor, target, BRAINDEATH_POCKET)?;
                 evidence(&format!(
-                    "FIXTURE row=W13.full kind=spawn creature={BRAINDEATH} target={target:?} position={position:?}"
+                    "FIXTURE row=W13.full kind=pocket-spawn source={BRAINDEATH_SOURCE} creature={BRAINDEATH} target={target:?} position={position:?} approach={player:?}"
                 ));
                 return Ok(actor);
             }
@@ -517,7 +533,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     verdict::Harness::global().progress("daily-boost-verified");
     enable_chase(&mut client).await?;
-    let first = fixture_braindeath(&mut client, &metadata.spawns).await?;
+    let first = fixture_braindeath(&mut client).await?;
     let home = tile(first.position)?;
     verdict::Harness::global().progress("dedicated-braindeath-visible");
     required_hunt(&mut client, 4, "selected creature", Some(first)).await?;
