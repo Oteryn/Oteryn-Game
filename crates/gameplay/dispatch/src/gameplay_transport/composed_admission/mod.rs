@@ -36,6 +36,8 @@ mod death;
 mod familiar;
 mod first_entry;
 mod grace_expiry;
+#[cfg(test)]
+pub(super) use grace_expiry::GRACE_RELEASE_CHECKOUT;
 mod items;
 mod npc;
 mod objects;

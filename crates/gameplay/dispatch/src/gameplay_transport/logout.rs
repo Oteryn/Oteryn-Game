@@ -718,40 +718,62 @@ impl AdmissionRetryBudget<'_> {
         Fut: std::future::Future<Output = Result<T, crate::durability::DurabilityError>>,
     {
         use crate::durability::DurabilityError;
-        loop {
+        let busy = |error: &DurabilityError| matches!(error, DurabilityError::RootUnavailable);
+        let mut wait = None;
+        let result = loop {
             match step().await {
-                Ok(value) => return Ok(value),
-                Err(error) => {
-                    if matches!(error, DurabilityError::RootUnavailable)
-                        && self
-                            .retries_unavailable(AdmissionRefusal::Unavailable)
-                            .await
+                Err(error) if busy(&error) => {
+                    wait.get_or_insert_with(|| {
+                        (
+                            tokio::time::Instant::now(),
+                            self.root.and_then(
+                                crate::durability::DurabilityRoot::checked_out_semantic_pass,
+                            ),
+                        )
+                    });
+                    if !self
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
                     {
-                        continue;
+                        break Err(error);
                     }
-                    let kind = match &error {
-                        DurabilityError::RootUnavailable => "holder_busy",
-                        DurabilityError::Database(_)
-                        | DurabilityError::Migration(_)
-                        | DurabilityError::SchemaIncompatible(_) => "storage",
-                        DurabilityError::RootPassDeadlineExceeded
-                        | DurabilityError::CommitTransactionTimeout => "deadline",
-                        DurabilityError::CommitOutcomeUnknown => "commit_unknown",
-                        DurabilityError::SessionUseAuthorization(_)
-                        | DurabilityError::CommitRejected => "authority",
-                        DurabilityError::InvalidStoredState
-                        | DurabilityError::InvalidConfiguration
-                        | DurabilityError::AdmissionGameSessionLedgerExhausted => "invalid_state",
-                        DurabilityError::Unavailable | DurabilityError::RootTaskFailed => {
-                            "unavailable"
-                        }
-                    };
-                    operator_event(&format!(
-                        "event=session_durability_failed stage={stage} kind={kind}"
-                    ));
-                    return Err(error);
                 }
+                result => break result,
             }
+        };
+        if let Some((started, holder)) = wait {
+            let owner = holder.map_or_else(|| "none".to_owned(), |(site, _)| site.to_string());
+            let waited_ms = started.elapsed().as_millis();
+            let outcome = if result.as_ref().is_err_and(busy) {
+                "holder_busy"
+            } else {
+                "retry_finished"
+            };
+            operator_event(&format!(
+                "event=session_durability_wait purpose={stage} owner={owner} waited_ms={waited_ms} outcome={outcome}"
+            ));
         }
+        if let Err(error) = &result {
+            let kind = match error {
+                DurabilityError::RootUnavailable => "holder_busy",
+                DurabilityError::Database(_)
+                | DurabilityError::Migration(_)
+                | DurabilityError::SchemaIncompatible(_) => "storage",
+                DurabilityError::RootPassDeadlineExceeded
+                | DurabilityError::CommitTransactionTimeout => "deadline",
+                DurabilityError::CommitOutcomeUnknown => "commit_unknown",
+                DurabilityError::SessionUseAuthorization(_) | DurabilityError::CommitRejected => {
+                    "authority"
+                }
+                DurabilityError::InvalidStoredState
+                | DurabilityError::InvalidConfiguration
+                | DurabilityError::AdmissionGameSessionLedgerExhausted => "invalid_state",
+                DurabilityError::Unavailable | DurabilityError::RootTaskFailed => "unavailable",
+            };
+            operator_event(&format!(
+                "event=session_durability_failed stage={stage} kind={kind}"
+            ));
+        }
+        result
     }
 }
