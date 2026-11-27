@@ -15,6 +15,22 @@ fn detailed(session: &ServeState, mut payload: Vec<u8>, detail: Option<RefusalDe
     payload
 }
 
+/// An unavailable owner has no typed payload or effects. Channel and House
+/// command receipts use the same registered operation-terminal result.
+pub(super) fn encode_refusal(
+    generation: u64,
+    sequence: u64,
+    command_id: u64,
+) -> Result<Vec<u8>, ServeEnd> {
+    encode_command_error_result(
+        generation,
+        sequence,
+        command_id,
+        FoundationProtocolError::CommandRefused,
+    )
+    .map_err(|_| ServeEnd::server("frame_encode_failed"))
+}
+
 pub(super) fn encode(
     session: &mut ServeState,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
@@ -22,13 +38,7 @@ pub(super) fn encode(
 ) -> Result<Vec<u8>, ServeEnd> {
     let sequence = next_sequence(session)?;
     if matches!(dispatch, Dispatch::Unavailable) {
-        return encode_command_error_result(
-            session.generation,
-            sequence,
-            command.command_id,
-            FoundationProtocolError::CommandRefused,
-        )
-        .map_err(|_| ServeEnd::server("frame_encode_failed"));
+        return encode_refusal(session.generation, sequence, command.command_id);
     }
     session.integrity.observe(dispatch);
     inventory_capacity::reread_after_command(session, command.command_type, dispatch);

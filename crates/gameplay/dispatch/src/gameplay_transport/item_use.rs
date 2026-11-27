@@ -369,6 +369,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
 
+    pub(super) async fn classify_item_use(
+        &self,
+        definition: NonZeroU32,
+    ) -> Option<super::connection::ItemUseKind> {
+        use super::connection::ItemUseKind;
+        use crate::durability::item_use::soul_war_source::source_use;
+        use crate::durability::quest_state::adventurers_stone::STONE_KEY;
+        use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
+
+        let runtime = self.runtime.lock().await;
+        let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+        let (key, revision) = index.definition_at(definition)?;
+        let native = self.active_generation?.native_gameplay()?;
+        Some(match key {
+            STONE_KEY => ItemUseKind::Stone,
+            DROME_CUBE_KEY => ItemUseKind::Cube,
+            _ if source_use(&TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: revision.into(),
+            })
+            .is_some() =>
+            {
+                ItemUseKind::SoulWar
+            }
+            _ => {
+                let policy = native.item_policy(key, revision)?;
+                let record = policy.record();
+                if matches!(&record.semantics.consumption,
+                    ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
+                        if food.regeneration_seconds > 0)
+                {
+                    ItemUseKind::Food
+                } else if matches!(&record.semantics.container,
+                    ReferenceItemField::Known(container)
+                        if matches!(container.capacity, ReferenceItemField::Known(n) if n > 0))
+                {
+                    ItemUseKind::Container
+                } else if record
+                    .production_binding
+                    .external_id
+                    .parse()
+                    .ok()
+                    .and_then(|id| self.legacy_rune_spell(id))
+                    .is_some()
+                {
+                    ItemUseKind::Rune
+                } else {
+                    ItemUseKind::Other
+                }
+            }
+        })
+    }
+
+    pub(super) async fn use_classified_stone(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: Option<ItemKey>,
+        definition: NonZeroU32,
+    ) -> UseOutcome {
+        let source = item.map_or(UseSource::Definition(definition), UseSource::Handle);
+        self.use_carried_item(actor, command, source, true).await
+    }
+
     pub(super) async fn use_admitted_food(
         &self,
         actor: ExactActorRef,
@@ -393,7 +458,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(UseOutcome::rejected());
         }
         let source = item.map_or(UseSource::Definition(definition), UseSource::Handle);
-        Some(self.use_carried_item(actor, command, source).await)
+        Some(self.use_carried_item(actor, command, source, false).await)
     }
 
     /// One `USE` of the carried-tree entry `item` under capability 15.
@@ -403,7 +468,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         item: ItemKey,
     ) -> UseOutcome {
-        self.use_carried_item(actor, command, UseSource::Handle(item))
+        self.use_carried_item(actor, command, UseSource::Handle(item), false)
             .await
     }
 
@@ -414,7 +479,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         definition: NonZeroU32,
     ) -> UseOutcome {
-        self.use_carried_item(actor, command, UseSource::Definition(definition))
+        self.use_carried_item(actor, command, UseSource::Definition(definition), false)
             .await
     }
 
@@ -505,10 +570,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         source: UseSource,
+        stone: bool,
     ) -> UseOutcome {
         let mut potion_utterance = None;
         let disposition = match self
-            .item_use(actor, command, source, &mut potion_utterance)
+            .item_use(actor, command, source, stone, &mut potion_utterance)
             .await
         {
             Ok(disposition) | Err(disposition) => disposition,
@@ -529,6 +595,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         source: UseSource,
+        stone: bool,
         utterance: &mut Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
     ) -> Result<UseDisposition, UseDisposition> {
         use oteryn_protocol_oteryn::world_object::PotionUtterance;
@@ -537,17 +604,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !super::hireling::resolve_pending_lamp(self, actor, session).await {
             return Err(UseDisposition::Rejected);
         }
-        if let Some(result) =
-            Box::pin(rotten_essence::use_essence(self, actor, command, &source)).await
+        if !stone
+            && let Some(result) =
+                Box::pin(rotten_essence::use_essence(self, actor, command, &source)).await
         {
             return result;
         }
         // Bind the exact ingress before resolving live inventory. A replay after return/relog
         // answers from its record without selecting a different lamp or using a new tile.
-        if matches!(
-            fence.runtime_scope,
-            crate::foundation::RuntimeScopeRefV1::Instance { .. }
-        ) {
+        if !stone
+            && matches!(
+                fence.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            )
+        {
             use crate::durability::house_hireling::HirelingLampInput;
             let input = match &source {
                 UseSource::Handle(ItemKey::Instance(id)) => {
@@ -626,7 +696,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
+        if !stone && let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
             return result;
         }
         if matches!(
@@ -732,6 +802,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command.command_id,
             ));
             return result;
+        }
+        if stone {
+            return Err(UseDisposition::StaleState);
         }
         if entry.item.definition.production_key
             == crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_KEY

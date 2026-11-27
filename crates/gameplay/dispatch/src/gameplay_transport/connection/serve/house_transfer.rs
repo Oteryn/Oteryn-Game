@@ -505,16 +505,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 .checked_add(1)
                 .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let result = if matches!(effects, Some(Dispatch::Unavailable)) {
-                encode_command_error_result(
-                    generation,
-                    sequence,
-                    command.command_id,
-                    FoundationProtocolError::CommandRefused,
-                )
+                result::encode_refusal(generation, sequence, command.command_id)?
             } else {
                 encode_command_result(generation, sequence, command.command_id, status, &payload)
-            }
-            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
+                    .map_err(|_| ServeEnd::server("frame_encode_failed"))?
+            };
             commands
                 .terminalize_with(command.command_id, &result, || {})
                 .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;
