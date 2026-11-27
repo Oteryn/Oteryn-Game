@@ -235,6 +235,14 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 /// `connect_and_join`'s full join, but keeps the admitted connection: see
 /// `oteryn_session::Session` for the sequence, revision and liveness discipline it carries.
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
+    connect_session_with_capabilities(request, CLIENT_SUPPORTED_CAPABILITIES).await
+}
+
+/// Join with an explicit capability offer for a qualification scenario.
+pub async fn connect_session_with_capabilities(
+    request: JoinRequest<'_>,
+    supported_capabilities: &[u32],
+) -> Result<DevClientSession, DevClientError> {
     let started = Instant::now();
     let stream = oteryn_session_tcp::connect(TcpConnect {
         address: request.address,
@@ -252,7 +260,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
             character_id: request.character_id,
             admission_material: request.admission_material,
             client_build_id: request.client_build_id,
-            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+            supported_capabilities,
             deadline: request.deadline,
         },
     )

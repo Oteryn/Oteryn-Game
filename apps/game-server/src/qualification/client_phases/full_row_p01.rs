@@ -421,6 +421,7 @@ pub(super) async fn hunt_exact_creature(
                             return Err("duplicate attributed Enflame impact".into());
                         }
                         fire_damage = true;
+                        verdict::Harness::global().progress("p01-attributed-enflame");
                     }
                     delta.value.into_iter().map(|entry| entry.fact).collect()
                 }
@@ -508,7 +509,7 @@ pub(super) async fn hunt_exact_creature(
             return Err("wire corpse or XP did not match the hunter's exact committed kill".into());
         }
         evidence(&format!(
-            "P01_CHECK exact-rat-death PASS target={:?} corpse={:?}",
+            "P01_CHECK exact-hunt-death PASS key={key} target={:?} corpse={:?}",
             target.entity, corpse.entity
         ));
     }
@@ -613,6 +614,56 @@ pub(super) async fn hunt_exact_creature(
     })
 }
 
+async fn connect_hunter_with_system_chat(
+    clients: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    const HUNTER: usize = 1;
+    wait_character_released(clients, HUNTER).await?;
+    let account = &clients.accounts[HUNTER];
+    let token = if requires_platform_grant(account) {
+        platform_row_grant(clients, HUNTER).await?
+    } else {
+        let security_generation = platform_generation(clients.descriptor, account).await?;
+        let (nonce, attempt) = fresh_grant_material(tag)?;
+        sign_grant(
+            &Grant {
+                signing: clients.signing,
+                key_id: clients.key_id,
+                account_id: account,
+                character_id: clients.characters[HUNTER],
+                world_id: clients.world,
+                channel_id: clients.channel,
+                security_generation,
+                scope_generation: clients.scope_generation,
+                nonce,
+                attempt,
+            },
+            now_seconds()?,
+        )
+    };
+    let mut capabilities = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES.to_vec();
+    capabilities.push(oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1);
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    let client = oteryn_dev_client::connect_session_with_capabilities(
+        oteryn_dev_client::JoinRequest {
+            address: clients.address,
+            server_name: "localhost",
+            root_certificate: clients.certificate,
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(&clients.characters[HUNTER])?,
+            admission_material: token.as_bytes(),
+            client_build_id: "oteryn-dev-client/world-qualification",
+            deadline: Duration::from_secs(20),
+        },
+        &capabilities,
+    )
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(client)
+}
+
 pub(super) async fn prepare_hunter(
     clients: &SeamClients<'_>,
     scenario: &str,
@@ -636,7 +687,11 @@ pub(super) async fn prepare_hunter(
     logout_when_ready(&mut setup).await?;
     drop(setup);
     charm_fixture::seed(clients, scenario == "P01.full").await?;
-    let mut client = connect_world(clients, 0xa4).await?;
+    let mut client = if scenario == "P01.full" {
+        connect_hunter_with_system_chat(clients, 0xa4).await?
+    } else {
+        connect_world(clients, 0xa4).await?
+    };
     if client.join_snapshot().game_session_id == before {
         return Err(format!("{scenario} fixture re-admission reused the setup session").into());
     }
@@ -929,6 +984,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let capability = oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_CHARM_SOURCE_V1;
     if !client.selected_capabilities().contains(&capability) {
         return Err("step=enflame-attribution missing negotiated capability 625".into());
+    }
+    if !client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1)
+    {
+        return Err("step=enflame-attribution missing negotiated System Log capability 617".into());
     }
     let (spawn, troll) = authored_target(
         &mut client,
