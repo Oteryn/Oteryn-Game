@@ -338,16 +338,22 @@ async fn enable_chase(client: &mut DevClientSession) -> TestResult {
         ..before
     };
     let reply = client.session_mut().set_fight_modes(&expected).await?;
-    let observed = client.session_mut().combat_state().map(|state| state.modes);
-    if reply.status != CommandStatus::Accepted
-        || reply.disposition != AttackIntentDisposition::Ok
-        || observed != Some(expected)
-    {
-        return Err(format!(
-            "W13 chase expected {expected:?}; observed {observed:?}, reply={reply:?}"
-        )
-        .into());
+    if reply.status != CommandStatus::Accepted || reply.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("W13 chase expected accepted fight mode; observed {reply:?}").into());
     }
+    // The command result precedes the combat state delta on the wire.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    tokio::time::timeout_at(deadline, async {
+        while client.session_mut().combat_state().map(|state| state.modes) != Some(expected) {
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+        TestResult::Ok(())
+    })
+    .await
+    .map_err(|_| {
+        let observed = client.session_mut().combat_state().map(|state| state.modes);
+        format!("W13 chase state deadline: expected {expected:?}; observed {observed:?}, reply={reply:?}")
+    })??;
     evidence("W13_CHECK chase changed from Stand to Chase");
     Ok(())
 }
