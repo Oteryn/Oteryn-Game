@@ -21,13 +21,20 @@ fn uuid_v7(marker: u8) -> [u8; 16] {
 #[cfg(feature = "test-support")]
 pub async fn p19_session(
     path: &Path,
-    mut observe: impl FnMut(&mut Session<DuplexStream>, EntityRef, bool) -> Result<(), BoxError>,
+    mut observe: impl FnMut(
+        &mut Session<DuplexStream>,
+        EntityRef,
+        Option<&SessionEvent>,
+        bool,
+    ) -> Result<(), BoxError>,
 ) -> Result<(), BoxError> {
     let input = ReplayInput::read(path, super::replay_capture::P19_FILES, APPEARANCE)?;
     let mut session = input.admit().await?;
-    observe(&mut session, input.entity, false)?;
-    input.apply(&mut session)?;
-    observe(&mut session, input.entity, true)
+    observe(&mut session, input.entity, None, false)?;
+    input.apply_observed(&mut session, |session, event| {
+        observe(session, input.entity, Some(event), false)
+    })?;
+    observe(&mut session, input.entity, None, true)
 }
 use std::path::Path;
 use world_spatial_entities::EntityRef;
@@ -170,9 +177,18 @@ impl ReplayInput {
         Ok(session)
     }
 
+    #[cfg(test)]
     pub(crate) fn apply(
         &self,
         session: &mut Session<DuplexStream>,
+    ) -> Result<Vec<SessionEvent>, BoxError> {
+        self.apply_observed(session, |_, _| Ok(()))
+    }
+
+    fn apply_observed(
+        &self,
+        session: &mut Session<DuplexStream>,
+        mut observe: impl FnMut(&mut Session<DuplexStream>, &SessionEvent) -> Result<(), BoxError>,
     ) -> Result<Vec<SessionEvent>, BoxError> {
         let mut last = self.sequence;
         self.deltas
@@ -186,7 +202,9 @@ impl ReplayInput {
                     return Err("out-of-order replay delta".into());
                 }
                 last = envelope.server_sequence();
-                Ok(session.apply_state_delta(last, envelope.payload())?)
+                let event = session.apply_state_delta(last, envelope.payload())?;
+                observe(session, &event)?;
+                Ok(event)
             })
             .collect()
     }

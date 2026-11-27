@@ -664,7 +664,7 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
                 let (link, _, outbox) = play_channel();
                 let mut view = None;
                 let mut held = Vec::new();
-                oteryn_session::test_support::p19_session(&root.join(folder), |session, target, final_state| {
+                oteryn_session::test_support::p19_session(&root.join(folder), |session, target, event, final_state| {
                     if !death && !final_state {
                         return Ok(());
                     }
@@ -675,20 +675,24 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
                             oteryn_renderer::TileCoord::new(own.x, own.y), own.floor, &[],
                         )?),
                     };
-                    let expected = if death && final_state {
-                        assert!(session.world_entities().and_then(|entities| entities.get(&target)).is_none(),
-                            "{folder}: exact creature never departed");
-                        None
-                    } else {
-                        let entity = session.world_entities().and_then(|entities| entities.get(&target))
-                            .ok_or("missing exact live creature in P19 replay")?;
+                    let entity = session.world_entities().and_then(|entities| entities.get(&target));
+                    let must_be_live = !death || (event.is_none() && !final_state);
+                    if must_be_live && entity.is_none() || death && final_state && entity.is_some() {
+                        return Err(format!("{folder}: exact actor violates its live/death boundary").into());
+                    }
+                    let expected = if let Some(entity) = entity {
                         let health = match entity.detail {
                             oteryn_session::EntityDetail::Actor { health_percent, .. }
                             | oteryn_session::EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
                             _ => return Err("P19 nameplate target is not an actor".into()),
                         };
                         Some((oteryn_renderer::TileCoord::new(entity.position.x, entity.position.y), label, health))
+                    } else {
+                        None
                     };
+                    if let Some(event) = event {
+                        outbox.push(vec![event.clone()]);
+                    }
                     super::super::session_stepper::publish(session, &outbox, &mut held);
                     view.tick(&link).map_err(|error| format!("{error:?}"))?;
                     assert!(view.scene.exact_nameplate(target, expected),
