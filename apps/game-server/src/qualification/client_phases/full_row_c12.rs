@@ -2232,16 +2232,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn c12_global_route_rejects_the_crystal_mainland_return() -> TestResult {
+    fn c12_global_route_rejects_mainland_and_wrong_guild_tile() -> TestResult {
         let mut callbacks = serde_json::json!({"callbacks": [
             {"key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5", "trigger": "use",
              "selector": {"position": {"x": 32203, "y": 32303, "floor": -6}},
              "teleport": {"x": 33614, "y": 31494, "floor": -7}},
             {"key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2", "trigger": "use",
              "selector": {"position": {"x": 33605, "y": 31468, "floor": -7}},
-             "teleport": {"x": 32200, "y": 32303, "floor": -7}}
+             "teleport": {"x": 32210, "y": 32300, "floor": -6}}
         ]});
         assert!(guild_portals(&callbacks).is_ok());
+        callbacks["callbacks"][1]["teleport"] =
+            serde_json::json!({"x": 32211, "y": 32300, "floor": -6});
+        assert!(guild_portals(&callbacks).is_err());
         callbacks["callbacks"][1]["teleport"] =
             serde_json::json!({"x": 32456, "y": 32291, "floor": -7});
         let Err(error) = guild_portals(&callbacks) else {
