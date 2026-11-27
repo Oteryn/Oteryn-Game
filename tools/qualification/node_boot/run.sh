@@ -891,15 +891,6 @@ TOML
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
   fi
-  if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
-    cat "$PORTAL_E2E_OUT/certs/clients/premium.pem" "$PORTAL_E2E_OUT/certs/clients/premium.key" \
-      | install_owned "$SERVICE_UID" -m 0600 /dev/stdin "$BASE/node/secrets/premium.pem"
-    NODE_GAMEPLAY_ENV+=(
-      "OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:$PORTAL_E2E_INTERNAL_PORT"
-      "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
-      "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
-    )
-  fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
 # Root/client writes an atomic offset; the service can only read it. Start at
@@ -910,6 +901,16 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
+fi
+if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+  # Set the shared environment before stage subshells launch or restart a node.
+  cat "$PORTAL_E2E_OUT/certs/clients/premium.pem" "$PORTAL_E2E_OUT/certs/clients/premium.key" \
+    | install_owned "$SERVICE_UID" -m 0600 /dev/stdin "$BASE/node/secrets/premium.pem"
+  NODE_GAMEPLAY_ENV+=(
+    "OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:$PORTAL_E2E_INTERNAL_PORT"
+    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
+    "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
+  )
 fi
 if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   # Use the Platform's disposable Premium-purpose client and trust root.

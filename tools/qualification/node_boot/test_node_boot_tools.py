@@ -272,9 +272,12 @@ WP5_PORT=18463
 DESCRIPTOR_INSTALLED_AT=1
 NODE_REQUIRED_CAPABILITIES=[]
 NODE_GAMEPLAY_ENV=()
+NODE_CLOCK_FEATURES=()
 '''
             result = bash(setup + function('write_node_config')
-                          + '\nwrite_node_config launch.json </dev/null\n',
+                          + '\n(write_node_config launch.json </dev/null)\n'
+                          + section('# Root/client writes an atomic offset', 'fi # NODE_BOOT_REUSE_STACK == 0')
+                          + 'printf "%s\\n" "${NODE_GAMEPLAY_ENV[@]}"\n',
                           {'WORK': work, 'BASE': work, 'PIN': str(pin),
                            'NODE_BOOT_WORLD': '1', 'NODE_BOOT_LIFECYCLE': 'native_reference',
                            'NODE_BOOT_D150_LEGACY': '0', 'PORTAL_E2E_OUT': work,
@@ -282,6 +285,11 @@ NODE_GAMEPLAY_ENV=()
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             config = tomllib.loads(Path(work, 'node.toml').read_text())
             self.assertEqual(config['premium_activation']['switch_over_us'], 0)
+            self.assertEqual(result.stdout.splitlines(), [
+                'OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:18464',
+                f'OTERYN_PREMIUM_CLIENT_IDENTITY_PEM={work}/node/secrets/premium.pem',
+                f'OTERYN_PREMIUM_PLATFORM_CA_PEM={work}/node/secrets/platform-roots.pem',
+            ])
 
     def test_all_groups_disable_the_unprovisioned_world_event_exporter(self):
         with tempfile.TemporaryDirectory() as work:
