@@ -9,7 +9,9 @@ import event_item_profiles
 import hireling_item_profiles
 import house_decoration_actions
 
+import crystal_equipment_quarter_1
 import register_spell_families
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
@@ -60,7 +62,7 @@ class EventItemProfilePrecedence(unittest.TestCase):
             # The hireling owner installs source taxonomy before event admission.
             expected[key]['authoring']['taxonomy'] = taxonomy[key]
             self.assertEqual(expected[key]['semantics'], original_semantics[key], key)
-            self.assertEqual(actual[key], expected[key], key)
+            self.assertEqual(compact_item_record(actual[key]), compact_item_record(expected[key]), key)
 
     def test_yasir_doors_keep_exact_source_geometry_without_global_item_admission(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
@@ -215,14 +217,20 @@ class EventItemProfilePrecedence(unittest.TestCase):
                    if row['production_definition']['production_key'] == key]
         self.assertEqual(len(records), 1)
         source = json.loads((ROOT / event_item_profiles.PATH).read_bytes())
-        expected = next(row['semantics'] for row in source['records']
+        expected = next(row for row in source['records']
                         if row['production_definition']['production_key'] == key)
         # Main's complete Item closure fills unknown facts from the pinned source.
-        # Keep that full expectation plus canonical armor, market policy and EQUIP
-        # transformation; the canonical definition alone now has unknown groups.
+        # Preserve canonical armor, market policy and the EQUIP transformation.
         for group in ('protection', 'trade_restrictions', 'use_transform'):
-            expected[group] = definitions[0]['semantics'][group]
-        self.assertEqual(records[0]['semantics'], expected)
+            expected['semantics'][group] = definitions[0]['semantics'][group]
+        capture = json.loads((ROOT / crystal_equipment_quarter_1.FACTS).read_bytes())
+        boots = next(row['attributes'] for row in capture['records'] if row['id'] == 9019)
+        protection = expected['semantics']['protection']['value']
+        self.assertEqual(protection['armor'], {'state': 'KNOWN', 'value': int(boots['armor'])})
+        self.assertFalse(boots.keys() & crystal_equipment_quarter_1.RESISTANCES.keys())
+        protection['resistances'] = {'state': 'KNOWN', 'value': []}
+        self.assertEqual(compact_item_record(records[0])['semantics'],
+                         compact_item_record(expected)['semantics'])
         self.assertEqual(records[0]['production_binding']['disposition'], 'EXACT')
         self.assertEqual(records[0]['admission']['materializable'], True)
 

@@ -589,9 +589,44 @@ pub(super) async fn seed_main_backpack(harness: &Harness, entries: &[(&str, i64)
     seed_character_backpack(harness, 41, 70, entries).await
 }
 
+pub(super) async fn force_seeded_tool_jam(
+    harness: &Harness,
+    session: crate::foundation::GameSessionId,
+    command: u64,
+    seed: u8,
+) -> TestResult {
+    let old = id(seed);
+    let item = (0..=u16::MAX).find_map(|suffix| {
+        let mut candidate = old;
+        candidate[14..].copy_from_slice(&suffix.to_be_bytes());
+        oteryn_gameplay_items::secret_agent::jams(*session.as_bytes(), command, candidate)
+            .then_some(candidate)
+    }).ok_or("deterministic tool jam seed")?;
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    for statement in [
+        "UPDATE game_item_instances SET item_instance_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid",
+        "UPDATE game_item_container_entries SET item_instance_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid",
+    ] {
+        let changed = sqlx::query(statement).bind(old.as_slice()).bind(item.as_slice()).execute(&mut *tx).await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
 pub(super) async fn seed_character_backpack(
     harness: &Harness,
     character: u8,
+    backpack: u8,
+    entries: &[(&str, i64)],
+) -> TestResult {
+    seed_character_backpack_id(harness, id(character), backpack, entries).await
+}
+
+pub(super) async fn seed_character_backpack_id(
+    harness: &Harness,
+    character: [u8; 16],
     backpack: u8,
     entries: &[(&str, i64)],
 ) -> TestResult {
@@ -612,7 +647,7 @@ pub(super) async fn seed_character_backpack(
         placed_transaction_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
         encode($3,'hex')::uuid, encode($4,'hex')::uuid)",
     )
-    .bind(id(character).as_slice())
+    .bind(character.as_slice())
     .bind(id(backpack).as_slice())
     .bind(id(42).as_slice())
     .bind(id(backpack + 2).as_slice())
@@ -626,7 +661,7 @@ pub(super) async fn seed_character_backpack(
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($5,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(quantity).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
-            .bind(id(character).as_slice()).bind(id(42).as_slice()).bind(id(backpack).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
+            .bind(character.as_slice()).bind(id(42).as_slice()).bind(id(backpack).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

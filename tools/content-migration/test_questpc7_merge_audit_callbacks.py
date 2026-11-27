@@ -44,8 +44,8 @@ class CallbackOwnerInventoryTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'QUESTPC7_CALLBACK_'):
                     audit.check_callback_inventory(root)
             else:
-                self.assertEqual(audit.check_callback_inventory(root), (110, 2, 112, 103))
-                self.assertEqual(audit.check_callback_inventory(root), (110, 2, 112, 103))
+                self.assertEqual(audit.check_callback_inventory(root), (118, 2, 120, 103))
+                self.assertEqual(audit.check_callback_inventory(root), (118, 2, 120, 103))
             self.assertEqual({path: (root / path).read_bytes() for path in original}, original,
                              'validation and refusal must preserve both owners and the Rust guards')
 
@@ -87,7 +87,7 @@ class CallbackOwnerInventoryTests(unittest.TestCase):
             'oteryn:quest-callback/questpc7-goblin-pond',
             'oteryn:quest-callback/questpc7-goblin-trunk-1',
             'oteryn:quest-callback/authored-smith-cache',
-            'oteryn:quest-callback/authored-smith-cache-reward',
+            'oteryn:quest-callback/authored-smith-cache-reward-hammer',
         ):
             with self.subTest(key=key):
                 main = copy.deepcopy(self.main)
@@ -100,13 +100,13 @@ class CallbackOwnerInventoryTests(unittest.TestCase):
 
     def test_missing_commented_or_monolithic_runtime_guards_are_refused(self):
         guards = (
-            'assert_eq!((callbacks.len(), phase_callbacks.len()), (110, 2));',
+            'assert_eq!((callbacks.len(), phase_callbacks.len()), (118, 2));',
             'assert!(keys.is_disjoint(&phase_keys));',
-            'assert_eq!(keys.len() + phase_keys.len(), 112);',
+            'assert_eq!(keys.len() + phase_keys.len(), 120);',
         )
         for guard in guards:
             self.assertEqual(self.fixture.count(guard), 1)
-            for replacement in ('', '// ' + guard, 'assert_eq!(parse(source)?.len(), 112);'):
+            for replacement in ('', '// ' + guard, 'assert_eq!(parse(source)?.len(), 120);'):
                 with self.subTest(guard=guard, replacement=replacement):
                     self.check(fixture=self.fixture.replace(guard, replacement), refused=True)
 

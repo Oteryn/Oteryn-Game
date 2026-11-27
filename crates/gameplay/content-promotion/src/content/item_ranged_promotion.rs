@@ -26,7 +26,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_RANGED_PACKET: &[u8] =
     include_bytes!("../../../../../docs/agents/evidence/OTV2-20261013-ranged-weapon-facts-v1.json");
 pub const ITEM_RANGED_PACKET_SHA256: &str =
-    "25677c591b49b051e026d23bc4f9daf7bb5ead3f3bd156615754f633ef491cca";
+    "42fb9bcd4eb258e832d75988e892202b7ce81a9e765af175b8bbd4e83634d1c6";
 pub const ITEM_RANGED_WEAPON_ROWS: usize = 90;
 pub const ITEM_RANGED_QUIVER_ROWS: usize = 8;
 /// What the pinned packet does to the consumables-admitted tree (checked on every run).

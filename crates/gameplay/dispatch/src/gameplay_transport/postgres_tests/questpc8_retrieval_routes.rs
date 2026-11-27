@@ -23,6 +23,10 @@ fn questpc8_retrieval_voodoo_three_witches_both_boxes_once() -> TestResult {
     scenario(Route::Voodoo)
 }
 #[test]
+fn questpc8_retrieval_voodoo_south_first_without_kills() -> TestResult {
+    scenario(Route::VoodooSouthFirst)
+}
+#[test]
 fn questpc8_retrieval_mastermind_two_routes_exact_outputs_once() -> TestResult {
     scenario(Route::Mastermind)
 }

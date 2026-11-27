@@ -80,6 +80,29 @@ fn dance_callback() -> serde_json::Value {
 }
 
 #[test]
+fn ray_of_light_loads_the_exact_native_crystal_and_retains_uid_1052() -> Result<(), String> {
+    let crystal = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/unnatural-selection-ray-of-light")
+        .ok_or("ray of light callback")?;
+    assert_eq!(crystal.trigger, Trigger::Use);
+    assert_eq!(crystal.selector.unique, Some(1052));
+    assert_eq!(
+        crystal.selector.native,
+        Some(NativeSelector {
+            position: Position {
+                x: 32982,
+                y: 31431,
+                floor: -1,
+            },
+            ordinal: 2,
+            appearance: 7807,
+        })
+    );
+    Ok(())
+}
+
+#[test]
 fn preserve_guard_does_not_reset_later_progress() -> Result<(), String> {
     let mut value = base();
     value["storage"] = serde_json::json!([

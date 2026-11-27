@@ -1,0 +1,19 @@
+{
+  "schema": "OTERYN_AUTHORED_NPC_SHOP_ITEMS/v1",
+  "items": [
+    {
+      "item": "oteryn:item.tibia.i10216",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cael.lua:35-36:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
+        "imports/canary/items-xml/items.xml:26586"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i10288",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cael.lua:35-36:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
+        "imports/canary/items-xml/items.xml:26708"
+      ]
+    }
+  ]
+}

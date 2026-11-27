@@ -1808,6 +1808,8 @@ fn area_candidates(
 pub(in crate::gameplay_transport) mod delayed_strikes;
 /// All facts originate in the actual owner, static qualified content and the same SQL Item
 /// transaction. Missing Premium/learning/Wheel/elemental/magnitude is refused before RNG.
+#[path = "native_combat_cast/monk_equipment.rs"]
+mod monk_equipment;
 #[path = "native_combat_cast/prepare.rs"]
 mod preparation;
 pub use preparation::prepare_from_owners;
@@ -1820,13 +1822,16 @@ fn presentation_requests(
     profile: &crate::spell::native::CompiledNativeSpell,
     actors: &[LiveActorBinding],
     caster: ExactActorRef,
+    monk_impact: Option<&str>,
 ) -> Result<Vec<super::super::spell_presentations::LocatedCueRequest>, SpellCastDisposition> {
     use super::super::spell_presentations::{CueTarget, LocatedCueRequest, QualifiedCueTile};
     let mut result = Vec::new();
-    let effect =
-        profile.spell()["execution"]["native_behavior"]["parameters"]["effect_asset_binding"]
-            .as_str()
-            .ok_or(SpellCastDisposition::Rejected)?;
+    let effect = monk_impact
+        .or_else(|| {
+            profile.spell()["execution"]["native_behavior"]["parameters"]["effect_asset_binding"]
+                .as_str()
+        })
+        .ok_or(SpellCastDisposition::Rejected)?;
     let actor = |id| {
         actors
             .iter()
@@ -2365,7 +2370,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some((spell, active_spell)) = self.spells.source_indexed(intent.spell) else {
             return NativeCastDispatch::NotApplicable;
         };
-        let native_combat = matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
+        let native_combat = monk_equipment::applies(spell)
+            || matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
             p.spell()["execution"]["native_behavior"]["key"].as_str(), Some("wheel_combat" | "avatar_state"
                 | "monster_ai_override" | "mass_spirit_mend" | "mana_shield_capacity" | "delayed_strike")));
         if !native_combat
@@ -2763,10 +2769,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     prepared.leech_inputs=item_spell_augments::leech_projection::capture(
                         runtime,states,owner.imported_charms,&prepared.batch,prepared.item_spell_leech,
                         prepared.magnitude.as_deref(),&stream,decision).map_err(|_|DurabilityError::Unavailable)?;
-                    states.apply_prey_spell_damage(runtime,&mut prepared.batch);
                     let talisman=crate::durability::task_board::read_talisman_in_transaction(&mut tx,fence).await?;
                     let bounty_leech=crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
-                        runtime,&mut prepared.batch,&talisman,&stream,decision,&mut prepared.leech_inputs).ok_or(DurabilityError::Unavailable)?;
+                        runtime,&mut prepared.batch,&talisman,&stream,decision,&mut prepared.leech_inputs,
+                        (states,prepared.magnitude.as_deref_mut())).ok_or(DurabilityError::Unavailable)?;
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;

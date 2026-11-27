@@ -34,6 +34,8 @@ const START: TilePos = tile(32826, 32575, -6);
 const BANANA: (TilePos, u8) = (tile(31983, 32193, -5), 2);
 const MOSS_DOOR: (TilePos, u8) = (tile(32781, 32910, -8), 1);
 const MOSS: (TilePos, u8) = (tile(32782, 32910, -8), 1);
+const SOURCE_QUESTLINE: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/questline";
+const MOSS_ITEM: &str = "oteryn:item.tibia.i4827";
 const PARCHMENT_DOOR: (TilePos, u8) = (tile(32934, 32886, -7), 1);
 const PARCHMENT: (TilePos, u8) = (tile(32935, 32886, -7), 1);
 const SIGNS: TilePos = tile(33305, 32861, -13);
@@ -41,6 +43,7 @@ const HAIR: (TilePos, u8) = (tile(32933, 32495, -7), 1);
 const ENTRY: TilePos = tile(32839, 32533, -9);
 const DEEPEST: TilePos = tile(32854, 32544, -10);
 const GATE: (TilePos, u8) = (tile(32862, 32557, -11), 1);
+const EXIT_GATE: (TilePos, u8) = (tile(32862, 32555, -11), 1);
 const STATUE: (TilePos, u8) = (tile(32858, 32526, -11), 1);
 const AMPHORAS: [(TilePos, u8); 4] = [
     (tile(32792, 32527, -10), 1),
@@ -61,6 +64,13 @@ const fn tile(x: u16, y: u16, floor: i8) -> TilePos {
     TilePos { x, y, floor }
 }
 
+enum Scenario {
+    Journey,
+    Casks,
+    LostMoss,
+    RecoverMoss,
+}
+
 #[test]
 fn ape_city_world_admission_loads_banuta_routes() -> TestResult {
     let state = load_embedded_quest_state("content-1").map_err(debug)?;
@@ -77,7 +87,37 @@ fn ape_city_full_journey_earns_banuta_and_shaman() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("ape-city-journey", move || {
-        super::fixture::run(async |_| scenario(admin).await)
+        super::fixture::run(async |_| scenario(admin, Scenario::Journey).await)
+    })
+}
+
+#[test]
+fn ape_city_cask_mission_accepts_both_crowbars_through_wire_use_with() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ape-city-casks", move || {
+        super::fixture::run(async |_| scenario(admin, Scenario::Casks).await)
+    })
+}
+
+#[test]
+fn ape_city_moss_cannot_be_reminted_while_the_issued_copy_is_live() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ape-city-lost-moss", move || {
+        super::fixture::run(async |_| scenario(admin, Scenario::LostMoss).await)
+    })
+}
+
+#[test]
+fn ape_city_moss_cannot_be_reclaimed_after_hairycles_reports_a_live_copy_missing() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ape-city-recover-moss", move || {
+        super::fixture::run(async |_| scenario(admin, Scenario::RecoverMoss).await)
     })
 }
 
@@ -87,6 +127,16 @@ fn world(
     use oteryn_world_bundle::bundle;
     use oteryn_world_bundle_compiler::{compile, project, source};
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let callbacks = world_callbacks::load()?;
+    let casks = callbacks
+        .iter()
+        .filter(|callback| {
+            callback
+                .key
+                .starts_with("oteryn:quest-callback/ape-city-cask-")
+        })
+        .filter_map(|callback| callback.selector.position)
+        .map(|position| tile(position.x, position.y, position.floor));
     let targets = [
         CONTACT,
         BANANA.0,
@@ -97,10 +147,12 @@ fn world(
         ENTRY,
         DEEPEST,
         GATE.0,
+        EXIT_GATE.0,
         STATUE.0,
     ];
     let regions: Vec<_> = targets
         .into_iter()
+        .chain(casks)
         .chain(
             AMPHORAS
                 .into_iter()
@@ -151,7 +203,7 @@ fn world(
     .map_err(debug)
 }
 
-async fn scenario(admin: String) -> TestResult {
+async fn scenario(admin: String, scenario: Scenario) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "ape_city_journey", false, false).await?;
     let fresh = prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -325,19 +377,24 @@ async fn scenario(admin: String) -> TestResult {
         }],
     )
     .await?;
-    Journey {
+    let mut journey = Journey {
         h: &h,
         owner: &mut owner,
         admitted: &mut admitted,
         npc,
         quest_index,
-    }
-    .exercise()
-    .await?;
+    };
+    let result = match scenario {
+        Scenario::Journey => journey.exercise().await,
+        Scenario::Casks => journey.exercise_casks().await,
+        Scenario::LostMoss => journey.exercise_lost_moss(false).await,
+        Scenario::RecoverMoss => journey.exercise_lost_moss(true).await,
+    };
     drop(owner);
     drop(authority);
     drop(seal);
-    h.cleanup().await
+    h.cleanup().await?;
+    result
 }
 
 fn local(position: TilePos) -> MovementLocalPosition {
@@ -429,30 +486,44 @@ impl Journey<'_, '_, '_, '_> {
     }
 
     async fn say(&mut self, text: &str) -> TestResult<u64> {
+        self.say_then(text, None).await.map(|(id, _)| id)
+    }
+
+    async fn say_then(
+        &mut self,
+        text: &str,
+        confirmation: Option<&str>,
+    ) -> TestResult<(u64, Option<NpcIntentDisposition>)> {
         self.relocate(START).await?;
         self.owner.clock_origin -= std::time::Duration::from_secs(4);
         let greeting = self.next();
-        let command = greeting + 1;
-        let commands: Vec<_> = [(greeting, "hi"), (command, text)]
-            .into_iter()
-            .map(|(id, word)| {
+        let mut lines = vec!["hi", text];
+        lines.extend(confirmation);
+        let commands: Vec<_> = lines
+            .iter()
+            .zip(greeting..)
+            .map(|(word, id)| {
                 encode_npc_talk_intent(&NpcTalkIntent {
                     npc_actor: self.npc,
-                    text: word.into(),
+                    text: (*word).into(),
                 })
                 .map(|payload| (id, COMMAND_TYPE_NPC_TALK_INTENT, payload))
                 .map_err(debug)
             })
             .collect::<Result<_, _>>()?;
+        let last = commands.last().ok_or("dialogue commands")?.0;
         let replies = wire_sequence(self.owner, self.admitted, commands).await?;
-        for (word, reply) in ["hi", text].into_iter().zip(replies) {
+        let mut dispositions = replies
+            .iter()
+            .map(|reply| decode_npc_intent_result(reply).map_err(debug));
+        for word in ["hi", text] {
             assert_eq!(
-                decode_npc_intent_result(&reply).map_err(debug)?,
+                dispositions.next().ok_or("dialogue response")??,
                 NpcIntentDisposition::Ok,
                 "{word}"
             );
         }
-        Ok(command)
+        Ok((last, dispositions.next().transpose()?))
     }
 
     async fn use_object(
@@ -477,6 +548,16 @@ impl Journey<'_, '_, '_, '_> {
         command: u64,
     ) -> TestResult {
         self.approach(position).await?;
+        self.use_carried_tool((position, ordinal), command, "oteryn:item.tibia.i4835")
+            .await
+    }
+
+    async fn use_carried_tool(
+        &mut self,
+        (position, ordinal): (TilePos, u8),
+        command: u64,
+        tool_key: &str,
+    ) -> TestResult {
         self.owner.clock_origin = self
             .owner
             .clock_origin
@@ -488,10 +569,8 @@ impl Journey<'_, '_, '_, '_> {
             .active_generation
             .and_then(|g| g.native_gameplay())
             .and_then(|native| native.item_index())
-            .and_then(|items| {
-                items.definition_ref("Item", "oteryn:item.tibia.i4835", "definition-r1")
-            })
-            .ok_or("native Snake Destroyer")?;
+            .and_then(|items| items.definition_ref("Item", tool_key, "definition-r1"))
+            .ok_or("native carried tool")?;
         let payload = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(NonZeroU64::new(1).ok_or("handle")?),
             use_with: None,
@@ -584,6 +663,250 @@ impl Journey<'_, '_, '_, '_> {
         self.check(13, [0, 1, 0, 0, 1]).await
     }
 
+    async fn exercise_casks(&mut self) -> TestResult {
+        use oteryn_gameplay_quests::quest::world_callbacks::Offering;
+
+        let questline = "oteryn:quest-progress/quest/u7_6/the_ape_city/questline";
+        let count = "oteryn:quest-progress/quest/u7_6/the_ape_city/casks";
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            self.h,
+            self.owner,
+            self.admitted,
+            &[(questline.into(), 13), (count.into(), 0)],
+            154,
+        )
+        .await?;
+        self.owner
+            .refresh_quest_session(self.admitted.game_session_id, false)
+            .await;
+        let fence = self.admitted.item_fence.ok_or("cask item fence")?;
+        let tools = ["oteryn:item.tibia.i3304", "oteryn:item.tibia.i9598"];
+        for (index, tool) in tools.iter().enumerate() {
+            super::quest_world_callbacks_fixtures::input_item(
+                self.owner,
+                fence,
+                &Offering {
+                    position: Position {
+                        x: START.x,
+                        y: START.y,
+                        floor: START.floor,
+                    },
+                    item: (*tool).into(),
+                    count: 1,
+                },
+                90_000 + u64::try_from(index)?,
+                true,
+            )
+            .await?;
+        }
+        let callbacks = world_callbacks::load()?;
+        let casks: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/ape-city-cask-")
+            })
+            .collect();
+        assert_eq!(casks.len(), 7);
+        for (strike, cask) in casks.into_iter().take(3).enumerate() {
+            let source = cask.selector.native.as_ref().ok_or("native cask source")?;
+            let position = source.position;
+            // The casks are struck from the corridor across the rail.
+            self.relocate(tile(position.x - 2, position.y, position.floor))
+                .await?;
+            self.use_carried_tool(
+                (tile(position.x, position.y, position.floor), source.ordinal),
+                self.next(),
+                tools[strike % tools.len()],
+            )
+            .await?;
+            let saved = self
+                .owner
+                .root
+                .read_character_quest_state(self.owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(saved.tracks().get(count), Some(&i64::try_from(strike + 1)?));
+        }
+
+        self.say("mission").await?;
+        let saved = self
+            .owner
+            .root
+            .read_character_quest_state(self.owner.character, fence.character_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(saved.tracks().get(questline), Some(&14));
+        Ok(())
+    }
+
+    async fn exercise_lost_moss(&mut self, report_missing: bool) -> TestResult {
+        use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
+        use crate::foundation::{CommandId, CommandRef};
+        use crate::world_party_runtime_postgres_cases::{
+            FreshPlayerOwners, committed_fresh_player_from_source_owned,
+        };
+        use UseDisposition::{Committed, NothingToUse};
+
+        // The saved source route owns the Moss hand-in. The separate authored
+        // journey starts with a banana and keeps a different stage track.
+        let chosen_stage = if report_missing {
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                self.h,
+                self.owner,
+                self.admitted,
+                &[
+                    (SOURCE_QUESTLINE.into(), 1),
+                    (
+                        "oteryn:quest-progress/quest/u7_6/the_ape_city/dworc_door".into(),
+                        1,
+                    ),
+                ],
+                155,
+            )
+            .await?;
+            self.owner
+                .refresh_quest_session(self.admitted.game_session_id, false)
+                .await;
+            0
+        } else {
+            self.say("mission").await?;
+            1
+        };
+        self.check(chosen_stage, [0; 5]).await?;
+        self.use_object(MOSS_DOOR, Committed).await?;
+        self.use_object(MOSS, Committed).await?;
+        self.use_object(MOSS, NothingToUse).await?;
+        let owner = &self.owner;
+        let fence = self.admitted.item_fence.ok_or("moss item fence")?;
+        let backpack = owner.root.read_character_backpack(owner.character, fence.character_id)
+            .await.map_err(debug)?.ok_or("backpack")?;
+        let moss = backpack.entries.iter().find(|entry| entry.item.definition.production_key == MOSS_ITEM)
+            .ok_or("claimed moss")?.item.item_instance_id;
+        let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native")?;
+        let weights = NativeItemWeights(native);
+        let (digest, frame) = {
+            let runtime = owner.runtime.lock().await;
+            (runtime.content_pin().server_artifact_digest(), runtime.content_pin().frame_binding_digest())
+        };
+        let position = MOSS.0;
+        let ground = LoopGround {
+            spatial_position: crate::durability::map_item_mint_audit::map_item_spatial_position(
+                position.x, position.y, position.floor,
+            ),
+            map_revision: crate::map::overlay::map_revision(owner.bundle_map().ok_or("map")?.overlay.base()),
+            content_revision: format!("sha256:{}", digest.iter().map(|b| format!("{b:02x}")).collect::<String>()),
+            placement_context: frame.to_vec(),
+        };
+        let permit = owner.spell_lane_permit().await.ok_or("item permit")?;
+        owner.root.commit_item_loop_move(
+            &permit, owner.character, owner.holder, &fence,
+            CommandRef::new(fence.game_session_id, CommandId::new(90100).map_err(debug)?),
+            &weights,
+            LoopMoveRequest { item: moss, count: None, pickup_cell: None, destination: LoopDestination::Ground(ground.clone()) },
+        ).await.map_err(|error| format!("moss drop transaction: {error:?}"))?
+            .map_err(|error| format!("moss drop: {error:?}"))?;
+        drop(permit);
+        self.use_object(MOSS, NothingToUse).await?;
+        let owner = &self.owner;
+        let _source = super::house_transfer_fixtures::RecoverySource::start(self.h).await?;
+        let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&self.h.pool).await?;
+        let (current, _) = committed_fresh_player_from_source_owned(
+            &FreshPlayerOwners { root: self.h.root.clone(), node: self.h.node.clone(), recovery: &self.h.recovery },
+            60, 63, 171, now, Some("platform-test"),
+        ).await.map_err(|error| format!("moss peer admission: {error}"))?;
+        let peer = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
+        let mut peer_admitted = AdmittedSession {
+            game_session_id: peer.game_session_id,
+            runtime_actor: None,
+            item_fence: Some(peer),
+            ..*self.admitted
+        };
+        owner.admit_progression_session(&mut peer_admitted).await;
+        super::item_look_fixtures::seed_character_backpack_id(self.h, *peer.character_id.as_bytes(), 77, &[]).await?;
+        let permit = owner.spell_lane_permit().await.ok_or("item permit")?;
+        owner.root.commit_item_loop_move(
+            &permit, owner.character, owner.holder, &peer,
+            CommandRef::new(peer.game_session_id, CommandId::new(90101).map_err(debug)?),
+            &weights,
+            LoopMoveRequest { item: moss, count: None, pickup_cell: Some(ground.spatial_position.clone()), destination: LoopDestination::MainBackpack },
+        ).await.map_err(|error| format!("moss pickup transaction: {error:?}"))?
+            .map_err(|error| format!("moss pickup: {error:?}"))?;
+        drop(permit);
+        self.check(chosen_stage, [0; 5]).await?;
+        self.use_object(MOSS, NothingToUse).await?;
+        self.use_object(MOSS, NothingToUse).await?;
+        let live: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_instances
+             WHERE definition_production_key=$1 AND lifecycle=1",
+        ).bind(MOSS_ITEM).fetch_one(&self.h.pool).await?;
+        assert_eq!(live, 1, "peer custody must not create a second Whisper Moss");
+        if report_missing {
+            for _ in 0..2 {
+                let (_, reply) = self.say_then("mission", Some("yes")).await?;
+                assert_eq!(reply, Some(NpcIntentDisposition::Ok));
+                self.use_object(MOSS, NothingToUse).await?;
+            }
+            let live: i64 = sqlx::query_scalar(
+                "SELECT COALESCE(sum(quantity), 0)::bigint FROM game_item_instances
+                 WHERE definition_production_key=$1 AND lifecycle=1",
+            )
+            .bind(MOSS_ITEM)
+            .fetch_one(&self.h.pool)
+            .await?;
+            assert_eq!(
+                live, 1,
+                "missing-moss confirmation must not duplicate the peer's moss"
+            );
+            let original: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM game_item_container_entries
+                 WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid)",
+            ).bind(peer.character_id.as_bytes().as_slice()).bind(moss.as_slice()).fetch_one(&self.h.pool).await?;
+            assert!(original, "the peer keeps the original Whisper Moss");
+        }
+        let owner = &self.owner;
+        let permit = owner.spell_lane_permit().await.ok_or("item permit")?;
+        owner.root.commit_item_loop_move(
+            &permit, owner.character, owner.holder, &peer,
+            CommandRef::new(peer.game_session_id, CommandId::new(90102).map_err(debug)?),
+            &weights,
+            LoopMoveRequest { item: moss, count: None, pickup_cell: None, destination: LoopDestination::Ground(ground.clone()) },
+        ).await.map_err(|error| format!("peer returns moss transaction: {error:?}"))?
+            .map_err(|error| format!("peer returns moss: {error:?}"))?;
+        owner.root.commit_item_loop_move(
+            &permit, owner.character, owner.holder, &fence,
+            CommandRef::new(fence.game_session_id, CommandId::new(90103).map_err(debug)?),
+            &weights,
+            LoopMoveRequest { item: moss, count: None, pickup_cell: Some(ground.spatial_position), destination: LoopDestination::MainBackpack },
+        ).await.map_err(|error| format!("original moss pickup transaction: {error:?}"))?
+            .map_err(|error| format!("original moss pickup: {error:?}"))?;
+        drop(permit);
+        self.check(chosen_stage, [0, 1, 0, 0, 0]).await?;
+        let returned = self.owner.root.read_character_backpack(self.owner.character, fence.character_id)
+            .await.map_err(debug)?.ok_or("returned moss backpack")?;
+        let copies = returned.entries.iter().filter(|entry| entry.item.definition.production_key == MOSS_ITEM);
+        assert_eq!(copies.map(|entry| entry.item.item_instance_id).collect::<Vec<_>>(), [moss]);
+        self.use_object(MOSS, NothingToUse).await?;
+        if report_missing {
+            let (_, reply) = self.say_then("mission", Some("yes")).await?;
+            assert_eq!(reply, Some(NpcIntentDisposition::Ok));
+            let saved = self
+                .owner
+                .root
+                .read_character_quest_state(self.owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(saved.tracks().get(SOURCE_QUESTLINE), Some(&2));
+            eprintln!("POSTGRES_CASE_COMPLETED ape_city_moss_recovery");
+        } else {
+            self.use_object(BANANA, Committed).await?;
+            self.check(2, [1, 1, 0, 0, 0]).await?;
+        }
+        Ok(())
+    }
+
     async fn exercise(&mut self) -> TestResult {
         use UseDisposition::{Committed, Rejected};
         self.check(0, [0; 5]).await?;
@@ -645,6 +968,15 @@ impl Journey<'_, '_, '_, '_> {
         self.use_object(GATE, Committed).await?;
         self.check(13, [0, 1, 0, 0, 1]).await?;
         self.reopen_catacombs_gate_after_timeout().await?;
+        self.owner.clock_origin -= std::time::Duration::from_secs(11);
+        let map = self.owner.bundle_map().ok_or("journey World")?;
+        assert!(
+            map.facts
+                .expire_movement_items(self.owner.owner_now().get())
+                > 0
+        );
+        self.use_object(EXIT_GATE, Committed).await?;
+        assert_eq!(self.track("exit").await?, 1);
         let passage = tile(32864, 32556, -11);
         self.enter(passage, passage).await?;
         self.check(13, [0, 1, 0, 0, 1]).await?;

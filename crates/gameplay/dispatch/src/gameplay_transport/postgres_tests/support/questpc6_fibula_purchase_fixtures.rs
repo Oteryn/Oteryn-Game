@@ -54,6 +54,9 @@ pub(super) async fn exercise(
     h: &Harness,
     name: &str,
 ) -> TestResult {
+    if name.ends_with("-simon") {
+        return simon(owner, admitted, h).await;
+    }
     let started = std::time::Instant::now();
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let first = callbacks
@@ -215,5 +218,51 @@ pub(super) async fn exercise(
         "POSTGRES_CASE_COMPLETED {name} duration={:?}",
         started.elapsed()
     );
+    Ok(())
+}
+
+async fn simon(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::qengine_rewards_fixtures::talk;
+
+    let [npc] = super::classic_quests_fixtures::install(
+        owner,
+        admitted,
+        ["oteryn:npc.simon_the_beggar"],
+    )
+    .await?;
+    super::qengine_outfit_stories_fixtures::select_outfit_capabilities(owner, admitted)?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+        .execute(&h.pool)
+        .await?;
+    bank(h, 1600).await?;
+
+    assert_eq!(talk(owner, admitted, npc, 701, "hi").await?, NpcIntentDisposition::Ok);
+    assert_eq!(counts(h).await?, (0, 0, 0));
+    for (command, text, expected_balance) in [
+        (702, "help", 1600),
+        (703, "yes", 1500),
+        (704, "yes", 1000),
+        (705, "yes", 800),
+        (706, "help", 800),
+        (707, "yes", 700),
+        (708, "yes", 200),
+        (709, "yes", 0),
+    ] {
+        assert_eq!(talk(owner, admitted, npc, command, text).await?, NpcIntentDisposition::Ok);
+        let balance: i64 = sqlx::query_scalar("SELECT balance FROM game_account_bank_balances")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(balance, expected_balance, "Simon dialogue command {command}");
+    }
+    let keys: Vec<(String, i32)> = sqlx::query_as(
+        "SELECT i.definition_production_key,k.key_number FROM game_item_keys k JOIN game_item_instances i USING(item_instance_id)",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(keys, vec![("oteryn:item.tibia.i2968".into(), 3940); 2]);
     Ok(())
 }

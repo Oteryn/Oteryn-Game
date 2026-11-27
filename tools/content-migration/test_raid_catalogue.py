@@ -162,15 +162,34 @@ class RaidCatalogueTest(unittest.TestCase):
         unanchored["waves"][0]["raw_delay_ms"] = 55000
         self.assertFalse(raids.apply_global_timeline(unanchored, timeline, []))
 
-    def test_global_count_conflicts_and_custom_identity_do_not_activate(self):
+    def test_global_conflicts_hold_crystal_raids_with_source_waves(self):
         rows = {r["key"]: r for r in json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]}
-        self.assertFalse(rows["raid:abdendriel.chayenne"]["active"])
-        self.assertFalse(rows["raid:carlin.trolls"]["active"])
+        chayenne = rows["raid:abdendriel.chayenne"]
+        self.assertFalse(chayenne["active"])
+        self.assertEqual(chayenne["wiki_records"], [])
+        trolls = rows["raid:carlin.trolls"]
+        self.assertFalse(trolls["active"])
+        self.assertEqual([e["amount"]["max"] for w in trolls["variants"][0]["waves"]
+                          for e in w["entries"]], [25, 1, 25, 1, 25, 1, 25])
+        self.assertTrue(trolls["global_observations"])
         self.assertFalse(rows["raid:roshamuul.gaz_haragoth"]["active"])
         orshabaal = rows["raid:edron.orshabaal"]
         self.assertTrue(orshabaal["active"])
         self.assertEqual(orshabaal["variants"][0]["waves"][0]["delay_ms"], 400000)
         self.assertEqual(orshabaal["wiki_records"], ["oteryn:raid.edron_raids.orshabaal_raid_near_edron"])
+
+    def test_old_widow_keeps_global_variant_without_custom_clock(self):
+        rows = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]
+        raid, = (row for row in rows if row["key"] == "raid:venore.the_old_widow")
+        self.assertFalse(raid["active"])
+        self.assertIn("global_raid_clock_unregistered", raid["inactive_reasons"])
+        self.assertEqual(raid["schedule"], {"kind": "unknown"})
+        variant, = raid["variants"]
+        self.assertEqual([w["delay_ms"] for w in variant["waves"]], [170000, 181000])
+        spider, widow = (w["entries"][0] for w in variant["waves"])
+        self.assertEqual(spider["amount"], {"min": 10, "max": 10})
+        self.assertEqual(widow["creature"], "oteryn:creature.the_old_widow")
+        self.assertEqual(widow["area"]["from"], {"x": 32776, "y": 32296, "floor": 7})
 
     def test_flower_month_admits_owner_selected_donor_cycle_and_shared_budget(self):
         rows = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]

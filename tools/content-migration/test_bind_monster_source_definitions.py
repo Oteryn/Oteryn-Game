@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from bind_monster_source_definitions import bind_attack_definitions, bind_definitions, definition_digest, canonical, CREATURES, MANIFEST
+import nrwicked_profiles
 
 class DefinitionBindingTests(unittest.TestCase):
     def fixture(self, root):
@@ -48,10 +49,17 @@ class DefinitionBindingTests(unittest.TestCase):
         # W01c: the serving provider must carry executable bodies, not only the
         # existing three Summer examples or unattached Ability references.
         root = Path(__file__).resolve().parents[2]
-        original = {CREATURES: (root / CREATURES).read_bytes(),
+        current = json.loads((root / CREATURES).read_bytes())
+        # Registration adds the encounter's independently authored attack bodies
+        # after binding the canonical creatures. Check that full late-owned
+        # inventory and replay the base binder on its own input cohort.
+        nrwicked_profiles.inventory_extension(root, current["records"])
+        late_keys = {f"oteryn:creature.{role}" for role in nrwicked_profiles.ROLES}
+        before = [row for row in current["records"]
+                  if row["profile"]["target"]["key"] not in late_keys]
+        original = {CREATURES: canonical({**current, "records": before}),
                     MANIFEST: (root / MANIFEST).read_bytes()}
         bound = bind_definitions(root, original)
-        before = json.loads(original[CREATURES])["records"]
         after = json.loads(bound[CREATURES])["records"]
         canonical_records = json.loads(
             (root / "content/world/definitions/reference.json").read_bytes())["records"]

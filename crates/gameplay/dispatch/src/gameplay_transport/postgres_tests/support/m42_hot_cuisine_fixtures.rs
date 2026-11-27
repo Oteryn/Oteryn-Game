@@ -14,6 +14,7 @@ use crate::durability::reward_claim_mint::{RewardClaimMintContent, RewardClaimMi
 
 use crate::foundation::{CommandId, CommandRef};
 
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
 
 use oteryn_gameplay_quests::quest::{
@@ -483,4 +484,210 @@ pub(super) async fn exercise_final(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     exercise_recipe(owner, admitted, h, authority, 15).await
+}
+
+pub(super) async fn exercise_books(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+) -> TestResult {
+    use super::quest_world_callbacks_fixtures::wire;
+    use crate::gameplay_transport::item_view::ItemKey;
+    use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
+    use oteryn_protocol_oteryn::item_inscription::{CAPABILITY_ITEM_INSCRIPTION_READ_V1, Reply};
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
+    use oteryn_protocol_oteryn::world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+        encode_step_intent,
+    };
+
+    let version: String = sqlx::query_scalar("SHOW server_version")
+        .fetch_one(&harness.pool)
+        .await?;
+    eprintln!("M42_COOKBOOKS POSTGRES_STARTED version={version}");
+
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 11, 15]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("cookbook capabilities")?;
+
+    async fn use_object(
+        owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+        admitted: &mut AdmittedSession,
+        x: u16,
+        y: u16,
+        appearance: u16,
+    ) -> TestResult<UseDisposition> {
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let target = super::questpc7_hoist_story_fixtures::target(
+            owner,
+            Position { x, y, floor: -5 },
+            appearance,
+        )?;
+        let command = admitted.continuity.next_command_id;
+        let reply = wire(owner, admitted, command, 2, target).await?;
+        decode_use_result(&reply).map_err(debug)
+    }
+
+    assert_ne!(
+        use_object(owner, admitted, 33065, 32529, 1674).await?,
+        UseDisposition::Committed,
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_item_instances WHERE definition_production_key IN ('oteryn:item.tibia.i9093', 'oteryn:item.tibia.i11541')",
+        ).fetch_one(&harness.pool).await?,
+        0,
+    );
+
+    // Model a returning cook who already earned the door track in the NPC route.
+    let transition_key = "oteryn:quest-transition/fixture/cookbook-door";
+    let catalogue = Arc::new(
+        owner.quest_catalogue.as_deref().ok_or("quest catalogue")?.clone()
+            .with_fixture_transition(QuestTransition {
+                key: transition_key.into(),
+                quest: "oteryn:quest.hot_cuisine_quest".into(),
+                effects: vec![QuestEffect {
+                    track: "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/cookbook_door".into(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(1),
+                }],
+                completes: false,
+                experience: None,
+                world_change: None,
+            }).map_err(debug)?,
+    );
+    owner.quest_catalogue = Some(catalogue.clone());
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "fence")?.ok_or("fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let outcome = slot.commit_quest_transition(
+        owner.root,
+        owner.character,
+        owner.holder,
+        fence,
+        QuestTransitionRequest {
+            transition_key: transition_key.into(),
+            cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(90000).map_err(debug)?)),
+        },
+        catalogue,
+    ).await.map_err(debug)?;
+    assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)), "cookbook door progress: {outcome:?}");
+    drop(slot);
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+
+    for (y, route) in [
+        (32529, vec![]),
+        (
+            32531,
+            vec![
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::South,
+            ],
+        ),
+    ] {
+        if !route.is_empty() {
+            // Leaving the first doorway to reach its chest closed it behind us.
+            // Reopen it from the room to enter the doorway before stepping east.
+            assert_eq!(
+                use_object(owner, admitted, 33065, 32529, 1674).await?,
+                UseDisposition::Committed
+            );
+        }
+        for direction in route {
+            owner.clock_origin -= std::time::Duration::from_secs(1);
+            let command = admitted.continuity.next_command_id;
+            let reply = wire(
+                owner,
+                admitted,
+                command,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                encode_step_intent(direction),
+            )
+            .await?;
+            assert_eq!(
+                decode_step_result(&reply).map_err(debug)?,
+                StepDisposition::Moved
+            );
+        }
+        assert_eq!(
+            use_object(owner, admitted, 33065, y, 1674).await?,
+            UseDisposition::Committed
+        );
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let command = admitted.continuity.next_command_id;
+        let reply = wire(
+            owner,
+            admitted,
+            command,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(StepDirection::West),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        assert_eq!(
+            use_object(owner, admitted, 33064, y, 2472).await?,
+            UseDisposition::Committed
+        );
+        assert_ne!(
+            use_object(owner, admitted, 33064, y, 2472).await?,
+            UseDisposition::Committed
+        );
+    }
+
+    let texts: Vec<(String, String, Vec<u8>)> = sqlx::query_as(
+        "SELECT i.definition_production_key,t.text,uuid_send(i.item_instance_id) FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id)
+         WHERE i.definition_production_key IN ('oteryn:item.tibia.i9093', 'oteryn:item.tibia.i11541') ORDER BY i.definition_production_key",
+    ).fetch_all(&harness.pool).await?;
+    let [(second, second_text, _), (first, first_text, _)] = texts.as_slice() else {
+        return Err("one readable item from each cookbook chest".into());
+    };
+    assert_eq!(second, "oteryn:item.tibia.i11541");
+    assert!(second_text.contains("- 5 vials of coconut milk"));
+    assert!(second_text.contains("Sweet Mangonaise Elixir\n- 40 eggs\n- 20 mangoes"));
+    assert_eq!(first, "oteryn:item.tibia.i9093");
+    assert!(first_text.starts_with("Rotworm Stew\n"));
+    let mut reader = *admitted;
+    use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
+    // The cropped fixture hosts the door and chest. The inscription client uses the
+    // bundle World capability closure, as required by the composed reader.
+    reader.continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[4, 6, 115, CAPABILITY_ITEM_INSCRIPTION_READ_V1],
+    ).ok_or("inscription capabilities")?;
+    assert!(reader.continuity.selected_capabilities.contains(CAPABILITY_ITEM_INSCRIPTION_READ_V1));
+    reader.item_fence = Some(
+        owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "read fence")?
+            .ok_or("read fence")?
+            .item_fence(),
+    );
+    for (_, text, item) in &texts {
+        let item = ItemKey::Instance(item.as_slice().try_into().map_err(|_| "cookbook UUID")?);
+        let bytes = owner
+            .item_inscription_read(reader, Some(item), false)
+            .await
+            .ok_or("server inscription read")?;
+        let reading = Reply::decode(&bytes).ok_or("cookbook read result")?;
+        assert_eq!(reading.text.as_str(), text);
+        assert!(!reading.writable);
+    }
+    Ok(())
 }

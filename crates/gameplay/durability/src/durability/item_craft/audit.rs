@@ -49,15 +49,22 @@ pub(in crate::durability) fn encode_with_ingredient(
     content_digest: [u8; 32],
     before: &Value,
     outputs: &[Value],
-    ingredient: Option<(&Value, i64)>,
+    ingredient: Option<(&Value, i64, Option<&Value>)>,
     transaction: &str,
     event: &str,
     occurred: i64,
     tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, DurabilityError> {
+    let ingredient = ingredient.map(|(before, count, location)| {
+        let mut proof = json!({"before": before, "count": count});
+        if let Some(location) = location {
+            proof["location"] = location.clone();
+        }
+        proof
+    });
     let proof = serde_json::to_vec(&json!({"recipe": recipe, "intent": request.intent,
         "character": fence.character_id.as_bytes(), "before": before, "outputs": outputs,
-        "ingredient": ingredient.map(|(before, count)| json!({"before": before, "count": count})),
+        "ingredient": ingredient,
         "station": request.station.as_ref().map(|s| json!({"family": s.family, "key": s.production_key, "revision": s.revision_ref})),
         "scope_generation": fence.scope_ownership_generation.get(),
         "content_digest": content_digest,
@@ -197,7 +204,7 @@ mod captured_ingredient_tests {
                 [1; 32],
                 &json!({"quantity":1}),
                 &[],
-                Some((&before, debit)),
+                Some((&before, debit, None)),
                 "29020304-0506-7008-800a-0b0c0d0e0f29",
                 "29020304-0506-7008-800a-0b0c0d0e0f29",
                 1,

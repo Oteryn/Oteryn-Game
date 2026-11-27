@@ -101,6 +101,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.arito",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Do visit us again.",
+      "walkaway": "Do visit us again.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/arito.lua:117:sha256:72036db5c28bae5fabb54a43657cb83f57a550665def3fc01b33357a652d79f1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/arito.lua:118:sha256:72036db5c28bae5fabb54a43657cb83f57a550665def3fc01b33357a652d79f1"
+      ]
+    },
+    {
       "npc": "oteryn:npc.atrad",
       "greet": "Hehe. That's a good show, player. With all the pyrotechnical effects, you got my {attention} - for a minute at least.",
       "farewell": "I guess someone blew out the candle.",
@@ -563,6 +574,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.jack_springer",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.jorge",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -794,6 +816,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.phillip",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.quentin",
       "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free or you want the {adventurer stone}?",
       "farewell": "May the gods bless you, |PLAYERNAME|!",
@@ -1011,6 +1044,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:173:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:175:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:174:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "greet": "Greetings hero. I guess you came to {talk}.",
+      "farewell": "Well, bye then.",
+      "walkaway": "Well, bye then.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:167:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:168:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:169:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc"
       ]
     },
     {

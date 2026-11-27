@@ -106,6 +106,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let removed = {
             let mut runtime = self.runtime.lock().await;
+            if self.has_pending_paid_quest_callback(session) {
+                return GraceExpiryResult::Unknown;
+            }
             if runtime.house_actor_state(actor, session).is_ok() {
                 runtime.remove_terminal_house_session(session, actor)
             } else {

@@ -32,7 +32,10 @@ fn m01c_native_prerequisite_uses_its_registered_completion_owner_postgres() -> f
             let catalogue=bindings.attach(&QuestStateCatalogue::empty("native-prerequisite-fixture").ok_or("catalogue")?)?;
             assert!(!admission_probe::permits_level(&catalogue,&quest,249));
             assert!(admission_probe::permits_level(&catalogue,&quest,250));
-            assert!(admission_probe::requires_premium(&catalogue,&quest));
+            let transition = loaded.catalogue()
+                .transition("oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore")
+                .ok_or("Decaying Defender transition")?;
+            assert!(admission_probe::requires_premium(&catalogue, transition));
             eprintln!("M01C_DECAYING_DEFENDER production_binding level_boundary_probe249_250 premium_required native_prerequisite query_component_only");
             let character=fixture::id(fixture::CHARACTER);
             let mut tx=h.pool.begin().await?;

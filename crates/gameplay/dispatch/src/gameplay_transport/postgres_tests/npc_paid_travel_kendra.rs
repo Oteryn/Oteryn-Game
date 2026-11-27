@@ -1,4 +1,4 @@
-//! Kendra's live route hold and Crystal fare fixture through the durable NPC_TALK owner.
+//! Kendra's held entry to Nostalgia and live return to Thais through NPC_TALK.
 use super::fixture::{Harness, debug, id, run};
 use super::npc_paid_travel_fixtures::talk;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -16,7 +16,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-const NPC: &str = "oteryn:npc.kendra";
+const RETURN_NPC: &str = "oteryn:npc.kendra";
+const INBOUND_NPC: &str = "oteryn:npc.kendra_thais";
 const ROUTE: &str = "oteryn:service.travel.kendra/thais";
 const GOLD: &str = "oteryn:item.tibia.i3031";
 // Crystal 201189f8: kendra_thais.lua (Nostalgia landing) and kendra.lua:65–70 (Thais).
@@ -25,8 +26,8 @@ const THAIS: (i32, i32, i16) = (32259, 32262, 7);
 
 #[derive(Clone, Copy)]
 enum RoutePolicy {
-    LiveCatalogue,
-    CrystalPaidFixture,
+    HeldInbound,
+    LiveReturn,
 }
 
 #[test]
@@ -35,7 +36,7 @@ fn kendra_thais_anniversary_route_does_not_quote_or_charge_outside_the_event() -
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("kendra-held", move || {
-        run(async move |_| scenario(admin, RoutePolicy::LiveCatalogue).await)
+        run(async move |_| scenario(admin, RoutePolicy::HeldInbound).await)
     })
 }
 
@@ -46,7 +47,7 @@ fn kendra_thais_live_passage_uses_postman_fare_and_exact_arrival() -> TestResult
     };
     let started = Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("kendra-thais", move || {
-        run(async move |_| scenario(admin, RoutePolicy::CrystalPaidFixture).await)
+        run(async move |_| scenario(admin, RoutePolicy::LiveReturn).await)
     })?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED kendra_thais_live_passage_uses_postman_fare_and_exact_arrival {:?}",
@@ -60,7 +61,11 @@ async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
     let (controller, pin) = activated_with_loot_tables(world_id, None);
     let active = controller.active().ok_or("active content")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    let table = kendra_placement()?;
+    let (npc_key, origin) = match policy {
+        RoutePolicy::HeldInbound => (INBOUND_NPC, THAIS),
+        RoutePolicy::LiveReturn => (RETURN_NPC, NOSTALGIA),
+    };
+    let table = kendra_placement(npc_key)?;
     let world = super::qc_pinned_world::world(native)?;
     for (x, y, floor) in [NOSTALGIA, THAIS] {
         let tile = crate::map::overlay::TilePos {
@@ -81,7 +86,7 @@ async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
             pin.identity().client_artifact_digest(),
             world.frame_binding_digest(world_id),
             world.map_revision_digest(),
-            NOSTALGIA,
+            origin,
         ),
         room,
         crate::spell::cast::v1_spell_book().map_err(debug)?,
@@ -128,18 +133,7 @@ async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
         npc_catalogue_preproduction_limits(),
     )
     .map_err(debug)?;
-    let mut book = NpcTalkBook::from_model(&catalogue.service_model_for_project().map_err(debug)?);
-    if matches!(policy, RoutePolicy::CrystalPaidFixture) {
-        // Keep the exact donor fare/arrival coverage in an explicitly test-only book.
-        let mut entry = book.get(NPC).cloned().ok_or("Kendra talk entry")?;
-        let route = entry
-            .travel_routes
-            .iter_mut()
-            .find(|route| route.route.key == "thais")
-            .ok_or("Crystal Thais route")?;
-        route.held = false;
-        book = book.with(NPC, entry);
-    }
+    let book = NpcTalkBook::from_model(&catalogue.service_model_for_project().map_err(debug)?);
     let npc = {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -164,16 +158,16 @@ async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
     owner.admit_premium(id(40), session);
 
     talk(&owner, &deps, npc, 1, "hi").await?;
-    if matches!(policy, RoutePolicy::LiveCatalogue) {
+    if matches!(policy, RoutePolicy::HeldInbound) {
         owner.premium_coordinator = Some(&premium);
-        let refused = talk(&owner, &deps, npc, 2, "thais").await?;
+        let refused = talk(&owner, &deps, npc, 2, "nostalgia").await?;
         assert_eq!(
             refused.conversation.ok_or("route hold reply")?.lines,
             ["I'm sorry but I don't sail there."]
         );
         let confirmed = talk(&owner, &deps, npc, 3, "yes").await?;
         assert!(!confirmed.inventory_changed);
-        assert_eq!(live_position(&deps).await?, NOSTALGIA);
+        assert_eq!(live_position(&deps).await?, THAIS);
         assert_eq!(carried_gold(&h).await?, 200);
         let effects: (i64, i64) = sqlx::query_as(
             "SELECT (SELECT count(*) FROM game_newhaven_travel_receipts),
@@ -182,6 +176,7 @@ async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(effects, (0, 0));
+        eprintln!("POSTGRES_EXECUTED Kendra Thais entry stayed closed without charging");
         drop(owner);
         drop(authority);
         drop(seal);
@@ -250,23 +245,25 @@ async fn carried_gold(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-fn kendra_placement() -> TestResult<NpcPlacementTable> {
+fn kendra_placement(npc_key: &str) -> TestResult<NpcPlacementTable> {
     let (bytes, _) = super::qc_pinned_world::artifact()?;
     let frame = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(())).map_err(debug)?;
     let kendra = frame
         .npcs
         .npcs
         .into_iter()
-        .find(|npc| npc.key == NPC)
-        .ok_or("Kendra's Nostalgia placement absent from the pinned World")?;
+        .find(|npc| npc.key == npc_key)
+        .ok_or("Kendra placement absent from the pinned World")?;
     let [placement] = kendra.placements.as_slice() else {
         return Err("expected one Kendra placement".into());
     };
-    // Crystal 201189f8: data-global/world/world-npc.xml:1138–1140.
-    assert_eq!(
-        (placement.x, placement.y, placement.floor),
+    // Crystal 201189f8: data-global/world/world-npc.xml:1138–1140 and :2000.
+    let expected = if npc_key == INBOUND_NPC {
+        (32261, 32262, -7)
+    } else {
         (33494, 31057, -7)
-    );
+    };
+    assert_eq!((placement.x, placement.y, placement.floor), expected);
     assert_eq!(
         placement.direction,
         oteryn_world_bundle::npc::Direction::North

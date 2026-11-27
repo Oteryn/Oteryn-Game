@@ -3,7 +3,7 @@ use super::ComposedFreshAdmission;
 use super::connection::{FreshAdmissionAuthority, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
-use crate::durability::item_craft::ItemCraftRequest;
+use crate::durability::item_craft::{GroundSculpture, ItemCraftRequest, SculptureGroundTarget};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::view::{self, MapEntryKey, MapFacts};
@@ -21,7 +21,7 @@ pub(in crate::gameplay_transport) use dispenser::DISPENSER_ACK_BARRIER;
 pub(super) mod enchanting;
 mod harvest;
 mod planting;
-mod rope;
+pub(super) mod rope;
 mod skinning;
 mod terrain;
 
@@ -128,7 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(()) => return None,
         }
         match self
-            .use_terrain_tool(actor, command, &intent, source, target)
+            .use_rope_tool(actor, command, &intent, source, target)
             .await
         {
             Ok(Some(outcome)) => return Some(outcome),
@@ -136,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(()) => return None,
         }
         match self
-            .use_rope_tool(actor, command, &intent, source, target)
+            .use_terrain_tool(actor, command, &intent, source, target)
             .await
         {
             Ok(Some(outcome)) => return Some(outcome),
@@ -179,12 +179,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?
         {
+            if result == UseDisposition::Committed {
+                self.states.loop_ground.invalidate();
+            }
             return disposition(result);
         }
         let Some(ItemKey::Instance(source)) = source else {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
+        let mut sculpture_ground = None;
         // Crystal 201189f8 data-global/scripts/actions/other/baking.lua:8-37,49-51 uses a
         // second carried ingredient for dough, chocolate/garlic dough, trays and sugar oat.
         // Resolve its exact current definition here; the durable owner locks and consumes it.
@@ -211,25 +215,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .flat_map(|bag| &bag.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
-                .find(|entry| entry.item.item_instance_id == ingredient)?;
-            request.ingredient = Some(ingredient);
-            request.station = Some(entry.item.definition.clone());
+                .find(|entry| entry.item.item_instance_id == ingredient);
+            if let Some(entry) = entry {
+                request.ingredient = Some(ingredient);
+                request.station = Some(entry.item.definition.clone());
+            } else {
+                let placement = sculpture_tile(self, actor).await?;
+                let index = self.active_generation?.native_gameplay()?.item_index()?;
+                let map = self.bundle_map()?;
+                let ground =
+                    super::loop_move::loop_ground(self, map.overlay.base(), Some(index)).await?;
+                let (pos, _) = ground.ground_entry(&ingredient)?;
+                let facts = map.facts.pinned();
+                let facts = ground.facts(&facts);
+                let tile = view::compose_tile(ground.overlay(), &facts, pos).ok()??;
+                let entry = tile
+                    .entries
+                    .iter()
+                    .find(|entry| entry.source.key() == MapEntryKey::Ground(ingredient))?;
+                let MapDefinition::Item(reference) = entry.facts.definition else {
+                    return None;
+                };
+                let definition = super::item_look::typed_definition(index, reference)?;
+                let tool = inventory
+                    .backpack
+                    .iter()
+                    .flat_map(|b| &b.entries)
+                    .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                    .find(|entry| entry.item.item_instance_id == source)?;
+                if !item_id(&tool.item.definition.production_key)
+                    .zip(item_id(&definition.production_key))
+                    .is_some_and(|(tool, target)| {
+                        oteryn_gameplay_items::fishing::is_sculpture(tool, target)
+                    })
+                {
+                    return None;
+                }
+                let actor_cell = crate::durability::spell_items_abi::decode_ground_cell(
+                    &placement.spatial_position,
+                )
+                .ok()?;
+                if actor_cell.z != i32::from(pos.floor)
+                    || actor_cell.x.abs_diff(i32::from(pos.x)) > 1
+                    || actor_cell.y.abs_diff(i32::from(pos.y)) > 1
+                {
+                    return disposition(UseDisposition::TooFar);
+                }
+                if entry.facts.bound
+                    || facts.house_tile(pos)
+                    || entry.facts.count != 1
+                    || entry.facts.sub_type != 0
+                {
+                    return disposition(UseDisposition::NothingToUse);
+                }
+                sculpture_ground = Some(GroundSculpture {
+                    actor: placement,
+                    target: Some(SculptureGroundTarget {
+                        position: ground.pickup_cell(&ingredient)?,
+                        ordinal: ground.ground_ordinal(&ingredient)?,
+                    }),
+                });
+                request.ingredient = Some(ingredient);
+                request.station = Some(definition);
+            }
         }
         let (station, map_target) = {
             if let Some(station) = request.station.clone() {
-                (
-                    station,
-                    (
-                        MapEntryKey::Base(0),
-                        0,
-                        false,
-                        crate::map::overlay::TilePos {
-                            x: 0,
-                            y: 0,
-                            floor: 0,
-                        },
-                    ),
-                )
+                (station, None)
             } else {
                 let mut runtime = self.runtime.lock().await;
                 let index = pinned_index(&runtime, self.active_generation)?;
@@ -285,7 +337,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 (
                     super::item_look::typed_definition(index, reference)?,
-                    map_target,
+                    Some(map_target),
                 )
             }
         };
@@ -294,10 +346,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
         // consumes a worm only after the skill-scaled catch succeeds.
-        if request
-            .station
-            .as_ref()
-            .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
+        if let Some((_, _, _, target_pos)) = map_target
+            && request
+                .station
+                .as_ref()
+                .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
         {
             let inventory = self
                 .root
@@ -311,7 +364,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .chain(inventory.nested.iter().map(|(_, entry)| entry));
             let water_key = &request.station.as_ref()?.production_key;
             let target_id = item_id(water_key)?;
-            let target_pos = map_target.3;
             let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
                 target_id,
                 target_pos.x,
@@ -411,8 +463,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .station
             .as_ref()
             .and_then(|s| item_id(&s.production_key));
-        if let (Some(tool), Some(target_id)) = (tool, target_id)
-            && let Some(tool_id) = item_id(&tool.item.definition.production_key)
+        let tool_id = tool.and_then(|entry| item_id(&entry.item.definition.production_key));
+        if let Some((MapEntryKey::Base(key), revision, invalid, _)) = map_target
+            && let (Some(tool), Some(tool_id), Some(target_id)) = (tool, tool_id, target_id)
             && let Some(attempt) = oteryn_gameplay_items::event_planting::planting_attempt(
                 tool_id, target_id,
             )
@@ -433,9 +486,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let seed_attempt =
                 oteryn_gameplay_items::event_planting::planting_attempt(tool_id, target_id);
-            let (MapEntryKey::Base(key), revision, invalid, _) = map_target else {
-                return None;
-            };
             if invalid {
                 return disposition(UseDisposition::NothingToUse);
             }
@@ -495,33 +545,115 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 attempt,
             });
         }
-        if !self
-            .states
-            .player_trades
-            .physical(command.game_session_id, Some(source))
-        {
+        let terrain_marble_yield = request
+            .gathering
+            .as_ref()
+            .is_some_and(|g| g.mutation.before == 10426 && g.attempt.yield_item.is_some());
+        let carried_marble_yield = sculpture_ground.is_none()
+            && request.ingredient.is_some()
+            && target_id == Some(10426)
+            && tool_id.is_some_and(|tool| {
+                gathering_roll(
+                    native.source_digest(),
+                    command.game_session_id,
+                    command.command_id,
+                    &request.intent,
+                )
+                .and_then(|roll| {
+                    oteryn_gameplay_items::fishing::gathering_attempt(tool, 10426, 10, 1, roll)
+                })
+                .is_some_and(|attempt| attempt.yield_item.is_some())
+            });
+        if terrain_marble_yield || carried_marble_yield {
+            let placement = sculpture_tile(self, actor).await;
+            if terrain_marble_yield && placement.is_none() {
+                return None;
+            }
+            sculpture_ground = placement.map(|actor| GroundSculpture {
+                actor,
+                target: None,
+            });
+        }
+        if !self.states.player_trades.physical_items(
+            command.game_session_id,
+            [
+                Some(source),
+                request.ingredient,
+                request.tool,
+                Some(request.source),
+            ],
+        ) {
             return disposition(UseDisposition::Rejected);
         }
-        let result = self
-            .root
-            .craft_item(
-                &_permit,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                native,
-                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
-                false,
-            )
-            .await;
-        let result = result.ok()??;
+        let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        // Invalidate even when the write's reply is lost or the task is
+        // cancelled. The next projection waits for the physical owner.
+        let ground_change = sculpture_ground
+            .as_ref()
+            .map(|_| self.states.loop_ground.sculpture_change());
+        let result = if let Some(ground) = sculpture_ground {
+            self.root
+                .craft_item_on_ground(
+                    &_permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &weights,
+                    ground,
+                )
+                .await
+        } else {
+            self.root
+                .craft_item(
+                    &_permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &weights,
+                    false,
+                )
+                .await
+        }
+        .ok()??;
+        drop(ground_change);
         drop(_permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
         }
         disposition(result)
     }
+}
+
+async fn sculpture_tile(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+) -> Option<crate::durability::item_mint::GroundPlacement> {
+    let mut runtime = admission.runtime.lock().await;
+    let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
+    pinned_index(&runtime, admission.active_generation)?;
+    let pin = runtime.content_pin();
+    let position = crate::durability::map_item_mint_audit::map_item_spatial_position(
+        u16::try_from(at.at.x).ok()?,
+        u16::try_from(at.at.y).ok()?,
+        i8::try_from(at.at.floor).ok()?,
+    );
+    Some(crate::durability::item_mint::GroundPlacement {
+        spatial_position: position,
+        corpse_ref: b"sculpture-craft-v1".to_vec(),
+        map_revision: crate::map::overlay::map_revision(at.map.overlay.base()),
+        content_revision: format!(
+            "sha256:{}",
+            pin.server_artifact_digest()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        ),
+        native_room_placement_context: pin.frame_binding_digest().to_vec(),
+    })
 }
 
 /// Decision used by the real I11 two-carried-item baking handler.
@@ -533,30 +665,7 @@ fn item_id(key: &str) -> Option<u16> {
     key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
 }
 
-pub(in crate::gameplay_transport) fn gathering_roll(
-    digest: [u8; 32],
-    session: crate::foundation::GameSessionId,
-    command_id: u64,
-    intent: &[u8],
-) -> Option<u32> {
-    let digest = Sha256::new()
-        .chain_update(b"oteryn.gathering.yield.v1")
-        .chain_update(session.as_bytes())
-        .chain_update(command_id.to_be_bytes())
-        .chain_update(intent)
-        .chain_update(digest)
-        .finalize();
-    let mut occurrence = [0; 16];
-    occurrence.copy_from_slice(&digest[..16]);
-    let draw = deterministic_decision_u64(
-        &GameplayDecisionRoot::from_bytes(digest.into()),
-        DecisionOccurrenceId::from_bytes(occurrence),
-        "gathering.yield",
-        0,
-    )
-    .ok()?;
-    u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()
-}
+pub(in crate::gameplay_transport) use crate::durability::item_craft::gathering_roll;
 
 #[cfg(test)]
 #[path = "item_craft_crystal_parity_tests.rs"]

@@ -175,6 +175,11 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         let achievement_key = "oteryn:achievement/polisher";
         super::achievement_granters::seed_progress(&harness, achievement_key, 999).await?;
+        let lottery = key == "oteryn:item.tibia.i5957";
+        let jinx = "oteryn:achievement/jinx";
+        if lottery {
+            super::achievement_granters::seed_progress(&harness, jinx, 499).await?;
+        }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -362,6 +367,24 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
             )
             .await?
         );
+        if lottery {
+            let award = super::achievement_granters::assert_progress(
+                &harness,
+                jinx,
+                if success { 499 } else { 500 },
+                !success,
+                "oteryn:consume-transform",
+            )
+            .await?;
+            if let Some((_, event, _)) = award {
+                let receipt: String = sqlx::query_scalar(
+                    "SELECT event_id::text FROM game_item_consume_transform_records",
+                )
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(event, receipt.into_bytes());
+            }
+        }
         if key=="oteryn:item.tibia.i6558" {
             super::achievement_granters::assert_progress(&harness,"oteryn:achievement/demonic_barkeeper",1,false,
                 "oteryn:consume-transform").await?;

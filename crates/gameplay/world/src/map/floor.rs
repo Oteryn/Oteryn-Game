@@ -54,7 +54,10 @@ pub use quest_callback::{
     prepare_quest_encounter_ejection, prepare_quest_encounter_member,
 };
 pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
-pub use rope::{LadderTarget, is_rope_spot_item, prepare_bundle_ladder, prepare_bundle_rope};
+pub use rope::{
+    LadderTarget, is_bundle_rope_spot, is_rope_spot_item, prepare_bundle_ladder,
+    prepare_bundle_rope,
+};
 pub use scripted_teleport::prepare_scripted_quest_teleport_facing;
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -258,9 +261,20 @@ pub type Cell = (i32, i32, i32);
 /// per step.
 pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
+    /// Player door predicates default to fail-closed without admitted Character facts.
+    fn admits_door_entry(&self, _requirement: super::door::DoorEntryRequirement) -> bool {
+        false
+    }
+
     /// An exact, unambiguous conditional callback owns this native portal's landing.
     /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
     fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
+        false
+    }
+
+    /// An exact, unambiguous callback owns the tile's floor change or teleport.
+    /// Ordinary movement stops at that tile so dispatch can enforce the callback.
+    fn owns_native_transition(&self, _cell: LogicalCell) -> bool {
         false
     }
 }
@@ -351,7 +365,7 @@ fn resolve_landing_with_exhaust(
     origin: Cell,
     direction: CardinalStep,
     mask: &impl Fn(Cell) -> u8,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    owns_transition: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     resolve_landing_with_teleports(
         ground,
@@ -360,7 +374,7 @@ fn resolve_landing_with_exhaust(
         direction,
         mask,
         |at| table.teleport(at),
-        suppress_teleport,
+        owns_transition,
     )
 }
 
@@ -371,14 +385,14 @@ fn resolve_landing_with_teleports(
     direction: CardinalStep,
     mask: &impl Fn(Cell) -> u8,
     teleport: impl Fn(TilePos) -> Option<TilePos>,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    owns_transition: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let (dx, dy) = direction.delta();
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
         Ground::Blocked => Err(Refusal::Blocked),
-        Ground::Walkable => follow(&ground, &landable, &teleport, next, mask, suppress_teleport),
+        Ground::Walkable => follow(&ground, &landable, &teleport, next, mask, owns_transition),
     }
 }
 
@@ -389,25 +403,32 @@ fn follow(
     teleport: &impl Fn(TilePos) -> Option<TilePos>,
     mut next: Cell,
     floor_mask: &impl Fn(Cell) -> u8,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    owns_transition: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let mut changed_floor = false;
     let land = |cell: Cell, changed_floor: bool| match ground(cell) {
         Ground::Walkable => {
-            let target = if suppress_teleport(cell) {
-                cell
-            } else {
-                teleported(ground, landable, teleport, cell)
-            };
+            let target = teleported(
+                ground,
+                landable,
+                &|at| teleport(at).filter(|_| !owns_transition(cell)),
+                cell,
+            );
             Ok((target, changed_floor || target != cell))
         }
         _ => Err(Refusal::Blocked),
     };
     for _ in 0..MAX_DESTINATIONS {
-        if ground(next) == Ground::Blocked {
+        let entered = ground(next);
+        if entered == Ground::Blocked {
             return Err(Refusal::Blocked);
         }
         let mask = floor_mask(next);
+        if mask != 0 && owns_transition(next) {
+            return (entered == Ground::Walkable)
+                .then_some((next, changed_floor))
+                .ok_or(Refusal::Blocked);
+        }
         if mask == 0 {
             return land(next, changed_floor);
         }
@@ -750,6 +771,18 @@ fn qualify_origin_control(
     Ok(())
 }
 
+/// Whether a player's live prerequisites rule out an open door at the candidate cell.
+pub fn player_door_entry_blocked(
+    cells: &NativeEntryMovementCells,
+    cell: LogicalCell,
+    access: &dyn CellBlocker,
+) -> bool {
+    matches!(cells.index(), NativeMovementCollisionIndex::Bundle(index)
+    if pos(cell.x, cell.y, cell.z).is_some_and(|tile| index.map().facts.blocks_player_entry(
+        tile, |requirement| access.admits_door_entry(requirement),
+    )))
+}
+
 fn destination(
     doomforge_open: bool,
     cells: &NativeEntryMovementCells,
@@ -765,11 +798,14 @@ fn destination(
     // teleport destination.
     let ground = ground_of(cells);
     let ground = |cell: Cell| {
-        if closed.blocks(LogicalCell {
+        let at = LogicalCell {
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) || (!doomforge_open && is_doomforge_portal(cells, cell))
+        };
+        if closed.blocks(at)
+            || player_door_entry_blocked(cells, at, closed)
+            || (!doomforge_open && is_doomforge_portal(cells, cell))
         {
             Ground::Blocked
         } else {
@@ -794,6 +830,14 @@ fn destination(
             table.mask(cell)
         },
         |at| {
+            let cell = LogicalCell {
+                x: i32::from(at.x),
+                y: i32::from(at.y),
+                z: -i32::from(at.floor),
+            };
+            if closed.suppresses_native_teleport(cell) {
+                return None;
+            }
             if doomforge_open
                 && is_doomforge_portal(
                     cells,
@@ -809,7 +853,7 @@ fn destination(
                 current_teleport(cells, at)
             }
         },
-        &|(x, y, z)| closed.suppresses_native_teleport(LogicalCell { x, y, z }),
+        &|(x, y, z)| closed.owns_native_transition(LogicalCell { x, y, z }),
     )
     .map_err(movement_error)?;
     Ok((
@@ -1218,6 +1262,34 @@ mod tests {
         assert_eq!(
             resolve(&t, world(&[7, 8], &[]), (2, 3, 8), CardinalStep::East),
             Ok((6, 6, 8))
+        );
+    }
+
+    #[test]
+    fn callback_owned_step_stops_before_cellar_floor_change() {
+        let origin = (32035, 32277, 6);
+        let cellar = (32036, 32277, 6);
+        let table = table(&[(
+            cellar,
+            palette_mask(Family::Item, "oteryn:item.tibia.i7767"),
+        )]);
+        assert_eq!(
+            resolve_landing_with_exhaust(
+                &table,
+                |cell| {
+                    if [origin, cellar, (32036, 32277, 7)].contains(&cell) {
+                        Ground::Walkable
+                    } else {
+                        Ground::Absent
+                    }
+                },
+                |_| true,
+                origin,
+                CardinalStep::East,
+                &|cell| table.mask(cell),
+                &|cell| cell == cellar,
+            ),
+            Ok((cellar, false))
         );
     }
 

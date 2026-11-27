@@ -931,9 +931,9 @@
         {
           "area": [
             33430,
-            33630,
+            33550,
             31150,
-            31320,
+            31230,
             0,
             14
           ],
@@ -947,9 +947,9 @@
         {
           "area": [
             33430,
-            33630,
+            33550,
             31150,
-            31320,
+            31230,
             0,
             14
           ],
@@ -963,9 +963,9 @@
         {
           "area": [
             33430,
-            33630,
+            33550,
             31150,
-            31320,
+            31230,
             0,
             14
           ],
@@ -979,9 +979,9 @@
         {
           "area": [
             33430,
-            33630,
+            33550,
             31150,
-            31320,
+            31230,
             0,
             14
           ],
@@ -1008,106 +1008,25 @@
       "key": "hive_born",
       "minimum_level": 0,
       "mode": "personal_on_demand",
-      "npc_callbacks": [
-        {
-          "achievement": null,
-          "give": null,
-          "key": "oteryn:quest-reward/worldchg-m31/hive_born/ask",
-          "keywords": [
-            "hive defence"
-          ],
-          "next_topic": 0,
-          "npc": "oteryn:npc.orockle",
-          "outfit": null,
-          "quest": "oteryn:quest.authored.hive_born_world_change",
-          "reply": [
-            "Your personal world-change journey has been recorded."
-          ],
-          "sources": [
-            "oteryn-native:world-change-journal:v1",
-            "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
-            "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
-          ],
-          "storage": [
-            {
-              "maximum": 0,
-              "minimum": -1,
-              "set": 1,
-              "track": "oteryn:quest-progress/world-change-journal/hive_born/phase"
-            }
-          ],
-          "take": [],
-          "topic": 0
-        },
-        {
-          "achievement": null,
-          "give": null,
-          "key": "oteryn:quest-reward/worldchg-m31/hive_born/permit",
-          "keywords": [
-            "personal scent"
-          ],
-          "next_topic": 0,
-          "npc": "oteryn:npc.orockle",
-          "outfit": null,
-          "participants": [
-            {
-              "quest": "oteryn:quest.hive_native_shared",
-              "state_ops": [
-                {
-                  "effect": {
-                    "kind": "add",
-                    "value": -50
-                  },
-                  "from": {
-                    "kind": "between",
-                    "maximum": 9223372036854775807,
-                    "minimum": 50
-                  },
-                  "track": "oteryn:quest-progress/hive/favour"
-                }
-              ],
-              "storage": []
-            }
-          ],
-          "quest": "oteryn:quest.authored.hive_born_world_change",
-          "reply": [
-            "Your personal world-change journey has been recorded."
-          ],
-          "sources": [
-            "oteryn-native:world-change-journal:v1",
-            "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
-            "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
-          ],
-          "storage": [
-            {
-              "maximum": 1,
-              "minimum": 1,
-              "set": 3,
-              "track": "oteryn:quest-progress/world-change-journal/hive_born/phase"
-            }
-          ],
-          "take": [],
-          "topic": 0
-        }
-      ],
+      "npc_callbacks": [],
       "phase_track": "oteryn:quest-progress/world-change-journal/hive_born/phase",
       "quest": "oteryn:quest.authored.hive_born_world_change",
       "repeat": "once",
       "requires_premium": true,
-      "runtime_enabled": false,
+      "runtime_enabled": true,
       "sources": [
         "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
         "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
       ],
       "stage_bindings": {
         "s1": [
-          "oteryn:quest-reward/worldchg-m31/hive_born/ask"
+          "oteryn:quest-callback/worldchg-m31/hive_born/eastern-inner"
         ],
         "s2": [
-          "oteryn:quest-reward/worldchg-m31/hive_born/permit"
+          "oteryn:quest-callback/worldchg-m31/hive_born/eastern-inner"
         ],
         "s3": [
-          "oteryn:quest-reward/worldchg-m31/hive_born/permit"
+          "oteryn:quest-callback/worldchg-m31/hive_born/eastern-inner"
         ],
         "s4": [
           "oteryn:quest-callback/worldchg-m31/hive_born/eastern-inner"
@@ -1178,8 +1097,8 @@
           ],
           "storage": [
             {
-              "maximum": 3,
-              "minimum": 3,
+              "maximum": 0,
+              "minimum": 0,
               "set": 4,
               "track": "oteryn:quest-progress/world-change-journal/hive_born/phase"
             },
