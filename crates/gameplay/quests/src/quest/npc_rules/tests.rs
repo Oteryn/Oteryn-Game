@@ -698,7 +698,7 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 
 // The accepted source cohorts from both parents retain these exact predecessors.
 // Draconia has no historical definition; Stag and schema2 have separate owners.
-const EXPECTED_LEGACY_QUESTS: [&str; 29] = [
+const EXPECTED_LEGACY_QUESTS: [&str; 30] = [
     "oteryn:quest.a_father_s_burden_quest",
     "oteryn:quest.a_pirates_tail",
     "oteryn:quest.adventurers_guild",

@@ -3678,10 +3678,24 @@ mod tests {
         assert_eq!(parse(OUTFIT_COMPLETIONS)?.len(), 18);
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
-        let added_keys = [
+        let cave_legacy_keys = [
             "oteryn:quest-reward/l12-cave-explorer-legacy-addon-1",
             "oteryn:quest-reward/l12-cave-explorer-legacy-addon-2",
             "oteryn:quest-reward/l12-cave-explorer-legacy-report",
+        ];
+        let classic = parse(include_str!(
+            "../../../../../content/quests/npc-callbacks/classic-quest-rewards.json"
+        ))?;
+        let cave_legacy: BTreeSet<_> = classic
+            .iter()
+            .map(|callback| callback.key.as_str())
+            .filter(|key| cave_legacy_keys.contains(key))
+            .collect();
+        assert_eq!(cave_legacy, BTreeSet::from(cave_legacy_keys));
+        assert!(
+            legacy.iter().all(|callback| !cave_legacy_keys.contains(&callback.key.as_str()))
+        );
+        let added_keys = [
             "oteryn:quest-reward/between-the-lines-phillip-accept",
             "oteryn:quest-reward/l10-brotherhood-dread-lord",
             "oteryn:quest-reward/l10-nightmare-lord-protector",
@@ -3721,12 +3735,12 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 228);
+        assert_eq!(legacy.len(), 217);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
             .collect();
-        assert_eq!(original.len(), 196);
+        assert_eq!(original.len(), 185);
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
@@ -3741,11 +3755,27 @@ mod tests {
             .map(|callback| callback.key.as_str())
             .collect::<BTreeSet<_>>();
         assert_eq!(actual_wayland_exchanges, wayland_exchanges);
-        assert_eq!(programmes.len() - actual_wayland_exchanges.len(), 168);
+        let friends_exchanges = BTreeSet::from([
+            "oteryn:quest-reward/questpc7-friends-draconian-steel",
+            "oteryn:quest-reward/questpc7-friends-hand-in-skirts",
+            "oteryn:quest-reward/questpc7-friends-request-friendship",
+        ]);
+        let actual_friends_exchanges = programmes
+            .iter()
+            .map(|callback| callback.key.as_str())
+            .filter(|key| friends_exchanges.contains(key))
+            .collect::<BTreeSet<_>>();
+        assert_eq!(actual_friends_exchanges, friends_exchanges);
+        assert_eq!(
+            programmes.len() - actual_wayland_exchanges.len() - actual_friends_exchanges.len(),
+            168
+        );
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
-            assert!(published.contains(&callback.key));
+            assert!(
+                published.contains(&callback.key) || friends_exchanges.contains(callback.key.as_str())
+            );
             assert!(legacy.iter().all(|old| old.key != callback.key));
         }
         for callback in original {
