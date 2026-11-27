@@ -324,6 +324,24 @@ fn scenario(target_move: bool) -> TestResult {
             vec![oteryn_protocol_oteryn::world_spatial::StepDirection::South; 4]
         );
         let target = object(world.base().digest(), pos(6, 1), 0)?;
+        if !target_move {
+            let held = h.root.try_issue_background_semantic_pass()?;
+            let harvest = DurabilityRoot::with_holder_owner(owner.use_event_world_object(
+                deps.actor,
+                crate::gameplay_transport::connection::UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 1,
+                    item_fence: admitted.item_fence,
+                },
+                target.clone(),
+            ))
+            .await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(
+                matches!(harvest, Ok(None)),
+                "ordinary door USE must reach its own owner even when the harvest holder is busy: {harvest:?}"
+            );
+        }
         let route = owner
             .item_walk_route(
                 deps.actor,

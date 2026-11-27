@@ -276,60 +276,70 @@ where
     {
         session.target_walk = None;
     }
-    let mut dispatch = if let Some(outcome) = retained_bank {
-        Dispatch::Npc(
-            outcome.disposition,
-            NpcUpdate {
-                conversation: outcome.conversation,
-                window: outcome.window,
-            },
-            outcome.inventory_changed,
-        )
-    } else if input_permit.is_none()
-        || !session
-            .admitted
-            .continuity
-            .selected_capabilities
-            .command_selected(command.command_type)
-    {
-        if selected_hotkey {
-            RejectionStage::InputUnavailable.log(command.command_id);
-        }
-        Dispatch::Unregistered
-    } else if replaced {
-        RejectionStage::Superseded.log(command.command_id);
-        Dispatch::ItemMove(
-            oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected,
-            Vec::new(),
-            None,
-        )
-    } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
-        match route::step(authority, session, command, arrived_while_buffered).await {
-            route::StepAction::Wait(due) => {
-                session
-                    .commands
-                    .buffer_step(command)
-                    .ok_or(ServeEnd::Disconnected)?;
-                // Pacing throttled this input; the buffered original is charged only once.
-                session
-                    .integrity
-                    .observe(&Dispatch::Step(StepOutcome::too_early(), 0));
-                if gameplay_activity {
-                    session
-                        .admitted
-                        .continuity
-                        .gameplay_idle
-                        .activity(activity_at);
-                }
-                session.buffered = Some(BufferedStep { frame, due });
-                authority.observe_gameplay_idle(session.admitted);
-                return Ok(());
+    let mut dispatch =
+        if let Some(outcome) = retained_bank {
+            Dispatch::Npc(
+                outcome.disposition,
+                NpcUpdate {
+                    conversation: outcome.conversation,
+                    window: outcome.window,
+                },
+                outcome.inventory_changed,
+            )
+        } else if input_permit.is_none()
+            || !session
+                .admitted
+                .continuity
+                .selected_capabilities
+                .command_selected(command.command_type)
+        {
+            if selected_hotkey {
+                RejectionStage::InputUnavailable.log(command.command_id);
             }
-            route::StepAction::Dispatch(dispatch) => dispatch,
-        }
-    } else {
-        route::execute(stream, authority, session, command, &mut outcome).await?
-    };
+            Dispatch::Unregistered
+        } else if replaced {
+            RejectionStage::Superseded.log(command.command_id);
+            Dispatch::ItemMove(
+                oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected,
+                Vec::new(),
+                None,
+            )
+        } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+            match route::step(authority, session, command, arrived_while_buffered).await {
+                route::StepAction::Wait(due) => {
+                    session
+                        .commands
+                        .buffer_step(command)
+                        .ok_or(ServeEnd::Disconnected)?;
+                    // Pacing throttled this input; the buffered original is charged only once.
+                    session
+                        .integrity
+                        .observe(&Dispatch::Step(StepOutcome::too_early(), 0));
+                    if gameplay_activity {
+                        session
+                            .admitted
+                            .continuity
+                            .gameplay_idle
+                            .activity(activity_at);
+                    }
+                    session.buffered = Some(BufferedStep { frame, due });
+                    authority.observe_gameplay_idle(session.admitted);
+                    return Ok(());
+                }
+                route::StepAction::Dispatch(dispatch) => dispatch,
+            }
+        } else {
+            route::execute(stream, authority, session, command, &mut outcome)
+            .await
+            .inspect_err(|end| {
+                if matches!(end, ServeEnd::Disconnected) {
+                    operator_event(&format!(
+                        "event=command_dispatch_aborted command_type={} command_id={} source={}:{}",
+                        command.command_type, command.command_id, file!(), line!(),
+                    ));
+                }
+            })?
+        };
     if let Dispatch::Training(result) = &dispatch
         && matches!(result.disposition, 1 | 2)
     {

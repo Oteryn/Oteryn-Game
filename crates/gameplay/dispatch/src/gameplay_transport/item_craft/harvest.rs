@@ -25,6 +25,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         target: &WorldObjectTarget,
     ) -> Result<Option<UseOutcome>, ()> {
+        // The pinned door owner classifies these placements independently of
+        // their mutable appearance and expected revision. They cannot have a
+        // harvest receipt. Keep ordinary door USE off the harvest holder.
+        if self.bundle_map().is_some_and(|map| {
+            target
+                .placement
+                .strip_prefix(map.overlay.base().digest().as_slice())
+                .and_then(|key| <[u8; 8]>::try_from(key).ok())
+                .map(u64::from_be_bytes)
+                .is_some_and(|key| map.facts.doors().contains(key))
+        }) {
+            return Ok(None);
+        }
         let intent = UseIntent {
             target: UseTarget::WorldObject(target.clone()),
             use_with: None,
@@ -94,7 +107,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &NativeItemWeights(native),
             )
             .await
-            .map_err(|_| ())?
+            .map_err(|error| {
+                let kind = match error {
+                    crate::durability::DurabilityError::RootUnavailable => "holder_unavailable",
+                    crate::durability::DurabilityError::RootPassDeadlineExceeded => {
+                        "holder_deadline"
+                    }
+                    _ => "durability_error",
+                };
+                crate::gameplay_transport::operator_event(&format!(
+                    "event=harvest_receipt_probe_failed kind={kind} source={}:{}",
+                    file!(),
+                    line!(),
+                ));
+            })?
         {
             drop(permit);
             if result.disposition == UseDisposition::Committed {
