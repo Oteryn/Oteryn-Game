@@ -1,7 +1,7 @@
 pub(super) mod peer {
     include!("peer.rs");
 }
-struct Selected;
+struct Selected(bool);
 impl crate::play::Stepper for Selected {
     async fn step(
         &mut self,
@@ -27,8 +27,8 @@ impl crate::play::Stepper for Selected {
         Ok(None)
     }
 
-    fn server_mechanic_selected(&self, _: u32) -> bool {
-        true
+    fn server_mechanic_selected(&self, capability: u32) -> bool {
+        capability != oteryn_session::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1 || self.0
     }
 }
 #[test]
@@ -39,7 +39,7 @@ fn cp02_0098_quick_loot_scenario() {
             oteryn_client_ui::quick_loot::QuickLootFilterMode::Skip
         ))
     );
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(false));
     assert!(
         link.quick_loot_action(oteryn_client_ui::quick_loot::Action::Clear(
             oteryn_client_ui::quick_loot::QuickLootFilterMode::Skip
@@ -199,7 +199,7 @@ fn selected_item_loot_click_round_trip() -> Result<(), Box<dyn std::error::Error
 fn corpse_loot_click_without_selected_item_is_unchanged() -> Result<(), Box<dyn std::error::Error>>
 {
     let (link, mut rx, outbox) = crate::play::play_channel();
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(false));
     let corpse = [7; 16];
     assert!(link.quick_loot_action(oteryn_client_ui::quick_loot::Action::Corpse(corpse)));
     let crate::combat_input::PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
@@ -216,7 +216,7 @@ fn corpse_loot_click_without_selected_item_is_unchanged() -> Result<(), Box<dyn 
 #[test]
 fn cp02_clear_uses_selected_filter_list() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut rx, outbox) = crate::play::play_channel();
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(false));
     assert!(link.discovery_action(98, 4, &["".into(), "2".into()], 0));
     let crate::combat_input::PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
         return Err("wrong command".into());
@@ -235,7 +235,7 @@ fn cp02_destination_controls_encode_existing_wire_and_reject_invalid_ids()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_ui::quick_loot::*;
     let (link, mut rx, outbox) = crate::play::play_channel();
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(false));
     assert!(!link.discovery_action(
         98,
         6,
@@ -293,7 +293,7 @@ fn cp02_shortcuts_are_exclusive_and_session_end_clears_all_panels()
         }
     }
     let (link, rx, outbox) = crate::play::play_channel();
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(false));
     assert!(link.quick_loot_action(oteryn_client_ui::quick_loot::Action::LootAll));
     outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
     let state = link.discovery_panel();
@@ -305,7 +305,7 @@ fn cp02_shortcuts_are_exclusive_and_session_end_clears_all_panels()
             && !state.history.selected
     );
     assert!(state.loot.pending.is_none());
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(false));
     drop(rx);
     assert!(!link.quick_loot_action(oteryn_client_ui::quick_loot::Action::LootAll));
     assert!(link.discovery_panel().loot.pending.is_none());
@@ -379,7 +379,7 @@ fn a_finished_loot_run_posts_one_loot_notice_when_loot_messages_are_on()
         Action, QuickLootItemResult, QuickLootResult, encode_quick_loot_result,
     };
     let (link, _commands, outbox) = crate::play::play_channel();
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(false));
     let result = || -> Result<oteryn_session::GatedCommandResult, Box<dyn std::error::Error>> {
         Ok(oteryn_session::GatedCommandResult {
             command_id: 1,
@@ -530,9 +530,14 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         Some(expected.fulfilment),
         false,
     );
+    let full = directory.file_name().is_some_and(|name| name == "i07-full");
     let armor = |fallback| {
         route(
-            Some(QuickLootCategory::Equipment),
+            Some(if full {
+                QuickLootCategory::Armor
+            } else {
+                QuickLootCategory::Equipment
+            }),
             QuickLootRecipient::GoldPouch,
             Some(expected.pouch),
             fallback,
@@ -583,7 +588,10 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     let (menu_link, mut menu_commands, menu_outbox) = crate::play::play_channel();
     menu_outbox.bevy_quick_loot_selected(true);
     let [x, y, floor] = expected.corpse_position;
-    assert_eq!(expected.corpse_kind, oteryn_session::EntityKind::Corpse as u8);
+    assert_eq!(
+        expected.corpse_kind,
+        oteryn_session::EntityKind::Corpse as u8
+    );
     menu_outbox.bevy_quick_loot_corpse(oteryn_session::WorldSpatialEntity {
         motion: None,
         display_name: None,
@@ -673,13 +681,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     menu_app.update();
     assert_eq!(menu::rendered_corpse_items(&mut menu_app), vec![sibling]);
     assert!(menu_commands.try_recv().is_err());
-    if directory.file_name().is_some_and(|name| name == "i07-full") {
-        println!(
-            "I07_NATIVE_REPLAY session={} relog={}",
-            first.game_session_id, relog.game_session_id
-        );
-        return Ok(());
-    }
     let skip = QuickLootFilterMode::Skip;
     let accept = QuickLootFilterMode::Accept;
     let gold_main = route(
@@ -762,7 +763,20 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         ),
         (click.clone(), &[], None),
         (Action::Select(skip), &[], None),
-        (unassigned_pouch, &[], None),
+        (
+            if full {
+                route(
+                    Some(QuickLootCategory::Food),
+                    QuickLootRecipient::GoldPouch,
+                    Some(expected.pouch),
+                    false,
+                )
+            } else {
+                unassigned_pouch
+            },
+            &[],
+            None,
+        ),
         (
             Action::LootAll,
             &[
@@ -772,7 +786,20 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             ],
             Some("Looted 0 of 3 items"),
         ),
-        (main.clone(), &[], None),
+        (
+            if full {
+                route(
+                    Some(QuickLootCategory::Food),
+                    QuickLootRecipient::MainContainer,
+                    None,
+                    false,
+                )
+            } else {
+                main.clone()
+            },
+            &[],
+            None,
+        ),
         (
             Action::LootAll,
             &[
@@ -801,7 +828,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         .local_preferences
         .game_window
         .loot_messages = true;
-    outbox.discovery_initialize(&Selected);
+    outbox.discovery_initialize(&Selected(full));
     ui::open(&mut app)?;
     let mut sessions = [String::new(), String::new()];
     let mut previous = (0, 0);
@@ -809,7 +836,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         let key = index + 1;
         let session_index = usize::from(key >= 12);
         if key == 12 {
-            outbox.discovery_initialize(&Selected);
+            outbox.discovery_initialize(&Selected(full));
             previous = (0, 0);
             let panel = ui::link(&app)?.discovery_panel().loot;
             assert!(panel.confirmed.is_empty() && panel.destinations.is_empty());
@@ -839,58 +866,66 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             continue;
         }
         let mode = |mode| (mode as u8).to_string();
-        let dispatched = if matches!(key, 4 | 5 | 7)
-            || matches!(&action, Action::LootAll | Action::Select(_))
-        {
-            ui::click_action(&mut app, action)?;
-            true
-        } else {
-            let link = ui::link(&app)?;
-            match action {
-                Action::Add {
-                    mode: filter,
-                    definition,
-                } => link.discovery_action(98, 2, &[definition.to_string(), mode(filter)], 0),
-                Action::Destination {
-                    category,
-                    recipient,
-                    id,
-                    fallback,
-                } => {
-                    let id = id
-                        .map(|id| {
-                            id.iter()
-                                .map(|byte| format!("{byte:02x}"))
-                                .collect::<String>()
-                        })
-                        .unwrap_or_default();
-                    link.discovery_action(
-                        98,
-                        6,
-                        &[
-                            String::new(),
-                            String::new(),
-                            category.map_or(0, |category| category as u8).to_string(),
-                            u8::from(fallback).to_string(),
-                            (recipient as u8).to_string(),
-                            id,
-                        ],
-                        0,
-                    )
+        let dispatched =
+            if matches!(key, 4 | 5 | 7) || matches!(&action, Action::LootAll | Action::Select(_)) {
+                ui::click_action(&mut app, action)?;
+                true
+            } else {
+                let link = ui::link(&app)?;
+                match action {
+                    Action::Add {
+                        mode: filter,
+                        definition,
+                    } => link.discovery_action(98, 2, &[definition.to_string(), mode(filter)], 0),
+                    Action::Destination {
+                        category,
+                        recipient,
+                        id,
+                        fallback,
+                    } => {
+                        let id = id
+                            .map(|id| {
+                                id.iter()
+                                    .map(|byte| format!("{byte:02x}"))
+                                    .collect::<String>()
+                            })
+                            .unwrap_or_default();
+                        link.discovery_action(
+                            98,
+                            6,
+                            &[
+                                String::new(),
+                                String::new(),
+                                category.map_or(0, |category| category as u8).to_string(),
+                                u8::from(fallback).to_string(),
+                                (recipient as u8).to_string(),
+                                id,
+                            ],
+                            0,
+                        )
+                    }
+                    _ => return Err("unexpected I07 replay action".into()),
                 }
-                _ => return Err("unexpected I07 replay action".into()),
-            }
-        };
+            };
         assert!(dispatched, "I07 probe {key}");
         let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
             return Err("I07 client queued the wrong command".into());
         };
-        assert_eq!((command.capability, command.command_type), (98, 114));
+        let captured = std::fs::read(directory.join(format!("i07-{key}-request.bin")))?;
+        let wire = decode_quick_loot_request(&captured)
+            .map_err(|error| format!("I07 probe {key} invalid captured request: {error:?}"))?;
+        let command_type = wire.action.command_type();
+        let capability = if command_type == COMMAND_TYPE_QUICK_LOOT_DESTINATIONS {
+            CAPABILITY_QUICK_LOOT_DESTINATIONS_V1
+        } else {
+            CAPABILITY_QUICK_LOOT_V1
+        };
         assert_eq!(
-            command.payload,
-            std::fs::read(directory.join(format!("i07-{key}-request.bin")))?,
+            (command.capability, command.command_type),
+            (capability, command_type),
             "I07 probe {key}"
         );
+        assert_eq!(command.payload, captured, "I07 probe {key}");
         let link = ui::link(&app)?;
         let notices = || {
             let mailbox = crate::play::mailbox::lock(&link.mailbox);
@@ -902,7 +937,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         let before = notices();
         let before_panel = link.discovery_panel().loot;
         outbox.discovery_result(
-            98,
+            command.capability,
             &GatedCommandResult {
                 command_id: reply.command_id,
                 server_sequence: reply.server_sequence,
@@ -914,15 +949,15 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         assert_eq!(panel.pending, None);
         if matches!(key, 19 | 20) {
             assert_eq!(panel.destinations, before_panel.destinations);
-            assert_eq!(panel.filter_mode, before_panel.filter_mode, "I07 probe {key}");
+            assert_eq!(
+                panel.filter_mode, before_panel.filter_mode,
+                "I07 probe {key}"
+            );
             assert_eq!(panel.skipped, before_panel.skipped, "I07 probe {key}");
             assert_eq!(panel.accepted, before_panel.accepted, "I07 probe {key}");
             assert_eq!(panel.result, before_panel.result);
             assert_eq!(notices(), before);
-            assert_eq!(
-                panel.feedback,
-                "The server refused the request"
-            );
+            assert_eq!(panel.feedback, "The server refused the request");
             continue;
         }
         assert_eq!(panel.feedback, "Confirmed by the server");

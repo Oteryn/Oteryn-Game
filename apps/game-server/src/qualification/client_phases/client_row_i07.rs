@@ -1018,6 +1018,10 @@ pub(super) async fn journey(
         .await?;
     evidence("I07_INVALID_POUCH status=rejected");
     capture.probe(&mut fresh, 20, click, &[]).await?;
+    fresh.service_liveness(Duration::from_secs(2)).await?;
+    if matching_corpse_delta(&mut fresh, corpse_handle)?.is_some() {
+        return Err("I07 stale Click emitted a corpse view delta".into());
+    }
     require_placements(
         &mut database,
         Storage::Corpse,

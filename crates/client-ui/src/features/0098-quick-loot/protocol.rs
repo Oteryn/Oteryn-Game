@@ -77,7 +77,11 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
             id,
             fallback,
         } => {
-            wire.action = QuickLootAction::Assign;
+            wire.action = if panel.destinations_selected {
+                QuickLootAction::AssignLoot
+            } else {
+                QuickLootAction::Assign
+            };
             wire.category = *category;
             wire.recipient = Some(*recipient);
             wire.recipient_id = *id;
@@ -95,8 +99,12 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     panel.feedback = tr!("Waiting for the server").into();
     panel.item_feedback = None;
     Some(ServerMechanicCommand {
-        capability: 98,
-        command_type: 114,
+        capability: if wire.action == QuickLootAction::AssignLoot {
+            CAPABILITY_QUICK_LOOT_DESTINATIONS_V1
+        } else {
+            CAPABILITY_QUICK_LOOT_V1
+        },
+        command_type: wire.action.command_type(),
         payload,
     })
 }
@@ -193,5 +201,46 @@ fn refusal(response: &ServerMechanicResponse) -> Option<QuickLootRefusal> {
             decode_quick_loot_refusal(&response.payload).ok()
         }
         CommandStatus::Accepted | CommandStatus::DuplicateOutcomeExpired => None,
+    }
+}
+
+#[cfg(test)]
+mod destination_request_tests {
+    use super::*;
+
+    #[test]
+    fn destination_assignment_uses_the_negotiated_wire() -> Result<(), &'static str> {
+        for (destinations_selected, action, capability, command_type) in [
+            (false, QuickLootAction::Assign, 98, 114),
+            (true, QuickLootAction::AssignLoot, 607, 6376),
+        ] {
+            let mut panel = Panel {
+                selected: true,
+                destinations_selected,
+                ..Panel::default()
+            };
+            let category = Some(QuickLootCategory::Gold);
+            let recipient = QuickLootRecipient::MainContainer;
+            let command = request(
+                &mut panel,
+                Action::Destination {
+                    category,
+                    recipient,
+                    id: None,
+                    fallback: true,
+                },
+            )
+            .ok_or("destination request")?;
+            assert_eq!(
+                (command.capability, command.command_type),
+                (capability, command_type)
+            );
+            let wire = decode_quick_loot_request(&command.payload).map_err(|_| "wire")?;
+            assert_eq!(wire.action, action);
+            assert_eq!(wire.category, category);
+            assert_eq!(wire.recipient, Some(recipient));
+            assert!(wire.fallback_to_main);
+        }
+        Ok(())
     }
 }

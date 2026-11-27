@@ -19,6 +19,7 @@ pub struct Panel {
     /// Saved destinations, at most one per category.
     pub destinations: Vec<Action>,
     pub managed: bool,
+    pub destinations_selected: bool,
     pub filter_mode: Option<QuickLootFilterMode>,
     pub skipped: std::collections::BTreeSet<u32>,
     pub accepted: std::collections::BTreeSet<u32>,
