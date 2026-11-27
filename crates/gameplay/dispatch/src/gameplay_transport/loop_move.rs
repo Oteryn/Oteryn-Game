@@ -79,9 +79,6 @@ impl ItemLoopContent for NativeItemWeights<'_> {
                 | "oteryn:item.tibia.i8140"
                 | "oteryn:item.tibia.i8141"
                 | "oteryn:item.tibia.i8106"
-                | "oteryn:item.tibia.i3994"
-                | "oteryn:item.tibia.i3995"
-                | "oteryn:item.tibia.i3996"
         ) {
             return None;
         }
