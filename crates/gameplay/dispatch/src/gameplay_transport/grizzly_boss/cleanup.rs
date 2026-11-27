@@ -1,4 +1,7 @@
 use super::*;
+use crate::durability::{
+    DB_PASS_DEADLINE, DurabilityError, GameplayScalarReadError, SqlxFailureClass,
+};
 use crate::gameplay_transport::{AdmissionRetryBudget, connection::AdmissionRefusal};
 use crate::monster_owner_cycle::respawn_job::RespawnExit;
 
@@ -180,15 +183,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return true;
         }
-        let budget = AdmissionRetryBudget::for_command(self.root);
-        match budget
-            .retry_command_guard(async || {
-                self.root
-                    .grizzly_boss_entry_exists_for_session(session, budget.deadline)
-                    .await
-            })
-            .await
-        {
+        let budget = AdmissionRetryBudget::for_foreground_root(&session, self.root)
+            .unwrap_or_else(|_| AdmissionRetryBudget::for_root(&session, self.root));
+        match self.probe_grizzly_session(session, &budget).await {
             Ok(false) => return self.remember_grizzly_session(session),
             Ok(true) => {}
             Err(error) => {
@@ -209,7 +206,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|error| match error {
                         CharacterProgressionError::Unavailable(
-                            crate::durability::DurabilityError::RootUnavailable,
+                            DurabilityError::RootUnavailable
+                            | DurabilityError::RootPassDeadlineExceeded,
                         ) => AdmissionRefusal::Unavailable,
                         _ => AdmissionRefusal::Rejected,
                     })
@@ -267,6 +265,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         self.remember_grizzly_session(session)
+    }
+
+    async fn probe_grizzly_session(
+        &self,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> Result<bool, GameplayScalarReadError> {
+        loop {
+            // One cold acquisition or stalled query must leave time for another
+            // attempt within the same foreground recovery window.
+            let deadline = (tokio::time::Instant::now() + DB_PASS_DEADLINE).min(budget.deadline);
+            let result = self
+                .root
+                .grizzly_boss_entry_exists_for_session(session, deadline)
+                .await;
+            if !matches!(
+                &result,
+                Err(GameplayScalarReadError::PoolDeadlineExceeded { .. }
+                    | GameplayScalarReadError::QueryDeadlineExceeded
+                    | GameplayScalarReadError::Durability(
+                        DurabilityError::RootUnavailable
+                            | DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+                    ))
+            ) || !budget
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
+            {
+                return result;
+            }
+        }
     }
 
     fn remember_grizzly_session(&self, session: GameSessionId) -> bool {

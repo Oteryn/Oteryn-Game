@@ -43,6 +43,7 @@ const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
 // The separately configured CHAT-2B relay can open up to four chat connections.
 const ROOT_HOLDER_CONNECTIONS: u32 = 1;
 const RETAINED_RECEIPT_PUBLISHER_CONNECTIONS: u32 = 1;
+
 /// How often maintenance looks again for a checked-out holder's return (NBHOG-2); a pass that
 /// drops its holder without a semantic-pass guard sends no return notification.
 const HOLDER_RETURN_POLL: Duration = Duration::from_millis(10);
@@ -60,6 +61,27 @@ type HolderOwner = Option<(
 
 /// A source location that took or asked for the holder.
 type Site = &'static std::panic::Location<'static>;
+
+/// A bounded read identifies the phase that expired.
+#[derive(Debug)]
+pub enum GameplayScalarReadError {
+    PoolDeadlineExceeded {
+        /// Preserve the error classification used by callers of the original scalar API.
+        legacy: DurabilityError,
+    },
+    QueryDeadlineExceeded,
+    Durability(DurabilityError),
+}
+
+impl From<GameplayScalarReadError> for DurabilityError {
+    fn from(error: GameplayScalarReadError) -> Self {
+        match error {
+            GameplayScalarReadError::PoolDeadlineExceeded { legacy } => legacy,
+            GameplayScalarReadError::QueryDeadlineExceeded => Self::RootPassDeadlineExceeded,
+            GameplayScalarReadError::Durability(error) => error,
+        }
+    }
+}
 
 tokio::task_local! {
     /// The connection trace of the task issuing semantic passes, when a connection set one
@@ -1625,17 +1647,37 @@ impl DurabilityRoot {
     where
         T: Send + Unpin + for<'r> sqlx::Decode<'r, Postgres> + sqlx::Type<Postgres>,
     {
-        let pool = self.retained_receipt_publisher_pool()?;
+        self.read_gameplay_scalar_with_deadline_kinds(query, deadline)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub(super) async fn read_gameplay_scalar_with_deadline_kinds<T>(
+        &self,
+        query: sqlx::query::QueryScalar<'_, Postgres, T, sqlx::postgres::PgArguments>,
+        deadline: tokio::time::Instant,
+    ) -> Result<T, GameplayScalarReadError>
+    where
+        T: Send + Unpin + for<'r> sqlx::Decode<'r, Postgres> + sqlx::Type<Postgres>,
+    {
+        use GameplayScalarReadError as Error;
+        let pool = self.retained_receipt_publisher_pool().map_err(Error::Durability)?;
         let mut connection = tokio::time::timeout_at(deadline, pool.acquire())
             .await
-            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+            .map_err(|_| Error::PoolDeadlineExceeded {
+                legacy: DurabilityError::RootPassDeadlineExceeded,
+            })?
+            .map_err(|error| match error {
+                sqlx::Error::PoolTimedOut => Error::PoolDeadlineExceeded { legacy: error.into() },
+                _ => Error::Durability(error.into()),
+            })?;
         match tokio::time::timeout_at(deadline, query.fetch_one(&mut *connection))
         .await
         {
-            Ok(result) => result.map_err(Into::into),
+            Ok(result) => result.map_err(|error| Error::Durability(error.into())),
             Err(_) => {
                 connection.close_on_drop();
-                Err(DurabilityError::RootPassDeadlineExceeded)
+                Err(Error::QueryDeadlineExceeded)
             }
         }
     }

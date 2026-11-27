@@ -2,7 +2,7 @@
 //! Prices: data/scripts/lib/task_board_shop.lua:33-248.
 //! Delivery ranges: https://tibia.fandom.com/wiki/Delivery_Task (archive 2026-09-04).
 //! The portable grappling hook 35588 is the approved replacement for 5800 (PR #2764).
-//! Items 821 and 3509 retain their authored fixed amounts pending Global ranges.
+//! Item 821 retains its authored fixed amount pending a Global range.
 use std::ops::RangeInclusive;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -307,7 +307,7 @@ pub const DELIVERY_ITEMS: &[WeeklyDeliveryItem] = &[
     WeeklyDeliveryItem::new(3415, 50, 100),
     WeeklyDeliveryItem::new(3421, 25, 50),
     WeeklyDeliveryItem::new(3429, 10, 20),
-    WeeklyDeliveryItem::new(3509, 50, 50),
+    WeeklyDeliveryItem::new(28568, 250, 500),
     WeeklyDeliveryItem::new(3557, 100, 200),
     WeeklyDeliveryItem::new(3575, 10, 20),
     WeeklyDeliveryItem::new(5479, 10, 20),
@@ -650,6 +650,7 @@ pub const DELIVERY_ITEMS: &[WeeklyDeliveryItem] = &[
     WeeklyDeliveryItem::new(43731, 50, 100),
     WeeklyDeliveryItem::new(43732, 10, 20),
     WeeklyDeliveryItem::new(43734, 10, 20),
+    WeeklyDeliveryItem::new(43859, 5, 10),
     WeeklyDeliveryItem::new(43846, 10, 20),
     WeeklyDeliveryItem::new(43848, 10, 20),
     WeeklyDeliveryItem::new(43849, 25, 50),
