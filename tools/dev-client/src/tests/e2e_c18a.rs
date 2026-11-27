@@ -8,7 +8,7 @@ use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent, SpellTarget};
 use oteryn_protocol_oteryn::attack::{self, ActorCombatState, FightModes};
 use oteryn_protocol_oteryn::{
     DomainSnapshot, ServerAcceptedValue, encode_command_result, encode_server_accepted,
-    encode_single_chunk_snapshot,
+    encode_single_chunk_snapshot, world_clock,
 };
 use oteryn_session::{Admission, CharacterId, CommandStatus, Session, read_frame, write_frame};
 use std::num::NonZeroU32;
@@ -33,6 +33,7 @@ struct LiveExchange {
     preceding_sequence: u64,
     vitals_before: Vec<u8>,
     vitals_revision: u64,
+    clock_before: Option<(u64, Vec<u8>)>,
     charged: actor_spell::ActorVitals,
 }
 
@@ -96,6 +97,11 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                 .build()?
                 .block_on(async move {
                     let charged = live.as_ref().map(|live| live.charged);
+                    let selected: &[u32] = if live.as_ref().is_some_and(|live| live.clock_before.is_some()) {
+                        &[6, 17, world_clock::CAPABILITY_WORLD_LIGHT_V1]
+                    } else {
+                        &[6, 17]
+                    };
                     let (generation, command_id, sequence, session_id) = if let Some(live) = &live {
                         let frame = read_frame(&mut live.inbound.as_slice()).await?;
                         let generation = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.connection_generation();
@@ -116,7 +122,7 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                                 current_server_sequence: sequence - 1,
                                 next_command_id: command_id,
                                 schema_revision: 1,
-                                selected_capabilities: &[6, 17],
+                                selected_capabilities: selected,
                             })?,
                         )
                         .await?;
@@ -155,6 +161,14 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                                 snapshot_type: actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
                                 payload: &live.vitals_before,
                             });
+                            if let Some((revision, payload)) = &live.clock_before {
+                                domains.push(DomainSnapshot {
+                                    domain_id: world_clock::STATE_DOMAIN_WORLD_CLOCK,
+                                    revision: *revision,
+                                    snapshot_type: world_clock::SNAPSHOT_TYPE_WORLD_CLOCK_V1,
+                                    payload,
+                                });
+                            }
                         }
                         for frame in encode_single_chunk_snapshot(generation, 1, sequence, &domains)? {
                             write_frame(&mut peer, &frame).await?;
@@ -200,7 +214,7 @@ fn replay_through_session(fixture: Fixture) -> Result<(), Error> {
                             character_id: CharacterId::decode(&id(4))?,
                             admission_material: b"grant",
                             client_build_id: "c18a-replay",
-                            supported_capabilities: &[6, 17],
+                            supported_capabilities: selected,
                             deadline: Duration::from_secs(5),
                         },
                     )
@@ -266,6 +280,7 @@ struct Proof {
     soul_before: u32,
     soul_after: u32,
     soul_relog: u32,
+    clock_before: Option<(u64, Vec<u8>)>,
     combat_before: Vec<u8>,
     clear_sequence: u64,
     cleared_combat: Vec<u8>,
@@ -408,6 +423,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
             preceding_sequence: proof.pre_cast_sequence,
             vitals_before: proof.vitals_before,
             vitals_revision,
+            clock_before: proof.clock_before,
             charged,
         }),
     })?;
@@ -724,6 +740,13 @@ fn cast_exchange_revision(
 
 #[test]
 fn successful_aimed_exchange_runs_the_admitted_client() -> Result<(), Error> {
+    for with_clock in [false, true] {
+        replay_successful_aimed_exchange(with_clock)?;
+    }
+    Ok(())
+}
+
+fn replay_successful_aimed_exchange(with_clock: bool) -> Result<(), Error> {
     use oteryn_protocol_oteryn::encode_state_delta;
     let mut fixture = fixture()?;
     fixture.expected = oteryn_session::SpellCastDisposition::Cast;
@@ -740,22 +763,57 @@ fn successful_aimed_exchange_runs_the_admitted_client() -> Result<(), Error> {
     };
     let charged = actor_spell::ActorVitals { mana: 47, ..before };
     let result = actor_spell::encode_spell_cast_result(fixture.expected);
-    let mut inbound = Vec::new();
-    for frame in [
-        encode_command_result(1, 41, command_id, CommandStatus::Accepted, &result)?,
-        encode_state_delta(
+    let clock = world_clock::WorldClock {
+        tibian_minute: 1110,
+        light_level: 117,
+        light_color: 215,
+    };
+    let mut frames = Vec::new();
+    if with_clock {
+        frames.push(encode_state_delta(
             1,
-            42,
-            actor_spell::STATE_DOMAIN_ACTOR_VITALS,
-            3,
-            4,
-            actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
-            &actor_spell::encode_actor_vitals(&charged).map_err(|e| format!("{e:?}"))?,
-        )?,
-    ] {
+            41,
+            world_clock::STATE_DOMAIN_WORLD_CLOCK,
+            8,
+            9,
+            world_clock::DELTA_TYPE_WORLD_CLOCK_V1,
+            &world_clock::encode_world_clock(world_clock::WorldClock {
+                tibian_minute: 1111,
+                ..clock
+            })
+            .map_err(|error| format!("{error:?}"))?,
+        )?);
+    }
+    let reply_sequence = preceding_sequence + 1 + u64::from(with_clock);
+    frames.push(encode_command_result(
+        1,
+        reply_sequence,
+        command_id,
+        CommandStatus::Accepted,
+        &result,
+    )?);
+    frames.push(encode_state_delta(
+        1,
+        reply_sequence + 1,
+        actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+        3,
+        4,
+        actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+        &actor_spell::encode_actor_vitals(&charged).map_err(|e| format!("{e:?}"))?,
+    )?);
+    let mut inbound = Vec::new();
+    for frame in frames {
         inbound.extend(u32::try_from(frame.len())?.to_be_bytes());
         inbound.extend(frame);
     }
+    let clock_before = if with_clock {
+        Some((
+            8,
+            world_clock::encode_world_clock(clock).map_err(|error| format!("{error:?}"))?,
+        ))
+    } else {
+        None
+    };
     fixture.live = Some(LiveExchange {
         inbound,
         intent: actor_spell::encode_spell_cast_intent(&SpellCastIntent {
@@ -768,6 +826,7 @@ fn successful_aimed_exchange_runs_the_admitted_client() -> Result<(), Error> {
         preceding_sequence,
         vitals_before: actor_spell::encode_actor_vitals(&before).map_err(|e| format!("{e:?}"))?,
         vitals_revision: 3,
+        clock_before,
         charged,
     });
     replay_through_session(fixture)

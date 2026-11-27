@@ -8,7 +8,7 @@ use oteryn_dev_client::client_runtime::spell::SpellFeedback;
 use oteryn_dev_client::{EntityDetail, SessionEvent};
 use oteryn_protocol_oteryn::{
     actor_spell::{self, SpellCastDisposition},
-    item_view as items, presentation, target_move,
+    item_view as items, presentation, target_move, world_clock,
 };
 
 const SCORCH_MANA: u32 = 8;
@@ -184,7 +184,18 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if tile(client.world_spatial().actor_position)? != TOWN {
         return Err("C18a expected the initial town tile".into());
     }
-    walk_once(&mut client, world, &spawn_cells, CAST_TILE).await?;
+    let mut clock_before = client
+        .session_mut()
+        .gated_snapshot(world_clock::STATE_DOMAIN_WORLD_CLOCK)
+        .map(|snapshot| (snapshot.revision, snapshot.payload.clone()));
+    walk_once(
+        &mut client,
+        world,
+        &spawn_cells,
+        CAST_TILE,
+        clock_before.as_mut(),
+    )
+    .await?;
     let here = client.world_spatial().actor_position;
     let rat = {
         let mut rats = client
@@ -276,7 +287,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if combat_before.target != Some(target) || combat_before.modes != initial_combat.modes {
         return Err("C18a did not retain the exact selected Rat while facing away".into());
     }
-    client.take_events();
+    collect_events(&mut client, None, clock_before.as_mut())?;
     let pre_cast_sequence = client.last_server_sequence();
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
     let mut feedback = SpellFeedback::default();
@@ -420,7 +431,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             return Err("C18a target clear did not remove the selected Rat".into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
-        collect_vitals(&mut client, Some(&mut regeneration));
+        collect_events(&mut client, Some(&mut regeneration), None)?;
     }
 
     let cleared_combat = *client
@@ -453,7 +464,15 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             destination(world, from, direction).filter(|&at| !is_logout_rest_tile(world, at))
         })
         .ok_or("C18a fixed retreat crosses a protection tile")?;
-    walk_path(&mut client, world, retreat, rest, Some(&mut regeneration)).await?;
+    walk_path(
+        &mut client,
+        world,
+        retreat,
+        rest,
+        Some(&mut regeneration),
+        None,
+    )
+    .await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
         let state = client
@@ -470,7 +489,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
         client.service_liveness(Duration::from_millis(200)).await?;
-        collect_vitals(&mut client, Some(&mut regeneration));
+        collect_events(&mut client, Some(&mut regeneration), None)?;
         verdict::Harness::global().progress("wait-for-combat-lock");
     }
     let before_conjure = *client
@@ -558,7 +577,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         "SEAM_EVIDENCE c18a_mana before={} pre_cast_sequence={pre_cast_sequence} cast_sequence={result_server_sequence} charge={} vitals_sequence={vitals_sequence} logout={} logout_sequence={logout_sequence} relog={}",
         before.mana, after.mana, logout_vitals.mana, fresh_vitals.mana
     ));
-    walk_once(&mut fresh, world, &spawn_cells, CAST_TILE).await?;
+    walk_once(&mut fresh, world, &spawn_cells, CAST_TILE, None).await?;
     let relogged = fresh
         .world_entities()
         .and_then(|entities| entities.get(&target))
@@ -641,6 +660,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             "soul_relog": fresh_vitals.soul,
             "clear_sequence": clear.result_server_sequence,
             "cleared_combat": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&cleared_combat).map_err(|error| format!("{error:?}"))?,
+            "clock_before": clock_before,
             "combat_before": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&combat_before).map_err(|error| format!("{error:?}"))?,
             "combat_after": oteryn_protocol_oteryn::attack::encode_actor_combat_state(&combat_after).map_err(|error| format!("{error:?}"))?,
             "relog_session_id": uuid_text(fresh.join_snapshot().game_session_id.as_bytes()),
@@ -692,6 +712,7 @@ async fn walk_once(
     world: &BundleWorld,
     spawn_cells: &std::collections::BTreeSet<TilePos>,
     goal: TilePos,
+    clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
     // Plan once from the pinned map. Spawn cells are occupied by design.
@@ -702,7 +723,7 @@ async fn walk_once(
         |at| !spawn_cells.contains(&at),
     )
     .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}"))?;
-    walk_path(client, world, &path, goal, None).await
+    walk_path(client, world, &path, goal, None, clock).await
 }
 
 async fn walk_path(
@@ -711,13 +732,14 @@ async fn walk_path(
     path: &[StepDirection],
     goal: TilePos,
     mut vitals: Option<&mut Vec<(u64, u32, u32)>>,
+    mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, from, direction).ok_or("C18a route lost its planned landing")?;
         if expected == CAST_TILE {
-            wait_for_cast_tile(client, vitals.as_deref_mut()).await?;
+            wait_for_cast_tile(client, vitals.as_deref_mut(), clock.as_deref_mut()).await?;
         }
         let outcome = client.step(direction).await?;
         require_mechanic_acceptance(outcome.status, "C18a first step attempt")?;
@@ -736,14 +758,14 @@ async fn walk_path(
             return Err(format!("C18a first step failed: from={from:?} direction={direction:?} expected={expected:?} actual={actual:?} outcome={outcome:?} observed_destination_occupants={occupants:?}").into());
         }
         verdict::Harness::global().progress("walk");
-        collect_vitals(client, vitals.as_deref_mut());
+        collect_events(client, vitals.as_deref_mut(), clock.as_deref_mut())?;
         if outcome.step_wait_ms != 0 {
             client
                 .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
                 .await?;
         }
     }
-    collect_vitals(client, vitals);
+    collect_events(client, vitals, clock)?;
     if tile(client.world_spatial().actor_position)? != goal {
         return Err("C18a fixed route did not reach its goal".into());
     }
@@ -809,24 +831,37 @@ async fn first_cast_vitals(mut inbound: &[u8]) -> TestResult<(u64, Vec<u8>)> {
     Err("C18a first cast stats frame absent".into())
 }
 
-fn collect_vitals(
+fn collect_events(
     client: &mut oteryn_dev_client::DevClientSession,
-    history: Option<&mut Vec<(u64, u32, u32)>>,
-) {
-    let events = client.take_events();
-    if let Some(history) = history {
-        history.extend(events.into_iter().filter_map(|event| match event {
+    mut history: Option<&mut Vec<(u64, u32, u32)>>,
+    mut clock: Option<&mut (u64, Vec<u8>)>,
+) -> TestResult {
+    for event in client.take_events() {
+        match event {
             SessionEvent::ActorVitals(delta) => {
-                Some((delta.server_sequence, delta.value.mana, delta.value.soul))
+                if let Some(history) = history.as_deref_mut() {
+                    history.push((delta.server_sequence, delta.value.mana, delta.value.soul));
+                }
             }
-            _ => None,
-        }));
+            SessionEvent::WorldClock(delta) => {
+                if let Some(clock) = clock.as_deref_mut() {
+                    *clock = (
+                        delta.new_revision,
+                        world_clock::encode_world_clock(delta.value)
+                            .map_err(|error| format!("C18a invalid applied clock: {error:?}"))?,
+                    );
+                }
+            }
+            _ => {}
+        }
     }
+    Ok(())
 }
 
 async fn wait_for_cast_tile(
     client: &mut oteryn_dev_client::DevClientSession,
     mut vitals: Option<&mut Vec<(u64, u32, u32)>>,
+    mut clock: Option<&mut (u64, Vec<u8>)>,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     loop {
@@ -850,7 +885,7 @@ async fn wait_for_cast_tile(
             );
         }
         client.service_liveness(Duration::from_millis(50)).await?;
-        collect_vitals(client, vitals.as_deref_mut());
+        collect_events(client, vitals.as_deref_mut(), clock.as_deref_mut())?;
     }
 }
 
