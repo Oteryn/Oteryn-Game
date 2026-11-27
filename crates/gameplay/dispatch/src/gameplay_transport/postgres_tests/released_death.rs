@@ -11,6 +11,15 @@ fn grace_expiry_after_released_death_reaches_terminal_release() -> TestResult {
 }
 
 #[test]
+fn fixture_terminal_release_retries_checkout_in_place_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(Case::BusyRelease)
+}
+
+#[test]
 fn settle_released_death_true_for_already_durable_death() -> TestResult {
     scenario(Case::AlreadyDurable)
 }
@@ -23,6 +32,7 @@ fn familiar_logout_save_returns_fenced_out_on_respawn_pending() -> TestResult {
 #[derive(Clone, Copy)]
 enum Case {
     Release,
+    BusyRelease,
     AlreadyDurable,
     Familiar,
 }
@@ -152,12 +162,26 @@ fn scenario(case: Case) -> TestResult {
             GameSessionState::Reconnectable
         );
         match case {
-            Case::Release => {
-                let released = tokio::time::timeout(
-                    Duration::from_secs(10),
-                    owner.release_after_grace(admitted),
-                )
-                .await;
+            Case::Release | Case::BusyRelease => {
+                let release = owner.release_after_grace(admitted);
+                let released = tokio::time::timeout(Duration::from_secs(10), async {
+                    if matches!(case, Case::BusyRelease) {
+                        use crate::gameplay_transport::composed_admission::GRACE_RELEASE_CHECKOUT;
+                        let probe = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+                        let hold = async {
+                            probe.0.notified().await;
+                            let held = h.root.try_issue_semantic_pass()?;
+                            probe.1.notify_one();
+                            tokio::time::sleep(Duration::from_millis(200)).await;
+                            held.run(|_, _| Box::pin(async { Ok(()) })).await
+                        };
+                        let (outcome, held) = tokio::join!(GRACE_RELEASE_CHECKOUT.scope(probe.clone(), release), hold);
+                        held.expect("return competing semantic holder");
+                        outcome
+                    } else {
+                        release.await
+                    }
+                }).await;
                 assert_eq!(
                     released,
                     Ok(GraceExpiryResult::Released),
@@ -291,7 +315,7 @@ fn scenario(case: Case) -> TestResult {
                             );
                         }
                     }
-                    Case::Release => return Err("unexpected release case".into()),
+                    Case::Release | Case::BusyRelease => return Err("unexpected release case".into()),
                 }
                 owner.states.fence_holders.release(&mut hold);
             }
