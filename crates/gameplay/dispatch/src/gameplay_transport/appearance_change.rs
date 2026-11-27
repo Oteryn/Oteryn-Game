@@ -398,6 +398,7 @@ macro_rules! authority_methods {
     () => {
         fn mount(&self, _actor: crate::foundation::ExactActorRef, _command: $crate::gameplay_transport::connection::UseCommand, _riding: bool) -> impl std::future::Future<Output=Option<bool>> { async { Some(false) } }
         fn appearance_available(&self) -> bool { false }
+        fn appearance_fallback_catalogue(&self) -> Option<oteryn_protocol_oteryn::appearance::Catalogue> { None }
         fn appearance_observation(&self, _actor: crate::foundation::ExactActorRef, _session: crate::foundation::GameSessionId, _entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { async { None } }
         fn appearance_observation_projected(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, _empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { self.appearance_observation(actor, session, entities) }
         fn appearance_observation_projected_result(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Result<$crate::gameplay_transport::appearance_change::observation::Observation, $crate::gameplay_transport::appearance_change::observation::ObservationError>> { async move { self.appearance_observation_projected(actor, session, empty_outfit, entities).await.ok_or($crate::gameplay_transport::appearance_change::observation::ObservationError::Unavailable) } }
@@ -418,6 +419,17 @@ macro_rules! composed_methods {
         }
         fn appearance_available(&self) -> bool {
             self.appearance_context().is_some()
+        }
+        fn appearance_fallback_catalogue(&self) -> Option<oteryn_protocol_oteryn::appearance::Catalogue> {
+            let (context, content) = self.appearance_context()?;
+            Some(oteryn_protocol_oteryn::appearance::Catalogue {
+                context,
+                root_revision: 1,
+                selected: None,
+                palette: content.palette().to_vec(),
+                outfits: Vec::new(),
+                mounts: Vec::new(),
+            })
         }
         async fn appearance_observation(
             &self,

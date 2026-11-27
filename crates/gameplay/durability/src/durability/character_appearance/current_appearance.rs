@@ -102,11 +102,22 @@ impl DurabilityRoot {
             AppearanceWriteError::Fence(CharacterProgressionError::AuthorityRejected)
         })?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+        let pass = match scope {
+            ReadScope::Channel { gallery: false } => self.try_issue_semantic_pass_by(
+                std::time::Instant::now() + std::time::Duration::from_secs(1),
+            )?,
+            _ => self.try_issue_semantic_pass()?,
+        };
+        pass.run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = match scope {
-                        ReadScope::Channel { .. } => super::super::db::begin_observation_transaction(holder, deadline).await?,
+                        ReadScope::Channel { gallery } => {
+                            let mut tx = super::super::db::begin_observation_transaction(holder, deadline).await?;
+                            if !gallery {
+                                super::super::db::bound_periodic_lock_wait(&mut tx).await?;
+                            }
+                            tx
+                        }
                         ReadScope::House { .. } => super::super::db::begin_locking_observation_transaction(holder, deadline).await?,
                     };
                     super::super::character_authority::observe_recovery_fence(&mut tx, &recovery).await?;

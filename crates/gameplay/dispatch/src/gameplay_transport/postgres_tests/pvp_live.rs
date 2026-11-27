@@ -31,6 +31,14 @@ fn pvp_expert_wire_modes_reach_melee_and_spell_checker() -> TestResult {
     super::item_look_fixtures::large_stack(|| scenario(7))
 }
 #[test]
+fn expert_fight_modes_waits_for_holder_through_live_command_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("expert-modes-holder", || scenario(16))
+}
+#[test]
 fn pvp_expert_hardcore_locks_red_fist() -> TestResult {
     super::item_look_fixtures::large_stack(|| scenario(8))
 }
