@@ -1692,6 +1692,47 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// Retry a known checkout miss with the identity of the competing holder.
+    async fn retry_logged_holder<T, E>(
+        &self,
+        purpose: &'static str,
+        mut step: impl AsyncFnMut() -> Result<T, E>,
+        busy: impl Fn(&E) -> bool,
+    ) -> Result<T, E> {
+        let mut wait = None;
+        let result = self
+            .retry_holder(
+                async || {
+                    let result = step().await;
+                    if result.as_ref().is_err_and(&busy) && wait.is_none() {
+                        wait = Some((
+                            tokio::time::Instant::now(),
+                            self.root
+                                .and_then(DurabilityRoot::checked_out_semantic_pass),
+                        ));
+                    }
+                    result
+                },
+                &busy,
+            )
+            .await;
+        if let Some((started, observed)) = wait {
+            let (owner, held_ms) = observed.map_or(("none".to_owned(), 0), |(site, held)| {
+                (site.to_string(), held.as_millis())
+            });
+            let waited_ms = started.elapsed().as_millis();
+            let outcome = if result.as_ref().is_err_and(&busy) {
+                "holder_busy"
+            } else {
+                "retry_finished"
+            };
+            operator_event(&format!(
+                "event=session_holder_wait purpose={purpose} owner={owner} held_ms={held_ms} waited_ms={waited_ms} outcome={outcome}"
+            ));
+        }
+        result
+    }
+
     /// Retry only transient pre-dispatch holder failures, retaining the exact
     /// failure when this command's fixed foreground budget is exhausted.
     async fn retry_command_guard<T>(

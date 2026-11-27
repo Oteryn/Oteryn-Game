@@ -15,6 +15,7 @@ struct DepartingPeer<'o, 'a, 'f, 's> {
     session: GameSessionId,
     armed: Cell<bool>,
     skipped: Cell<bool>,
+    busy_at_join: Cell<bool>,
 }
 impl FreshAdmissionAuthority for DepartingPeer<'_, '_, '_, '_> {
     async fn observe_character_inventory(
@@ -42,6 +43,9 @@ impl FreshAdmissionAuthority for DepartingPeer<'_, '_, '_, '_> {
     ) -> Option<crate::gameplay_transport::world_spatial::ChannelEntities> {
         self.owner.observe_visible_entities(actor).await
     }
+    fn appearance_fallback_catalogue(&self) -> Option<appearance::Catalogue> {
+        self.owner.appearance_fallback_catalogue()
+    }
     async fn appearance_observation_projected(
         &self,
         actor: ExactActorRef,
@@ -49,9 +53,17 @@ impl FreshAdmissionAuthority for DepartingPeer<'_, '_, '_, '_> {
         empty: bool,
         entities: Vec<appearance::EntityRef>,
     ) -> Option<Observation> {
-        self.owner
-            .appearance_observation_projected(actor, session, empty, entities)
-            .await
+        let held = if self.busy_at_join.replace(false) {
+            Some(self.owner.root.try_issue_semantic_pass().expect("fixture holder"))
+        } else {
+            None
+        };
+        let observed = self.owner.appearance_observation_projected(actor, session, empty, entities).await;
+        if let Some(held) = held {
+            assert!(observed.is_none(), "held past the advisory budget");
+            held.run(|_, _| Box::pin(async { Ok(()) })).await.expect("return fixture holder");
+        }
+        observed
     }
     async fn appearance_observation_projected_result(
         &self,
@@ -97,11 +109,21 @@ fn appearance_census_departure_race_keeps_live_connection_postgres() -> TestResu
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::item_look_fixtures::large_stack(scenario)
+    super::item_look_fixtures::large_stack(|| scenario(false))
 }
-fn scenario() -> TestResult {
+
+#[test]
+fn appearance_join_degrades_on_holder_deadline_and_recovers_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("appearance-join-deadline", || scenario(true))
+}
+
+fn scenario(busy_at_join: bool) -> TestResult {
     use super::appearance_change_postgres_fixtures::observer_visibility_tests;
-    run(async |admin| {
+    run(async move |admin| {
         let harness = Harness::create_appearance(admin, "appearance_census_departure").await?;
         prepare_current_session(&harness).await?;
         harness.seed_appearance_observer().await?;
@@ -191,6 +213,7 @@ fn scenario() -> TestResult {
             session: dependencies.admitted.game_session_id,
             armed: Cell::new(false),
             skipped: Cell::new(false),
+            busy_at_join: Cell::new(busy_at_join),
         };
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         tokio::time::timeout(Duration::from_secs(10), async {
@@ -201,6 +224,17 @@ fn scenario() -> TestResult {
                 value = read_appearance_snapshot(&mut client) => value?,
             };
             assert_eq!(initial.bindings.len(), 2);
+            if busy_at_join {
+                assert!(initial.bindings.iter().all(|b| b.look == appearance::Look::EmptyOutfit));
+                assert!(initial.catalogue.outfits.is_empty());
+                let recovered = tokio::select! {
+                    end = &mut serving => return Err(format!("degraded join ended: {end:?}").into()),
+                    value = read_appearance_mappings(&mut client) => value?,
+                };
+                assert_eq!(recovered.upserts.len(), 2);
+                assert!(recovered.upserts.iter().all(|b| matches!(b.look, appearance::Look::Outfit { .. })));
+                return Ok(());
+            }
             projection.armed.set(true);
             let forgotten = tokio::select! {
                 end = &mut serving => return Err(format!("census departure disconnected observer: {end:?}").into()),

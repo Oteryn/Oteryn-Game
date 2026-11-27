@@ -105,7 +105,7 @@ impl fmt::Display for EvidenceUnavailable {
 }
 
 /// A fixed log token for a durability failure.
-const fn durability_cause(error: &DurabilityError) -> &'static str {
+pub(super) const fn durability_cause(error: &DurabilityError) -> &'static str {
     match error {
         DurabilityError::AdmissionGameSessionLedgerExhausted => "ledger_exhausted",
         DurabilityError::SessionUseAuthorization(_) => "session_use_authorization",
