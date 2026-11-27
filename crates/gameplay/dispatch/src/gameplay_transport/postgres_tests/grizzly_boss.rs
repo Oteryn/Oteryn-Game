@@ -17,7 +17,8 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, SessionContinuity,
+    serve_admitted,
 };
 use crate::gameplay_transport::last_position::AdmissionPosition;
 
@@ -58,7 +59,6 @@ fn grizzly_input_probe_deadline_reports_join_unavailable() -> TestResult {
 }
 
 fn blocked_probe() -> TestResult {
-    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use oteryn_protocol_oteryn::{FoundationProtocolError, MessageType, decode_wire_envelope};
     use std::time::Duration;
 
@@ -113,6 +113,7 @@ fn blocked_probe() -> TestResult {
             FoundationProtocolError::SessionJoinUnavailable.code()
         );
         blocker.rollback().await?;
+        eprintln!("POSTGRES_EXECUTED grizzly_input_probe_deadline_reports_join_unavailable");
         drop(owner);
         drop(authority);
         drop(seal);
@@ -430,14 +431,17 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
                     )
                     .map_err(debug)?;
             }
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = Some(current.item_fence());
+            // The rebuilt owner has a fresh ingress stream, while the retained
+            // visit and its original deadline still belong to this character.
+            admitted.continuity = SessionContinuity::FRESH;
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
             assert!(owner.track_restored(admitted.game_session_id, deps.actor, &decided, current));
             assert_position(&owner, deps.actor, local(boss.player_position)).await?;
-            admitted.runtime_actor = Some(deps.actor);
-            admitted.item_fence = Some(current.item_fence());
-            resume_after_probe_deadline(&owner, &h, &mut admitted).await?;
+            resume_after_probe_deadline(&owner, &h, admitted).await?;
             assert_position(&owner, deps.actor, origin).await?;
             assert!(owner.reconcile_grizzly_boss(admitted.game_session_id).await);
             assert!(
@@ -489,15 +493,31 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
 async fn resume_after_probe_deadline(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
-    admitted: &mut AdmittedSession,
+    admitted: AdmittedSession,
 ) -> TestResult {
+    use oteryn_protocol_oteryn::{MessageType, decode_wire_envelope};
+    use std::time::Duration;
+
     let mut blocker = h.pool.begin().await?;
     sqlx::query("LOCK TABLE game_character_grizzly_boss_entries IN ACCESS EXCLUSIVE MODE")
         .execute(&mut *blocker)
         .await?;
-    let resume = async {
-        let _ = owner.prepare_quest_callback_resume(admitted).await;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let resume = async move {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)), "{end:?}");
         Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let read_join = async move {
+        loop {
+            let frame = super::item_look_fixtures::read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            match envelope.message_type() {
+                MessageType::SnapshotCommit => return Ok(()),
+                MessageType::ProtocolError => return Err("Grizzly recovery refused the join".into()),
+                _ => {}
+            }
+        }
     };
     let release_after_retry = async {
         let first = waiting_grizzly_probe(&h.pool, 0).await?;
@@ -507,7 +527,10 @@ async fn resume_after_probe_deadline(
         blocker.rollback().await?;
         Ok::<(), Box<dyn std::error::Error>>(())
     };
-    tokio::try_join!(resume, release_after_retry)?;
+    tokio::time::timeout(Duration::from_secs(15), async {
+        tokio::try_join!(resume, release_after_retry, read_join)
+    })
+    .await??;
     Ok(())
 }
 
