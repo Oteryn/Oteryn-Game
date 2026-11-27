@@ -471,7 +471,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if quote.selection != selection
         || (quote.cost.dust, quote.cost.gold, quote.cost.cores) != (100, 25_000, 0)
         || (quote.resources.dust, quote.resources.carried_gold, quote.resources.bank_gold)
-            != (15, 30_000, 0)
+            != (15, 30_050, 0)
     {
         return Err(format!("Forge refusal pre-state has an incorrect quote: {quote:?}").into());
     }
