@@ -12,6 +12,49 @@ use std::num::NonZeroU32;
 const RESET_NOTICE: &str = "Your spells are no longer on cooldown.";
 const GIFT_INPUT_MICROS: i64 = 3_600_000_000;
 
+async fn platform_premium_evidence(
+    scope: &SeamClients<'_>,
+    client: &mut DevClientSession,
+    previous: Option<(&str, i64)>,
+) -> TestResult<(String, i64)> {
+    use sqlx::Connection;
+
+    let mut connection = sqlx::PgConnection::connect(scope.url).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    loop {
+        let current = sqlx::query_as::<_, (String, i64)>(
+            "SELECT e.entitlement_id, e.authority_revision::bigint
+             FROM game_premium_account_fence f
+             JOIN game_premium_evidence e USING (account_id, authority_revision)
+             WHERE f.account_id=encode($1,'hex')::uuid AND f.conflict_authority_revision IS NULL
+               AND e.entitlement_state=1 AND e.entitlement_id IS NOT NULL
+               AND e.effective_from_us <= extract(epoch FROM statement_timestamp()) * 1000000
+               AND LEAST(e.effective_until_us, e.authority_valid_until_us, e.refresh_after_us)
+                   > extract(epoch FROM statement_timestamp()) * 1000000",
+        )
+        .bind(scope.accounts[0].as_slice())
+        .fetch_optional(&mut connection)
+        .await?;
+        if let Some((entitlement, revision)) = current {
+            if let Some((expected, _)) = previous
+                && entitlement != expected
+            {
+                return Err("W09 fresh admission received a different Premium entitlement".into());
+            }
+            if previous.is_none_or(|(_, old_revision)| revision > old_revision) {
+                evidence(&format!("W09_CHECK platform-premium revision={revision}"));
+                return Ok((entitlement, revision));
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                "W09 Platform Premium fixture snapshot was not accepted before the cast".into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+    }
+}
+
 async fn seed_gift_input(scope: &SeamClients<'_>) -> TestResult {
     use sha2::{Digest, Sha256};
     use sqlx::Connection;
@@ -456,6 +499,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("W09 preparation reused its original session".into());
     }
     evidence("FIXTURE row=W09.full input=platform-premium");
+    let (initial_entitlement, _) = platform_premium_evidence(&scope, &mut client, None).await?;
     let level = full_e2ef7::player_level(&mut client).await?;
     let vitals = client.actor_vitals().ok_or("W09 seeded vitals missing")?;
     if (level, vitals.max_health, vitals.max_mana) != (50, 395, 1350) {
@@ -711,6 +755,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         fresh.service_liveness(Duration::from_millis(50)).await?;
     }
     let refused_session = fresh.join_snapshot().game_session_id;
+    let (entitlement, revision) = platform_premium_evidence(&scope, &mut fresh, None).await?;
+    if entitlement != initial_entitlement {
+        return Err("W09 Premium entitlement changed before the final relog".into());
+    }
     logout(&mut fresh).await?;
     let mut verified = connect_character(&scope, 0xd2, 0).await?;
     if verified.join_snapshot().game_session_id == refused_session
@@ -740,6 +788,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             "W09 full relog changed the active deadlines sequence={sequence} expected={active:?} frame={cooldowns:?}"
         ).into());
     }
+    platform_premium_evidence(&scope, &mut verified, Some((&entitlement, revision))).await?;
     assert_cooling_down(&mut verified, spell, &settled).await?;
     logout(&mut verified).await?;
     evidence(
