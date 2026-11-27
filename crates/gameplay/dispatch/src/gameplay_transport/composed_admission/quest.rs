@@ -18,11 +18,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn refresh_due_quest_sessions(&self) {
         let now = std::time::Instant::now();
         let runtime = self.runtime.lock().await;
-        let mut due: Vec<GameSessionId> = match self.states.quest_sessions.lock() {
+        let mut due: Vec<_> = match self.states.quest_sessions.lock() {
             Ok(mut sessions) => sessions
                 .iter_mut()
                 .filter_map(|(session, entry)| {
-                    if !entry.retry_at.is_some_and(|at| at <= now)
+                    let terrain = self
+                        .states
+                        .command_ingress
+                        .terrain_quest_controller(*session);
+                    if !(terrain.is_some() || entry.retry_at.is_some_and(|at| at <= now))
                         || !matches!(runtime.house_player_for_session(*session), Ok(None))
                     {
                         // The generic quest owner admits Channel only. Preserve
@@ -31,19 +35,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return None;
                     }
                     entry.retry_at = None;
-                    Some(*session)
+                    Some((*session, terrain))
                 })
                 .collect(),
             Err(_) => return,
         };
         drop(runtime);
-        due.sort_by_key(|session| *session.as_bytes());
+        due.sort_by_key(|(session, _)| *session.as_bytes());
         let start = self.background_start("quest-refresh", due.len());
         let count = due.len();
         for index in (start..count).chain(0..start) {
-            let session = due[index];
+            let (session, terrain) = due[index];
             self.background_unit("quest-refresh", index + 1, async {
                 self.refresh_quest_session(session, false).await;
+                if let Some(controller) = terrain {
+                    self.retry_recovered_terrain_use(controller).await;
+                }
                 let wheel_deferred = self
                     .states
                     .wheel_sessions

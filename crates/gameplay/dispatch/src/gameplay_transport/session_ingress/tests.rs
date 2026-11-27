@@ -84,6 +84,30 @@ fn session() -> Result<AdmittedSession, Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn autowalk_use_redispatch_keeps_the_original_reservation() -> Result<(), Box<dyn std::error::Error>>
+{
+    let owner = SessionCommands::default();
+    let admitted = session()?;
+    let mut stream = SessionCommandStream::open(Some(&owner), &admitted).ok_or("open")?;
+    assert!(matches!(
+        stream.begin(1, 1, 0, false),
+        Ok(CommandAction::Execute)
+    ));
+    let command = crate::foundation::CommandRef::new(admitted.game_session_id, CommandId::new(1)?);
+    let wire = [3, 7];
+    assert_eq!(owner.remember_use_wire(command, &wire), Some(()));
+    owner.set_use_receipt(command, Some(UseReceipt::Terrain));
+    assert_eq!(owner.remember_use_wire(command, &wire), Some(()));
+    assert_eq!(owner.remember_use_wire(command, &[3, 8]), None);
+    drop(stream);
+    assert!(matches!(
+        owner.pending_use_receipt(admitted.game_session_id),
+        Some(Some((retained, payload, UseReceipt::Terrain))) if retained == command && payload == wire
+    ));
+    Ok(())
+}
+
+#[test]
 fn session_ingress_reserves_terminalizes_evicts_and_recovers()
 -> Result<(), Box<dyn std::error::Error>> {
     let owner = SessionCommands::default();

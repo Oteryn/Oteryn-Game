@@ -261,11 +261,9 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
         }
         let active = controller.active().ok_or("active content")?;
-        let destination = oteryn_gameplay_entities::rashid_schedule::destination_at(
-            crate::gameplay_transport::npc_trade_command::unix_ms_now(),
-        )
-        .placement;
         let entry = if wandering_rashid {
+            let now = i64::try_from(crate::world_clock::now_utc_ms().ok_or("World clock")?)?;
+            let destination = oteryn_gameplay_entities::rashid_schedule::destination_at(now).placement;
             (
                 i32::from(destination.x),
                 i32::from(destination.y),
@@ -764,7 +762,13 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
 
         // SELL_ALL sells both stacks, eight units in one durable trade.
         let sell_all = intent(NpcShopAction::SellAll);
+        let wall_ms = || -> TestResult<i64> {
+            let elapsed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
+            Ok(i64::try_from(elapsed.as_millis())?)
+        };
+        let wall_before = wall_ms()?;
         let (status, sold) = exchange(&owner, &mut admitted, Some((4, 5)), 6, &sell_all).await?;
+        let wall_after = wall_ms()?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
             (sold.disposition, sold.sold_units, sold.total_gold_units),
@@ -794,6 +798,15 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!((units, gold, flag), (8, total_gold.to_string(), true));
+        if wandering_rashid {
+            let occurred_at: i64 = sqlx::query_scalar("SELECT occurred_at FROM game_npc_trades")
+                .fetch_one(&h.pool)
+                .await?;
+            assert!(
+                (wall_before..=wall_after).contains(&occurred_at),
+                "Rashid's trade receipt timestamp {occurred_at} is outside wall time {wall_before}..={wall_after}",
+            );
+        }
 
         if equipped {
             let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -853,7 +866,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             drop(owner);
             drop(authority);
             drop(seal);
-            return Ok(());
+            return h.cleanup().await;
         }
 
         // A visible Rashid outside today's server-owned Canary destination cannot trade. This

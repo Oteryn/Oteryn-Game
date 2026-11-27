@@ -2,6 +2,7 @@
 use super::*;
 use crate::durability::item_craft::{MapHarvestOperand, MapHarvestRequest};
 use crate::durability::terrain_tool::{MapMutation, TerrainScope};
+use crate::gameplay_transport::session_ingress::UseReceipt;
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_items::event_planting as fishing;
 use oteryn_protocol_oteryn::world_object::{WorldObjectTarget, encode_item_use_intent};
@@ -61,6 +62,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         target: Target<'_>,
     ) -> Result<Option<UseOutcome>, ()> {
+        self.mark_use_receipt(command, Some(UseReceipt::Harvest));
+        let result = self.try_map_harvest(actor, command, intent, target).await;
+        // Keep the owner on uncertainty and clear it on fallthrough.
+        if matches!(result, Ok(None)) {
+            self.mark_use_receipt(command, None);
+        }
+        result
+    }
+
+    async fn try_map_harvest(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        target: Target<'_>,
+    ) -> Result<Option<UseOutcome>, ()> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
@@ -82,17 +99,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operand: None,
         };
         let permit = self.spell_lane_permit().await.ok_or(())?;
-        if let Some(result) = self
-            .root
-            .harvest_map_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &NativeItemWeights(native),
-            )
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let weights = NativeItemWeights(native);
+        if let Some(result) = retry
+            .retry_command_guard(async || {
+                self.root
+                    .harvest_map_item(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        native,
+                        &weights,
+                    )
+                    .await
+            })
             .await
             .map_err(|_| ())?
         {
@@ -257,7 +279,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 request,
                 native,
-                &NativeItemWeights(native),
+                &weights,
             )
             .await
             .map_err(|_| ())?

@@ -16,6 +16,16 @@ fn terrain_tool_wire_durable_replay_and_deadline_revert() -> TestResult {
 }
 
 #[test]
+fn dead_archer_terrain_receipt_recovery_advances_quest_once() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("dead-archer-terrain-recovery", || {
+        scenario_with_voice("oteryn:item.tibia.i3457", 867, 868, &[], None, true)
+    })
+}
+
+#[test]
 fn m08_machete_cuts_jungle_grass_through_wire_and_recovers_regrowth() -> TestResult {
     run_case("oteryn:item.tibia.i3308", 3696, 3695)
 }
@@ -122,7 +132,7 @@ fn run_case_with_decay(tool: &'static str, before: u16, after: u16, decay: Vec<u
 }
 
 fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
-    scenario_with_voice(tool, before, after, decay, None)
+    scenario_with_voice(tool, before, after, decay, None, false)
 }
 
 #[test]
@@ -143,7 +153,7 @@ fn worldchg_voice_case(active: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            scenario_with_voice("oteryn:item.tibia.i12077", 12059, 12065, &[], Some(active))
+            scenario_with_voice("oteryn:item.tibia.i12077", 12059, 12065, &[], Some(active), false)
                 .map_err(|e| e.to_string())
         })?
         .join()
@@ -162,6 +172,7 @@ fn scenario_with_voice(
     after: u16,
     decay: &[u16],
     voice: Option<bool>,
+    recover_quest: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -169,6 +180,11 @@ fn scenario_with_voice(
                 .await?;
         super::reset();
         prepare_current_session(&harness).await?;
+        let recovery = if recover_quest {
+            Some(super::house_transfer_fixtures::RecoverySource::start(&harness).await?)
+        } else {
+            None
+        };
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -434,6 +450,19 @@ fn scenario_with_voice(
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
+        if let Some(recovery) = &recovery {
+            owner.evidence = &recovery.evidence;
+            let result = Box::pin(recover_dead_archer(
+                &mut owner, &harness, admitted, &intent, before, after,
+            ))
+            .await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            let cleanup = harness.cleanup().await;
+            result?;
+            return cleanup;
+        }
         let (mut next, result, payload) =
             exchange(&owner, admitted, 1, &payload, reference(shovel))
                 .await
@@ -537,6 +566,36 @@ fn scenario_with_voice(
         restarted.movement_cells = (&restored_cells).into();
 
         deps.initialize(&restarted).await;
+        if shovel == "oteryn:item.tibia.i3457" && before == 867 {
+            // Block only the terrain receipt read while the committed command is retried.
+            let mut lock = harness.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_terrain_tool_receipts IN ACCESS EXCLUSIVE MODE")
+                .execute(&mut *lock)
+                .await?;
+            let retry_intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+                admitted.continuity.selected_capabilities.as_slice(),
+                &payload,
+            )
+            .map_err(debug)?;
+            let probe = restarted
+                .use_craft(
+                    deps.actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 1,
+                        item_fence: Some(fence),
+                    },
+                    retry_intent,
+                    None,
+                    None,
+                )
+                .await;
+            lock.rollback().await?;
+            assert!(
+                probe.is_none(),
+                "a blocked terrain receipt must stay pending"
+            );
+        }
         let (_, result, _) = exchange(&restarted, admitted, 1, &payload, None)
             .await
             .map_err(|e| format!("replay: {e}"))?;
@@ -841,4 +900,234 @@ fn scenario_with_voice(
         drop(seal);
         harness.cleanup().await
     })
+}
+
+
+async fn recover_dead_archer(
+    owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: super::AdmittedSession,
+    intent: &UseIntent,
+    before: u16,
+    after: u16,
+) -> TestResult {
+    use crate::durability::terrain_tool::TerrainMutation;
+    use crate::foundation::{AuthenticatedTransportRefV1, CommandId, CommandRef};
+    use crate::gameplay_transport::connection::{
+        AdmissionRefusal, ControlLossResult, ResumeAttempt, UseCommand,
+    };
+    use crate::gameplay_transport::session_ingress::{
+        CommandAction, SessionCommandStream, UseReceipt,
+    };
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+    use std::sync::Arc;
+
+    let Some(MapUseTarget::Object(target)) = &intent.use_with_map_item else {
+        return Err("shovel target".into());
+    };
+    let placement_key = u64::from_be_bytes(target.placement[32..].try_into()?);
+    let mut authored: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/quests/authored-bindings/qmech-m01c-dead-archer.json"
+    )))?;
+    // Move the authored trigger onto the fixture's closed hole.
+    let quest = &mut authored["quests"][0];
+    for stage in quest["stages"].as_array_mut().ok_or("authored stages")? {
+        stage["trigger"]["usage"]["placement_key"] = placement_key.into();
+    }
+    let track = quest["tracks"][0]["key"]
+        .as_str()
+        .ok_or("authored track")?
+        .to_owned();
+    let bindings = Bindings::parse(&serde_json::to_vec(&authored)?).map_err(debug)?;
+    let base = QuestStateCatalogue::empty("content-1").ok_or("fixture catalogue")?;
+    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base).map_err(debug)?));
+    owner.admit_quest_session(&admitted).await;
+
+    let session = admitted.game_session_id;
+    let fence = admitted.item_fence.ok_or("item fence")?;
+    let ordinal = admitted.continuity.next_command_id;
+    let reference = CommandRef::new(session, CommandId::new(ordinal).map_err(debug)?);
+    let ingress = &owner.states.command_ingress;
+    ingress.admit(session);
+    let mut stream =
+        SessionCommandStream::open(Some(ingress), &admitted).ok_or("command stream")?;
+    assert!(matches!(
+        stream.begin(
+            ordinal,
+            admitted.continuity.connection_generation,
+            admitted.continuity.server_sequence,
+            false,
+        ),
+        Ok(CommandAction::Execute)
+    ));
+    let payload = encode_item_use_intent(intent).map_err(debug)?;
+    ingress
+        .remember_use_wire(reference, &payload)
+        .ok_or("pending USE")?;
+    owner.mark_use_receipt(
+        UseCommand {
+            game_session_id: session,
+            command_id: ordinal,
+            item_fence: Some(fence),
+        },
+        Some(UseReceipt::Terrain),
+    );
+    let permit = owner.spell_lane_permit().await.ok_or("terrain lane")?;
+    // Commit through the real terrain owner, then lose the connection before
+    // dispatch receives the acknowledgement or invokes the quest callback.
+    assert_eq!(
+        harness
+            .root
+            .apply_terrain_tool(
+                &permit,
+                owner.character,
+                owner.holder,
+                fence,
+                reference,
+                payload,
+                owner.terrain_scope().ok_or("terrain scope")?,
+                Some(TerrainMutation {
+                    tool: id(71),
+                    tool_key: "oteryn:item.tibia.i3457".into(),
+                    tool_revision: "definition-r1".into(),
+                    placement: target.placement.clone(),
+                    expected_revision: 0,
+                    before: before.into(),
+                    after: after.into(),
+                    decay: Vec::new(),
+                }),
+            )
+            .await?,
+        Some(UseDisposition::Committed)
+    );
+    drop(permit);
+    drop(stream);
+
+    let track_value = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COALESCE((SELECT value FROM game_character_quest_tracks WHERE track_key=$1), 0)"
+        ).bind(&track).fetch_one(&harness.pool).await
+    };
+    assert_eq!(
+        track_value().await?,
+        0,
+        "quest effect has not been observed"
+    );
+    let mut resumed = admitted;
+    for generation in [2_u8, 3] {
+        assert_eq!(
+            owner
+                .lose_control(resumed, std::time::Duration::ZERO, None)
+                .await,
+            ControlLossResult::Recorded
+        );
+        if generation == 2 {
+            // The receipt can be recovered before the reconnect itself succeeds.
+            // A refused reconnect must leave its quest effect for the valid successor.
+            assert!(matches!(
+                owner
+                    .resume(ResumeAttempt {
+                        game_session_id: session,
+                        recovery_material: b"",
+                        transport: AuthenticatedTransportRefV1::decode(&[90; 16]).map_err(debug)?,
+                        last_applied_server_sequence: resumed.continuity.server_sequence,
+                        supported_capabilities: admitted
+                            .continuity
+                            .selected_capabilities
+                            .as_slice(),
+                    })
+                    .await,
+                Err(AdmissionRefusal::Rejected)
+            ));
+            assert!(ingress.original_terminalized(reference));
+            assert_eq!(
+                track_value().await?,
+                0,
+                "a refused reconnect cannot write quest state"
+            );
+        }
+        let token = super::house_transfer_fixtures::RecoverySource::token(generation)?;
+        let resume = owner.resume(ResumeAttempt {
+            game_session_id: session,
+            recovery_material: token.as_bytes(),
+            transport: AuthenticatedTransportRefV1::decode(&[generation; 16]).map_err(debug)?,
+            last_applied_server_sequence: resumed.continuity.server_sequence,
+            supported_capabilities: admitted.continuity.selected_capabilities.as_slice(),
+        });
+        resumed = if generation == 2 {
+            // The reconnect is already durable at the quest admission fence read.
+            // Keep the holder checked out through the entire post-resume retry window.
+            let pause = crate::gameplay_transport::quest_admission::test_pause::install();
+            let hold = async {
+                pause.reached.notified().await;
+                let held = harness.root.try_acquire_ready();
+                pause.resume.notify_one();
+                held
+            };
+            let (resumed, held) = tokio::time::timeout(
+                std::time::Duration::from_secs(30),
+                super::fixture::join_two(resume, hold),
+            )
+            .await?;
+            let resumed = resumed.map_err(debug)?;
+            assert_eq!(track_value().await?, 0, "the quest effect is still pending");
+            let returned = held?
+                .return_to_pool_observed_until(
+                    std::time::Instant::now() + std::time::Duration::from_secs(5),
+                )
+                .await;
+            assert!(matches!(
+                returned,
+                sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+            ));
+            owner.refresh_due_quest_sessions().await;
+            resumed
+        } else {
+            resume.await.map_err(debug)?
+        };
+        assert_eq!(
+            resumed.continuity.connection_generation,
+            u64::from(generation)
+        );
+        assert_eq!(
+            track_value().await?,
+            1,
+            "the recovered shovel must advance the quest after holder contention clears"
+        );
+        let mut stream =
+            SessionCommandStream::open(Some(ingress), &resumed).ok_or("resumed stream")?;
+        let Ok(CommandAction::Replay(frame)) = stream.begin(
+            ordinal,
+            resumed.continuity.connection_generation,
+            resumed.continuity.server_sequence,
+            false,
+        ) else {
+            return Err("expected retained USE result".into());
+        };
+        let replay = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+        let result = oteryn_protocol_oteryn::decode_command_result(replay.payload())?;
+        assert_eq!(result.command_id, ordinal);
+        assert_eq!(
+            result.status,
+            oteryn_protocol_oteryn::CommandStatus::DuplicateReplay
+        );
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                .map_err(debug)?,
+            UseDisposition::Committed
+        );
+        resumed.continuity.server_sequence = replay.server_sequence();
+        let receipts: (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_terrain_tool_receipts),
+                    (SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='command')"
+        ).fetch_one(&harness.pool).await?;
+        assert_eq!(
+            receipts,
+            (1, 1),
+            "resume and retry preserve one effect each"
+        );
+    }
+    eprintln!("PG_EXECUTED dead_archer_terrain_receipt_recovery_advances_quest_once");
+    Ok(())
 }
