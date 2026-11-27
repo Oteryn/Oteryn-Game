@@ -245,6 +245,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ReleaseAttempt::Retry;
         };
         let releasing = self.journal_logout_store(releasing, admitted.world_id);
+        #[cfg(test)]
+        if matches!(release, TerminalRelease::Logout(_))
+            && let Ok(barrier) = LOGOUT_RELEASE_COMMIT_BARRIER.try_with(std::sync::Arc::clone)
+        {
+            barrier.entered.notify_one();
+            barrier.proceed.notified().await;
+        }
         let outcome = AdmissionRetryBudget::for_command(self.root)
             .retry_durability("release_commit", async || match release {
                 TerminalRelease::Abandoned(transport) => {

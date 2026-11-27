@@ -26,6 +26,18 @@ tokio::task_local! {
     pub(super) static FAMILIAR_LOGIN_CHECKOUT: FamiliarLoginCheckoutProbe;
 }
 
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct LogoutReleaseCommitBarrier {
+    pub(super) entered: tokio::sync::Notify,
+    pub(super) proceed: tokio::sync::Notify,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static LOGOUT_RELEASE_COMMIT_BARRIER: std::sync::Arc<LogoutReleaseCommitBarrier>;
+}
+
 mod achievements;
 mod admission;
 mod combat;
