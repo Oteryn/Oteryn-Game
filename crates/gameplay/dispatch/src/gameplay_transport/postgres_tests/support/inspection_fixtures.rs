@@ -3,8 +3,10 @@ use super::{TestResult, item_look_fixtures as item_look};
 
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
-    connection::{AdmittedSession, IDLE_LIVENESS, serve_admitted},
+    connection::{AdmittedSession, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted},
+    item_view::SessionItemView,
 };
+use crate::durability::DurabilityRoot;
 
 use oteryn_protocol_oteryn::{
     self as protocol,
@@ -14,12 +16,45 @@ use oteryn_protocol_oteryn::{
 
 use std::{future::Future, task::Poll};
 
+async fn inspect_backpack_when_holder_busy(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("inspection actor")?;
+    let inventory = owner
+        .observe_character_inventory(actor, admitted.game_session_id)
+        .await
+        .ok_or("inspection inventory")?;
+    let mut view = SessionItemView::resume(admitted.continuity.item_view);
+    let [items, _] = view.snapshot(inventory, None).map_err(super::debug)?;
+    let handle = protocol::item_view::decode_character_inventory(&items.payload)
+        .map_err(super::debug)?
+        .main_backpack
+        .ok_or("inspection backpack")?
+        .handle;
+    let held = owner.root.try_issue_background_semantic_pass()?;
+    let mut observation = std::pin::pin!(DurabilityRoot::with_holder_owner(owner.inspection_command(
+        admitted, admitted.continuity.next_command_id, Request::Item(handle), Some(&view),
+    )));
+    let first = std::future::poll_fn(|cx| Poll::Ready(observation.as_mut().poll(cx))).await;
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    assert!(first.is_pending(), "backpack inspection must wait for the holder: {first:?}");
+    let reply = observation.await;
+    assert_eq!(reply.status, 1, "{reply:?}");
+    assert_eq!(reply.items.len(), 1);
+    assert!(reply.items[0].attributes.iter().any(|(label, _)| label == "Total Weight"));
+    Ok(())
+}
+
 pub(super) async fn serve_inspections(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     own: EntityRef,
     enabled: bool,
 ) -> TestResult {
+    if enabled {
+        inspect_backpack_when_holder_busy(owner, admitted).await?;
+    }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serve = async {
         serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;

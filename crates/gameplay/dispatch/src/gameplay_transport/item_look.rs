@@ -378,9 +378,14 @@ pub(super) async fn observe_item(
                 // the main backpack. A handle may instead name a durable Ground item, which
                 // needs no carried-item fence: without one the look goes straight to the map.
                 let read = match fence {
-                    Some(fence) => admission
-                        .root
-                        .read_item_loop_container(admission.character, fence.character_id, instance)
+                    Some(fence) => super::AdmissionRetryBudget::for_command(admission.root)
+                        .retry_durability("carried_item_observation", || {
+                            admission.root.read_item_loop_container(
+                                admission.character,
+                                fence.character_id,
+                                instance,
+                            )
+                        })
                         .await
                         .map_err(|_| unavailable)?,
                     None => None,
