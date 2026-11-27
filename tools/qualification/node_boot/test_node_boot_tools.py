@@ -703,17 +703,18 @@ class P04ReplayTests(unittest.TestCase):
         binding = ('below=01890f4c-3b2a-7c01-8d11-9a321b7c0004,'
                    '01890f4c-3b2a-7c01-8d11-9a321b7c0005,1,10,2,12,1,9;'
                    'at=01890f4c-3b2a-7c01-8d11-9a321b7c0006,'
-                   '01890f4c-3b2a-7c01-8d11-9a321b7c0007,1,10,2,12,1,9')
+                   '01890f4c-3b2a-7c01-8d11-9a321b7c0007,1,10,2,12,1,9;availability=2,11,813')
         marker = ('SEAM_EVIDENCE e2e_capture scenario=P04.client status=CAPTURED '
                   f'evidence={binding};period=20780;\n')
         names = ('p04-query.json', 'p04-refused.json', 'p04-readmission.json', 'p04-expected.txt',
-                 'p04-master-query.json', 'p04-master-start.json', 'p04-master-readmission.json')
+                 'p04-master-query.json', 'p04-master-start.json', 'p04-master-readmission.json',
+                 'p04-master-availability.json', 'p04-master-assignments.json')
         test = 'e2e_p04_replays_query_and_refused_start_weekly'
         for evidence, count, missing, cause, invoked in [
             (marker, 1, None, 'replay-not-run', False),
             (marker, 0, None, 'replay-not-run', False),
             (marker, 1, 'p04-readmission.json', 'capture-missing', False),
-            (marker.replace(',1,9;period', ';period'), 1, None, 'capture-missing', False),
+            (marker.replace(';availability=2,11,813', ''), 1, None, 'capture-missing', False),
             (marker * 2, 1, None, 'server-failed', False),
             ('', 1, None, 'replay-not-run', False),
         ]:

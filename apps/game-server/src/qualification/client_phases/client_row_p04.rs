@@ -58,31 +58,57 @@ fn frame_envelope(session: &[u8; 16], result: &GatedCommandResult) -> serde_json
     }))
 }
 
-async fn global_period(database: &mut sqlx::PgConnection, at: Option<&str>) -> TestResult<u64> {
+async fn global_period(database: &mut sqlx::PgConnection) -> TestResult<u64> {
     // Global Weekly Tasks reset on Monday at 10:00 local server time.
     let period: i64 = sqlx::query_scalar(
-        "SELECT (date_trunc('week', (COALESCE($1::text::timestamptz, clock_timestamp())
+        "SELECT (date_trunc('week', (clock_timestamp()
                     AT TIME ZONE 'Europe/Berlin') - interval '10 hours')::date
                     - DATE '1970-01-01')::bigint",
     )
-    .bind(at)
     .fetch_one(database)
     .await?;
     Ok(u64::try_from(period)?)
 }
 
 async fn expected_period(database: &mut sqlx::PgConnection) -> TestResult<u64> {
-    for (before, after) in [
-        ("2026-11-23 08:59:59+00", "2026-11-23 09:00:00+00"),
-        ("2026-07-20 07:59:59+00", "2026-07-20 08:00:00+00"),
+    use sqlx::Connection as _;
+
+    // Each historical probe uses a private World publication rolled back before live play.
+    const WORLD: &str = "01934f10-7c02-7001-805b-3b1122334499";
+    for (instant, expected) in [
+        ("2026-11-23 08:59:59+00", 20773),
+        ("2026-11-23 09:00:00+00", 20780),
+        ("2026-07-20 07:59:59+00", 20647),
+        ("2026-07-20 08:00:00+00", 20654),
     ] {
-        if global_period(database, Some(before)).await? + 7
-            != global_period(database, Some(after)).await?
-        {
-            return Err("P04 calendar oracle did not reset at Monday 10:00 Berlin".into());
+        let mut tx = database.begin().await?;
+        sqlx::query(
+            "INSERT INTO game_world_reset_epochs
+              (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,
+               frame_digest,calendar,calendar_revision,activated_at,reset_month)
+             VALUES($1::uuid,0,$2,'map-1',$2,$2,$2,
+               'TIBIA_SERVER_SAVE_BERLIN_06',1,$3::text::timestamptz,'2026-11')",
+        )
+        .bind(WORLD)
+        .bind([9_u8; 32].as_slice())
+        .bind(instant)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("INSERT INTO game_world_reset_active VALUES($1::uuid,0)")
+            .bind(WORLD)
+            .execute(&mut *tx)
+            .await?;
+        let actual: i64 = sqlx::query_scalar("SELECT game_task_board_period($1::uuid)")
+            .bind(WORLD)
+            .fetch_one(&mut *tx)
+            .await?;
+        tx.rollback().await?;
+        if actual != expected {
+            return Err(format!("P04 production period at {instant}: expected {expected}, got {actual}").into());
         }
+        evidence(&format!("P04_PRODUCTION_PERIOD instant={instant:?} period={actual}"));
     }
-    global_period(database, None).await
+    global_period(database).await
 }
 
 fn expected_shop() -> Vec<ShopOffer> {
@@ -316,13 +342,16 @@ fn logout_ack_write_time(
             .and_then(|rest| rest.split_once(' '))
             .map_or(fields, |(_, fields)| fields);
         let expected = binding.strip_prefix("event=qualification_logout_ack_write ")?;
-        fields.strip_prefix(expected)?.split_whitespace().next()
+        fields.strip_prefix(expected)?.split_once(' ')
     });
-    let at = matches
+    let (at, proof) = matches
         .next()
         .ok_or("P04 missing bound server logout acknowledgement write marker")?;
     if matches.next().is_some() {
         return Err("P04 duplicate server logout acknowledgement write marker".into());
+    }
+    if proof.trim() != "commit_visible=true" {
+        return Err("P04 logout commit was not visible before the acknowledgement write".into());
     }
     Ok(at.parse()?)
 }
@@ -594,6 +623,43 @@ fn seeded_carried(client: &DevClientSession) -> TestResult<std::collections::BTr
     Ok(amounts)
 }
 
+fn verify_delivery_availability(before: &Reply, after: &Reply, item: u32) -> TestResult {
+    let mut expected = before.clone();
+    let assignment = expected.weekly.deliveries.iter_mut()
+        .find(|assignment| assignment.item == item && assignment.current == 0)
+        .ok_or("P04 availability fixture requires a zero-count assigned item")?;
+    assignment.current = 1;
+    if *after != expected {
+        return Err(format!("P04 availability query did not expose the one carried item {item}: {:?}", after.weekly.deliveries).into());
+    }
+    Ok(())
+}
+
+async fn observe_positive_delivery(
+    client: &mut DevClientSession,
+    database: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    board: &Reply,
+) -> TestResult<String> {
+    let item = board.weekly.deliveries.iter()
+        .find(|assignment| assignment.current == 0 && assignment.required > 1)
+        .ok_or("P04 positive availability needs an unfulfilled delivery assignment")?.item;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        format!("item-{item}-1"),
+    ).await?;
+    let available = durable_delivery_amounts(&durable_carried(database, character).await?)?;
+    if available.get(&item) != Some(&1) {
+        return Err(format!("P04 availability fixture did not commit exactly one item {item}").into());
+    }
+    let (after, frame) = send(client, 4, 0, "p04-master-availability.json").await?;
+    verify_delivery_availability(board, &after, item)?;
+    evidence(&format!("P04_DELIVERY_AVAILABILITY item={item} before=0 after=1"));
+    Ok(format!("{},{},{item}", frame.command_id, frame.server_sequence))
+}
+
 struct Boundary {
     level: u32,
     account: &'static str,
@@ -708,10 +774,14 @@ async fn verify_boundary(
         experience_before,
         durable_experience(database, character).await?,
     )?;
-    logout_released(&mut fresh, database).await?;
-    if let Some(catalogue) = catalogue {
+    let availability = if let Some(catalogue) = catalogue {
+        let proof = observe_positive_delivery(&mut fresh, database, character, &after).await?;
         verify_delivery_pool(&catalogue.amounts, &production_delivery_pool()?)?;
-    }
+        format!(";availability={proof}")
+    } else {
+        String::new()
+    };
+    logout_released(&mut fresh, database).await?;
     evidence(&format!(
         "P04_DURABLE_ASSERTIONS level={} custody_entries={} total_experience={} refusal={}",
         case.level,
@@ -720,7 +790,7 @@ async fn verify_boundary(
         start_refusal,
     ));
     Ok(format!(
-        "{},{},{},{},{},{},{},{}",
+        "{},{},{},{},{},{},{},{}{availability}",
         uuid_text(session.as_bytes()),
         uuid_text(readmission.as_bytes()),
         query.command_id,
@@ -803,14 +873,42 @@ mod tests {
 
     #[test]
     fn p04_logout_proof_rejects_commit_after_server_write_and_wrong_binding() -> TestResult {
-        let log = "oteryn-game-server event=qualification_logout_ack_write trace=trace session_id=session command_id=2 server_sequence=9 unix_us=100";
+        let log = "oteryn-game-server event=qualification_logout_ack_write trace=trace session_id=session command_id=2 server_sequence=9 unix_us=100 commit_visible=true";
         let at = logout_ack_write_time(log, "session", 2, 9)?;
+        let early = log.replace("commit_visible=true", "commit_visible=false");
+        assert!(logout_ack_write_time(&early, "session", 2, 9).is_err());
         assert!(logout_ack_write_time(log, "session", 2, 8).is_err());
         assert!(logout_ack_write_time(log, "other", 2, 9).is_err());
         assert!(logout_ack_write_time(&format!("{log}\n{log}"), "session", 2, 9).is_err());
         verify_release((3, false, true, Some(99), false, false), at)?;
         assert!(verify_release((3, false, true, Some(101), false, false), at).is_err());
         Ok(())
+    }
+
+    #[test]
+    fn p04_nonzero_availability_rejects_a_constant_zero_report() -> TestResult {
+        let mut board = Reply {
+            refusal: 0,
+            period: 20780,
+            points: 0,
+            bounty_points: 0,
+            soulseals: 0,
+            weekly: fresh_weekly(),
+            weekly_results: None,
+            bounty: fresh_bounty(),
+            talisman: FRESH_TALISMAN,
+            shop: expected_shop(),
+        };
+        board.weekly.deliveries.push(DeliveryTask {
+            item: 813,
+            required: 10,
+            current: 0,
+            delivered: false,
+        });
+        assert!(verify_delivery_availability(&board, &board, 813).is_err());
+        let mut changed = board.clone();
+        changed.weekly.deliveries[0].current = 1;
+        verify_delivery_availability(&board, &changed, 813)
     }
 
     #[test]

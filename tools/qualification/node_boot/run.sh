@@ -620,7 +620,6 @@ fi
 p04_track_commit=off
 if [[ "${NODE_BOOT_P04_CAPTURE_PENDING:-0}" == 1 ]]; then
   p04_track_commit=on
-  NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_LOGOUT_ACK=1")
 fi
 docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
@@ -643,6 +642,9 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 [[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 180006 ]] || fail "postgres_version"
 [[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
+if [[ "$p04_track_commit" == on ]]; then
+  NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_LOGOUT_ACK_DATABASE=$ADMIN_URL")
+fi
 
 # Use the merged native producer for every shard; the PHP producer is retired.
 game_platform_start

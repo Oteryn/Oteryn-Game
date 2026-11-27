@@ -7,12 +7,19 @@ use task_board::full::{Bounty, Reply, Weekly, decode_request, encode_reply};
 type Error = Box<dyn std::error::Error>;
 type MasterAssignments = (Vec<(String, u32, u32)>, Vec<(u32, u32, u32, bool)>);
 
+struct MasterCapture {
+    boundary: [GatedCommandResult; 3],
+    assignments: MasterAssignments,
+    availability: GatedCommandResult,
+    available_item: u32,
+}
+
 struct Captured {
     query: GatedCommandResult,
     refused: GatedCommandResult,
     readmission: GatedCommandResult,
     expected: String,
-    master: Option<([GatedCommandResult; 3], MasterAssignments)>,
+    master: Option<MasterCapture>,
 }
 
 fn fixture() -> Result<Captured, Error> {
@@ -81,7 +88,13 @@ fn captured() -> Result<Captured, Error> {
         ["p04-query.json", "p04-refused.json", "p04-readmission.json"],
         &mut sessions,
     )?;
-    let master = read_boundary(
+    let (at, availability) = at
+        .split_once(";availability=")
+        .ok_or("missing availability binding")?;
+    let (frame, item) = availability
+        .rsplit_once(',')
+        .ok_or("missing availability item")?;
+    let boundary = read_boundary(
         path,
         at,
         [
@@ -91,14 +104,33 @@ fn captured() -> Result<Captured, Error> {
         ],
         &mut sessions,
     )?;
+    let readmitted_session = at
+        .split(',')
+        .nth(1)
+        .ok_or("missing Master readmission session")?;
+    let availability = read_live_result(
+        &path.join("p04-master-availability.json"),
+        readmitted_session,
+        frame,
+    )?;
+    if boundary[2].command_id.checked_add(1) != Some(availability.command_id)
+        || boundary[2].server_sequence >= availability.server_sequence
+        || availability.status != CommandStatus::Accepted
+    {
+        return Err("P04 availability must follow the readmission Query".into());
+    }
     Ok(Captured {
         query,
         refused,
         readmission,
-        master: Some((
-            master,
-            serde_json::from_slice(&std::fs::read(path.join("p04-master-assignments.json"))?)?,
-        )),
+        master: Some(MasterCapture {
+            boundary,
+            assignments: serde_json::from_slice(&std::fs::read(
+                path.join("p04-master-assignments.json"),
+            )?)?,
+            availability,
+            available_item: item.parse()?,
+        }),
         expected: std::fs::read_to_string(path.join("p04-expected.txt"))?,
     })
 }
@@ -368,11 +400,9 @@ fn verify_master_summary(text: &str, period: u64) -> Result<(), Error> {
     Ok(())
 }
 
-fn verify_master_replay(
-    [query, start, after]: [GatedCommandResult; 3],
-    baseline: &Reply,
-    assignments: &MasterAssignments,
-) -> Result<(), Error> {
+fn verify_master_replay(master: MasterCapture, baseline: &Reply) -> Result<(), Error> {
+    let [query, start, after] = master.boundary;
+    let assignments = &master.assignments;
     let mut panel = TaskBoardPanel {
         selected: true,
         ..TaskBoardPanel::default()
@@ -423,7 +453,28 @@ fn verify_master_replay(
     let started_text = panel_text(&panel);
     let relog_text = panel_text(&fresh);
     verify_master_renderings(&started_text, &relog_text, baseline, assignments)?;
-    Ok(())
+
+    let mut available = assignments.clone();
+    let task = available
+        .1
+        .iter_mut()
+        .find(|task| task.0 == master.available_item && task.2 == 0)
+        .ok_or("P04 availability assignment must begin at zero")?;
+    task.2 = 1;
+    let request =
+        full_request(&mut fresh, FullIntent::Refresh).ok_or("Master availability query request")?;
+    verify_route(&request);
+    assert_eq!(
+        decode_request(&request.payload).map_err(|e| format!("{e:?}"))?,
+        task_board::full::Request::query()
+    );
+    apply_full_result(&mut fresh, &master.availability);
+    verify_master_panel(&fresh, &available)?;
+    let text = panel_text(&fresh);
+    verify_master_summary(&text, baseline.period)?;
+    verify_master_experience(&text)?;
+    verify_rendered_shop(&text, baseline)?;
+    verify_rendered_assignments(&text, &available)
 }
 
 fn verify_master_renderings(
@@ -508,6 +559,21 @@ fn p04_unstarted_render_rejects_started_and_phantom_tasks() -> Result<(), Error>
     Ok(())
 }
 
+fn verify_refusal_header(text: &str, expected: &str) -> Result<(), Error> {
+    let heading = format!("Task Board — week {}", value(expected, "period")?);
+    let balances = format!(
+        "Points: {}  Bounty points: {}  Soulseals: {}",
+        value(expected, "points")?,
+        value(expected, "bounty_points")?,
+        value(expected, "soulseals")?
+    );
+    let mut lines = text.lines();
+    if lines.next() != Some(&heading) || lines.next() != Some(&balances) {
+        return Err("Task Board heading or balances changed".into());
+    }
+    Ok(())
+}
+
 fn verify_replay(captured: Captured) -> Result<(), Error> {
     let e = captured.expected.as_str();
     let mut panel = TaskBoardPanel {
@@ -526,23 +592,7 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert_eq!(panel.feedback, None);
 
     let text = panel_text(&panel);
-    let lines: Vec<&str> = text.lines().collect();
-    assert_eq!(
-        lines.first().copied(),
-        Some(format!("Task Board — week {}", value(e, "period")?).as_str())
-    );
-    assert_eq!(
-        lines.get(1).copied(),
-        Some(
-            format!(
-                "Points: {}  Bounty points: {}  Soulseals: {}",
-                value(e, "points")?,
-                value(e, "bounty_points")?,
-                value(e, "soulseals")?
-            )
-            .as_str()
-        )
-    );
+    verify_refusal_header(&text, e)?;
     let weekly = panel.weekly.clone().ok_or("weekly state")?;
     assert_eq!(weekly.weekly_results, None);
     assert_eq!(weekly.weekly.started.to_string(), value(e, "started")?);
@@ -573,6 +623,7 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     unchanged.refusal = 0;
     assert_eq!(unchanged, weekly);
     let refused_text = panel_text(&panel);
+    verify_refusal_header(&refused_text, e)?;
     verify_unstarted_weekly(&refused_text)?;
     verify_rendered_shop(&refused_text, &weekly)?;
     assert!(refused_text.ends_with("The server refused: level too low for this difficulty"));
@@ -593,11 +644,12 @@ fn verify_replay(captured: Captured) -> Result<(), Error> {
     assert_eq!(fresh.feedback, None);
     assert_eq!(fresh.weekly.as_ref(), Some(&weekly));
     let readmitted_text = panel_text(&fresh);
+    verify_refusal_header(&readmitted_text, e)?;
     verify_unstarted_weekly(&readmitted_text)?;
     verify_rendered_shop(&readmitted_text, &weekly)?;
 
-    if let Some((master, assignments)) = captured.master {
-        verify_master_replay(master, &weekly, &assignments)?;
+    if let Some(master) = captured.master {
+        verify_master_replay(master, &weekly)?;
     }
     assert_invalid_results(&mut panel, &refused)
 }
@@ -610,6 +662,17 @@ fn p04_refusal_requires_the_rendered_shop() -> Result<(), Error> {
     let reply = panel.weekly.as_ref().ok_or("missing refusal board")?;
     let text = panel_text(&panel);
     verify_rendered_shop(&text, reply)?;
+    verify_refusal_header(&text, &fixture.expected)?;
+    for (original, altered) in [
+        ("week ", "week 9"),
+        ("Points: ", "Points: 9"),
+        ("Bounty points: ", "Bounty points: 9"),
+        ("Soulseals: ", "Soulseals: 9"),
+    ] {
+        assert!(
+            verify_refusal_header(&text.replacen(original, altered, 1), &fixture.expected).is_err()
+        );
+    }
     let missing = text.replace("\nTask shop\n", "\n");
     verify_unstarted_weekly(&missing)?;
     assert!(missing.ends_with("The server refused: level too low for this difficulty"));
@@ -662,6 +725,16 @@ fn p04_master_panels_reject_pending_and_corrupted_assignments() -> Result<(), Er
         panel.weekly = Some(corrupted);
         assert!(verify_master_panel(&panel, &committed).is_err());
     }
+    let mut available = committed.clone();
+    available.1[0].2 = 1;
+    reply.weekly.started = true;
+    panel.weekly = Some(reply.clone());
+    assert!(verify_master_panel(&panel, &available).is_err());
+    assert!(verify_rendered_assignments(&panel_text(&panel), &available).is_err());
+    reply.weekly.deliveries[0].current = 1;
+    panel.weekly = Some(reply);
+    verify_master_panel(&panel, &available)?;
+    verify_rendered_assignments(&panel_text(&panel), &available)?;
     Ok(())
 }
 

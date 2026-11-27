@@ -59,6 +59,43 @@ pub(super) fn movement_effect_visible(
     }
 }
 
+#[cfg(feature = "qualification-clock")]
+async fn qualification_logout_commit_visible(
+    database: &str,
+    game_session: [u8; 16],
+    session_id: &str,
+) -> bool {
+    use sqlx::Connection as _;
+
+    let mut key = b"claim-lifecycle-v1".to_vec();
+    key.extend_from_slice(&game_session);
+    key.push(1);
+    let observe = async {
+        let mut connection = sqlx::PgConnection::connect(database).await?;
+        sqlx::query_scalar::<_, bool>(
+            "SELECT current_setting('fsync')='on'
+                AND current_setting('synchronous_commit') IN ('on','local','remote_apply','remote_write')
+                AND EXISTS (
+                    SELECT 1 FROM game_durability_admission_lifecycle_receipts r
+                    JOIN game_durability_reconnect_sessions s ON s.game_session_id=$1::uuid
+                    WHERE r.operation_key=$2 AND s.session_state=3
+                        AND s.current_transport_ref IS NULL
+                )",
+        )
+        .bind(session_id)
+        .bind(key)
+        .fetch_one(&mut connection)
+        .await
+    };
+    // A separate READ COMMITTED snapshot sees the release only after PostgreSQL
+    // finishes synchronous commit, including the WAL flush. Report failure
+    // without polling or delaying the write until the receipt becomes visible.
+    matches!(
+        tokio::time::timeout(std::time::Duration::from_secs(2), observe).await,
+        Ok(Ok(true))
+    )
+}
+
 pub(super) async fn finish<S, A>(
     stream: &mut S,
     authority: &A,
@@ -104,19 +141,22 @@ where
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
         // committed release keeps this a logout end.
+        #[cfg(feature = "qualification-clock")]
         if matches!(dispatch, Dispatch::Logout(LogoutResult::Accepted))
-            && std::env::var("OTERYN_QUALIFICATION_LOGOUT_ACK").as_deref() == Ok("1")
-            && let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+            && let Ok(database) = std::env::var("OTERYN_QUALIFICATION_LOGOUT_ACK_DATABASE")
         {
-            let session_id = crate::gameplay_transport::format_connection_trace(
-                *session.admitted.game_session_id.as_bytes(),
-            );
-            operator_event(&format!(
-                "event=qualification_logout_ack_write session_id={session_id} command_id={} server_sequence={} unix_us={}",
-                command.command_id,
-                session.sequence,
-                now.as_micros(),
-            ));
+            let game_session = *session.admitted.game_session_id.as_bytes();
+            let session_id = crate::gameplay_transport::format_connection_trace(game_session);
+            let visible =
+                qualification_logout_commit_visible(&database, game_session, &session_id).await;
+            if let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+                operator_event(&format!(
+                    "event=qualification_logout_ack_write session_id={session_id} command_id={} server_sequence={} unix_us={} commit_visible={visible}",
+                    command.command_id,
+                    session.sequence,
+                    now.as_micros(),
+                ));
+            }
         }
         if write_frame(stream, &result).await.is_ok()
             && (!outcome.second_logout

@@ -110,7 +110,7 @@ P04_FRAME = r"[1-9][0-9]*"
 P04_BOUNDARY = rf"{UUID7},{UUID7}(?:,{P04_FRAME}){{6}}"
 P04_BINDING = re.compile(
     r"^SEAM_EVIDENCE e2e_capture scenario=P04[.]client status=CAPTURED evidence="
-    rf"(?P<binding>below={P04_BOUNDARY};at={P04_BOUNDARY});",
+    rf"(?P<binding>below={P04_BOUNDARY};at={P04_BOUNDARY};availability={P04_FRAME},{P04_FRAME},{P04_FRAME});",
     re.MULTILINE,
 )
 
@@ -139,7 +139,8 @@ def replay_targets():
     targets["e2e_p04"] = [(
         "oteryn-client-ui", P04_TEST,
         {"p04-query.json", "p04-refused.json", "p04-readmission.json", "p04-expected.txt",
-         "p04-master-query.json", "p04-master-start.json", "p04-master-readmission.json"},
+         "p04-master-query.json", "p04-master-start.json", "p04-master-readmission.json",
+         "p04-master-availability.json", "p04-master-assignments.json"},
     )]
     return targets
 
