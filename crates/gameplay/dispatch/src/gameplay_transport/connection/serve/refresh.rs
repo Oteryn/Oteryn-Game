@@ -475,10 +475,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    // A lethal swing clears the combat lock before the periodic visibility
-    // update. Send the creature's removal first so a client cannot retarget the
-    // stale incarnation. If the observation is busy, keep the last sent state
-    // and retry its publication on the next combat tick.
+    // The attack owner can clear a dead target while the spatial view holds
+    // that incarnation for its committed corpse. Refresh the view first and
+    // retry on the next combat tick if the death is still held or the view is busy.
     if synchronize_target_loss
         && state.target.is_none()
         && let Some(previous) = session
@@ -495,13 +494,19 @@ where
         let mut step = "entity_names";
         let observation = crate::durability::DurabilityRoot::with_background_holder(
             authority.background_operation(Box::pin(spatial_entities(
-                stream, authority, session, &mut step,
+                stream,
+                authority,
+                session,
+                &mut step,
+                Some(previous),
             ))),
         )
         .await;
         match observation {
-            Ok(()) => {}
-            Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => return Ok(()),
+            Ok(false) => {}
+            Ok(true) | Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {
+                return Ok(());
+            }
             Err(ObservationError::Unavailable) => {
                 operator_event(&format!("event=visibility_refresh_refused step={step}"));
                 return Err(ServeEnd::Disconnected);
@@ -727,8 +732,8 @@ where
     if session.visibility.is_none() {
         return Ok(());
     }
-    match spatial_entities(stream, authority, session, step).await {
-        Ok(()) => {
+    match spatial_entities(stream, authority, session, step, None).await {
+        Ok(_) => {
             *step = "party_skull";
             party_skull::refresh(stream, authority, session).await?;
             inventory_capacity::refresh(stream, authority, session).await?;
@@ -829,14 +834,15 @@ async fn spatial_entities<S, A>(
     authority: &A,
     session: &mut ServeState,
     step: &mut &'static str,
-) -> Result<(), ObservationError>
+    cleared_target: Option<WireEntityRef>,
+) -> Result<bool, ObservationError>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
     // VIS-3: entities that moved, entered or left without this actor's step.
     let Some(view) = session.visibility.as_mut() else {
-        return Ok(());
+        return Ok(false);
     };
     *step = "entity_names";
     let mut channel = Box::pin(crate::gameplay_transport::entity_names::observe_result(
@@ -858,30 +864,35 @@ where
         )
         .await;
     }
-    let projection = match channel {
-        Ok(channel) => {
-            *step = "appearances";
-            Box::pin(session.appearances.refresh_result(
-                stream,
-                authority,
-                session.actor,
-                &mut session.admitted,
-                view,
-                &channel,
-                session.item_view.as_mut(),
-                (session.sequence, session.revision),
-                false,
-            ))
-            .await
-        }
-        Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
-        Err(_) => Err(ObservationError::Unavailable),
+    let channel = match channel {
+        Ok(channel) => channel,
+        Err(AdmissionRefusal::Unavailable) => return Err(ObservationError::HolderBusy),
+        Err(_) => return Err(ObservationError::Unavailable),
     };
-    let (to_sequence, to_revision) = projection?;
+    let pending_target = cleared_target.filter(|target| {
+        channel.entities.iter().any(|entry| {
+            entry.kind == VisibleKind::PendingDeath
+                && entry.identity == target.identity
+                && entry.generation == target.generation
+        })
+    });
+    *step = "appearances";
+    let (to_sequence, to_revision) = Box::pin(session.appearances.refresh_result(
+        stream,
+        authority,
+        session.actor,
+        &mut session.admitted,
+        view,
+        &channel,
+        session.item_view.as_mut(),
+        (session.sequence, session.revision),
+        false,
+    ))
+    .await?;
     session.sequence = to_sequence;
     session.revision = to_revision;
     session.admitted.continuity.spatial_revision = to_revision;
-    Ok(())
+    Ok(pending_target.is_some_and(|target| view.shows_creature(target)))
 }
 
 pub(super) async fn sounds<S, A>(
