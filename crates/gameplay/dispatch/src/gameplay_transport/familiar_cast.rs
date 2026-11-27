@@ -1353,6 +1353,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(SpellCastOutcome {
                     disposition,
                     vitals: None,
+                    refresh_inventory: false,
                 });
             }
             let Some(settings) = source
