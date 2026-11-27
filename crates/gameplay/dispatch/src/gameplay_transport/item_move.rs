@@ -96,6 +96,7 @@ pub(super) const fn loop_outcome(refusal: LoopMoveRefusal) -> ItemMoveOutcome {
         LoopMoveRefusal::NoRoom => ItemMoveOutcome::NoRoom,
         LoopMoveRefusal::Blocked => ItemMoveOutcome::Blocked,
         LoopMoveRefusal::NotSupported => ItemMoveOutcome::NotSupported,
+        LoopMoveRefusal::NotPickupable => ItemMoveOutcome::NotPickupable,
         LoopMoveRefusal::Overweight
         | LoopMoveRefusal::WeightUnknown
         | LoopMoveRefusal::Rejected => ItemMoveOutcome::Rejected,
@@ -107,6 +108,7 @@ pub(super) const fn loop_outcome(refusal: LoopMoveRefusal) -> ItemMoveOutcome {
 pub(super) const fn loop_detail(refusal: LoopMoveRefusal) -> Option<RefusalDetail> {
     match refusal {
         LoopMoveRefusal::Overweight => Some(RefusalDetail::NotEnoughCapacity),
+        LoopMoveRefusal::NotPickupable => Some(RefusalDetail::CannotPickup),
         _ => None,
     }
 }

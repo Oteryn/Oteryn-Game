@@ -91,6 +91,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .reconcile_plain_corpses(fence.runtime_scope, &live);
             let _ = runtime.retain_live_corpse_items(&live);
             for corpse in &schedule.corpses {
+                if let Some(position) = corpse.relocated_position {
+                    let _ = runtime.relocate_bound_corpse(corpse.corpse_item_instance_id, position);
+                }
                 let _ = runtime.refresh_corpse_item(
                     corpse.corpse_item_instance_id,
                     &corpse.definition.family,

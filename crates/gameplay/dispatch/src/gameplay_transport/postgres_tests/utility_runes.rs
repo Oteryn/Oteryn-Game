@@ -59,6 +59,7 @@ enum Case {
     SummonLimit,
     Animate,
     AnimateRat,
+    AnimateRatDragged,
     AnimateBlackSkull,
     NonCorpse,
 }
@@ -87,6 +88,14 @@ fn utility_runes_animate_dead_rat_use_summons_skeleton_and_consumes_corpse() -> 
     scenario(Case::AnimateRat)
 }
 #[test]
+fn utility_runes_animate_dragged_rat_at_destination_consumes_that_corpse() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(Case::AnimateRatDragged)
+}
+
+#[test]
 fn utility_runes_animate_real_dispatch_refuses_non_corpse() -> TestResult {
     scenario(Case::NonCorpse)
 }
@@ -111,13 +120,14 @@ fn scenario(case: Case) -> TestResult {
 }
 
 async fn run_case(admin: String, case: Case) -> TestResult {
+    let rat = matches!(case, Case::AnimateRat | Case::AnimateRatDragged);
     let animate = matches!(
         case,
-        Case::Animate | Case::AnimateRat | Case::AnimateBlackSkull | Case::NonCorpse
+        Case::Animate | Case::AnimateRat | Case::AnimateRatDragged | Case::AnimateBlackSkull | Case::NonCorpse
     );
-    let committed = matches!(case, Case::Convince | Case::Animate | Case::AnimateRat);
+    let committed = matches!(case, Case::Convince | Case::Animate) || rat;
     let harness =
-        Harness::create_with_admission_seed(admin, "utility_runes", case != Case::AnimateRat, false)
+        Harness::create_with_admission_seed(admin, "utility_runes", !rat, false)
             .await?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, pin) = production_generation_with_source(
@@ -129,8 +139,8 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     )?;
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    let level = if case == Case::AnimateRat { 27 } else { 50 };
-    if case == Case::AnimateRat {
+    let level = if rat { 27 } else { 50 };
+    if rat {
         // The native cast reads both the durable progression and live spell state.
         let progression = native
             .progression()
@@ -311,9 +321,14 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         1, "policy-1", BUNDLE_WORLD_OFFERED_CAPABILITIES).map_err(debug)?;
     owner.rooms = SeamRooms::new(None, Some(&room));
     owner.movement_cells = (&cells).into();
+    let rune_target = if case == Case::AnimateRatDragged {
+        MovementLocalPosition { y: CASTER.y + 1, ..CASTER }
+    } else {
+        VICTIM
+    };
     let wire_victim = {
         let runtime = owner.runtime.lock().await;
-        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(VICTIM))
+        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(rune_target))
             .ok_or("project utility-rune victim")?
     };
 
@@ -345,7 +360,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?,
         BuildCommitOutcome::Committed(_)
     ));
-    let magic_level = if case == Case::AnimateRat { 4 } else { 10 };
+    let magic_level = if rat { 4 } else { 10 };
     let trained = DurableBuildState::new(druid.vocation(), (magic_level, 0), druid.skills())
         .map_err(debug)?;
     harness
@@ -376,7 +391,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                     session,
                     CharacterCastFacts {
                         level,
-                        max_mana: if case == Case::AnimateRat { 642 } else { 2000 },
+                        max_mana: if rat { 642 } else { 2000 },
                         magic_level: u32::from(magic_level),
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
@@ -458,6 +473,33 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?;
         drop(runtime);
         seed_target(&harness, native, &address, case).await?;
+        if case == Case::AnimateRatDragged {
+            use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
+            use crate::foundation::{CommandId, CommandRef};
+            use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+
+            let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+            let fence = admitted.item_fence.ok_or("current item fence")?;
+            let mut destination = rune_target.x.to_be_bytes().to_vec();
+            destination.extend_from_slice(&rune_target.y.to_be_bytes());
+            destination.extend_from_slice(&(-rune_target.floor).to_be_bytes());
+            owner.root.commit_item_loop_move(
+                &permit, owner.character, owner.holder, &fence,
+                CommandRef::new(session, CommandId::new(90_000).map_err(debug)?),
+                &NativeItemWeights(native),
+                LoopMoveRequest {
+                    item: id(180),
+                    count: None,
+                    pickup_cell: Some(address.spatial_position),
+                    destination: LoopDestination::Ground(LoopGround {
+                        spatial_position: destination,
+                        map_revision: crate::map::overlay::map_revision(map.base()),
+                        content_revision: address.content_revision,
+                        placement_context: address.placement_context,
+                    }),
+                },
+            ).await?.map_err(debug)?;
+        }
     }
     let before = {
         let runtime = owner.runtime.lock().await;
@@ -470,7 +512,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .ok_or("caster")?
             .vitals()
     };
-    if case == Case::AnimateRat {
+    if rat {
         assert_eq!(before.mana, 642);
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -612,6 +654,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         if animate {
             assert_eq!(owned[0].state.policy.definition_revision, "definition-r1");
             assert_eq!(owned[0].state.policy.display_name, "Skeleton");
+            if case == Case::AnimateRatDragged {
+                assert_eq!(runtime.read_actor_position(owned[0].actor).map_err(debug)?.position(), rune_target);
+            }
         } else {
             assert_eq!(owned[0].actor, target_actor);
         }
@@ -631,7 +676,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .bind(id(180).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(body, if committed { (2, 0) } else { (1, 1) });
     }
-    if case == Case::AnimateRat {
+    if rat {
         let (chain, durations): (Vec<i32>, Vec<i64>) = sqlx::query_as(
             "SELECT game_summer_corpse_chain($1), game_source_corpse_durations_v1($1)",
         )
@@ -653,7 +698,7 @@ async fn seed_target(
     target: &crate::durability::native_world_items::SpellGroundTarget,
     case: Case,
 ) -> TestResult {
-    let rat = case == Case::AnimateRat;
+    let rat = matches!(case, Case::AnimateRat | Case::AnimateRatDragged);
     let creature_key = if rat {
         "oteryn:creature.rat"
     } else {
@@ -700,6 +745,20 @@ async fn seed_target(
     if case != Case::NonCorpse {
         sqlx::query("INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(1,game_item_death_scope_key(encode($1,'hex')::uuid,1::smallint,encode($2,'hex')::uuid,NULL),encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable',$9,'r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,CASE WHEN $10 THEN floor(extract(epoch FROM clock_timestamp())*1000)::bigint-10000 ELSE 1 END)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(vec![1_u8;33]).bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(180).as_slice()).bind(vec![1_u8;32]).bind(id(41).as_slice()).bind(creature_key).bind(rat).execute(&mut *tx).await?;
+    }
+    if case == Case::AnimateRatDragged {
+        // The source fixture starts at the first completed Rat transform.
+        sqlx::query(
+            "INSERT INTO game_spell_field_temporal_schedules
+            (item_instance_id, source_stage, source_transaction_id, source_ordinal, duration_millis,
+             expires_at_unix_ms, definition_family, definition_production_key, definition_revision,
+             target_family, target_production_key, target_revision, content_digest, blocks_movement,
+             blocks_projectile, immovable_block_solid)
+             SELECT item_instance_id, 1, transaction_id, 0, 10000, materialized_at + 10000,
+                    'Item', 'oteryn:item.tibia.i5964', 'definition-r1', 'Item', 'oteryn:item.tibia.i3994',
+                    'definition-r1', $2, false, false, false
+             FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+        ).bind(id(180).as_slice()).bind(native.source_digest().as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

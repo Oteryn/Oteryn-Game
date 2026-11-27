@@ -29,6 +29,7 @@ pub(super) struct CorpseItemBinding {
     // Original MINT binding stays immutable when the displayed Item transforms.
     minted_item: RuntimeCorpseItem,
     item: RuntimeCorpseItem,
+    relocated: Option<(MovementLocalPosition, u64)>,
 }
 
 impl ChannelActorCarrier {
@@ -81,6 +82,7 @@ impl ChannelActorCarrier {
             actor,
             minted_item: item.clone(),
             item,
+            relocated: None,
         });
         Ok(())
     }
@@ -100,10 +102,13 @@ impl ChannelActorCarrier {
                     .corpse_item_bindings
                     .iter()
                     .find(|binding| binding.actor == actor)?;
+                let (position, revision) = binding
+                    .relocated
+                    .unwrap_or_else(|| (projection.position(), projection.position_revision()));
                 Some(VisibleRuntimeCorpse {
                     identity: actor.corpse_identity(),
-                    position: projection.position(),
-                    revision: projection.position_revision(),
+                    position,
+                    revision,
                     item: binding.item.clone(),
                 })
             })
@@ -291,6 +296,34 @@ impl ChannelRuntimeV1 {
             binding.item.family = family.to_owned();
             binding.item.production_key = production_key.to_owned();
             binding.item.revision_ref = revision_ref.to_owned();
+        }
+        Ok(())
+    }
+
+    /// Publish a committed Ground move without mutating the sealed death position.
+    pub fn relocate_bound_corpse(
+        &mut self,
+        item: [u8; 16],
+        position: MovementLocalPosition,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if let Some(binding) = self
+            .carrier
+            .corpse_item_bindings
+            .iter_mut()
+            .find(|binding| binding.item.item_instance_id == item)
+            && let Some(projection) = self
+                .carrier
+                .corpse_projections
+                .iter()
+                .find(|projection| projection.occurrence.actor == binding.actor)
+        {
+            let (previous, revision) = binding
+                .relocated
+                .unwrap_or_else(|| (projection.position(), projection.position_revision()));
+            if previous != position {
+                binding.relocated = Some((position, revision.saturating_add(1)));
+            }
         }
         Ok(())
     }
