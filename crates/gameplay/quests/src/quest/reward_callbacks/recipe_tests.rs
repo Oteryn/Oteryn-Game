@@ -152,16 +152,30 @@ fn achievement_slice_three_loads_the_forbidden_fruit_consumption() -> Result<(),
 }
 
 #[test]
-fn achievement_slice_three_loads_the_cave_completionist_final_addon() -> Result<(), String> {
-    let callback = load()?
-        .into_iter()
-        .find(|callback| callback.key == "oteryn:quest-reward/l12-cave-explorer-second")
-        .ok_or("second Cave Explorer addon")?;
-    assert_eq!(
-        callback.achievement.as_deref(),
-        Some("oteryn:achievement/cave_completionist")
-    );
-    assert_eq!(callback.requires_addons[0].addons, 1);
+fn cave_completionist_counts_both_addons_in_either_order() -> Result<(), String> {
+    let callbacks = load()?;
+    for (suffix, addon) in [("first", 1), ("second", 2)] {
+        let key = format!("oteryn:quest-reward/l12-cave-explorer-{suffix}");
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or("Cave Explorer addon")?;
+        assert!(callback.achievement.is_none());
+        assert_eq!(callback.requires_outfits, ["oteryn:outfit.cave_explorer"]);
+        assert!(callback.requires_addons.is_empty());
+        let [forbidden] = callback.forbids_addons.as_slice() else {
+            return Err("expected one self-addon guard".into());
+        };
+        assert_eq!(forbidden.outfit, "oteryn:outfit.cave_explorer");
+        assert_eq!(forbidden.addons, addon);
+        assert_eq!(
+            callback.achievement_progress,
+            [AchievementProgress {
+                key: "oteryn:achievement/cave_completionist".into(),
+                target: 2,
+            }]
+        );
+    }
     Ok(())
 }
 
