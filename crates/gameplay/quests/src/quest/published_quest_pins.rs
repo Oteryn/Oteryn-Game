@@ -49,6 +49,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
             hash(b"d91460774be98a4b174ae1c83d7d2c7e7efcf5fc5ac115f7cd60ae12094840fa"),
             hash(b"617bff2ce025747e4a7747fce2009d039c79c0416d2ba226ed735d0ea5d76ede"),
             hash(b"8e6dd324609ad288a973fc96293b0d8230bb51f8093f6e676199e7c173b6a191"),
+            hash(b"717ed235f59e2a87f75331f18199877f1324995ab8c3cf2d80cf52a1593d74ab"),
         ],
         hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
     ),
@@ -112,9 +113,10 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
     ),
     (
         "oteryn:quest.grimvale_quest",
-        &[hash(
-            b"8d739e34de08f00342139183123982adb253d99776829429bcccaa471136702d",
-        )],
+        &[
+            hash(b"8d739e34de08f00342139183123982adb253d99776829429bcccaa471136702d"),
+            hash(b"87207e32015277e46a85905acf5e59ce524c22817b920255eeb62a7310f68923"),
+        ],
         hash(b"a12ba535924a59362bc81815385cc2164cd29b0a666f71c94340ff98a5a3970d"),
     ),
     (
@@ -130,6 +132,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
             hash(b"24fc148f94a14a65c654cb3c583396ecd78928dfe925a3e02d96d4b939f3f0bb"),
             hash(b"5fd58496a9bbec4ab0feda817d182f73fc9b562cfeee6c48ccec84df16fe064d"),
             hash(b"d2b693bda2cb942c371056f6267c980bedff85882b81dbb1e3661732ba4b6e5d"),
+            hash(b"6932cd6660ef753b3d772eb61d25630e8885af55542c486a1f5e22be6d0c4abd"),
         ],
         hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
     ),
@@ -146,6 +149,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
             hash(b"7b5d449d50f32ca6d1a72ff58aa3c557f882358d32cc42259ea8614f7934bd05"),
             hash(b"45f1e1cfde073c475a485ef92d29e9b6177b6e3fa1de7df67e4e2652aa3c462c"),
             hash(b"59828756c8cdfdfcef9853acde04b5b420d372f1ca7b021213c2423ffa1469dd"),
+            hash(b"bcb632c2d8f98ea72960400637dcead1438c7267366415c3836be9a71e8963fd"),
         ],
         hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
     ),
@@ -162,6 +166,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
             hash(b"b9fd699bb82723a99a039107862d2920348cc47e38ab1dd99d8df5b3769965d9"),
             hash(b"5710efb6a47e898a65a81660b74ee74e469d1ea3e4ceb14b5e3a0b5029ed4215"),
             hash(b"8cbf1b4b88b94598939d9f352e1a4a69a2ba5ff13d0f5486d1f59eff8ccddc2d"),
+            hash(b"824fcc3e8d29376814c064b0c6343db5319456c1c186318caa16f8449a453f12"),
         ],
         hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
     ),
@@ -233,6 +238,49 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         )],
         hash(b"b31bab1af5526262b5b0590cf13b3b99947d18fe0d40ff1fbbbf24189199fdea"),
     ),
+    // Exact citation refreshes measured across the integrated content train.
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        &[hash(
+            b"b5c362e28e85b935de1d7013a6cac14af4762101b7180dfa624a8199284ce206",
+        )],
+        hash(b"e612ad0f379b601b86b10d7c2b46d8e8ac7ce64c828cc12c5e4d686b9bf49620"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        &[hash(
+            b"6aa8ccd292372accd01854fad5cc220d5af321308631bc1658172474dc005c20",
+        )],
+        hash(b"2c3b037dd13d724ea7b0371afc5756318c94d91285bfc6620aa710bb3005899f"),
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        &[hash(
+            b"2e4114efbc89f46d333713805e8ab81bc8c9205e5f213efbf96e71ab9e7aaaa3",
+        )],
+        hash(b"4242553063eec3ce16dd533c848c3f6a5cd716943b713c53a713ff42d8c80ce1"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        &[hash(
+            b"649dd6d0d108b695fb8c2c6fa3f0f7bbefeb6228a572603ac1ddb32ecfb1e8bf",
+        )],
+        hash(b"52f34079861497c5687b92fc1b02cc48bfd5072af466ca308c112c946c25f81f"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        &[hash(
+            b"5cbcc415adb5bb8ed3b77d0729ecff0950da236c0d0daa2aa03d4d1310241d18",
+        )],
+        hash(b"d1cdf6655a94744e239e485b9051f8e7d073be20d228a64e2fd1e19eda40840a"),
+    ),
+    (
+        "oteryn:quest.hydra_egg_quest",
+        &[hash(
+            b"4ccce72f5f05d84b3b7d08d6700eeb4870b3eb1fe51035c9a365a5eb8ce157ef",
+        )],
+        hash(b"ae002be99d3196b93a23087bd929766e6160482da9fc3f36e054d91e5acc32e6"),
+    ),
 ];
 
 type GameplayPredecessors = (&'static str, DefinitionHash, &'static [DefinitionHash]);
@@ -251,6 +299,20 @@ const NEW_FRONTIER_NATIVE_PREDECESSORS: GameplayPredecessors = (
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
+    (
+        "oteryn:quest.adventurers_guild",
+        hash(b"1ccc6851351d21c2d18943b259dbb017060607f9ab1421c4c36be4aadb4e9978"),
+        &[hash(
+            b"ae3b30a75e15f42fef0701e744bb27e91596aec92d794c9b969244d4668e7eae",
+        )],
+    ),
+    (
+        "oteryn:quest.adventures_of_galthen_quest",
+        hash(b"97f814314ddbe2aa7ca889e426f88d64c8fc38f83ae1bb753ddd9c23f18923bf"),
+        &[hash(
+            b"610d37ee99a353c9a5cb00020f3d425e1e8fe72df4b585878968abfb559a6445",
+        )],
+    ),
     // Captured by quest_definition_hashes on main 9295760b3 and the reviewed route definitions.
     (
         "oteryn:quest.factions",
@@ -654,9 +716,10 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
     (
         "oteryn:quest.battle_mage_outfits_quest",
         hash(b"a19162baec7e41dd0e4c5b3332819dce4dd6b8f4a2bb300cd5f14ab58c4aff90"),
-        &[hash(
-            b"5ad0bfbad1d580750ff170af788693571ddf9dcd7cd544a4a001c315e74f38b9",
-        )],
+        &[
+            hash(b"292c00bd7c415835a998f3f249239c9b0b78d2f712bd8a347cb0759bfbdc81e8"),
+            hash(b"5ad0bfbad1d580750ff170af788693571ddf9dcd7cd544a4a001c315e74f38b9"),
+        ],
     ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
@@ -755,6 +818,9 @@ const TIBIA_TALES_TRAIN_SUCCESSOR: DefinitionHash =
 const TIBIA_TALES_WITHOUT_ARITO_REFERRAL: DefinitionHash =
     hash(b"3e47096ea96ec29008c3666724672aeea3489bcd8e02ce3131c5be0a2837f05f");
 
+const TIBIA_TALES_WITH_LIONS_ROCK: DefinitionHash =
+    hash(b"97df564833d439d17ea75888b3cafc53c7551b489aa52f58b2dc4640f8c38362");
+
 // Exact successors captured from the integrated production loader. The unit
 // hashes remain valid predecessors for their own quest.
 const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
@@ -829,6 +895,51 @@ const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"6aba631a049bcb9213d7192bcc98fcaf7c94ef7ce643c4c741c7f738f3e0a233"),
         NEW_FRONTIER_AUTHORED_PIN,
     ),
+    (
+        "oteryn:quest.barbarian_test",
+        hash(b"18aa3b81e3b3462295a80b435696a7e9e66a739b0c26c199e6c0f1abbe6f89cb"),
+        hash(b"b093eed3bfc25b81c1aff81ab93a2316ba426353ec608ff705f21b3bd410f1be"),
+    ),
+    (
+        "oteryn:quest.battle_mage_outfits_quest",
+        hash(b"a19162baec7e41dd0e4c5b3332819dce4dd6b8f4a2bb300cd5f14ab58c4aff90"),
+        hash(b"7e24a445ca8fc5bc5e3443dd38c23bafa6f01b4815b666a652291f36305a1edf"),
+    ),
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+        hash(b"e612ad0f379b601b86b10d7c2b46d8e8ac7ce64c828cc12c5e4d686b9bf49620"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        hash(b"2c3b037dd13d724ea7b0371afc5756318c94d91285bfc6620aa710bb3005899f"),
+    ),
+    (
+        "oteryn:quest.nightmare_outfits_quest",
+        hash(b"dc94a505cae469502aacecb2886cf794f483a0a5082583c9c9fdf505f592bca2"),
+        hash(b"63d6c648bcbc087f4277361c686926870b2df2c73d6570d3dd8ea13fbe7cabc1"),
+    ),
+    (
+        "oteryn:quest.the_ice_islands_quest",
+        hash(b"fdaedce30df4cf940d0022e341e5c0e9be4025a17564ae8f0fed960e350cfe4e"),
+        hash(b"026ddacf9e11904f68123efbfaf0f8b19337ad6fd717809e2bf18e426d30a0ae"),
+    ),
+    (
+        "oteryn:quest.the_ice_islands_quest",
+        hash(b"b31bab1af5526262b5b0590cf13b3b99947d18fe0d40ff1fbbbf24189199fdea"),
+        hash(b"026ddacf9e11904f68123efbfaf0f8b19337ad6fd717809e2bf18e426d30a0ae"),
+    ),
+    (
+        "oteryn:quest.the_secret_library_quest",
+        hash(b"22db0b0b39a6a299def5ea0466fd0def68f98d9ccba6e209ae2108ecefec0a6b"),
+        hash(b"e5f4033817cca4c9f267379f185fa7c6ed2f2ec755544abc132221dc9b49b0a2"),
+    ),
+    (
+        "oteryn:quest.tibia_tales",
+        TIBIA_TALES_WITHOUT_ARITO_REFERRAL,
+        TIBIA_TALES_WITH_LIONS_ROCK,
+    ),
 ];
 
 fn is_content_train_successor(
@@ -845,6 +956,7 @@ fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionH
     active == Some(current)
         || (quest == "oteryn:quest.tibia_tales"
             && (active == Some(TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+                || active == Some(TIBIA_TALES_WITH_LIONS_ROCK)
                 || (current != TIBIA_TALES_WITHOUT_ARITO_REFERRAL
                     && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))))
         || is_content_train_successor(quest, current, active)
@@ -869,6 +981,54 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
         .map_or(current, |(_, _, published)| *published)
 }
 
+// The exact replacement NPC snapshots have the same absent-track defaults as the
+// earlier live snapshots. Preserve both under the measured active definition.
+const NPC_SNAPSHOT_PREDECESSORS: &[(&str, DefinitionHash, DefinitionHash, DefinitionHash)] = &[
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"d1cdf6655a94744e239e485b9051f8e7d073be20d228a64e2fd1e19eda40840a"),
+        GRAVE_DANGER_PRE_ZELOS,
+        hash(b"62b1a9c525aea095845afd89a9bfa0d478b729b851dc86d006eacb3b5b405e2f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+        hash(b"cab96523f101dda9dea22ea0b0c6b3a88054c5c5f71949e5f93f205fac1495f6"),
+        hash(b"aec1fbb66d6cbb19a6d3d9fa5c3a51999d1f159c8d1cee8d427ad3075adea0a5"),
+    ),
+    (
+        "oteryn:quest.tibia_tales",
+        TIBIA_TALES_WITH_LIONS_ROCK,
+        hash(b"26e770c01a6deddd293cde040494caabee10def864f616bac7e8afa01b7d5dde"),
+        hash(b"52cc0637ab01ee36326fbbd0f9f89aa45579e78d280cfea01ca44481eb27d64c"),
+    ),
+];
+
+fn retain_npc_snapshot_predecessors(catalogue: &mut QuestStateCatalogue) {
+    for &(quest, active, saved, replacement) in NPC_SNAPSHOT_PREDECESSORS {
+        if catalogue.definition_hash(quest) != Some(active) {
+            continue;
+        }
+        let Some(defaults) =
+            super::npc_rules::legacy_defaults(catalogue, quest, &replacement).cloned()
+        else {
+            continue;
+        };
+        let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+        if let Some(previous) = predecessors
+            .iter_mut()
+            .find(|previous| previous.hash == saved)
+        {
+            previous.defaults = defaults;
+        } else {
+            predecessors.push(NpcDefinitionPredecessor {
+                hash: saved,
+                defaults,
+            });
+        }
+    }
+}
+
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     retain(
         catalogue,
@@ -876,6 +1036,7 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
             .iter()
             .chain([&NEW_FRONTIER_NATIVE_PREDECESSORS]),
     );
+    retain_npc_snapshot_predecessors(catalogue);
 }
 
 pub(super) fn retain_authored_predecessors(catalogue: &mut QuestStateCatalogue) {
@@ -931,11 +1092,12 @@ mod tests {
         let main = hash(b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065");
         assert_eq!(
             catalogue.definition_hash(quest),
-            Some(TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+            Some(TIBIA_TALES_WITH_LIONS_ROCK)
         );
         for (successor, accepted) in [
             (TIBIA_TALES_TRAIN_SUCCESSOR, true),
             (TIBIA_TALES_WITHOUT_ARITO_REFERRAL, true),
+            (TIBIA_TALES_WITH_LIONS_ROCK, true),
             ([0x5a; 32], false),
         ] {
             catalogue.predecessors.remove(quest);
@@ -948,7 +1110,15 @@ mod tests {
             assert_eq!(
                 npc_rules::legacy_defaults(&catalogue, quest, &TIBIA_TALES_TRAIN_SUCCESSOR)
                     .is_some(),
-                successor == TIBIA_TALES_WITHOUT_ARITO_REFERRAL
+                matches!(
+                    successor,
+                    TIBIA_TALES_WITHOUT_ARITO_REFERRAL | TIBIA_TALES_WITH_LIONS_ROCK
+                )
+            );
+            assert_eq!(
+                npc_rules::legacy_defaults(&catalogue, quest, &TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+                    .is_some(),
+                successor == TIBIA_TALES_WITH_LIONS_ROCK
             );
         }
         Ok(())
@@ -1052,9 +1222,9 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             let active = catalogue.definition_hash(quest);
-            if quest == "oteryn:quest.grave_danger_quest"
-                || (active != Some(published)
-                    && CONTENT_TRAIN_SUCCESSORS
+            if active != Some(published)
+                && (quest == "oteryn:quest.grave_danger_quest"
+                    || CONTENT_TRAIN_SUCCESSORS
                         .iter()
                         .any(|&(owner, _, train)| owner == quest && active == Some(train)))
             {
@@ -1113,6 +1283,20 @@ mod tests {
                 foreign[0] ^= 1;
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());
             }
+        }
+        for &(quest, active, saved, replacement) in NPC_SNAPSHOT_PREDECESSORS {
+            assert_eq!(catalogue.definition_hash(quest), Some(active), "{quest}");
+            let defaults = npc_rules::legacy_defaults(catalogue, quest, &replacement)
+                .ok_or("replacement NPC snapshot defaults")?;
+            assert!(!defaults.is_empty(), "{quest}");
+            assert_eq!(
+                npc_rules::legacy_defaults(catalogue, quest, &saved),
+                Some(defaults),
+                "{quest}"
+            );
+            let mut foreign = saved;
+            foreign[0] ^= 1;
+            assert!(npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());
         }
         Ok(())
     }
