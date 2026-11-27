@@ -199,8 +199,10 @@ fn weekly_master_candidates_match_the_global_source_set() -> Result<(), Box<dyn 
 {
     use std::collections::BTreeSet;
 
-    let world =
-        oteryn_protocol_oteryn::WorldId::decode(&[42; 16]).map_err(|error| format!("{error:?}"))?;
+    let world = oteryn_protocol_oteryn::WorldId::decode(&[
+        1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 42,
+    ])
+    .map_err(|error| format!("{error:?}"))?;
     let (controller, _) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let generation = controller.active().ok_or("activated generation")?;

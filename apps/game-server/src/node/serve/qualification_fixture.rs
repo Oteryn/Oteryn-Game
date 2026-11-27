@@ -1025,8 +1025,7 @@ async fn reserve_p04_delivery_bag(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     request: &crate::durability::reward_claim_mint::RewardClaimMintRequest,
     weights: &dyn crate::durability::item_transfer::ItemWeightLookup,
-    deadline: tokio::time::Instant,
-    attempts: &std::sync::atomic::AtomicU8,
+    (deadline, attempts): (tokio::time::Instant, &std::sync::atomic::AtomicU8),
 ) -> Result<
     crate::durability::reward_claim_mint::RewardClaimMintCandidate,
     crate::durability::reward_claim_mint::RewardClaimMintError,
@@ -1276,7 +1275,13 @@ async fn prepare_p04_delivery(
             key_number: None,
         };
         let mut candidate = reserve_p04_delivery_bag(
-            root, authority, proof, fence, &request, &weights, deadline, &attempts,
+            root,
+            authority,
+            proof,
+            fence,
+            &request,
+            &weights,
+            (deadline, &attempts),
         )
         .await
         .map_err(|error| format!("P04 delivery bag reserve: {error:?}"))?;
@@ -1847,8 +1852,10 @@ mod tests {
             fence,
             &request,
             &weights,
-            tokio::time::Instant::now() + Duration::from_secs(2),
-            &attempts,
+            (
+                tokio::time::Instant::now() + Duration::from_secs(2),
+                &attempts
+            ),
         ));
         let first = std::future::poll_fn(|cx| Poll::Ready(reserve.as_mut().poll(cx))).await;
         assert!(

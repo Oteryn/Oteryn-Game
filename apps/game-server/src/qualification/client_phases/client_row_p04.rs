@@ -367,6 +367,30 @@ fn verify_release(after: Release, acknowledged_at: i64) -> TestResult {
     Ok(())
 }
 
+const PRODUCTION_MASTER_CREATURES: &str = include_str!("../../../../../content/quests/weekly-master-creatures.txt");
+
+fn master_creature_keys(source: &str) -> std::collections::BTreeSet<String> {
+    source.lines().filter(|line| !line.starts_with('#'))
+        .map(|key| match key {
+            "oteryn:creature.sabretooth_creature" => "oteryn:creature.sabretooth",
+            key => key,
+        })
+        .map(str::to_owned)
+        .collect()
+}
+
+fn verify_master_pool(expected: &std::collections::BTreeSet<String>, production: &str) -> TestResult {
+    let actual = master_creature_keys(production);
+    if actual != *expected {
+        return Err(format!(
+            "P04 Master pool differs from Global; missing={:?} ineligible={:?}",
+            expected.difference(&actual).collect::<Vec<_>>(),
+            actual.difference(expected).collect::<Vec<_>>(),
+        ).into());
+    }
+    Ok(())
+}
+
 struct MasterCatalogue {
     races: std::collections::BTreeSet<String>,
     amounts: std::collections::BTreeMap<u32, (u32, u32)>,
@@ -374,11 +398,8 @@ struct MasterCatalogue {
 
 impl MasterCatalogue {
     fn load() -> TestResult<Self> {
-        let races = include_str!("p04_master_creature_oracle.txt")
-            .lines()
-            .filter(|line| !line.starts_with('#'))
-            .map(str::to_owned)
-            .collect();
+        let races = master_creature_keys(include_str!("p04_master_creature_oracle.txt"));
+        verify_master_pool(&races, PRODUCTION_MASTER_CREATURES)?;
         let amounts = delivery_oracle()?;
         Ok(Self { races, amounts })
     }
@@ -980,6 +1001,17 @@ mod tests {
         let mut pool = DeliveryPool::new();
         insert_delivery_range(&mut pool, 28568, (250, 500))?;
         assert!(insert_delivery_range(&mut pool, 28568, (250, 500)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn p04_master_pool_rejects_an_ineligible_candidate_even_when_undrawn() -> TestResult {
+        let expected = master_creature_keys(include_str!("p04_master_creature_oracle.txt"));
+        verify_master_pool(&expected, PRODUCTION_MASTER_CREATURES)?;
+        assert!(verify_master_pool(&expected, &PRODUCTION_MASTER_CREATURES.replace(
+            "oteryn:creature.cliff_strider",
+            "oteryn:creature.moonspawn_juggernaut",
+        )).is_err());
         Ok(())
     }
 
