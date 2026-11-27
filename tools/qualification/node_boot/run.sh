@@ -428,28 +428,6 @@ sys.exit(not start <= 298 < start + count)
 PY_W15C_BATCH
 }
 
-seed_w15c_premium() {
-  local database
-  database="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
-  [[ "$database" =~ ^portal_e2e_[0-9a-f]{12}$ && "$GP_PG_CONTAINER" == "$WP5_PROJECT-portal-postgres" ]] || return 1
-  docker exec -i "$GP_PG_CONTAINER" psql -Xq -v ON_ERROR_STOP=1 -U game_platform_admin -d "$database" \
-    -v account="$W15C_ACCOUNT" <<'SQL_W15C_PREMIUM'
-BEGIN;
-INSERT INTO premium_authority(account_id) VALUES (:'account');
-INSERT INTO premium_ledger(
-  request_id, account_id, actor_id, event_type, duration_days, reason_sha256,
-  entitlement_id, lifecycle_revision, delta_seconds, effective_from, effective_until
-)
-SELECT :'account', :'account', :'account', 'GRANT', 1,
-       sha256(convert_to('W15c disposable travel fixture', 'UTF8')),
-       :'account', 1, 86400, starts_at, starts_at + interval '24 hours'
-FROM (SELECT date_trunc('second', clock_timestamp()) - interval '1 minute' AS starts_at) AS fixture;
-INSERT INTO premium_audit(request_id, actor_id, account_id, event_name)
-VALUES (:'account', :'account', :'account', 'products.premium_granted');
-COMMIT;
-SQL_W15C_PREMIUM
-}
-
 result=NODE_BOOT_FAIL
 compose() {
   docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" \
@@ -668,15 +646,35 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # Use the merged native producer for every shard; the PHP producer is retired.
-if [[ "$NODE_BOOT_WORLD" == 1 ]] && NODE_BOOT_E2E_ONLY="${NODE_BOOT_E2E_ONLY:-}" w15c_batch_selected; then
-  export NODE_BOOT_W15C_PLATFORM_REVISION="$NODE_BOOT_PLATFORM_PIN"
-fi
 game_platform_start
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
-  if NODE_BOOT_E2E_ONLY="${NODE_BOOT_E2E_ONLY:-}" w15c_batch_selected; then
-    seed_w15c_premium || blocked w15c_premium_seed_failed
-  fi
+  # The packet accounts are disposable. Their Premium comes from the same
+  # Platform ledger on every admission, including after a terminal logout.
+  platform_db="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
+  [[ "$platform_db" =~ ^portal_e2e_[0-9a-f]{12}$ && "$GP_PG_CONTAINER" == "$WP5_PROJECT-portal-postgres" ]] || fail "invalid Premium fixture database"
+  docker exec -i "$GP_PG_CONTAINER" psql -Xq -v ON_ERROR_STOP=1 \
+    -U game_platform_admin -d "$platform_db" \
+    -v first="$PACKET_ACCOUNT_ID" -v second="$SECOND_PACKET_ACCOUNT_ID" -v w15c="$W15C_ACCOUNT" <<'SQL_PREMIUM_FIXTURE'
+WITH accounts AS (
+    INSERT INTO premium_authority (account_id)
+    VALUES (:'first'::uuid), (:'second'::uuid), (:'w15c'::uuid)
+    RETURNING account_id
+), grants AS (
+    INSERT INTO premium_ledger (
+        request_id, account_id, actor_id, event_type, duration_days, reason_sha256,
+        entitlement_id, lifecycle_revision, delta_seconds, effective_from, effective_until
+    )
+    SELECT uuidv7(), account_id, account_id, 'GRANT', 1,
+           sha256(convert_to('Disposable node-boot packet Premium fixture', 'UTF8')),
+           uuidv7(), 1, 86400, date_trunc('second', statement_timestamp()),
+           date_trunc('second', statement_timestamp()) + interval '86400 seconds'
+    FROM accounts
+    RETURNING request_id, account_id, actor_id
+)
+INSERT INTO premium_audit (request_id, account_id, actor_id, event_name)
+SELECT request_id, account_id, actor_id, 'products.premium_granted' FROM grants;
+SQL_PREMIUM_FIXTURE
 fi
 
 # Shipped binaries and the SEAM client harness.
@@ -922,7 +920,7 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   local_premium_dir="$WORK/portal/certs"
   cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
   secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
-  if NODE_BOOT_E2E_ONLY="${NODE_BOOT_E2E_ONLY:-}" w15c_batch_selected; then
+  if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
     # The Platform pin provides one Premium identity. Use it on the snapshot
     # client only, as Game requires distinct identities across stream clients.
     NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=https://localhost:$WP5_PORT"

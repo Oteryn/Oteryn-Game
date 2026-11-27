@@ -65,7 +65,7 @@ def portal_binary(work):
 
 def main():
     work = Path(sys.argv[1])
-    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:10]
+    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id, platform_revision = sys.argv[2:11]
     binary = portal_binary(work)
     ports = select_ports(os.environ, ("GAME_PLATFORM_CALLBACK_PORT", "GAME_PLATFORM_NATIVE_PORT"))
     callback = f"http://127.0.0.1:{ports['GAME_PLATFORM_CALLBACK_PORT']}/callback"
@@ -76,7 +76,7 @@ def main():
         {"accountId": account_a, "email": f"gpe2e-a-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
         {"accountId": account_b, "email": f"gpe2e-b-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
     ]
-    extra_accounts = sys.argv[10:]
+    extra_accounts = sys.argv[11:]
     if len(extra_accounts) not in (0, 2):
         raise ValueError("reference_accounts_missing")
     for label, account in zip(("c", "d"), extra_accounts):
@@ -98,14 +98,8 @@ def main():
     (work / "oauth.json").write_text(json.dumps({"enabled": True, "clients": [{"client_id": client, "redirect_uris": [callback]}]}))
     custody = work / "portal" / "secrets" / "admission-custody"
     custody_args = shlex.quote(json.dumps({"directory": str(custody), "purpose": "fresh_admission"}))
-    platform_revision = os.environ.get("NODE_BOOT_W15C_PLATFORM_REVISION")
-    revision_export = (
-        f"export PLATFORM_BUILD_REVISION={shlex.quote(platform_revision)}\n"
-        if platform_revision is not None else ""
-    )
     launcher = work / "portal-exec"
     launcher.write_text("#!/usr/bin/env bash\nset -euo pipefail\nset +x\n"
-                        + revision_export +
                         "export OTERYN_ACCOUNT_MFA=true APP_ENV=testing\n"
                         "export OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true\n"
                         "export OTERYN_NATIVE_DEVICE_PROJECTION_AUTHORITY=oteryn-game-e2e\n"
@@ -114,6 +108,7 @@ def main():
                         'export OTERYN_NATIVE_TLS_KEY_FILE="$OTERYN_INTERNAL_TLS_KEY_FILE"\n'
                         f"export PORTAL_OAUTH_CONFIG=\"$(cat {shlex.quote(str(work / 'oauth.json'))})\"\n"
                         'if [[ "${1:-}" == serve ]]; then\n'
+                        f"  export PLATFORM_BUILD_REVISION={shlex.quote(platform_revision)}\n"
                         '  export OTERYN_ACCOUNT_LOGIN=true\n'
                         f"  {shlex.quote(str(binary))} seed signing-custody {custody_args} > {shlex.quote(str(work / 'custody-result.json'))}\n"
                         f"  export PORTAL_NATIVE_ADMISSION_KEY_CUSTODY_FILE={shlex.quote(str(custody / 'admission-custody.bin'))}\n"
