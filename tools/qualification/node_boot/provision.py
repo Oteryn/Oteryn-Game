@@ -48,8 +48,8 @@ def provision(socket_path, session, profile):
         )
 
 
-def spawn(socket_path, session, creature_key):
-    """Places one creature next to the session's actor; only a qualification-mode node serves it.
+def spawn(socket_path, session, creature_key, tile=None):
+    """Places one creature at tile or next to the session's actor in qualification mode.
 
     Returns the node answer `spawned <entity identity hex> <generation>`; a refusal raises with
     the exact `rejected reason=<token>` answer.
@@ -61,7 +61,12 @@ def spawn(socket_path, session, creature_key):
         or not CREATURE_KEY.fullmatch(creature_key)
     ):
         raise ValueError("invalid qualification spawn request")
-    answer = bytes(_request(socket_path, f"spawn {session} {creature_key}\n", 128))
+    line = f"spawn {session} {creature_key}\n"
+    if tile is not None:
+        if not re.fullmatch(r"-?[0-9]{1,10},-?[0-9]{1,10},-?[0-9]{1,5}", tile):
+            raise ValueError("invalid qualification spawn tile")
+        line = f"spawn-at {session} {tile} {creature_key}\n"
+    answer = bytes(_request(socket_path, line, 128))
     if not SPAWNED.fullmatch(answer):
         raise RuntimeError(
             f"node refused qualification spawn: node_answer={answer[:128]!r} "
@@ -87,10 +92,14 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
+    group.add_argument("--spawn-at", metavar="X,Y,Z:CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
+    elif args.spawn_at is not None:
+        tile, _, key = args.spawn_at.partition(":")
+        print(spawn(args.socket, args.session, key, tile=tile))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))
     else:

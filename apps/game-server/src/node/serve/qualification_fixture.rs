@@ -178,25 +178,68 @@ pub(super) struct SpawnOwners<'a> {
     pub(super) room: &'a crate::content::QualifiedNativeEntryRoom,
 }
 
-/// `spawn <session> <creature key>`: only a node in the qualification fixture mode serves it.
-fn spawn_request(enabled: bool, bytes: &[u8]) -> Result<([u8; 16], &str), &'static str> {
+#[cfg_attr(not(any(test, feature = "qualification-spawn")), allow(dead_code))]
+#[derive(Debug)]
+struct SpawnRequest<'a> {
+    session: [u8; 16],
+    key: &'a str,
+    exact: Option<crate::foundation::MovementLocalPosition>,
+}
+
+/// `spawn <session> <key>` or `spawn-at <session> <x,y,z> <key>`.
+fn spawn_request(enabled: bool, bytes: &[u8]) -> Result<SpawnRequest<'_>, &'static str> {
+    const MALFORMED: &str = "malformed_request";
     if !enabled {
         return Err("not_qualification");
     }
     let text = std::str::from_utf8(bytes)
-        .map_err(|_| "malformed_request")?
+        .map_err(|_| MALFORMED)?
         .trim_end_matches('\n');
-    let (session, key) = text
-        .strip_prefix("spawn ")
-        .and_then(|rest| rest.split_once(' '))
-        .ok_or("malformed_request")?;
+    let (command, rest) = text.split_once(' ').ok_or(MALFORMED)?;
+    let (session, argument) = rest.split_once(' ').ok_or(MALFORMED)?;
+    let (exact, key) = match command {
+        "spawn" => (None, argument),
+        "spawn-at" => {
+            let (coordinates, key) = argument.split_once(' ').ok_or(MALFORMED)?;
+            let mut coordinates = coordinates.split(',');
+            let x = coordinates
+                .next()
+                .ok_or(MALFORMED)?
+                .parse()
+                .map_err(|_| MALFORMED)?;
+            let y = coordinates
+                .next()
+                .ok_or(MALFORMED)?
+                .parse()
+                .map_err(|_| MALFORMED)?;
+            let floor = coordinates
+                .next()
+                .ok_or(MALFORMED)?
+                .parse()
+                .map_err(|_| MALFORMED)?;
+            if coordinates.next().is_some() {
+                return Err(MALFORMED);
+            }
+            (
+                Some(crate::foundation::MovementLocalPosition { x, y, floor }),
+                key,
+            )
+        }
+        _ => return Err(MALFORMED),
+    };
     let session = parse_operation_id(session.as_bytes()).ok_or("malformed_request")?;
     let bounded = !key.is_empty()
         && key.len() <= 128
         && key
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || b":._/-".contains(&byte));
-    bounded.then_some((session, key)).ok_or("malformed_request")
+    bounded
+        .then_some(SpawnRequest {
+            session,
+            key,
+            exact,
+        })
+        .ok_or(MALFORMED)
 }
 
 fn spawn_rejected(reason: &str) -> String {
@@ -235,7 +278,7 @@ pub(super) async fn spawn(
         emit(PROCESS, &spawn_refusal_warning(reason, detail));
         spawn_rejected(reason)
     };
-    let (session, key) = match spawn_request(config.qualification_fixture, bytes) {
+    let request = match spawn_request(config.qualification_fixture, bytes) {
         Ok(request) => request,
         Err(reason) => return refuse(reason, None),
     };
@@ -243,7 +286,7 @@ pub(super) async fn spawn(
         return refuse("native_unavailable", None);
     };
     Box::pin(spawn_placed(
-        root, authority, proof, native, owners, session, key, refuse,
+        root, authority, proof, native, owners, request, refuse,
     ))
     .await
 }
@@ -305,14 +348,13 @@ async fn spawn_placed(
     proof: &NodeIncarnationProof,
     native: &NativeGameplayState,
     owners: SpawnOwners<'_>,
-    session: [u8; 16],
-    key: &str,
+    request: SpawnRequest<'_>,
     refuse: impl Fn(&'static str, Option<&str>) -> String,
 ) -> String {
     let budget = SpawnBudget::new(tokio::time::Instant::now());
     let placed = spawn_with_watchdog(budget.reply_deadline, async |published| {
         Box::pin(place(
-            root, authority, proof, native, owners, session, key, budget, published,
+            root, authority, proof, native, owners, &request, budget, published,
         ))
         .await
     })
@@ -330,7 +372,7 @@ async fn spawn_placed(
                 creature.actor.actor_local_generation()
             )
         }
-        Ok(Err(refusal)) => refuse(refusal.token(), refusal.detail()),
+        Ok(Err(refusal)) => refuse(refusal.token(), refusal.detail().as_deref()),
         Err(_) => refuse("deadline", None),
     }
 }
@@ -343,8 +385,7 @@ async fn spawn_placed(
     _proof: &NodeIncarnationProof,
     _native: &NativeGameplayState,
     _owners: SpawnOwners<'_>,
-    _session: [u8; 16],
-    _key: &str,
+    _request: SpawnRequest<'_>,
     refuse: impl Fn(&'static str, Option<&str>) -> String,
 ) -> String {
     // The test-support owners are not in this build; only the qualification-spawn build places.
@@ -400,22 +441,22 @@ async fn place(
     proof: &NodeIncarnationProof,
     native: &NativeGameplayState,
     owners: SpawnOwners<'_>,
-    session: [u8; 16],
-    key: &str,
+    request: &SpawnRequest<'_>,
     budget: SpawnBudget,
     published: &mut Option<crate::foundation::CompanionSnapshot>,
 ) -> Result<(), wild_spawn::SpawnRefusal> {
     let fence = wild_spawn::SpawnRefusal::Fence;
-    let session = crate::foundation::GameSessionId::decode(&session)
+    let session = crate::foundation::GameSessionId::decode(&request.session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
     let source = wild_spawn::next_command_source()?;
     let mut runtime = owners.runtime.lock().await;
-    let mut plan = Some(wild_spawn::snapshot_adjacent_spawn(
+    let mut plan = Some(wild_spawn::snapshot_session_spawn(
         owners.room,
         native,
         &mut runtime,
-        key,
+        request.key,
         session,
+        request.exact,
     )?);
     drop(runtime);
     let acquire_holder = async || {
@@ -477,7 +518,7 @@ async fn place(
                     &mut runtime,
                     plan,
                     source,
-                    key,
+                    request.key,
                     &tiles,
                 )?));
             }
@@ -643,7 +684,10 @@ async fn finish_spawn_holder<T>(
             // An unacknowledged BEGIN can leave a live transaction that SQLx
             // has not recorded. Retire the socket before releasing the slot.
             drop(holder.detach());
-            spawn_cleanup_warning("holder_retired", error.detail().unwrap_or(error.token()));
+            spawn_cleanup_warning(
+                "holder_retired",
+                error.detail().as_deref().unwrap_or(error.token()),
+            );
             return Err(error);
         }
     };
@@ -1332,11 +1376,27 @@ mod tests {
     #[test]
     fn qualification_spawn_gets_its_turn_after_a_busy_holder()
     -> crate::bestiary_postgres_harness::TestResult {
-        use crate::bestiary_postgres_harness::{Harness, debug, runtime};
-
         let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
             return Ok(());
         };
+        spawn_postgres_case(admin, false)
+    }
+
+    #[test]
+    fn qualification_exact_rat_spawn_refuses_occupied_tile_without_fallback()
+    -> crate::bestiary_postgres_harness::TestResult {
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        spawn_postgres_case(admin, true)
+    }
+
+    fn spawn_postgres_case(
+        admin: String,
+        exact: bool,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, debug, runtime};
+
         std::thread::Builder::new()
             .stack_size(64 << 20)
             .spawn(move || {
@@ -1344,7 +1404,7 @@ mod tests {
                     .map_err(debug)?
                     .block_on(async {
                         let harness = Harness::create(admin, "spawn_holder", false).await?;
-                        let result = exercise_busy_spawn(&harness).await;
+                        let result = exercise_spawn(&harness, exact).await;
                         harness.cleanup().await?;
                         result
                     })
@@ -1355,8 +1415,9 @@ mod tests {
             .map_err(Into::into)
     }
 
-    async fn exercise_busy_spawn(
+    async fn exercise_spawn(
         harness: &crate::bestiary_postgres_harness::Harness,
+        exact: bool,
     ) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{SESSION, debug, id, scope};
         use crate::foundation::GameSessionId;
@@ -1416,6 +1477,77 @@ mod tests {
         let root = &harness.root;
         let authority = root.open_character_authority(&seal).await.map_err(debug)?;
         assert!(root.maintain_ready_once().await?);
+        if exact {
+            let tile = wild_spawn::POSITION;
+            let neighbour = {
+                let mut channel = channel.lock().await;
+                let mut movement = channel.borrow_movement_position();
+                let original = movement.read(player)?;
+                movement.commit_cardinal(original, tile)?;
+                original.position()
+            };
+            let request = format!(
+                "spawn-at {} {},{},{} canary:creature/rat\n",
+                uuid_text(session.as_bytes()),
+                tile.x,
+                tile.y,
+                tile.floor
+            );
+            let send = || {
+                spawn(
+                    root,
+                    &authority,
+                    &harness.node,
+                    &config,
+                    Some(&native),
+                    Some(owners),
+                    request.as_bytes(),
+                )
+            };
+            assert_eq!(send().await, "rejected reason=tile_occupied");
+            {
+                let mut channel = channel.lock().await;
+                let census = channel.positioned_actor_census()?;
+                assert!(
+                    matches!(&census[..], [(_, position, Some(id))]
+                        if *id == session && position.position() == tile),
+                    "the refused spawn must leave the neighbouring cell empty"
+                );
+                assert!(wild_spawn::adjacent_cells(tile).contains(&neighbour));
+                let mut movement = channel.borrow_movement_position();
+                let occupied = movement.read(player)?;
+                movement.commit_cardinal(occupied, neighbour)?;
+            }
+
+            assert!(root.maintain_ready_once().await?);
+            let reply = send().await;
+            let channel = channel.lock().await;
+            let census = channel.positioned_actor_census()?;
+            let [(_, player_position, Some(_)), (rat, rat_position, None)] = census.as_slice()
+            else {
+                return Err(format!("expected player and Rat, reply={reply}").into());
+            };
+            assert_eq!(player_position.position(), neighbour);
+            assert_eq!(rat_position.position(), tile);
+            assert_eq!(
+                channel
+                    .companion_snapshot(*rat)?
+                    .state
+                    .policy
+                    .definition_key,
+                "canary:creature/rat"
+            );
+            let identity = rat
+                .placement_identity()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            assert_eq!(
+                reply,
+                format!("spawned {identity} {}", rat.actor_local_generation())
+            );
+            return Ok(());
+        }
         let mut busy = root.try_acquire_ready()?;
         assert!(!root.has_ready_demand());
         let request = format!(
@@ -1649,7 +1781,7 @@ mod tests {
                     stall.store(true, std::sync::atomic::Ordering::Relaxed);
                     Ok(Some(17))
                 }).await;
-                assert!(matches!(&result, Err(error) if error.detail()
+                assert!(matches!(&result, Err(error) if error.detail().as_deref()
                     == Some("qualification spawn pool return: after_release_timeout")));
                 result
             }).await;
@@ -1664,7 +1796,7 @@ mod tests {
             let outcome = finish_spawn_holder(
                 holder, SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
             ).await;
-            assert!(matches!(outcome, Err(error) if error.detail()
+            assert!(matches!(outcome, Err(error) if error.detail().as_deref()
                 == Some("qualification spawn pool return: ping_failed")));
 
             let mut empty = pool.acquire().await?;
@@ -1673,7 +1805,7 @@ mod tests {
             let outcome = finish_spawn_holder(
                 empty, SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
             ).await;
-            assert!(matches!(outcome, Err(error) if error.detail()
+            assert!(matches!(outcome, Err(error) if error.detail().as_deref()
                 == Some("qualification spawn pool return: no_evidence")));
             Ok(())
         })
@@ -1978,7 +2110,11 @@ mod tests {
         // The same bytes are a valid request once the node runs in the fixture mode.
         assert!(matches!(
             spawn_request(true, request.as_bytes()),
-            Ok((_, "oteryn:creature.rat"))
+            Ok(SpawnRequest {
+                key: "oteryn:creature.rat",
+                exact: None,
+                ..
+            })
         ));
     }
 
@@ -1988,6 +2124,38 @@ mod tests {
         let line = format!("spawn {id} {}\n", "k".repeat(128));
         assert_eq!(line.len(), CONTROL_REQUEST_BYTES);
         assert!(spawn_request(true, line.as_bytes()).is_ok());
+    }
+
+    #[test]
+    fn exact_spawn_request_shares_fixture_gate_and_bounds() -> Result<(), &'static str> {
+        let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        let request = format!(
+            "spawn-at {id} -2147483648,-2147483648,-32768 {}\n",
+            "k".repeat(128)
+        );
+        assert_eq!(request.len(), EXACT_SPAWN_REQUEST_BYTES);
+        assert_eq!(
+            spawn_request(false, request.as_bytes()).err(),
+            Some("not_qualification")
+        );
+        let parsed = spawn_request(true, request.as_bytes())?;
+        assert_eq!(
+            parsed.exact,
+            Some(crate::foundation::MovementLocalPosition {
+                x: i32::MIN,
+                y: i32::MIN,
+                floor: i16::MIN,
+            })
+        );
+        assert_eq!(parsed.key.len(), 128);
+        for malformed in ["1,2", "1,2,3,4", "1,2,32768", "2147483648,2,3"] {
+            let request = format!("spawn-at {id} {malformed} rat\n");
+            assert_eq!(
+                spawn_request(true, request.as_bytes()).err(),
+                Some("malformed_request")
+            );
+        }
+        Ok(())
     }
 
     #[test]
