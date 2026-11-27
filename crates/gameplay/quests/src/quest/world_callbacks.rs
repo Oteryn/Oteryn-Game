@@ -17,7 +17,8 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280;
+// The Gnome dailies and Wrath City source shards add up to 134 callback rows.
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280 + 134;
 const MAX_COFFIN_RECOVERY_VARIANTS: usize = 2;
 pub(super) const MAX_EMBEDDED_CALLBACKS: usize =
     MAX_RUNTIME_CALLBACKS + MAX_COFFIN_RECOVERY_VARIANTS;
