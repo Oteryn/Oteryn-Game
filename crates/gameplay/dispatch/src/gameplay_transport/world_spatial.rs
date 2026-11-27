@@ -294,6 +294,13 @@ impl SessionVisibility {
         })
     }
 
+    /// A corpse the current session can select from its published spatial view.
+    pub(crate) fn shows_corpse(&self, identity: [u8; ENTITY_IDENTITY_BYTES]) -> bool {
+        self.entities
+            .get(&identity)
+            .is_some_and(|entity| entity.kind == EntityKind::Corpse)
+    }
+
     /// The content generation and own position the session last sent; `None` before any view.
     pub(crate) fn published(&self) -> Option<([u8; 32], ActorPosition)> {
         self.published

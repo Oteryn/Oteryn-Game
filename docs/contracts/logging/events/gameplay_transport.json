@@ -251,7 +251,7 @@
         "last_handle"
       ],
       "codes": [],
-      "note": "Plain item USE view refusal. The client command ordinal and last server frame sequence are independent counters. Handles are connection view selectors and carry no generation field."
+      "note": "Stale USE refusal, attributed to the item view, corpse open, or originating mechanic route. The command ordinal and last server frame sequence are independent. Requested handle is zero for a non-handle USE; handles carry no generation field."
     },
     {
       "event": "join_prepare_failed",
