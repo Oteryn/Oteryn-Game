@@ -163,17 +163,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let attack = self.states.attack.lock().await;
             (attack.kills().lethal_hits(), attack.kills().held_targets())
         };
-        let mut pending_deaths = Vec::new();
+        let corpse_identities: std::collections::BTreeSet<_> =
+            corpses.iter().map(|corpse| corpse.identity).collect();
         for lethal in lethal_hits {
-            let target = lethal.actor.actor;
             if let Some(corpse) = corpses
                 .iter_mut()
-                .find(|corpse| corpse.identity == target.corpse_identity())
+                .find(|corpse| corpse.identity == lethal.actor.actor.corpse_identity())
                 && let VisibleKind::Corpse { lethal_hit, .. } = &mut corpse.kind
             {
                 *lethal_hit = Some(lethal.hit);
-            } else if held_targets.contains(&target) && in_view(lethal.actor.position) {
-                pending_deaths.push(lethal.actor);
+            }
+        }
+        // A lethal slot can reach visibility before the reward queue, for example
+        // when a native callback or reflected hit publishes damage separately.
+        // Retain the exact old entity for observers until its committed corpse
+        // is included in this same view. Lethal hit text is optional metadata.
+        let mut pending_deaths = Vec::new();
+        for entry in held_targets
+            .into_iter()
+            .chain(runtime.pending_source_corpse_actor())
+            .filter(|target| !corpse_identities.contains(&target.corpse_identity()))
+            .filter_map(|target| runtime.projected_death_actor(target))
+            .chain(visible.settling_creatures.iter().copied().filter(|entry| {
+                let target = entry.actor;
+                in_view(entry.position)
+                    && !runtime.is_tibiadrome(target)
+                    && runtime.soulpit_variant(target).is_none()
+                    && (runtime
+                        .source_creature_death_pending(target)
+                        .unwrap_or(false)
+                        || runtime.companion_snapshot_including_dead(target).is_ok_and(
+                            |creature| {
+                                let key = &creature.state.policy.definition_key;
+                                let rewards = self.reward_table();
+                                !creature.state.policy.is_familiar
+                                    && (rewards
+                                        .row(key)
+                                        .ok()
+                                        .or_else(|| rewards.reward_boss_corpse(key)))
+                                    .is_some_and(|row| row.corpse_item.is_some())
+                            },
+                        ))
+                    && !corpse_identities.contains(&target.corpse_identity())
+            }))
+        {
+            if !pending_deaths.iter().any(
+                |seen: &oteryn_gameplay_entities::carrier::VisibleRuntimeActor| {
+                    seen.actor == entry.actor
+                },
+            ) && !runtime.contains_live_creature(entry.actor)
+            {
+                pending_deaths.push(entry);
             }
         }
         // Use the wire interest owner's exact floor/rectangle rules before cloning

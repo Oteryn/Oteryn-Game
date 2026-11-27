@@ -4553,6 +4553,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     "kill_reward_corpse_unbound creature={} reason={error:?}",
                     entry.creature
                 ));
+                report.verdict = SettleVerdict::Retry;
             }
             if source_plain_body
                 || matches!(

@@ -1122,6 +1122,12 @@ async fn scenario(
                 .expect("clock");
         }
     }
+    if matches!(case, Case::ForgeKillCorpse) {
+        return super::forge_creature_fixtures::assert_fiendish_corpse_delta(
+            &owner, h, creature.actor, players[0], players[1].0,
+        )
+        .await;
+    }
     for (index, (actor, session)) in players.iter().copied().enumerate() {
         if index == 2
             || (index == 0 && matches!(case, Case::Pz | Case::Concurrent | Case::Foreign))
