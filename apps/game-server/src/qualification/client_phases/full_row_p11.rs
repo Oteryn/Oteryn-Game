@@ -953,6 +953,41 @@ async fn authored_granter(
     Ok((key, alternate_keys, ACHIEVEMENT.to_owned(), claim.key.as_str().to_owned(), world))
 }
 
+async fn assert_claim_refused(client: &mut DevClientSession, target: &[u8]) -> TestResult {
+    use std::io::{Read, Seek, SeekFrom};
+    let command = client.next_command_id();
+    let path = required("NODE_BOOT_CAST_EVIDENCE_LOG")?;
+    let mut log = std::fs::File::open(path)?;
+    log.seek(SeekFrom::End(0))?;
+    let reply = client.session_mut().use_object(target, 0).await?;
+    if reply.command_id != command
+        || reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
+    {
+        return Err(format!("P11 first claimed chest USE had the wrong wire result: {reply:?}").into());
+    }
+    const LOG_LIMIT: u64 = 256 * 1024;
+    let mut appended = String::new();
+    log.take(LOG_LIMIT + 1).read_to_string(&mut appended)?;
+    if appended.len() as u64 > LOG_LIMIT || !has_exact_claim_refusal(&appended, command) {
+        return Err(format!("P11 chest USE command={command} sequence={} lacked one AlreadyClaimed owner refusal", reply.result_server_sequence).into());
+    }
+    evidence(&format!("P11_CHECK chest_command={command} sequence={} owner_refusal=AlreadyClaimed", reply.result_server_sequence));
+    Ok(())
+}
+
+fn has_exact_claim_refusal(log: &str, command: u64) -> bool {
+    let command_field = format!("command_id={command}");
+    let mut reasons = log.lines().filter(|line| {
+        let mut fields = line.split_ascii_whitespace();
+        fields.any(|field| field == "event=chest_command_refused")
+            && fields.any(|field| field == command_field)
+    });
+    reasons.next().is_some_and(|line| {
+        line.split_ascii_whitespace().any(|field| field == "reason=AlreadyClaimed")
+    }) && reasons.next().is_none()
+}
+
 async fn leave_reward_room(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -1009,13 +1044,12 @@ async fn leave_reward_room(
             x
         };
         let before_inventory = client.inventory().ok_or("P11 missing carried inventory")?.clone();
-        let reply = client.session_mut().use_object(target, 0).await?;
-        if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
-            || page(client, 0).await? != *granted
+        assert_claim_refused(client, target).await?;
+        if page(client, 0).await? != *granted
             || client.inventory() != Some(&before_inventory)
             || bag_count(client, reward) != Some(1)
         {
-            return Err(format!("P11 alternative chest beside x={x} changed the reward: {reply:?}").into());
+            return Err(format!("P11 alternative chest beside x={x} changed the reward").into());
         }
         reject_earned_notices(client)?;
         evidence(&format!("P11_CHECK alternative_chest_adjacent_x={x} disposition=NothingToUse inventory=unchanged page=unchanged"));
@@ -1346,19 +1380,15 @@ pub(super) async fn earn_and_logout(
 
     reject_earned_notices(&mut client)?;
     let before_duplicate = client.inventory().ok_or("P11 missing inventory before repeat USE")?.clone();
-    let duplicate_reply = client.session_mut().use_object(&placement, 0).await?;
+    assert_claim_refused(&mut client, &placement).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
     let unchanged = page(&mut client, 0).await?;
     reject_earned_notices(&mut client)?;
-    if duplicate_reply.disposition
-        != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
-        || unchanged != granted
+    if unchanged != granted
         || client.inventory() != Some(&before_duplicate)
         || bag_count(&client, reward) != Some(1)
     {
-        return Err(
-            format!("step=duplicate observed_reply={duplicate_reply:?},duplicate-grant").into(),
-        );
+        return Err("P11 same chest changed inventory or achievements after refusal".into());
     }
     leave_reward_room(&mut client, world, &alternate, reward, &granted).await?;
     reject_earned_notices(&mut client)?;
@@ -1418,21 +1448,11 @@ pub(super) async fn probe_relog_claim(clients: &SeamClients<'_>, proof: &GrantPr
         return Err("P11 relog lockout probe did not admit at the alternate chest".into());
     }
     let before = client.inventory().ok_or("P11 missing relog lockout inventory")?.clone();
-    let distant = client.session_mut().use_object(&proof.relog_chest, 0).await?;
-    if distant.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::TooFar
-        || client.inventory() != Some(&before)
-    {
-        return Err(format!("P11 fresh session failed the alternate chest binding probe: {distant:?}").into());
-    }
     reject_earned_notices(&mut client)?;
     corridor_step(&mut client, StepDirection::North, at.x, 31657).await?;
-    let reply = client.session_mut().use_object(&proof.relog_chest, 0).await?;
-    if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
-        || client.inventory() != Some(&before)
-        || page(&mut client, 0).await? != proof.page
-        || client.inventory() != Some(&before)
-    {
-        return Err(format!("P11 shared claim lockout failed in a fresh session: {reply:?}").into());
+    assert_claim_refused(&mut client, &proof.relog_chest).await?;
+    if page(&mut client, 0).await? != proof.page || client.inventory() != Some(&before) {
+        return Err("P11 shared claim lockout changed inventory or achievements in a fresh session".into());
     }
     reject_earned_notices(&mut client)?;
     evidence("P11_CHECK persisted_shared_claim alternate_chest=NothingToUse inventory=unchanged page=unchanged");
@@ -1590,6 +1610,18 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn p11_claim_refusal_requires_the_chest_owner_and_exact_command() {
+        use super::has_exact_claim_refusal;
+        let right = "event=chest_command_refused trace=live command_id=8 reason=AlreadyClaimed";
+        assert!(has_exact_claim_refusal(right, 8));
+        assert!(!has_exact_claim_refusal(right, 80));
+        assert!(!has_exact_claim_refusal("", 8));
+        assert!(!has_exact_claim_refusal(&right.replace("AlreadyClaimed", "TooFar"), 8));
+        assert!(!has_exact_claim_refusal(&right.replace("chest_command_refused", "map_use"), 8));
+        assert!(!has_exact_claim_refusal(&format!("{right}\n{right}"), 8));
+    }
 
     #[test]
     fn p11_flags_live_target_clear_after_the_acknowledgment() {
@@ -1775,6 +1807,6 @@ fn review_p11_guards_the_journey() {
     assert!(
         include_str!("full_row_p11.rs")
             .split_once("#[cfg(test)]")
-            .is_some_and(|(body, _)| body.contains("duplicate_reply"))
+            .is_some_and(|(body, _)| body.contains("assert_claim_refused(&mut client, &placement).await?"))
     );
 }
