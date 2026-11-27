@@ -3,7 +3,13 @@ use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent, native_session as oteryn_session};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::observe(journey(clients)).await {
+    let mut trace = CloseTrace::new();
+    let caster_wire = trace.caster.clone();
+    let observer_wire = trace.observer.clone();
+    let result = verdict::observe(caster_wire.observe(journey(clients, &caster_wire, &observer_wire))).await;
+    trace.finished = true;
+    trace.report(result.as_ref().err().map(|error| error.as_ref()));
+    match result {
         Ok(()) => evidence(
             "e2e_all scenario=C17b.client status=PASS evidence=live-cast-and-visibility-captured",
         ),
@@ -11,6 +17,69 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             evidence(&format!(
                 "SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence={error}"
             ));
+        }
+    }
+}
+
+// Only C17b.client consumes these live diagnostics. Replay takes its own
+// immutable prefix from the observer capture before relog.
+struct CloseTrace {
+    caster: oteryn_session::test_support::WireCapture,
+    observer: oteryn_session::test_support::WireCapture,
+    started: tokio::time::Instant,
+    finished: bool,
+}
+
+impl CloseTrace {
+    fn new() -> Self {
+        Self {
+            caster: Default::default(),
+            observer: Default::default(),
+            started: tokio::time::Instant::now(),
+            finished: false,
+        }
+    }
+
+    fn report(&self, mut error: Option<&dyn std::error::Error>) {
+        let detail = error.map(ToString::to_string);
+        let mut side = if self.finished || detail.is_some() {
+            "local_scope_exit"
+        } else {
+            "local_completed_or_cancelled"
+        };
+        let mut client_timeout = None;
+        while let Some(cause) = error {
+            if let Some(io) = cause.downcast_ref::<std::io::Error>() {
+                side = match io.kind() {
+                    std::io::ErrorKind::UnexpectedEof | std::io::ErrorKind::ConnectionReset => "peer_or_transport",
+                    _ => "transport_unknown",
+                };
+            }
+            if let Some(oteryn_session::SessionError::Timeout(stage)) = cause.downcast_ref() {
+                client_timeout = Some(*stage);
+            }
+            if let Some(oteryn_dev_client::DevClientError::Timeout(stage)) = cause.downcast_ref() {
+                client_timeout = Some(*stage);
+            }
+            error = cause.source();
+        }
+        for (connection, capture) in [("caster", &self.caster), ("observer", &self.observer)] {
+            use oteryn_protocol_oteryn::decode_wire_envelope;
+            let (received, sent) = capture.take();
+            let frame = received.last().and_then(|raw| decode_wire_envelope(raw).ok())
+                .map(|frame| (frame.connection_generation(), frame.server_sequence(), frame.message_type()));
+            let command = sent.last().and_then(|raw| decode_wire_envelope(raw).ok())
+                .and_then(|frame| frame.client_command(frame.connection_generation()).ok())
+                .map(|command| (command.command_id, command.command_type));
+            evidence(&format!("C17B_CLIENT_CLOSE connection={connection} row_end={side} last_command_sent={command:?} last_frame_received={frame:?} client_timeout={client_timeout:?} elapsed_ms={} detail={detail:?}", self.started.elapsed().as_millis()));
+        }
+    }
+}
+
+impl Drop for CloseTrace {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.report(None);
         }
     }
 }
@@ -26,7 +95,7 @@ fn own(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
         .ok_or_else(|| "C17b.client own entity absent".into())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::test_support::WireCapture, capture: &oteryn_session::test_support::WireCapture) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -45,10 +114,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .spell;
     let mut caster =
         full_row_c17b::seeded_caster(&caster_clients, "C17b.client", 0xc1, spell).await?;
-    let capture = oteryn_session::test_support::WireCapture::default();
     let mut observer = capture.observe(connect_character(clients, 0xc2, 0)).await?;
     full_row_c17b::Staging::new(world, &metadata.spawns)
-        .encounter(&mut caster, &mut observer, &capture)
+        .encounter(&mut caster, &mut observer, capture)
         .await?;
     let rat = full_row_c17b::place_rat(&mut caster).await?;
     super::mp::observations::while_servicing_liveness(
@@ -154,7 +222,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     observer.take_events();
     use tokio::time::Instant;
     let (durable_vitals, before, before_sequence, before_sent, before_received, logout_sent, logout_received, logout_sequence) =
-        full_e2ef5::with_observer_liveness(&mut observer, async {
+        capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
             full_row_c17b::wait_rat_combat_end(&mut caster).await?;
             let sent = Instant::now();
             let (before, sequence) = full_row_c17b::invisibility_sample(&mut caster).await?;
@@ -170,22 +238,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 return Err(format!("C17b first logout invalid after condition sequence {sequence}: {result:?}").into());
             }
             Ok((durable, before.ok_or("C17b Invisible absent before logout")?, sequence, sent, received, logout_sent, logout_received, result.result_server_sequence))
-        }).await?;
+        }))).await?;
     if durable_vitals.0 >= mana_before {
         return Err("C17b spent mana did not persist until logout".into());
     }
-    full_row_c17b::wait_visible(&mut observer, caster_ref, false).await?;
+    capture.observe(full_row_c17b::wait_visible(&mut observer, caster_ref, false)).await?;
     // Keep the character definitely offline long enough to distinguish a
     // paused timer from one running across the admission round trips.
-    full_e2ef5::with_observer_liveness(&mut observer, async {
+    capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
         tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         Ok(())
-    }).await?;
+    }))).await?;
     let login_sent = Instant::now();
-    caster = full_e2ef5::with_observer_liveness(
+    caster = capture.observe(full_e2ef5::with_observer_liveness(
         &mut observer,
-        connect_character(&caster_clients, 0xc3, 0),
-    ).await?;
+        caster_capture.observe(connect_character(&caster_clients, 0xc3, 0)),
+    )).await?;
     let login_received = Instant::now();
     let admission_sequence = caster.last_server_sequence();
     let relog_session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
@@ -207,7 +275,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || after_sequence <= admission_sequence {
         return Err("C17b relog admission state mismatch; see C17B_CLIENT_ADMISSION".into());
     }
-    full_row_c17b::wait_visible(&mut observer, fresh_ref, true).await?;
+    capture.observe(full_row_c17b::wait_visible(&mut observer, fresh_ref, true)).await?;
     evidence(&format!(
         "C17B_CLIENT_RELOG fresh_session=true paid_mana={} invisible_before_ms={initial} remaining_ms={remaining}",
         paid.value.mana
