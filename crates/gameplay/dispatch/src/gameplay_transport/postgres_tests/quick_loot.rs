@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
-use super::fixture::{Harness, debug, id, join_two};
 use super::autowalk_fixtures::{read, send};
+use super::fixture::{Harness, debug, id, join_two};
 use super::full_world_support::command_reply;
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -17,7 +17,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
 };
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
+    MessageType, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
 };
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
@@ -108,7 +108,10 @@ enum Case {
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
     async move |admin| {
-        let pouch = matches!(case, Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout);
+        let pouch = matches!(
+            case,
+            Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout
+        );
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -428,7 +431,9 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 Case::PouchFulfilment => {
                     pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool).await?
                 }
-                Case::Bulk | Case::GoldPouch | Case::PouchLogout => return Err("unexpected dedicated case".into()),
+                Case::Bulk | Case::GoldPouch | Case::PouchLogout => {
+                    return Err("unexpected dedicated case".into());
+                }
             }
             drop(owner);
             drop(authority);
@@ -738,7 +743,8 @@ async fn pouch_relog_logout(
         owner.logout_session(previous).await,
         LogoutReply::Result(LogoutResult::Accepted)
     );
-    let admitted = super::full_world_support::readmit_after_logout(harness, owner, previous).await?;
+    let admitted =
+        super::full_world_support::readmit_after_logout(harness, owner, previous).await?;
     let session = admitted.game_session_id;
     let actor = admitted.runtime_actor.ok_or("readmitted actor")?;
     let store = FreshAdmissionStore::from_root(harness.root.clone());
@@ -1223,7 +1229,11 @@ async fn quick_loot_destination_management(
         super::parameter_spell_fixtures::exchange(owner, admitted, &commands, false, false).await?;
     assert_eq!(replies.len(), commands.len());
     for ((kind, _), (status, _)) in commands.iter().zip(&replies) {
-        assert_eq!(*status, CommandStatus::Accepted, "quick-loot command {kind}");
+        assert_eq!(
+            *status,
+            CommandStatus::Accepted,
+            "quick-loot command {kind}"
+        );
     }
     let first = decode_quick_loot_destinations(&replies[1].1).map_err(debug)?;
     assert_eq!(first.loot.len(), QuickLootCategory::ALL.len() + 1);
@@ -1256,7 +1266,10 @@ async fn quick_loot_destination_management(
         distribution_id,
     )
     .await?;
-    assert_eq!(retry, [(CommandStatus::DuplicateReplay, replies[5].1.clone())]);
+    assert_eq!(
+        retry,
+        [(CommandStatus::DuplicateReplay, replies[5].1.clone())]
+    );
 
     // A cold ingress must recover the same durable result even if the new item view cannot
     // resolve the original handle. An unresolved handle on its own cannot authorize a move.

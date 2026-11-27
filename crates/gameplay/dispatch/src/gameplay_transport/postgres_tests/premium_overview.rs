@@ -186,7 +186,8 @@ fn scenario() -> TestResult {
             crate::gameplay_transport::character_info::CharacterInfoReply::Rejected
         ));
         let (bad, _) =
-            super::cyclopedia_fixtures::support::exchange(&owner, &mut session, 5, 113, &[5, 0]).await?;
+            super::cyclopedia_fixtures::support::exchange(&owner, &mut session, 5, 113, &[5, 0])
+                .await?;
         assert_eq!(bad, CommandStatus::Rejected);
         eprintln!(
             "POSTGRES_EXECUTED t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases"
@@ -195,10 +196,6 @@ fn scenario() -> TestResult {
         Ok(())
     })
 }
-
-#[allow(dead_code, reason = "the shared mTLS fixture serves other Premium cases")]
-#[path = "../../../../social/src/premium/test_producer.rs"]
-mod premium_test_producer;
 
 #[test]
 fn first_overview_uses_active_snapshot_after_fresh_admission() -> TestResult {
@@ -214,11 +211,13 @@ fn first_overview_uses_active_snapshot_after_fresh_admission() -> TestResult {
 }
 
 fn cold_overview() -> TestResult {
+    use super::full_world_support::premium_test_producer::{
+        Reply, TestPki, TestProducer, snapshot,
+    };
     use crate::premium::{
         client::{PremiumClientConfig, PremiumSnapshotClient},
         refresh::PremiumRefresher,
     };
-    use premium_test_producer::{Reply, TestPki, TestProducer, snapshot};
     use std::time::Duration;
     use tokio::sync::Notify;
 
@@ -228,7 +227,11 @@ fn cold_overview() -> TestResult {
             .await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
         let deps = Dependencies::new()?;
         let mut owner = deps.owner(&h, &authority);
         let current = FreshAdmissionStore::from_root(h.root.clone())
@@ -238,12 +241,16 @@ fn cold_overview() -> TestResult {
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
         {
             let mut runtime = deps.runtime.lock().await;
-            runtime.initialize_first_entry_position(deps.actor).map_err(debug)?;
-            runtime.bind_attacker_lease(
-                deps.actor,
-                deps.admitted.game_session_id,
-                current.current_character_lease(),
-            ).map_err(debug)?;
+            runtime
+                .initialize_first_entry_position(deps.actor)
+                .map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    current.current_character_lease(),
+                )
+                .map_err(debug)?;
         }
         deps.initialize(&owner).await;
         let mut session = deps.admitted;
@@ -276,7 +283,10 @@ fn cold_overview() -> TestResult {
         let issued = 1_790_769_600_000_000;
         let coordinator = SpellPremiumCoordinator::new(
             consumer.clone(),
-            Some(Arc::new(Clock(Mutex::new(TrustedNow::new(issued + 60_000_000, 0))))),
+            Some(Arc::new(Clock(Mutex::new(TrustedNow::new(
+                issued + 60_000_000,
+                0,
+            ))))),
             Some(PremiumActivation {
                 activation_id: "cold-premium-overview".into(),
                 switch_over_us: issued,
@@ -291,7 +301,10 @@ fn cold_overview() -> TestResult {
         let mut overview = std::pin::pin!(wire(&owner, &mut session, 1));
         if let Ok(early) = tokio::time::timeout(Duration::from_secs(1), &mut overview).await {
             let early = early?;
-            return Err(format!("First Premium overview completed before Platform answered: {early:?}").into());
+            return Err(format!(
+                "First Premium overview completed before Platform answered: {early:?}"
+            )
+            .into());
         }
         respond.notify_one();
         let paid = tokio::time::timeout(Duration::from_secs(8), overview).await??;
