@@ -351,7 +351,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 "event=logout_release_retry stage={stage} ms={}",
                 started.elapsed().as_millis()
             ));
-            if channel_switch || self.states.spell_states.lock().await.has_retained_familiar_logout(actor, session) {
+            if channel_switch
+                || self
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .has_retained_familiar_logout(actor, session)
+            {
                 break step;
             }
             if !budget
