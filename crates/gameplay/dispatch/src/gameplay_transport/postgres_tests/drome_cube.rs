@@ -25,6 +25,8 @@ mod cases;
 mod fixture;
 #[path = "drome_cube/kooldown_aid.rs"]
 mod kooldown_aid;
+#[path = "drome_cube/logout.rs"]
+mod logout;
 #[path = "drome_cube/wire.rs"]
 mod wire;
 
@@ -35,12 +37,17 @@ enum Case {
     ExistingStack,
     ConcurrentLastUnit,
     KooldownAid,
+    Logout,
 }
 
 fn scenario(case: Case) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
+    routed_scenario(admin, case)
+}
+
+fn routed_scenario(admin: String, case: Case) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -79,8 +86,20 @@ fn kooldown_aid_lost_ack_replays_once_and_keeps_its_durable_cooldown() -> TestRe
     scenario(Case::KooldownAid)
 }
 
+#[test]
+fn drome_cube_first_logout_waits_for_checked_out_pass_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    routed_scenario(admin, Case::Logout)
+}
+
 struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
+    async fn logout(&self, admitted: AdmittedSession) -> crate::gameplay_transport::logout::LogoutReply {
+        self.0.logout_session(admitted).await
+    }
+
     async fn observe_actor_cooldowns(
         &self,
         actor: ExactActorRef,
