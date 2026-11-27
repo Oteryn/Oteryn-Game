@@ -171,7 +171,6 @@ async fn logout_from_protected_ground(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
     let mut occupied = occupied_rat_route_tiles(client);
     occupied.insert(TilePos {
         x: 32444,
@@ -192,11 +191,33 @@ async fn logout_from_protected_ground(
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| tile.protection_zone())
     };
-    let path =
-        route_avoiding(world, from, protected, |at| !occupied.contains(&at)).ok_or_else(|| {
-            format!("no walkable route from Rat hunt at {from:?} to protected ground")
-        })?;
-    walk_rat_route(client, world, &path).await?;
+    let mut path = std::collections::VecDeque::new();
+    let mut detours = 0;
+    while !protected(tile(client.world_spatial().actor_position)?) {
+        let current = tile(client.world_spatial().actor_position)?;
+        if path.is_empty() {
+            path = route_avoiding(world, current, protected, |at| !occupied.contains(&at))
+                .ok_or_else(|| format!("no walkable route from {current:?} to protected ground"))?
+                .into();
+        }
+        let direction = path.pop_front().ok_or("protected route has no next step")?;
+        let landing =
+            destination(world, current, direction).ok_or("protected route step has no landing")?;
+        let visible = occupied_rat_route_tiles(client);
+        if visible.contains(&landing) {
+            detours += 1;
+            evidence(&format!(
+                "P01_CHECK client-logout-route occupied={landing:?} from={current:?} detour={detours}"
+            ));
+            if detours > 8 {
+                return Err("protected logout route exceeded eight occupancy detours".into());
+            }
+            occupied.extend(visible);
+            path.clear();
+            continue;
+        }
+        walk_rat_route(client, world, &[direction]).await?;
+    }
     let reached = tile(client.world_spatial().actor_position)?;
     if !protected(reached) {
         return Err(format!("client logout ground is not protected: {reached:?}").into());
