@@ -13,7 +13,7 @@ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestRe
                 49948,
                 3,
                 (33605, 31468, -7),
-                (32456, 32291, -7),
+                (32210, 32300, -6),
             ),
             (
                 "blue-valley-3",

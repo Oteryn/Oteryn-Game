@@ -20,9 +20,9 @@
       "reversible": false,
       "passages": [],
       "teleport": {
-        "x": 32456,
-        "y": 32291,
-        "floor": -7
+        "x": 32210,
+        "y": 32300,
+        "floor": -6
       },
       "storage": [],
       "offerings": [],
@@ -30,7 +30,9 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2",
+        "https://tibia.fandom.com/wiki/Guarded_Crystal_Sphere",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/adventurers_guild/adventurers_stone.lua:96-98"
       ]
     },
     {
@@ -138,6 +140,8 @@
           ],
           "sources": [
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2",
+            "https://tibia.fandom.com/wiki/Guarded_Crystal_Sphere",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/adventurers_guild/adventurers_stone.lua:96-98",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
           ],
           "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
