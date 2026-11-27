@@ -63,9 +63,6 @@ impl StepIngressRead<'_, '_> {
         ),
         MovementError,
     > {
-        if states.has_pending_spell_commit(actor, session) {
-            return Err(MovementError::FieldAuthorityUnavailable);
-        }
         let fence = self.read.fence();
         if actor != self.actor
             || !self.player_fields_current
@@ -462,9 +459,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 equipment_delta,
             );
         }
-        if source.source_digest() != runtime.content_pin().server_artifact_digest()
-            || states.has_pending_spell_commit(actor, session)
-        {
+        if source.source_digest() != runtime.content_pin().server_artifact_digest() {
             return fail();
         }
         let before = states.get(runtime, actor, session).cloned();

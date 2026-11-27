@@ -109,11 +109,17 @@ pub(super) async fn complete(
         UseDisposition::NothingToUse
     );
     step(owner, member, East).await?;
+    let actor = member.runtime_actor.ok_or("alternate chest actor")?;
+    let session = member.game_session_id;
+    owner.states.spell_states.lock().await.enchanting_pending.push((actor, session));
     assert_eq!(
         use_target(owner, member, &target(map, 33229, 31656)?).await?,
         UseDisposition::NothingToUse,
         "other source choice shares the durable claim"
     );
+    owner.states.spell_states.lock().await.enchanting_pending.retain(|entry| {
+        *entry != (actor, session)
+    });
     durable_counts(pool).await?;
     let fence = owner
         .current_quest_fence(member.game_session_id)

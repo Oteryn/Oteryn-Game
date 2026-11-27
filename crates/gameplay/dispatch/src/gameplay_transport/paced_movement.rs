@@ -4,6 +4,7 @@ use super::*;
 mod autowalk;
 mod blocking;
 pub(super) mod drunk;
+mod protection_zone;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;
@@ -37,6 +38,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected: Option<crate::foundation::MovementPositionSnapshot>,
         follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
+        let probe = protection_zone::Probe::default();
+        let result = self
+            .ordinary_paced_step_attempt(actor, session, direction, expected, follow, &probe)
+            .await;
+        if result.0.disposition != StepDisposition::Moved && probe.needs_refresh() {
+            if self.refresh_pvp_locks(actor, session).await {
+                return self
+                    .ordinary_paced_step_attempt(
+                        actor,
+                        session,
+                        direction,
+                        expected,
+                        follow,
+                        &protection_zone::Probe::default(),
+                    )
+                    .await;
+            }
+            operator_event("event=step_blocked cause=protection_zone_authority");
+        }
+        result
+    }
+
+    async fn step_spell_lane_permit(
+        &self,
+    ) -> Option<crate::durability::spell_owner_commit::SpellLanePermit> {
+        if let Some(permit) = self.spell_lane_permit().await {
+            return Some(permit);
+        }
+        // An unresolved durable position owner must finish before we can move.
+        // Give its owning lane the original command's bounded holder window.
+        let retry = AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
+        retry
+            .retry_unavailable(async || {
+                self.spell_lane_permit()
+                    .await
+                    .ok_or(connection::AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
+    }
+
+    async fn ordinary_paced_step_attempt(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+        expected: Option<crate::foundation::MovementPositionSnapshot>,
+        follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
+        pz_probe: &protection_zone::Probe,
+    ) -> (StepOutcome, Option<Duration>) {
         if !self.resume_dawnport_departure(actor, session).await {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());
@@ -55,28 +106,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Preflight SQL shares the field owner's bounded durability holder.
         // Take the lane before those reads so a concurrent field turn cannot
         // exhaust the holder or invalidate their player-state predecessor.
-        let Some(mut permit) = self.spell_lane_permit().await else {
+        let Some(mut permit) = self.step_spell_lane_permit().await else {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());
             operator_event("event=step_rejected_lane");
             return (StepOutcome::rejected(), None);
         };
-        if !source_map_initialized
-            || super::loop_move::reconcile_cask_collision(self)
-                .await
-                .is_none()
-        {
+        if !source_map_initialized {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());
             operator_event("event=step_rejected_source_map");
             return (StepOutcome::rejected(), None);
         }
-        if !self.refresh_pvp_locks(actor, session).await {
-            #[cfg(test)]
-            eprintln!("M25 movement preflight rejected at {}", line!());
-            operator_event("event=step_rejected_pvp_locks");
-            return (StepOutcome::rejected(), None);
-        }
+        // The collision index keeps its last known item facts while a cask
+        // projection cannot refresh. Its read is not movement qualification.
+        let _ = super::loop_move::reconcile_cask_collision(self).await;
         self.refresh_cyclopedia_speed(actor, session).await;
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
@@ -114,6 +158,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if runtime.note_rotten_movement_time(now).is_err() {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_movement kind=OwnerClock");
             drop((states, runtime));
             let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
@@ -141,14 +186,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
-        if states.has_pending_spell_commit(actor, session) {
-            #[cfg(test)]
-            eprintln!("M25 movement preflight rejected at {}", line!());
-            operator_event("event=step_rejected_pending_spell");
-            drop((states, runtime));
-            let _ = Self::return_unused_field_step_pass(field_pass).await;
-            return (StepOutcome::rejected(), None);
-        }
+        // The lane settles real parked commits. A marker for an unrelated
+        // pending spell effect does not own the walking position.
         let cardinal = match direction {
             StepDirection::North => CardinalStep::North,
             StepDirection::East => CardinalStep::East,
@@ -168,7 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } {
             Ok(direction) => direction,
             Err(MovementError::Blocked) => {
-                operator_event("event=step_blocked cause=drome_rule");
+                operator_event("event=step_blocked cause=movement_condition");
                 drop((states, runtime));
                 let _ = Self::return_unused_field_step_pass(field_pass).await;
                 return (
@@ -228,11 +267,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy = self.door.lock().await.blocking_cells().clone();
             &legacy
         };
-        let pvp_blocking = super::pvp_live::PvpBlocker {
-            inner: blocking,
-            cells: self.movement_cells(),
-            blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
-        };
+        let origin = runtime.read_actor_position(actor).ok();
+        let pvp_blocking = protection_zone::StepBlocker::new(
+            blocking,
+            self.movement_cells(),
+            origin,
+            &states,
+            (actor, session),
+            now,
+            pz_probe,
+        );
         let callback_portals = super::quest_callbacks::CallbackPortals {
             inner: &pvp_blocking,
             map: self.bundle_map(),
@@ -255,7 +299,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_some_and(|native| {
                     super::soul_war_callbacks::qualifies_source(&runtime, native)
                 });
-        let origin = runtime.read_actor_position(actor).ok();
         let snow_origin = self.bundle_map().is_some_and(|map| {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
@@ -279,13 +322,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .binary_search(&30)
                 .is_err()
         {
-            if Self::return_unused_field_step_pass(field_pass)
-                .await
-                .is_err()
-            {
-                operator_event("event=step_rejected_field_pass_return");
-                return (StepOutcome::rejected(), None);
-            }
+            let _ = Self::return_unused_field_step_pass(field_pass).await;
             states.step_with_non_player_field_contact(
                 &mut runtime,
                 self.movement_cells(),
@@ -458,7 +495,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::content::static_cell_engine::StaticCellEngineError::Absent,
                 )),
             ) => {
-                blocking::log(self, &pvp_blocking, origin, cardinal, error);
+                if error == MovementError::Blocked && pz_probe.blocked_entry() {
+                    operator_event("event=step_blocked cause=protection_zone");
+                } else if !pz_probe.needs_refresh() {
+                    blocking::log(self, origin, cardinal, error);
+                }
                 (
                     StepOutcome {
                         disposition: StepDisposition::Blocked,
@@ -541,11 +582,8 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
         "source_map",
         "dead",
         "lane",
-        "pvp_locks",
         "stale_position",
-        "pending_spell",
         "drome",
-        "field_pass_return",
         "movement",
     ] {
         assert!(
@@ -560,7 +598,9 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
             .count(),
         1
     );
-    assert_eq!(body.matches("StepOutcome::rejected()").count(), 11);
-    assert_eq!(body.matches("operator_event(").count(), 11);
+    assert_eq!(body.matches("StepOutcome::rejected()").count(), 8);
+    assert!(body.contains("event=step_blocked cause=protection_zone_authority"));
+    assert!(body.contains("event=step_blocked cause=movement_condition"));
+    assert!(body.contains("event=step_blocked cause=protection_zone"));
     Ok(())
 }

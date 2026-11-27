@@ -166,12 +166,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> Reply {
-        // An uncertain native food commit must settle before movement reads its
-        // SPEED predecessor. The resolver takes and releases this same lane.
-        if !crate::gameplay_transport::hireling::resolve_pending_lamp(self, actor, session).await
-            || !crate::gameplay_transport::item_use::gourmet::resolve(self, actor, session).await
-            || !self.ensure_source_map_initialized().await
-        {
+        if !self.ensure_source_map_initialized().await {
+            super::super::operator_event("event=step_rejected_source_map");
+            return (StepOutcome::rejected(), None);
+        }
+        // An unresolved gourmet effect can change the actual walk-speed predecessor;
+        // unrelated pending item commands do not own house movement.
+        if !crate::gameplay_transport::item_use::gourmet::resolve(self, actor, session).await {
+            super::super::operator_event("event=step_rejected_movement kind=SpeedOwnerUnavailable");
             return (StepOutcome::rejected(), None);
         }
         let Some(_lane) = self.spell_lane_permit().await else {
@@ -201,7 +203,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || state.lease.character_id().as_bytes() != fence.character_id.as_bytes()
             || state.lease.generation() != fence.character_lease_generation
             || states.is_dead(actor)
-            || states.has_pending_spell_commit(actor, session)
             || self.movement_cells().scope().world_id != self.world_id
             || self.movement_cells().scope().generation_digest
                 != runtime.content_pin().server_artifact_digest()
@@ -318,9 +319,6 @@ impl Turn<'_, '_, '_, '_> {
             || read.equipment.character != *self.fence.character_id.as_bytes()
             || read.equipment.content_digest != self.runtime.content_pin().server_artifact_digest()
             || content.source_digest() != read.equipment.content_digest
-            || self
-                .states
-                .has_pending_spell_commit(self.actor, self.session)
         {
             return Err(MovementError::NotQualified);
         }

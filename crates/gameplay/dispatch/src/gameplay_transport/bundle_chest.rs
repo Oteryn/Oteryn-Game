@@ -15,6 +15,35 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::interaction_chest_use::{ChestUseError, chest_use_disposition, entry_chest};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[derive(Debug, Clone, Copy)]
+enum ChestRefusal {
+    FenceUnavailable,
+    StaleFence,
+    AwardRoute,
+    UnqualifiedClaim,
+    QuestBinding,
+    SpellLaneUnavailable,
+    ActorUnavailable,
+    Dead,
+    ContentPin,
+    PositionUnavailable,
+    TooFar,
+    Exhausted,
+    ClaimInput,
+    BackpackUnavailable,
+    RewardItemFacts,
+    InvalidFluid,
+    Timeout,
+}
+
+fn refusal(command: UseCommand, reason: ChestRefusal, disposition: UseDisposition) -> UseOutcome {
+    super::operator_event(&format!(
+        "event=chest_command_refused command_id={} reason={reason:?}",
+        command.command_id,
+    ));
+    outcome(disposition)
+}
+
 pub(super) fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
         disposition,
@@ -57,17 +86,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // read keeps the command's bounded holder retry and still fails closed.
         if let Some(expected) = command.item_fence {
             let retry = super::AdmissionRetryBudget::for_command(self.root);
-            if !matches!(
-                tokio::time::timeout(
-                    std::time::Duration::from_secs(10),
-                    retry.retry_command_guard(async || {
-                        self.current_quest_fence_durable(command.game_session_id).await
-                    }),
-                )
-                .await,
-                Ok(Ok(Some(current))) if current.item_fence() == expected
-            ) {
-                return Some(outcome(UseDisposition::Rejected));
+            let current = tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                retry.retry_command_guard(async || {
+                    self.current_quest_fence_durable(command.game_session_id)
+                        .await
+                }),
+            )
+            .await;
+            let reason = match current {
+                Ok(Ok(Some(current))) if current.item_fence() == expected => None,
+                Ok(Ok(_)) => Some(ChestRefusal::StaleFence),
+                Ok(Err(_)) => Some(ChestRefusal::FenceUnavailable),
+                Err(_) => Some(ChestRefusal::Timeout),
+            };
+            if let Some(reason) = reason {
+                return Some(refusal(command, reason, UseDisposition::Rejected));
             }
         }
         #[cfg(test)]
@@ -149,7 +183,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if claim.key.as_str()
             == oteryn_gameplay_quests::quest::world_callbacks::SERPENTINE_PEARL_CLAIM
         {
-            return Some(outcome(UseDisposition::Rejected));
+            return Some(refusal(
+                command,
+                ChestRefusal::AwardRoute,
+                UseDisposition::Rejected,
+            ));
         }
         if !super::native_claim_reward::admits_forgemaster_claim(
             map,
@@ -157,7 +195,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             bound,
             self.quest_catalogue.as_deref(),
         ) {
-            return Some(outcome(UseDisposition::NotPossible));
+            return Some(refusal(
+                command,
+                ChestRefusal::UnqualifiedClaim,
+                UseDisposition::NotPossible,
+            ));
         }
         let mut quest_transition = bound.placement.quest_transition.clone();
         match oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(
@@ -169,12 +211,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .as_ref()
                         .is_some_and(|current| current != key)
                 {
-                    return Some(outcome(UseDisposition::Rejected));
+                    return Some(refusal(
+                        command,
+                        ChestRefusal::QuestBinding,
+                        UseDisposition::Rejected,
+                    ));
                 }
                 quest_transition = Some(key.to_owned());
             }
             Ok(None) => {}
-            Err(_) => return Some(outcome(UseDisposition::Rejected)),
+            Err(_) => {
+                return Some(refusal(
+                    command,
+                    ChestRefusal::QuestBinding,
+                    UseDisposition::Rejected,
+                ));
+            }
         }
 
         // Source shards bypass the entry-room Content check at boot. Resolve their
@@ -186,7 +238,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|catalogue| catalogue.transition(key))
                 .is_none()
         }) {
-            return Some(outcome(UseDisposition::Rejected));
+            return Some(refusal(
+                command,
+                ChestRefusal::QuestBinding,
+                UseDisposition::Rejected,
+            ));
         }
         if bound.reward_callback.is_some() {
             self.settle_native_claim_premium(claim, bound, command)
@@ -195,35 +251,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Some(
             tokio::time::timeout(std::time::Duration::from_secs(10), async {
                 let Some(permit) = self.spell_lane_permit().await else {
-                    return outcome(UseDisposition::Rejected);
+                    return refusal(
+                        command,
+                        ChestRefusal::SpellLaneUnavailable,
+                        UseDisposition::Rejected,
+                    );
                 };
                 {
                     let mut runtime = self.runtime.lock().await;
-                    let Ok(states) = self.states.spell_states.try_lock() else {
-                        return outcome(UseDisposition::Rejected);
-                    };
+                    // Wait inside the existing chest deadline. An observation
+                    // of player state cannot disqualify the chest by holding its lock.
+                    let states = self.states.spell_states.lock().await;
                     if !runtime
                         .player_control_facts(actor, command.game_session_id)
                         .is_ok_and(|facts| facts.control_loss.is_none())
-                        || states.is_dead(actor)
-                        || states.has_pending_spell_commit(actor, command.game_session_id)
-                        || pinned_index(&runtime, self.active_generation).is_none()
                     {
-                        return outcome(UseDisposition::Rejected);
+                        return refusal(
+                            command,
+                            ChestRefusal::ActorUnavailable,
+                            UseDisposition::Rejected,
+                        );
+                    }
+                    if states.is_dead(actor) {
+                        return refusal(command, ChestRefusal::Dead, UseDisposition::Rejected);
+                    }
+                    if pinned_index(&runtime, self.active_generation).is_none() {
+                        return refusal(
+                            command,
+                            ChestRefusal::ContentPin,
+                            UseDisposition::Rejected,
+                        );
                     }
                     drop(states);
                     let Ok(position) = runtime.borrow_movement_position().read(actor) else {
-                        return outcome(UseDisposition::Rejected);
+                        return refusal(
+                            command,
+                            ChestRefusal::PositionUnavailable,
+                            UseDisposition::Rejected,
+                        );
                     };
                     if position.context() != runtime.pinned_movement_context() {
-                        return outcome(UseDisposition::Rejected);
+                        return refusal(
+                            command,
+                            ChestRefusal::PositionUnavailable,
+                            UseDisposition::Rejected,
+                        );
                     }
                     let position = position.position();
                     if position.x.abs_diff(i32::from(bound.cell.x)) > 1
                         || position.y.abs_diff(i32::from(bound.cell.y)) > 1
                         || i32::from(position.floor) != -i32::from(bound.cell.floor)
                     {
-                        return outcome(UseDisposition::TooFar);
+                        return refusal(command, ChestRefusal::TooFar, UseDisposition::TooFar);
                     }
                     if !self
                         .states
@@ -231,7 +310,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .lock()
                         .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
                     {
-                        return outcome(UseDisposition::Exhausted);
+                        return refusal(
+                            command,
+                            ChestRefusal::Exhausted,
+                            UseDisposition::Exhausted,
+                        );
                     }
                 }
                 if bound.reward_callback.is_some() {
@@ -244,20 +327,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     CommandId::new(command.command_id),
                     bound.placement.items.split_first(),
                 ) else {
-                    return outcome(UseDisposition::Rejected);
+                    return refusal(command, ChestRefusal::ClaimInput, UseDisposition::Rejected);
                 };
                 let Ok(Some(bag)) = self
                     .root
                     .read_character_backpack(self.character, fence.character_id)
                     .await
                 else {
-                    return outcome(UseDisposition::Rejected);
+                    return refusal(
+                        command,
+                        ChestRefusal::BackpackUnavailable,
+                        UseDisposition::Rejected,
+                    );
                 };
                 let (Ok(item), Ok(backpack)) = (
                     generation_item_facts(native, &item_ref(&reward.item)),
                     generation_item_facts(native, &bag.backpack.definition),
                 ) else {
-                    return outcome(UseDisposition::Rejected);
+                    return refusal(
+                        command,
+                        ChestRefusal::RewardItemFacts,
+                        UseDisposition::Rejected,
+                    );
                 };
                 // Match the quest reward owner's variable-vessel admission. A
                 // content fluid modifier cannot turn an ordinary Item into a vessel.
@@ -277,7 +368,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 )
                             })
                 }) {
-                    return outcome(UseDisposition::Rejected);
+                    return refusal(
+                        command,
+                        ChestRefusal::InvalidFluid,
+                        UseDisposition::Rejected,
+                    );
                 }
                 let contents = bound
                     .contents
@@ -296,7 +391,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     .collect::<Result<Vec<_>, _>>();
                 let Ok(contents) = contents else {
-                    return outcome(UseDisposition::Rejected);
+                    return refusal(
+                        command,
+                        ChestRefusal::RewardItemFacts,
+                        UseDisposition::Rejected,
+                    );
                 };
                 let additional_items = additional
                     .iter()
@@ -314,7 +413,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     .collect::<Result<Vec<_>, _>>();
                 let Ok(additional_items) = additional_items else {
-                    return outcome(UseDisposition::Rejected);
+                    return refusal(
+                        command,
+                        ChestRefusal::RewardItemFacts,
+                        UseDisposition::Rejected,
+                    );
                 };
                 let request = RewardClaimMintRequest {
                     backpack_outputs: false,
@@ -401,11 +504,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             ..outcome(UseDisposition::Committed)
                         }
                     }
-                    Err(error) => mint_refusal(error),
+                    Err(error) => mint_refusal(command, error),
                 }
             })
             .await
-            .unwrap_or_else(|_| outcome(UseDisposition::Rejected)),
+            .unwrap_or_else(|_| refusal(command, ChestRefusal::Timeout, UseDisposition::Rejected)),
         )
     }
 }
@@ -417,6 +520,23 @@ pub(super) fn reward_occurrence(mint: RewardClaimMintOutcome) -> [u8; 16] {
     }
 }
 
-fn mint_refusal(error: RewardClaimMintError) -> UseOutcome {
+fn mint_refusal(command: UseCommand, error: RewardClaimMintError) -> UseOutcome {
+    let reason = match &error {
+        RewardClaimMintError::Refused(reason) => format!("{reason:?}"),
+        RewardClaimMintError::InvalidInput => "MintInvalidInput".into(),
+        RewardClaimMintError::CapacityExceeded => "MintCapacityExceeded".into(),
+        RewardClaimMintError::AuthorityRejected => "MintAuthorityRejected".into(),
+        RewardClaimMintError::ConflictingCause => "ConflictingCause".into(),
+        RewardClaimMintError::ConflictingCandidate => "ConflictingCandidate".into(),
+        RewardClaimMintError::UnknownAchievement => "UnknownAchievement".into(),
+        RewardClaimMintError::Unavailable(crate::durability::DurabilityError::RootUnavailable) => {
+            "MintHolderBusy".into()
+        }
+        RewardClaimMintError::Unavailable(_) => "MintUnavailable".into(),
+    };
+    super::operator_event(&format!(
+        "event=chest_command_refused command_id={} reason={reason}",
+        command.command_id,
+    ));
     outcome(chest_use_disposition(&ChestUseError::Mint(error)))
 }
