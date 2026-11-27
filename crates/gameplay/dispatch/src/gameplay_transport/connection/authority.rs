@@ -46,6 +46,12 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = Option<oteryn_protocol_oteryn::daily_boost::login::WorldInfo>> {
         async { None }
     }
+    /// Let the registered account's first authoritative snapshot settle before gameplay input.
+    /// Authorities without a Premium source have no snapshot to wait on.
+    fn await_admitted_premium(&self, _admitted: AdmittedSession) -> impl Future<Output = ()> {
+        async {}
+    }
+
     /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
     fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }

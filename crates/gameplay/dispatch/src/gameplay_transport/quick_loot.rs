@@ -200,7 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Some(coordinator) = self.premium_coordinator
             && let Some(account) = self.session_account(admitted.game_session_id)
         {
-            match coordinator.quick_loot_premium(account).await {
+            match coordinator.ready_premium_gate(account).await {
                 Ok(gate) => gate.premium_current(),
                 Err(error) => {
                     log_refusal(&admitted, command.command_id, "premium", &error);

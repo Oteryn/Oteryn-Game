@@ -278,6 +278,14 @@ where
         if !authority.remember_activity_connection(admitted) {
             return ServeEnd::Disconnected.finish(admitted);
         }
+        // All gameplay commands share this entry boundary, including those
+        // whose Premium check reads the account projection directly.
+        if matches!(
+            admitted.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) {
+            authority.await_admitted_premium(admitted).await;
+        }
         if !authority.prepare_quest_callback_resume(&mut admitted).await {
             return ServeEnd::Disconnected.finish(admitted);
         }
@@ -310,6 +318,7 @@ where
         let repaired_io = if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
             && admitted.runtime_actor.is_some()
         {
+            authority.await_admitted_premium(admitted).await;
             match spell_repair::wait(stream, &mut admitted, authority, policy).await {
                 Ok(io) => Some(io),
                 Err(end) => return end.finish(admitted),

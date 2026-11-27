@@ -1,5 +1,42 @@
 use super::*;
 
+#[cfg(test)]
+#[derive(Default)]
+pub(in crate::gameplay_transport) struct HolderCheckoutProbe {
+    before_read: tokio::sync::Notify,
+    proceed: tokio::sync::Notify,
+    read_failed: tokio::sync::Notify,
+}
+
+#[cfg(test)]
+impl HolderCheckoutProbe {
+    pub(in crate::gameplay_transport) async fn pause(&self) {
+        self.before_read.notify_one();
+        self.proceed.notified().await;
+    }
+
+    pub(in crate::gameplay_transport) fn blocked(&self) {
+        self.read_failed.notify_one();
+    }
+
+    pub(in crate::gameplay_transport) async fn contend(
+        &self,
+        root: &DurabilityRoot,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        self.before_read.notified().await;
+        // Another foreground pass briefly wins the real holder at the selected checkout.
+        let holder = root.try_issue_semantic_pass()?;
+        self.proceed.notify_one();
+        self.read_failed.notified().await;
+        holder.run(|_, _| Box::pin(async { Ok(()) })).await
+    }
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static CONDITION_RELEASE_PROBE: std::cell::Cell<Option<std::sync::Arc<HolderCheckoutProbe>>>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn release_terminal(
         &self,
@@ -215,7 +252,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
             return ReleaseAttempt::Retry;
         }
+        #[cfg(test)]
+        let probe = CONDITION_RELEASE_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
         if !self.save_conditions_at_actor_end(actor, session).await {
+            #[cfg(test)]
+            if let Some(probe) = probe {
+                probe.blocked();
+            }
             return ReleaseAttempt::Retry;
         }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.

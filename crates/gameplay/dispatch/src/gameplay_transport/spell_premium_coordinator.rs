@@ -519,9 +519,8 @@ impl SpellPremiumCoordinator {
         }
     }
 
-    /// Quick Loot uses the read-only gate and waits for a transiently busy holder
-    /// before treating a cold Premium activation as unavailable.
-    pub(super) async fn quick_loot_premium(
+    /// Read the gate after a bounded retry of a busy holder during cold activation.
+    pub(super) async fn ready_premium_gate(
         &self,
         account: [u8; 16],
     ) -> Result<PremiumGate, DurabilityError> {
