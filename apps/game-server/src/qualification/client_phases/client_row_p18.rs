@@ -245,7 +245,7 @@ pub(super) async fn seed_dust(row: &str, clients: &SeamClients<'_>) -> TestResul
         .bind(&entry).bind(&character).execute(&mut *tx).await?;
     tx.commit().await?;
     evidence(&format!(
-        "FIXTURE row={row} input=forge_dust before=0 after=100 cap=100"
+        "FIXTURE row={row} input=forge_dust before=0 after=100 dust_cap=100"
     ));
     Ok(())
 }
@@ -463,19 +463,42 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         boost: false,
         protect: false,
     };
-    let wire::Payload::Quote(quote) =
-        super::full_row_p18::preview(&mut client, selection).await?
-    else {
-        return Err("distinct Fusion daggers did not produce a live pair quote".into());
-    };
-    if quote.selection != selection
-        || (quote.target_tier, quote.success_percent, quote.protection_percent) != (1, 50, 0)
-        || (quote.cost.dust, quote.cost.gold, quote.cost.cores) != (100, 25_000, 0)
-        || (quote.resources.dust, quote.resources.carried_gold, quote.resources.bank_gold)
-            != (15, 30_050, 0)
-    {
-        return Err(format!("Forge refusal pre-state has an incorrect quote: {quote:?}").into());
+    let panel = &mut confirmation_panel;
+    panel.first_item = pair.0.get();
+    panel.second_item = pair.1.get();
+    let fusion_id = occurrence(session, 1);
+    if panel.paid_request(fusion_id).is_some() {
+        return Err("Fusion could be submitted before reviewing a quote".into());
     }
+    let request = forge_ui::preview_request(panel, selection).ok_or("Fusion preview did not start")?;
+    let response = client.session_mut()
+        .gated_command(request.capability, request.kind, &request.payload).await?;
+    if response.status != CommandStatus::Accepted {
+        return Err("Fusion pair quote was refused".into());
+    }
+    forge_ui::preview::apply(panel, &request, &response);
+    let item = |handle| wire::Item {
+        handle, definition_ref: dagger.get(), appearance: 3267, name: "dagger".into(),
+        classification: 1, tier: 0, maximum_tier: 1, container: false,
+    };
+    let expected_quote = wire::Quote {
+        selection, first: item(pair.0), second: item(pair.1),
+        resources: wire::Resources {
+            carried_gold: 30_050, bank_gold: 0, bank_spendable: true,
+            dust: 15, dust_limit: 101, cores: 0, slivers: 3,
+        },
+        cost: wire::Cost { gold: 25_000, dust: 100, cores: 0 },
+        target_tier: 1, success_percent: 50, protection_percent: 0,
+    };
+    if panel.preview.quote.as_ref() != Some(&expected_quote) {
+        return Err(format!("Fusion quote mismatch: {:?}", panel.preview.quote).into());
+    }
+    quotes.push((response.command_id, response.server_sequence, response.status as u32,
+        response.payload, request.payload));
+    let fusion = panel.paid_request(fusion_id).and_then(|request| request.encode())
+        .ok_or("reviewed Fusion could not be submitted")?;
+    let fusion = forge_ui::request(panel, forge_ui::command(fusion.to_vec()))
+        .ok_or("reviewed Fusion request was rejected by the panel")?;
     for (ordinal, (name, operation, expected_reason)) in [
         // The valid, distinct pair is evaluated against the remaining dust.
         ("fusion", Operation::Fusion, "INSUFFICIENT_DUST"),
@@ -491,15 +514,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         // The item-forge-v1 contract gives new attempts and history a shared 490 ms cooldown.
         client.service_liveness(Duration::from_millis(490)).await?;
-        let pair = operation.requires_pair().then_some(pair);
-        let (bytes, body) = forge(
-            &mut client,
-            operation,
-            occurrence(session, u8::try_from(ordinal + 1)?),
-            pair,
-            0,
-        )
-        .await?;
+        let (bytes, body) = if operation == Operation::Fusion {
+            submit_forge(&mut client, operation, &fusion.payload).await?
+        } else {
+            forge(&mut client, operation, occurrence(session, u8::try_from(ordinal + 1)?),
+                None, 0).await?
+        };
         check_refusal(&body, expected_reason).map_err(|error| format!("{name}: {error}"))?;
         if dust(&mut client).await? != balance
             || client.inventory() != Some(&inventory)

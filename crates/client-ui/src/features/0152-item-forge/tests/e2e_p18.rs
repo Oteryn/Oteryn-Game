@@ -147,9 +147,9 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                 19 => matches!(byte, b'8' | b'9' | b'a' | b'b'),
                 _ => byte.is_ascii_hexdigit(),
             })
-        || requests.len() != 10
+        || requests.len() != 11
     {
-        return Err("Forge replay requires ten frames from a live UUIDv7 session".into());
+        return Err("Forge replay requires eleven frames from a live UUIDv7 session".into());
     }
     let mut panel = ItemForgePanel {
         selected: true,
@@ -178,7 +178,7 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         {
             return Err(format!("invalid Forge reply metadata at frame {index}").into());
         }
-        if matches!(index, 1 | 2) {
+        if matches!(index, 1..=3) {
             use oteryn_client_runtime::{forge_preview as wire, raw_feature};
             let quote_index = index + 7;
             let (quote_id, quote_sequence, quote_request) = &requests[quote_index];
@@ -198,15 +198,25 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             }
             let submitted =
                 Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
+            let selection = if index == 3 {
+                panel.first_item = submitted.first_item.ok_or("Fusion receiver absent")?.get();
+                panel.second_item = submitted.second_item.ok_or("Fusion donor absent")?.get();
+                if panel.paid_request(submitted.occurrence).is_some() {
+                    return Err("Fusion replay submitted before review".into());
+                }
+                panel.selection().ok_or("Fusion pair selection missing")?
+            } else {
+                wire::Selection::Resource(submitted.operation)
+            };
             let request =
-                preview_request(&mut panel, wire::Selection::Resource(submitted.operation))
-                    .ok_or("Forge UI refused resource review")?;
+                preview_request(&mut panel, selection).ok_or("Forge UI refused preview request")?;
             if request.payload != *quote_request
-                || panel
-                    .confirm_resource(panel.resource_dialog.serial, submitted.occurrence)
-                    .is_some()
+                || (index != 3
+                    && panel
+                        .confirm_resource(panel.resource_dialog.serial, submitted.occurrence)
+                        .is_some())
             {
-                return Err("Forge submitted without the live resource quote".into());
+                return Err("Forge UI did not reproduce the captured preview request".into());
             }
             crate::item_forge::preview::apply(
                 &mut panel,
@@ -218,17 +228,38 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                     payload: quote.payload,
                 },
             );
-            check_paid_confirmation(index, &panel.resource_dialog)?;
-            let serial = panel.resource_dialog.serial;
-            let confirmed = panel
-                .confirm_resource(serial, submitted.occurrence)
-                .ok_or("Forge UI refused the displayed confirmation")?;
-            if confirmed != submitted
-                || panel
+            if index == 3 {
+                let expected = concat!(
+                    "Receiver: dagger — class 1, tier 0 / 1\n",
+                    "Source / tier donor: dagger — class 1, tier 0 / 1\n",
+                    "Server-verified pair: target tier 1\n",
+                    "Base cost before outcome bonuses: 25000 gold, 100 dust, 0 cores\n",
+                    "Success: 50%; tier-loss protection: 0%\n",
+                    "Available: 30050 carried gold; 0 bank gold; 15 / 101 dust; 0 cores; 3 slivers\n",
+                    "The original server writer independently rechecks the current state."
+                );
+                if crate::item_forge::selected_pair_text(&panel) != expected
+                    || panel.paid_request(submitted.occurrence) != Some(submitted)
+                {
+                    return Err(
+                        "Fusion review did not render or submit the exact live quote".into(),
+                    );
+                }
+            } else {
+                check_paid_confirmation(index, &panel.resource_dialog)?;
+                let serial = panel.resource_dialog.serial;
+                let confirmed = panel
                     .confirm_resource(serial, submitted.occurrence)
-                    .is_some()
-            {
-                return Err("Forge confirmation submitted a different or duplicate action".into());
+                    .ok_or("Forge UI refused the displayed confirmation")?;
+                if confirmed != submitted
+                    || panel
+                        .confirm_resource(serial, submitted.occurrence)
+                        .is_some()
+                {
+                    return Err(
+                        "Forge confirmation submitted a different or duplicate action".into(),
+                    );
+                }
             }
         }
         previous = (command_id, server_sequence);
@@ -246,7 +277,19 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
         } else {
             let submitted =
                 Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
-            request(&mut panel, command(submitted_bytes)).ok_or("Forge UI refused submission")?;
+            let payload = if index == 3 {
+                let reviewed = panel
+                    .paid_request(submitted.occurrence)
+                    .and_then(|request| request.encode())
+                    .ok_or("reviewed Fusion request missing")?;
+                if reviewed.as_slice() != submitted_bytes {
+                    return Err("reviewed Fusion request differs from the submitted frame".into());
+                }
+                reviewed.to_vec()
+            } else {
+                submitted_bytes
+            };
+            request(&mut panel, command(payload)).ok_or("Forge UI refused submission")?;
             Some(submitted)
         };
         if !panel.pending || panel.submitted != submitted {
