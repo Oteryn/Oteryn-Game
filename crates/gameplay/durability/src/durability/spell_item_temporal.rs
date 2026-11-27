@@ -318,9 +318,12 @@ pub async fn drain_due_field_chains_in_transaction(
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (g.world_id=i.world_id AND game_instance_corpse_stage_current(i.item_instance_id,i.world_id,encode($5,'hex')::uuid,$3::text::numeric,g.stack_ordinal))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
-          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
-          AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
-          AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
+          AND ((cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
+            AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
+            AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric)
+           OR (g.item_instance_id IS NULL AND game_instance_carried_corpse_timer_current(
+             i.item_instance_id,p.source_stage,i.world_id,encode($5,'hex')::uuid,$3::text::numeric,
+             cg.character_id,sess.game_session_id,sess.character_lease_generation,sess.current_generation)))))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id,p.source_stage LIMIT $4 FOR UPDATE OF i,p"#)
         .bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(authority.generation().to_string()).bind(1_i64).bind(instance.map(|id| id.to_vec())).fetch_all(&mut **tx).await?;
         if rows.is_empty() {
