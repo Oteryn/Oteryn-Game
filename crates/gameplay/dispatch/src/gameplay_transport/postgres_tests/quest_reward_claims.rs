@@ -10,6 +10,7 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+use crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -262,7 +263,7 @@ const PHASE_A_BOOK: &[Chest] = &[Chest {
     reward: "oteryn:item.tibia.i2821",
     quantity: 1,
     contents: &[],
-    text_digest: Some("9ea894f92d1b6e4cf60555cd08f5e552b8c5ce59c11c13eb6d35f7ff07abb036"),
+    text_digest: Some("82c070d062d19713a8dcb51b748174e179a9570800e07a316e209d641708119f"),
 }];
 
 fn phase_a_chests() -> impl Iterator<Item = &'static Chest> {
@@ -1170,7 +1171,7 @@ async fn numbered_key_journey(
             use_with_position: None,
         })
         .map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+        tokio::time::sleep(WORLD_USE_WITH_COOLDOWN).await;
         let (next, result, _) = super::item_craft_fixtures::exchange(
             owner,
             admitted,
@@ -1244,7 +1245,7 @@ async fn panpipe_access(
         ("oteryn:item.tibia.i2968", UseDisposition::KeyMismatch),
         ("oteryn:item.tibia.i2969", UseDisposition::Committed),
     ] {
-        tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+        tokio::time::sleep(WORLD_USE_WITH_COOLDOWN).await;
         let command = admitted.continuity.next_command_id;
         let (next, result, actual) = super::item_craft_fixtures::exchange(
             owner,

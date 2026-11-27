@@ -529,7 +529,9 @@ def _requested_inputs(root, extra_keys=()):
     keys.add("oteryn:item.tibia.i21467")
     # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
     # admitted bone key2973. Its key-binding hold is separate from Item admission.
-    keys.add("oteryn:item.tibia.i2973")
+    keys.add('oteryn:item.tibia.i2973')
+    # Existing characters can still own the unlit lantern from the old claim.
+    keys.add('oteryn:item.tibia.i23734')
     # Restored startup chest selectors must carry their exact ready reward into
     # the native provider too. Otherwise a correctly bound chest has nothing to
     # mint (notably Nightmare Teddy). This is the selected cohort, not a general

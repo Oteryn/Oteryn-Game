@@ -277,6 +277,14 @@ class ItemKeySetTests(unittest.TestCase):
 class LootTablesTests(unittest.TestCase):
     """ARCH-KILL-REWARD-LOGOUT-1 §1.1: the loot section is generated from the Content definitions."""
 
+    def test_arbaziloth_multi_count_yields_keep_their_stack_facts(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        facts = {row['item']['key']: row for row in document['items']}
+        for item in (3043, 7642, 23373, 7643, 23375, 23374, 3041, 3037):
+            with self.subTest(item=item):
+                self.assertIs(facts[f'oteryn:item.tibia.i{item}'].get('stackable'), True)
+
     def test_corruptor_projects_current_items_and_native_corpse_without_changing_source(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
         document = json.loads(full.loot_tables(creatures))

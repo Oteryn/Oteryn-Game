@@ -28,14 +28,16 @@ fn qc_skull_of_ratha_three_source_chests_use_replay_and_refusal() -> TestResult 
         CLAIMS.into_iter().collect(),
         "every Skull of Ratha reward must execute"
     );
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
     let started = std::time::Instant::now();
     super::quest_catalogue_chests_fixtures::execute(selected)?;
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some() {
-        println!(
-            "POSTGRES_CASE_COMPLETED qc_skull_of_ratha_three_source_chests_use_replay_and_refusal duration={:?}",
-            started.elapsed()
-        );
-    }
+    super::m35_claim_sets::skull_of_ratha()?;
+    println!(
+        "POSTGRES_CASE_COMPLETED qc_skull_of_ratha_three_source_chests_use_replay_and_refusal duration={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 

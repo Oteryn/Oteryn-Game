@@ -203,6 +203,7 @@ pub fn load_embedded_quest_state(
     let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
     super::published_quest_pins::retain_authored_predecessors(&mut lowered.catalogue);
     super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
+    super::top_of_the_city::retain_predecessor(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -1070,6 +1071,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/postman.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-chests.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qc-twenty-miles.json"),
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),
@@ -1182,6 +1184,13 @@ mod tests {
             "engitem-ice-seal-2-2",
             "goblin-merchant-elevator-lower",
             "goblin-merchant-elevator-upper",
+            "koshei-amulet",
+            "koshei-statue-33276-32444",
+            "koshei-statue-33278-32450",
+            "koshei-statue-33281-32442",
+            "koshei-statue-33284-32450",
+            "koshei-statue-33286-32444",
+            "koshei-sundial",
             "last-creep-native-blightwalker",
             "last-creep-native-carniphila",
             "last-creep-native-exit",
@@ -1250,7 +1259,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 81);
+        assert_eq!(expected.len() - before_qmech_native, 81 + 7);
         let before_ape_city_and_beginning = expected.len();
         for suffix in [
             "ape-city-amphora-40092",

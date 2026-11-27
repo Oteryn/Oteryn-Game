@@ -98,6 +98,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// A cue at the definition-selected target, after a fresh receipt commits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_magic: Option<u16>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -433,7 +436,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
-    if inputs.len() > 8
+    if effects.target_magic.is_some_and(|effect| {
+        effect == 0 || effect > 255 || callback.selector.target_definition.is_none()
+    }) || inputs.len() > 8
         || unique.len() != inputs.len()
         || inputs.iter().any(|input| {
             input.count == 0

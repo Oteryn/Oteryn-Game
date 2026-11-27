@@ -1,11 +1,11 @@
-"""TUTORIAL-1 movement overlay; fail closed on the exact record set and walkability."""
+"""Movement overlay for the tutorial and the Top of the City archways."""
 import hashlib
 import json
 
 from native_profile_composition import encode_native_profile
 
 PATH = 'tools/content-schema/native-gameplay/movement-item-profiles.json'
-IDS = {3892, 3893, 6216, 6217, *range(6373, 6383), 6385, 19394, 37001}
+IDS = {1403, 1404, 3892, 3893, 6216, 6217, *range(6373, 6383), 6385, 6884, 19394, 37001}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

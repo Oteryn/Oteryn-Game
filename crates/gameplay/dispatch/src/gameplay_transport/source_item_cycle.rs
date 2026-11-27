@@ -102,7 +102,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Keep the population sweep outside any operation. Multi-pass
             // units such as equipment checkpoints scope their own grants.
             {
-                let runtime = self.runtime.lock().await;
+                let mut runtime = self.runtime.lock().await;
+                self.states
+                    .quest_callbacks
+                    .finish_cancelled_ground_uses(&mut runtime);
                 if runtime.owner_fence().is_err() {
                     return;
                 }

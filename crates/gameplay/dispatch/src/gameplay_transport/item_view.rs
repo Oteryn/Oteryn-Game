@@ -357,6 +357,13 @@ impl ItemHandleTable {
         Some(self.slots[slot as usize].handle)
     }
 
+    /// A carried instance cannot enter the map-item owner through a handle
+    /// issued by its inventory or an open container.
+    pub(super) fn resolve_on_map(&self, handle: ItemHandle) -> Option<ItemKey> {
+        let slot = &self.slots[*self.by_handle.get(&handle)? as usize];
+        (slot.views & (1 << View::Map as usize) != 0).then_some(slot.key)
+    }
+
     /// The keys of `view` in key order.
     fn keys_of(&self, view: View) -> Vec<ItemKey> {
         let mut keys: Vec<ItemKey> = self.views[view as usize]

@@ -55,6 +55,7 @@ pub(super) fn run_scenario_with_read_priority(
                     read_priority,
                     contents,
                     check_capacity,
+                    false,
                 )
                 .await
                 .map_err(|e| e.to_string());
@@ -64,6 +65,27 @@ pub(super) fn run_scenario_with_read_priority(
         })?
         .join()
         .map_err(|_| "trade wire thread panicked")??;
+    Ok(())
+}
+
+pub(super) fn run_quest_hand_in_trade() -> TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || {
+            fixture::runtime().map_err(debug)?.block_on(async move {
+                let h = Harness::create(admin, "player_trade_quest_wire", true)
+                    .await.map_err(debug)?;
+                let result = scenario(&h, false, false, false, false, false, true)
+                    .await.map_err(|e| e.to_string());
+                h.cleanup().await.map_err(debug)?;
+                result
+            })
+        })?
+        .join()
+        .map_err(|_| "quest trade wire thread panicked")??;
     Ok(())
 }
 
@@ -102,6 +124,7 @@ async fn scenario(
     read_priority: bool,
     contents: bool,
     check_capacity: bool,
+    quest_hand_in: bool,
 ) -> TestResult {
     eprintln!("TRADE-WIRE-1: PostgreSQL harness started; two native Fresh admissions");
     let now: i64 =
@@ -123,7 +146,9 @@ async fn scenario(
         *currents[0].commit().character_id().as_bytes(),
         90,
         91,
-        if contents {
+        if quest_hand_in {
+            "oteryn:item.tibia.i7158"
+        } else if contents {
             "oteryn:item.tibia.i2854"
         } else {
             "oteryn:item.tibia.i3607"
@@ -239,12 +264,12 @@ async fn scenario(
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
     // The build writer requires the same content revision as the durable fixture roots.
+    // The native NPC placement owner and the small entry room both use floor zero.
+    let source = (!quest_hand_in).then_some(
+        include_bytes!("../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json").as_slice()
+    );
     let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
-        world,
-        "content-1",
-        Some(include_bytes!(
-            "../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-        )),
+        world, "content-1", source,
     )?;
     let active = controller.active().ok_or("active")?;
     let frame_digest = pin.frame_binding().digest();
@@ -301,6 +326,25 @@ async fn scenario(
             generation: p.generation,
         })
         .collect();
+    let fish_npc = if quest_hand_in {
+        use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+        let position = runtime.read_actor_position(admitted[0].runtime_actor.ok_or("actor")?)
+            .map_err(debug)?.position();
+        runtime.place_npcs(&NpcPlacementTable {
+            npcs: vec![NpcPlacements {
+                key: "oteryn:npc.sinatuki".into(),
+                placements: vec![NpcPlacement {
+                    x: u16::try_from(position.x + 1)?,
+                    y: u16::try_from(position.y)?,
+                    floor: i8::try_from(-position.floor)?,
+                    direction: MovementFacing::West,
+                }],
+            }],
+        }, |_| true, true).map_err(debug)?;
+        Some(runtime.visible_entities().npcs.into_iter().find(|npc| runtime.npc_key(npc.actor)==Some("oteryn:npc.sinatuki"))
+            .map(|npc| EntityRef { identity:npc.actor.placement_identity(),generation:npc.generation })
+            .ok_or("Sinatuki placement")?)
+    } else { None };
     let runtime = Mutex::new(runtime);
     let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner { root: &h.root, character: &recovery, holder: &h.node, evidence: &deps.evidence, world_id: world, channel_id: channel,
         required_capabilities: crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(&[], currents[0].current_runtime_scope(), 1, "policy-1", crate::gameplay_transport::world_required_capabilities::offered_for_scope(false, Some(active))).map_err(debug)?,
@@ -310,6 +354,36 @@ async fn scenario(
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
+    if quest_hand_in {
+        use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
+        let catalogue = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        for (track,value) in [
+            ("oteryn:quest-progress/quest/u8_0/barbarian_test/questline", 3i64),
+            ("oteryn:quest-progress/quest/u8_0/the_ice_islands/questline", 5),
+        ] {
+            let quest = &catalogue.catalogue().track(track).ok_or("prerequisite")?.quest;
+            let hash = catalogue.catalogue().definition_hash(quest).ok_or("prerequisite pin")?;
+            sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision)
+                         SELECT character_id,$2,'content-1',$3,2,2 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT (character_id,quest_key) DO NOTHING")
+                .bind(currents[0].commit().character_id().as_bytes().as_slice()).bind(quest).bind(hash.as_slice()).execute(&mut *tx).await?;
+            let insert = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
+                         SELECT character_id,$2,$3,$4,2 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT (character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+                .bind(currents[0].commit().character_id().as_bytes().as_slice()).bind(track).bind(quest).bind(value).execute(&mut *tx).await?;
+            assert_eq!(insert.rows_affected(), 1, "seed {track}");
+        }
+        tx.commit().await?;
+        owner.quest_catalogue = Some(std::sync::Arc::new(catalogue.catalogue().clone()));
+        let model = NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            npc_catalogue_preproduction_limits(),
+        ).map_err(debug)?.service_model_for_project().map_err(debug)?;
+        owner.states.chat.install_npc_talk(std::sync::Arc::new(
+            crate::gameplay_transport::npc_talk::NpcTalkBook::from_model(&model),
+        ));
+    }
     // This is the ordinary idempotent admission step: temporary holder/commit
     // unavailability must reach real readiness under the existing entry budget.
     let map_budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(
@@ -348,7 +422,7 @@ async fn scenario(
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
         a.continuity.selected_capabilities = SelectedCapabilities::select(
-            if contents || check_capacity || check_container_preview {
+            if contents || check_capacity || check_container_preview || quest_hand_in {
                 crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
             } else {
                 owner.offered_capabilities()
@@ -357,6 +431,8 @@ async fn scenario(
                 &[3, 4, 6, 12, 14, 21, 60, 61, 132, 501, 590]
             } else if check_capacity {
                 &[4, 6, 21, 60, 508]
+            } else if quest_hand_in {
+                &[oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1, 4, 6, 21, 60]
             } else if inspection {
                 &[4, 6, 21, 60, 132]
             } else if check_container_preview {
@@ -370,6 +446,13 @@ async fn scenario(
         if contents {
             assert!([12, 14, 61, 501].iter().all(|&id| a.continuity.selected_capabilities.contains(id)));
         }
+    }
+
+    if quest_hand_in {
+        assert!(admitted[0].continuity.selected_capabilities.command_selected(
+            oteryn_protocol_oteryn::npc_service::COMMAND_TYPE_NPC_TALK_INTENT,
+        ));
+        owner.admit_quest_session(&admitted[0]).await;
     }
 
     if read_priority {
@@ -457,6 +540,50 @@ async fn scenario(
                 owner.states.player_trades.open(admitted[0].game_session_id),
                 "a rejected container preview must leave the live trade open"
             );
+        }
+        if let Some(npc) = fish_npc {
+            use oteryn_protocol_oteryn::npc_service::{
+                self as npc_wire, NpcIntentDisposition, NpcTalkIntent,
+            };
+            let talk = |text: &str| {
+                npc_wire::encode_npc_talk_intent(&NpcTalkIntent {
+                    npc_actor: npc,
+                    text: text.into(),
+                })
+                .map_err(debug)
+            };
+            let greeting = a.command(npc_wire::COMMAND_TYPE_NPC_TALK_INTENT, &talk("hi")?).await?;
+            assert_eq!(npc_wire::decode_npc_intent_result(&greeting).map_err(debug)?, NpcIntentDisposition::Ok);
+            let session = admitted[0].game_session_id;
+            assert!(owner.states.player_trades.open(session));
+            let payload = talk("nupi")?;
+            let (status, result) = a.send(a.next, npc_wire::COMMAND_TYPE_NPC_TALK_INTENT, &payload).await?;
+            a.next += 1;
+            assert_eq!(
+                npc_wire::decode_npc_intent_result(&result).map_err(debug)?,
+                NpcIntentDisposition::Rejected,
+                "the eligible hand-in must refuse the open trade"
+            );
+            assert_eq!(status, CommandStatus::Rejected);
+            let custody = || async {
+                sqlx::query_as::<_, (i64, i64)>(
+                    "SELECT (SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances
+                             WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1),
+                            (SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances
+                             WHERE definition_production_key='oteryn:item.tibia.i7290' AND lifecycle=1)",
+                ).bind(id(91).as_slice()).fetch_one(&h.pool).await
+            };
+            assert_eq!(custody().await?, (100, 0));
+            if owner.states.player_trades.open(session) {
+                assert_eq!(b.trade(Intent::Cancel).await?, ResultCode::Cancelled.payload());
+            }
+            assert!(!owner.states.player_trades.open(session));
+            let result = a.command(npc_wire::COMMAND_TYPE_NPC_TALK_INTENT, &payload).await?;
+            assert_eq!(npc_wire::decode_npc_intent_result(&result).map_err(debug)?, NpcIntentDisposition::Ok);
+            assert_eq!(custody().await?, (0, 5), "the same hand-in commits with the trade closed");
+            a.close().await?;
+            b.close().await?;
+            return Ok(());
         }
         let (_, first, _) = owner
             .trade_observation(admitted[1].game_session_id)
@@ -1071,7 +1198,7 @@ async fn scenario(
     )
     .await?;
     result?;
-    if check_capacity {
+    if check_capacity || quest_hand_in {
         return Ok(());
     }
     let markers: (i64, i64) = sqlx::query_as(

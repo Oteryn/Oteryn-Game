@@ -4,6 +4,7 @@ pub(super) mod carrot;
 pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;
+mod definition_target;
 mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
@@ -13,6 +14,7 @@ mod selected_tool;
 mod tool_reads;
 mod vampire_coffin;
 pub use selected_tool::QuestWorldToolContext;
+pub(crate) use selected_tool::SelectedQuestTool;
 
 /// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
 /// authority and all production Ground locks are checked by the same participant.
@@ -144,8 +146,7 @@ impl super::DurabilityRoot {
                      FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
                 ).bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest)
                     .fetch_optional(&mut *tx).await?;
-                let mut historical_defaults = None;
-                if let Some(pin) = pin {
+                let defaults = if let Some(pin) = pin {
                     let pin = super::quest_state::QuestStateRecord {
                         pinned_content_revision: pin.try_get("pinned_content_revision")?,
                         definition_hash: pin.try_get::<Vec<u8>, _>("definition_hash")?.try_into()
@@ -155,9 +156,26 @@ impl super::DurabilityRoot {
                     if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
-                    historical_defaults = legacy_defaults(
+                    legacy_defaults(
                         &catalogue, &callback.quest, &pin.definition_hash,
-                    );
+                    )
+                } else {
+                    None
+                };
+                use oteryn_gameplay_quests::quest::world_callbacks::phase;
+                if let Some(required) = phase::sea_ear_route(&callback) {
+                    let carried: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_quest_callback_carried(
+                            encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+                         JOIN game_item_instances i ON i.item_instance_id=c.item
+                         WHERE i.lifecycle=1 AND i.definition_family='Item'
+                           AND i.definition_production_key=$3)",
+                    ).bind(fence.character_id.as_bytes().as_slice())
+                        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                        .bind(phase::SEA_EAR_ITEM).fetch_one(&mut *tx).await?;
+                    if carried != required {
+                        return Ok(Ok(false));
+                    }
                 }
                 use oteryn_gameplay_quests::quest::venore_predecessor;
                 let mut legacy = std::collections::BTreeMap::new();
@@ -172,6 +190,9 @@ impl super::DurabilityRoot {
                     }
                 }
                 for storage in &callback.storage {
+                    if storage.track == phase::SEA_EAR_TRACK && phase::sea_ear_route(&callback).is_some() {
+                        continue; // This route reads live custody instead of the issuance flag.
+                    }
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
@@ -187,7 +208,7 @@ impl super::DurabilityRoot {
                     let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
                         .or_else(|| venore_predecessor::inherited_value(&storage.track, &legacy))
                         .unwrap_or(track.initial);
-                    if !(storage.minimum..=storage.maximum).contains(&value) {
+                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(initial)) {
                         return Ok(Ok(false));
                     }
                 }
@@ -834,6 +855,9 @@ async fn consume_inputs(
             return Ok(false);
         }
         lock_location(tx, &input).await?;
+        if !definition_target::require(tx, permit, fence, callback, context).await? {
+            return Ok(false);
+        }
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same
@@ -1128,9 +1152,12 @@ fn location_queries(kind: &str) -> Result<(&'static str, &'static str), Durabili
              WHERE item_instance_id=$1::uuid FOR UPDATE",
             "SELECT * FROM game_quest_callback_remove_backpack($1::uuid)",
         )),
+        // Equipment moves take the item and Character root locks. The
+        // runtime role can read and replace slots but has no slot UPDATE grant.
         "equipment" => Ok((
             "SELECT to_jsonb(l) FROM game_character_equipment_slots l \
-             WHERE item_instance_id=$1::uuid FOR UPDATE",
+             JOIN game_item_instances i USING(item_instance_id) \
+             WHERE item_instance_id=$1::uuid FOR UPDATE OF i",
             "DELETE FROM game_character_equipment_slots WHERE item_instance_id=$1::uuid",
         )),
         _ => Err(DurabilityError::InvalidStoredState),

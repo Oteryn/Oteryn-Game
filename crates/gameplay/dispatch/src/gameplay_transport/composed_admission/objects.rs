@@ -55,17 +55,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Some(UseOutcome::rejected());
             }
-            if !self
-                .states
-                .world_gate
-                .lock()
-                .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
-            {
-                return Some(UseOutcome {
-                    disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,
-                    ..UseOutcome::rejected()
-                });
-            }
             let expected = runtime.borrow_movement_position().read(actor).ok()?;
             let position = expected.position();
             let actor_tile = TilePos {
@@ -80,6 +69,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor_tile,
                 action,
                 target,
+                || {
+                    self.states.world_gate.lock().is_ok_and(|mut gate| {
+                        gate.admit_use_with(actor, self.clock_origin.elapsed())
+                    })
+                },
             )
         };
         drop(permit);

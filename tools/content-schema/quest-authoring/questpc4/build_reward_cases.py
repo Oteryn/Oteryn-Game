@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/reward-claim-authoring'))
 import capture_container_native_source as capture
 import container_native
+import global_corrections
 import lua_tables
 import reward_claim_authoring as plain
 
@@ -72,7 +73,7 @@ def build(crystal):
                 elif source.get('isKey'):
                     raise ValueError(f'{title}: missing source key binding UID{unique}')
                 rewards = []
-                for item, count in source['reward']:
+                for item, count in global_corrections.source_reward(unique, point, source['reward']):
                     key = f'oteryn:item.tibia.i{item}'
                     if item in (3082, 3083, 3084, 3085):
                         if container_native.fact(items[key], 'charges', 'count') != count:
@@ -104,7 +105,7 @@ def build(crystal):
                         raise ValueError(f'{title}: achievement mismatch UID{unique}')
                 elif 'achievement_grant' in placement:
                     raise ValueError(f'{title}: unverified achievement UID{unique}')
-                body = text['text'].strip('\n') if text else None
+                body = global_corrections.source_text(unique, text['text'].strip('\n')) if text else None
                 root_text = None
                 if source.get('container'):
                     native, = [p for p in definition['native_contents']['placements']

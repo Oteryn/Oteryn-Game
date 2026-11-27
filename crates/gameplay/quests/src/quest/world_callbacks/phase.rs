@@ -59,9 +59,53 @@ pub fn select_storage_phase<'a>(
     }
     Ok(selected)
 }
-// STEP alternatives share geometry only when preserved personal phases are disjoint.
+pub const SEA_EAR_TRACK: &str = "oteryn:quest-progress/qc/twenty_miles/ear_found";
+pub const SEA_EAR_ITEM: &str = "oteryn:item.tibia.i21754";
+
+/// Whether this stage-19–21 route requires the Sea Ear in current custody.
+pub fn sea_ear_route(callback: &Callback) -> Option<bool> {
+    match callback.key.as_str() {
+        "oteryn:quest-callback/qc-twenty-miles-maelstrom-to-shells" => Some(false),
+        "oteryn:quest-callback/qc-twenty-miles-maelstrom-to-grounds-with-ear" => Some(true),
+        _ => None,
+    }
+}
+
+/// A paid hoard and its receipt-backed return share the exact physical source.
+pub fn hoard_reentry_pair(left: &Callback, right: &Callback) -> bool {
+    let (paid, reentry) = if left.is_read_only() {
+        (right, left)
+    } else {
+        (left, right)
+    };
+    paid.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+        && paid.quest == reentry.quest
+        && paid.selector == reentry.selector
+        && paid.trigger == Trigger::Use
+        && reentry.trigger == Trigger::Use
+        && paid.teleport.is_some()
+        && paid.teleport == reentry.teleport
+        && paid.requires_world_admission
+        && paid.item_on_target.as_ref().is_some_and(|item| {
+            item.selected_instance && !item.reusable && item.item == "oteryn:item.tibia.i21746"
+        })
+        && reentry.is_read_only()
+        && reentry.item_on_target.is_none()
+        && reentry.key.strip_suffix("-reentry") == Some(paid.key.as_str())
+        && paid
+            .key
+            .starts_with("oteryn:quest-callback/qc-twenty-miles-hoard-")
+        && matches!((paid.storage.as_slice(), reentry.storage.as_slice()), ([before], [after])
+            if before.track == after.track && before.minimum == 3 && before.maximum == 3
+                && before.set == 4 && after.minimum == 4 && after.maximum == 5)
+}
+
+// STEP alternatives share geometry only when their personal phases are disjoint.
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
+    if disjoint(left, right) {
+        return true;
+    }
     let source_trial = left.trigger == Trigger::Use
         && left.effects.target_transform.is_some()
         && left.effects.target_transform == right.effects.target_transform

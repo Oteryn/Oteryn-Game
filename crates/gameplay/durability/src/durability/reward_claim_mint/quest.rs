@@ -13,6 +13,7 @@ use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::reward_callbacks::{AccountReservation, RewardCallback};
 
 mod claim;
+mod twenty_miles_recovery;
 pub(crate) use claim::QuestMintClaim;
 
 pub(crate) fn prepare_achievement(
@@ -465,6 +466,11 @@ pub(crate) async fn apply(
         admission.carried_use,
     )
     .await?
+    {
+        return Ok(false);
+    }
+    if let Some(item) = callback.recovery_item()
+        && !twenty_miles_recovery::missing(tx, fence, callback, item).await?
     {
         return Ok(false);
     }

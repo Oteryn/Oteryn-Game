@@ -113,6 +113,9 @@ pub struct NativeSelector {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Selector {
+    /// Native use-with target, matched against its current Ground Item definition.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_definition: Option<String>,
     pub position: Option<Position>,
     /// Alternate step tiles share one canonical callback/activation identity.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -867,6 +870,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qc-twenty-miles.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);
@@ -925,6 +931,8 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     native_callbacks.push(super::dreamer_carrot::callback());
     native_callbacks.push(super::dreamer_death_ring::reset_callback());
     native_callbacks.extend(super::dreamer_fire_bug::callbacks());
+    native_callbacks.push(super::koshei_amulet::callback()?);
+    native_callbacks.extend(super::koshei_amulet::catacomb_access()?);
     native_callbacks.push(super::targuna_ram::callback()?);
     native_callbacks.push(nomads_land::callback()?);
     native_callbacks.extend(super::ice_seal_paint::callbacks()?);
@@ -971,8 +979,26 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
 
 mod selector_gates;
 
-pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
-    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+/// Validate callback data with the same closed rules used by the World registry.
+pub fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    let callbacks = parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string())?;
+    validate_definition_targets(&callbacks)
+}
+
+fn validate_definition_targets(callbacks: &[Callback]) -> Result<(), String> {
+    let mut pairs = BTreeSet::new();
+    for callback in callbacks {
+        if let (Some(target), Some(tool)) = (
+            &callback.selector.target_definition,
+            &callback.item_on_target,
+        ) && std::iter::once(&tool.item)
+            .chain(&tool.alternatives)
+            .any(|source| !pairs.insert((target, source)))
+        {
+            return Err("duplicate definition-target callback tool".into());
+        }
+    }
+    Ok(())
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
@@ -987,6 +1013,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         return Err("callback runtime registry bounds".into());
     }
     let mut keys = BTreeSet::new();
+    validate_definition_targets(callbacks)?;
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
         if let Some(fallback) = callback.vampire_coffin_fallback()
@@ -1032,6 +1059,9 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
         }
+        if callback.selector.target_definition.is_some() {
+            continue;
+        }
         let selector = serde_json::to_vec(&(
             callback.trigger,
             &callback.selector,
@@ -1046,6 +1076,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
                 !coffin_pair
                     && !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
+                    && !phase::hoard_reentry_pair(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)
                         && selector_partitions::disjoint(peer, callback))
@@ -1135,8 +1166,32 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && selector.unique.is_none()
                 && selector.action.is_none()
                 && selector.native.is_none()
+                && selector.target_definition.is_none()
                 && callback.effects.place_item.is_none()
                 && !callback.effects.loot_merchant)
+            || selector.target_definition.as_ref().is_some_and(|definition| {
+                !definition.strip_prefix("oteryn:item.tibia.i").is_some_and(|id| !id.is_empty() && id.bytes().all(|c| c.is_ascii_digit()) && id.parse::<u32>().is_ok_and(|id| id > 0))
+                    || callback.trigger != Trigger::Use
+                    || !callback.requires_world_admission
+                    || !callback.item_on_target.as_ref().is_some_and(|item| item.selected_instance)
+                    || callback.reversible
+                    || callback.opening_only
+                    || callback.activation.is_some()
+                    || callback.item_on_target.as_ref().is_some_and(|tool| tool.target_remove || tool.target_replacement.is_some() || !tool.ingredients.is_empty())
+                    || !callback.passages.is_empty()
+                    || callback.teleport.is_some()
+                    || !callback.offerings.is_empty()
+                    || !callback.world_requirements.is_empty()
+                    || { let mut effects = callback.effects.clone(); effects.target_magic = None; !effects.is_empty() }
+                    || callback.native_rule.is_some()
+                    || selector.position.is_some()
+                    || !selector.position_aliases.is_empty()
+                    || selector.ordinal.is_some()
+                    || selector.unique.is_some()
+                    || selector.action.is_some()
+                    || selector.appearance.is_some()
+                    || selector.native.is_some()
+            })
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native
@@ -1880,6 +1935,8 @@ mod bounded_tests;
 mod outfit_tests;
 #[cfg(test)]
 mod qc_lizard_sanctuary_tests;
+#[cfg(test)]
+mod qc_twenty_miles_tests;
 
 #[cfg(test)]
 mod scene_tests;

@@ -502,10 +502,45 @@ impl RewardCallback {
             && !self.take.is_empty()
             && self.give.is_some()
     }
+    /// The lost-item turns reuse the normal reward writer with stricter custody.
+    pub fn recovery_item(&self) -> Option<&str> {
+        let suffix = self
+            .key
+            .strip_prefix("oteryn:quest-reward/qc-twenty-miles-recover-")?;
+        let item = match suffix {
+            "skull" => "oteryn:item.tibia.i21770",
+            "cursed-gold" => "oteryn:item.tibia.i21746",
+            "wedding-ring" => "oteryn:item.tibia.i21745",
+            "blue-slab" | "blue-slab-after-report" => "oteryn:item.tibia.i21753",
+            "yellow-slab" | "yellow-slab-after-report" => "oteryn:item.tibia.i21861",
+            "red-slab" => "oteryn:item.tibia.i21862",
+            "sea-ear" | "sea-ear-after-report" => "oteryn:item.tibia.i21754",
+            "time-compass" => "oteryn:item.tibia.i21795",
+            _ => return None,
+        };
+        (self.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+            && self.npc == "oteryn:npc.guardian_of_the_deep_seas"
+            && self.per_occurrence_mint
+            && self.take.is_empty()
+            && self.give.as_ref().is_some_and(|reward| {
+                reward.item == item
+                    && reward.count == 1
+                    && reward.contents.is_empty()
+                    && reward.additional.is_empty()
+            })
+            && matches!(self.storage.as_slice(), [stage] if
+                stage.track == "oteryn:quest-progress/qc/twenty_miles/stage" && stage.preserve)
+            && matches!(self.state_ops.as_slice(), [StateOperation {
+                track, from: StateCondition::Any, effect: StateMutation::Add { value: 1 },
+            }] if track == "oteryn:quest-progress/qc/twenty_miles/replacements"))
+        .then_some(item)
+    }
+
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        temporal_payment::guarded(self)
+        self.recovery_item().is_some()
+            || temporal_payment::guarded(self)
             || (self.per_occurrence_mint
                 && self.state_ops.iter().any(|operation| {
                     matches!(&operation.from, StateCondition::ElapsedAtLeast { seconds } if *seconds > 0)
@@ -610,9 +645,13 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     include_str!("../../../../../content/quests/npc-callbacks/nomads-land.json"),
     include_str!("../../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
@@ -621,6 +660,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rookgaard-exchanges.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/sinatuki.json"),
     include_str!("../../../../../content/quests/npc-callbacks/travora-tickets.json"),
     WARRIOR_COMPLETIONS,
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
@@ -2202,6 +2242,121 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
             ],
             &[],
         ),
+        (
+            "oteryn:quest.friends_and_traders",
+            [
+                0x0a, 0x66, 0x58, 0x93, 0xaa, 0x6b, 0x60, 0x28, 0x83, 0xc7, 0x1b, 0xfe, 0xe7, 0x86,
+                0xa7, 0x1e, 0x86, 0xb2, 0xb9, 0xd3, 0xfd, 0xbf, 0xfe, 0xdf, 0x0c, 0xe6, 0x19, 0xf1,
+                0x71, 0x56, 0xd2, 0x23,
+            ],
+            &[
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake_wait_time",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_mermaid_marina",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+                    0,
+                ),
+                ("oteryn:quest-progress/questpc7/friends/program", -1),
+                ("oteryn:quest-progress/questpc7/friends/steel-uses", 0),
+                ("oteryn:quest-progress/questpc7/friends/yarn-uses", 0),
+            ],
+        ),
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            [
+                0x1a, 0x1c, 0x54, 0x3d, 0xbe, 0x51, 0x1c, 0x3a, 0x56, 0x54, 0xd1, 0x38, 0x59, 0x56,
+                0x22, 0x4b, 0x73, 0x23, 0x24, 0x3a, 0xce, 0x53, 0xfa, 0x5e, 0xb1, 0x42, 0xe6, 0x76,
+                0x36, 0x1f, 0xc4, 0x20,
+            ],
+            &[
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
+                    0,
+                ),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 0),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet_started_at", 0),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/claimed",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/claimed",
+                    0,
+                ),
+            ],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            [
+                0x95, 0x57, 0x24, 0xdf, 0xc1, 0xc9, 0xb0, 0x39, 0x2d, 0x23, 0xea, 0xa2, 0x2a, 0x2b,
+                0x77, 0x1f, 0x73, 0x9e, 0x36, 0x7e, 0x9b, 0x7a, 0x07, 0xf2, 0xa7, 0xd7, 0x5e, 0x52,
+                0x4b, 0xfe, 0x3f, 0x3c,
+            ],
+            &[
+                ("oteryn:quest-progress/qc/twenty_miles/access_birthing", -1),
+                (
+                    "oteryn:quest-progress/qc/twenty_miles/access_sunken_city",
+                    -1,
+                ),
+                ("oteryn:quest-progress/qc/twenty_miles/access_west", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile1", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile2", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile3", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile4", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile5", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/skulls", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/slabs", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/stage", -1),
+            ],
+        ),
+        (
+            "oteryn:quest.friends_and_traders",
+            [
+                0xce, 0x00, 0xb5, 0xa5, 0xfe, 0x72, 0x64, 0x29, 0xda, 0x79, 0xfa, 0xb7, 0x00, 0x63,
+                0x02, 0x9f, 0x88, 0xc7, 0x34, 0x25, 0xee, 0x3c, 0xff, 0xef, 0x00, 0x50, 0x6e, 0xfb,
+                0xbc, 0x2c, 0xd5, 0x70,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            [
+                0xe0, 0x2b, 0x51, 0xe2, 0x0a, 0x74, 0xc1, 0x8d, 0x4f, 0x7b, 0xb4, 0x70, 0x53, 0x31,
+                0xd1, 0x54, 0x5f, 0x01, 0x80, 0xf0, 0x70, 0x9b, 0x66, 0x9b, 0xcd, 0xc4, 0x74, 0xe2,
+                0x65, 0x60, 0xcb, 0x3c,
+            ],
+            &[],
+        ),
     ];
     for &(quest, hash, defaults) in PREVIOUS {
         if active
@@ -3241,6 +3396,71 @@ mod tests {
     }
 
     /// Regenerate with tools/content-schema/quest-authoring/refresh_reward_hash_baselines.py.
+    #[test]
+    fn sinatuki_first_hand_in_debits_the_source_quantity_and_grants_crystals() -> Result<(), String>
+    {
+        let callbacks = load()?;
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            for quantity in [99, 100, 101] {
+                let carried = BTreeMap::from([(item.to_owned(), quantity)]);
+                let eligible: Vec<_> = callbacks
+                    .iter()
+                    .filter(|callback| {
+                        callback.npc == "oteryn:npc.sinatuki"
+                            && callback
+                                .storage
+                                .iter()
+                                .all(|r| (r.minimum..=r.maximum).contains(&-1))
+                            && callback.inventory.iter().all(|r| r.holds(&carried))
+                    })
+                    .collect();
+                assert_eq!(eligible.len(), 1, "{item} × {quantity}");
+                let callback = eligible[0];
+                assert!(callback.completes);
+                assert_eq!(callback.take[0].item, item);
+                assert_eq!(u64::from(callback.take[0].count), quantity.min(100));
+                let reward = callback.give.as_ref().ok_or("Sinatuki crystals")?;
+                assert_eq!(
+                    (reward.item.as_str(), reward.count),
+                    ("oteryn:item.tibia.i7290", 5)
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn sinatuki_repeat_hand_ins_load_at_the_completed_stage() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = super::offered_for(lowered.catalogue())?;
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            for quantity in [99, 100, 101] {
+                let carried = BTreeMap::from([(item.to_owned(), quantity)]);
+                let eligible: Vec<_> = callbacks
+                    .iter()
+                    .filter(|callback| {
+                        callback.npc == "oteryn:npc.sinatuki"
+                            && callback
+                                .storage
+                                .iter()
+                                .all(|state| (state.minimum..=state.maximum).contains(&2))
+                            && callback.inventory.iter().all(|rule| rule.holds(&carried))
+                    })
+                    .collect();
+                assert_eq!(eligible.len(), 1, "{item} × {quantity} at stage 2");
+                assert!(eligible[0].is_paid_exchange());
+                assert_eq!(u64::from(eligible[0].take[0].count), quantity.min(100));
+                let reward = eligible[0].give.as_ref().ok_or("Sinatuki crystals")?;
+                assert_eq!(
+                    (reward.item.as_str(), reward.count),
+                    ("oteryn:item.tibia.i7290", 5)
+                );
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")

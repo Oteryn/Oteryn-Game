@@ -197,6 +197,10 @@ def decay_closure(roots, xml):
                 if "duration" in attributes or "decayto" in attributes:
                     raise ValueError("QUEST_CORPSE_BUTTERFLY_REMAINS")
                 break
+            # Crystal 201189f8 items.xml:20777–20802 ends Koshei's decay
+            # chain at untimed remains. The pinned Canary XML agrees.
+            if root == 7535 and current == 7540 and attributes == {"decayto": "0"}:
+                break
             if (
                 "duration" not in attributes
                 or "decayto" not in attributes
@@ -451,6 +455,12 @@ def qualifications(root=ROOT, creatures=None):
             number in roots,
             limits.get(number),
         )
+        if number in (50029, 50028):
+            # The pinned Canary XML establishes the chain. Crystal 201189f8
+            # items.xml:84147-84157 supplies its two loot-bearing stages.
+            semantics = records[key]["semantics"]
+            semantics["container"]["value"]["capacity"] = grizzly.source.K(8)
+            semantics["temporal"]["value"]["duration"] = grizzly.source.K(60_000)
     return Qualification(roots, records, source_capacities, ordinary_loot_only)
 
 

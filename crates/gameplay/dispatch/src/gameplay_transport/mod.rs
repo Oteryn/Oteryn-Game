@@ -1322,6 +1322,26 @@ fn achievement_notification_text(name: &str) -> String {
     format!("Congratulations! You earned the achievement {name}.")
 }
 
+/// Acquire both commit owners without parking the Channel behind contended spell state.
+async fn lock_runtime_and_spell_states<'a>(
+    runtime: &'a tokio::sync::Mutex<ChannelRuntimeV1>,
+    states: &'a tokio::sync::Mutex<actor_spell::ChannelSpellStates>,
+) -> (
+    tokio::sync::MutexGuard<'a, ChannelRuntimeV1>,
+    tokio::sync::MutexGuard<'a, actor_spell::ChannelSpellStates>,
+) {
+    loop {
+        let runtime = runtime.lock().await;
+        if let Ok(states) = states.try_lock() {
+            return (runtime, states);
+        }
+        // Existing spell work can hold states while waiting for Runtime.
+        // Yield both owners so neither lock order can strand the Channel.
+        drop(runtime);
+        drop(states.lock().await);
+    }
+}
+
 fn achievement_notification(notice: &connection::EarnedNotice) -> Option<String> {
     match notice {
         connection::EarnedNotice::Earned(earned) => {

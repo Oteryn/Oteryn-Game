@@ -22,6 +22,51 @@ impl ChannelRuntimeV1 {
             .point(usize::from(point.ordinal))?
             .enabled)
     }
+    /// The fresh corpse may wake only the authored Koshei point that held
+    /// that exact dead incarnation. A replay cannot replace its living successor.
+    pub fn wake_koshei_from_corpse(&mut self, item: [u8; 16]) -> Result<bool, CarrierError> {
+        self.owner_fence()?;
+        let Some(dead) = self
+            .carrier
+            .corpse_item_bindings
+            .iter()
+            .find(|binding| binding.item.item_instance_id == item)
+            .map(|binding| binding.actor)
+        else {
+            return Ok(false);
+        };
+        let Some((source, ordinal)) = self.carrier.locate_spawn_cell(dead) else {
+            return Ok(false);
+        };
+        let index = self
+            .carrier
+            .spawn_index(source)
+            .ok_or(CarrierError::UnknownSpawnSource)?;
+        let definition = &self.carrier.spawns[index].definition;
+        let point = definition.point(ordinal)?;
+        if !point.enabled
+            || point.creature_target_identity != "oteryn:creature.koshei_the_deathless"
+        {
+            return Ok(false);
+        }
+        let home = definition.placement_cells[ordinal];
+        let context = self.pinned_position_context();
+        if self.carrier.cell_occupied(context, home) {
+            return Ok(false);
+        }
+        let spawn = spawn::SpawnPoint {
+            source: source.0,
+            ordinal: u8::try_from(ordinal).map_err(|_| CarrierError::UnknownSpawnCell)?,
+        };
+        let successor =
+            self.carrier
+                .respawn_into_free_cell(&self.continuity, source, ordinal, context)?;
+        self.bind_spawned_creature_policy(successor);
+        if let Some(pending) = self.spawn_schedule.cancel(spawn) {
+            self.spawn_deadlines.remove(&(pending.due_micros, spawn));
+        }
+        Ok(true)
+    }
     /// The actual actor's source cohort survives a delayed global phase observation.
     /// A newer cache cannot relabel a still-reserved actor from the preceding cohort.
     pub fn world_spawn_cohort(

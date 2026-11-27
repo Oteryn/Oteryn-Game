@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from collections import Counter
 
@@ -523,7 +524,44 @@ def test_committed_content_carries_tibia_global_corrections() -> None:
     assert pairs("kv.powerring1") == [[3031, 1]]
     assert pairs("kv.fireaxe1") == [[3098, 1], [3085, 1], [3028, 7]]
     assert pairs("kv.fireaxe2") == [[3320, 1]]
+    assert pairs("kv.ghostsilver_lantern_quest") == [[23738, 1]]
     assert pairs("quest.key.id4502") == [[2970, 1], [3031, 33], [3147, 1], [3298, 4], [3384, 1]]
+
+
+def test_committed_variants_carry_tibia_global_book_texts() -> None:
+    """The Global book text reaches both the claim text_ref and the native root_text."""
+    import container_native
+    from book_text_expectations import GLOBAL_BOOK_REFS
+
+    evidence, _ = container_native.source()
+    donor = {r["unique_id"]: r["text"].strip("\n") for r in evidence["text_entries"]
+             if r["unique_id"] != 6195}
+    seen = set()
+    shards = sorted((rca.ROOT / rca.CONTENT_DIR).glob("reward-claim-variants-*.json"))
+    for shard in shards:
+        for record in json.loads(shard.read_text())["records"]:
+            definition = record["definition"]
+            for placement in definition["placements"]:
+                for binding in placement["source_binding"]["legacy_unique_ids"]:
+                    uid = binding["unique_id"]
+                    if binding["server"] != "crystalserver" or uid not in donor:
+                        continue
+                    assert uid not in seen
+                    seen.add(uid)
+                    [native] = definition["native_contents"]["placements"]
+                    body = native["root_text"]
+                    if uid in GLOBAL_BOOK_REFS:
+                        expected = GLOBAL_BOOK_REFS[uid]
+                    else:
+                        assert body == donor[uid], uid
+                        expected = {"length": len(donor[uid]), "placeholders": [],
+                                    "sha256": hashlib.sha256(donor[uid].encode()).hexdigest()}
+                    assert {"length": len(body), "placeholders": [],
+                            "sha256": hashlib.sha256(body.encode()).hexdigest()} == expected, uid
+                    assert placement["reward"]["written_text"]["text_ref"] == expected, uid
+    assert seen == donor.keys()
+    assert len(seen - GLOBAL_BOOK_REFS.keys()) == 9
+
 
 if __name__ == "__main__":
     for name, test in sorted(globals().items()):

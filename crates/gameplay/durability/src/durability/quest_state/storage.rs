@@ -11,12 +11,42 @@ impl DurabilityRoot {
         command: CommandRef,
         intent: Vec<u8>,
     ) -> Result<Option<bool>> {
+        self.read_quest_tool_receipt(authority, character, command, intent, None)
+            .await
+    }
+
+    /// Wait for the original ground USE writer before interpreting an absent tool receipt.
+    pub async fn reconcile_quest_ground_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        request: QuestTransitionRequest,
+        intent: Vec<u8>,
+    ) -> Result<Option<bool>> {
+        let QuestCause::Use(command) = request.cause else {
+            return Err(CharacterProgressionError::InvalidInput);
+        };
+        self.read_quest_tool_receipt(authority, character, command, intent, Some(request))
+            .await
+    }
+
+    async fn read_quest_tool_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        command: CommandRef,
+        intent: Vec<u8>,
+        request: Option<QuestTransitionRequest>,
+    ) -> Result<Option<bool>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
+            if let Some(request) = &request {
+                lock_receipt_key(&mut tx, character, request).await?;
+            }
             let rows=sqlx::query("SELECT proof,item_instance_id FROM (SELECT c.proof,c.item_instance_id FROM game_quest_callback_consumptions c LEFT JOIN game_quest_reward_sources s USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.character_id=encode($1,'hex')::uuid AND c.cause_id=encode($2,'hex')::uuid AND c.cause_ordinal=$3::text::numeric AND (((s.plan ? 'carried_item' OR s.plan ? 'recipe_source') AND c.before_item->>'definition_production_key'=coalesce(s.plan->>'carried_item',s.plan->>'recipe_source')) OR (convert_from(c.proof,'UTF8')::jsonb #>> '{callback,item_on_target,selected_instance}'='true' AND c.location_kind<>'ground')) UNION ALL SELECT r.proof,r.item_instance_id FROM game_quest_world_tool_reads r WHERE r.character_id=encode($1,'hex')::uuid AND r.cause_id=encode($2,'hex')::uuid AND r.cause_ordinal=$3::text::numeric) bound_tool_proofs LIMIT 2")
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
             let answer=match rows.as_slice() {
@@ -24,13 +54,23 @@ impl DurabilityRoot {
                 [row]=>{
                     let proof:serde_json::Value=serde_json::from_slice(&row.try_get::<Vec<u8>,_>("proof")?).map_err(|_|DurabilityError::InvalidStoredState)?;
                     let selected=proof.get("carried_use").or_else(||proof.get("context").and_then(|context|context.get("selected_tool"))).ok_or(DurabilityError::InvalidStoredState)?;
-                    let use_:super::super::reward_claim_mint::QuestCarriedUse=serde_json::from_value(selected.clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let use_:super::super::reward_claim_mint::QuestCarriedUse=if proof.get("carried_use").is_some() {
+                        serde_json::from_value(selected.clone()).map_err(|_|DurabilityError::InvalidStoredState)?
+                    } else {
+                        let tool:super::super::quest_world_callback::SelectedQuestTool=serde_json::from_value(selected.clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                        super::super::reward_claim_mint::QuestCarriedUse { source:tool.source,intent:tool.intent,recipe_target:None }
+                    };
                     let source:sqlx::types::Uuid=row.try_get("item_instance_id")?;
                     if use_.source!=*source.as_bytes() {return Err(DurabilityError::InvalidStoredState);}
                     Some(use_.intent==intent)
                 },
                 _=>return Err(DurabilityError::InvalidStoredState),
             };
+            if answer.is_none() && let Some(request) = &request
+                && load_receipt(&mut tx, character, request).await?.is_some()
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
             commit_semantic_read(tx,deadline).await?;
             Ok(Ok(answer))
         })).await?

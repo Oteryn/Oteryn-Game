@@ -152,6 +152,15 @@ pub struct ChannelSessionStates {
 }
 
 impl ChannelSessionStates {
+    pub(super) fn meets_quest_door_storage(&self, session: GameSessionId, action: u16) -> bool {
+        self.quest_sessions.lock().ok().is_some_and(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|quest| quest.copy.as_ref())
+                .is_some_and(|copy| copy.meets_door_storage(action))
+        })
+    }
+
     pub(super) fn insert_lost(&self, session: AdmittedSession) -> Result<(), ()> {
         self.lost
             .lock()
@@ -222,6 +231,7 @@ impl ChannelSessionStates {
         self.appearance_commands.forget(session);
         self.chat.forget(session);
         self.command_ingress.forget(session);
+        self.quest_callbacks.forget_ground_use(session);
         self.gameplay_idle_presence.forget(session);
         self.player_trades.forget(session);
         self.inspection_permissions.forget(session);

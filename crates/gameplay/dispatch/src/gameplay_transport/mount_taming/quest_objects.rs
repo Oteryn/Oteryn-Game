@@ -15,8 +15,9 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .item_on_target
                 .as_ref()
                 .is_some_and(|tool| tool.selected_instance)
-                && ((callback.requires_world_admission
-                    && callback.quest == "oteryn:quest.the_explorer_society_quest")
+                && (callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+                    || (callback.requires_world_admission
+                        && callback.quest == "oteryn:quest.the_explorer_society_quest")
                     || matches!(
                         callback.key.as_str(),
                         "oteryn:quest-callback/druid-ceiron-waterskin"

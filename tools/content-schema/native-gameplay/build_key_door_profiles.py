@@ -19,6 +19,9 @@ closed6252 and open6253 are already supplied by the plain door provider.
 Dwacatra and its key route retain locked5106, locked7711 and locked7714;
 their closed and open counterparts are already supplied.
 Shirith and the Prisoner award the silver key (2969); pinned items.xml types it as a key.
+Koshei's level-40 gate uses 5120/5121, Crystal 201189f door_level.lua:76,105.
+The retained Darashia corridor also needs the source collision of its debris
+(1892/1895/1898/1899), webs (3110/3115/3116) and cracks (6298).
 The existing pinned importer supplies physics and classifications without overrides.
 """
 
@@ -41,13 +44,22 @@ IDS = {
     1679,
     1680,
     1681,
+    1892,
+    1895,
+    1898,
+    1899,
     2967,
     2968,
     2969,
+    3110,
+    3115,
+    3116,
     5097,
     5102,
     5103,
     5106,
+    5120,
+    5121,
     5291,
     5292,
     6248,
@@ -56,6 +68,7 @@ IDS = {
     6263,
     6264,
     6265,
+    6298,
     7711,
     7714,
     9565,

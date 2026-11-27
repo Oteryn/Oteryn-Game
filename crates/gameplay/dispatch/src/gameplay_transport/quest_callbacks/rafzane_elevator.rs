@@ -1,5 +1,6 @@
 //! Native USE consumer for the Goblin Merchant elevator's retained winches.
 use super::*;
+use crate::gameplay_transport::lock_runtime_and_spell_states;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn use_rafzane_elevator(
@@ -31,7 +32,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .special_movement_policy(&permit, actor, command.game_session_id)
                 .await;
             let (mut runtime, mut states) =
-                elevator_owners(&self.runtime, &self.states.spell_states).await;
+                lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states).await;
             if !runtime
                 .player_control_facts(actor, command.game_session_id)
                 .is_ok_and(|f| f.control_loss.is_none())
@@ -183,25 +184,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-async fn elevator_owners<'a>(
-    runtime: &'a tokio::sync::Mutex<ChannelRuntimeV1>,
-    states: &'a tokio::sync::Mutex<ChannelSpellStates>,
-) -> (
-    tokio::sync::MutexGuard<'a, ChannelRuntimeV1>,
-    tokio::sync::MutexGuard<'a, ChannelSpellStates>,
-) {
-    loop {
-        let runtime = runtime.lock().await;
-        if let Ok(states) = states.try_lock() {
-            return (runtime, states);
-        }
-        // Existing spell work can hold states while waiting for Runtime.
-        // Yield both owners so neither lock order can strand the Channel.
-        drop(runtime);
-        drop(states.lock().await);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -220,7 +202,8 @@ mod tests {
                 let states = tokio::sync::Mutex::new(ChannelSpellStates::default());
                 {
                     let held = runtime.lock().await;
-                    let mut acquiring = std::pin::pin!(elevator_owners(&runtime, &states));
+                    let mut acquiring =
+                        std::pin::pin!(lock_runtime_and_spell_states(&runtime, &states));
                     std::future::poll_fn(|cx| {
                         assert!(acquiring.as_mut().poll(cx).is_pending());
                         Poll::Ready(())
@@ -235,7 +218,8 @@ mod tests {
                 }
                 {
                     let held = states.lock().await;
-                    let mut acquiring = std::pin::pin!(elevator_owners(&runtime, &states));
+                    let mut acquiring =
+                        std::pin::pin!(lock_runtime_and_spell_states(&runtime, &states));
                     std::future::poll_fn(|cx| {
                         assert!(acquiring.as_mut().poll(cx).is_pending());
                         Poll::Ready(())

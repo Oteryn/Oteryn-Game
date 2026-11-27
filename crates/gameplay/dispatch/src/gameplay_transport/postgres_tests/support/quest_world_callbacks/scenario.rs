@@ -70,6 +70,11 @@ fn scenario_case(
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
+    let cyclops_amulet = matches!(
+        name,
+        "questpc7-friends-draconian-amulet-replaces-steel"
+            | "questpc7-friends-draconian-locked-soul-orb"
+    );
     use super::super::new_frontier_journey_fixtures;
     let recover_bait = name == new_frontier_journey_fixtures::BAIT_RECOVERY;
     let frontier = matches!(
@@ -156,8 +161,14 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let pinned_qc_world = classic_access.is_some() || name.starts_with("m09-treasure-")
+    let twenty_miles = super::super::qc_twenty_miles_fixtures::matches(name);
+    let pinned_qc_world = twenty_miles || classic_access.is_some() || name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
+    let city_story = name == super::super::qh_authored_cases_fixtures::TOP_OF_THE_CITY;
+    if city_story {
+        let callback = super::super::qh_authored_cases_fixtures::callback(name)?;
+        assert_eq!(callback.selector.position, Some(trigger), "cellar crate scenario trigger");
+    }
     let tibia_tales_hallowed = name == "qengine-rewards-tibia-tales-hallowed";
     let cursed_crystal_stairs = name.starts_with("crystal-stairs-");
     let eroth_mirror = matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy");
@@ -174,6 +185,8 @@ fn scenario_case(
         || explorer
         || koshei
         || frontier
+        || pinned_qc_world
+        || city_story
         || m03_use
         || qd_world
         || engenc_asura
@@ -216,6 +229,8 @@ fn scenario_case(
         || paradox_journey;
     let start = if vampire_coffin {
         super::super::inquisition_coffin_recovery_fixtures::staging(name)?
+    } else if twenty_miles {
+        super::super::qc_twenty_miles_fixtures::START
     } else if sarina_vine {
         let reverse = if name.ends_with("-climb") {
             "thieves-guild-sarina-vine-descend"
@@ -255,6 +270,8 @@ fn scenario_case(
         }
     } else if super::super::qc_lizard_sanctuary_fixtures::matches_world(name) {
         super::super::qc_lizard_sanctuary_fixtures::START
+    } else if city_story {
+        super::super::qh_authored_cases_fixtures::city_start()
     } else if super::super::qh_authored_cases_fixtures::is_dig(name) {
         super::super::qh_authored_cases_fixtures::dig_start()
     } else if qd_world {
@@ -430,7 +447,7 @@ fn scenario_case(
         || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
-        || name == "questpc7-friends";
+        || name.starts_with("questpc7-friends");
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -561,6 +578,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
+    } else if twenty_miles {
+        callback("qc-twenty-miles-pile-1")?
     } else if name == super::super::qengine_rewards_fixtures::cq29_quest_contacts::THIEVES {
         callback("thieves-guild-sarina-vase")?
     } else if classic_npc || classic_access.is_some() {
@@ -1098,7 +1117,7 @@ fn scenario_case(
         world(&callback, trigger)?
     };
     run(async |admin| {
-        let h = if shared_rewards
+        let h = if twenty_miles || shared_rewards
             || qengine_reward
             || outfit_world
             || matches!(
@@ -1633,6 +1652,8 @@ fn scenario_case(
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             _ if paradox_source_probe => Some(30),
+            // Paying for the amulet now reaches the authored Koshei admission.
+            _ if cyclops_amulet => Some(40),
             super::super::too_hot_research_fixtures::NAME => Some(80),
             _ => None,
         };
@@ -1785,6 +1806,7 @@ fn scenario_case(
         } else {
             activated.frame_binding().digest()
         };
+        let entry_floor = if city_story { start.floor } else { trigger.floor };
         let bundle_room = Some(
             activated
                 .qualified_room()
@@ -1795,7 +1817,7 @@ fn scenario_case(
                     crate::content::NativeEntryStart {
                         x: i32::from(start.x),
                         y: i32::from(start.y),
-                        floor: -i16::from(trigger.floor),
+                        floor: -i16::from(entry_floor),
                     },
                 )
                 .ok_or("qualified native Bundle room")?,
@@ -1810,7 +1832,7 @@ fn scenario_case(
             (
                 i32::from(start.x),
                 i32::from(start.y),
-                -i16::from(trigger.floor),
+                -i16::from(entry_floor),
             ),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -1860,8 +1882,8 @@ fn scenario_case(
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
             } else if super::super::qh_authored_cases_fixtures::is_city(name) {
-                // One player plus Iriana and Jimmy for Top of the City.
-                3
+                // Two players plus Iriana and Jimmy for Top of the City.
+                4
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
@@ -1872,6 +1894,9 @@ fn scenario_case(
                 3
             } else if name == "classic-quests-npc" {
                 6
+
+            } else if twenty_miles {
+                6 // One player, three quest contacts, and two event contacts.
             } else if classic_npc || qd_world {
                 5
             } else if monk {
@@ -1967,6 +1992,7 @@ fn scenario_case(
                 Some(h.root.clone()),
             );
         let eligibility_premium = if feaster
+            || cyclops_amulet
             || name == "catalogue-npc-inventory"
             || matches!(
                 name,
@@ -1983,6 +2009,7 @@ fn scenario_case(
             || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium"))
             || name.starts_with("questpc7-outfits-")
             || name.starts_with("qengine-rewards-qb-")
+            || name == "questpc7-friends-draconian-other-services"
             || name.starts_with("qengine-rewards-l1-warmaster")
             || (name.starts_with("qengine-rewards-l1-wayfarer")
                 && !name.ends_with("-free"))
@@ -3111,9 +3138,17 @@ fn scenario_case(
         } else if name.starts_with("questpc7-eligibility-") {
             super::super::questpc7_eligibility_fixtures::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
+        } else if name == super::super::questpc7_friends_fixtures::LEGACY_CASE {
+            super::super::questpc7_friends_fixtures::exercise_legacy(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if let Some(case) = name.strip_prefix("questpc7-friends-draconian-") {
+            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h, case)
+                .await?;
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if twenty_miles {
+            Box::pin(super::super::qc_twenty_miles_fixtures::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if super::super::qc_lizard_sanctuary_fixtures::matches_world(name) {
             Box::pin(super::super::qc_lizard_sanctuary_fixtures::exercise(
                 &mut owner, &mut admitted, &h, &callback, trigger,

@@ -130,6 +130,14 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
             ),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        if source.is_none() {
+            let sector = data.sectors.first_mut().ok_or("fixture sector")?;
+            let mut approach = sector.tiles.iter().find(|tile| tile.x == 7)
+                .ok_or("approach tile")?.clone();
+            approach.x += 1;
+            approach.items.truncate(1);
+            sector.tiles.push(approach);
+        }
         if level_gate {
             let tiles = &mut data.sectors.first_mut().ok_or("door sector")?.tiles;
             let mut next_door = tiles.iter().find(|tile| tile.x == 6)
@@ -227,6 +235,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame_binding = map.frame_binding_digest(deps.admitted.world_id);
         let frame = map.frame_binding_digest(deps.admitted.world_id);
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
@@ -261,7 +270,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(door_x + 1),
+                    x: i32::from(door_x + if source.is_none() { 2 } else { 1 }),
                     y: i32::from(door_y),
                     floor: -i16::from(door_floor),
                 },
@@ -455,9 +464,10 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, admitted, 1, &payload, reference(wrong_key))
                 .await?;
+        // From two tiles away the wire owner walks one tile before trying the key.
         assert_eq!(result, UseDisposition::KeyMismatch);
         assert_eq!(map.facts().doors().revision(placement_key), 0);
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (next, result, replay) =
             super::item_craft_fixtures::exchange(&owner, next, 2, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);
@@ -497,7 +507,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
         assert_eq!(inventory.key_action(id(72)), Some(key_action + 1));
         station.expected_revision = 1;
         let payload = encode_item_use_intent(&intent(station.clone())).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 3, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);
@@ -508,12 +518,12 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
         station.expected_revision = 2;
         let payload =
             oteryn_protocol_oteryn::world_object::encode_use_intent(&station).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN;
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 4, &payload, None).await?;
         assert_eq!(result, UseDisposition::Locked);
         let payload = encode_item_use_intent(&intent(station)).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (_, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 5, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);

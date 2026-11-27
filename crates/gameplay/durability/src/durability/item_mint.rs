@@ -79,6 +79,9 @@ pub const CORPSE_MATERIALIZATION_PURPOSE_KEY: &str = "CORPSE_MATERIALIZATION";
 /// at the corpse's own MINT commit under the per-scope `oteryn:corpse-cap:`
 /// advisory lock -- never re-decided here.
 pub(super) const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
+// Terminal Koshei remains stop taking corpse slots at the committed transform.
+// This independent ceiling bounds the retirement backlog during worker outages.
+pub(super) const KOSHEI_REMAINS_HEADROOM: i64 = 64;
 
 /// Equality on the full tagged cause tuple, parameters `$1..$10`; never a hash.
 macro_rules! cause_key {
@@ -1419,9 +1422,11 @@ impl DurabilityRoot {
                     // D3 §4.2: the per-scope corpse-cap advisory lock, taken
                     // before fence_is_live and before this MINT's own insert
                     // -- never a freeze-time-only count.
-                    let live_corpses =
+                    let (live_corpses, all_corpses) =
                         corpse_cap_recount(&mut tx, &frozen.request.cause.death).await?;
-                    if live_corpses >= COMBAT01_CORPSES_PER_SCOPE_MAX {
+                    if live_corpses >= COMBAT01_CORPSES_PER_SCOPE_MAX
+                        || all_corpses >= COMBAT01_CORPSES_PER_SCOPE_MAX + KOSHEI_REMAINS_HEADROOM
+                    {
                         return Ok(Err(ItemMintError::CapacityExceeded));
                     }
 
@@ -2261,7 +2266,7 @@ async fn fence_is_live(
 async fn corpse_cap_recount(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     death: &CreatureDeathKey,
-) -> std::result::Result<i64, DurabilityError> {
+) -> std::result::Result<(i64, i64), DurabilityError> {
     sqlx::query(
         "SELECT pg_advisory_xact_lock(hashtextextended(\
          'oteryn:corpse-cap:' || encode($1,'hex'), 0))",
@@ -2269,8 +2274,9 @@ async fn corpse_cap_recount(
     .bind(assignment_scope_key(death.runtime_scope).as_slice())
     .execute(&mut **tx)
     .await?;
-    let count: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_item_ground_locations g \
+    let counts = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE NOT (r.loot_table_production_key='oteryn:item.tibia.i7535'
+           AND i.definition_production_key='oteryn:item.tibia.i7540')), count(*) FROM game_item_ground_locations g \
            JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
            JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
           WHERE g.world_id = encode($1,'hex')::uuid AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid \
@@ -2283,7 +2289,7 @@ async fn corpse_cap_recount(
     .bind(death.instance_bytes())
     .fetch_one(&mut **tx)
     .await?;
-    Ok(count)
+    Ok(counts)
 }
 
 async fn insert_mint(

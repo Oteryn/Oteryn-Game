@@ -49,11 +49,10 @@ fn refresh_source_reset(projection: Option<&mut QuestCallbackProjection>, publis
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
-    pub(super) async fn execute_quest_callback<'map>(
-        &self,
+    pub(super) async fn execute_quest_callback<'a, 'map>(
+        &'a self,
         permit: &SpellLanePermit,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        guards: &mut Option<CallbackGuards<'a>>,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &'map BundleMap,
@@ -69,6 +68,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
         scene_publication: Option<&mut Option<super::scene_items::ScenePublication<'map>>>,
     ) -> UseDisposition {
+        let Some((runtime, states)) = guards.as_mut() else {
+            return UseDisposition::Rejected;
+        };
+        let (mut runtime, mut states) = (&mut **runtime, &mut **states);
         // Another user may have obtained the lane after this caller's first
         // receipt check. Only the original batch or its exact receipt can
         // release this placement for a new close.
@@ -289,6 +292,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && super::timed_passages::lion_is_busy(map, callback)
             {
                 return UseDisposition::NothingToUse;
+            }
+            if !callback.requires_durable_commit()
+                && callback.trigger == Trigger::Use
+                && let Some(message) = &callback.failure_message
+            {
+                self.states.chat.push_quest_feedback(session, message);
             }
             return UseDisposition::Rejected;
         }
@@ -1379,6 +1388,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     None
                 };
+            // Pending retains the exact source and receipt so the Character
+            // commit can run without the Channel guards.
+            let release_guards = callback.trigger == Trigger::Use
+                && callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest";
+            if release_guards {
+                drop(guards.take());
+            }
+            #[cfg(test)]
+            if callback.key == "oteryn:quest-callback/qc-twenty-miles-pile-1"
+                && let Some(pause) = self
+                    .states
+                    .quest_callbacks
+                    .before_commit
+                    .lock()
+                    .ok()
+                    .and_then(|mut pause| pause.take())
+            {
+                pause.0.notify_one();
+                pause.1.notified().await;
+            }
             let outcome = if let Some(input) = &flame {
                 slot.commit_rotten_flame_use(
                     self.root,
@@ -1410,6 +1439,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             };
+            if release_guards {
+                *guards = Some(self.lock_callback_guards().await);
+            }
+            let Some((current_runtime, current_states)) = guards.as_mut() else {
+                return UseDisposition::Rejected;
+            };
+            (runtime, states) = (&mut **current_runtime, &mut **current_states);
+            if release_guards {
+                let current_actor = runtime.owner_fence().is_ok()
+                    && runtime.read_actor_position(actor) == Ok(expected)
+                    && runtime
+                        .player_control_facts(actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+                    && !states.is_dead(actor)
+                    && states.spell_idle(runtime, actor, session);
+                if !current_actor
+                    || map.facts.object_revision(key) != expected_revision
+                    || !matches(map, callback, key)
+                {
+                    match &outcome {
+                        Ok(QuestTransitionOutcome::Committed(receipt)
+                            | QuestTransitionOutcome::AlreadyCommitted(receipt)) if current_actor => {
+                            self.apply_committed_quest_copy(
+                                session, matches!(outcome, Ok(QuestTransitionOutcome::Committed(_))), receipt,
+                            );
+                            self.schedule_quest_refresh(session);
+                        }
+                        Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
+                            return UseDisposition::Rejected;
+                        }
+                        _ => {}
+                    }
+                    if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                        records.remove(&session);
+                    }
+                    return UseDisposition::StaleState;
+                }
+            }
             if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
                 && matches!(&outcome,Ok(QuestTransitionOutcome::Refused(
                     oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing

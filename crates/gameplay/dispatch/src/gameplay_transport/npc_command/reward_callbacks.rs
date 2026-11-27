@@ -35,7 +35,12 @@ pub(super) struct Offer {
     topic: u16,
     #[serde(default)]
     any_topic: bool,
+    #[serde(default)]
+    crystal_keyword: bool,
     next_topic: u16,
+    // A dialogue alias can select the NPC's existing fenced reward callback.
+    #[serde(default)]
+    transition: Option<String>,
     storage: Vec<Storage>,
     #[serde(default)]
     requires: Vec<reward_callbacks::TrackRequirement>,
@@ -48,6 +53,8 @@ pub(super) struct Offer {
     requires_premium: Option<bool>,
     #[serde(default)]
     failure_reply: Vec<String>,
+    #[serde(default)]
+    failure_topic: Option<u16>,
 }
 
 #[cfg(test)]
@@ -60,6 +67,23 @@ impl NpcConversations {
             .set(rows)
             .map_err(|_| "reward callback fixture already installed".to_owned())
     }
+}
+
+const TWENTY_MILES: &str = "oteryn:quest.twenty_miles_beneath_the_sea_quest";
+
+fn twenty_miles_placement(
+    npc: &str,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    named: EntityRef,
+) -> bool {
+    let at = match npc {
+        "oteryn:npc.guardian_of_the_deep_seas" => (33547, 31632, -14),
+        "oteryn:npc.yeo" => (33660, 31989, -7),
+        _ => return true,
+    };
+    service_context::at_placement(runtime, actor, session, named, at)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -139,25 +163,32 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
+    let placement = twenty_miles_placement(
+        &context.2,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent.npc_actor,
+    );
     let text = callback_keyword(admission, command, &context.2, &intent.text);
     let raw_text = intent.text.trim().to_ascii_lowercase();
-    let requests_offer = if context.2 == storkus::NPC {
+    let requests_offer = if matches!(context.2.as_str(), storkus::NPC | offer_topic::CYCLOPS) {
         &text
     } else {
         &raw_text
     };
     let says_no = raw_text == "no";
     // A passage question replaces the ticket offer, even if travel later refuses.
-    if phase == Phase::Rewards
+    if matches!(phase, Phase::Rewards { .. })
         && admission
             .states
             .chat
             .npc_talk()
             .and_then(|book| book.get(&context.2))
             .is_some_and(|npc| {
-                npc.travel_routes
-                    .iter()
-                    .any(|route| raw_text == route.keyword || raw_text == route.route.key.replace('_', " "))
+                npc.travel_routes.iter().any(|route| {
+                    raw_text == route.keyword || raw_text == route.route.key.replace('_', " ")
+                })
             })
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
@@ -171,12 +202,22 @@ pub(super) fn prepare(
             dialogue.retire_for_source(&context);
         }
     }
+    if matches!(phase, Phase::Rewards { .. }) {
+        offer_topic::retire_cyclops_offer(
+            admission,
+            command.game_session_id,
+            &context,
+            &offers,
+            &text,
+        )?;
+    }
     if says_no
         || (phase == Phase::Offers
             && !matches!(
                 requests_offer.as_str(),
                 "yes" | "hi" | "hello" | "bye" | "farewell"
             )
+            && placement
             && offers
                 .iter()
                 .any(|offer| offer.npc == context.2 && offer.matches_keyword(requests_offer)))
@@ -231,6 +272,12 @@ pub(super) fn prepare(
                         .iter()
                         .any(|gate| gate.track == EROTH_LEGACY_TRACK)
             });
+            // The Cyclops keeps each metal quote on refusal. Apply a failure
+            // topic where the source changes it, including skirt delivery.
+            failure_topic = match (context.2.as_str(), topic.number, text.as_str()) {
+                (offer_topic::CYCLOPS, 12, "yes") | ("oteryn:npc.yeo", 1, "yes") => Some(0),
+                _ => None,
+            };
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
@@ -264,8 +311,12 @@ pub(super) fn prepare(
                 } else {
                     topic.number
                 };
+                let meets_requirements = |c: &reward_callbacks::RewardCallback| {
+                    c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                };
                 let matching_stage = callbacks.filter(|c| {
                     c.carried_item.is_none()
+                        && (c.quest != TWENTY_MILES || placement)
                         && c.npc == context.2
                         && c.topic == topic
                         && matches_reward_keyword(c, &text)
@@ -286,7 +337,7 @@ pub(super) fn prepare(
                                     .iter()
                                     .all(|op| op.advisory_holds(catalogue, tracks))
                         })
-                        && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                        && (c.quest == TWENTY_MILES || meets_requirements(c))
                 });
                 // Both programmes can teach Melchior's single greeting. The
                 // active Appease stage owns it when its transition is eligible.
@@ -298,17 +349,20 @@ pub(super) fn prepare(
                     !appease_greeting || c.key != "oteryn:quest-reward/marid-melchior-greeting"
                 });
                 let mut selected = matching_stage.clone().filter(|c| {
-                    c.inventory
-                        .iter()
-                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+                    (c.quest != TWENTY_MILES || meets_requirements(c))
+                        && c.inventory.iter().all(|rule| {
+                            inventory.is_some_and(|facts| rule.holds(&facts.quantities))
+                        })
                 });
                 if let Some(callback) = selected.next() {
                     if selected.next().is_some() {
                         return None;
                     }
                     if !meets_level(callback.minimum_level)
-                        && let Some(choice) =
-                            refusal(&callback.failure_reply, callback.failure_topic)
+                        && let Some(choice) = refusal(
+                            &callback.failure_reply,
+                            callback.failure_topic.or(failure_topic),
+                        )
                     {
                         return Some(choice);
                     }
@@ -316,7 +370,7 @@ pub(super) fn prepare(
                     // transition: its locked owner must reject the level gate.
                     // Falling through would return the ordinary dialogue's Ok.
                     failure_reply = callback.failure_reply.clone();
-                    failure_topic = callback.failure_topic;
+                    failure_topic = callback.failure_topic.or(failure_topic);
                     return Some(Choice {
                         transition: Some(callback.key.clone()),
                         next_topic: Some(Topic::from(callback.next_topic)),
@@ -341,11 +395,14 @@ pub(super) fn prepare(
                     });
                 }
                 // A later stage with the same keyword cannot hide this stage's
-                // explicit inventory refusal. Successful branches retain priority.
+                // explicit refusal. Successful branches retain priority.
                 let mut blocked = matching_stage;
                 if let Some(callback) = blocked.next()
                     && blocked.next().is_none()
-                    && let Some(choice) = refusal(&callback.failure_reply, callback.failure_topic)
+                    && let Some(choice) = refusal(
+                        &callback.failure_reply,
+                        callback.failure_topic.or(failure_topic),
+                    )
                 {
                     return Some(choice);
                 }
@@ -353,6 +410,9 @@ pub(super) fn prepare(
             }
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, |lines| refusal(lines, None));
+            }
+            if !placement {
+                return None;
             }
             let account_matches = |offer: &Offer| {
                 offer.requires_premium.is_none_or(|required| {
@@ -377,10 +437,21 @@ pub(super) fn prepare(
                     && account_matches(c)
             }) {
                 if !meets_level(offer.minimum_level) {
-                    return refusal(&offer.failure_reply, None);
+                    return refusal(&offer.failure_reply, offer.failure_topic.or(failure_topic));
+                }
+                if let Some(key) = &offer.transition {
+                    // Keep the original callback, value plan and saved-definition pin.
+                    callbacks.clone().find(|callback| {
+                        callback.key == *key
+                            && callback.npc == context.2
+                            && callback.carried_item.is_none()
+                            && callback.world_claim.is_none()
+                    })?;
+                    failure_reply = offer.failure_reply.clone();
+                    failure_topic = offer.failure_topic.or(failure_topic);
                 }
                 return Some(Choice {
-                    transition: None,
+                    transition: offer.transition.clone(),
                     next_topic: Some(Topic::from(offer.next_topic)),
                     reply: if context.2 == storkus::NPC
                         && text == "mission"
@@ -421,7 +492,8 @@ pub(super) fn prepare(
             });
             if let Some(offer) = blocked.next()
                 && blocked.next().is_none()
-                && let Some(choice) = refusal(&offer.failure_reply, None)
+                && let Some(choice) =
+                    refusal(&offer.failure_reply, offer.failure_topic.or(failure_topic))
             {
                 return Some(choice);
             }
@@ -444,7 +516,10 @@ pub(super) fn prepare(
                     && matching.next().is_none()
                     && let Some(terminal) = [callback, other].into_iter().find(|c| c.completes)
                 {
-                    return refusal(&terminal.failure_reply, terminal.failure_topic);
+                    return refusal(
+                        &terminal.failure_reply,
+                        terminal.failure_topic.or(failure_topic),
+                    );
                 }
                 return None;
             }
@@ -453,7 +528,10 @@ pub(super) fn prepare(
                     .inventory
                     .iter()
                     .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities))))
-                && let Some(choice) = refusal(&callback.failure_reply, callback.failure_topic)
+                && let Some(choice) = refusal(
+                    &callback.failure_reply,
+                    callback.failure_topic.or(failure_topic),
+                )
             {
                 return Some(choice);
             }
@@ -587,6 +665,11 @@ pub(super) fn unhandled_confirmation(
     ) else {
         return false;
     };
+    let text = if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
+        text
+    } else {
+        callback_keyword(&admission.states.chat, &context.2, &intent.text)
+    };
     if admission.has_pending_paid_confirmation(command, intent, &context, received_at) {
         return false;
     }
@@ -607,9 +690,17 @@ pub(super) fn unhandled_confirmation(
     let Some(catalogue) = admission.quest_catalogue.as_deref() else {
         return false;
     };
+    let placement = twenty_miles_placement(
+        &context.2,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent.npc_actor,
+    );
     reward_callbacks::offered_for(catalogue).is_ok_and(|callbacks| {
         callbacks.iter().any(|callback| {
             callback.npc == context.2
+                && (callback.quest != TWENTY_MILES || placement)
                 && (callback.topic == topic
                     || requested
                     // The forge requires a specific offer before it accepts yes.
@@ -617,6 +708,15 @@ pub(super) fn unhandled_confirmation(
                 && matches_reward_keyword(callback, &text)
         })
     })
+}
+
+/// Crystal MsgContains rejects a keyword if any occurrence follows a Lua %w byte.
+pub(super) fn crystal_keyword(text: &str, word: &str) -> bool {
+    let mut matches = text.match_indices(word);
+    let allowed = |(index, _): (usize, &str)| {
+        index == 0 || !text.as_bytes()[index - 1].is_ascii_alphanumeric()
+    };
+    matches.next().is_some_and(allowed) && matches.all(allowed)
 }
 
 const JORGE: &str = "oteryn:npc.jorge";
@@ -690,6 +790,12 @@ fn callback_keyword(
     text: &str,
 ) -> String {
     use oteryn_gameplay_quests::quest::classic_talk;
+    if npc == crate::durability::npc_trade::sinatuki_exchange::NPC {
+        if super::npc_item_exchanges::sinatuki_default_keyword(chat, text) {
+            return "nupi".into();
+        }
+        return String::new();
+    }
     if npc == classic_talk::ROTTIN {
         return classic_talk::rottin_keyword(text)
             .unwrap_or_default()
@@ -704,7 +810,14 @@ fn callback_keyword(
             .unwrap_or_default()
             .into();
     }
-    text.trim().to_ascii_lowercase()
+    let trimmed = text.trim();
+    if npc == offer_topic::CYCLOPS {
+        if trimmed.eq_ignore_ascii_case("yes") {
+            return text.to_ascii_lowercase();
+        }
+        return offer_topic::amulet_keyword(&trimmed.to_ascii_lowercase()).into();
+    }
+    trimmed.to_ascii_lowercase()
 }
 
 fn rottin_dialogue(

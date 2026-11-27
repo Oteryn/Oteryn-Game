@@ -133,10 +133,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || states.is_dead(actor)
                 || !states.spell_idle(&runtime, actor, command.game_session_id)
                 || pinned_index(&runtime, self.active_generation).is_none()
-                || !self
-                    .states
-                    .player_trades
-                    .physical(command.game_session_id, None)
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
@@ -214,6 +210,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(plan) = fishing::map_harvest(before.appearance_id, 1) else {
                 return Ok(None);
             };
+            // This route probes ordinary world USE before its actual owner.
+            // Only a matching harvest can invalidate an open Trade.
+            if !self
+                .states
+                .player_trades
+                .physical(command.game_session_id, None)
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
             let actor_at = runtime
                 .read_actor_position(actor)
                 .map_err(|_| ())?

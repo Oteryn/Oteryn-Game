@@ -171,6 +171,46 @@ fn draw(context: &BossRoll<'_>, ordinal: u32, kind: u8) -> u64 {
 #[allow(clippy::expect_used, reason = "bounded test fixtures")]
 mod tests {
     use super::*;
+    use oteryn_gameplay_content::content::creature_reward::{
+        CreatureRewardTable, LootTablesSection,
+    };
+    use oteryn_gameplay_content::content::native_gameplay::CreatureProfilesDocument;
+
+    #[test]
+    fn arbaziloth_crystal_coin_roll_yields_three_coins() -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let creatures: CreatureProfilesDocument = serde_json::from_reader(std::fs::File::open(
+            root.join("content/creatures/definitions/spell-native-profiles.json"),
+        )?)?;
+        let loot = LootTablesSection::decode(
+            &std::fs::read(root.join("tools/content-schema/native-gameplay/loot-tables.json"))?,
+            &creatures,
+        )?;
+        let rewards = CreatureRewardTable::build(&creatures, &loot, &Default::default());
+        let arbaziloth = rewards
+            .row("oteryn:creature.arbaziloth")
+            .map_err(|reason| format!("Arbaziloth reward row refused: {reason:?}"))?;
+        let reference = arbaziloth
+            .loot_table_ref
+            .as_ref()
+            .ok_or("missing loot reference")?;
+        let plan = plan_boss_loot(
+            [3; 16],
+            [2; 16],
+            reference,
+            &arbaziloth.loot_table,
+            2.0,
+            true,
+        )?;
+        let coins = plan
+            .entries
+            .iter()
+            .find(|entry| entry.item.production_key == "oteryn:item.tibia.i3043")
+            .ok_or("missing crystal coin roll")?;
+        assert_eq!(coins.quantity, 3);
+        assert!(coins.stackable);
+        Ok(())
+    }
 
     fn reference() -> LootDefinitionRef {
         LootDefinitionRef::new("Loot", "oteryn:loot.test-boss", "definition-r1")

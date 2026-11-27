@@ -4405,6 +4405,50 @@ mod tests {
         supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
         assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
     }
+    #[test]
+    fn twenty_miles_overlays_reject_rehashed_invalid_records()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let baseline = qualify_native_entry_room(test_source(1)?.world_id)?;
+        let mut supplied = input();
+        let items =
+            include_bytes!("../../../../../content/items/definitions/spell-native-profiles.json");
+        let appearances =
+            include_bytes!("../../../../../content/presentations/bindings/spell-appearances.json");
+        supplied.item_profiles = Some(pinned(items));
+        compile_native_gameplay(baseline.compiled(), &supplied)?;
+
+        let mut profiles: Value = serde_json::from_slice(items)?;
+        let slab = profiles["records"]
+            .as_array_mut()
+            .ok_or("item records")?
+            .iter_mut()
+            .find(|row| {
+                row["production_definition"]["production_key"] == "oteryn:item.tibia.i21753"
+            })
+            .ok_or("nacre slab profile")?;
+        slab["unknown_field"] = true.into();
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles)?));
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+
+        let compile_appearance = |bytes: &[u8]| {
+            super::super::native_spell_appearances::compile(
+                bytes,
+                super::super::digest::sha256(bytes),
+            )
+        };
+        compile_appearance(appearances)?;
+        let mut poses: Value = serde_json::from_slice(appearances)?;
+        let swimming = poses["records"]
+            .as_array_mut()
+            .ok_or("appearance records")?
+            .iter_mut()
+            .find(|row| row["outfit_key"] == "oteryn:outfit.source.crystal.look267")
+            .ok_or("swimming appearance")?;
+        swimming["look_type"] = 268.into();
+        assert!(compile_appearance(&serde_json::to_vec(&poses)?).is_err());
+        Ok(())
+    }
+
     /// Explicit local qualification of the real composed input, without runtime activation.
     #[test]
     #[ignore = "requires OTERYN_FULL_SPELL_TEST_MANIFEST from the explicit source producer"]

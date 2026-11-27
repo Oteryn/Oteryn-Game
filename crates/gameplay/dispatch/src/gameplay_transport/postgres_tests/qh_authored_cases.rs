@@ -1,5 +1,7 @@
 //! Lane qh: registered authored bindings driven by literal USE on an unmodified native map crop.
-use super::qh_authored_cases_fixtures::{BARE, DIG, DIRT, NO_PICK, SMALL_SAPPHIRE, TOP_OF_THE_CITY, WRONG_TOOL};
+use super::qh_authored_cases_fixtures::{
+    BARE, DIG, DIRT, NO_PICK, SMALL_SAPPHIRE, TOP_OF_THE_CITY, TOP_OF_THE_CITY_CRATE, WRONG_TOOL,
+};
 use super::{TestResult, quest_world_callbacks_fixtures};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
@@ -71,16 +73,8 @@ fn qh_top_of_the_city_npc_chain_and_cellar_crate_postgres() -> TestResult {
     }
     let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("qh-top-of-the-city", || {
-        // The scenario starts one tile west of this position, beside the cellar crate.
-        quest_world_callbacks_fixtures::scenario(
-            TOP_OF_THE_CITY,
-            Position {
-                x: 32809,
-                y: 31252,
-                floor: -8,
-            },
-            false,
-        )
+        // The story starts at Iriana; the trigger below identifies the cellar crate.
+        quest_world_callbacks_fixtures::scenario(TOP_OF_THE_CITY, TOP_OF_THE_CITY_CRATE, false)
     })?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED qh_top_of_the_city_npc_chain_and_cellar_crate_postgres duration={:?}",

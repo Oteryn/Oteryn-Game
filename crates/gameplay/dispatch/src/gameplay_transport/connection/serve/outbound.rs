@@ -211,7 +211,7 @@ where
         Dispatch::Step(outcome, _) => {
             effects::step(stream, authority, session, outcome).await?;
         }
-        Dispatch::Use(outcome) => {
+        Dispatch::Use(outcome) | Dispatch::UseWithoutWalk(outcome) => {
             use_effects::use_effects(stream, authority, session, command, outcome).await?;
         }
         Dispatch::Spell(outcome) | Dispatch::ParameterSpell(outcome, _) => {

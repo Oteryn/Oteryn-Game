@@ -34,6 +34,8 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qc-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../content/quests/npc-callbacks/ape-city.json"),
     include_str!("../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../content/quests/npc-callbacks/battle-mage-completions.json"),

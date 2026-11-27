@@ -176,6 +176,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 quest: "oteryn:quest/soul-war".into(),
                 trigger: Trigger::Use,
                 selector: Selector {
+                    target_definition: None,
                     ordinal: None,
                     native: None,
                     position: Some(trigger),

@@ -17,7 +17,15 @@ pub(super) fn prepare(
         intent,
         runtime,
         |context, _, _, tracks| {
-            if context.2 != "oteryn:npc.guardian_of_the_deep_seas" {
+            if context.2 != "oteryn:npc.guardian_of_the_deep_seas"
+                || !service_context::at_placement(
+                    runtime,
+                    actor,
+                    command.game_session_id,
+                    intent.npc_actor,
+                    quest::GUARDIAN_NATIVE_POSITION,
+                )
+            {
                 return None;
             }
             let text = intent.text.trim().to_ascii_lowercase();

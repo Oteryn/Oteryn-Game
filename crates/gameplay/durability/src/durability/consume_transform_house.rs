@@ -466,7 +466,8 @@ impl DurabilityRoot {
                 Some(Ok(plan)) => plan,
                 Some(Err(disposition)) => return Ok(ConsumeTransformResult::refused(disposition)),
                 None => {
-                if novelty_items::house_transform_for_key(&definition.production_key).is_none() {
+                if novelty_items::house_transform_for_key(&definition.production_key).is_none()
+                    && !novelty_items::is_ghostsilver_lantern(&definition.production_key) {
                     return Ok(ConsumeTransformResult::refused(UseDisposition::NothingToUse));
                 }
                 let Some(mut selected) = novelty_items::plan_ground(native, &definition,
@@ -482,6 +483,7 @@ impl DurabilityRoot {
                 || policy.container_capacity.is_some() || policy.decay.is_some() || !policy.ground_destination) {
                 return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
             }
+            selected.effects["kind"] = json!("house_transform");
             selected.effects["house_after"] = json!({"key": after.production_key, "revision": after.revision_ref});
                 ActionPlan { recipe: selected.recipe, outputs: Vec::new(), consume_source: false,
                     source_count: 0, effects: selected.effects, extra_inputs: Vec::new() }
