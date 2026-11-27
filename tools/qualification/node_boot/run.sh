@@ -636,17 +636,17 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 game_platform_start
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
-  # I07.full uses the second core account. P19 and W15c use the packet pair.
+  # Seed the dedicated I07 account and the shared core and packet accounts.
   # Seed these disposable accounts at the Platform snapshot authority before admission.
   platform_db="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
   [[ "$platform_db" =~ ^portal_e2e_[0-9a-f]{12}$ ]] || fail "invalid Premium fixture database"
   docker exec -i "$GP_PG_CONTAINER" psql -Xq -v ON_ERROR_STOP=1 \
     -U game_platform_admin -d "$platform_db" \
-    -v core_second="$SECOND_ACCOUNT_ID" -v packet_first="$PACKET_ACCOUNT_ID" \
+    -v i07="$I07_ACCOUNT" -v core_second="$SECOND_ACCOUNT_ID" -v packet_first="$PACKET_ACCOUNT_ID" \
     -v packet_second="$SECOND_PACKET_ACCOUNT_ID" <<'SQL_PREMIUM_FIXTURE'
 WITH accounts AS (
     INSERT INTO premium_authority (account_id)
-    VALUES (:'core_second'::uuid), (:'packet_first'::uuid), (:'packet_second'::uuid)
+    VALUES (:'i07'::uuid), (:'core_second'::uuid), (:'packet_first'::uuid), (:'packet_second'::uuid)
     RETURNING account_id
 ), grants AS (
     INSERT INTO premium_ledger (
@@ -900,12 +900,6 @@ TOML
       "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
       "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
     )
-    cat >> "$WORK/node.toml" <<'TOML_PREMIUM_FIXTURE'
-
-[premium_activation]
-activation_id = "node-boot-fixture-premium"
-switch_over_us = 0
-TOML_PREMIUM_FIXTURE
   fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }

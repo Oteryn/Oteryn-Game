@@ -828,7 +828,12 @@ async fn prepare_build(
         {
             return Err("I07 fixture requires its active disposable admission".into());
         }
-        grant_premium(root, premium, *record.account_id.as_bytes(), None).await?;
+        premium
+            .ok_or("I07 Premium coordinator absent")?
+            .premium_gate(*record.account_id.as_bytes())
+            .await
+            .require()
+            .map_err(|_| "I07 Platform Premium fixture unavailable at admission")?;
         let spawn = spawn.ok_or("I07 fixture requires a live channel runtime")?;
         return i07::seed(root, authority, proof, &current, native, &record, spawn).await;
     }
