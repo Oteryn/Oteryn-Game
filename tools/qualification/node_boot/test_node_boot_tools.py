@@ -958,6 +958,27 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_p18_rows_include_the_physical_forge_region(self):
+        selection = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE')
+        for profile in ('town', 'quests'):
+            for group, batch, expected in (
+                ('rows', '47:1', 1),
+                ('rows', '174:1', 1),
+                ('rows', 'all', 1),
+                ('rows', '0:1', 0),
+                ('core', 'all', 0),
+                ('', '174:1', 1),
+            ):
+                with self.subTest(profile=profile, group=group, batch=batch):
+                    result = bash(
+                        'set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + selection
+                        + 'printf "%s\\n" "$WORLD_REGIONS"\n',
+                        {'GAME_SOURCE': str(HERE.parents[2]), 'NODE_BOOT_WORLD_PROFILE': profile,
+                         'NODE_BOOT_E2E_ONLY': group, 'OTERYN_E2E_ROW_BATCH': batch},
+                    )
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual(result.stdout.strip().split(';').count('125,126'), expected)
+
     def test_p18_replay_requires_its_live_capture(self):
         import runpy
 

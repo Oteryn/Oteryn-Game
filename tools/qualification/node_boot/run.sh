@@ -163,18 +163,33 @@ case "$NODE_BOOT_D150_LEGACY" in
   *) blocked invalid_d150_mode ;;
 esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
+selected_groups="${NODE_BOOT_E2E_ONLY:-}"
+selected_groups=",${selected_groups//[[:space:]]/},"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
   town)
     WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
-    selected_groups="${NODE_BOOT_E2E_ONLY:-}"
-    case ",${selected_groups//[[:space:]]/}," in
+    case "$selected_groups" in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
     ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
+# Both P18 rows walk to the physical Forge and send USE on its served placement.
+if [[ "$NODE_BOOT_WORLD" == 1 && ( "$selected_groups" == ,, || "$selected_groups" == *,rows,* ) ]]; then
+  p18_region="$(python3 - "$GAME_SOURCE/tools/qualification/node_boot/client_replay.py" <<'PY_P18_REGION'
+import os
+import runpy
+import sys
+
+selected, _ = runpy.run_path(sys.argv[1])["selected_rows"](os.environ.get("OTERYN_E2E_ROW_BATCH"))
+if selected & {"P18.client", "P18.full"}:
+    print(";125,126")
+PY_P18_REGION
+  )" || blocked invalid_p18_region_selection
+  WORLD_REGIONS+="$p18_region"
+fi
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
