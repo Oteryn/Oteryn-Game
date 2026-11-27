@@ -152,47 +152,31 @@ pub(super) fn rat_corpse_stage() -> TestResult<client_hunt::CorpseStage> {
     })
 }
 
-pub(super) async fn prepare_rat_ground(
+pub(super) async fn retreat_from_spawn(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    spawn: TilePos,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let occupied = client_row_p01::occupied_rat_route_tiles(client);
-    let open = |at: TilePos| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-            && !occupied.contains(&at)
-    };
-    let path = route_avoiding(
+    // Leave native eleven-tile creature sight before respawn.
+    let retreat = route_avoiding(
         world,
         from,
-        |at| {
-            open(at)
-                && [
-                    StepDirection::North,
-                    StepDirection::East,
-                    StepDirection::South,
-                    StepDirection::West,
-                ]
-                .into_iter()
-                .filter(|&direction| destination(world, at, direction).is_some_and(open))
-                .count()
-                    >= 2
-        },
+        |at| at.floor != spawn.floor || at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) > 11,
         |at| !occupied.contains(&at),
     )
-    .ok_or("no reachable free ground for the Rat fixture")?;
-    client_row_p01::walk_rat_route(client, world, &path).await
+    .ok_or_else(|| format!("no walkable retreat from hunt at {from:?}"))?;
+    client_row_p01::walk_rat_route(client, world, &retreat).await
 }
 
-async fn authored_target(
+pub(super) async fn authored_target(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     key: &str,
     name: &str,
+    excluded_spawn: Option<TilePos>,
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     use oteryn_dev_client::EntityKind;
     let from = tile(client.world_spatial().actor_position)?;
@@ -217,7 +201,9 @@ async fn authored_target(
                 .get(point.creature as usize)
                 .is_some_and(|creature| creature.key == key)
             {
-                points.insert(at);
+                if Some(at) != excluded_spawn {
+                    points.insert(at);
+                }
             }
         }
     }
@@ -281,50 +267,6 @@ async fn authored_target(
     }
 }
 
-pub(super) async fn place_rat(
-    client: &mut DevClientSession,
-) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
-    place_creature(client, "oteryn:creature.rat").await
-}
-
-async fn place_creature(
-    client: &mut DevClientSession,
-    key: &str,
-) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, key.to_owned()).await?;
-    let target = parse_spawned_entity(&answer)?;
-    evidence(&format!("P01_FIXTURE placed key={key} target={target:?}"));
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
-    verdict::Harness::global().bounded_wait(deadline, "fixture-rat-visibility");
-    loop {
-        if let Some(entity) = client
-            .world_entities()
-            .and_then(|view| view.get(&target))
-            .copied()
-        {
-            let actor = client.world_spatial().actor_position;
-            if entity.kind != oteryn_dev_client::EntityKind::Creature
-                || entity.position.floor != actor.floor
-                || entity
-                    .position
-                    .x
-                    .abs_diff(actor.x)
-                    .max(entity.position.y.abs_diff(actor.y))
-                    != 1
-            {
-                return Err(format!("incorrect {key} fixture placement: {entity:?}").into());
-            }
-            return Ok(entity);
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("{key} fixture entity {target:?} absent from wire view").into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
-    }
-}
-
 async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent};
     use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
@@ -368,13 +310,14 @@ async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn hunt_exact_creature(
+pub(super) async fn hunt_exact_creature(
     client: &mut DevClientSession,
     target: oteryn_dev_client::WorldSpatialEntity,
     key: &str,
     race: NonZeroU32,
     corpse_ref: u32,
     stage: Option<client_hunt::CorpseStage>,
+    verify_principal: Option<&SeamClients<'_>>,
 ) -> TestResult<full_row_p05::KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
@@ -485,6 +428,29 @@ async fn hunt_exact_creature(
         }
     };
     client.session_mut().attack_target(None).await?;
+    if let Some(clients) = verify_principal {
+        let principal = clients.characters[1];
+        let death = committed_hunt_death(
+            client,
+            clients,
+            Some(principal),
+            key,
+            target.entity,
+            deadline,
+        )
+        .await?;
+        if death.shared
+            || death.awards.len() != 1
+            || death.awards.get(&principal) != Some(&gained_xp)
+            || corpse.entity.identity != death.actor.corpse_identity()
+        {
+            return Err("wire corpse or XP did not match the hunter's exact committed kill".into());
+        }
+        evidence(&format!(
+            "P01_CHECK exact-rat-death PASS target={:?} corpse={:?}",
+            target.entity, corpse.entity
+        ));
+    }
     let corpse = if let Some(stage) = stage {
         client_hunt::wait_for_corpse_stage(client, corpse, stage).await?
     } else {
@@ -595,31 +561,21 @@ pub(super) async fn prepare_hunter(
 
     let reason = "ordinary leveling does not fit the timed Bestiary hunts";
     character_prep::declare_seeded(scenario, "level-80-sorcerer", reason);
-    let mut client = if scenario == "P01.full" {
-        let mut setup = connect_world(clients, tag).await?;
-        let before = setup.join_snapshot().game_session_id;
-        request_fixture_control(
-            uuid_text(before.as_bytes()),
-            "--profile",
-            "p01-sorcerer".to_owned(),
-        )
-        .await?;
-        logout_when_ready(&mut setup).await?;
-        drop(setup);
-        charm_fixture::seed(clients).await?;
-        let fresh = connect_world(clients, 0xa4).await?;
-        if fresh.join_snapshot().game_session_id == before {
-            return Err("P01.full fixture re-admission reused the setup session".into());
-        }
-        fresh
-    } else {
-        character_prep::Seeded {
-            profile: "p01-sorcerer",
-            reason,
-        }
-        .connect(clients, tag, 1)
-        .await?
-    };
+    let mut setup = connect_world(clients, tag).await?;
+    let before = setup.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(before.as_bytes()),
+        "--profile",
+        "p01-sorcerer".to_owned(),
+    )
+    .await?;
+    logout_when_ready(&mut setup).await?;
+    drop(setup);
+    charm_fixture::seed(clients, scenario == "P01.full").await?;
+    let mut client = connect_world(clients, 0xa4).await?;
+    if client.join_snapshot().game_session_id == before {
+        return Err(format!("{scenario} fixture re-admission reused the setup session").into());
+    }
     let reply = client
         .session_mut()
         .gated_command(
@@ -727,7 +683,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     prepare_unarmed(&mut client).await?;
-    let target = authored_target(&mut client, world, &metadata.spawns, rat.key(), "Rat").await?;
+    let target =
+        authored_target(&mut client, world, &metadata.spawns, rat.key(), "Rat", None).await?;
     let first_kill = hunt_exact_creature(
         &mut client,
         target,
@@ -735,6 +692,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         race,
         rat_stage.fresh_ref,
         Some(rat_stage),
+        None,
     )
     .await?;
     let current = query(&mut client, "p01-full-mastery.json", &mut frames).await?;
@@ -903,8 +861,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }) {
         return Err("step=charm-proc need=unarmed-physical-baseline-to-isolate-Enflame".into());
     }
-    let troll = authored_target(&mut client, world, &metadata.spawns, troll_key, "Troll").await?;
-    let kill = hunt_exact_creature(&mut client, troll, troll_key, race, troll_corpse, None).await?;
+    let troll = authored_target(
+        &mut client,
+        world,
+        &metadata.spawns,
+        troll_key,
+        "Troll",
+        None,
+    )
+    .await?;
+    let kill = hunt_exact_creature(
+        &mut client,
+        troll,
+        troll_key,
+        race,
+        troll_corpse,
+        None,
+        None,
+    )
+    .await?;
     if kill.race != race || kill.raw_xp != 20 {
         return Err(format!("incorrect Troll kill credit: {kill:?}").into());
     }
@@ -925,25 +900,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     ));
 
     row.at("leave-troll-spawn");
-    let from = tile(client.world_spatial().actor_position)?;
-    let troll_position = tile(troll.position)?;
-    let occupied = client_row_p01::occupied_rat_route_tiles(&client);
-    // Leave the Troll's native eleven-tile sight range before it respawns.
-    let retreat = route_avoiding(
-        world,
-        from,
-        |at| {
-            at.floor != troll_position.floor
-                || at
-                    .x
-                    .abs_diff(troll_position.x)
-                    .max(at.y.abs_diff(troll_position.y))
-                    > 11
-        },
-        |at| !occupied.contains(&at),
-    )
-    .ok_or_else(|| format!("no walkable retreat from Troll hunt at {from:?}"))?;
-    client_row_p01::walk_rat_route(&mut client, world, &retreat).await?;
+    retreat_from_spawn(&mut client, world, tile(troll.position)?).await?;
 
     row.at("wait-for-logout-block-and-relog");
     let old_session = client.join_snapshot().game_session_id;

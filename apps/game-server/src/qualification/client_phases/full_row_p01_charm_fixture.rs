@@ -21,7 +21,7 @@ const COMPLETED: [&str; 15] = [
 pub(super) const INCOMPLETE: &str = "oteryn:creature.wolf";
 const RAT: &str = "oteryn:creature.rat";
 
-pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
+pub(super) async fn seed(clients: &SeamClients<'_>, full: bool) -> TestResult {
     // Match the character selected by connect_world, in the disposable row database.
     let character = clients.characters[1].as_slice();
     let races = full_row_p05::canonical_races()?;
@@ -42,7 +42,7 @@ pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
     .fetch_one(&mut *tx)
     .await?;
     if prior_kills != 0 {
-        return Err("P01.full fixture requires a clean Bestiary".into());
+        return Err("P01 fixture requires a clean Bestiary".into());
     }
     // The normal root guard permits one successor at a time. Bulk fixture setup
     // writes the complete receipt chain atomically, as the charm PG fixture does.
@@ -51,7 +51,13 @@ pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
         .await?;
     let mut points = 0;
     let mut offset = 0_i64;
-    for key in COMPLETED.into_iter().chain([RAT, INCOMPLETE]) {
+    let keys: &[&str] = if full {
+        &COMPLETED
+    } else {
+        &["oteryn:creature.troll"]
+    };
+    let partial: &[&str] = if full { &[RAT, INCOMPLETE] } else { &[] };
+    for &key in keys.iter().chain(partial) {
         let (race, award) = races
             .iter()
             .find(|(race, _)| race.key() == key)
@@ -81,7 +87,7 @@ pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
                     kill_count_before, kill_count_after, profile_revision, ruleset_revision,
                     content_revision, simulation_revision, evidence_revision,
                     declaration_revision, policy_revision, reward_revision, committed_at)
-                SELECT game_character_uuid_v7(), decode('01','hex'), sha256('P01.full fixture'),
+                SELECT game_character_uuid_v7(), decode('01','hex'), sha256('P01 fixture'),
                     s.character_id, s.character_revision + $5 + k.n - 1,
                     s.character_revision + $5 + k.n, s.level, s.level,
                     s.total_experience, s.total_experience, $2, $4, $3, k.n - 1, k.n,
@@ -111,7 +117,7 @@ pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
         }
         offset += kills;
     }
-    if points != 400 {
+    if full && points != 400 {
         return Err(
             format!("P01 fixture needs exactly 400 points, catalogue yields {points}").into(),
         );
@@ -135,6 +141,9 @@ pub(super) async fn seed(clients: &SeamClients<'_>) -> TestResult {
         }
     }
     tx.commit().await?;
-    evidence(&format!("P01_FIXTURE charm_points={points} rat_kills=249"));
+    evidence(&format!(
+        "P01_FIXTURE charm_points={points} rat_kills={}",
+        if full { 249 } else { 0 }
+    ));
     Ok(())
 }

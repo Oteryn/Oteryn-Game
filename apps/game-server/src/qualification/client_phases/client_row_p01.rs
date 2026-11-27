@@ -10,7 +10,9 @@ use oteryn_protocol_oteryn::charm_progression::{
 use std::fmt::Write as _;
 use std::num::NonZeroU32;
 
-const DEADLINE: Duration = Duration::from_secs(600);
+const DEADLINE: Duration = Duration::from_secs(1_800);
+const RAT: &str = "oteryn:creature.rat";
+const RAT_THRESHOLDS: [u32; 3] = [10, 100, 250];
 
 pub(super) fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write as _;
@@ -61,14 +63,6 @@ pub(super) async fn send(
     )?;
     wire::decode_charm_progression_reply(&reply.payload)
         .map_err(|error| format!("decode {action:?}: {error:?}").into())
-}
-
-fn kills(reply: &CharmProgressionReply, race: NonZeroU32) -> u32 {
-    reply
-        .bestiary
-        .iter()
-        .find(|entry| entry.race == race)
-        .map_or(0, |entry| entry.kill_count)
 }
 
 pub(super) fn occupied_rat_route_tiles(
@@ -149,8 +143,32 @@ pub(super) async fn walk_rat_route(
     Ok(())
 }
 
+async fn verify_rat_kill(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    target: oteryn_dev_client::WorldSpatialEntity,
+    race: NonZeroU32,
+    corpse: client_hunt::CorpseStage,
+) -> TestResult {
+    let kill = full_row_p01::hunt_exact_creature(
+        client,
+        target,
+        RAT,
+        race,
+        corpse.fresh_ref,
+        Some(corpse),
+        Some(clients),
+    )
+    .await?;
+    if kill.race != race || kill.raw_xp != 5 {
+        return Err(format!("P01.client Rat XP or credit mismatch: {kill:?}").into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -159,11 +177,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = full_row_p01::prepare_hunter(clients, "P01.client", 0x21).await?;
-    let rat_index = full_row_p05::canonical_races()?
-        .iter()
-        .position(|(definition, _)| definition.key() == "oteryn:creature.rat")
-        .ok_or("Rat is absent from the canonical Bestiary")?;
-    let race = NonZeroU32::new(u32::try_from(rat_index)? + 1).ok_or("Rat race index")?;
+    let races = full_row_p05::canonical_races()?;
+    let race_id = |key| -> TestResult<NonZeroU32> {
+        let index = races
+            .iter()
+            .position(|(definition, _)| definition.key() == key)
+            .ok_or("creature is absent from the canonical Bestiary")?;
+        Ok(NonZeroU32::new(u32::try_from(index)? + 1).ok_or("zero race index")?)
+    };
+    let race = race_id(RAT)?;
+    let refusal_race = race_id("oteryn:creature.troll")?;
     let corpse_stage = full_row_p01::rat_corpse_stage()?;
     let mut frames = String::new();
     let initial = send(
@@ -173,8 +196,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut frames,
     )
     .await?;
-    if initial.outcome != CharmProgressionOutcome::Query || kills(&initial, race) != 0 {
-        return Err("P01 client requires a zero-kill Rat baseline".into());
+    if initial.outcome != CharmProgressionOutcome::Query
+        || !matches!(initial.bestiary.as_slice(), [entry]
+            if entry.race == refusal_race && entry.is_complete())
+    {
+        return Err("P01.client requires only a completed Troll and no Rat entry".into());
     }
     if !client
         .selected_capabilities()
@@ -182,13 +208,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("P01 Rat selection requires wire entity names".into());
     }
-    full_row_p01::prepare_rat_ground(&mut client, world).await?;
-    let target = full_row_p01::place_rat(&mut client).await?;
-    verdict::Harness::global().bounded_wait(
-        tokio::time::Instant::now() + Duration::from_secs(125),
-        "baseline-rat-combat",
-    );
-    client_hunt::hunt_named_target(&mut client, target, corpse_stage).await?;
+    let target =
+        full_row_p01::authored_target(&mut client, world, &metadata.spawns, RAT, "Rat", None)
+            .await?;
+    let first_spawn = tile(target.position)?;
+    verify_rat_kill(&mut client, clients, target, race, corpse_stage).await?;
     let before = send(
         &mut client,
         CharmProgressionAction::Query,
@@ -196,39 +220,57 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut frames,
     )
     .await?;
-    if before.outcome != CharmProgressionOutcome::Query || before.charms.charms.is_empty() {
-        return Err(format!("QUERY outcome {:?}", before.outcome).into());
+    let mut expected_before = initial;
+    expected_before
+        .bestiary
+        .push(oteryn_protocol_oteryn::bestiary::BestiaryRaceProgress {
+            race,
+            kill_count: 1,
+            kill_thresholds: RAT_THRESHOLDS,
+        });
+    expected_before.bestiary.sort_by_key(|entry| entry.race);
+    if before != expected_before {
+        return Err(format!(
+            "first Rat kill changed unexpected Bestiary or Charm state: {before:?}"
+        )
+        .into());
     }
-    if kills(&before, race) != 1 {
-        return Err("first Rat hunt did not establish exactly one Bestiary kill".into());
-    }
-    let (index, locked) = before
+    evidence("P01_CHECK client-first-rat-delta PASS absent-to-one exact-views");
+    let locked = before
         .charms
         .charms
         .iter()
-        .enumerate()
-        .find(|(_, charm)| charm.unlocked_stage == 0 && charm.next_stage_cost > 0)
+        .find(|charm| charm.unlocked_stage == 0 && charm.next_stage_cost > 0)
         .ok_or("no locked charm to refuse")?;
-    let charm = NonZeroU32::new(u32::try_from(index)? + 1).ok_or("charm index")?;
+    let charm = locked.charm;
     let refused = send(
         &mut client,
-        CharmProgressionAction::Assign { charm, race },
+        CharmProgressionAction::Assign {
+            charm,
+            race: refusal_race,
+        },
         "p01-refused.json",
         &mut frames,
     )
     .await?;
     if refused.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked)
+        || refused.fee_gold != 0
         || refused.charms != before.charms
         || refused.bestiary != before.bestiary
     {
         return Err(format!("locked ASSIGN reply {refused:?}").into());
     }
-    let target = full_row_p01::place_rat(&mut client).await?;
-    verdict::Harness::global().bounded_wait(
-        tokio::time::Instant::now() + Duration::from_secs(125),
-        "captured-rat-combat",
-    );
-    client_hunt::hunt_named_target(&mut client, target, corpse_stage).await?;
+    evidence("P01_CHECK client-locked-assign PASS completed-race zero-fee unchanged");
+    let target = full_row_p01::authored_target(
+        &mut client,
+        world,
+        &metadata.spawns,
+        RAT,
+        "Rat",
+        Some(first_spawn),
+    )
+    .await?;
+    verify_rat_kill(&mut client, clients, target, race, corpse_stage).await?;
     let after = send(
         &mut client,
         CharmProgressionAction::Query,
@@ -236,20 +278,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut frames,
     )
     .await?;
-    if after.outcome != CharmProgressionOutcome::Query {
-        return Err(format!("post-hunt QUERY outcome {:?}", after.outcome).into());
-    }
-    let count_before = kills(&before, race);
-    let count_after = kills(&after, race);
-    let mut expected_bestiary = before.bestiary.clone();
-    let rat = expected_bestiary
+    let mut expected_after = expected_before;
+    expected_after
+        .bestiary
         .iter_mut()
         .find(|entry| entry.race == race)
-        .ok_or("Rat absent from baseline Bestiary")?;
-    rat.kill_count += 1;
-    if after.bestiary != expected_bestiary {
-        return Err(format!("second Rat hunt changed unexpected Bestiary state: {after:?}").into());
+        .ok_or("Rat absent from expected Bestiary")?
+        .kill_count = 2;
+    if after != expected_after {
+        return Err(format!(
+            "second Rat kill changed unexpected Bestiary or Charm state: {after:?}"
+        )
+        .into());
     }
+    evidence("P01_CHECK client-second-rat-delta PASS one-to-two exact-views");
+    full_row_p01::retreat_from_spawn(&mut client, world, tile(target.position)?).await?;
     let old_session = client.join_snapshot().game_session_id;
     full_row_p01::logout_when_ready(&mut client).await?;
     drop(client);
@@ -264,14 +307,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &mut frames,
     )
     .await?;
-    if durable != after {
+    if durable != expected_after {
         return Err(format!("P01.client relog lost the changed views: {durable:?}").into());
     }
+    evidence("P01_CHECK client-relog PASS exact-durable-views");
     full_row_p01::close_relog_fixture(&mut fresh).await?;
     let session = uuid_text(old_session.as_bytes());
     let durable_session = uuid_text(fresh.join_snapshot().game_session_id.as_bytes());
     let expected = format!(
-        "session={session}\ndurable_session={durable_session}\nrace={race}\nkills_before={count_before}\nkills_after={count_after}\npoints_before={}\npoints_after={}\nlocked_charm={charm}\nlocked_stage={}\nrefusal=CharmLocked\n",
+        "session={session}\ndurable_session={durable_session}\nrace={race}\nrefusal_race={refusal_race}\nkills_before=1\nkills_after=2\npoints_before={}\npoints_after={}\nlocked_charm={charm}\nlocked_stage={}\nrefusal=CharmLocked\n",
         before.charms.charm_points_available,
         after.charms.charm_points_available,
         locked.unlocked_stage

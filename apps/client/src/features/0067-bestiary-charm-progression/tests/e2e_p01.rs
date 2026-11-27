@@ -22,6 +22,7 @@ struct Replies {
     kills_after: u32,
     points_before: u32,
     charm: u32,
+    refusal_race: u32,
 }
 
 fn view(
@@ -150,6 +151,7 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
             kills_after: field("kills_after")?.parse()?,
             points_before: field("points_before")?.parse()?,
             charm: field("locked_charm")?.parse()?,
+            refusal_race: field("refusal_race")?.parse()?,
         });
     }
     let refused = wire::CharmProgressionReply {
@@ -174,6 +176,7 @@ fn replies() -> Result<Replies, Box<dyn std::error::Error>> {
         kills_after: 5,
         points_before: 7,
         charm: 1,
+        refusal_race: 3,
     })
 }
 
@@ -214,7 +217,12 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
         .find(|entry| entry.race.get() == replies.race)
         .ok_or("race absent from QUERY")?;
     assert_eq!(entry.kill_count, replies.kills_before);
-    let thresholds = entry.kill_thresholds;
+    let thresholds = if replies.initial.is_some() {
+        [10, 100, 250]
+    } else {
+        [10, 100, 500]
+    };
+    assert_eq!(entry.kill_thresholds, thresholds);
     let line = |kills: u32| {
         let stage = thresholds.iter().filter(|t| kills >= **t).count();
         let next = thresholds.iter().find(|t| kills < **t);
@@ -237,6 +245,20 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
                 .all(|entry| { entry.race.get() != replies.race || entry.kill_count == 0 })
         );
         assert_eq!((replies.kills_before, replies.kills_after), (1, 2));
+        let completed = initial
+            .bestiary
+            .iter()
+            .find(|entry| entry.race.get() == replies.refusal_race && entry.is_complete())
+            .ok_or("completed refusal race is absent from initial Query")?;
+        assert_ne!(completed.race.get(), replies.race);
+        let mut expected = initial.clone();
+        expected.bestiary.push(BestiaryRaceProgress {
+            race: NonZeroU32::new(replies.race).ok_or("zero Rat race")?,
+            kill_count: 1,
+            kill_thresholds: thresholds,
+        });
+        expected.bestiary.sort_by_key(|entry| entry.race);
+        assert_eq!(before, expected);
         panel = admitted;
     }
     let (mut loading, query) = pending(&panel, Intent::Query)?;
@@ -262,8 +284,23 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
     panel = loading;
 
     // A refused ASSIGN reports the refusal and leaves the charm locked.
-    panel.fields = [replies.charm.to_string(), replies.race.to_string()];
+    panel.fields = [replies.charm.to_string(), replies.refusal_race.to_string()];
     let (mut refusing, assign) = pending(&panel, Intent::Assign)?;
+    assert_eq!(
+        (assign.capability, assign.kind),
+        (
+            wire::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+            wire::COMMAND_TYPE_CHARM_PROGRESSION
+        )
+    );
+    assert_eq!(
+        wire::decode_charm_progression_request(&assign.payload)
+            .map_err(|error| format!("{error:?}"))?,
+        wire::CharmProgressionAction::Assign {
+            charm: NonZeroU32::new(replies.charm).ok_or("zero charm")?,
+            race: NonZeroU32::new(replies.refusal_race).ok_or("zero refusal race")?,
+        }
+    );
     apply(&mut refusing, &assign, &replies.refused);
     assert_eq!(
         refusing.feedback,
@@ -291,6 +328,14 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
 
     assert_eq!(reply.charms, before.charms);
     assert_eq!(reply.bestiary, before.bestiary);
+    let mut expected = before;
+    expected
+        .bestiary
+        .iter_mut()
+        .find(|entry| entry.race.get() == replies.race)
+        .ok_or("Rat absent before second hunt")?
+        .kill_count += 1;
+    assert_eq!(hunted.reply.as_ref(), Some(&expected));
     if let Some(durable) = &replies.durable {
         let (mut rejoined, query) = pending(&Panel::default(), Intent::Query)?;
         apply(&mut rejoined, &query, durable);
@@ -299,8 +344,7 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
             race_line(&rejoined, replies.race)?,
             line(replies.kills_after)
         );
-        assert_eq!(rejoined.reply, hunted.reply);
-        return Ok(());
+        assert_eq!(rejoined.reply.as_ref(), Some(&expected));
     }
 
     // An undecodable payload and a rejected status change neither summary nor reply.
