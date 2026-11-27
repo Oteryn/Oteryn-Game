@@ -176,7 +176,7 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     esac
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*)
-        # C12.full reaches Enpa-Deia Pema through the authored Blue Valley portal.
+        # Both C12 rows reach Enpa-Deia Pema through the authored Blue Valley portal.
         # The seller and the portal landing straddle the 122/123 region boundary.
         if python3 - "${OTERYN_E2E_ROW_BATCH-0:15}" <<'PY_C12_BATCH'
 import re
@@ -193,7 +193,7 @@ max_usize = (1 << (8 * struct.calcsize("P"))) - 1
 if any(len(value) > len(str(max_usize)) for value in parts):
     sys.exit(1)
 start, count = map(int, parts)
-sys.exit(not (start <= 2 and 2 - start < count <= max_usize))
+sys.exit(not any(start <= row and row - start < count <= max_usize for row in (2, 97)))
 PY_C12_BATCH
         then
           WORLD_REGIONS+=";131,123"

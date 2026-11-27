@@ -276,7 +276,7 @@ NODE_REQUIRED_CAPABILITIES=[]
             config = tomllib.loads(Path(work, 'node.toml').read_text())
             self.assertIs(config['platform']['world_event_outcomes']['enabled'], False)
 
-    def test_blue_valley_landing_sector_follows_the_c12_full_batch(self):
+    def test_blue_valley_landing_and_guild_sectors_follow_the_c12_batches(self):
         profile = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE')
         game_source = f'GAME_SOURCE={str(HERE.parents[2])!r}\n'
         for group, batch, includes_landing in [
@@ -284,7 +284,10 @@ NODE_REQUIRED_CAPABILITIES=[]
             ('rows', '+0:+3', True),
             ('rows', 'all', True),
             ('rows', '0:2', False),
-            ('rows', '97:1', False),
+            ('rows', '96:1', False),
+            ('rows', '96:2', True),
+            ('rows', '97:1', True),
+            ('rows', '98:1', False),
             ('rows', '2:0', False),
             ('rows', 'invalid', False),
             ('world', '2:1', False),
@@ -293,7 +296,8 @@ NODE_REQUIRED_CAPABILITIES=[]
                 result = bash(game_source + profile + '\nprintf "%s" "$WORLD_REGIONS"\n',
                               {'NODE_BOOT_E2E_ONLY': group, 'OTERYN_E2E_ROW_BATCH': batch})
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual('131,123' in result.stdout.split(';'), includes_landing)
+                for required_region in ('131,123', '125,126'):
+                    self.assertEqual(required_region in result.stdout.split(';'), includes_landing)
 
     def test_spell_manifest_initializes_world_epoch_without_a_bundle(self):
         assignment = function('node_complete_assignment')
