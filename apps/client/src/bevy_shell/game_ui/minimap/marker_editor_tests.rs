@@ -260,27 +260,75 @@ fn secondary_minimap_cancel_does_not_persist_a_mark() -> TestResult {
         .satellite_map(|_, marks| assert!(marks.is_empty()));
     Ok(())
 }
-#[test]
-fn create_mark_key_marks_the_player_position_through_the_router() -> TestResult {
+fn route_create_mark(app: &mut App) -> TestResult {
     use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
-    let (link, _, _) = play_channel();
-    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
-    let mut owner = HostOwner::new(None)?;
-    owner.play = Some(ActivePlay { view, link });
-    owner.phase = Phase::Playing;
     let key = NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(16)?,
         state: ButtonState::Pressed,
         modifiers: Modifiers::one(Modifier::Alt).with(Modifier::Shift),
         repeat: false,
     };
-    owner.route_input(&[key], false);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[key], false);
+    app.update();
+    Ok(())
+}
+
+fn assert_no_local_marks(app: &App) -> TestResult {
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .view
+        .satellite_map(|_, marks| assert!(marks.is_empty()));
+    Ok(())
+}
+
+#[test]
+fn create_mark_opens_editor_at_character_position() -> TestResult {
+    let mut app = fixture()?;
+    activate(&mut app, "E")?;
+    route_create_mark(&mut app)?;
+    assert_no_local_marks(&app)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Map mark: 100, 200, floor 7")
+    );
+    Ok(())
+}
+
+#[test]
+fn create_mark_saves_only_on_confirm() -> TestResult {
+    let mut app = fixture()?;
+    route_create_mark(&mut app)?;
+    assert_no_local_marks(&app)?;
+    activate(&mut app, "Save mark")?;
+    let owner = app.world().non_send::<HostOwner>();
     let play = owner.play.as_ref().ok_or("play")?;
-    assert!(play.view.satellite_map(|_, marks| {
-        marks
-            .iter()
-            .any(|mark| (mark.x, mark.y, mark.floor) == (100, 200, 7))
-    }));
+    play.view.satellite_map(|_, marks| {
+        assert_eq!(marks.len(), 1);
+        assert_eq!((marks[0].x, marks[0].y, marks[0].floor), (100, 200, 7));
+    });
+    Ok(())
+}
+
+#[test]
+fn create_mark_cancel_saves_nothing() -> TestResult {
+    let mut app = fixture()?;
+    route_create_mark(&mut app)?;
+    assert_no_local_marks(&app)?;
+    replay::activate(&mut app, "Cancel mark")?;
+    assert_no_local_marks(&app)?;
+    assert!(
+        !app.world_mut()
+            .query::<&Name>()
+            .iter(app.world())
+            .any(|name| name.as_str() == "Mark description")
+    );
     Ok(())
 }
 

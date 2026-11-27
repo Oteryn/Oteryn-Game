@@ -139,3 +139,38 @@ fn review_admitted_first_scene_projects_wire_entities_and_presentations()
         .map_err(|_| "admission scene test thread failed")?
         .map_err(Into::into)
 }
+
+#[test]
+fn admission_hands_cache_identity_to_view() -> Result<(), Box<dyn std::error::Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let run = || -> Result<(), Box<dyn std::error::Error>> {
+                let stack = Stack::start_with_frames(Vec::new(), frames()?)?;
+                let client = crate::ClientBootstrap::new()?.with_native_login(stack.config());
+                for _ in 0..2 {
+                    let admission = client.request_gameplay_entry()?;
+                    let character = oteryn_platform_client::native_login::parse_uuid_v7(
+                        admission.character_id(),
+                    )
+                    .ok_or("admitted character UUID")?;
+                    let view = admission.play_view()?;
+                    assert_eq!(
+                        view.minimap_cache_identity(),
+                        Some((character, admission.world_id().to_owned()))
+                    );
+                }
+                assert_eq!(
+                    stack.admissions.load(std::sync::atomic::Ordering::SeqCst),
+                    2
+                );
+                client.shutdown();
+                stack.finish();
+                Ok(())
+            };
+            run().map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "admission cache test thread failed")?
+        .map_err(Into::into)
+}

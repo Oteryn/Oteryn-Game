@@ -52,10 +52,7 @@ impl AdmittedSession {
 
     /// The server-owned join map, actors and overlays.
     pub fn play_view(&self) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
-        let mut view = crate::play::PlayView::from_join(self.session.join_snapshot())?;
-        view.bind_minimap_world(self.world_id());
-        view.set_preference_character(*self.preference_character_id.as_bytes());
-        view.with_join_scene(&self.session)
+        admitted_play_view(&self.session, self.preference_character_id, self.world_id())
     }
 
     /// The session's byte counters, for the diagnostics overlay.
@@ -68,4 +65,15 @@ impl AdmittedSession {
     pub fn into_session(self) -> Session<Counting<TcpTlsStream>> {
         self.session
     }
+}
+
+/// Install the admitted cache scope before the join map can load or update it.
+pub(crate) fn admitted_play_view<S: oteryn_session::SessionStream>(
+    session: &Session<S>,
+    character: oteryn_session::CharacterId,
+    world: &str,
+) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
+    let mut view = crate::play::PlayView::from_join(session.join_snapshot())?;
+    view.bind_admitted_minimap(world, *character.as_bytes());
+    view.with_join_scene(session)
 }

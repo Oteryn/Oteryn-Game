@@ -140,6 +140,7 @@ pub struct Minimap {
     pub feedback: String,
     root: Option<PathBuf>,
     world: Option<String>,
+    admitted_character: Option<[u8; 16]>,
     binding: Option<Binding>,
     // Hold each cache lock for the session, including across binding changes.
     cache_access: BTreeMap<PathBuf, CacheAccess>,
@@ -181,6 +182,7 @@ impl Default for Minimap {
                 .map(|path| PathBuf::from(path).join("Oteryn/minimap"))
                 .or_else(|| crate::play::PreferenceStore::configuration_path("minimap")),
             world: None,
+            admitted_character: None,
             binding: None,
             cache_access: BTreeMap::new(),
             cells_dirty: false,
@@ -231,6 +233,7 @@ impl Minimap {
             self.binding_generation = self.binding_generation.saturating_add(1);
         }
         self.pending_edit = None;
+        self.admitted_character = None;
         // Native admission calls this even when another Character enters the same World.
         self.quest_marks = Default::default();
         self.quest_markers.clear();
@@ -277,6 +280,15 @@ impl Minimap {
         self.quest_marks = marks;
         true
     }
+    pub(super) fn bind_admitted_world(&mut self, world: &str, character: [u8; 16]) {
+        self.bind_world(world);
+        self.admitted_character = self.world.as_ref().map(|_| character);
+    }
+
+    pub(super) fn cache_identity(&self) -> Option<([u8; 16], String)> {
+        Some((self.admitted_character?, self.world.clone()?))
+    }
+
     fn path(&self) -> Option<PathBuf> {
         let (generation, bundle, epoch) = self.binding?;
         let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
@@ -323,17 +335,20 @@ impl Minimap {
         }
         // The snapshot is authoritative only within its visible window. Retain distant
         // exploration, but remove cleared cells and item-only tiles from remembered ground.
-        use std::collections::BTreeSet;
         use oteryn_session::world_map::{
             VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH, floors_in_view, in_window,
         };
+        use std::collections::BTreeSet;
         let origin = map.header.origin;
         let observed: BTreeSet<_> = map
             .tiles
             .iter()
             .filter(|tile| {
-                cache_position(i32::from(tile.position.floor), tile.position.x, tile.position.y)
-                    && tile.ground_speed > 0
+                cache_position(
+                    i32::from(tile.position.floor),
+                    tile.position.x,
+                    tile.position.y,
+                ) && tile.ground_speed > 0
                     && tile.position.floor >= map.header.first_visible_floor
                     && in_window(origin, tile.position)
             })
@@ -499,7 +514,9 @@ impl Minimap {
             self.load_in_background(path);
             return Ok(());
         }
-        self.cache_access.entry(path.clone()).or_insert_with(|| CacheAccess::open(&path));
+        self.cache_access
+            .entry(path.clone())
+            .or_insert_with(|| CacheAccess::open(&path));
         if let Some(saved) = Saved::read_from(&path)? {
             self.cells = saved_cells(saved.cells);
             self.markers = saved.markers;

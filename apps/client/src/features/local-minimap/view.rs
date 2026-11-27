@@ -7,6 +7,7 @@ use std::{
 };
 pub const MAX_REMEMBERED_TILES: usize = 8192;
 pub const MAX_MAP_MARKS: usize = 128;
+pub(crate) const MARKER_COLORS: [u8; 4] = [180, 5, 30, 210];
 const MAX_TRANSFER_BYTES: u64 = 1024 * 1024;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

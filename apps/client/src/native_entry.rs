@@ -27,6 +27,8 @@ mod tests;
 
 use crate::GameplayEntryError;
 pub use admitted::AdmittedSession;
+#[cfg(all(test, bevy_shell))]
+pub(crate) use admitted::admitted_play_view;
 pub(crate) use config::BrowserEpoch;
 pub use config::{NativeLoginConfig, NativeLoginSettingError};
 use oteryn_client_runtime::connection::{AdmissionAttempt, AdmissionWait};

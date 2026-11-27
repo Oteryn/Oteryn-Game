@@ -124,7 +124,8 @@ impl Scene {
                         && (0..map.zoom).contains(&m.x.saturating_sub(tx))
                         && (0..map.zoom).contains(&m.y.saturating_sub(ty))
                 }) {
-                    let color = [180, 5, 30, 210][usize::from(marker.color)];
+                    let color = crate::play::feature_local_minimap::view::MARKER_COLORS
+                        [usize::from(marker.color)];
                     sprites.push_quad(QuadInstance {
                         position: view.tile_to_screen(cell),
                         size: [TILE_PX as f32; 2],

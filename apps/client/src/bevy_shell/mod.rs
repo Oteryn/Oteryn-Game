@@ -20,8 +20,9 @@ mod owner;
 pub(crate) use owner::{N07dHost, offline_training_logout_status};
 mod render_settings;
 mod scene;
+pub use game_ui::minimap::MinimapRenderTarget;
 #[cfg(test)]
-pub(crate) use scene::{n07d_sidebar_colors, n07d_sidebar_pixels};
+pub(crate) use scene::n07d_sidebar_colors;
 mod screenshots;
 mod selection;
 mod speech_bubbles;

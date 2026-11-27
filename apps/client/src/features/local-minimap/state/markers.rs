@@ -36,8 +36,15 @@ impl Minimap {
         )?;
         Ok(())
     }
-    /// `Misc.: Create Mark`: adds a default-labelled marker at `own`. Returns `false` and leaves
-    /// the map unchanged when a marker already sits there, so the caller opens it for editing.
+    pub(in crate::play) fn request_marker_edit(&mut self, at: (i32, i32, i16)) {
+        match self.check_marker_target(at, self.path().as_deref()) {
+            Ok(()) => self.pending_edit = Some(at),
+            Err(error) => self.feedback = error.to_string(),
+        }
+    }
+
+    /// Inserts a default mark for cache tests that exercise the state directly.
+    #[cfg(test)]
     pub fn create_mark_at(&mut self, own: (i32, i32, i16)) -> io::Result<bool> {
         let (x, y, floor) = own;
         if !cache_position(i32::from(floor), x, y) {
@@ -64,14 +71,12 @@ impl Minimap {
         Ok(())
     }
 
-    fn change_marker(
-        &mut self,
+    fn check_marker_target(
+        &self,
         position: (i32, i32, i16),
-        replacement: Option<Marker>,
-        create_only: bool,
-    ) -> io::Result<bool> {
-        let path = self.path();
-        if let Some(path) = &path {
+        path: Option<&Path>,
+    ) -> io::Result<()> {
+        if let Some(path) = path {
             self.require_cache_owner(path)?;
         } else if self.world.is_some() {
             return Err(io::Error::other("Minimap storage is unavailable"));
@@ -83,6 +88,17 @@ impl Minimap {
         {
             return Err(io::Error::other("Quest markers are supplied by the server"));
         }
+        Ok(())
+    }
+
+    fn change_marker(
+        &mut self,
+        position: (i32, i32, i16),
+        replacement: Option<Marker>,
+        create_only: bool,
+    ) -> io::Result<bool> {
+        let path = self.path();
+        self.check_marker_target(position, path.as_deref())?;
         let at_position = |marker: &Marker| (marker.x, marker.y, marker.floor) == position;
         let index = self.markers.iter().position(at_position);
         let current = index.map(|index| &self.markers[index]);
