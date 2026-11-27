@@ -89,7 +89,7 @@ pub(super) enum Case {
 enum Expected {
     Result(UseDisposition),
     Replay,
-    Disconnect,
+    Unavailable(CommandStatus),
 }
 
 async fn send_use(
@@ -102,20 +102,16 @@ async fn send_use(
     let frame = test_command(id, COMMAND_TYPE_USE_INTENT, &payload);
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
+    read_use_result(client, id, expected).await
+}
+
+async fn read_use_result(
+    client: &mut DuplexStream,
+    id: u64,
+    expected: Expected,
+) -> TestResult {
     loop {
-        let frame = match read_frame(client).await {
-            Ok(frame) => frame,
-            Err(error) if expected == Expected::Disconnect => {
-                assert_eq!(
-                    error
-                        .downcast_ref::<std::io::Error>()
-                        .map(std::io::Error::kind),
-                    Some(std::io::ErrorKind::UnexpectedEof)
-                );
-                return Ok(());
-            }
-            Err(error) => return Err(error),
-        };
+        let frame = read_frame(client).await?;
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
         assert_ne!(envelope.message_type(), MessageType::ProtocolError);
         if envelope.message_type() != MessageType::CommandResult {
@@ -144,7 +140,14 @@ async fn send_use(
                     UseDisposition::Committed
                 );
             }
-            Expected::Disconnect => return Err("an unresolved cast sent a terminal result".into()),
+            Expected::Unavailable(status) => {
+                assert_eq!(result.status, status);
+                assert_eq!(
+                    result.error_code,
+                    oteryn_protocol_oteryn::FoundationProtocolError::CommandRefused.code()
+                );
+                assert!(result.payload.is_empty());
+            }
         }
         return Ok(());
     }
@@ -206,18 +209,10 @@ async fn client_cast(
         },
     };
     if retry {
-        // FND-02 §13.3: unknown pending work cannot reopen the logical session. The
-        // duplicate is already queued by serve_cast; it must never reach the family.
-        let error = read_frame(client)
-            .await
-            .err()
-            .ok_or("an unresolved session reopened instead of disconnecting")?;
-        assert_eq!(
-            error
-                .downcast_ref::<std::io::Error>()
-                .map(std::io::Error::kind),
-            Some(std::io::ErrorKind::UnexpectedEof)
-        );
+        // serve_cast queued the original command. Replay the terminal receipt
+        // before any rune owner work, then close the client side normally.
+        read_use_result(client, first_id - 1, Expected::Unavailable(CommandStatus::DuplicateReplay)).await?;
+        client.shutdown().await?;
         return Ok(intent);
     }
     let actor = owner.runtime.lock().await.visible_entities().players[0].actor;
@@ -530,7 +525,7 @@ async fn client_cast(
         Case::LostContent => {
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1,$3,$4,$5)")
                 .bind(id(42).as_slice()).bind(id(43).as_slice()).bind([9_u8;32].as_slice()).bind([8_u8;32].as_slice()).bind([7_u8;32].as_slice()).execute(&harness.pool).await?;
-            send_use(client, first_id, &intent, Expected::Disconnect).await?;
+            send_use(client, first_id, &intent, Expected::Unavailable(CommandStatus::Rejected)).await?;
         }
         Case::BeforeCommit | Case::AfterCommit | Case::StaleRevision => {
             test_faults::arm(if case == Case::AfterCommit {
@@ -538,7 +533,7 @@ async fn client_cast(
             } else {
                 Point::BeforeCommit
             });
-            send_use(client, first_id, &intent, Expected::Disconnect).await?;
+            send_use(client, first_id, &intent, Expected::Unavailable(CommandStatus::Rejected)).await?;
         }
     }
     client.shutdown().await?;
@@ -989,7 +984,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             resumed.continuity.next_command_id,
             admitted.continuity.next_command_id + 1
         );
-        assert!(!owner.states.command_ingress.resumable(&resumed));
+        assert!(owner.states.command_ingress.resumable(&resumed));
         let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(quantity, if case == Case::AfterCommit { 2 } else { 3 });
         assert_eq!(
@@ -1049,8 +1044,8 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             Some(initial_health)
         );
         // Retain the family's original cancellation/reconciliation qualification. This
-        // is owner reconciliation of its retained batch, not another client execution
-        // or permission to resume the unresolved common ingress.
+        // is owner reconciliation of its retained batch. The replayed refusal above
+        // never re-enters the caster and never consumes another item.
         let command = crate::gameplay_transport::connection::UseCommand {
             game_session_id: session,
             command_id: admitted.continuity.next_command_id,
@@ -1086,7 +1081,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
                 health
             );
         }
-        assert!(!owner.states.command_ingress.resumable(&resumed));
+        assert!(owner.states.command_ingress.resumable(&refused));
     }
     let (quantity, revision): (i64, String) = sqlx::query_as("SELECT quantity,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
     let committed = matches!(case, Case::Replay | Case::BeforeCommit | Case::AfterCommit | Case::Explosion | Case::Fireball);

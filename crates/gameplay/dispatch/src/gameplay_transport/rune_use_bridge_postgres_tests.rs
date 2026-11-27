@@ -17,7 +17,7 @@ fn rune_use_bridge_postgres_before_commit_reconciles_the_cast() -> TestResult {
 }
 
 #[test]
-fn rune_use_bridge_postgres_lost_content_disconnects() -> TestResult {
+fn rune_use_bridge_postgres_lost_content_returns_command_refused() -> TestResult {
     large_stack(|| scenario(Case::LostContent))
 }
 

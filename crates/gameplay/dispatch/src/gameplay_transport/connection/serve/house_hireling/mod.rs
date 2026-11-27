@@ -193,16 +193,21 @@ impl State {
                 if !plain {
                     return Some(Dispatch::Use(UseOutcome::rejected()));
                 }
-                routing::use_item::route(
-                    authority,
-                    self.actor,
-                    admitted,
-                    command,
-                    &mut self.items,
-                    &mut self.containers,
-                    &self.visibility,
+                Some(
+                    routing::use_item::route(
+                        authority,
+                        self.actor,
+                        admitted,
+                        command,
+                        &mut self.items,
+                        &mut self.containers,
+                        &self.visibility,
+                    )
+                    .await
+                    .unwrap_or_else(|| {
+                        super::route::command_unavailable(command, "use_item_outcome_unavailable")
+                    }),
                 )
-                .await
             }
             hireling::COMMAND_TYPE_HIRELING => {
                 routing::hireling::route(authority, admitted, command).await
