@@ -77,7 +77,10 @@ where
         .commands
         .terminalize_with(command.command_id, &result, || {
             if !matches!(dispatch, Dispatch::Unavailable) {
-                authority.player_trade_terminalized(session.admitted.game_session_id, command.command_id);
+                authority.player_trade_terminalized(
+                    session.admitted.game_session_id,
+                    command.command_id,
+                );
             }
         })
         .is_none()
