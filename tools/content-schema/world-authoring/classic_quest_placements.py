@@ -23,6 +23,7 @@ def overlay_region(raw, palette, rows):
     for row in rows:
         selected[tuple(row["position"])].append(row)
     decompressor = codec.zstandard.ZstdDecompressor()
+    new_attributes = Counter()
     sectors, found, added = {}, set(), 0
     for local, offset, length in table:
         payload = decompressor.decompress(
@@ -58,6 +59,7 @@ def overlay_region(raw, palette, rows):
                     items.append((index, 0, attributes or None))
                     changed = True
                     added += 1
+                    new_attributes.update(attributes.keys())
                 else:
                     slot = matches[0]
                     index, depth, attrs = items[slot]
@@ -68,6 +70,7 @@ def overlay_region(raw, palette, rows):
                     ):
                         raise ValueError(f"conflicting classic quest placement: {row}")
                     if not attributes.items() <= attrs.items():
+                        new_attributes.update(attributes.keys() - attrs.keys())
                         items[slot] = (index, depth, {**attrs, **attributes})
                         changed = True
                 found.add(position)
@@ -76,7 +79,7 @@ def overlay_region(raw, palette, rows):
         )
     if found != selected.keys():
         raise ValueError(f"missing classic quest tiles: {selected.keys() - found}")
-    return codec.encode_region(z, rx, ry, sectors), added
+    return codec.encode_region(z, rx, ry, sectors), added, new_attributes
 
 
 def overlay_outputs(outputs, root=ROOT):
@@ -99,9 +102,12 @@ def overlay_outputs(outputs, root=ROOT):
         if path not in groups:
             continue
         baseline = outputs[path]
-        outputs[path], count = overlay_region(
+        outputs[path], count, new_attributes = overlay_region(
             baseline, index["palette"], groups.pop(path)
         )
+        for name, value in new_attributes.items():
+            counts = summary["item_attributes"]
+            counts[name] = counts.get(name, 0) + value
         added += count
         region["items"] += count
         delta += len(outputs[path]) - len(baseline)
@@ -115,12 +121,7 @@ def overlay_outputs(outputs, root=ROOT):
         "items_added": previous.get("items_added", 0) + added,
     }
     summary["source"] = index["source"]
-    for name, count in attrs.items():
-        summary["item_attributes"][name] = (
-            summary["item_attributes"].get(name, 0)
-            + count
-            - previous.get("attributes", {}).get(name, 0)
-        )
+    summary["palette"]["families"]["item"]["occurrences"] += added
     summary["bytes_on_disk"] += delta
     index["totals"]["items"] += added
     summary["totals"]["items"] += added
