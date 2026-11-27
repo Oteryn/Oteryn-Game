@@ -190,6 +190,89 @@ pub(in super::super) async fn exchange_pair(
     })
 }
 
+/// Both paid attempts use the original live connection and its issued handles.
+pub(in super::super) async fn paid_fusion_sequence(
+    h: &super::super::fixture::Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    mut requests: [Request; 2],
+) -> TestResult<[(Request, Value); 2]> {
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let exercise = async move {
+        let snapshot = inventory(&mut client).await?;
+        // The three newest entries are the success donor, failure donor and receiver.
+        let [second_donor, first_donor, receiver, ..] = snapshot.entries.as_slice() else {
+            return Err("expected three visible Fusion operands".into());
+        };
+        let mut replies = Vec::with_capacity(2);
+        for (offset, (request, donor)) in requests
+            .iter_mut()
+            .zip([first_donor, second_donor])
+            .enumerate()
+        {
+            let command = admitted.continuity.next_command_id + u64::try_from(offset)?;
+            request.first_item = Some(receiver.handle);
+            request.second_item = Some(donor.handle);
+            let payload = request.encode().ok_or("canonical paid Fusion")?;
+            let (status, bytes) = support::send_command(
+                &mut client,
+                admitted.continuity.connection_generation,
+                command,
+                protocol::item_forge::COMMAND_TYPE_ITEM_FORGE,
+                &payload,
+            )
+            .await?;
+            assert_eq!(status, CommandStatus::Accepted, "Fusion command {command}");
+            let reply: Value = serde_json::from_slice(&bytes)?;
+            assert_eq!(reply["applied"], true, "Fusion command {command}: {reply}");
+            assert_eq!(reply["succeeded"], offset == 1);
+            let updated = inventory_delta(&mut client).await?;
+            assert!(updated.entries.iter().all(|item| item.handle != donor.handle));
+            if offset == 0 {
+                assert!(updated.entries.iter().any(|item| item.handle == receiver.handle));
+                assert!(updated.entries.iter().any(|item| item.handle == second_donor.handle));
+                // Advance the existing durable cooldown fixture after the first receipt.
+                support::cooldown_elapsed(h).await?;
+            } else {
+                let definition = chest_definition(owner)?;
+                let chest = updated
+                    .entries
+                    .iter()
+                    .find(|item| item.item_definition_ref == definition)
+                    .ok_or("successful Fusion chest missing from inventory")?;
+                let children =
+                    open_wire_container(&mut client, admitted, command + 1, chest.handle).await?;
+                assert_eq!(children.len(), 1);
+                assert_eq!(children[0].item_definition_ref, receiver.item_definition_ref);
+                assert!(updated.entries.iter().all(|item| item.handle != receiver.handle));
+            }
+            replies.push((*request, reply));
+        }
+        client.shutdown().await?;
+        let mut remaining = Vec::new();
+        client.read_to_end(&mut remaining).await?;
+        replies.try_into().map_err(|_| "expected two Fusion receipts".into())
+    };
+    let (end, replies) = tokio::time::timeout(
+        std::time::Duration::from_secs(45),
+        support::together(serving, exercise),
+    )
+    .await?;
+    if !matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)) {
+        return Err(format!(
+            "paid Fusion connection ended: {}",
+            support::server_end_summary(&end)
+        )
+        .into());
+    }
+    replies
+}
+
 fn chest_definition(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult<std::num::NonZeroU32> {

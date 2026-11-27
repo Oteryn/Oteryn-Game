@@ -69,6 +69,67 @@ pub(in super::super) async fn exercise(
     receipt(h, action, &reply, Some((100, 0, FEE))).await
 }
 
+pub(in super::super) async fn failure_then_success(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    const DAGGER: &str = "oteryn:item.tibia.i3267";
+    // The first fee spends exactly 25,000. The second spends three crystal
+    // coins and must mint change alongside the Exaltation Chest.
+    seed_items(h, &[
+        (104, "oteryn:item.tibia.i3035", 50, 0),
+        (105, "oteryn:item.tibia.i3043", 5, 0),
+        (101, DAGGER, 1, 0),
+        (102, DAGGER, 1, 0),
+        (103, DAGGER, 1, 0),
+    ]).await?;
+    let mut failure = request(Operation::Fusion, 147);
+    failure.occurrence = occurrence_for(h, 147, |rolls| rolls[0] >= 50).await?;
+    let mut success = request(Operation::Fusion, 148);
+    success.occurrence = occurrence_for(h, 148, |rolls| rolls[0] < 50 && rolls[2] < 7400).await?;
+    let replies = super::super::item_forge_fixtures::pair_wire::paid_fusion_sequence(
+        h, owner, admitted, [failure, success],
+    ).await?;
+    for (index, (action, reply)) in replies.iter().enumerate() {
+        let tier = u8::try_from(index)?;
+        assert_eq!(reply["bonus"], 0);
+        assert_eq!(reply["result"]["first_tier"], tier);
+        assert_eq!(reply["result"]["second_tier"], Value::Null);
+        assert_eq!(reply["result"]["dust"], if index == 0 { 100 } else { 0 });
+        assert_eq!(reply["result"]["cores_spent"], 0);
+        receipt(h, *action, reply, Some((100, 0, FEE))).await?;
+    }
+
+    let rows: Vec<(Vec<u8>, String, i64, i64)> = sqlx::query_as(
+        "SELECT uuid_send(p.game_session_id),p.command_id::text,f.change_gold_units,
+                jsonb_array_length(p.outputs)::bigint
+         FROM game_forge_operations p JOIN game_item_fee_burns f USING(transaction_id)
+         WHERE p.character_id=encode($1,'hex')::uuid ORDER BY p.command_id LIMIT 3")
+        .bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+    let first = admitted.continuity.next_command_id;
+    let session = admitted.game_session_id.as_bytes().to_vec();
+    assert_eq!(rows, [
+        (session.clone(), first.to_string(), 0, 0),
+        (session, (first + 1).to_string(), 5_000, 1),
+    ]);
+    assert_eq!(bank(h).await?, 0);
+    assert_eq!(support::balances(h).await?, (0, 200, 0, 0));
+    item_state(h, id(101), Some(1)).await?;
+    item_state(h, id(102), None).await?;
+    item_state(h, id(103), None).await?;
+    let children: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(e.item_instance_id)
+           FROM game_forge_operations p JOIN game_item_nested_entries e
+             ON e.parent_item_instance_id=(p.outputs->0->>'item')::uuid
+          WHERE p.character_id=encode($1,'hex')::uuid AND p.occurrence_id=encode($2,'hex')::uuid
+          LIMIT 2")
+        .bind(id(41).as_slice())
+        .bind(success.occurrence.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(children, [id(101).to_vec()]);
+    Ok(())
+}
+
 async fn evidence(h: &Harness, action: Request, bank_before: i64) -> TestResult {
     let fee: (i16, i64, i64, i64, i64, bool) = sqlx::query_as("SELECT f.cause_kind,f.fee_gold_units,f.burned_gold_units,f.change_gold_units,f.bank_debit_gold_units,f.cause_occurrence_id=p.occurrence_id AND f.event_id=p.event_id AND f.envelope_sha256=p.envelope_sha256 FROM game_item_fee_burns f JOIN game_forge_operations p USING(transaction_id) WHERE p.character_id=encode($1,'hex')::uuid AND p.occurrence_id=encode($2,'hex')::uuid")
         .bind(id(41).as_slice()).bind(action.occurrence.as_slice()).fetch_one(&h.pool).await?;

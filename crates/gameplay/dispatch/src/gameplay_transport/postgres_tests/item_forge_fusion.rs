@@ -15,6 +15,17 @@ fn forge_postgres_fusion_success_failure_protection_bonuses_and_replay() -> Test
 }
 
 #[test]
+fn forge_postgres_paid_fusion_failure_then_success_on_same_connection() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("forge-failure-then-success", || {
+        support::scenario(Case::FailureThenSuccess)
+    })
+}
+
+#[test]
 fn forge_postgres_convergence_fusion_preserves_insufficient_gold_refusal_and_replay() -> TestResult
 {
     super::kill_reward_e2e_fixtures::scenario_thread::run("forge-convergence-fusion", || {

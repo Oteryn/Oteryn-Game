@@ -480,6 +480,17 @@ pub(super) async fn apply(
             .bind(reserved.occurred_at).bind(mint_audit::AUDIT_RETENTION_P90D_MS).bind(envelope).execute(&mut ***tx).await?;
     }
     if let Some(chest) = chest {
+        if effects.gold > 0 {
+            // The fee proof counts this transaction's mints as change. Validate it
+            // after fee settlement and before the independent chest mint. The
+            // deferred Forge proof still checks the complete joined result at commit.
+            sqlx::query("SET CONSTRAINTS game_item_fee_burn_consistent IMMEDIATE")
+                .execute(&mut ***tx)
+                .await?;
+            sqlx::query("SET CONSTRAINTS game_item_fee_burn_consistent DEFERRED")
+                .execute(&mut ***tx)
+                .await?;
+        }
         place_output(tx, fence, reserved.transaction, chest).await?;
         for (index, line) in effects.inputs.iter().take(2).enumerate() {
             if line["quantity_after"] == 0 {

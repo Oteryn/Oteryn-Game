@@ -61,6 +61,7 @@ pub(in super::super) enum Case {
     ChestGuards(Operation),
     CoreRefusal,
     MixedFee,
+    FailureThenSuccess,
     Items(Operation),
 }
 
@@ -137,6 +138,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         let (dust, limit) = match case {
             Case::Preview => (300, 300),
+            Case::FailureThenSuccess => (200, 200),
             Case::Items(_) | Case::Chest(_) | Case::ChestFull | Case::ChestScheduledInputs | Case::ChestGuards(_)
             | Case::Integrity | Case::CoreRefusal | Case::MixedFee => (1000, 1000),
             Case::Refusals | Case::BusyHolder => (59, 100),
@@ -364,6 +366,11 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                     &mut admitted,
                 )
                 .await?
+            }
+            Case::FailureThenSuccess => {
+                super::super::item_forge_fusion_fixtures::fee::failure_then_success(
+                    &h, &owner, admitted,
+                ).await?
             }
             Case::MixedFee => {
                 super::super::item_forge_fusion_fixtures::fee::exercise(&h, &owner, &mut admitted)
