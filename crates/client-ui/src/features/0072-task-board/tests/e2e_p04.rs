@@ -483,6 +483,21 @@ fn p04_master_text_rejects_consistent_omission_and_misrendering() -> Result<(), 
 }
 
 #[test]
+fn task_board_shop_labels_use_global_names() -> Result<(), Error> {
+    for (offer, name) in shop_oracle()? {
+        assert_eq!(
+            shop_offer_choice(&offer, u64::from(offer.price)),
+            format!(
+                "{}. {name} — {} task points — Available",
+                offer.index + 1,
+                offer.price
+            )
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn p04_shop_oracle_rejects_omitted_or_reordered_rendered_offers() -> Result<(), Error> {
     let mut panel = TaskBoardPanel {
         selected: true,

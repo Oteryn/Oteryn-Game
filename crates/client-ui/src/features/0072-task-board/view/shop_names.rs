@@ -15,7 +15,7 @@ const LABELS: &[Label] = &[
     (10, 0, 36753, 0, 0, "Falcon Pet"),
     (11, 0, 31465, 0, 0, "Cerberus Champion Puppy"),
     (12, 0, 32753, 0, 0, "Hellflayer Trophy"),
-    (13, 0, 32756, 0, 0, "Golden Hunter Trophy"),
+    (13, 0, 32756, 0, 0, "Gold Hunter Trophy"),
     (14, 0, 36748, 0, 0, "Brachiodemon Trophy"),
     (15, 0, 36749, 0, 0, "Many Faces Trophy"),
     (16, 0, 32752, 0, 0, "Sea Serpent Trophy"),
