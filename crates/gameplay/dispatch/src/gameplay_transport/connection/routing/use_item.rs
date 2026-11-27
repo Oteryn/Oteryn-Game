@@ -113,8 +113,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && let Ok(intent) = &decoded
         && matches!(intent.target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
         && !matches!(source, Some(ItemKey::MapBase { .. } | ItemKey::MapAdded(_)))
-    {
-        if let Some(outcome) = tokio::time::timeout(
+        && let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_drome_cube(
                 actor,
@@ -130,9 +129,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .await
         .ok()?
         .ok()?
-        {
-            return Some(Dispatch::Use(outcome));
-        }
+    {
+        return Some(Dispatch::Use(outcome));
     }
     if let Ok(UseIntent { target, .. }) = &decoded
         && matches!(target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
