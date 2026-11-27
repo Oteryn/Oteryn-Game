@@ -727,9 +727,12 @@ fn global_parity_legacy_fight_mode_messages_leave_swing_damage_unchanged() {
             &owner.runtime,
             &selected,
             constants,
-            &GameplayDecisionRoot::from_bytes([3; 32]),
-            &EquippedOffence::default(),
-            false,
+            drain::SwingDamageContext {
+                root: &GameplayDecisionRoot::from_bytes([3; 32]),
+                offence: &EquippedOffence::default(),
+                pure_elemental_with_attack_points: false,
+                area: false,
+            },
         )
         .unwrap()
     };

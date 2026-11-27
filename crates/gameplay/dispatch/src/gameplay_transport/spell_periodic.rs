@@ -432,11 +432,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .any(|instance| {
                 instance.provenance().lineage.is_some()
-                    && instance
-                        .provenance()
-                        .source
-                        .as_deref()
-                        .is_some_and(|source| source.starts_with("player:field:"))
+                    && (crate::gameplay_transport::pvp_live::is_poison_arrow(instance.provenance())
+                        || instance
+                            .provenance()
+                            .source
+                            .as_deref()
+                            .is_some_and(|source| source.starts_with("player:field:")))
             })
         {
             return self

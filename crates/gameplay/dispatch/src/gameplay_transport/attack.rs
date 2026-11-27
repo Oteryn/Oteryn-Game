@@ -260,6 +260,8 @@ enum StepClock {
 #[derive(Debug, Default)]
 pub struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
+    /// Drawn player impacts waiting for the spell lane to publish the exact swing.
+    pending_pvp: std::collections::VecDeque<drain::PvpSwing>,
     /// At most one source-qualified Bless selection per pending player death.
     death_charms: Vec<charm_combat::DeathCharmSnapshot>,
     /// The block budget of each live creature a player has hit (ATTACK-0 §5), created at its

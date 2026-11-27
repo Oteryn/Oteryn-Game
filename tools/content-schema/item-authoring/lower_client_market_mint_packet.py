@@ -15,6 +15,7 @@ not materializable (so their runtime stack class stays Unknown). Marketability i
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 from engine_items import decode_appearance_object, protobuf_fields
@@ -23,6 +24,9 @@ from lower_wiki_stack_default_packet import checked, sha
 ROOT = Path(__file__).resolve().parents[3]
 COMPILER = "tools/content-schema/item-authoring/lower_client_market_mint_packet.py"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261031-item-client-market-mint-v1.json"
+RUST_PIN = (
+    ROOT / "crates/gameplay/content-promotion/src/content/item_client_market_mint.rs"
+)
 CLIENT_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 REGISTER = "docs/agents/evidence/OTV2-20260929-item-id-1b-q13d-family-decisions.json"
@@ -171,6 +175,22 @@ def build(root=ROOT):
     }
 
 
+def refresh_rust_packet_pin(path, constant, digest, *, check):
+    previous = path.read_text()
+    updated, matches = re.subn(
+        rf'({constant}: &str =\s*")[0-9a-f]{{64}}(")',
+        lambda match: match[1] + digest + match[2],
+        previous,
+    )
+    if matches != 1:
+        raise ValueError(f"expected one Rust packet pin for {constant}")
+    if previous == updated:
+        return
+    if check:
+        raise SystemExit(f"Rust packet pin drift: {constant}")
+    path.write_text(updated)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
@@ -185,7 +205,11 @@ def main():
             raise SystemExit("client market mint packet drift")
     else:
         OUTPUT.write_bytes(data)
-    print(json.dumps(packet["counts"]), sha(data))
+    digest = sha(data)
+    refresh_rust_packet_pin(
+        RUST_PIN, "ITEM_CLIENT_MARKET_MINT_PACKET_SHA256", digest, check=args.check
+    )
+    print(json.dumps(packet["counts"]), digest)
 
 
 if __name__ == "__main__":

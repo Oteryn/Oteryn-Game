@@ -205,7 +205,7 @@ impl ScheduledIo {
     /// - `f`: a closure returning a new readiness value given the previous
     ///   readiness.
     pub(super) fn set_readiness(&self, tick_op: Tick, f: impl Fn(Ready) -> Ready) {
-        let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+        let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
             // If the io driver is shut down, then you are only allowed to clear readiness.
             debug_assert!(SHUTDOWN.unpack(curr) == 0 || matches!(tick_op, Tick::Clear(_)));
 

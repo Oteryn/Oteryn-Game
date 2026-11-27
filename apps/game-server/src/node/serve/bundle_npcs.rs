@@ -540,6 +540,10 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
+            // The Christmas calendar owns when the compiled Messenger cells become actors.
+            table
+                .npcs
+                .retain(|npc| npc.key != seasonal::MESSENGER || !admitted.contains(&npc.key));
             if let Some(daily) = daily {
                 table.npcs.retain_mut(|npc| {
                     !admitted.contains(&npc.key)
@@ -876,8 +880,33 @@ pub(crate) mod tests {
     fn christmas_messengers_share_the_season_with_santa_on_distinct_cells() {
         let messenger = "oteryn:npc.messenger_of_santa";
         let santa = "oteryn:npc.santa_claus";
-        let boot = timed_boot(&[messenger, santa]);
+        let mut boot = timed_boot(&[messenger, santa]);
+        let NpcBoot::Place { table, .. } = &mut boot else {
+            unreachable!("timed boot has a placement table");
+        };
+        table.npcs.push(NpcPlacements {
+            key: messenger.into(),
+            placements: [
+                (32654, 31665, -8),
+                (32308, 31837, -8),
+                (32641, 31892, -9),
+                (32356, 32210, -7),
+                (32916, 32070, -9),
+            ]
+            .into_iter()
+            .map(|(x, y, floor)| NpcPlacement {
+                x,
+                y,
+                floor,
+                direction: MovementFacing::South,
+            })
+            .collect(),
+        });
         let mut runtime = channel_runtime_with(32);
+        assert_eq!(
+            place(&mut runtime, Some(&boot), None).expect("static boot"),
+            0
+        );
 
         let mut closed = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
         closed.tick(&mut runtime).expect("out of season");

@@ -308,6 +308,8 @@ ACTIVE_STAGE=setup
 PG_OBS="$WORK/postgres"
 PG_SAMPLER_PID=""
 STACK_KEPT=0
+node_seasonal_fixture=""
+kept_seasonal_fixture=""
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
 if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   rm -rf -- "$WORK"
@@ -449,6 +451,7 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
     { declare -p "${names[@]}"
       printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT"
       printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
+      printf 'kept_seasonal_fixture=%q\n' "${node_seasonal_fixture:-}"
     } > "$REUSE_STATE" )
   STACK_KEPT=1
 }
@@ -1102,6 +1105,55 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
+# Give the journey runner the same parsed range used by the fixture and verifier.
+node_boot_row_selection() { # batch|w19a
+  python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
+import os
+import re
+import struct
+import sys
+
+def env_text(value, default):
+    try:
+        return os.fsencode(value).decode("utf-8")
+    except UnicodeDecodeError:
+        # Rust env::var treats non-Unicode values as unset at this caller.
+        return default
+
+mode, raw_batch, raw_groups = sys.argv[1:]
+batch = env_text(raw_batch, "0:15")
+usize_max = (1 << (8 * struct.calcsize("P"))) - 1
+if batch == "all":
+    start, length = 0, usize_max
+else:
+    # Match Rust's unsigned decimal parser, including one optional leading +.
+    match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+    if not match:
+        sys.exit(0)
+    digits = tuple(part.lstrip("0") or "0" for part in match.groups())
+    if any(len(part) > len(str(usize_max)) for part in digits):
+        sys.exit(0)
+    start, length = map(int, digits)
+    if max(start, length) > usize_max:
+        sys.exit(0)
+
+if mode == "batch":
+    print(batch if batch == "all" else f"{start}:{length}")
+else:
+    groups = env_text(raw_groups, "").strip()
+    if not groups or "rows" in (group.strip() for group in groups.split(",")):
+        # Indices passed to e2e_row_selected in the Rust journeys.
+        for index, row in ((12, "W19a.full"), (216, "W19a.client")):
+            if index >= start and index - start < length:
+                print(row)
+PY_ROW_SELECTION
+}
+
+w19a_rows() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] || return 0
+  node_boot_row_selection w19a
+}
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -1145,6 +1197,17 @@ stage() { # name prerequisite... -- function
     if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
+    fi
+    if [[ "$name" == seam_stages ]]; then
+      local row expected w19a
+      w19a="$(w19a_rows)"
+      for row in $w19a; do
+        case "$row" in W19a.full) expected=PASS ;; W19a.client) expected=CAPTURED ;; esac
+        if ! stage_rows "$WORK/stage-$name.log" "$expected" | grep -Fx "$row" >/dev/null; then
+          STATUS[$name]="FAIL(rows)"
+          echo "NODE_BOOT_STAGE_FAILED $name row=$row required_status=$expected"
+        fi
+      done
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
@@ -1314,11 +1377,27 @@ node_complete_assignment() {
   node_deployment_grants
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
+  local w19a
+  w19a="$(w19a_rows)"
+  if [[ -n "$w19a" ]]; then
+    local christmas_epoch
+    christmas_epoch="$({
+      echo 'PREPARE node_boot_christmas(UUID, UUID, TEXT, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/christmas_epoch.sql"
+      printf "EXECUTE node_boot_christmas('%s', '%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST" "$MAP_REVISION"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$christmas_epoch" == 1 ]] || { fail "Christmas epoch fixture"; return 1; }
+    evidence "world_epoch=1 source=qualification_fixture seasonal_event=christmas"
+  fi
   local -a report_args=()
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
+  if [[ -n "$w19a" ]]; then
+    await_log 'event=seasonal_calendar .*detail="reset_epoch=1 active=\[\\"christmas\\"\]"$' 60
+    remember node_seasonal_fixture christmas_epoch_1
+  fi
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1340,8 +1419,13 @@ node_complete_assignment() {
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
     } | psql_admin oteryn_node_boot)"
-    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
-    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    if [[ -n "${w19a:-}" ]]; then
+      [[ "$epoch_result" == $'f\nf' ]] || fail "Christmas fixture epoch zero replay"
+      evidence "world_epoch_history=0 source=qualification_fixture replay=idempotent"
+    else
+      [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+      evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    fi
   fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
@@ -1466,7 +1550,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
-    local extra_accounts
+    local extra_accounts row_batch
+    row_batch="$(node_boot_row_selection batch)"
+    test_env+=("OTERYN_E2E_ROW_BATCH=$row_batch")
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_G17_ACCOUNT=$G17_ACCOUNT" "NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
@@ -1734,6 +1820,11 @@ fi
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+  reused_w19a="$(w19a_rows)"
+  if [[ -n "$reused_w19a" && "${kept_seasonal_fixture:-}" != christmas_epoch_1 ]]; then
+    result='BLOCKED reason=kept_stack_requires_christmas_epoch_1'
+    exit 2
+  fi
   stage "$seam_stage_name" -- seam_stages
 else
 stage operator_setup -- operator_setup
@@ -1770,10 +1861,11 @@ NODE_PID=""
 elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
   # The shutdown and restart stages did not run, so this is never a qualification pass.
   if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
-    # The node was started inside a stage subshell; its pid is in $VARS.
+    # The assignment stage records the node PID and any verified seasonal fixture.
     # shellcheck source=/dev/null
     NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
     PVP_GAME_PORT="$(source "$VARS"; printf '%s' "$PVP_GAME_PORT")"
+    node_seasonal_fixture="$(source "$VARS"; printf '%s' "${node_seasonal_fixture:-}")"
     [[ -z "$NODE_PID" ]] || save_reuse_state
   fi
   ORDER+=(stack_kept)
