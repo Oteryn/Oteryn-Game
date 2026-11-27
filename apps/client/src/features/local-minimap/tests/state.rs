@@ -53,6 +53,32 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     Ok(())
 }
 #[test]
+fn empty_description_mark_persists_and_reloads() -> Result<(), Box<dyn std::error::Error>> {
+    let root = tempfile::tempdir()?;
+    let open = || {
+        let mut map = Minimap::default();
+        map.root = Some(root.path().to_owned());
+        map.bind_world("11111111-1111-4111-8111-111111111111");
+        map.observe(&joined_window(100, 200));
+        map
+    };
+    let mut map = open();
+    map.edit_marker(100, 200, 7, String::new(), 2)?;
+    let expected = Marker {
+        x: 100,
+        y: 200,
+        floor: 7,
+        label: String::new(),
+        color: 2,
+    };
+    drop(map);
+
+    let reopened = open();
+    assert_eq!(reopened.markers, [expected]);
+    Ok(())
+}
+
+#[test]
 fn camera_and_marker_validation_do_not_change_gameplay_positions()
 -> Result<(), Box<dyn std::error::Error>> {
     let mut map = Minimap::default();
@@ -65,6 +91,7 @@ fn camera_and_marker_validation_do_not_change_gameplay_positions()
     assert_eq!(map.position(15, 12), Some((105, 195, 6)));
     assert!(map.edit_marker(0, 0, -2, "x".into(), 0).is_err());
     assert!(map.edit_marker(0, 0, 7, "\0".into(), 0).is_err());
+    assert!(map.edit_marker(0, 0, 7, "é".repeat(65), 0).is_err());
     map.edit_marker(100, 200, 7, "Gate".into(), 2)?;
     let kept = map.markers.clone();
     assert!(

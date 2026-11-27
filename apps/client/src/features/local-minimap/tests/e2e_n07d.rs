@@ -718,7 +718,8 @@ async fn check_markers(
         ("Depot", "Green mark icon", 2),
         ("Temple", "Blue mark icon", 1),
     ] {
-        host.edit_mark_at_cell(cell)?;
+        host.open_mark_menu_at_cell(cell)?;
+        host.click_minimap_button("Set Mark")?;
         host.enter_mark_description(label)?;
         host.click_minimap_button(icon)?;
         host.click_minimap_button("Save mark")?;
@@ -731,7 +732,8 @@ async fn check_markers(
         wait_for_saved_marks(host, path, std::slice::from_ref(&marker)).await?;
     }
 
-    host.edit_mark_at_cell(cell)?;
+    host.open_mark_menu_at_cell(cell)?;
+    host.click_minimap_button("Set Mark")?;
     host.enter_mark_description("  ")?;
     host.click_minimap_button("Save mark")?;
     assert_eq!(

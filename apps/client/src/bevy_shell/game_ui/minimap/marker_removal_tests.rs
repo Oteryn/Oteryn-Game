@@ -224,6 +224,31 @@ fn renaming_then_removing_an_imported_mark_does_not_reveal_the_original() -> Tes
             .satellite_map(|_, marks| marks.iter().any(|mark| (mark.x, mark.y, mark.floor) == at))
     );
     open_marker_editor(&mut app)?;
+    app.world_mut()
+        .query::<&mut bevy::text::EditableText>()
+        .single_mut(app.world_mut())?
+        .clear();
+    activate(&mut app, "Save mark")?;
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .view
+            .remembered_minimap_mark(at)
+            .ok_or("cleared mark")?
+            .label,
+        ""
+    );
+    open_marker_editor(&mut app)?;
+    assert_eq!(
+        app.world_mut()
+            .query::<&bevy::text::EditableText>()
+            .single(app.world())?
+            .value(),
+        ""
+    );
     activate(&mut app, "Remove mark")?;
     open_marker_editor(&mut app)?;
     let field = app

@@ -1,9 +1,22 @@
 #[test]
-fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
+fn minimap_secondary_click_opens_set_mark_menu() -> TestResult {
     let mut app = fixture()?;
     activate(&mut app, "E")?;
     activate(&mut app, "Floor up")?;
-    open_marker_editor(&mut app)?;
+    secondary_click(&mut app, Vec2::ZERO)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Set Mark")
+    );
+    select_set_mark(&mut app)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Map mark: 105, 200, floor 6")
+    );
     for mut text in app
         .world_mut()
         .query::<&mut bevy::text::EditableText>()
@@ -26,6 +39,42 @@ fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
         "Cave entrance"
     ))));
     assert_eq!(play.view.satellite_player(), (100, 200, 7));
+    Ok(())
+}
+
+#[test]
+fn minimap_pointer_pick_menu_editor_chain() -> TestResult {
+    let (link, _, _) = play_channel();
+    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    let mut app = replay::app(owner, false)?;
+    let cell = [10, 13];
+
+    replay::open_menu(&mut app, cell)?;
+    replay::named(app.world_mut(), "Set Mark")?;
+    assert_no_mark_editor(&mut app);
+    replay::click(&mut app, Vec2::new(600., 450.), MouseButton::Left)?;
+    assert!(replay::named(app.world_mut(), "Set Mark").is_err());
+    assert_no_mark_editor(&mut app);
+
+    replay::open_menu(&mut app, cell)?;
+    assert_no_mark_editor(&mut app);
+    replay::activate(&mut app, "Set Mark")?;
+    assert!(replay::named(app.world_mut(), "Set Mark").is_err());
+    let description = replay::named(app.world_mut(), "Mark description")?;
+    assert!(
+        app.world()
+            .get::<bevy::text::EditableText>(description)
+            .is_some()
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| { text.0 == "Map mark: 95, 201, floor 7" })
+    );
     Ok(())
 }
 
@@ -149,6 +198,10 @@ fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult
             position: Vec2::new(93., 50.),
         },
     );
+    let ui_camera = app
+        .world_mut()
+        .query_filtered::<Entity, With<IsDefaultUiCamera>>()
+        .single(app.world())?;
     let before = camera(&app)?;
     app.world_mut().trigger(PointerPress {
         entity,
@@ -161,11 +214,12 @@ fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult
         entity,
         pointer: pointer.clone(),
         button: PointerButton::Secondary,
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        hit: HitData::new(ui_camera, 0., Some(Vec3::new(0.25, 0., 0.)), None),
         duration: std::time::Duration::ZERO,
         count: 1,
     });
     app.update();
+    select_set_mark(&mut app)?;
     activate(&mut app, "Save mark")?;
     app.update();
     let owner = app.world().non_send::<HostOwner>();
@@ -217,42 +271,11 @@ fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult
 
 #[test]
 fn secondary_minimap_cancel_does_not_persist_a_mark() -> TestResult {
-    use bevy::picking::{
-        backend::HitData,
-        events::Pointer,
-        pointer::{Location, PointerButton, PointerId},
-    };
     let mut app = fixture()?;
     activate(&mut app, "E")?;
     activate(&mut app, "Floor up")?;
-    let image = app
-        .world_mut()
-        .query_filtered::<Entity, With<MiniImage>>()
-        .single(app.world())?;
-    app.world_mut()
-        .entity_mut(image)
-        .insert(RelativeCursorPosition {
-            normalized: Some(Vec2::new(-0.25, -0.25)),
-            ..default()
-        });
-    app.world_mut().trigger(PointerClick {
-        entity: image,
-        pointer: Pointer::new(
-            PointerId::Mouse,
-            Location {
-                target: bevy::camera::NormalizedRenderTarget::None {
-                    width: 124,
-                    height: 100,
-                },
-                position: Vec2::ZERO,
-            },
-        ),
-        button: PointerButton::Secondary,
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
-        duration: std::time::Duration::ZERO,
-        count: 1,
-    });
-    app.update();
+    secondary_click(&mut app, Vec2::splat(-0.25))?;
+    select_set_mark(&mut app)?;
     activate(&mut app, "Cancel")?;
     let owner = app.world().non_send::<HostOwner>();
     let play = owner.play.as_ref().ok_or("play")?;
@@ -321,7 +344,9 @@ fn create_mark_cancel_saves_nothing() -> TestResult {
     let mut app = fixture()?;
     route_create_mark(&mut app)?;
     assert_no_local_marks(&app)?;
-    replay::activate(&mut app, "Cancel mark")?;
+    let entity = replay::named(app.world_mut(), "Cancel mark")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
     assert_no_local_marks(&app)?;
     assert!(
         !app.world_mut()
