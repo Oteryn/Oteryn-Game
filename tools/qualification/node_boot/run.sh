@@ -897,7 +897,8 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" \
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" OTERYN_QUALIFICATION_LOG_PROFILE=monster_ai \
+      "$BASE/bin/oteryn-game-server" \
       serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"

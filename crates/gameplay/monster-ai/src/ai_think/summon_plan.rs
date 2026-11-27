@@ -176,11 +176,13 @@ impl CreatureAiState {
         } else {
             "no_eligible_players"
         };
-        // CREATURE-AI-0 §4.3: the ordinary search takes the nearest eligible candidate when
-        // there is no target or it cannot be attacked from here, and never while an override
-        // holds.
+        // A failed chase describes the previous geometry. An eligible native melee
+        // target that has since come into reach no longer needs that path. Crystal
+        // monster.cpp:1169-1178 uses current attack reach and follow-path state.
+        let reachable_melee =
+            self.profile.is_native() && attack_distance == 1 && target.is_some_and(in_range);
         if !override_holds
-            && (target.is_none() || self.unreachable)
+            && (target.is_none() || (self.unreachable && !reachable_melee))
             && let Some(found) = targeting::select(
                 Strategy::Nearest,
                 position,
