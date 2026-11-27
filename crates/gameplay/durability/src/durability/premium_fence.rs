@@ -202,7 +202,7 @@ impl DurabilityRoot {
             let mut waiter = None;
             loop {
                 attempt = attempt.saturating_add(1);
-                let result = self.try_issue_semantic_pass_by(deadline);
+                let result = self.try_issue_semantic_pass_by(deadline.into_std());
                 self.premium_checkout_attempt(attempt, started.elapsed(), result.is_ok());
                 match result {
                     Err(DurabilityError::RootUnavailable) => {
