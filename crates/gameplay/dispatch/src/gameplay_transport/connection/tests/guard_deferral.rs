@@ -2,9 +2,16 @@
 use super::*;
 use crate::durability::DurabilityError;
 use crate::gameplay_transport::world_spatial::decode_step_result;
+use oteryn_protocol_oteryn::actor_spell::{
+    COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, SpellCastDisposition, SpellCastIntent, SpellTarget,
+    decode_spell_cast_result, encode_spell_cast_intent,
+};
 use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, ChatDisposition, ChatSpeechMode,
     decode_chat_intent_result, encode_chat_intent,
+};
+use oteryn_protocol_oteryn::logout::{
+    CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
 };
 
 struct GuardAuthority {
@@ -46,7 +53,11 @@ impl FreshAdmissionAuthority for GuardAuthority {
         if self.activity { Ok(()) } else { self.guard() }
     }
 
-    async fn activity_transfer_input(&self, _: AdmittedSession) -> Result<(), DurabilityError> {
+    async fn activity_transfer_input(
+        &self,
+        _: AdmittedSession,
+        _: u64,
+    ) -> Result<(), DurabilityError> {
         if self.activity { self.guard() } else { Ok(()) }
     }
 
@@ -157,6 +168,29 @@ fn guard_case(
                     oteryn_protocol_oteryn::encode_client_command(
                         1,
                         &oteryn_protocol_oteryn::ClientCommandValue { command_id: 1, command_type, payload: &payload },
+                    )?
+                } else if command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
+                    let payload = encode_spell_cast_intent(&SpellCastIntent {
+                        spell: std::num::NonZeroU32::MIN,
+                        target: SpellTarget::None,
+                        aim_at_target: false,
+                    });
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload: &payload,
+                        },
+                    )?
+                } else if command_type == COMMAND_TYPE_LOGOUT_INTENT {
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload: &[],
+                        },
                     )?
                 } else if command_type == COMMAND_TYPE_USE_INTENT {
                     use_command(1, 1, u64::from(command_type), b"oteryn:cell/entry-door", 0)
@@ -275,6 +309,14 @@ fn guard_case(
                                 ),
                                 Ok(UseDisposition::Rejected)
                             ),
+                            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => assert_eq!(
+                                decode_spell_cast_result(results[0].payload),
+                                Ok(SpellCastDisposition::Rejected),
+                            ),
+                            COMMAND_TYPE_LOGOUT_INTENT => assert_eq!(
+                                decode_logout_result(results[0].payload),
+                                Ok(LogoutResult::Busy),
+                            ),
                             _ => assert!(results[0].payload.is_empty()),
                         }
                         assert_eq!(results[1].command_id, 1);
@@ -356,6 +398,28 @@ fn use_guard_deferral_returns_typed_rejection() -> Result<(), Box<dyn Error>> {
         true,
         COMMAND_TYPE_USE_INTENT,
         &[],
+        false,
+    )
+}
+
+#[test]
+fn spell_guard_deferral_returns_typed_rejection() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+        &[],
+        false,
+    )
+}
+
+#[test]
+fn selected_logout_guard_deferral_returns_busy() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_LOGOUT_INTENT,
+        &[CAPABILITY_LOGOUT_V1],
         false,
     )
 }

@@ -90,9 +90,12 @@ impl ReleaseProgress<'_> {
         };
         // Start on the first deferral. A checkpoint already in flight settles its
         // outcome normally, and a retry may only start inside the command window.
-        let retry = self
-            .retry
-            .get_or_insert_with(|| AdmissionRetryBudget::for_command(root));
+        let retry = self.retry.get_or_insert_with(|| {
+            AdmissionRetryBudget::for_holder_window(
+                root,
+                AdmissionRetryBudget::holder_wait_window(),
+            )
+        });
         retry
             .retries_unavailable(AdmissionRefusal::Unavailable)
             .await
