@@ -635,6 +635,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                     super::quest_kill_objectives::publish(_attack.kills(), &objectives);
+                    if entry.forge.is_some() {
+                        publish_forge_dust(owner, quest_fences, &awards);
+                    }
                     publish_stamina(states, runtime, &current, entry, &awards);
                     Ok(Ok(awards))
                 })
@@ -742,6 +745,33 @@ async fn initialize(
     Ok(())
 }
 
+// Only the first commit sends the notice. The Forge query reads the current
+// balance directly from the ledger, including after a lost connection.
+fn publish_forge_dust(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fences: &[CurrentCharacterGameplayFence],
+    awards: &[party_kill_xp::PartyKillXpAward],
+) {
+    for award in awards {
+        if let Some(dust) = &award.forge_dust
+            && dust.after.balance() > dust.before.balance()
+            && let Some(fence) = fences
+                .iter()
+                .find(|fence| fence.character_id == award.character)
+        {
+            owner.states.server_messages.send_for_generation(
+                fence.game_session_id,
+                fence.connection_generation.get(),
+                oteryn_protocol_oteryn::zones_nologout::ServerMessage::StatusText(format!(
+                    "Forge dust: {}/{}",
+                    dust.after.balance(),
+                    dust.after.limit().get(),
+                )),
+            );
+        }
+    }
+}
+
 fn forge_dust_for_member(
     entry: &PendingKillSettlement,
     states: &super::actor_spell::ChannelSpellStates,
@@ -755,11 +785,17 @@ fn forge_dust_for_member(
         .recipients
         .iter()
         .find(|(actor, session, _)| *actor == member.actor && *session == member.session)?;
-    let blocked = !states.is_dead(member.actor)
-        && (attack
-            .in_fight_until(member.actor, member.session, now)
-            .is_some()
-            || super::pvp_live::logout_blocked(states, member.actor, member.session, now));
+    // The reward principal already has a generation-qualified combat proof
+    // from the death ledger, including spell kills without an auto-attack lock.
+    // Other recipients must still qualify through their own combat lock.
+    let principal = entry.facts.principal;
+    let earned_kill = member.actor == principal.actor && member.session == principal.session;
+    let blocked = earned_kill
+        || (!states.is_dead(member.actor)
+            && (attack
+                .in_fight_until(member.actor, member.session, now)
+                .is_some()
+                || super::pvp_live::logout_blocked(states, member.actor, member.session, now)));
     let eligible = eligible_dust_recipient(ForgeRecipientFacts {
         premium: member.premium,
         logout_blocked: blocked,

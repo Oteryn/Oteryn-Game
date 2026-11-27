@@ -96,19 +96,20 @@ pub(super) async fn balance(
             return Some(Vec::new());
         }
     }
-    match owner
-        .root
-        .read_current_forge_dust(
-            owner.character,
-            owner.holder,
-            fence,
-            CommandRef::new(admitted.game_session_id, id),
-        )
-        .await
-    {
-        Ok(value) => serde_json::to_vec(&value).ok(),
-        Err(ForgeDustLimitError::Unavailable(_)) => None,
-        Err(_) => Some(Vec::new()),
+    let budget = super::AdmissionRetryBudget::for_command(owner.root);
+    let command = CommandRef::new(admitted.game_session_id, id);
+    loop {
+        match owner
+            .root
+            .read_current_forge_dust(owner.character, owner.holder, fence, command)
+            .await
+        {
+            Ok(value) => return serde_json::to_vec(&value).ok(),
+            Err(ForgeDustLimitError::Unavailable(crate::durability::DurabilityError::RootUnavailable))
+                if budget.retries_unavailable(super::AdmissionRefusal::Unavailable).await => {}
+            Err(ForgeDustLimitError::Unavailable(_)) => return None,
+            Err(_) => return Some(Vec::new()),
+        }
     }
 }
 

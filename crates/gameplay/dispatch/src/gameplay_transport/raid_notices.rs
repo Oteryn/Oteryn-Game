@@ -124,6 +124,24 @@ impl ServerMessageHub {
     /// A source callback's personal notice uses the currently joined native
     /// session, without a broadcast identity or a durable gameplay grant.
     pub(super) fn send_current(&self, session: GameSessionId, message: ServerMessage) -> bool {
+        self.send_to_session(session, None, message)
+    }
+
+    pub(super) fn send_for_generation(
+        &self,
+        session: GameSessionId,
+        generation: u64,
+        message: ServerMessage,
+    ) -> bool {
+        self.send_to_session(session, Some(generation), message)
+    }
+
+    fn send_to_session(
+        &self,
+        session: GameSessionId,
+        generation: Option<u64>,
+        message: ServerMessage,
+    ) -> bool {
         if encode_server_message(&message).is_err() {
             return false;
         }
@@ -133,7 +151,8 @@ impl ServerMessageHub {
         let Some(recipient) = state.recipients.get_mut(&session) else {
             return false;
         };
-        if recipient.queue.len() >= MAX_ANNOUNCEMENTS
+        if generation.is_some_and(|generation| recipient.connection_generation != generation)
+            || recipient.queue.len() >= MAX_ANNOUNCEMENTS
             || (matches!(message, ServerMessage::BossDefeated(_)) && !recipient.boss_defeats)
         {
             return false;
