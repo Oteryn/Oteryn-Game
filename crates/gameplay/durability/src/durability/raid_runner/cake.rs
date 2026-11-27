@@ -24,7 +24,7 @@ pub async fn phase_one_in_transaction(
     world: WorldId,
     expected_epoch: u64,
 ) -> Result<Option<CakeProgress>, DurabilityError> {
-    let calendar: Option<(i32, bool)> = sqlx::query_as("SELECT extract(year FROM r.activated_at AT TIME ZONE 'Europe/Berlin')::integer,extract(month FROM r.activated_at AT TIME ZONE 'Europe/Berlin')=2 AND extract(day FROM r.activated_at AT TIME ZONE 'Europe/Berlin')=21 FROM game_world_reset_active a JOIN game_world_reset_epochs r USING(world_id,reset_epoch) JOIN game_world_event_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch=$2::text::numeric AND e.seasonal_calendar_revision=1 AND 'piece_of_cake'=ANY(e.seasonal_event_keys) FOR SHARE OF a")
+    let calendar: Option<(i32, bool)> = sqlx::query_as("SELECT extract(year FROM game_server_save_event_day(r.activated_at,r.legacy_six_am))::integer,extract(month FROM game_server_save_event_day(r.activated_at,r.legacy_six_am))=2 AND extract(day FROM game_server_save_event_day(r.activated_at,r.legacy_six_am))=21 FROM game_world_reset_active a JOIN game_world_reset_epochs r USING(world_id,reset_epoch) JOIN game_world_event_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch=$2::text::numeric AND e.seasonal_calendar_revision=1 AND 'piece_of_cake'=ANY(e.seasonal_event_keys) FOR SHARE OF a")
         .bind(world.as_bytes().as_slice()).bind(expected_epoch.to_string()).fetch_optional(&mut **tx).await?;
     let Some((year, opening_day)) = calendar else {
         return Ok(None);

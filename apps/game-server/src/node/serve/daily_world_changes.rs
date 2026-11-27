@@ -871,7 +871,7 @@ pub(crate) mod tests {
                         !day.their_masters_voice && day.fury_gates.is_none()
                     }).ok_or("inactive source occurrence")?;
                     for (epoch, day, enabled) in [(active, 13, true), (inactive, 14, false)] {
-                        let timestamp = format!("2026-06-{day:02} 06:00:00+00");
+                        let timestamp = format!("2026-06-{day:02} 08:00:00+00");
                         sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'qworld',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,$4::text::timestamptz,'2026-06')")
                             .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7_u8;32].as_slice()).bind(timestamp).execute(&h.pool).await?;
                         let announcement = oteryn_gameplay_world_change::scheduled::announcement_for_epoch(epoch).unwrap_or_default();

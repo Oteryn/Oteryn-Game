@@ -44,22 +44,22 @@ pub(super) fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool,
                 // Business clock matches the historical epoch fixture. T94's
                 // actual observation clock remains current: terminal native
                 // evidence must not claim a future decision (native.rs:483-484).
-                sqlx::query("CREATE OR REPLACE FUNCTION game_cake_now_ms() RETURNS bigint LANGUAGE sql STABLE AS $$ SELECT floor(extract(epoch FROM TIMESTAMPTZ '2026-02-21 06:00 Europe/Berlin')*1000)::bigint $$")
+                sqlx::query("CREATE OR REPLACE FUNCTION game_cake_now_ms() RETURNS bigint LANGUAGE sql STABLE AS $$ SELECT floor(extract(epoch FROM TIMESTAMPTZ '2026-02-21 10:00 Europe/Berlin')*1000)::bigint $$")
                     .execute(&h.pool).await?;
-                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-02-21 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-02-21 10:00 Europe/Berlin'; NEW.reset_month=to_char(game_server_save_day(NEW.activated_at),'YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else if matches!(clock, Some("QworldGrimvaleActive" | "QworldGrimvaleInactive")) {
                 let clock_sql = if clock == Some("QworldGrimvaleActive") {
-                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-13 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
+                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-13 10:00 Europe/Berlin'; NEW.reset_month=to_char(game_server_save_day(NEW.activated_at),'YYYY-MM'); RETURN NEW; END $$"
                 } else {
-                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
+                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-12 10:00 Europe/Berlin'; NEW.reset_month=to_char(game_server_save_day(NEW.activated_at),'YYYY-MM'); RETURN NEW; END $$"
                 };
                 sqlx::query(clock_sql).execute(&h.pool).await?;
             } else if clock == Some("Christmas") {
-                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2025-12-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2025-12-12 10:00 Europe/Berlin'; NEW.reset_month=to_char(game_server_save_day(NEW.activated_at),'YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else {
-                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-31 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-31 10:00 Europe/Berlin'; NEW.reset_month=to_char(game_server_save_day(NEW.activated_at),'YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             }
             sqlx::query("CREATE TRIGGER seasonal_fixture_clock BEFORE INSERT ON game_world_reset_epochs FOR EACH ROW EXECUTE FUNCTION seasonal_fixture_clock()")

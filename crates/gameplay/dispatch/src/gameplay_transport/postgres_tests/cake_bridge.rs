@@ -113,7 +113,7 @@ async fn exercise(h: &Harness) -> TestResult {
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$3,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2026-02-21 05:00:00+00','2026-02')")
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$3,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2026-02-21 09:00:00+00','2026-02')")
         .bind(world_id).bind(bundle.as_slice()).bind(world.map_revision())
         .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice())
         .bind(room.frame_binding().digest().as_slice()).execute(&mut *tx).await?;
@@ -217,7 +217,7 @@ async fn exercise(h: &Harness) -> TestResult {
     )
     .execute(&mut *tx)
     .await?;
-    sqlx::query("UPDATE game_world_reset_epochs SET activated_at='2026-02-27 05:00:00+00' WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
+    sqlx::query("UPDATE game_world_reset_epochs SET activated_at='2026-02-27 09:00:00+00' WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
         .bind(world_id).execute(&mut *tx).await?;
     sqlx::query(
         "ALTER TABLE game_world_reset_epochs ENABLE TRIGGER game_world_reset_epochs_immutable",

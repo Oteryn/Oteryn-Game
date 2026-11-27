@@ -74,11 +74,11 @@ fn world_reset_atomic_activation_calendar_house_refusal_and_dispatch_remint() ->
                 expected
             );
         }
-        let calendar: bool = sqlx::query_scalar("SELECT calendar='TIBIA_SERVER_SAVE_BERLIN_06' AND calendar_revision=1 AND reset_month=to_char((activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM') FROM game_world_reset_epochs WHERE reset_epoch=0")
+        let calendar: bool = sqlx::query_scalar("SELECT calendar='TIBIA_SERVER_SAVE_BERLIN_06' AND calendar_revision=1 AND reset_month=to_char(game_server_save_day(activated_at),'YYYY-MM') FROM game_world_reset_epochs WHERE reset_epoch=0")
             .fetch_one(&harness.pool).await?;
         assert!(calendar);
-        // Crystal config.lua.dist:604: 06:00 Berlin, UTC+2 in April and UTC+1 in November.
-        let months: Vec<String> = sqlx::query_scalar("SELECT to_char((instant AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM') FROM (VALUES (1,'2026-04-01 03:59:59+00'::timestamptz),(2,'2026-04-01 04:00:00+00'),(3,'2026-11-01 04:59:59+00'),(4,'2026-11-01 05:00:00+00')) v(n,instant) ORDER BY n LIMIT 4")
+        // Server Save is 10:00 Berlin, UTC+2 in April and UTC+1 in November.
+        let months: Vec<String> = sqlx::query_scalar("SELECT to_char(game_server_save_day(instant),'YYYY-MM') FROM (VALUES (1,'2026-04-01 07:59:59+00'::timestamptz),(2,'2026-04-01 08:00:00+00'),(3,'2026-11-01 08:59:59+00'),(4,'2026-11-01 09:00:00+00')) v(n,instant) ORDER BY n LIMIT 4")
             .fetch_all(&harness.pool).await?;
         assert_eq!(months, ["2026-03", "2026-04", "2026-10", "2026-11"]);
         // No global role counts: this slice installs no reset capability grants.
@@ -191,7 +191,7 @@ fn world_reset_atomic_activation_calendar_house_refusal_and_dispatch_remint() ->
                 .await?,
             2
         );
-        let calendar: bool = sqlx::query_scalar("SELECT reset_month=to_char((activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM') FROM game_world_reset_epochs WHERE reset_epoch=1")
+        let calendar: bool = sqlx::query_scalar("SELECT reset_month=to_char(game_server_save_day(activated_at),'YYYY-MM') FROM game_world_reset_epochs WHERE reset_epoch=1")
             .fetch_one(&harness.pool).await?;
         assert!(calendar);
         let issuance = harness

@@ -32,9 +32,9 @@ async fn seasonal_for_epoch(
     world: WorldId,
     epoch: u64,
 ) -> Result<Vec<String>, DurabilityError> {
-    // The reset owner already resolves 06:00 Europe/Berlin. Read its immutable
+    // The reset owner resolves Europe/Berlin. Read its immutable
     // activated date rather than the process's clock or a client-supplied month.
-    let row = sqlx::query("SELECT extract(month FROM activated_at AT TIME ZONE 'Europe/Berlin')::smallint AS month,extract(day FROM activated_at AT TIME ZONE 'Europe/Berlin')::smallint AS day FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
+    let row = sqlx::query("SELECT extract(month FROM game_server_save_event_day(activated_at,legacy_six_am))::smallint AS month,extract(day FROM game_server_save_event_day(activated_at,legacy_six_am))::smallint AS day FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     let month = u8::try_from(row.try_get::<i16, _>("month")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -469,9 +469,9 @@ async fn capture_calendar(
     catalogue: &oteryn_gameplay_world_change::rules::Catalogue,
 ) -> Result<(), DurabilityError> {
     occurrence::lock(tx, world).await?;
-    let created = sqlx::query("INSERT INTO game_world_change_calendar(world_id,reset_epoch,month,day,decision_required) SELECT world_id,reset_epoch,EXTRACT(MONTH FROM activated_at AT TIME ZONE 'UTC')::smallint,EXTRACT(DAY FROM activated_at AT TIME ZONE 'UTC')::smallint,true FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric ON CONFLICT DO NOTHING")
+    let created = sqlx::query("INSERT INTO game_world_change_calendar(world_id,reset_epoch,month,day,decision_required) SELECT world_id,reset_epoch,EXTRACT(MONTH FROM CASE WHEN legacy_six_am THEN (activated_at AT TIME ZONE 'UTC')::date ELSE game_server_save_day(activated_at) END)::smallint,EXTRACT(DAY FROM CASE WHEN legacy_six_am THEN (activated_at AT TIME ZONE 'UTC')::date ELSE game_server_save_day(activated_at) END)::smallint,true FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric ON CONFLICT DO NOTHING")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&mut **tx).await?.rows_affected() == 1;
-    let (month, day, required, matches): (i16,i16,bool,bool) = sqlx::query_as("SELECT c.month,c.day,c.decision_required,c.month=EXTRACT(MONTH FROM e.activated_at AT TIME ZONE 'UTC')::smallint AND c.day=EXTRACT(DAY FROM e.activated_at AT TIME ZONE 'UTC')::smallint FROM game_world_change_calendar c JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE c.world_id=encode($1,'hex')::uuid AND c.reset_epoch=$2::text::numeric")
+    let (month, day, required, matches): (i16,i16,bool,bool) = sqlx::query_as("SELECT c.month,c.day,c.decision_required,c.month=EXTRACT(MONTH FROM CASE WHEN e.legacy_six_am THEN (e.activated_at AT TIME ZONE 'UTC')::date ELSE game_server_save_day(e.activated_at) END)::smallint AND c.day=EXTRACT(DAY FROM CASE WHEN e.legacy_six_am THEN (e.activated_at AT TIME ZONE 'UTC')::date ELSE game_server_save_day(e.activated_at) END)::smallint FROM game_world_change_calendar c JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE c.world_id=encode($1,'hex')::uuid AND c.reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     if !matches {
         return Err(DurabilityError::InvalidStoredState);

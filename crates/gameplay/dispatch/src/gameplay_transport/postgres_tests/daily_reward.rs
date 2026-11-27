@@ -172,10 +172,10 @@ async fn reset_boundary_case(
     assert_eq!(&legacy[..4], b"DRD1");
     assert_eq!(&extended[..4], b"DRD2");
     assert_eq!(&extended[4..legacy.len()], &legacy[4..]);
-    // 2026-10-25 06:00 Berlin is 05:00 UTC after the DST transition.
+    // 2026-10-25 10:00 Berlin is 09:00 UTC after the DST transition.
     assert_eq!(
         &extended[legacy.len()..],
-        &1_792_904_400_000_i64.to_le_bytes()
+        &1_792_918_800_000_i64.to_le_bytes()
     );
     Ok(())
 }

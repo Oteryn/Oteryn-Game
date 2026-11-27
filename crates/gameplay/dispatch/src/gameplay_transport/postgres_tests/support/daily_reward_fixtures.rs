@@ -88,7 +88,7 @@ pub(super) async fn epoch(h: &Harness, value: u64) -> TestResult {
         assert_eq!(epoch, "1");
         return Ok(());
     }
-    sqlx::query("INSERT INTO game_world_reset_history SELECT encode($1,'hex')::uuid,$2::text::numeric,((DATE '2026-10-01'+($2::text::integer-1))-DATE '1970-01-01')::bigint,extract(epoch FROM ((DATE '2026-10-01'+($2::text::integer-1))::timestamp + interval '6 hours') AT TIME ZONE 'Europe/Berlin')::bigint*1000,extract(epoch FROM ((DATE '2026-10-01'+($2::text::integer-1))::timestamp + interval '6 hours') AT TIME ZONE 'Europe/Berlin')::bigint*1000")
+    sqlx::query("INSERT INTO game_world_reset_history SELECT encode($1,'hex')::uuid,$2::text::numeric,((DATE '2026-10-01'+($2::text::integer-1))-DATE '1970-01-01')::bigint,extract(epoch FROM game_server_save_at(DATE '2026-10-01'+($2::text::integer-1)))::bigint*1000,extract(epoch FROM game_server_save_at(DATE '2026-10-01'+($2::text::integer-1)))::bigint*1000")
         .bind(id(42).as_slice()).bind(value.to_string()).execute(&h.pool).await?;
     Ok(())
 }

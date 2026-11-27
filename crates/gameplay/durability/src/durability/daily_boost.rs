@@ -122,8 +122,7 @@ impl DurabilityRoot {
                     JOIN game_world_reset_epochs e USING(world_id,reset_epoch)
                     JOIN game_world_daily_boosts d USING(world_id,reset_epoch)
                     CROSS JOIN LATERAL (
-                        SELECT (date_trunc('day', (e.activated_at AT TIME ZONE 'Europe/Berlin') - interval '6 hours')
-                                + interval '1 day 6 hours') AT TIME ZONE 'Europe/Berlin' AS effective_until
+                        SELECT game_server_save_at(game_server_save_day(e.activated_at,e.legacy_six_am)+1) AS effective_until
                     ) boundary
                     WHERE e.activated_at <= statement_timestamp()
                       AND statement_timestamp() < boundary.effective_until

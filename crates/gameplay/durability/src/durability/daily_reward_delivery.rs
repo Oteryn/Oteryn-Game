@@ -86,7 +86,7 @@ impl DurabilityRoot {
             if !current(&mut tx, &node, fence, command).await? {
                 return Ok(Err(DailyRewardClaimError::AuthorityRejected));
             }
-            let reset: Option<(String, i64)> = sqlx::query_as("SELECT h.reset_epoch::text, (extract(epoch FROM (((DATE '1970-01-01' + (h.reset_day + 1)::integer) + TIME '06:00') AT TIME ZONE 'Europe/Berlin')) * 1000)::bigint FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
+            let reset: Option<(String, i64)> = sqlx::query_as("SELECT h.reset_epoch::text, (extract(epoch FROM game_server_save_at(DATE '1970-01-01' + (h.reset_day + 1)::integer)) * 1000)::bigint FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
                 .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let Some((epoch, next_reset_at)) = reset else { return Ok(Err(DailyRewardClaimError::ResetWindowUnavailable)); };
             let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;

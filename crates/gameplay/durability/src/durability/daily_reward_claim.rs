@@ -145,7 +145,7 @@ pub(super) async fn write_claim(
     // will publish this history after its durable reset protocol commits.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:world-reset:' || (encode($1,'hex')::uuid)::text,0))")
                 .bind(world_id.as_bytes().as_slice()).execute(&mut **tx).await?;
-    let reset = sqlx::query("SELECT reset_epoch::text, reset_day, (local_time::date - DATE '1970-01-01')::bigint AS civil_day, floor(extract(epoch FROM local_time::time))::bigint AS local_seconds FROM (SELECT reset_epoch,reset_day,to_timestamp(reset_at_unix_ms/1000.0) AT TIME ZONE 'Europe/Berlin' AS local_time FROM public.game_world_reset_history WHERE world_id=encode($1,'hex')::uuid ORDER BY reset_epoch DESC LIMIT 1) h")
+    let reset = sqlx::query("SELECT reset_epoch::text, reset_day, legacy_six_am, (local_time::date - DATE '1970-01-01')::bigint AS civil_day, floor(extract(epoch FROM local_time::time))::bigint AS local_seconds FROM (SELECT reset_epoch,reset_day,legacy_six_am,to_timestamp(reset_at_unix_ms/1000.0) AT TIME ZONE 'Europe/Berlin' AS local_time FROM public.game_world_reset_history WHERE world_id=encode($1,'hex')::uuid ORDER BY reset_epoch DESC LIMIT 1) h")
                 .bind(world_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(reset) = reset else {
         return Err(Error::ResetWindowUnavailable);
@@ -160,9 +160,11 @@ pub(super) async fn write_claim(
     let day: i64 = reset.try_get("reset_day")?;
     let seconds = u32::try_from(reset.try_get::<i64, _>("local_seconds")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if daily_reward_reset_day(reset.try_get("civil_day")?, seconds)
-        .map_err(|_| DurabilityError::InvalidStoredState)?
-        != day
+    // The database constraint retains the original 06:00 labels on legacy rows.
+    if !reset.try_get::<bool, _>("legacy_six_am")?
+        && daily_reward_reset_day(reset.try_get("civil_day")?, seconds)
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            != day
     {
         return Err(DurabilityError::InvalidStoredState.into());
     }
