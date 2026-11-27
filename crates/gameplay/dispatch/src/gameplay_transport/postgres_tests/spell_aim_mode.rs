@@ -200,7 +200,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             .companion_policy("oteryn:creature.rat")
             .map_err(debug)?
             .maximum_health;
-        // The rat stands on the tile east of the caster, the aimed wave's origin.
+        // The front rat stands at the aimed wave's origin. The second stands one tile deeper.
         let health = u64::try_from(health)?;
         runtime
             .realize_activation_spawns(
@@ -210,7 +210,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
                         60_000,
                         5_000,
                         "oteryn:creature.rat".into(),
-                        health as u64,
+                        health,
                     ))
                     .to_vec(),
             )
@@ -326,11 +326,15 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             actor_spell::decode_spell_cast_result(&refused[0].1).map_err(debug)?,
             actor_spell::SpellCastDisposition::Rejected
         );
-        assert_eq!(
-            deps.runtime.lock().await.live_creature_health(targets[0]),
-            Some(u64::try_from(RAT_HEALTH)?),
-            "the refused cast must not damage the creature"
-        );
+        let runtime = deps.runtime.lock().await;
+        for &target in &targets {
+            assert_eq!(
+                runtime.live_creature_health(target),
+                Some(u64::try_from(RAT_HEALTH)?),
+                "the refused cast must not damage either creature"
+            );
+        }
+        drop(runtime);
         let unchanged = owner
             .observe_vitals(actor, session)
             .await
@@ -384,29 +388,31 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             if source.identity == actor.placement_identity() && index == spell.get() => Some(event.decision_ordinal),
         _ => None,
     }).ok_or("spectator sees Scorch words")?;
-    let cells = events.iter().filter_map(|event| match event.kind {
+    let mut cells = events.iter().filter_map(|event| match event.kind {
         Kind::MagicEffect { position, source: PresentationSource::Others, .. }
             if event.decision_ordinal == decision => Some((position.x, position.y, position.floor)),
         _ => None,
-    }).collect::<std::collections::BTreeSet<_>>();
+    }).collect::<Vec<_>>();
     // Thalom's northeast wall and solid tiles on the far edge clip this east-facing cone.
     let expected = [(1, 0), (2, 0), (2, 1), (3, 0), (4, 1)]
         .map(|(dx, dy)| (caster.x + dx, caster.y + dy, caster.floor.abs()));
-    assert_eq!(cells, expected.into_iter().collect(), "resolved Scorch cone");
+    cells.sort_unstable();
+    assert_eq!(cells, expected, "resolved Scorch cone");
     let runtime = deps.runtime.lock().await;
     for target in targets {
         let hit = runtime.live_creature_health(target).ok_or("rat survives")?;
         let damage = u64::try_from(RAT_HEALTH)? - hit;
         assert!(damage > 0);
-        assert!(events.iter().any(|event| event.decision_ordinal == decision && matches!(
+        assert_eq!(events.iter().filter(|event| event.decision_ordinal == decision && matches!(
             event.kind,
             Kind::ValueText { kind: PresentationValueKind::DamageOthers, target: shown,
                 attacker: Some(attacker), primary, .. }
                 if shown.identity == target.placement_identity()
                     && shown.generation == target.actor_local_generation()
                     && attacker.identity == actor.placement_identity()
+                    && attacker.generation == actor.actor_local_generation()
                     && primary.value == damage && primary.color == PresentationColor::Orange
-        )), "spectator sees the rat's fire damage in Scorch's decision: {events:?}");
+        )).count(), 1, "spectator sees the rat's fire damage once in Scorch's decision: {events:?}");
     }
     drop(runtime);
     let after = owner
