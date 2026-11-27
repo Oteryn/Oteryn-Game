@@ -23,6 +23,14 @@ pub(crate) const DECLARATION: &str = "oteryn:qualification.spawn/thalom-rat-r1";
 #[cfg(test)]
 const RAT_KEY: &str = "canary:creature/rat";
 
+pub(crate) const C18A_RAT_FIXTURE: &str = "qualification:c18a/fixed-rat";
+pub(crate) const C18A_RAT_POSITION: MovementLocalPosition = MovementLocalPosition {
+    x: 32491,
+    y: 32169,
+    floor: -7,
+};
+const C18A_RAT_KEY: &str = "oteryn:creature.rat";
+
 /// Spawn source ids of the `spawn` control command; the harness Rat keeps `u16::MAX`.
 const FIRST_COMMAND_SOURCE: u16 = 40_000;
 static NEXT_COMMAND_SOURCE: AtomicU16 = AtomicU16::new(FIRST_COMMAND_SOURCE);
@@ -33,6 +41,7 @@ pub(crate) enum SpawnRefusal {
     SessionUnknown,
     NoFreeTile(String),
     Fence(String),
+    ExactPlacement(String),
 }
 
 impl SpawnRefusal {
@@ -43,13 +52,16 @@ impl SpawnRefusal {
             Self::SessionUnknown => "session_unknown",
             Self::NoFreeTile(_) => "no_free_tile",
             Self::Fence(_) => "fence",
+            Self::ExactPlacement(_) => "c18a_exact_placement_refused",
         }
     }
 
     /// The refused rule, for the node's diagnostic line.
     pub(crate) fn detail(&self) -> Option<&str> {
         match self {
-            Self::NoFreeTile(message) | Self::Fence(message) => Some(message),
+            Self::NoFreeTile(message) | Self::Fence(message) | Self::ExactPlacement(message) => {
+                Some(message)
+            }
             Self::UnknownCreature | Self::SessionUnknown => None,
         }
     }
@@ -59,7 +71,9 @@ impl SpawnRefusal {
         match self {
             Self::UnknownCreature => "qualification spawn active Creature policies: unknown".into(),
             Self::SessionUnknown => "qualification spawn session has no positioned actor".into(),
-            Self::NoFreeTile(message) | Self::Fence(message) => message,
+            Self::NoFreeTile(message) | Self::Fence(message) | Self::ExactPlacement(message) => {
+                message
+            }
         }
     }
 }
@@ -129,6 +143,7 @@ enum Placement {
     #[cfg_attr(not(test), allow(dead_code))]
     Fixed(MovementLocalPosition),
     Adjacent(GameSessionId),
+    C18aRat(GameSessionId),
 }
 
 /// The Rat of the seam harness, at its Thalom cell, unchanged.
@@ -153,6 +168,7 @@ pub(crate) async fn realize_rat_in_transaction(
 }
 
 pub(crate) struct SpawnPlan {
+    exact_rat: bool,
     pin: ChannelContentPin,
     scope: crate::foundation::RuntimeScopeRefV1,
     scope_generation: u64,
@@ -175,6 +191,21 @@ pub(crate) fn snapshot_adjacent_spawn(
     session: GameSessionId,
 ) -> Result<SpawnPlan, SpawnRefusal> {
     snapshot_spawn(room, native, runtime, key, Placement::Adjacent(session))
+}
+
+pub(crate) fn snapshot_c18a_rat(
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    runtime: &mut ChannelRuntimeV1,
+    session: GameSessionId,
+) -> Result<SpawnPlan, SpawnRefusal> {
+    snapshot_spawn(
+        room,
+        native,
+        runtime,
+        C18A_RAT_KEY,
+        Placement::C18aRat(session),
+    )
 }
 
 fn snapshot_spawn(
@@ -207,15 +238,21 @@ fn snapshot_spawn(
             ))
         })?;
     require_policy(runtime, key)?;
+    let exact_rat = matches!(placement, Placement::C18aRat(_));
     let (candidates, player) = match placement {
         Placement::Fixed(position) => (vec![position], None),
-        Placement::Adjacent(session) => {
+        Placement::Adjacent(session) | Placement::C18aRat(session) => {
             let (actor, snapshot) = runtime
                 .positioned_player_for_session(session)
                 .map_err(|error| fence(format!("qualification spawn session actor: {error:?}")))?
                 .ok_or(SpawnRefusal::SessionUnknown)?;
             let position = snapshot.position();
-            (adjacent_cells(position), Some((session, actor, position)))
+            let candidates = if exact_rat {
+                vec![C18A_RAT_POSITION]
+            } else {
+                adjacent_cells(position)
+            };
+            (candidates, Some((session, actor, position)))
         }
     };
     let mut targets = Vec::with_capacity(candidates.len());
@@ -234,6 +271,7 @@ fn snapshot_spawn(
         return Err(SpawnRefusal::NoFreeTile(skipped));
     }
     Ok(SpawnPlan {
+        exact_rat,
         pin,
         scope: runtime.binding().runtime_scope(),
         scope_generation: runtime.binding().scope_generation().get(),
@@ -315,7 +353,56 @@ pub(crate) fn publish_spawn(
             return Err(SpawnRefusal::SessionUnknown);
         }
     }
+    if plan.exact_rat {
+        return place_c18a_rat(runtime, eligible);
+    }
     place_first(runtime, &plan.pin, source, key, eligible)
+}
+
+fn place_c18a_rat(
+    runtime: &mut ChannelRuntimeV1,
+    eligible: &[MovementLocalPosition],
+) -> Result<CompanionSnapshot, SpawnRefusal> {
+    let refusal = SpawnRefusal::ExactPlacement;
+    if eligible != [C18A_RAT_POSITION] {
+        return Err(refusal(
+            "fixed tile failed the durable placement check".into(),
+        ));
+    }
+    let points = runtime.spawn_point_creatures();
+    let mut origins = points
+        .iter()
+        .filter(|(_, origin, _)| *origin == C18A_RAT_POSITION);
+    let Some((_, _, Some(rat))) = origins.next() else {
+        return Err(refusal(
+            "fixed native spawn has no live Rat generation".into(),
+        ));
+    };
+    let snapshot = runtime
+        .companion_snapshot(*rat)
+        .map_err(|error| refusal(format!("read exact Rat: {error:?}")))?;
+    if origins.next().is_some() || snapshot.state.policy.definition_key != C18A_RAT_KEY {
+        return Err(refusal("fixed native spawn is not one Rat".into()));
+    }
+    if snapshot.position == C18A_RAT_POSITION {
+        return Ok(snapshot);
+    }
+    if runtime
+        .position_occupied_by_other(*rat, C18A_RAT_POSITION)
+        .map_err(|error| refusal(format!("read fixed occupancy: {error:?}")))?
+    {
+        return Err(refusal("fixed tile is occupied by another actor".into()));
+    }
+    let before = runtime
+        .read_actor_position(*rat)
+        .map_err(|error| refusal(format!("read exact Rat position: {error:?}")))?;
+    runtime
+        .borrow_movement_position()
+        .commit_creature_relocation(*rat, before, C18A_RAT_POSITION)
+        .map_err(|error| refusal(format!("place exact Rat: {error:?}")))?;
+    runtime
+        .companion_snapshot(*rat)
+        .map_err(|error| refusal(format!("read placed Rat: {error:?}")))
 }
 
 /// The qualified tile and source-metadata rules of one spawn cell.
@@ -423,7 +510,9 @@ mod tests {
     }
 
     /// A Channel runtime whose only policy is `SPIDER` and whose one player stands at `PLAYER_AT`.
-    fn runtime_with_player() -> (ChannelRuntimeV1, ChannelContentPin, GameSessionId) {
+    fn runtime_with_player_and_policy(
+        key: &str,
+    ) -> (ChannelRuntimeV1, ChannelContentPin, GameSessionId) {
         let world = WorldId::decode(&uuid(1)).expect("world");
         let pin = ChannelContentPin::from_activation(
             world,
@@ -447,7 +536,7 @@ mod tests {
         )
         .expect("runtime");
         runtime
-            .install_companion_policies(policy(SPIDER, pin.server_artifact_digest()))
+            .install_companion_policies(policy(key, pin.server_artifact_digest()))
             .expect("policies");
         let session = GameSessionId::decode(&uuid(4)).expect("session");
         let reservation = runtime.reserve_fresh_session(session).expect("reservation");
@@ -466,8 +555,54 @@ mod tests {
     }
 
     #[test]
+    fn qualification_spawn_c18a_restores_only_the_authored_rat_generation() {
+        let (mut runtime, pin, _) = runtime_with_player_and_policy(C18A_RAT_KEY);
+        let other_origin = MovementLocalPosition {
+            x: C18A_RAT_POSITION.x - 1,
+            ..C18A_RAT_POSITION
+        };
+        let other = place_first(&mut runtime, &pin, 40_001, C18A_RAT_KEY, &[other_origin])
+            .expect("other Rat");
+        assert!(matches!(
+            place_c18a_rat(&mut runtime, &[C18A_RAT_POSITION]),
+            Err(SpawnRefusal::ExactPlacement(_))
+        ));
+        let authored = place_first(
+            &mut runtime,
+            &pin,
+            40_000,
+            C18A_RAT_KEY,
+            &[C18A_RAT_POSITION],
+        )
+        .expect("authored Rat");
+        let displaced = MovementLocalPosition {
+            y: C18A_RAT_POSITION.y + 1,
+            ..C18A_RAT_POSITION
+        };
+        let before = runtime
+            .read_actor_position(authored.actor)
+            .expect("position");
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(authored.actor, before, displaced)
+            .expect("displace authored Rat");
+        let placed =
+            place_c18a_rat(&mut runtime, &[C18A_RAT_POSITION]).expect("place authored Rat");
+        assert_eq!(placed.actor, authored.actor);
+        assert_eq!(placed.position, C18A_RAT_POSITION);
+        assert_eq!(placed.health, authored.health);
+        assert_eq!(
+            runtime
+                .read_actor_position(other.actor)
+                .expect("other Rat")
+                .position(),
+            other_origin
+        );
+    }
+
+    #[test]
     fn a_non_rat_creature_is_realised_adjacent_to_the_session_actor() {
-        let (mut runtime, pin, session) = runtime_with_player();
+        let (mut runtime, pin, session) = runtime_with_player_and_policy(SPIDER);
         let (_, actor) = runtime
             .positioned_player_for_session(session)
             .expect("session read")
@@ -492,7 +627,7 @@ mod tests {
 
     #[test]
     fn an_unknown_creature_key_is_refused_before_any_placement() {
-        let (runtime, _, _) = runtime_with_player();
+        let (runtime, _, _) = runtime_with_player_and_policy(SPIDER);
         assert_eq!(require_policy(&runtime, SPIDER), Ok(()));
         let refused = require_policy(&runtime, "fixture:not_a_creature");
         assert_eq!(refused, Err(SpawnRefusal::UnknownCreature));

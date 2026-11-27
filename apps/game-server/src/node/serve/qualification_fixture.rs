@@ -409,13 +409,11 @@ async fn place(
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
     let source = wild_spawn::next_command_source()?;
     let mut runtime = owners.runtime.lock().await;
-    let mut plan = Some(wild_spawn::snapshot_adjacent_spawn(
-        owners.room,
-        native,
-        &mut runtime,
-        key,
-        session,
-    )?);
+    let mut plan = Some(if key == wild_spawn::C18A_RAT_FIXTURE {
+        wild_spawn::snapshot_c18a_rat(owners.room, native, &mut runtime, session)?
+    } else {
+        wild_spawn::snapshot_adjacent_spawn(owners.room, native, &mut runtime, key, session)?
+    });
     drop(runtime);
     let acquire_holder = async || {
         acquire_spawn_holder(root, budget.work_deadline)
