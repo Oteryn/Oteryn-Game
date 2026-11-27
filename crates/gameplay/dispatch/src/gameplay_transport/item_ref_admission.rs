@@ -13,7 +13,7 @@ use super::capabilities::{
 };
 use super::connection::UseCommand;
 use super::item_view::{
-    InventoryItems, ItemKey, ItemTargetObservation, UseItemTarget, ViewItem,
+    CorpseOpenRefusal, InventoryItems, ItemKey, ItemTargetObservation, UseItemTarget, ViewItem,
     inventory_from_backpack,
 };
 use super::world_spatial::{ActorPosition, ChannelEntity, VisibleKind};
@@ -24,8 +24,8 @@ use crate::content::item_ref::ItemDefinitionIndex;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
-    ItemStackClass, ItemTransferDestination, ItemTransferError, ItemTransferOutcome,
-    ItemTransferRequest, ItemWeightLookup, ItemWeightRefused,
+    CorpseContents, ItemStackClass, ItemTransferDestination, ItemTransferError,
+    ItemTransferOutcome, ItemTransferRequest, ItemWeightLookup, ItemWeightRefused,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
 use std::num::NonZeroU32;
@@ -388,49 +388,127 @@ pub(super) fn visible_corpses(
         .collect()
 }
 
-/// MAP-ITEM-REF-1 Part B: `USE` on a domain-1 object (ITEM-MOVE-WIRE-0 §4.3). Only a bound corpse
-/// is an item target; an unbound or vanished one is `Gone`, so no corpse Item id is ever made up.
-/// Its contents are the durable corpse entries, each named by the pinned index; any it does not
-/// name, or a failed read, is `None` (`STALE`).
+/// MAP-ITEM-REF-1 Part B: refresh an already-open domain 11 view after a move.
 pub(super) async fn observe_item_target(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     target: ItemKey,
 ) -> Option<ItemTargetObservation> {
+    observe_corpse(admission, actor, target, None).await.ok()
+}
+
+pub(super) async fn observe_corpse_for_use(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    target: ItemKey,
+) -> Result<ItemTargetObservation, CorpseOpenRefusal> {
+    observe_corpse(admission, actor, target, Some(command)).await
+}
+
+async fn observe_corpse(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    target: ItemKey,
+    command: Option<UseCommand>,
+) -> Result<ItemTargetObservation, CorpseOpenRefusal> {
+    use crate::durability::DurabilityError;
+    use CorpseOpenRefusal::{CorpseAbsent, DurableRead, HandleStale, NotOwner};
+
     let ItemKey::Entity(identity) = target else {
-        return None;
+        return Err(CorpseAbsent);
     };
-    let (position, corpse, index) = {
+    let (actor_at, corpse, index, viewer) = {
         let mut runtime = admission.runtime.lock().await;
-        let index = pinned_index(&runtime, admission.active_generation)?;
+        let viewer = if let Some(command) = command {
+            let fence = command.item_fence.ok_or(HandleStale)?;
+            let lease = runtime
+                .bound_attacker_lease(actor, command.game_session_id)
+                .map_err(|_| HandleStale)?;
+            if lease.character_id() != fence.character_id
+                || !lease.accepts_generation(fence.character_lease_generation)
+                || !runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return Err(HandleStale);
+            }
+            Some(fence.character_id)
+        } else {
+            None
+        };
+        let index = pinned_index(&runtime, admission.active_generation).ok_or(HandleStale)?;
         let position = runtime
             .borrow_movement_position()
             .read(actor)
-            .ok()?
+            .map_err(|_| HandleStale)?
             .position();
-        (position, runtime.bound_corpse(identity), index)
+        (
+            position,
+            runtime.bound_corpse(identity).ok_or(CorpseAbsent)?,
+            index,
+            viewer,
+        )
     };
-    let actor_position = ActorPosition {
-        x: position.x,
-        y: position.y,
-        floor: position.floor,
+    let actor = ActorPosition {
+        x: actor_at.x,
+        y: actor_at.y,
+        floor: actor_at.floor,
     };
-    let Some(corpse) = corpse else {
-        return Some(ItemTargetObservation {
-            actor: actor_position,
-            target: UseItemTarget::Gone,
-        });
+    let position = ActorPosition {
+        x: corpse.position.x,
+        y: corpse.position.y,
+        floor: corpse.position.floor,
     };
-    let Some(entries) = admission
-        .root
-        .read_corpse_contents(admission.character, corpse.item.item_instance_id)
-        .await
-        .ok()?
-    else {
-        return Some(ItemTargetObservation {
-            actor: actor_position,
-            target: UseItemTarget::Gone,
-        });
+    let entries = if let (Some(viewer), Some(command)) = (viewer, command) {
+        if !super::corpse_open::within_reach(actor, position) {
+            return Ok(ItemTargetObservation {
+                actor,
+                target: UseItemTarget::Corpse {
+                    position,
+                    contents: Vec::new(),
+                },
+            });
+        }
+        let budget = super::AdmissionRetryBudget::for_command(admission.root);
+        let mut waited = false;
+        loop {
+            match admission
+                .root
+                .read_corpse_contents_for_open(
+                    admission.character,
+                    corpse.item.item_instance_id,
+                    viewer,
+                    budget.deadline,
+                )
+                .await
+            {
+                Ok(CorpseContents::Open(entries)) => break entries,
+                Ok(CorpseContents::Absent) => return Err(CorpseAbsent),
+                Ok(CorpseContents::NotOwner) => return Err(NotOwner),
+                Err(ItemTransferError::Unavailable(DurabilityError::RootUnavailable)) => {
+                    if !waited && command.command_id != 0 {
+                        super::operator_event(&format!(
+                            "event=corpse_open_wait command_id={} cause=holder_busy budget_ms={}",
+                            command.command_id,
+                            super::COMMAND_HOLDER_WINDOW.as_millis(),
+                        ));
+                    }
+                    waited = true;
+                    if !budget.retries_holder_checkout().await {
+                        return Err(CorpseOpenRefusal::HolderBusy);
+                    }
+                }
+                Err(error) => return Err(DurableRead(error)),
+            }
+        }
+    } else {
+        admission
+            .root
+            .read_corpse_contents(admission.character, corpse.item.item_instance_id)
+            .await
+            .map_err(DurableRead)?
+            .ok_or(CorpseAbsent)?
     };
     let contents = entries
         .iter()
@@ -443,17 +521,11 @@ pub(super) async fn observe_item_target(
                 sub_type: 0,
             })
         })
-        .collect::<Option<Vec<_>>>()?;
-    Some(ItemTargetObservation {
-        actor: actor_position,
-        target: UseItemTarget::Corpse {
-            position: ActorPosition {
-                x: corpse.position.x,
-                y: corpse.position.y,
-                floor: corpse.position.floor,
-            },
-            contents,
-        },
+        .collect::<Option<Vec<_>>>()
+        .ok_or(DurableRead(DurabilityError::InvalidStoredState.into()))?;
+    Ok(ItemTargetObservation {
+        actor,
+        target: UseItemTarget::Corpse { position, contents },
     })
 }
 

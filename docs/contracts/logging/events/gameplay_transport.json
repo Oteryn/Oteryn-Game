@@ -266,6 +266,30 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "corpse_open_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "cause",
+        "detail"
+      ],
+      "codes": [],
+      "note": "Corpse USE refusal with the command id, typed cause and safe durability classification."
+    },
+    {
+      "event": "corpse_open_wait",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "cause",
+        "budget_ms"
+      ],
+      "codes": [],
+      "note": "Corpse USE is waiting within its command budget for the durability holder to return."
+    },
+    {
       "event": "drome_use_probe_failed",
       "level": "info",
       "span": false,
