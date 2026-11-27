@@ -464,10 +464,10 @@ async fn live<A: FreshAdmissionAuthority>(
     {
         observed(
             "sounds",
-            authority.observe_sounds(actor, admitted.game_session_id, u64::MAX),
+            authority.observe_presentation(actor, admitted.game_session_id, u64::MAX),
         )
         .await
-        .map_or(0, |(cursor, _)| cursor)
+        .map_or(0, |observation| observation.cursor)
     } else {
         0
     };

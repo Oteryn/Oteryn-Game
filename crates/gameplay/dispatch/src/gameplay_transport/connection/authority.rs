@@ -22,6 +22,14 @@ pub struct DepotObservation {
     pub items: Vec<(u64, [u8; 16])>,
 }
 
+/// The positional presentation journal and the decisions originating from item use.
+pub struct SoundObservation {
+    pub cursor: u64,
+    pub events: Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    /// Sorted decision ordinals originating from the item-effect journal.
+    pub item_effect_decisions: Vec<u32>,
+}
+
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
@@ -88,18 +96,31 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
-    fn observe_sounds(
+    fn observe_presentation(
         &self,
         _actor: ExactActorRef,
         _session: GameSessionId,
         _after: u64,
+    ) -> impl Future<Output = Option<SoundObservation>> {
+        async { None }
+    }
+
+    #[cfg(test)]
+    fn observe_sounds(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
     ) -> impl Future<
         Output = Option<(
             u64,
             Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
         )>,
     > {
-        async { None }
+        async move {
+            let observation = self.observe_presentation(actor, session, after).await?;
+            Some((observation.cursor, observation.events))
+        }
     }
 
     /// Native movement effects committed by special-tile entry after `after`.

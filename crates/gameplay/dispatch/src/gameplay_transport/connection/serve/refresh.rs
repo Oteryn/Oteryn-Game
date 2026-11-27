@@ -839,8 +839,12 @@ where
     if !presentation_selected && !ambient_selected && !item_selected {
         return Ok(());
     }
-    let Some((cursor, mut events)) = authority
-        .observe_sounds(
+    let Some(crate::gameplay_transport::connection::SoundObservation {
+        cursor,
+        mut events,
+        item_effect_decisions,
+    }) = authority
+        .observe_presentation(
             session.actor,
             session.admitted.game_session_id,
             session.sound_cursor,
@@ -861,18 +865,18 @@ where
     if session.selected_capabilities.contains(290) {
         authority.cast_effects(session.admitted, &events).await;
     }
-    let item_events: Vec<_> = events
-        .iter()
-        .copied()
-        .filter(|event| {
-            item_selected && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
-        })
-        .collect();
+    let mut item_events = Vec::new();
     events.retain(|event| {
+        if item_selected
+            && item_effect_decisions
+                .binary_search(&event.decision_ordinal)
+                .is_ok()
+        {
+            item_events.push(*event);
+            return false;
+        }
         presentation_selected
             && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
-            && !(item_selected
-                && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
     });
     if !events.is_empty() {
         let payload =

@@ -10,6 +10,97 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 use oteryn_protocol_oteryn::actor_spell::{STATE_DOMAIN_ACTOR_VITALS, decode_actor_vitals};
 
 #[test]
+fn spent_soul_survives_logout_and_is_sent_in_the_next_login_snapshot() -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::foundation::{MessageType, decode_wire_envelope};
+    use crate::gameplay_transport::connection::{AdmittedSession, ControllerBinding, LogoutReply};
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        let h = Harness::create_with_admission_seed(admin, "soul_relog", false, false).await?;
+        let request = prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let deps = Dependencies::new()?;
+        let owner = deps.owner(&h, &authority);
+        admit(&owner, &deps, &request).await?;
+        let mut admitted = deps.admitted;
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        let actor = deps.actor;
+        let session = admitted.game_session_id;
+        let fence = owner.current_quest_fence(session).await.map_err(|()| "login fence")?
+            .ok_or("login fence")?;
+        assert!(owner.track_restored(
+            session, actor, &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin, fence
+        ));
+        let expected = {
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states.get_mut(&runtime, actor, session).ok_or("login vitals")?;
+            state.facts.max_mana = 300;
+            state.restore_saved_vitals(state.vitals().health, 300);
+            let initial = state.vitals().soul;
+            let (paid, _) = state.prepare_gem_enchanting(1, owner.owner_now().get())
+                .ok_or("enchanting soul payment")?;
+            let expected = paid.vitals().soul;
+            assert!(expected < initial);
+            assert!(states.commit(&runtime, actor, session, paid));
+            expected
+        };
+        assert_eq!(
+            owner.logout_session(admitted).await,
+            LogoutReply::Result(LogoutResult::Accepted)
+        );
+
+        let (session, request) = super::full_world_support::relogin_request(&h).await?;
+        let store = FreshAdmissionStore::from_root(h.root.clone());
+        let current = store.current_session(session).await?;
+        let transport = current.current_transport().ok_or("successor transport")?;
+        let actor = {
+            let mut runtime = deps.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            runtime.commit_fresh_session(reservation).map_err(debug)?
+        };
+        let (first_entry, item_fence, _) =
+            Box::pin(owner.initialize_first_entry(&request, session, transport, actor)).await;
+        assert_eq!(first_entry, FirstEntryOutcome::Positioned);
+        let successor = AdmittedSession {
+            game_session_id: session,
+            runtime_actor: Some(actor),
+            item_fence,
+            first_entry,
+            controller: Some(ControllerBinding { transport, account_id: id(40) }),
+            ..admitted
+        };
+        let (_, output) = super::weather_wire_fixtures::fixture_access::serve_input(
+            &owner, successor, &[]
+        ).await?;
+        let mut frames = output.as_slice();
+        let mut soul = None;
+        while !frames.is_empty() {
+            let length = u32::from_be_bytes(frames.get(..4).ok_or("frame length")?.try_into()?) as usize;
+            let envelope = decode_wire_envelope(frames.get(4..4 + length).ok_or("frame")?).map_err(debug)?;
+            frames = &frames[4 + length..];
+            if envelope.message_type() == MessageType::SnapshotChunk {
+                for domain in oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload()).map_err(debug)?.1 {
+                    if domain.domain_id == STATE_DOMAIN_ACTOR_VITALS {
+                        soul = Some(decode_actor_vitals(domain.payload).map_err(debug)?.soul);
+                    }
+                }
+            }
+        }
+        assert_eq!(soul, Some(expected));
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
+#[test]
 fn bed_regen_admission_wire_replay_and_restart_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("bed-regen-wire", || scenario(false))
 }
