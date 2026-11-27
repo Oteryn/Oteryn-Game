@@ -35,14 +35,7 @@ impl KosheiVisitClaim {
     }
 
     pub(in crate::gameplay_transport) fn holds(&self, runtime: &ChannelRuntimeV1) -> bool {
-        !self.retired()
-            && match runtime.present_player_lease(self.actor) {
-                Ok(current) => current == (self.session, self.lease),
-                // A transient write fence alone does not abandon a present player.
-                Err(_) => runtime
-                    .player_control_facts(self.actor, self.session)
-                    .is_ok(),
-            }
+        !self.retired() && runtime.player_slot_matches_lease(self.actor, self.session, self.lease)
     }
 
     pub(in crate::gameplay_transport) fn retire_respawned(
@@ -51,10 +44,7 @@ impl KosheiVisitClaim {
         actor: ExactActorRef,
         session: GameSessionId,
     ) {
-        if self.actor == actor
-            && self.session == session
-            && runtime.present_player_lease(actor) == Ok((session, self.lease))
-        {
+        if self.actor == actor && self.session == session && self.holds(runtime) {
             self.retired.store(true, Ordering::Relaxed);
         }
     }

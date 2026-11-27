@@ -46,6 +46,27 @@ impl ChannelRuntimeV1 {
         self.carrier
             .bound_attacker_lease(&self.continuity, actor.0, game_session_id)
     }
+    /// Compare a projection's lease with its committed player slot. An in-flight
+    /// write fence preserves this identity. Writes still require an unfenced lease.
+    pub fn player_slot_matches_lease(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        lease: CharacterLease,
+    ) -> bool {
+        if self.owner_fence().is_err() {
+            return false;
+        }
+        let Ok(index) = self
+            .carrier
+            .player_slot_index(&self.continuity, actor.0, game_session_id)
+        else {
+            return false;
+        };
+        self.carrier
+            .attacker_authority(index, actor.0.actor_local_generation.0)
+            .is_some_and(|authority| authority.lease == Some(lease))
+    }
     /// Read the lease of a physically present player, including reconnect grace.
     /// This is roster evidence. Damage writes still require an unfenced attacker.
     pub fn present_player_lease(
