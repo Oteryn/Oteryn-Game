@@ -4,7 +4,7 @@ use super::super::super as transport;
 use super::super::{
     AdmittedSession, CAPABILITY_ITEM_USE_V1, ContainerObservation, ContainerViewOutcome,
     ContainerViewState, ExactActorRef, FreshAdmissionAuthority, ItemKey, OpenDecision, PendingOpen,
-    SessionItemView, SessionVisibility, UseCommand, UseIntent, UseOutcome, UseTarget,
+    SessionItemView, SessionVisibility, UseCommand, UseDisposition, UseIntent, UseOutcome, UseTarget,
     decode_use_intent_target,
 };
 use super::Dispatch;
@@ -23,6 +23,58 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    let requested_handle = match decoded.as_ref().map(|intent| &intent.target) {
+        Ok(UseTarget::Item(handle)) => handle.get(),
+        _ => 0,
+    };
+    let command_id = command.command_id;
+    let connection_generation = admitted.continuity.connection_generation;
+    let server_sequence = admitted.continuity.server_sequence;
+    let last_handle = item_view.as_ref().map_or(0, |view| view.table().last_issued());
+    let note_stale = |stage: &str| {
+        transport::operator_event(&format!(
+            "event=item_use_view_stale stage={stage} command_id={command_id} server_sequence={server_sequence} connection_generation={connection_generation} requested_handle={requested_handle} last_handle={last_handle}"
+        ));
+    };
+    let owner_result = |stage, outcome: UseOutcome| {
+        if outcome.disposition == UseDisposition::StaleState {
+            note_stale(stage);
+        }
+        Dispatch::Use(outcome)
+    };
+
+    // A live, published corpse has its own read-only owner. In particular an
+    // activity Instance must not send its corpse to the House item owner just
+    // because both have an Instance fence. Retired handles still reach receipts.
+    if let Ok(UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }) = &decoded
+        && let Some(view) = item_view.as_mut()
+        && let Some(key @ ItemKey::Entity(identity)) = view.resolve(*handle)
+        && visibility.as_ref().is_some_and(|shown| shown.shows_corpse(identity))
+    {
+        let use_command = UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id,
+            item_fence: admitted.item_fence,
+        };
+        if !authority.player_trade_item_available(actor, use_command, Some(key)).await? {
+            return Some(Dispatch::Use(UseOutcome::rejected()));
+        }
+        let Some(observation) = authority.observe_item_target(actor, key).await else {
+            note_stale("item_observation");
+            return Some(Dispatch::UseItem(OpenDecision::StaleState, None));
+        };
+        let (decision, delta) = view.open(key, observation).ok()?;
+        admitted.continuity.item_view = view.continuity();
+        if decision == OpenDecision::StaleState {
+            note_stale("corpse_gone");
+        }
+        return Some(Dispatch::UseItem(decision, delta));
+    }
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
     // Preserve the same timeout/unknown close used by receipt-backed Item actions.
@@ -48,7 +100,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .ok()?
         .ok()?
     {
-        return Some(Dispatch::Use(outcome));
+        return Some(owner_result("event_world_object", outcome));
     }
     if admitted
         .continuity
@@ -88,7 +140,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .ok()?
         .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            return Some(owner_result("drome_cube", outcome));
         }
     }
     if let Ok(intent) = &decoded {
@@ -140,7 +192,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .server_modal_offer_bed(*admitted, intent.target.clone(), resolved)
             .await
         {
-            return Some(Dispatch::Use(outcome));
+            return Some(owner_result("bed_modal", outcome));
         }
     }
     // A map handle reaches only its explicit world owner. It never widens the
@@ -172,7 +224,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .await
         .ok()?
     {
-        return Some(Dispatch::Use(outcome));
+        return Some(owner_result("map_item", outcome));
     }
     // The shared item-action owner also admits equipped hats and player-targeted toys.
     // Map and position uses must reach their own receipt probes before an unrelated
@@ -218,7 +270,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .ok()?
         .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            return Some(owner_result("event_item", outcome));
         }
     }
     if let Ok(intent) = &decoded {
@@ -250,7 +302,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .ok()?
         .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            return Some(owner_result("soul_war_source", outcome));
         }
     }
     if let Ok(intent) = &decoded
@@ -290,7 +342,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .ok()?
             .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            return Some(owner_result("quest_tool", outcome));
         }
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
@@ -313,7 +365,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .ok()?
         .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            return Some(owner_result("mount_taming", outcome));
         }
     }
     // Direct USE can open a reachable container even with rune USE selected.
@@ -366,7 +418,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         authority.use_dispenser_action(actor,UseCommand{game_session_id:admitted.game_session_id,
                             command_id:command.command_id,item_fence:admitted.item_fence},intent.clone(),source,target))
                         .await.ok()?.ok()? {
-                    return Some(Dispatch::Use(outcome));
+                    return Some(owner_result("dispenser", outcome));
                 }
                 // Carried targets otherwise enter the pick owner directly. Probe W07
                 // here, including historical receipts whose source handle was retired.
@@ -379,19 +431,19 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         intent.clone(), source, target,
                     ),
                 ).await.ok()?.ok()? {
-                    return Some(Dispatch::Use(outcome));
+                    return Some(owner_result("soulpit", outcome));
                 }
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority.use_coin_converter(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await.ok()?
-                { return Some(Dispatch::Use(outcome)); }
+                { return Some(owner_result("coin_converter", outcome)); }
                 if let Some(outcome) = authority.use_consume_transform(
                     actor,
                     UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence },
                     intent.clone(), source, target,
-                ).await { return Some(Dispatch::Use(outcome)); }
+                ).await { return Some(owner_result("consume_transform", outcome)); }
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority.use_proficiency_catalyst(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await.ok()?
-                { return Some(Dispatch::Use(outcome)); }
+                { return Some(owner_result("proficiency_catalyst", outcome)); }
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority
                         .use_fluid_container(
@@ -406,7 +458,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         )
                         .await
                 {
-                    return Some(Dispatch::Use(outcome));
+                    return Some(owner_result("fluid_container", outcome));
                 }
                 if let Some(outcome) = authority
                     .use_imbuement_item(
@@ -422,7 +474,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     )
                     .await
                 {
-                    return Some(Dispatch::Use(outcome));
+                    return Some(owner_result("imbuement", outcome));
                 }
                 if let (
                     Some(source),
@@ -441,7 +493,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         )
                         .await
                 {
-                    return Some(Dispatch::Use(outcome));
+                    return Some(owner_result("key_on_door", outcome));
                 }
                 if let (
                     Some(source),
@@ -460,21 +512,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         )
                         .await
                 {
-                    return Some(Dispatch::Use(outcome));
+                    return Some(owner_result("fluid_on_map", outcome));
                 }
                 if let Some(outcome) = transport::house_destroy::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,
                     item_fence: admitted.item_fence,
                 }, intent.clone(), item_view.as_ref()).await {
-                    return Some(Dispatch::Use(outcome));
+                    return Some(owner_result("house_destroy", outcome));
                 }
                 match transport::mining::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,
                     item_fence: admitted.item_fence,
                 }, intent, item_view.as_ref()).await {
-                    Some(outcome) => Dispatch::Use(outcome),
+                    Some(outcome) => owner_result("mining", outcome),
                     None => return None,
                 }
             }
@@ -491,7 +543,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 intent, item_view.as_ref(), visibility.as_ref(),
                 &admitted.continuity.selected_capabilities,
             ).await {
-                Some(outcome) => Dispatch::Use(outcome),
+                Some(outcome) => owner_result("rune_bridge", outcome),
                 None => return None,
             },
             // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
@@ -522,7 +574,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     item_fence: admitted.item_fence,
                 }, definition).await;
                 if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
-                Dispatch::Use(outcome)
+                owner_result("item_by_definition", outcome)
             },
             // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
             // call; opening writes nothing.
@@ -533,17 +585,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => {
                 let key = item_view.as_ref().and_then(|view| view.resolve(handle));
-                let command_id = command.command_id;
-                let connection_generation = admitted.continuity.connection_generation;
-                let server_sequence = admitted.continuity.server_sequence;
-                let last_handle = item_view.as_ref().map_or(0, |view| view.table().last_issued());
-                let stale = |stage: &str| {
-                    transport::operator_event(&format!(
-                        "event=item_use_view_stale stage={stage} command_id={command_id} server_sequence={server_sequence} connection_generation={connection_generation} requested_handle={handle} last_handle={last_handle}"
-                    ));
-                    OpenDecision::StaleState
-                };
                 let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
+                let container_gone = matches!(container, Some(ContainerObservation::Gone));
                 let container = container.filter(|_| opens_container);
                 // BAGS-USE-1: a carried entry of an open view can be used under capability
                 // 15. The owner revalidates custody before PREPARE; equipped sources fail closed.
@@ -578,7 +621,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             ),
                         ).await.ok().flatten()?;
                         if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
-                        Dispatch::Use(outcome)
+                        owner_result("item_completion", outcome)
                     },
                     (Some(view), Some(key), _) if container.is_some() => {
                         let views = container_views.as_mut()?;
@@ -592,7 +635,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                                 ContainerViewOutcome::Opened => OpenDecision::Open,
                                 ContainerViewOutcome::TooFar => OpenDecision::TooFar,
                                 ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
-                                    stale("container_view")
+                                    { note_stale("container_view"); OpenDecision::StaleState }
                                 }
                                 ContainerViewOutcome::NotAContainer
                                 | ContainerViewOutcome::TooManyViews => {
@@ -609,14 +652,20 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             return None;
                         };
                         if decision == OpenDecision::StaleState {
-                            stale("corpse_gone");
+                            note_stale("corpse_gone");
                         }
                         Dispatch::UseItem(decision, delta)
                     }
-                    _ => Dispatch::UseItem(
-                        stale(if key.is_none() { "handle_resolution" } else { "item_observation" }),
-                        None,
-                    ),
+                    _ => {
+                        note_stale(if key.is_none() {
+                            "handle_resolution"
+                        } else if container_gone {
+                            "container_observation"
+                        } else {
+                            "item_observation"
+                        });
+                        Dispatch::UseItem(OpenDecision::StaleState, None)
+                    }
                 }
             }
             Ok(UseIntent {
@@ -624,7 +673,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with: None,
                 use_with_map_item: None,
                 use_with_position: None,
-            }) => Dispatch::Use(
+            }) => owner_result(
+                "world_object",
                 authority
                     .use_object(
                         actor,

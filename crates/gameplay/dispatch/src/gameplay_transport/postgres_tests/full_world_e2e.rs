@@ -318,7 +318,8 @@ fn scenario() -> TestResult {
                 input.extend(frame);
             }
             let (end, output) =
-                super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input).await?;
+                super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input)
+                    .await?;
             let mut replies = Vec::new();
             let mut cursor = output.as_slice();
             while !cursor.is_empty() {
@@ -456,6 +457,13 @@ fn scenario() -> TestResult {
                 "default training survives logout and relogin"
             );
             assert_eq!(position(&owner, next_actor).await?, LOCKER_CELL);
+            let mut first_corpse_view = successor;
+            first_corpse_view.continuity =
+                crate::gameplay_transport::connection::SessionContinuity::FRESH;
+            first_corpse_view.continuity.selected_capabilities =
+                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 14, 15])
+                    .ok_or("corpse view capabilities")?;
+            open_corpse_from_relog_snapshot(&owner, first_corpse_view, corpse.identity).await?;
             let relogged = ledger(&h).await?;
             assert_eq!(relogged, deposited, "relogin moves no value");
             let depot_view = owner
@@ -515,4 +523,113 @@ fn scenario() -> TestResult {
             h.cleanup().await
         }
     )
+}
+
+/// Do not predict the handle from the server table. Send the first USE on the
+/// replacement connection using only the corpse entry in its committed snapshot.
+async fn open_corpse_from_relog_snapshot(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    corpse: [u8; 16],
+) -> TestResult {
+    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn::{
+        self as wire, CommandStatus, MessageType,
+        item_view::{STATE_DOMAIN_OPEN_CONTAINER, decode_open_container},
+        world_object::{UseDisposition, decode_use_result, encode_use_item_intent},
+        world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+        world_spatial_entities::{
+            EntityDetail, EntityKind, decode_world_spatial_entities_snapshot_with_item_handles,
+        },
+    };
+    use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
+
+    async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
+        let length = usize::try_from(client.read_u32().await?)?;
+        let mut frame = vec![0; length];
+        client.read_exact(&mut frame).await?;
+        Ok(frame)
+    }
+
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serve = async move {
+        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+    };
+    let open = async move {
+        let mut body = Vec::new();
+        loop {
+            let frame = read(&mut client).await?;
+            let envelope = wire::decode_wire_envelope(&frame).map_err(debug)?;
+            match envelope.message_type() {
+                MessageType::SnapshotBegin => {}
+                MessageType::SnapshotChunk => {
+                    let (_, chunk) =
+                        wire::decode_snapshot_chunk_framing(envelope.payload()).map_err(debug)?;
+                    body.extend_from_slice(chunk);
+                }
+                MessageType::SnapshotCommit => break,
+                other => return Err(format!("unexpected relog frame: {other:?}").into()),
+            }
+        }
+        let domains = wire::decode_snapshot_body(&body).map_err(debug)?;
+        let spatial = domains
+            .iter()
+            .find(|domain| domain.domain_id == STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY)
+            .ok_or("relog spatial snapshot")?;
+        let snapshot = decode_world_spatial_entities_snapshot_with_item_handles(spatial.payload)
+            .map_err(debug)?;
+        let handle = snapshot
+            .entities
+            .iter()
+            .find(|entity| entity.kind == EntityKind::Corpse && entity.entity.identity == corpse)
+            .and_then(|entity| match entity.detail {
+                EntityDetail::Object { item_handle, .. } => item_handle,
+                _ => None,
+            })
+            .ok_or("the same Rat corpse must have a handle in the relog snapshot")?;
+        let command_id = admitted.continuity.next_command_id;
+        let payload = encode_use_item_intent(handle);
+        let command = wire::encode_client_command(
+            admitted.continuity.connection_generation,
+            &wire::ClientCommandValue {
+                command_id,
+                command_type: wire::world_object::COMMAND_TYPE_USE_INTENT,
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
+        client.write_u32(u32::try_from(command.len())?).await?;
+        client.write_all(&command).await?;
+        let mut committed = false;
+        loop {
+            let frame = read(&mut client).await?;
+            let envelope = wire::decode_wire_envelope(&frame).map_err(debug)?;
+            match envelope.message_type() {
+                MessageType::CommandResult => {
+                    let result = wire::decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(result.command_id, command_id);
+                    assert_eq!(
+                        (
+                            result.status,
+                            decode_use_result(result.payload).map_err(debug)?
+                        ),
+                        (CommandStatus::Accepted, UseDisposition::Committed),
+                    );
+                    committed = true;
+                }
+                MessageType::StateDelta if committed => {
+                    let delta = wire::decode_state_delta(envelope.payload()).map_err(debug)?;
+                    if delta.domain_id == STATE_DOMAIN_OPEN_CONTAINER {
+                        let opened = decode_open_container(delta.payload).map_err(debug)?;
+                        assert_eq!(opened.container_handle, Some(handle));
+                        return Ok(());
+                    }
+                }
+                MessageType::ProtocolError => return Err("relog USE closed the connection".into()),
+                _ => {}
+            }
+        }
+    };
+    let ((), result) = tokio::join!(serve, open);
+    result
 }
