@@ -550,6 +550,10 @@ pub(super) fn place(
                         || super::daily_world_changes::retain_bundle_npc(daily, npc)
                 });
             }
+            table.npcs.retain(|npc| {
+                !conditional::seasonal_merchant(&npc.key)
+                    && !event_contacts::owns_presence(&npc.key)
+            });
             let unix_ms = crate::world_clock::now_utc_ms()
                 .and_then(|now| i64::try_from(now).ok())
                 .unwrap_or(0);
@@ -780,20 +784,7 @@ pub(crate) mod tests {
         Ok(())
     }
 
-    #[test]
-    fn rottin_wood_boots_from_repository_npc_placement() -> Result<(), Box<dyn std::error::Error>> {
-        assert_repository_npc_boots("oteryn:npc.rottin_wood", (32_652, 32_201, 7))
-    }
-
-    #[test]
-    fn dorian_boots_on_global_floor_eight() -> Result<(), Box<dyn std::error::Error>> {
-        assert_repository_npc_boots("oteryn:npc.dorian", (32_318, 32_209, 8))
-    }
-
-    fn assert_repository_npc_boots(
-        key: &str,
-        (x, y, floor): (u16, u16, i16),
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn repository_npc_boot(x: u16, y: u16) -> Result<Option<NpcBoot>, Box<dyn std::error::Error>> {
         use crate::content::{
             NpcDataCatalogue, capture_world_project, npc_catalogue_preproduction_limits,
         };
@@ -823,12 +814,58 @@ pub(crate) mod tests {
         let snapshot = capture_world_project(&content, OsStr::new("world"), limits)?;
         let catalogue = NpcDataCatalogue::from_project(snapshot, limits.project)?;
         let frame = read(&compiled.bytes).map_err(|error| error.to_string())?;
-        let boot = prepare(
+        Ok(prepare(
             Some(frame),
             Some((&catalogue, &content.join("world"))),
             false,
         )
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| error.to_string())?)
+    }
+
+    #[test]
+    fn chip_is_absent_at_bundle_boot_when_lumberjack_is_inactive()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let chip = "oteryn:npc.chip";
+        let boot = repository_npc_boot(32418, 31702)?;
+        let Some(NpcBoot::Place { table, .. }) = boot.as_ref() else {
+            return Err("repository NPC bundle did not bind".into());
+        };
+        assert!(table.npcs.iter().any(|npc| {
+            npc.key == chip
+                && npc
+                    .placements
+                    .iter()
+                    .any(|p| (p.x, p.y, p.floor) == (32418, 31702, -7))
+        }));
+        let mut runtime = channel_runtime_with(128);
+        let mut contacts = event_contacts::EventContacts::admit(boot.as_ref(), |_| true);
+        assert!(
+            !contacts.is_empty(),
+            "Chip's event contact must be admitted"
+        );
+        place(&mut runtime, boot.as_ref(), None).map_err(|error| error.to_string())?;
+        contacts
+            .tick(&mut runtime)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(!timed_keys(&runtime).contains(&chip));
+        Ok(())
+    }
+
+    #[test]
+    fn rottin_wood_boots_from_repository_npc_placement() -> Result<(), Box<dyn std::error::Error>> {
+        assert_repository_npc_boots("oteryn:npc.rottin_wood", (32_652, 32_201, 7))
+    }
+
+    #[test]
+    fn dorian_boots_on_global_floor_eight() -> Result<(), Box<dyn std::error::Error>> {
+        assert_repository_npc_boots("oteryn:npc.dorian", (32_318, 32_209, 8))
+    }
+
+    fn assert_repository_npc_boots(
+        key: &str,
+        (x, y, floor): (u16, u16, i16),
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let boot = repository_npc_boot(x, y)?;
         let mut runtime = channel_runtime_with(128);
         place(&mut runtime, boot.as_ref(), None).map_err(|error| error.to_string())?;
         let visible = runtime.visible_entities();
@@ -935,6 +972,80 @@ pub(crate) mod tests {
             ])
         );
         assert_eq!(runtime.visible_entities().npcs.len(), 19);
+    }
+
+    #[test]
+    fn lumberjack_contact_requires_the_admitted_chip_and_source_tile() {
+        let boot = timed_boot(&["oteryn:npc.chip"]);
+        let checked = std::cell::Cell::new(None);
+        let contacts = event_contacts::EventContacts::admit(Some(&boot), |tile| {
+            checked.set(Some(tile));
+            true
+        });
+        assert!(!contacts.is_empty());
+        assert_eq!(
+            checked.get(),
+            Some(crate::map::overlay::TilePos {
+                x: 32418,
+                y: 31702,
+                floor: -7
+            })
+        );
+        assert!(event_contacts::EventContacts::admit(Some(&boot), |_| false).is_empty());
+        assert!(event_contacts::EventContacts::admit(None, |_| true).is_empty());
+    }
+
+    #[test]
+    fn seasonal_shops_use_the_reset_calendar_and_donor_anchors() {
+        let stan = "oteryn:npc.stan";
+        let valentina = "oteryn:npc.valentina";
+        let mut boot = timed_boot(&[stan, valentina]);
+        if let NpcBoot::Place { table, .. } = &mut boot {
+            table.npcs = vec![NpcPlacements {
+                key: stan.into(),
+                placements: vec![NpcPlacement {
+                    x: 32944,
+                    y: 32110,
+                    floor: -6,
+                    direction: MovementFacing::South,
+                }],
+            }];
+        }
+        for (month, day, expected) in [
+            (1, 31, &[][..]),
+            (2, 1, &[(stan, 32944, 32110, 6)][..]),
+            (
+                2,
+                14,
+                &[(stan, 32944, 32110, 6), (valentina, 32271, 32052, 7)][..],
+            ),
+            (2, 15, &[(stan, 32944, 32110, 6)][..]),
+            (3, 1, &[][..]),
+        ] {
+            let mut runtime = channel_runtime_with(8);
+            place(&mut runtime, Some(&boot), None).expect("load bundle placements");
+            assert!(runtime.visible_entities().npcs.is_empty());
+            let mut timed = TimedNpcSpawns::from_boot(Some(&boot))
+                .with_seasonal(Some(&boot), &[], |_| true)
+                .with_calendar(Some((month, day)));
+            timed.reconcile(&mut runtime, 720).expect("first placement");
+            timed.reconcile(&mut runtime, 0).expect("idempotent retry");
+            let mut actual = runtime
+                .visible_entities()
+                .npcs
+                .into_iter()
+                .map(|npc| {
+                    (
+                        runtime.npc_key(npc.actor).expect("source actor"),
+                        npc.position.x,
+                        npc.position.y,
+                        npc.position.floor,
+                    )
+                })
+                .collect::<Vec<_>>();
+            actual.sort_unstable();
+            assert_eq!(actual, expected, "calendar date {month}/{day}");
+        }
     }
 
     #[test]

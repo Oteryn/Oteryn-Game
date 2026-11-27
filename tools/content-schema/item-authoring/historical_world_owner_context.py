@@ -116,10 +116,39 @@ def original_soulpit(root):
     return predecessor
 
 
+def without_traversal(root, family, raw):
+    """Verify the closed traversal shard before replaying its predecessor marker."""
+    directory = Path(__file__).resolve().parents[1] / "world-object-authoring"
+    sys.path.insert(0, str(directory))
+    from activity_static import (
+        TRAVERSAL_NOTES,
+        TRAVERSAL_SHARDS,
+        traversal_records,
+        traversal_shard,
+    )
+
+    marker = json.loads(raw)
+    note = TRAVERSAL_NOTES[family]
+    shard = root / TRAVERSAL_SHARDS[family]
+    if not marker["notes"].endswith(note) and not shard.exists():
+        return raw
+    rows = traversal_records(root)[0][family]
+    if (
+        not marker["notes"].endswith(note)
+        or not shard.is_file()
+        or shard.read_bytes() != traversal_shard(family, rows)
+        or (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw
+    ):
+        raise ValueError("source digest drift: Crystal traversal witness")
+    marker["notes"] = marker["notes"].removesuffix(note)
+    return (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
+
+
 def original_marker(root):
     """Recover the exact old marker after independently qualified owner additions."""
     root = Path(root)
     raw = (root / MARKER).read_bytes()
+    raw = without_traversal(root, "Terrain", raw)
     # Later publishers compose their annotations after Sugar and move Soulpit
     # to the end. Recover only the frozen receipt's annotation order; the hash
     # checks below still require every byte of the original marker.

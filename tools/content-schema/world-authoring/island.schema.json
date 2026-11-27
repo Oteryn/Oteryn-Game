@@ -99,7 +99,7 @@
     "anchor_source": {
       "type": "string",
       "maxLength": 128,
-      "pattern": "^(crystalserver-npc:[^:]+|crystalserver-monster:[^:]+|teleport:oteryn:transition\\.teleport\\.x[0-9]+_y[0-9]+_z[0-9]+)$"
+      "pattern": "^(crystalserver-npc:[^:]+|crystalserver-monster:[^:]+|area:oteryn:content\\.area\\.subregion\\.[a-z0-9_]+|teleport:oteryn:transition\\.teleport\\.x[0-9]+_y[0-9]+_z[0-9]+)$"
     },
     "additional_component": {
       "type": "object",
@@ -404,7 +404,10 @@
                 "type": "object",
                 "additionalProperties": false,
                 "required": ["file", "name", "x", "y", "z"],
+                "dependentRequired": { "revision": ["sha256"], "sha256": ["revision"] },
                 "properties": {
+                  "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+                  "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
                   "file": { "enum": ["data-global/world/world-monster.xml", "data-global/world/world-npc.xml"] },
                   "name": { "type": "string", "minLength": 1, "maxLength": 64 },
                   "x": { "$ref": "#/$defs/u16" },

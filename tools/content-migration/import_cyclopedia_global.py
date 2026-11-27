@@ -696,12 +696,30 @@ def apply_trades(declarations, rows, identities, counts):
                     captures[shop][identifier, direction][currency, offer["price"]] += 1
 
     for shop, service in services.items():
+        captured_offers = captures[shop]
+        # Crystal 201189f8, data-global/npc/stan.lua:55-59, bounds this seasonal shop.
+        if shop == f"{TRADE_PREFIX}stan":
+            donor_offers = {
+                (654, "SellToPlayer"),
+                (6572, "SellToPlayer"),
+                (6578, "SellToPlayer"),
+            }
+            service["offers"] = [
+                offer
+                for offer in service["offers"]
+                if (item_id(offer["item"]), offer["direction"]) in donor_offers
+            ]
+            captured_offers = {
+                key: offers
+                for key, offers in captured_offers.items()
+                if key in donor_offers
+            }
         wrap_subtypes = qualified_wraps(service, rows)
         by_row = defaultdict(list)
         for offer in service["offers"]:
             by_row[item_id(offer["item"]), offer["direction"]].append(offer)
         changed = False
-        for (identifier, direction), captured in captures[shop].items():
+        for (identifier, direction), captured in captured_offers.items():
             if identifier in FLUID_CONTAINERS:
                 # The client trade rows supply Item identity and price without
                 # variant evidence. Keep the independently qualified offers.

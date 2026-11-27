@@ -1033,6 +1033,15 @@ class QuestRewards(unittest.TestCase):
         )
         callbacks = [c for c in merged if c not in full_outfit]
         callbacks += self.l13_callbacks["callbacks"] + battle_mage["callbacks"]
+        numbered_keys = json.loads(
+            (q.ROOT / "tools/content-schema/quest-authoring/cwdoor-npc-keys.json").read_bytes()
+        )["callbacks"]
+        numbered_ids = {callback["key"] for callback in numbered_keys}
+        self.assertEqual(
+            sorted((callback for callback in callbacks if callback["key"] in numbered_ids), key=lambda callback: callback["key"]),
+            sorted(numbered_keys, key=lambda callback: callback["key"]),
+        )
+        callbacks = [callback for callback in callbacks if callback["key"] not in numbered_ids]
         self.assertEqual(
             {
                 c["key"].split("/")[-1]

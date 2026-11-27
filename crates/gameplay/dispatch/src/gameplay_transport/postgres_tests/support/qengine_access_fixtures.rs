@@ -748,6 +748,7 @@ async fn wardrobe(
         achievement_progress: vec![],
         reply: vec![],
         failure_reply: vec![],
+        failure_topic: None,
 
         sources: vec![],
     };

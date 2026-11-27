@@ -177,9 +177,13 @@ impl super::DurabilityRoot {
                     };
                     let value: Option<i64> = sqlx::query_scalar(
                         "SELECT value FROM game_character_quest_tracks \
-                         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+                         WHERE character_id=encode($1,'hex')::uuid \
+                         AND ((track_key=$2 AND quest_key=$3) OR track_key=$4) \
+                         ORDER BY (track_key=$2) DESC LIMIT 1",
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
-                        .bind(&callback.quest).fetch_optional(&mut *tx).await?;
+                        .bind(&callback.quest)
+                        .bind(oteryn_gameplay_quests::quest::world_callbacks::phase::legacy_read_track(storage))
+                        .fetch_optional(&mut *tx).await?;
                     let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
                         .or_else(|| venore_predecessor::inherited_value(&storage.track, &legacy))
                         .unwrap_or(track.initial);

@@ -926,9 +926,9 @@
           "url": "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
         }
       ],
-      "reason": "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent.",
+      "reason": "The W15 90-permille reset decision controls the native Chip placement. The felled-tree variant, shared report transition and wood sale remain unbound.",
       "missing_facts": [
-        "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent."
+        "The W15 90-permille reset decision controls the native Chip placement. The felled-tree variant, shared report transition and wood sale remain unbound."
       ],
       "trigger": {
         "kind": "at_reset",

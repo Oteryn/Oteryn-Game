@@ -140,9 +140,11 @@ map or the wiki changes.
   33839,31223), Ingol (Hawkhurst Ingol 33710,32602), Oskayaat (Tonar Oskayaat 33068,32917),
   Isle of the Mists (destination of the committed teleport at 32831,32294,
   32858,32336), Robson's Isle (Lunch 32527,32029 on floor 14, `underground`, the enclosed
-  2,080 tile water-bounded floor-14 component). Not imported: Dwacatra (its floor-13/14
-  pockets are void-bounded, no enclosure), Travora (no map tile),
-  Redbone Castle (inside Draconia), Isle of Merriment (test server only). Temple of Light is an
+  2,080 tile water-bounded floor-14 component), Dwacatra (Cyclops at 32588,31917,14,
+  2,696 tiles enclosed by lava and water), Redbone Castle (Demon Skeleton at 32666,31675,15,
+  491 tiles enclosed by lava), and Travora (committed subregion position at 32057,32368,7,
+  66 tiles enclosed by water). Isle of Merriment is excluded. The anchor is shallow water
+  on B3 and the documented access is a staff-operated test-server raid. Temple of Light is an
   event-only island record (5,821 tiles, floor 7) because the wiki marks it an event place (`wiki_status` event); the flag comes from the wiki, not from the map, and is correct.
 - **Newhaven** is one island of two components. The wiki coordinate (city temple) lies on a
   50 tile temple islet; the island itself is the 9,189 tile component west of it. Ground
@@ -152,9 +154,9 @@ map or the wiki changes.
   `additional_components[0]` (anchor at the temple) and `tile_count` in the capture is the
   sum (9,239). No connection is recorded because none is committed; add a
   `connected_by` link when the teleport enters the map.
-- Result: 60 records (56 island, 3 archipelago, 1 continent; 3 event-only; 1 underground;
-  8 evidence-anchored; 1 with an additional component) and 6 excluded pages (3 without
-  coordinates, 2 part of the landmass, 1 event-only not on the map), all listed with their
+- Result: 63 records (59 island, 3 archipelago, 1 continent; 3 event-only; 3 underground;
+  11 evidence-anchored; 1 with an additional component) and 3 excluded pages (2 part of the
+  landmass and 1 event-only not on the map), all listed with their
   reasons in `samples/islands-capture-v1.json`. Tiny footprints such as Laguna Islands (97)
   are confirmed and kept.
 - `validate_islands.py` checks the pins (snapshot, ground classes, evidence anchors, base
@@ -242,10 +244,11 @@ repository test's directory-scan budget grows by exactly the one added entry
 
 There is no floor-change family. The WO-2 catalogues carry the `items.xml` `floorchange` value as the
 `floor_change` fact of each Terrain and WorldObject record (`north`, `south`, `east`, `west`,
-`southalt`, `eastalt`, `down`): 444 of the 447 item types that declare it are in the catalogues
-(158 Terrain, 286 WorldObject). The other three (166 and 167 `wooden coffin`, 53431 `stone stairs`)
-stay Items; `edron_rework.ITEM_FLOOR_CHANGES` lists them. `edron_rework.floor_change_kinds()` maps the
-catalogue values to the kinds below and adds the two rope spots (386, 21965).
+`southalt`, `eastalt`, `down`). The original capture qualified 444 catalogue types and used
+`edron_rework.ITEM_FLOOR_CHANGES` for 166, 167 and 53431. The Crystal 201189f8 overlay supplies
+facts for the fixed coffins and newer stairs. `build_floor_catalogue.py` projects the native masks
+from the catalogue and the fixed-Item facts. `edron_rework.floor_change_kinds()` also counts the two rope spots (386, 21965)
+when capturing the source map.
 
 | catalogue value | kind | Engine meaning (`Tile::queryDestination`, `src/items/tile.cpp`) |
 |---|---|---|

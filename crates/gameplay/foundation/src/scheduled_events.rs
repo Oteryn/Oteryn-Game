@@ -492,13 +492,56 @@ mod tests {
     }
 
     #[test]
-    fn w05d_content_schedule_parses_and_is_neutral_now() {
+    fn w05d_content_schedule_parses_and_is_neutral_outside_events() {
         let schedule = Schedule::parse(SCHEDULE).expect("content schedule");
         assert_eq!(&schedule, content_schedule());
-        // The donor's two example events (2024, every rate 100) leave every rate neutral.
-        assert_eq!(schedule.events.len(), 2);
-        assert_eq!(schedule.rates_at(1_704_067_200), EventRates::default());
+        assert_eq!(schedule.events.len(), 5);
+        let outside_events = 1_704_067_200;
+        assert_eq!(schedule.rates_at(outside_events), EventRates::default());
+        let _clock = test_clock::set(schedule, outside_events);
         assert_eq!(current_rates(), EventRates::default());
+    }
+
+    #[test]
+    fn committed_bonus_weekends_apply_only_between_server_saves() -> Result<(), ScheduleError> {
+        let schedule = Schedule::parse(SCHEDULE)?;
+        for (start, end, hour, experience, spawn, skill) in [
+            ("06/05/2026", "06/08/2026", "04:00", 100, 500, 200),
+            ("08/07/2026", "08/10/2026", "04:00", 100, 500, 100),
+            ("09/04/2026", "09/07/2026", "04:00", 200, 100, 200),
+            ("11/20/2026", "11/23/2026", "05:00", 200, 100, 200),
+        ] {
+            // The World reset calendar uses 06:00 Europe/Berlin.
+            let start = utc_instant(start, hour).expect("start");
+            let end = utc_instant(end, hour).expect("end");
+            let expected = EventRates {
+                experience,
+                spawn,
+                skill,
+                ..EventRates::default()
+            };
+            assert_eq!(schedule.rates_at(start - 1), EventRates::default());
+            assert_eq!(schedule.rates_at(start), expected);
+            assert_eq!(schedule.rates_at(end - 1), expected);
+            assert_eq!(schedule.rates_at(end), EventRates::default());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_double_loot_window_loads_the_donor_rate() -> Result<(), ScheduleError> {
+        let schedule = Schedule::parse(SCHEDULE)?;
+        let start = utc_instant("11/12/2024", "00:00").expect("donor start");
+        let end = utc_instant("11/17/2024", "23:59:59").expect("donor end");
+        assert_eq!(schedule.rates_at(start - 1), EventRates::default());
+        let expected = EventRates {
+            loot: 200,
+            ..EventRates::default()
+        };
+        assert_eq!(schedule.rates_at(start), expected);
+        assert_eq!(schedule.rates_at(end), expected);
+        assert_eq!(schedule.rates_at(end + 1), EventRates::default());
+        Ok(())
     }
 
     #[test]

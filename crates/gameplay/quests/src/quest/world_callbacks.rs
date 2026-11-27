@@ -778,6 +778,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/children-grease.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/cwdoor-world-routes.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m39-stories.json"
     ))?);
     callbacks.extend(parse(include_str!(

@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import boss_conditional_item_reference as conditional
+import galthen_door_reference as galthen
 import item_tree_index
 import ranged_item_profiles as ranged
 from dispenser_item_profiles import APPEARANCES
@@ -252,7 +253,10 @@ class ItemBootstrapTests(unittest.TestCase):
                 self.assertEqual(converter.cli(["--items-only"]), 0)
                 ranged_call.assert_called_once_with(root)
             index = json.loads((root / "content/items/index.json").read_bytes())
-            expected_identities = [row["identity"] for row in reference["records"]] + [identity(8748)]
+            expected_identities = [row["identity"] for row in reference["records"]] + [
+                identity(8748),
+                *(identity(appearance) for appearance in galthen.APPEARANCES),
+            ]
             count = len(expected_identities)
             expected_shards = [
                 f"content/items/definitions/items-{start:05d}-{min(start + 1, count - 1):05d}.json"
@@ -283,9 +287,12 @@ class ItemBootstrapTests(unittest.TestCase):
                 [row["definition"]["identity"] for row in rows], expected_identities
             )
             self.assertTrue(rows[0]["definition"]["materializable"])
-            self.assertTrue(
-                all(row["definition"]["materializable"] for row in rows[3:])
-            )
+            self.assertTrue(rows[3]["definition"]["materializable"])
+            for row, appearance in zip(rows[4:], galthen.APPEARANCES, strict=True):
+                self.assertEqual(
+                    row,
+                    {"definition": conditional.definition(identity(appearance)["key"])},
+                )
             self.assertEqual(rows[0]["editor"], editor["entries"][0])
             self.assertEqual(
                 rows[0]["source_bindings"],

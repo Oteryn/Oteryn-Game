@@ -82,6 +82,10 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
     **QUEST_PLAN_PLACEMENT_RELOCATIONS,
+    ('tools/content-schema/item-authoring/historical_world_owner_context.py', "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898"): (
+        'tools/content-schema/item-authoring/historical_world_owner_context.py',
+        "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
+    ),
     (
         "content/world/terrain/index.json",
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
@@ -94,14 +98,14 @@ RELOCATIONS = {
         "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
     ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
@@ -133,7 +137,7 @@ RELOCATIONS = {
         "db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -304,21 +308,21 @@ RELOCATIONS = {
         "00878d28eb56c84f57734956505f60eb1fe7d248b7d1002c19209172a5125cfd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "8e41e838db44b527e4a243d4be1dc5245fe74def7145d9a68cdfc1436d609d5c",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "ae1a4f2c09345efbda4293eee96a93f9054bb33e40f658ab483b8b0c88027477",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",

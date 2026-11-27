@@ -52,6 +52,10 @@ def source_qualified_item_references(reference, root):
     from crystal_ordinary_items import extend_references as doors
 
     doors(records, root)
+
+    from galthen_door_reference import extend_records as extend_galthen_door_references
+
+    extend_galthen_door_references(records)
     return records
 
 

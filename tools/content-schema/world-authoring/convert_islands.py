@@ -47,6 +47,7 @@ SUMMARY = "tools/content-schema/world-authoring/samples/islands-capture-v1.json"
 GROUND_CLASSES = "tools/content-schema/world-authoring/island-ground-classes.json"
 EVIDENCE = "tools/content-schema/world-authoring/island-evidence-anchors.json"
 TELEPORTS = "content/world/transitions"
+REGION_AREAS = "content/world/areas/regions"
 PLACEMENT_INDEX = "content/world/placements/index.json"
 GENERATOR = "tools/content-schema/world-authoring/convert_islands.py"
 SNAPSHOT_SCHEMA = "OTERYN_TIBIAWIKI_FANDOM_ISLANDS_SNAPSHOT/v1"
@@ -387,6 +388,7 @@ def load_evidence(data: bytes, snapshot: dict, root: Path) -> dict[str, dict]:
         raise ConvertError("evidence anchor file schema differs")
     pages = {row["title"]: row for row in snapshot["pages"]}
     teleports = None
+    areas = None
     found: dict[str, dict] = {}
     for entry in document["anchors"]:
         title = entry["title"]
@@ -408,6 +410,22 @@ def load_evidence(data: bytes, snapshot: dict, root: Path) -> dict[str, dict]:
                 entry["y"],
             ):
                 raise ConvertError(f"{title}: anchor differs from its spawn evidence")
+        elif source.startswith("area:"):
+            if areas is None:
+                areas = {
+                    area["identity"]["key"]: area
+                    for shard in sorted((root / REGION_AREAS).glob("areas-*.json"))
+                    for area in json.loads(shard.read_bytes())["areas"]
+                }
+            area = areas.get(source.removeprefix("area:"), {})
+            if area.get("name") != title or area.get("position") != {
+                "x": entry["x"],
+                "y": entry["y"],
+                "z": entry["floor"],
+            }:
+                raise ConvertError(
+                    f"{title}: anchor differs from the committed subregion"
+                )
         else:
             teleports = teleports or committed_teleports(root)
             key = source.removeprefix("teleport:")
@@ -439,7 +457,9 @@ def spawn_positions(xml: bytes) -> set[tuple[str, int, int, int]]:
     return positions
 
 
-def verify_spawns(crystal_root: Path, data: bytes) -> None:
+def verify_spawns(
+    crystal_root: Path, data: bytes, donor_root: Path | None = None
+) -> None:
     """Check the pinned XML digests and that every evidence spawn is present in them."""
     document = json.loads(data)
     positions = {}
@@ -452,16 +472,18 @@ def verify_spawns(crystal_root: Path, data: bytes) -> None:
         raise ConvertError("evidence source revision differs from the pinned source")
     for entry in document["anchors"]:
         spawn = entry.get("spawn")
-        if (
-            spawn
-            and (
-                spawn["name"],
-                spawn["x"],
-                spawn["y"],
-                spawn["z"],
-            )
-            not in positions[spawn["file"]]
-        ):
+        if not spawn:
+            continue
+        if "revision" in spawn:
+            if donor_root is None:
+                continue
+            xml = (donor_root / spawn["file"]).read_bytes()
+            if hashlib.sha256(xml).hexdigest() != spawn["sha256"]:
+                raise ConvertError(f"{spawn['file']}: donor XML differs from the pin")
+            candidates = spawn_positions(xml)
+        else:
+            candidates = positions[spawn["file"]]
+        if (spawn["name"], spawn["x"], spawn["y"], spawn["z"]) not in candidates:
             raise ConvertError(f"{entry['title']}: spawn is not in {spawn['file']}")
 
 
@@ -946,13 +968,20 @@ def main() -> int:
         help="pinned crystalserver checkout: re-derive the ground classes from items.xml "
         "and verify the evidence spawns",
     )
+    parser.add_argument(
+        "--donor-root", type=Path, help="also verify later pinned donor spawns"
+    )
     args = parser.parse_args()
+    if args.donor_root and not args.crystal_root:
+        parser.error("--donor-root requires --crystal-root")
     try:
         extra: dict[str, bytes] = {}
         if not args.crystal_root:
             check_ground_classes_pin((ROOT / GROUND_CLASSES).read_bytes())
         if args.crystal_root:
-            verify_spawns(args.crystal_root, (ROOT / EVIDENCE).read_bytes())
+            verify_spawns(
+                args.crystal_root, (ROOT / EVIDENCE).read_bytes(), args.donor_root
+            )
             derived, stale = verify_ground_classes(args.crystal_root, ROOT)
             check_ground_classes_pin(derived)
             if stale:

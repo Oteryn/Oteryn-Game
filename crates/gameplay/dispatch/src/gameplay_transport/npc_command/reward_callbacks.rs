@@ -147,6 +147,30 @@ pub(super) fn prepare(
         &raw_text
     };
     let says_no = raw_text == "no";
+    // A passage question replaces the ticket offer, even if travel later refuses.
+    if phase == Phase::Rewards
+        && admission
+            .states
+            .chat
+            .npc_talk()
+            .and_then(|book| book.get(&context.2))
+            .is_some_and(|npc| {
+                npc.travel_routes
+                    .iter()
+                    .any(|route| raw_text == route.keyword || raw_text == route.route.key.replace('_', " "))
+            })
+    {
+        let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+        let dialogue = &mut sessions.get_mut(&command.game_session_id)?.quest_dialogue;
+        let topic = dialogue.topic(&context).number;
+        if callbacks.iter().any(|callback| {
+            callback.npc == context.2
+                && callback.topic == topic
+                && callback.key.starts_with("oteryn:quest-reward/travora/")
+        }) {
+            dialogue.retire_for_source(&context);
+        }
+    }
     if says_no
         || (phase == Phase::Offers
             && !matches!(
@@ -164,6 +188,7 @@ pub(super) fn prepare(
             .reward_request = (!says_no).then_some(context);
     }
     let mut failure_reply = Vec::new();
+    let mut failure_topic = None;
     let mut refused = false;
     let step = quest_dialogue::prepare(
         admission,
@@ -209,11 +234,11 @@ pub(super) fn prepare(
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
-            let mut refusal = |lines: &[String]| {
+            let mut refusal = |lines: &[String], next_topic: Option<u16>| {
                 refused = !lines.is_empty();
                 (!lines.is_empty()).then(|| Choice {
                     transition: None,
-                    next_topic: None,
+                    next_topic: next_topic.map(Topic::from),
                     reply: lines.to_vec(),
                 })
             };
@@ -282,7 +307,8 @@ pub(super) fn prepare(
                         return None;
                     }
                     if !meets_level(callback.minimum_level)
-                        && let Some(choice) = refusal(&callback.failure_reply)
+                        && let Some(choice) =
+                            refusal(&callback.failure_reply, callback.failure_topic)
                     {
                         return Some(choice);
                     }
@@ -290,6 +316,7 @@ pub(super) fn prepare(
                     // transition: its locked owner must reject the level gate.
                     // Falling through would return the ordinary dialogue's Ok.
                     failure_reply = callback.failure_reply.clone();
+                    failure_topic = callback.failure_topic;
                     return Some(Choice {
                         transition: Some(callback.key.clone()),
                         next_topic: Some(Topic::from(callback.next_topic)),
@@ -318,14 +345,14 @@ pub(super) fn prepare(
                 let mut blocked = matching_stage;
                 if let Some(callback) = blocked.next()
                     && blocked.next().is_none()
-                    && let Some(choice) = refusal(&callback.failure_reply)
+                    && let Some(choice) = refusal(&callback.failure_reply, callback.failure_topic)
                 {
                     return Some(choice);
                 }
                 return None;
             }
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
-                return rottin_dialogue(topic, &text, tracks, refusal);
+                return rottin_dialogue(topic, &text, tracks, |lines| refusal(lines, None));
             }
             let account_matches = |offer: &Offer| {
                 offer.requires_premium.is_none_or(|required| {
@@ -350,7 +377,7 @@ pub(super) fn prepare(
                     && account_matches(c)
             }) {
                 if !meets_level(offer.minimum_level) {
-                    return refusal(&offer.failure_reply);
+                    return refusal(&offer.failure_reply, None);
                 }
                 return Some(Choice {
                     transition: None,
@@ -394,7 +421,7 @@ pub(super) fn prepare(
             });
             if let Some(offer) = blocked.next()
                 && blocked.next().is_none()
-                && let Some(choice) = refusal(&offer.failure_reply)
+                && let Some(choice) = refusal(&offer.failure_reply, None)
             {
                 return Some(choice);
             }
@@ -417,7 +444,7 @@ pub(super) fn prepare(
                     && matching.next().is_none()
                     && let Some(terminal) = [callback, other].into_iter().find(|c| c.completes)
                 {
-                    return refusal(&terminal.failure_reply);
+                    return refusal(&terminal.failure_reply, terminal.failure_topic);
                 }
                 return None;
             }
@@ -426,11 +453,12 @@ pub(super) fn prepare(
                     .inventory
                     .iter()
                     .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities))))
-                && let Some(choice) = refusal(&callback.failure_reply)
+                && let Some(choice) = refusal(&callback.failure_reply, callback.failure_topic)
             {
                 return Some(choice);
             }
             failure_reply = callback.failure_reply.clone();
+            failure_topic = callback.failure_topic;
             Some(Choice {
                 transition: Some(callback.key.clone()),
                 next_topic: Some(Topic::from(callback.next_topic)),
@@ -438,7 +466,10 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure_reply(failure_reply, failure_topic)
+            .with_refusal(refused)
+    })
 }
 
 #[cfg(test)]
@@ -467,6 +498,53 @@ fn sterling_marker_offer_and_refusal_follow_the_source_topics() -> Result<(), se
                 && r.maximum == 0
                 && r.preserve)
     );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn cwdoor_key_dialogue_follows_native_offer_topics()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let offers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-offers.json"
+    ))?;
+    let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let tracks = std::collections::BTreeMap::new();
+    for (npc, routes) in [
+        (
+            "oteryn:npc.a_prisoner",
+            &[
+                (4, "riddle", 1),
+                (1, "pd-d-ks-p-pd", 2),
+                (3, "yes", 4),
+                (4, "yes", 5),
+            ][..],
+        ),
+        ("oteryn:npc.shirith", &[(1, "key", 1)]),
+        (
+            "oteryn:npc.skjaar",
+            &[
+                (6, "key", 1),
+                (1, "yes", 2),
+                (3, "redips", 4),
+                (4, "7", 5),
+                (5, "black", 6),
+            ],
+        ),
+    ] {
+        for &(topic, text, next) in routes {
+            let choice = offers
+                .offers
+                .iter()
+                .find(|offer| offer.admits(npc, topic, text, state.catalogue(), &tracks));
+            assert_eq!(
+                choice.map(|offer| offer.next_topic),
+                Some(next),
+                "{npc} {text}"
+            );
+        }
+    }
     Ok(())
 }
 

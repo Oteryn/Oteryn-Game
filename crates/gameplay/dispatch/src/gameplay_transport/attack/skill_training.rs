@@ -142,14 +142,14 @@ mod tests {
 
     /// Whether `tries` banked by one real `train_hit` reach the next sword level of a fresh
     /// player while `now` reads a W05d event schedule (skill rate 200%) on this thread.
-    fn tries_reach_a_level(tries: u64, now: Option<i64>) -> bool {
+    fn tries_reach_a_level(tries: u64, now: i64) -> bool {
         use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
         let schedule = Schedule::parse(
             r#"{"events":[{"name":"w05d","startdate":"01/01/2030","enddate":"01/02/2030",
                 "ingame":{"skillrate":200}}]}"#,
         )
         .expect("schedule");
-        let _clock = now.map(|now| test_clock::set(schedule, now));
+        let _clock = test_clock::set(schedule, now);
         let formula = CompiledTrainingFormula::from_profile(
             include_bytes!(
                 "../../../../../../tools/content-schema/native-gameplay/build-training.json"
@@ -199,17 +199,18 @@ mod tests {
         // 2030-01-01T00:00:00Z and 2030-01-02T23:59:59Z.
         const START: i64 = 1_893_456_000;
         const END: i64 = 1_893_628_799;
+        let baseline = START - 1;
         let needed = (1..=10_000)
-            .find(|&tries| tries_reach_a_level(tries, None))
+            .find(|&tries| tries_reach_a_level(tries, baseline))
             .expect("a reachable sword level");
         assert!(needed >= 2, "one try below the level is a positive count");
         let short = needed - 1;
-        assert!(!tries_reach_a_level(short, None), "no event: no level");
+        assert!(!tries_reach_a_level(short, baseline), "no event: no level");
         for now in [START - 1, END + 1] {
-            assert!(!tries_reach_a_level(short, Some(now)), "outside the window");
+            assert!(!tries_reach_a_level(short, now), "outside the window");
         }
         for now in [START, END] {
-            assert!(tries_reach_a_level(short, Some(now)), "doubled at an edge");
+            assert!(tries_reach_a_level(short, now), "doubled at an edge");
         }
     }
 }

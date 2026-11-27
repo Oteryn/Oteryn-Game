@@ -960,7 +960,15 @@ mod tests {
             .filter(|row| row.key.starts_with("oteryn:service.travel.karith/"))
         {
             assert!(!row.postman);
-            assert!(row.yalahar_town_gate.is_some());
+            if row.key == "oteryn:service.travel.karith/travora" {
+                assert!(row.yalahar_town_gate.is_none());
+                assert_eq!(
+                    row.ticket.as_ref().map(|ticket| ticket.valid_for_seconds),
+                    Some(86400)
+                );
+            } else {
+                assert!(row.yalahar_town_gate.is_some());
+            }
         }
         // These donor routes cannot be safely offered with the currently admitted owners.
         for key in ["captain_max/yalahar", "captain_bluebear/targuna"] {

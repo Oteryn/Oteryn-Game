@@ -124,12 +124,14 @@ pub(super) struct Step {
     transition: Option<String>,
     reply: Vec<String>,
     failure_reply: Vec<String>,
+    failure_topic: Option<u16>,
     refused: bool,
 }
 
 impl Step {
-    pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
+    pub(super) fn with_failure_reply(mut self, lines: Vec<String>, topic: Option<u16>) -> Self {
         self.failure_reply = lines;
+        self.failure_topic = topic;
         self
     }
     pub(super) fn with_refusal(mut self, refused: bool) -> Self {
@@ -188,6 +190,7 @@ pub(super) fn prepare(
         transition: choice.transition,
         reply: choice.reply,
         failure_reply: Vec::new(),
+        failure_topic: None,
         refused: false,
     })
 }
@@ -258,6 +261,7 @@ enum Completion {
     Committed,
     Refused,
     ClearTopic,
+    RefusedAt(Topic),
 }
 
 fn finish(
@@ -273,6 +277,7 @@ fn finish(
             Completion::Committed => pending.next_topic,
             Completion::Refused => return,
             Completion::ClearTopic => Some(Topic::default()),
+            Completion::RefusedAt(topic) => Some(topic),
         };
         state
             .quest_dialogue
@@ -558,6 +563,10 @@ pub(super) async fn apply(
                     .starts_with("oteryn:quest-reward/vampire-hunter-rank-")
             }) {
                 Completion::ClearTopic
+            } else if matches!(other, Ok(QuestTransitionOutcome::Refused(_)))
+                && let Some(topic) = step.failure_topic
+            {
+                Completion::RefusedAt(Topic::from(topic))
             } else {
                 Completion::Refused
             };

@@ -18,6 +18,7 @@ Outlaw Camp key 3304 uses locked6251 from Crystal doors.lua:34;
 closed6252 and open6253 are already supplied by the plain door provider.
 Dwacatra and its key route retain locked5106, locked7711 and locked7714;
 their closed and open counterparts are already supplied.
+Shirith and the Prisoner award the silver key (2969); pinned items.xml types it as a key.
 The existing pinned importer supplies physics and classifications without overrides.
 """
 
@@ -42,6 +43,7 @@ IDS = {
     1681,
     2967,
     2968,
+    2969,
     5097,
     5102,
     5103,

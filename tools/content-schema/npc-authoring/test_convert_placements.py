@@ -222,6 +222,24 @@ class ConvertPlacementsTest(unittest.TestCase):
             self.assertEqual(actual[key]['cell'], cell)
             self.assertTrue(any(p['origin'] == 'crystal' for p in actual[key]['provenance']))
 
+    def test_travora_captains_keep_their_source_cells(self):
+        expected = {
+            "oteryn:npc.captain_breezelda": (32341, 31109, 6),
+            "oteryn:npc.captain_greyhound": (32387, 31822, 6),
+            "oteryn:npc.captain_seahorse": (33175, 31763, 6),
+            "oteryn:npc.captain_sinbeard": (33091, 32883, 6),
+            "oteryn:npc.captain_tiberius": (32056, 32368, 6),
+            "oteryn:npc.karith": (32818, 31278, 5),
+            "oteryn:npc.petros": (33290, 32481, 6),
+        }
+        rows = [r["declaration"] for r in self.records if r["declaration"]["npc"] in expected]
+        self.assertEqual(len(rows), len(expected))
+        self.assertEqual(
+            {r["npc"]: tuple(r["cell"][axis] for axis in ("x", "y", "floor")) for r in rows},
+            expected,
+        )
+        self.assertTrue(all(r["provenance"] for r in rows))
+
     def test_viola_uses_the_newhaven_magic_shop_source_cell(self):
         viola = next(r['declaration'] for r in self.records
                      if r['declaration']['npc'] == 'oteryn:npc.viola')

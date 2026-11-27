@@ -22,6 +22,75 @@
       ]
     },
     {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Sure I have the key! Hehehe! Perhaps I will give it to you. IF you can solve my {riddle}."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "riddle"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/mad_mage_room/a_prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Great riddle, isn't it? If you can tell me the correct answer, I will give you something. Hehehe!"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "pd-d-ks-p-pd"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Hurray! For that I will give you my key for - hmm - let's say ... some apples. Interested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [],
+      "reply": [
+        "Really, really?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [],
+      "reply": [
+        "Really, really, really, really?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ajax",
       "keywords": [
         "behemoth fang",
@@ -5916,6 +5985,19 @@
       ]
     },
     {
+      "npc": "oteryn:npc.shirith",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Do you want to buy a key for 50 gold?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.simon_the_beggar",
       "keywords": [
         "100 ape fur"
@@ -6098,6 +6180,67 @@
       ],
       "reply": [
         "Will you retrieve my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "I will give the key to the crypt only to the closest followers of my master. Would you like me to test you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Before we start I must ask you for a small donation of 1000 gold coins. Are you willing to pay 1000 gold coins for the test?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "redips"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [],
+      "reply": [
+        "Perhaps you knew him after all. Tell me - how many fingers did he have when he died?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "7"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [],
+      "reply": [
+        "Also true. But can you also tell me the colour of the deamons in which master specialized?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "black"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [],
+      "reply": [
+        "It seems you are worthy after all. Do you want the key to the crypt?"
       ]
     },
     {

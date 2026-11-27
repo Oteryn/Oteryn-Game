@@ -6,6 +6,7 @@ use super::{
 
 pub const KEY: &str = "oteryn:quest-callback/barbarian-test-mead";
 pub const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
+pub const LEGACY_QUESTLINE: &str = "oteryn:quest-progress/storage/41174";
 pub const TRACKS: [&str; 4] = [
     "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
     "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",

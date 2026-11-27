@@ -145,6 +145,10 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-object-authoring/activity_static.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/crystal_traversal.py", "--check"],
+    ["python3", "tools/content-migration/build_floor_catalogue.py", "--check"],
+    ["python3", "tools/content-migration/build_ladder_catalogue.py", "--check"],
     ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
     [
         "python3",
@@ -1252,6 +1256,9 @@ def main() -> int:
             "--refresh-native-pin",
         ]
     )
+    run(["python3", "tools/content-schema/world-authoring/crystal_traversal.py"])
+    run(["python3", "tools/content-migration/build_floor_catalogue.py"])
+    run(["python3", "tools/content-migration/build_ladder_catalogue.py"])
     refresh_world_metadata()
     # The palette refresh can change the placement index after the scenery pass.
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])

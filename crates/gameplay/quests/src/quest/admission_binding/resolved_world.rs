@@ -151,6 +151,10 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
+        // The door routes add Svargrond roof callbacks.
+        assert_eq!(base.len(), 1_014);
+        assert_eq!(bindings.world_callbacks().count(), 96);
+        assert_eq!(callbacks.len(), 1_110);
         assert!(base.len() <= MAX_RESOLVED_CALLBACKS);
         assert!(bindings.world_callbacks().next().is_some());
         assert_eq!(

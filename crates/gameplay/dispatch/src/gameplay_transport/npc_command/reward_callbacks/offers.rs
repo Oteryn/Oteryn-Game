@@ -31,6 +31,7 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/tibia-tales.json"),
     include_str!("../../../../../../../content/quests/npc-offers/too-hot-to-handle.json"),
     include_str!("../../../../../../../content/quests/npc-offers/tower-defence.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/travora-tickets.json"),
     include_str!("../../../../../../../content/quests/npc-offers/vampire-hunter.json"),
 ];
 
