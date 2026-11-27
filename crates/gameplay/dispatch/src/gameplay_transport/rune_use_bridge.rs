@@ -149,10 +149,86 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(super) enum RuneReadReason {
+    HolderBusy,
+    PassDeadline,
+    ReadUnavailable,
+    TileRead,
+    PositionMismatch,
+    GenerationMismatch,
+    CorpseCustody,
+    PredecessorCustody,
+    DuplicateItemPlan,
+}
+
+impl RuneReadReason {
+    pub(super) fn durability(error: &crate::durability::DurabilityError) -> Self {
+        use crate::durability::DurabilityError;
+        match error {
+            DurabilityError::RootUnavailable => Self::HolderBusy,
+            DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitTransactionTimeout => Self::PassDeadline,
+            _ => Self::ReadUnavailable,
+        }
+    }
+
+    pub(super) fn corpse(
+        error: &crate::durability::spell_item_transaction::SpellItemError,
+    ) -> Self {
+        use crate::durability::spell_item_transaction::SpellItemError;
+        match error {
+            SpellItemError::Rejected(
+                "Ground custody belongs to an unreconciled scope generation",
+            ) => Self::PredecessorCustody,
+            SpellItemError::Rejected("unreconciled opaque or incompatible Ground placement") => {
+                Self::PositionMismatch
+            }
+            SpellItemError::Rejected("duplicate or invalid item identity") => {
+                Self::DuplicateItemPlan
+            }
+            SpellItemError::Rejected(_) => Self::CorpseCustody,
+            SpellItemError::Durability(error) => Self::durability(error),
+            _ => Self::ReadUnavailable,
+        }
+    }
+}
+
+#[derive(Default)]
+pub(super) struct RuneReadEvidence {
+    pub(super) reason: Option<RuneReadReason>,
+    pub(super) generation: Option<u64>,
+    pub(super) holder: Option<&'static std::panic::Location<'static>>,
+    pub(super) corpse_item: Option<[u8; 16]>,
+    pub(super) corpse_stage: Option<String>,
+}
+
+impl RuneReadEvidence {
+    pub(super) fn log(&mut self, command_id: u64, stage: &str, reason: RuneReadReason) {
+        self.reason = Some(reason);
+        let holder = self
+            .holder
+            .map_or_else(|| "none".into(), |site| site.to_string());
+        let generation = self
+            .generation
+            .map_or_else(|| "none".into(), |value| value.to_string());
+        let corpse_item = self.corpse_item.map_or_else(
+            || "none".into(),
+            |item| {
+                item.iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+            },
+        );
+        let corpse_stage = self.corpse_stage.as_deref().unwrap_or("none");
+        super::operator_event(&format!(
+            "event=rune_use_read_refused stage={stage} command_id={command_id} reason={reason:?} holder={holder} corpse_item_id={corpse_item} corpse_stage={corpse_stage} generation={generation}"
+        ));
+    }
+}
+
 pub(super) fn rune_read_refusal(command_id: u64, stage: &str) -> NativeCastDispatch {
-    super::operator_event(&format!(
-        "event=rune_use_read_refused stage={stage} command_id={command_id}"
-    ));
+    RuneReadEvidence::default().log(command_id, stage, RuneReadReason::ReadUnavailable);
     NativeCastDispatch::RuneRefused(UseDisposition::Rejected)
 }
 
@@ -363,7 +439,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let store =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
-        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let mut retry = super::AdmissionRetryBudget::for_command(self.root);
         let Ok((current, _)) = read_rune_owner(&retry, command.command_id, "session", async || {
             #[cfg(test)]
             if test_faults::take(test_faults::Point::SessionReadBusy) {
@@ -374,7 +450,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
         else {
             return self
-                .finish_rune_retry(actor, command, &intent, &retry, "session")
+                .finish_rune_retry(actor, command, &intent, &retry, "session", None)
                 .await;
         };
         if current.session_state() != crate::foundation::GameSessionState::Active
@@ -413,7 +489,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             NativeCastDispatch::RuneRefused(reason) => return Some(outcome(reason)),
             NativeCastDispatch::Pending => {
                 return self
-                    .finish_rune_retry(actor, command, &intent, &retry, "replay")
+                    .finish_rune_retry(actor, command, &intent, &retry, "replay", None)
                     .await;
             }
             NativeCastDispatch::NotApplicable => (),
@@ -580,9 +656,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .spells
             .indexed(rune.intent.spell)
             .is_some_and(super::actor_spell::native_combat_cast::corpse_companion_spell);
+        if corpse_cast {
+            retry.allow_corpse_rune_pass();
+        }
         if !self.ensure_source_map_initialized().await {
             return if corpse_cast {
-                self.finish_rune_retry(actor, command, &legacy.original, &retry, "source_map")
+                self.finish_rune_retry(actor, command, &legacy.original, &retry, "source_map", None)
                     .await
             } else {
                 None
@@ -591,8 +670,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let access = self
             .refresh_and_apply_spell_access(actor, command.game_session_id)
             .await;
+        let mut native_read = RuneReadEvidence::default();
         let mut result = self
-            .cast_rune_item(actor, command, &rune, legacy.clone(), &access, &retry)
+            .cast_rune_item(
+                actor,
+                command,
+                &rune,
+                legacy.clone(),
+                &access,
+                (&retry, &mut native_read),
+            )
             .await;
         // Complete the original command while the client is still connected.
         // Replaying first reclaims a parked writer using its exact retained
@@ -607,7 +694,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             {
                 return self
-                    .finish_rune_retry(actor, command, &legacy.original, &retry, "native_cast")
+                    .finish_rune_retry(
+                        actor,
+                        command,
+                        &legacy.original,
+                        &retry,
+                        "native_cast",
+                        Some(&mut native_read),
+                    )
                     .await;
             }
             result = match tokio::time::timeout_at(
@@ -636,7 +730,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // the same ingress with its original handle and fence.
                 let retry_rune = retained.unwrap_or(rune);
                 result = self
-                    .cast_rune_item(actor, command, &retry_rune, legacy.clone(), &access, &retry)
+                    .cast_rune_item(
+                        actor,
+                        command,
+                        &retry_rune,
+                        legacy.clone(),
+                        &access,
+                        (&retry, &mut native_read),
+                    )
                     .await;
             }
         }
@@ -661,12 +762,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         original: &UseIntent,
         budget: &super::AdmissionRetryBudget<'_>,
         stage: &str,
+        evidence: Option<&mut RuneReadEvidence>,
     ) -> Option<UseOutcome> {
         let disposition = self
             .finish_legacy_rune_at_deadline(actor, command, original, budget.deadline)
             .await?;
         if disposition == UseDisposition::Rejected {
-            let _ = rune_read_refusal(command.command_id, stage);
+            let reason = if budget.check_deadline().is_err() {
+                RuneReadReason::PassDeadline
+            } else {
+                RuneReadReason::ReadUnavailable
+            };
+            let mut fallback = RuneReadEvidence {
+                generation: command
+                    .item_fence
+                    .map(|fence| fence.scope_ownership_generation.get()),
+                holder: self.root.semantic_holder_location(),
+                ..RuneReadEvidence::default()
+            };
+            let evidence = evidence.unwrap_or(&mut fallback);
+            evidence.log(command.command_id, stage, evidence.reason.unwrap_or(reason));
         }
         Some(outcome(disposition))
     }

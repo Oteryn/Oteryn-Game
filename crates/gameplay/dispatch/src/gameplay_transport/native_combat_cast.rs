@@ -9,7 +9,9 @@
     reason = "spell import candidate; awaits its production owner caller"
 )]
 use super::super::item_spell_augments;
-use super::super::rune_use_bridge::{LegacyRuneUse, retry_rune_owner, rune_read_refusal};
+use super::super::rune_use_bridge::{
+    LegacyRuneUse, RuneReadEvidence, RuneReadReason, retry_rune_owner,
+};
 use super::super::{AdmissionRetryBudget, connection::UseCommand};
 use super::{
     ChannelSpellStates, check_owner_batch, commit_owner_batch, install_owner_batch,
@@ -206,6 +208,7 @@ pub type NativeMarkerIntent = (
 struct NativeCastLane<'a, 'r> {
     permit: &'a mut SpellLanePermit,
     rune_budget: Option<&'a AdmissionRetryBudget<'r>>,
+    rune_read: Option<&'a mut RuneReadEvidence>,
 }
 
 /// The complete attempt of a committing writer, parked in the spell lane's `unresolved` record
@@ -2400,6 +2403,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Some(NativeCastLane {
                     permit: &mut permit,
                     rune_budget: None,
+                    rune_read: None,
                 }),
             )
             .await;
@@ -2450,6 +2454,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Some(NativeCastLane {
                     permit: &mut *permit,
                     rune_budget: None,
+                    rune_read: None,
                 }),
             )
             .await;
@@ -2492,18 +2497,28 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         rune: &ItemSpellCastIntent,
         legacy: LegacyRuneUse,
         access: &A,
-        budget: &AdmissionRetryBudget<'_>,
+        recovery: (&AdmissionRetryBudget<'_>, &mut RuneReadEvidence),
     ) -> NativeCastDispatch {
+        let (budget, read) = recovery;
         let UseCommand {
             game_session_id: session,
             command_id,
-            ..
+            item_fence,
         } = command;
-        let Ok(Ok(mut permit)) =
-            tokio::time::timeout_at(budget.deadline, self.try_spell_lane_permit()).await
-        else {
-            return NativeCastDispatch::Pending;
-        };
+        read.generation = item_fence.map(|fence| fence.scope_ownership_generation.get());
+        let mut permit =
+            match tokio::time::timeout_at(budget.deadline, self.try_spell_lane_permit()).await {
+                Ok(Ok(permit)) => permit,
+                result => {
+                    read.holder = self.root.semantic_holder_location();
+                    let reason = match result {
+                        Ok(Err(error)) => RuneReadReason::durability(&error),
+                        _ => RuneReadReason::PassDeadline,
+                    };
+                    read.log(command_id, "native_lane", reason);
+                    return NativeCastDispatch::Pending;
+                }
+            };
         let mut rune = *rune;
         if rune.expected_state_revision == 0 {
             rune.expected_state_revision = match self
@@ -2528,6 +2543,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Some(NativeCastLane {
                 permit: &mut permit,
                 rune_budget: Some(budget),
+                rune_read: Some(read),
             }),
         )
         .await
@@ -2581,7 +2597,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         parameter_output: &mut Option<ParameterSpellCastResult>,
         access: &A,
         reconcile_only: bool,
-        lane: Option<NativeCastLane<'_, '_>>,
+        mut lane: Option<NativeCastLane<'_, '_>>,
     ) -> NativeCastDispatch {
         let _ground_change = super::super::loop_move::GroundChange(Some(&self.states.loop_ground));
         use super::super::spell_access_facts::load_owned_cast_facts_in_transaction;
@@ -2656,13 +2672,21 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let corpse_cast = corpse_companion_spell(spell);
         let rune_budget = lane.as_ref().and_then(|lane| lane.rune_budget);
-        let fallback_budget = (corpse_cast && rune_budget.is_none())
-            .then(|| AdmissionRetryBudget::for_command(self.root));
+        let fallback_budget = (corpse_cast && rune_budget.is_none()).then(|| {
+            let mut budget = AdmissionRetryBudget::for_command(self.root);
+            budget.allow_corpse_rune_pass();
+            budget
+        });
         let retry = if corpse_cast {
             rune_budget.or(fallback_budget.as_ref())
         } else {
             None
         };
+        let mut fallback_read = RuneReadEvidence::default();
+        let read = lane
+            .as_mut()
+            .and_then(|lane| lane.rune_read.take())
+            .unwrap_or(&mut fallback_read);
         let mut retries = 0;
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let current = loop {
@@ -2679,10 +2703,20 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 break result;
             }
         };
-        let Ok((current, _)) = current else {
-            return self
-                .native_preflight_refusal(actor, session, command_id, corpse_cast, "native_session")
-                .await;
+        let (current, _) = match current {
+            Ok(current) => current,
+            Err(error) => {
+                return self
+                    .native_preflight_refusal(
+                        actor,
+                        session,
+                        command_id,
+                        corpse_cast,
+                        read,
+                        ("native_session", RuneReadReason::durability(&error)),
+                    )
+                    .await;
+            }
         };
         if current.session_state() != GameSessionState::Active {
             return rejected();
@@ -2711,16 +2745,27 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 break result;
             }
         };
-        let Ok(root_record) = root_record else {
-            return self
-                .native_preflight_refusal(
-                    actor,
-                    session,
-                    command_id,
-                    corpse_cast,
-                    "native_character",
-                )
-                .await;
+        let root_record = match root_record {
+            Ok(root_record) => root_record,
+            Err(error) => {
+                use crate::durability::character_authority::CharacterAuthorityError;
+                let reason = match error {
+                    CharacterAuthorityError::Unavailable(error) => {
+                        RuneReadReason::durability(&error)
+                    }
+                    _ => RuneReadReason::ReadUnavailable,
+                };
+                return self
+                    .native_preflight_refusal(
+                        actor,
+                        session,
+                        command_id,
+                        corpse_cast,
+                        read,
+                        ("native_character", reason),
+                    )
+                    .await;
+            }
         };
         let fence = CurrentCharacterGameplayFence {
             character_id: character,
@@ -2734,6 +2779,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Ok(command) = CommandId::new(command_id).map(|id| CommandRef::new(session, id)) else {
             return rejected();
         };
+        read.generation = Some(fence.scope_ownership_generation.get());
         // Lock order (§1.2): the lane before any Channel guard.
         let mut acquired;
         let permit = match lane {
@@ -2819,6 +2865,24 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Err(()) => return NativeCastDispatch::Pending,
             }
         };
+        // Publication is context for diagnosing a failed read, never custody proof.
+        if corpse_cast && let SpellTarget::Position(target) = intent.target {
+            let position = MovementLocalPosition {
+                x: target.x,
+                y: target.y,
+                floor: target.floor,
+            };
+            let mut corpses = runtime
+                .visible_corpses()
+                .into_iter()
+                .filter(|corpse| corpse.position == position);
+            if let (Some(corpse), None) = (corpses.next(), corpses.next()) {
+                read.corpse_item = Some(corpse.item.item_instance_id);
+                read.corpse_stage = native
+                    .item_policy(&corpse.item.production_key, &corpse.item.revision_ref)
+                    .map(|policy| policy.record().production_binding.external_id.clone());
+            }
+        }
         let marker_intent: NativeMarkerIntent = (*intent, rune, parameter.clone(), legacy.clone());
         // Finish waiting for the map and the holder before creating a fresh
         // marker. An existing marker still owns its original attempt.
@@ -2837,13 +2901,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Some(self.door.lock().await)
             };
             let door_busy = objects.is_none();
+            let mut checkout_reason = RuneReadReason::TileRead;
             if let Some(objects) = objects {
                 let pass = match retry {
                     Some(retry) => self.root.try_issue_semantic_pass_by(retry.deadline),
                     None => self.root.try_issue_semantic_pass(),
                 };
-                if let Ok(pass) = pass {
-                    break (objects, pass);
+                match pass {
+                    Ok(pass) => break (objects, pass),
+                    Err(error) => {
+                        read.holder = self.root.semantic_holder_location();
+                        checkout_reason = RuneReadReason::durability(&error);
+                    }
                 }
             }
             let Some(retry) = &retry else {
@@ -2858,9 +2927,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             if door_busy {
                 match tokio::time::timeout_at(retry.deadline, self.door.lock()).await {
                     Ok(objects) => drop(objects),
-                    Err(_) => return unavailable(),
+                    Err(_) => {
+                        read.log(command_id, "native_map", checkout_reason);
+                        return unavailable();
+                    }
                 }
             } else if !retry_rune_owner(retry, command_id, "native_holder", &mut retries).await {
+                read.log(command_id, "native_holder", checkout_reason);
                 return unavailable();
             }
             let Ok(guards) = tokio::time::timeout_at(retry.deadline, async {
@@ -2870,14 +2943,23 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             })
             .await
             else {
+                read.log(command_id, "native_runtime", RuneReadReason::PassDeadline);
                 return unavailable();
             };
             (runtime, states) = guards;
-            if retry.check_deadline().is_err()
-                || runtime.player_control_facts(actor, session).is_err()
+            if retry.check_deadline().is_err() {
+                read.log(command_id, "native_holder", checkout_reason);
+                return unavailable();
+            }
+            if runtime.player_control_facts(actor, session).is_err()
                 || runtime.owner_fence().is_err()
                 || runtime.content_pin().server_artifact_digest() != native.source_digest()
             {
+                read.log(
+                    command_id,
+                    "native_runtime",
+                    RuneReadReason::GenerationMismatch,
+                );
                 return unavailable();
             }
         };
@@ -2953,6 +3035,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         // cancellation cannot discard the original normalized occurrence: before the commit
         // window it stays in the context, after it the window parks it in the lane.
         let mut completed = None;
+        read.holder = self.root.semantic_holder_location();
+        read.reason = None;
         let mut context = (
             self,
             access,
@@ -2961,10 +3045,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter_output,
             native_health_observations,
             &mut completed,
+            &mut *read,
         );
-        let rune_cast = rune.is_some();
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
-            let (owner,access,writer,guards,parameter_output,native_health_observations,completed)=ctx;
+            let (owner,access,writer,guards,parameter_output,native_health_observations,completed,read)=ctx;
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
@@ -3054,7 +3138,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         }
                     } else if native_companion_item_cast::applicable(spell) {
                         native_companion_item_cast::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),read).await
                     } else if native_world_item_cast::applicable(spell) {
                         native_world_item_cast::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
@@ -3139,7 +3223,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     } else {
                         read_tile(&mut tx,&authority,room,runtime,objects,*position).await
                     };
-                    if !matches!(current,Ok(actual) if actual==*expected) { original_tiles_current=false; }
+                    if !matches!(current,Ok(actual) if actual==*expected) {
+                        if corpse_cast {
+                            read.log(command_id, "corpse_tile_recheck", RuneReadReason::TileRead);
+                        }
+                        original_tiles_current=false;
+                    }
                 }
                 let original_party_current=if let Some(party)=attempt.prepared.party.as_ref(){
                     match crate::durability::world_party::read_world_party_in_transaction(&mut tx,&authority).await{
@@ -3204,7 +3293,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         disposition:SpellCastDisposition::Rejected,
                         vitals:super::observe_vitals(&runtime,&states,actor,session)}));
                 }
-                Err(_)=>return Err(DurabilityError::Unavailable),
+                Err(error)=>{
+                    if corpse_cast {
+                        if let Some(crate::durability::spell_items_abi::SpellItemOperation::ConsumeCorpse(corpse)) =
+                            attempt.request.operations.iter().find(|op| matches!(op, crate::durability::spell_items_abi::SpellItemOperation::ConsumeCorpse(_))) {
+                            read.corpse_item=Some(corpse.item_instance_id);
+                            read.corpse_stage=content.item_policy(&corpse.definition.production_key,&corpse.definition.revision_ref)
+                                .map(|policy|policy.record().production_binding.external_id.clone());
+                        }
+                        read.log(command_id, "corpse_item_write", RuneReadReason::corpse(&error));
+                    }
+                    return Err(DurabilityError::Unavailable);
+                },
             };
             let historical=matches!(items,SpellItemTransactionOutcome::AlreadyCommitted(_));
             let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
@@ -3392,7 +3492,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             **completed=Some(outcome);
             Ok(NativeCastDispatch::Outcome(outcome))
         })).await;
-        let (_, _, writer, guards, _, _, _) = context;
+        let (_, _, writer, guards, _, _, _, _) = context;
         drop(guards);
         // Holder return cannot retract a result that installed after COMMIT.
         let result = completed.map_or(result, |outcome| Ok(NativeCastDispatch::Outcome(outcome)));
@@ -3415,10 +3515,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         match result {
             Ok(result) => result,
             Err(error) => {
-                if rune_cast {
-                    super::super::operator_event(&format!(
-                        "event=native_rune_cast_pending command_id={command_id} error={error:?}"
-                    ));
+                if corpse_cast
+                    && (!matches!(error, DurabilityError::Unavailable) || read.reason.is_none())
+                {
+                    read.log(
+                        command_id,
+                        "native_pass",
+                        RuneReadReason::durability(&error),
+                    );
                 }
                 NativeCastDispatch::Pending
             }
@@ -3431,8 +3535,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         corpse_cast: bool,
-        stage: &str,
+        read: &mut RuneReadEvidence,
+        (stage, reason): (&str, RuneReadReason),
     ) -> NativeCastDispatch {
+        if corpse_cast {
+            read.holder = self.root.semantic_holder_location();
+            read.log(command_id, stage, reason);
+        }
         if corpse_cast
             && !self
                 .states
@@ -3441,7 +3550,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .has_pending_native(actor, session)
         {
-            rune_read_refusal(command_id, stage)
+            NativeCastDispatch::RuneRefused(
+                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
+            )
         } else {
             NativeCastDispatch::Pending
         }

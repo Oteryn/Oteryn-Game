@@ -1806,6 +1806,11 @@ impl DurabilityRoot {
         }
     }
 
+    /// Diagnostic call site of the checked-out semantic pass, when one is known.
+    pub fn semantic_holder_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        self.holder_owner.lock().ok()?.map(|(caller, ..)| caller)
+    }
+
     /// Names the pass that kept the holder through a whole recovery window (NBDIAG-4).
     fn report_stuck_holder(&self) {
         let owner = self.holder_owner.lock().ok().and_then(|owner| *owner);

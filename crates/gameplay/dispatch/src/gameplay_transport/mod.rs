@@ -1539,6 +1539,13 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// Keep one standard pass for Animate Dead after the holder already in flight returns.
+    /// This uses the original command start and stays inside the idle liveness interval.
+    fn allow_corpse_rune_pass(&mut self) {
+        self.deadline +=
+            2 * crate::durability::DB_PASS_DEADLINE + self.backoff - COMMAND_HOLDER_WINDOW;
+    }
+
     fn for_background_command(root: &'r DurabilityRoot) -> Self {
         Self::for_holder_window(root, COMMAND_HOLDER_WINDOW)
     }
