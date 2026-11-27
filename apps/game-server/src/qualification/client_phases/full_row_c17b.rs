@@ -229,13 +229,14 @@ pub(super) async fn seeded_caster(
 }
 
 const SPEAR: u32 = 3277;
+const SPEAR_COUNT: u32 = 5;
 
 async fn prepare_caster(
     clients: &SeamClients<'_>,
     row: &str,
     tag: u8,
     spell: &crate::spell::SpellDefinition,
-    weapon: Option<u32>,
+    weapon: Option<(u32, u32)>,
 ) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(row, "sorcerer-level-35", "Invisibility cast prerequisites");
     let mut initial = connect_character(clients, tag, 0).await?;
@@ -246,8 +247,8 @@ async fn prepare_caster(
         "c17b-sorcerer".into(),
     )
     .await?;
-    if let Some(id) = weapon {
-        character_prep::grant_item(&initial, id, 1).await?;
+    if let Some((id, count)) = weapon {
+        character_prep::grant_item(&initial, id, count).await?;
     }
     logout(&mut initial).await?;
     drop(initial);
@@ -719,15 +720,9 @@ pub(super) async fn require_rat_stops(
 // The full-row caster wears no armour or shield. A plain spear replaces
 // fist defence with zero without changing the Rat or its damage rolls.
 async fn full_caster_loadout(caster: &mut DevClientSession) -> TestResult<Defence> {
-    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
     let spear = provisioning::item_reference(&provisioning::item_index()?, SPEAR)?;
-    let source = caster.inventory()
-        .and_then(|inventory| inventory.entries.iter().find(|item| item.item_definition_ref == spear))
-        .ok_or("FIXTURE C17b spear absent after admission")?.handle;
-    let result = caster.move_item(&ItemMoveIntent {
-        source,
-        destination: ItemMoveDestination::Equipment(EquipmentSlot::RightHand),
-    }).await?;
+    let result = caster.session_mut().equip_item_definition(spear).await?;
     if result.outcome != ItemMoveOutcome::Moved {
         return Err(format!("FIXTURE C17b spear equip refused: {result:?}").into());
     }
@@ -774,7 +769,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if cost != 440 {
         return Err(format!("C17b served mana cost={cost} expected=440 per Global Tibia").into());
     }
-    let mut caster = prepare_caster(&caster_clients, "C17b.full", 0xb1, spell, Some(SPEAR))
+    let mut caster = prepare_caster(&caster_clients, "C17b.full", 0xb1, spell, Some((SPEAR, SPEAR_COUNT)))
         .await
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let defence = full_caster_loadout(&mut caster).await?;
