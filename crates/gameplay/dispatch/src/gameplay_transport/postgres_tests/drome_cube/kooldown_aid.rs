@@ -9,15 +9,80 @@ use std::num::NonZeroU64;
 
 const TEXT: &str = "Your spells are no longer on cooldown.";
 
-pub(super) async fn run(
+pub(super) async fn delayed_publication(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    harness: &Harness,
     actor: ExactActorRef,
     session: GameSessionId,
     index: &ItemDefinitionIndex,
 ) -> TestResult {
-    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use oteryn_protocol_oteryn::presentation::{ActorCooldown, ActorCooldownKind};
+
     let mut admitted = cases::admitted(owner, actor, session)?;
+    select_cooldown_capabilities(&mut admitted)?;
+    let _clock = owner.freeze_owner_clock_for_test();
+    let start = owner.owner_now();
+    let commit = start.checked_add(750_000).map_err(debug)?;
+    let publish = start.checked_add(2_000_000).map_err(debug)?;
+    let groups = [
+        ("attack", 500_000),
+        ("support", 1_000_000),
+        ("healing", 1_500_000),
+    ];
+    let mut cooldowns = Cooldowns::default();
+    for (key, duration) in groups {
+        cooldowns
+            .groups
+            .insert(key.into(), start.checked_add(duration).map_err(debug)?);
+    }
+    install(owner, actor, session, cooldowns).await?;
+    let aid = index
+        .definition_ref(
+            "Item",
+            KOOLDOWN_AID_KEY,
+            index.revision(KOOLDOWN_AID_KEY).ok_or("Aid revision")?,
+        )
+        .ok_or("Aid definition")?;
+    let use_aid = encode_item_use_intent(&UseIntent {
+        target: UseTarget::ItemByDefinition(aid),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let result = wire::exchange_with_owner(
+        WireOwner(owner, Some((commit.get(), publish.get()))),
+        admitted,
+        &[use_aid],
+    )
+    .await?;
+    assert_eq!(result.results, [UseDisposition::Committed]);
+    assert_eq!(result.notices, [TutorialNotice::StatusText(TEXT.into())]);
+    let [clearance] = result.cooldowns.as_slice() else {
+        return Err("expected one committed Aid clearance frame".into());
+    };
+    assert_eq!(clearance.server_now_ms, publish.get() / 1_000);
+    let keys = crate::gameplay_transport::spell_catalog::cooldown_group_keys().ok_or("group keys")?;
+    let mut expected = Vec::new();
+    for key in ["support", "healing"] {
+        let index = keys.iter().position(|candidate| candidate == key).ok_or("group index")?;
+        expected.push(ActorCooldown {
+            kind: ActorCooldownKind::Group,
+            id: u32::try_from(index + 1)?,
+            expires_at_ms: 0,
+        });
+    }
+    expected.sort_unstable_by_key(|entry| entry.id);
+    assert_eq!(
+        clearance.entries, expected,
+        "attack expired before commit and both active groups clear"
+    );
+    eprintln!("KOOLDOWN_AID_DELAYED POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+
+fn select_cooldown_capabilities(admitted: &mut AdmittedSession) -> TestResult {
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
         &[
             OfferedCapability { id: 4, requires: &[] },
@@ -29,6 +94,18 @@ pub(super) async fn run(
         ],
         &[4, 6, 14, 15, 23, 31],
     ).ok_or("cooldown capability selection")?;
+    Ok(())
+}
+
+pub(super) async fn run(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    index: &ItemDefinitionIndex,
+) -> TestResult {
+    let mut admitted = cases::admitted(owner, actor, session)?;
+    select_cooldown_capabilities(&mut admitted)?;
     let keys = ["exura", "exura gran"].map(|words| {
         owner.spells.spoken(words).map(|spoken| spoken.spell.key.as_str())
     });

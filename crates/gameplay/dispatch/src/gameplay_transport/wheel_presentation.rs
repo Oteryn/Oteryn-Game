@@ -207,6 +207,30 @@ macro_rules! composed_methods {
             &self,
             admitted: connection::AdmittedSession,
         ) -> Option<[u8; 9]> {
+            let actor = admitted.runtime_actor?;
+            let session = admitted.game_session_id;
+            {
+                let runtime = self.runtime.lock().await;
+                if !battle_instinct_status::actor_is_current(&runtime, admitted) {
+                    return None;
+                }
+            }
+            let budget = AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
+            let allocation_ready = || {
+                self.states.wheel_sessions.lock().ok().is_some_and(|sessions| {
+                    sessions.get(&session).is_some_and(Option::is_some)
+                })
+            };
+            if !budget.retry_until(async || {
+                if !allocation_ready() {
+                    self.admit_wheel_session(session).await;
+                }
+                allocation_ready()
+                    && self.load_wheel_gift(actor, session).await
+                    && self.refresh_wheel_vitals_with_budget(actor, session, Some(&budget)).await
+            }).await {
+                return None;
+            }
             wheel_presentation::gift_status(self, admitted).await
         }
 

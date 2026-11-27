@@ -432,6 +432,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reward_granted: None,
             gate_message_id: None,
             potion_utterance,
+            cooldown_clearance: None,
             refusal_detail: None,
         }
     }
@@ -856,6 +857,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             earned: EarnedNotice::NoneEarned,
             reward_granted: None,
             gate_message_id: None,
+            cooldown_clearance: None,
             potion_utterance: None,
             refusal_detail: None,
         })

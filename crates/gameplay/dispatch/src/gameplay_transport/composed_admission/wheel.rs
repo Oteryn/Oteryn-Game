@@ -8,6 +8,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        self.refresh_wheel_vitals_with_budget(actor, session, None)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn refresh_wheel_vitals_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: Option<&AdmissionRetryBudget<'_>>,
+    ) -> bool {
         // Without a current allocation there are no Wheel effects to qualify. In particular,
         // observing vitals must not take the root's sole holder away from death reconciliation.
         // Still apply zero bonuses below so a removed/stale allocation clears old maxima.
@@ -24,27 +34,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         // Allocation checks this session's Premium owner too. The spell state's Premium
         // cache can still be unset at entry or stale until the next spell-access refresh.
-        let premium = if current_allocation {
+        let access_ready = if current_allocation && self.premium_coordinator.is_some() {
             // Install the same owner-qualified promotion and conservative Premium deadline
             // that spell casts use. A bool-only gate cannot authorize later combat reads.
-            self.refresh_and_apply_spell_access(actor, session)
-                .await
-                .premium_gate()
-                .premium_current()
+            !matches!(
+                &*self.refresh_and_apply_spell_access_with_budget(actor, session, budget).await,
+                crate::gameplay_transport::spell_premium_coordinator::RegisteredSpellAccessOwner::Unavailable { .. }
+            )
         } else {
-            false
+            true
         };
-        // Promotion is a separate permanent Character fact. Buying it does not replace
-        // the base vocation stored in the build or in the live spell state.
-        let promoted = current_allocation
-            && match self.current_quest_fence(session).await {
-                Ok(Some(fence)) => self
-                    .root
-                    .read_promotion_for_session(self.character, self.holder, fence.item_fence())
-                    .await
-                    .unwrap_or(false),
-                _ => false,
-            };
+        if !access_ready {
+            return false;
+        }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let Some(state) = states.get(&runtime, actor, session) else {
@@ -64,8 +66,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::spell::Vocation::Monk => "monk",
             crate::spell::Vocation::ExaltedMonk => "exalted_monk",
         };
+        let now = self.owner_now().get();
+        let eligible = current_allocation
+            && self.premium_coordinator.is_some()
+            && state.wheel_effects_at(now).is_some();
         let bonuses = self
-            .wheel_stat_bonuses(session, vocation, facts.level, promoted, premium)
+            .wheel_stat_bonuses(session, vocation, facts.level, eligible, eligible)
             .unwrap_or_default();
         states
             .get_mut(&runtime, actor, session)
@@ -76,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return false;
                 }
-                state.install_wheel_effects_at(bonuses, self.owner_now().get());
+                state.install_wheel_effects_at(bonuses, now);
                 true
             })
     }
@@ -87,7 +93,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn admit_wheel_session(&self, session: GameSessionId) {
         let fence = self.current_quest_fence(session).await;
         let retry = self.wheel_ruleset.is_some() && !matches!(&fence, Ok(None));
-        let allocation = match (fence, &self.wheel_ruleset) {
+        let loaded = match (fence, &self.wheel_ruleset) {
             (Ok(Some(fence)), Some(ruleset)) => {
                 crate::durability::character_wheel::admit_character_wheel(
                     &self.revision_sequencer,
@@ -98,13 +104,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ruleset,
                 )
                 .await
+                .map(|allocation| (fence, allocation))
             }
             _ => None,
         };
         // A Character without admitted progression has no Wheel allocation. Keep the
         // documented fail-closed result local to Wheel instead of immediately starting the
         // progression-backed Atelier owner with the same missing state.
-        if allocation.is_none() {
+        let Some((fence, allocation)) = loaded else {
             if retry {
                 self.schedule_quest_refresh(session);
             }
@@ -115,12 +122,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 sessions.insert(session, None);
             }
             return;
-        }
-        if let (Ok(Some(fence)), Some(_), Some(_)) = (
-            self.current_quest_fence(session).await,
-            &self.wheel_ruleset,
-            self.premium_coordinator,
-        ) {
+        };
+        if self.premium_coordinator.is_some() {
             let _ = self
                 .execute_gem_atelier(
                     session,
@@ -134,21 +137,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let atelier = self
             .root
-            .read_character_atelier(
-                self.character,
-                match self.current_quest_fence(session).await {
-                    Ok(Some(fence)) => fence.character_id,
-                    _ => return,
-                },
-            )
+            .read_character_atelier(self.character, fence.character_id)
             .await
             .ok()
             .flatten();
         if let Ok(mut sessions) = self.states.atelier_sessions.lock() {
             sessions.insert(session, atelier);
         }
+        // A busy optional Atelier read must not discard the admitted Wheel allocation.
         if let Ok(mut sessions) = self.states.wheel_sessions.lock() {
-            sessions.insert(session, allocation);
+            sessions.insert(session, Some(allocation));
         }
     }
 

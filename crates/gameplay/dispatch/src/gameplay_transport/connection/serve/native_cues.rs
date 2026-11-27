@@ -123,6 +123,7 @@ pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAu
     stream: &mut S,
     authority: &A,
     session: &mut ServeState,
+    committed_clearance: Option<&[cooldown_wire::ActorCooldown]>,
 ) -> Result<(), ServeEnd> {
     use cooldown_wire as wire;
     let Some(previous) = session.cooldowns.as_mut() else {
@@ -138,21 +139,32 @@ pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAu
     current.entries.retain(|entry| {
         previous.deadlines.get(&(entry.kind, entry.id)) != Some(&entry.expires_at_ms)
     });
-    // Natural expiry is already known to the client. An early reset needs a tombstone.
-    current.entries.extend(
-        previous
-            .deadlines
-            .iter()
-            .filter_map(|(&(kind, id), &expiry)| {
-                (expiry > current.server_now_ms && !next.contains_key(&(kind, id))).then_some(
-                    wire::ActorCooldown {
-                        kind,
-                        id,
-                        expires_at_ms: 0,
-                    },
-                )
-            }),
-    );
+    if let Some(clearance) = committed_clearance {
+        // This command captured its reset under the spell owner. Publication latency
+        // cannot turn a committed reset into natural expiry. Preserve any newer deadline.
+        current.entries.extend(
+            clearance
+                .iter()
+                .copied()
+                .filter(|entry| !next.contains_key(&(entry.kind, entry.id))),
+        );
+    } else {
+        // Natural expiry is already known to the client. An early reset needs a tombstone.
+        current.entries.extend(
+            previous
+                .deadlines
+                .iter()
+                .filter_map(|(&(kind, id), &expiry)| {
+                    (expiry > current.server_now_ms && !next.contains_key(&(kind, id))).then_some(
+                        wire::ActorCooldown {
+                            kind,
+                            id,
+                            expires_at_ms: 0,
+                        },
+                    )
+                }),
+        );
+    }
     if current.entries.is_empty() {
         previous.deadlines = next;
         return Ok(());

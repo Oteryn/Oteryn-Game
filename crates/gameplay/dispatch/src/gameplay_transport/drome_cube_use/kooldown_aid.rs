@@ -5,6 +5,7 @@
 use super::super::*;
 use crate::durability::item_use::concoction::kooldown_aid::{KOOLDOWN_AID_KEY, KooldownAidOutcome};
 use crate::gameplay_transport::item_craft::retry_item_use_holder;
+use oteryn_protocol_oteryn::presentation::ActorCooldown;
 
 const RESET_TEXT: &str = "Your spells are no longer on cooldown.";
 
@@ -61,9 +62,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
         {
             Ok(true) => {
-                self.finish_kooldown_aid(actor, command, binding, UseDisposition::Committed)
+                let cooldown_clearance = self
+                    .finish_kooldown_aid(actor, command, binding, UseDisposition::Committed)
                     .await?;
-                return Ok(Some(outcome(UseDisposition::Committed)));
+                return Ok(Some(UseOutcome {
+                    cooldown_clearance,
+                    ..outcome(UseDisposition::Committed)
+                }));
             }
             Ok(false) => {}
             Err(ItemUseError::Unavailable(_)) => return Err(()),
@@ -82,7 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return self
                 .commit_kooldown_attempt(actor, command, pending.request.clone(), binding)
                 .await
-                .map(|result| Some(outcome(result)));
+                .map(Some);
         }
         let native = match self
             .active_generation
@@ -221,7 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.commit_kooldown_attempt(actor, command, request, binding)
             .await
-            .map(|result| Some(outcome(result)))
+            .map(Some)
     }
 
     async fn commit_kooldown_attempt(
@@ -230,7 +235,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         request: ItemUseRequest,
         binding: [u8; 32],
-    ) -> Result<UseDisposition, ()> {
+    ) -> Result<UseOutcome, ()> {
         let fence = command.item_fence.ok_or(())?;
         let command_ref = CommandRef::new(
             command.game_session_id,
@@ -281,7 +286,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
-        self.finish_kooldown_aid(actor, command, binding, disposition)
+        let cooldown_clearance = self
+            .finish_kooldown_aid(actor, command, binding, disposition)
             .await?;
         if let Some(ms) = remaining_ms {
             let seconds = ms.div_ceil(1000);
@@ -293,7 +299,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )),
             );
         }
-        Ok(disposition)
+        Ok(UseOutcome {
+            cooldown_clearance,
+            ..outcome(disposition)
+        })
     }
 
     /// No await between applying the runtime effect and releasing its retained PREPARE.
@@ -304,7 +313,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         binding: [u8; 32],
         disposition: UseDisposition,
-    ) -> Result<(), ()> {
+    ) -> Result<Option<Vec<ActorCooldown>>, ()> {
         {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -318,12 +327,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && pending.binding() == Some(binding)
                 });
             if !ours {
-                return Ok(());
+                return Ok(None);
             }
         }
         if disposition != UseDisposition::Committed {
             self.finish_cube(actor, command, disposition).await;
-            return Ok(());
+            return Ok(None);
         }
         let fence = command.item_fence.ok_or(())?;
         // Re-prove the current item fence even when the receipt's source is consumed.
@@ -359,10 +368,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .gate(&runtime, actor, command.game_session_id)
             .is_some_and(|gate| gate.finish_cube(command.command_id, disposition))
         {
-            return Ok(());
+            return Ok(None);
         }
         let (_, _, state) = states.actors.get_mut(actor_index).ok_or(())?;
-        clear_kooldown_cooldowns(&mut state.cooldowns, self.owner_now());
+        let committed_at = self.owner_now();
+        let mut clearance = crate::gameplay_transport::spell_catalog::active_cooldowns(
+            self.spells,
+            &state.cooldowns,
+            committed_at.get(),
+        );
+        for entry in &mut clearance {
+            entry.expires_at_ms = 0;
+        }
+        clear_kooldown_cooldowns(&mut state.cooldowns, committed_at);
         states.owner_wake.notify_one();
         drop(states);
         drop(runtime);
@@ -370,7 +388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(RESET_TEXT.into()),
         );
-        Ok(())
+        Ok(Some(clearance))
     }
 }
 
@@ -386,8 +404,8 @@ pub(in crate::gameplay_transport) mod test_faults {
     }
 }
 
-/// Crystal 201189f8 player.cpp:10468-10487 expires individual and group spell
-/// conditions without a book/Harmony filter. It does not remove other conditions.
+/// Global Kooldown-Aid resets all active spell cooldowns (Tibia Fandom archive,
+/// MediaWiki API page Kooldown-Aid). Movement pacification is a separate condition.
 /// Preserve the map entries and expire them at the current semantic time; movement
 /// pacification shares this owner but is not a spell-group condition.
 fn clear_kooldown_cooldowns(

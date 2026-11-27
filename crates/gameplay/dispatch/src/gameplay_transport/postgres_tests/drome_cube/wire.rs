@@ -18,6 +18,14 @@ pub(super) async fn exchange(
     admitted: AdmittedSession,
     payloads: &[Vec<u8>],
 ) -> TestResult<Exchange> {
+    exchange_with_owner(WireOwner(owner, None), admitted, payloads).await
+}
+
+pub(super) async fn exchange_with_owner(
+    owner: WireOwner<'_, '_, '_, '_>,
+    admitted: AdmittedSession,
+    payloads: &[Vec<u8>],
+) -> TestResult<Exchange> {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     for (command_id, payload) in (admitted.continuity.next_command_id..).zip(payloads) {
         let frame = oteryn_protocol_oteryn::encode_client_command(
@@ -37,7 +45,7 @@ pub(super) async fn exchange(
     let end = crate::gameplay_transport::connection::serve_admitted(
         &mut server,
         admitted,
-        &WireOwner(owner),
+        &owner,
         crate::gameplay_transport::connection::IDLE_LIVENESS,
     )
     .await;

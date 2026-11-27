@@ -642,6 +642,8 @@ pub struct UseOutcome {
     /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
     pub gate_message_id: Option<u8>,
     pub potion_utterance: Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
+    /// Spell cooldowns active immediately before this command's committed reset.
+    pub cooldown_clearance: Option<Vec<oteryn_protocol_oteryn::presentation::ActorCooldown>>,
     /// PARITY-REFUSAL-DETAIL-1: the refusal detail the disposition alone does not name (the
     /// floor of a target out of reach). `None` sends the disposition's own detail under
     /// capability 66; nothing is sent without it.
@@ -657,6 +659,7 @@ impl UseOutcome {
             reward_granted: None,
             gate_message_id: None,
             potion_utterance: None,
+            cooldown_clearance: None,
             refusal_detail: None,
         }
     }

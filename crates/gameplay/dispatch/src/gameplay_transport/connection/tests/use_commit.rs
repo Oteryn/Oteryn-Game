@@ -76,6 +76,7 @@ fn admitted_use_commit_write_failure_does_not_record_the_overlay_revision()
                 earned: EarnedNotice::NoneEarned,
                 reward_granted: None,
                 gate_message_id: None, potion_utterance: None, refusal_detail: None,
+                cooldown_clearance: None,
             },
         };
         let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -135,6 +136,7 @@ fn admitted_use_passes_command_identity_and_fence_and_chest_commit_emits_no_delt
                 earned: EarnedNotice::NoneEarned,
                 reward_granted: None,
                 gate_message_id: None, potion_utterance: None, refusal_detail: None,
+                cooldown_clearance: None,
             },
         };
         let world_id = WorldId::decode(&WORLD)?;
@@ -213,6 +215,7 @@ fn admitted_use_non_committing_disposition_emits_no_delta_and_unregistered_type_
                 earned: EarnedNotice::NoneEarned,
                 reward_granted: None,
                 gate_message_id: None, potion_utterance: None, refusal_detail: None,
+                cooldown_clearance: None,
             },
         };
         let use_type = u64::from(COMMAND_TYPE_USE_INTENT);

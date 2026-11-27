@@ -22,6 +22,7 @@ pub(super) fn outcome(disposition: UseDisposition) -> UseOutcome {
         earned: EarnedNotice::NoneEarned,
         reward_granted: None,
         gate_message_id: None,
+        cooldown_clearance: None,
         potion_utterance: None,
         refusal_detail: None,
     }
