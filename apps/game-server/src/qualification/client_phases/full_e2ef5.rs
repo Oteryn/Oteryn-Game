@@ -1439,7 +1439,7 @@ async fn loot_corpse_coins(
     corpse: oteryn_dev_client::WorldSpatialEntity,
     index: &crate::content::item_ref::ItemDefinitionIndex,
 ) -> TestResult {
-    let oteryn_dev_client::EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
+    let (oteryn_dev_client::EntityDetail::Object { item_handle: Some(handle), .. } | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. }) = corpse.detail else {
         return Err("Rat corpse has no server-issued item handle".into());
     };
     let use_reply = client.use_item(handle).await?;
@@ -4044,7 +4044,7 @@ async fn player_corpse(
                         if entry.kind == oteryn_dev_client::EntityKind::Corpse
                             && !existing.contains(&entry.entity)
                             && entry.position == last
-                            && matches!(entry.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. } if item_definition_ref == corpse_ref.get())
+                            && matches!(entry.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. } | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_definition_ref, item_handle: Some(_), .. } if item_definition_ref == corpse_ref.get())
                         {
                             corpse = Some((entry, delta.server_sequence));
                         }

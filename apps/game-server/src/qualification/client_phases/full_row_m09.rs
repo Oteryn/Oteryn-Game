@@ -459,6 +459,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         oteryn_dev_client::EntityDetail::Object {
             item_handle: Some(handle),
             ..
+        } | oteryn_dev_client::EntityDetail::ObjectWithAppearance {
+            item_handle: Some(handle),
+            ..
         } => handle,
         _ => return Err("step 4 served corpse has no item handle".into()),
     };

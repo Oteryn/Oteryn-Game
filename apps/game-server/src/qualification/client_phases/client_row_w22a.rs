@@ -81,7 +81,7 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
             return Err("step=death no corpse frame".into());
         }
     };
-    let EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
+    let (EntityDetail::Object { item_handle: Some(handle), .. } | EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. }) = corpse.detail else {
         return Err("step=corpse the corpse has no item handle".into());
     };
     let used = client.use_item(handle).await?;

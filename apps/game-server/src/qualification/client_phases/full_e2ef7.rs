@@ -4059,10 +4059,13 @@ async fn hunt_one_inner(
         return Err(format!("starter attack stop refused: {stopped:?}").into());
     }
     // Loot only a real nearby corpse; custody comes from native MOVE results.
-    let oteryn_dev_client::EntityDetail::Object {
+    let (oteryn_dev_client::EntityDetail::Object {
         item_handle: Some(handle),
         ..
-    } = corpse.detail
+    } | oteryn_dev_client::EntityDetail::ObjectWithAppearance {
+        item_handle: Some(handle),
+        ..
+    }) = corpse.detail
     else {
         return Err("killed creature corpse has no server-issued item handle".into());
     };
@@ -6685,6 +6688,9 @@ async fn forge_attack_corpse(
                 .as_ref()
                 .and_then(|hunt| hunt.corpse(client.entities.iter(), true))
             && let spatial::EntityDetail::Object {
+                item_handle: Some(handle),
+                ..
+            } | spatial::EntityDetail::ObjectWithAppearance {
                 item_handle: Some(handle),
                 ..
             } = corpse.detail

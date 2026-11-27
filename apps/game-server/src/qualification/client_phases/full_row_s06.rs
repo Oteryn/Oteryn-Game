@@ -434,10 +434,13 @@ async fn hunt_hunter(client: &mut DevClientSession) -> TestResult {
     {
         return Err("hunt did not observe damage and target removal".into());
     }
-    let EntityDetail::Object {
+    let (EntityDetail::Object {
         item_handle: Some(handle),
         ..
-    } = corpse.detail
+    } | EntityDetail::ObjectWithAppearance {
+        item_handle: Some(handle),
+        ..
+    }) = corpse.detail
     else {
         return Err("hunt corpse has no server-issued item handle".into());
     };

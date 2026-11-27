@@ -135,13 +135,12 @@ pub(super) async fn hunt_target(
     {
         return Err("hunt did not observe damage and target removal".into());
     }
-    let EntityDetail::Object {
-        item_handle: Some(handle),
-        ..
-    } = corpse.detail
-    else {
-        return Err("hunt corpse has no server-issued item handle".into());
-    };
+    let (variant, handle) = corpse_item_handle(corpse.detail);
+    evidence(&format!(
+        "hunt corpse entity={:?} detail={variant}",
+        corpse.entity
+    ));
+    let handle = handle.ok_or("hunt corpse has no server-issued item handle")?;
     let used = client.use_item(handle).await?;
     if used.status != CommandStatus::Accepted
         || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
@@ -226,4 +225,45 @@ pub(super) async fn hunt_target(
         entries.len()
     ));
     Ok(())
+}
+
+fn corpse_item_handle(
+    detail: oteryn_dev_client::EntityDetail,
+) -> (
+    &'static str,
+    Option<oteryn_protocol_oteryn::item_view::ItemHandle>,
+) {
+    use oteryn_dev_client::EntityDetail;
+    match detail {
+        EntityDetail::Object { item_handle, .. } => ("Object", item_handle),
+        EntityDetail::ObjectWithAppearance { item_handle, .. } => {
+            ("ObjectWithAppearance", item_handle)
+        }
+        _ => ("non-object", None),
+    }
+}
+
+#[test]
+fn hunt_corpse_handle_accepts_both_wire_variants() {
+    use oteryn_dev_client::EntityDetail;
+    let handle = oteryn_protocol_oteryn::item_view::ItemHandle::new(17);
+    for item_handle in [handle, None] {
+        assert_eq!(
+            corpse_item_handle(EntityDetail::Object {
+                item_definition_ref: 42,
+                quantity: 1,
+                item_handle
+            }),
+            ("Object", item_handle)
+        );
+        assert_eq!(
+            corpse_item_handle(EntityDetail::ObjectWithAppearance {
+                item_definition_ref: 42,
+                quantity: 1,
+                item_handle,
+                appearance_id: std::num::NonZeroU16::MIN,
+            }),
+            ("ObjectWithAppearance", item_handle)
+        );
+    }
 }

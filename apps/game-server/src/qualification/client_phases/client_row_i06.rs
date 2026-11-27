@@ -81,7 +81,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err("I06 kill produced no corpse entity payload".into());
         }
     };
-    let EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
+    let (EntityDetail::Object { item_handle: Some(handle), .. } | EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. }) = corpse.detail else {
         return Err("I06 corpse has no item handle".into());
     };
     let used = client.use_item(handle).await?;
