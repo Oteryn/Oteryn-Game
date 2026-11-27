@@ -181,12 +181,14 @@ fn selected_item_loot_click_round_trip() -> Result<(), Box<dyn std::error::Error
             assert!(!link.quick_loot_corpse_item(container, corpse, taken.handle));
 
             push(
-                exchange(remaining.handle, vec![0x10, 2], CommandStatus::Rejected),
+                exchange(remaining.handle, vec![0x08, 0x01], CommandStatus::Rejected),
                 vec![],
             );
             assert!(link.quick_loot_corpse_item(container, corpse, remaining.handle));
             wait(&|| link.corpse_loot_view().feedback == Some("Item is no longer available"));
-            assert_eq!(link.corpse_loot_view().contents, after);
+            let view = link.corpse_loot_view();
+            assert_eq!(view.identity, Some(corpse));
+            assert_eq!(view.contents, after);
             assert!(link.quick_loot_panel().pending.is_none());
             Ok(())
         },
@@ -915,7 +917,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             assert_eq!(notices(), before);
             assert_eq!(
                 panel.feedback,
-                "Loot request refused or invalid reply; try again"
+                "The server refused the request"
             );
             continue;
         }

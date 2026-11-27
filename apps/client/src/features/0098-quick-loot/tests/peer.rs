@@ -65,6 +65,46 @@ impl Stepper for Peer {
         Ok(None)
     }
 }
+
+#[tokio::test]
+async fn quick_loot_restore_refusal_keeps_saved_settings() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_session::quick_loot::*;
+    let (link, _, outbox) = play_channel();
+    let exchange = Exchange {
+        command: ServerMechanicCommand {
+            capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            payload: encode_quick_loot_request(&quick_loot_filter_review_request())
+                .map_err(|error| format!("{error:?}"))?,
+        },
+        payload: encode_quick_loot_refusal(QuickLootRefusal::Unavailable),
+        status: CommandStatus::Rejected,
+    };
+    let mut peer = Peer {
+        exchanges: Arc::new(Mutex::new(Exchanges::from([(exchange, vec![])]))),
+        events: vec![],
+        entities: vec![],
+    };
+    outbox.discovery_initialize(&peer);
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        let panel = &mut mailbox.discovery.loot;
+        panel.filter_mode = Some(QuickLootFilterMode::Skip);
+        panel.skipped.insert(4097);
+        panel.destinations.push(oteryn_client_ui::quick_loot::Action::Destination {
+            category: Some(QuickLootCategory::Gold),
+            recipient: QuickLootRecipient::MainContainer,
+            id: None,
+            fallback: true,
+        });
+    }
+    let mut expected = link.quick_loot_panel();
+    expected.feedback = "The server refused the request".into();
+    outbox.restore_quick_loot(&mut peer).await?;
+    assert_eq!(link.quick_loot_panel(), expected);
+    Ok(())
+}
 pub(in crate::play::tests) fn scenario(
     run: impl FnOnce(
         &crate::play::PlayLink,

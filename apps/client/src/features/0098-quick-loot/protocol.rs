@@ -76,6 +76,13 @@ impl Outbox {
             payload,
         }).await?;
         if response.status != CommandStatus::Accepted {
+            if matches!(
+                response.status,
+                CommandStatus::Rejected | CommandStatus::DuplicateReplay
+            ) && decode_quick_loot_refusal(&response.payload).is_ok()
+            {
+                lock(&self.0).discovery.loot.feedback = tr!("The server refused the request").into();
+            }
             return Ok(());
         }
         if let Ok(saved) = decode_quick_loot_destinations(&response.payload) {
