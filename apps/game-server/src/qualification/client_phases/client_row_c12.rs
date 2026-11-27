@@ -387,13 +387,17 @@ async fn verify_post_cast_relog<S: oteryn_dev_client::native_session::SessionStr
         return Err(format!("C12.client logout refused on first attempt: {logout:?}").into());
     }
     drop(session);
+    let saved_mana = full_row_c12::saved_mana(clients).await?;
+    if saved_mana < mana || saved_mana >= mana_before_cast {
+        return Err(format!("C12.client terminal mana does not preserve the cast debit: before_cast={mana_before_cast} before_logout={mana} saved={saved_mana}").into());
+    }
     let fresh = full_row_c12::connect_c12_character(clients).await?;
     let durable_mana = fresh
         .actor_vitals()
         .ok_or("C12.client post-relog vitals absent")?
         .mana;
-    if fresh.join_snapshot().game_session_id == old_id || durable_mana != mana {
-        return Err(format!("C12.client relog did not retain exact post-cast mana: expected={mana} observed={durable_mana}").into());
+    if fresh.join_snapshot().game_session_id == old_id || durable_mana != saved_mana {
+        return Err(format!("C12.client relog did not retain exact post-cast mana: expected={saved_mana} observed={durable_mana}").into());
     }
     evidence(&format!(
         "C12_CLIENT_RELOG mana_before_cast={mana_before_cast} durable_mana={durable_mana} fresh_session=true"

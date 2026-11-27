@@ -22,13 +22,13 @@ use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationVa
 use std::num::NonZeroU32;
 
 const PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c12-monk",
-    reason: "C12 tests spell augment behavior after obtaining the weapon and qualifying for the spell.",
+    profile: "c12-monk-augment",
+    reason: "C12 requires a roll large enough that the authored eight percent changes integer damage.",
 };
 const ITEM_ID: u32 = 50_271;
 const AUGMENT_BPS: u64 = 800;
 const PEMA_PRICE: u64 = 20_000;
-const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions,magma-crystal";
+const PREREQUISITES: &str = "level-80-monk,premium,purchase-gold,mana-potions,magma-crystal";
 const FIXTURE_TARGET: &str = "oteryn:creature.magma_crystal";
 const CRYSTAL_COIN: u32 = 3043;
 const CRYSTAL_COIN_VALUE: u64 = 10_000;
@@ -359,22 +359,37 @@ impl Hunt {
         if outcome.disposition != SpellCastDisposition::Cast {
             return Err(format!("CAST reply={outcome:?}").into());
         }
-        let vitals = outcome
+        let delta = outcome
             .actor_vitals_delta
             .as_ref()
-            .ok_or("C12 accepted cast omitted actor-vitals")?
-            .value;
-        if before.mana.checked_sub(CAST_MANA) != Some(vitals.mana) {
+            .ok_or("C12 accepted cast omitted actor-vitals")?;
+        let vitals = delta.value;
+        let in_flight = client.take_events();
+        let mana_before_cast = in_flight
+            .iter()
+            .filter_map(|event| match event {
+                SessionEvent::ActorVitals(update)
+                    if update.server_sequence < delta.server_sequence =>
+                {
+                    Some(update)
+                }
+                _ => None,
+            })
+            .max_by_key(|update| update.server_sequence)
+            .map_or(before.mana, |update| update.value.mana);
+        if mana_before_cast.checked_sub(CAST_MANA) != Some(vitals.mana) {
             return Err(format!(
-                "C12 expected {CAST_MANA} mana spent, observed {} -> {}",
-                before.mana, vitals.mana
-            )
-            .into());
+                "C12 expected {CAST_MANA} mana spent, observed {mana_before_cast} -> {} from wire sequence {}",
+                vitals.mana, delta.server_sequence
+            ).into());
         }
         if client.actor_vitals() != Some(&vitals) {
             return Err("C12 cast vitals were not applied to the client view".into());
         }
-        let mut damage = 0_u64;
+        let mut damage = in_flight
+            .iter()
+            .map(|event| cast_damage_in(event, own, victim))
+            .sum::<u64>();
         let window = tokio::time::Instant::now() + Duration::from_secs(3);
         while damage == 0 && tokio::time::Instant::now() < window {
             client.service_liveness(Duration::from_millis(50)).await?;
@@ -1165,6 +1180,22 @@ pub(super) fn item_dictionary_pin(
     })
 }
 
+/// Read the terminal logout's persisted mana before any successor session can regenerate.
+pub(super) async fn saved_mana(clients: &SeamClients<'_>) -> TestResult<u32> {
+    use sqlx::Connection;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mana = sqlx::query_scalar::<_, Option<i32>>(
+        "SELECT mana FROM game_character_last_positions
+          WHERE character_id = encode($1,'hex')::uuid AND world_id = encode($2,'hex')::uuid",
+    )
+    .bind(clients.characters[1].as_slice())
+    .bind(clients.world.as_slice())
+    .fetch_one(&mut db)
+    .await?
+    .ok_or("C12 terminal position did not save mana")?;
+    Ok(u32::try_from(mana)?)
+}
+
 pub(super) async fn connect_c12_character(
     clients: &SeamClients<'_>,
 ) -> TestResult<DevClientSession> {
@@ -1229,9 +1260,9 @@ async fn verify_seeded_monk(client: &mut DevClientSession) -> TestResult {
         .actor_vitals()
         .ok_or("C12 seeded Monk has no actor-vitals snapshot")?;
     // Crystal's level 8 pools are 185 HP and 90 mana. Monk adds 10 to each per level.
-    if (level, vitals.max_health, vitals.max_mana) != (20, 305, 210) {
+    if (level, vitals.max_health, vitals.max_mana) != (80, 905, 810) {
         return Err(format!(
-            "C12 expected level 20 Monk with 305 max HP and 210 max mana, observed level={level} vitals={vitals:?}"
+            "C12 expected level 80 Monk with 905 max HP and 810 max mana, observed level={level} vitals={vitals:?}"
         ).into());
     }
     Ok(())
@@ -1295,7 +1326,7 @@ pub(super) async fn prepare_client_capture(
 ) -> TestResult<ClientCaptureSetup> {
     character_prep::declare_seeded(
         "C12.client",
-        "level-20-monk,premium,item-50271,magma-crystal",
+        "level-80-monk,premium,item-50271,magma-crystal",
         "capture Greater Tiger Clash with the augment equipped",
     );
     let dedicated =
@@ -1452,7 +1483,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
+    let durable_mana = saved_mana(clients).await?;
     let mut fresh = connect_c12_character(clients).await?;
+    let fresh_vitals = fresh.actor_vitals().ok_or("C12 post-relog vitals absent")?;
+    if durable_mana >= fresh_vitals.max_mana || fresh_vitals.mana != durable_mana {
+        return Err(format!(
+            "C12 relog did not retain changed mana: saved={durable_mana} observed={}",
+            fresh_vitals.mana
+        )
+        .into());
+    }
+    evidence(&format!(
+        "C12_FULL_RELOG durable_mana={durable_mana} fresh_session=true"
+    ));
     if fresh.join_snapshot().game_session_id == old_session
         || !equipped_right(&fresh, definition)
         || carried_count(&fresh, definition) != 0
