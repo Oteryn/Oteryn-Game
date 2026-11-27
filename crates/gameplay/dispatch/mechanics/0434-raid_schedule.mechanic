@@ -3,5 +3,5 @@ commands=171
 [route]
 match routing::raid_schedule::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("raid_schedule_outcome_unavailable")),
 }

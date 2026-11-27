@@ -208,6 +208,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target_tile_solid: None,
                 target_tile_creature: None,
             };
+            super::native_combat_cast::cast_cooldown_refused(
+                &state.cooldowns,
+                spell,
+                now,
+                command_id,
+            );
             let paid = match crate::spell::cast::prepare_native_owner_cast(
                 state,
                 spell,

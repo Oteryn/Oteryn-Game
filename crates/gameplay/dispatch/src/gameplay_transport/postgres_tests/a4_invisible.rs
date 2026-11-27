@@ -26,28 +26,37 @@ use oteryn_protocol_oteryn::zones_nologout::{PlayerPresence, PlayerStatus};
 
 #[test]
 fn a4_invisible_postgres_real_dispatch() -> TestResult {
-    invisibility_case::<false, false, false>()
+    invisibility_case::<false, false, false, false>()
 }
 
 #[test]
 fn invisible_cast_projects_spell_and_support_cooldowns() -> TestResult {
-    invisibility_case::<false, false, true>()
+    invisibility_case::<false, false, true, false>()
 }
 
 #[test]
 fn invisible_caster_stays_visible_to_players_hidden_from_monsters() -> TestResult {
-    invisibility_case::<true, false, false>()
+    invisibility_case::<true, false, false, false>()
 }
 
 #[test]
 fn invisible_player_swing_publishes_exact_rat_damage() -> TestResult {
-    invisibility_case::<false, true, false>()
+    invisibility_case::<false, true, false, false>()
+}
+
+#[test]
+fn invisible_recast_during_committed_pass_and_after_publication_costs_no_mana() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    invisibility_case::<false, false, false, true>()
 }
 
 fn invisibility_case<
     const WITH_OBSERVER: bool,
     const WITH_ATTACK: bool,
     const WITH_COOLDOWNS: bool,
+    const WITH_RECAST: bool,
 >() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -289,20 +298,14 @@ fn invisibility_case<
             } else {
                 None
             };
-            let cooldown_clock = WITH_COOLDOWNS.then(|| owner.freeze_owner_clock_for_test());
-            let outcome = owner
-                .cast_spell_completion(
-                    actor,
-                    session,
-                    1,
-                    SpellCastIntent {
-                        spell,
-                        target: SpellTarget::None,
-                        aim_at_target: false,
-                    },
-                )
-                .await
-                .ok_or("terminal spell completion")?;
+            let cooldown_clock = (WITH_COOLDOWNS || WITH_RECAST).then(|| owner.freeze_owner_clock_for_test());
+            let intent = SpellCastIntent { spell, target: SpellTarget::None, aim_at_target: false };
+            let outcome = if WITH_RECAST {
+                verify_recast_during_pass(&owner, actor, session, intent).await?
+            } else {
+                owner.cast_spell_completion(actor, session, 1, intent)
+                    .await.ok_or("terminal spell completion")?
+            };
             assert_eq!(
                 outcome.disposition,
                 SpellCastDisposition::Cast,
@@ -488,6 +491,59 @@ fn invisibility_case<
             h.cleanup().await
         })
     })
+}
+
+async fn verify_recast_during_pass(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    intent: SpellCastIntent,
+) -> TestResult<crate::gameplay_transport::actor_spell::SpellCastOutcome> {
+    use crate::gameplay_transport::actor_spell::native_combat_cast::{
+        NATIVE_CAST_BEFORE_INSTALL,
+    };
+    use crate::gameplay_transport::actor_spell::NativeCastDispatch;
+    use std::future::{Future, poll_fn};
+    use std::sync::{Arc, atomic::Ordering};
+    use std::task::Poll;
+    let access = owner.refresh_and_apply_spell_access(actor, session).await;
+    let definition = owner.spells.indexed(intent.spell).ok_or("Invisible definition")?;
+    let crate::spell::ManaCost::Fixed(cost) = definition.mana else {
+        return Err("Invisible must have a fixed mana cost".into());
+    };
+    let cooldown_us = definition.groups.iter().map(|group| group.cooldown_micros)
+        .chain(std::iter::once(definition.cooldown_micros)).max().ok_or("cooldown")?;
+    let before = owner.observe_vitals(actor, session).await.ok_or("caster vitals before cast")?.1;
+    assert!(before.mana >= cost.saturating_mul(2), "the fixture must afford both casts");
+    let probe = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    let mut first = std::pin::pin!(NATIVE_CAST_BEFORE_INSTALL.scope(
+        probe.clone(), owner.cast_spell_completion(actor, session, 1, intent),
+    ));
+    tokio::select! {
+        () = probe.0.notified() => {}
+        _ = &mut first => return Err("first cast completed before the COMMIT/publication probe".into()),
+    }
+
+    // Let the full original cooldown elapse in semantic time while the real
+    // durability pass still holds the spell lane. The payer is not yet visible.
+    owner.states.test_owner_time.fetch_add(cooldown_us + 1, Ordering::Relaxed);
+    assert_eq!(owner.observe_vitals(actor, session).await.ok_or("unpublished payer")?.1.mana, before.mana);
+    let mut recast = std::pin::pin!(owner.cast_native_combat(actor, session, 2, &intent, &access, owner.owner_now()));
+    let overlapping = poll_fn(|cx| Poll::Ready(recast.as_mut().poll(cx))).await;
+    probe.1.notify_one();
+    let first = first.await.ok_or("first cast completion")?;
+    assert_eq!(first.disposition, SpellCastDisposition::Cast);
+    let paid = first.vitals.ok_or("paid vitals")?.1.mana;
+    assert_eq!(paid, before.mana - cost);
+    assert!(overlapping.is_pending(), "a new occurrence must wait for the in-flight cast");
+    let NativeCastDispatch::Outcome(refused) = recast.await else {
+        return Err("overlapping cast did not produce a terminal decision".into());
+    };
+    assert_eq!(refused.disposition, SpellCastDisposition::CoolingDown);
+    let immediate = owner.cast_spell_completion(actor, session, 3, intent).await.ok_or("immediate recast completion")?;
+    assert_eq!(immediate.disposition, SpellCastDisposition::CoolingDown);
+    assert_eq!(owner.observe_vitals(actor, session).await.ok_or("caster after recasts")?.1.mana, paid);
+    Ok(first)
 }
 
 async fn assert_invisible_cooldowns(

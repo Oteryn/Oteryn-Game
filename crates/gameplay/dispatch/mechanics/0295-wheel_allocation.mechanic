@@ -6,5 +6,5 @@ authority=wheel_allocation
 [route]
 match routing::wheel_allocation::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("wheel_allocation_outcome_unavailable")),
 }

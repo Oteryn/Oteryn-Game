@@ -6,5 +6,5 @@ authority=team_finder_members
 [route]
 match routing::team_finder_members::route(authority, &session.admitted, command, &mut session.team_finder_view).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("team_finder_members_outcome_unavailable")),
 }

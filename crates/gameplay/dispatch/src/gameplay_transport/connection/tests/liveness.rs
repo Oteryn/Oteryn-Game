@@ -88,6 +88,37 @@ fn command_result_backpressure_does_not_hold_the_connection_forever() -> Result<
 }
 
 #[test]
+fn admitted_peer_eof_is_logged_at_the_read_boundary() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                result = run(async {
+                    let authority = StepAuthority {
+                        steps: RefCell::new(Vec::new()),
+                        tutorial_notices: Default::default(),
+                    };
+                    let (end, _) = drive_session(&authority, positioned()?, &[]).await?;
+                    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                    Ok(())
+                }).map_err(|error| error.to_string());
+            });
+            result?;
+            assert!(
+                lines.iter().any(|line| line.contains(
+                    "event=serve_end reason=peer_eof path=read initiator=peer io_kind=UnexpectedEof"
+                )),
+                "{lines:?}"
+            );
+            Ok::<_, String>(())
+        })?
+        .join()
+        .map_err(|_| "peer close test thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn silent_admitted_client_loses_control_after_the_missed_limit() -> Result<(), Box<dyn Error>> {
     run(async {
         let authority = StepAuthority {

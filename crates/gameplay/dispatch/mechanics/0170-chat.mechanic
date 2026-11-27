@@ -3,5 +3,5 @@ commands=13,6117
 [route]
 match routing::chat::route(authority, session.actor, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("chat_outcome_unavailable")),
 }

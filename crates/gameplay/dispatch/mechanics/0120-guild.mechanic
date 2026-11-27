@@ -6,5 +6,5 @@ authority=guild_intent
 [route]
 match routing::guild::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("guild_outcome_unavailable")),
 }

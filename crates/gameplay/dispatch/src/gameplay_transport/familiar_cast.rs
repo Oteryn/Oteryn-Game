@@ -1456,6 +1456,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(state) = states.get(&runtime, actor, session) else {
                 return Some(SpellCastOutcome::rejected());
             };
+            super::native_combat_cast::cast_cooldown_refused(
+                &state.cooldowns,
+                spell,
+                now,
+                command_id,
+            );
             let Ok(caster) = owned.caster(
                 state,
                 spell,

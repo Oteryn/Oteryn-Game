@@ -5,5 +5,5 @@ authority=atelier
 [route]
 match routing::atelier::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("atelier_outcome_unavailable")),
 }

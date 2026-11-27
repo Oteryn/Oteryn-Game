@@ -3,5 +3,5 @@ commands=6210,6211,6212,6213,6214
 [route]
 match routing::atelier::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("atelier_v2_outcome_unavailable")),
 }

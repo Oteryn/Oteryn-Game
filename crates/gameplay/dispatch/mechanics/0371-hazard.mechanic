@@ -6,5 +6,5 @@ authority=hazard
 [route]
 match routing::hazard::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("hazard_outcome_unavailable")),
 }
