@@ -27,6 +27,18 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
         let bytes = reply.encode().ok_or("all real entries must fit")?;
         assert!(bytes.len() <= wire::MAX_REPLY_BYTES);
         assert_eq!(wire::Reply::decode(&bytes), Some(reply));
+        if vocation == "knight" {
+            let cleansing = rows
+                .iter()
+                .find(|row| row.kind == 1 && row.id == 97)
+                .ok_or("cleansing")?;
+            let momentum = cleansing
+                .effects
+                .iter()
+                .find(|effect| effect.name == "momentum_chance")
+                .ok_or("Momentum")?;
+            assert_eq!(momentum.values, [0, 330, 660, 1000]);
+        }
         if vocation == "monk" {
             let capacity = rows
                 .iter()

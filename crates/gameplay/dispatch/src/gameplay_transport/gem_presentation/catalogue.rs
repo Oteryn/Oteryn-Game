@@ -51,32 +51,33 @@ pub(super) fn project(data: &WheelGemData, vocation: &str) -> Option<Vec<wire::M
                     });
                 }
             } else {
-                for (position, first) in row["grades"][0]["numeric_effects"]
-                    .as_array()?
-                    .iter()
-                    .enumerate()
-                {
-                    let first = supreme_effect(id, 0, first)?;
-                    let mut values = [0; 4];
-                    let expected_unit =
-                        unit(row["grades"][0]["numeric_effects"][position]["unit"].as_str()?)?;
-                    for grade in 0..4 {
-                        let raw = &row["grades"][usize::from(grade)]["numeric_effects"][position];
+                for grade in 0..4 {
+                    let index = usize::from(grade);
+                    let mut present = BTreeSet::new();
+                    for raw in row["grades"][index]["numeric_effects"].as_array()? {
                         let value = supreme_effect(id, grade, raw)?;
-                        if value.kind != first.kind
-                            || value.target != first.target
-                            || unit(raw["unit"].as_str()?)? != expected_unit
-                        {
+                        let effect_unit = unit(raw["unit"].as_str()?)?;
+                        if !present.insert((value.kind, value.target)) {
                             return None;
                         }
-                        values[usize::from(grade)] = value.value_milli;
+                        if let Some(effect) = effects.iter_mut().find(|effect| {
+                            effect.name == value.kind && effect.target == value.target
+                        }) {
+                            if effect.unit != effect_unit {
+                                return None;
+                            }
+                            effect.values[index] = value.value_milli;
+                        } else {
+                            let mut values = [0; 4];
+                            values[index] = value.value_milli;
+                            effects.push(wire::Effect {
+                                name: value.kind.into(),
+                                target: value.target.into(),
+                                unit: effect_unit,
+                                values,
+                            });
+                        }
                     }
-                    effects.push(wire::Effect {
-                        name: first.kind.into(),
-                        target: first.target.into(),
-                        unit: expected_unit,
-                        values,
-                    });
                 }
             }
             let name = if kind == 0 {
