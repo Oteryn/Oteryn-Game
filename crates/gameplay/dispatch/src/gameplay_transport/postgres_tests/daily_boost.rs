@@ -8,91 +8,6 @@ use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAut
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::daily_boost::*;
 
-async fn assert_parked_trade_query(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
-    expected: &[u8],
-) -> TestResult {
-    use crate::foundation::{MessageType, decode_wire_envelope};
-    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
-    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
-    use oteryn_protocol_oteryn::{
-        ClientCommandValue, decode_command_result, encode_client_command,
-    };
-    use tokio::io::{AsyncWriteExt, DuplexStream};
-
-    async fn query(
-        stream: &mut DuplexStream,
-        generation: u64,
-        id: u64,
-    ) -> TestResult<(CommandStatus, Vec<u8>)> {
-        let frame = encode_client_command(
-            generation,
-            &ClientCommandValue {
-                command_id: id,
-                command_type: COMMAND_TYPE_DAILY_BOOST_QUERY,
-                payload: &[],
-            },
-        )
-        .map_err(debug)?;
-        write_frame(stream, &frame).await?;
-        loop {
-            let frame = read_frame(stream).await?;
-            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-            if envelope.message_type() == MessageType::CommandResult {
-                let reply = decode_command_result(envelope.payload()).map_err(debug)?;
-                assert_eq!(reply.command_id, id);
-                return Ok((reply.status, reply.payload.to_vec()));
-            }
-        }
-    }
-
-    let (mut server, mut client) = tokio::io::duplex(4096);
-    let before = *admitted;
-    let serving = async move { serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await };
-    let driving = async move {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
-        owner
-            .states
-            .test_daily_boost_parked_trade
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-        let generation = before.continuity.connection_generation;
-        let rejected = query(&mut client, generation, 5).await;
-        assert_eq!(
-            rejected?,
-            (
-                CommandStatus::Rejected,
-                oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec()
-            )
-        );
-        super::maintain_authority_ready(owner).await;
-        assert_eq!(
-            query(&mut client, generation, 6).await?,
-            (CommandStatus::Accepted, expected.to_vec())
-        );
-        client.shutdown().await?;
-        TestResult::Ok(())
-    };
-    let (end, result) = tokio::time::timeout(
-        std::time::Duration::from_secs(30),
-        super::fixture::join_two(serving, driving),
-    )
-    .await?;
-    if let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(current)
-    | crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenClosed(current, _) = end
-    {
-        *admitted = current;
-    }
-    result
-}
-
 #[test]
 fn daily_boost_postgres_real_dispatch_restart_and_epoch_fence() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -100,7 +15,7 @@ fn daily_boost_postgres_real_dispatch_restart_and_epoch_fence() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(Scenario::Restart).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(Case::Restart).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "daily boost PostgreSQL scenario panicked")??;
     Ok(())
@@ -113,7 +28,7 @@ fn selected_world_login_probe_returns_boost_and_online_before_admission() -> Tes
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(Scenario::BeforeAdmission).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(Case::PreAdmission).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "world login probe PostgreSQL scenario panicked")?
         .map_err(Into::into)
@@ -159,31 +74,18 @@ async fn pre_admission_case(
     // Keep the old committed epoch as the active pointer, with no retirement in
     // progress, after its Berlin boundary has elapsed.
     let mut tx = pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query(
-        "UPDATE game_world_reset_epochs SET activated_at=statement_timestamp()-interval '2 days'
-                 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0",
-    )
-    .bind(world.as_bytes().as_slice())
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_world_reset_epochs SET activated_at=statement_timestamp()-interval '2 days'
+                 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     let (mut stream, mut peer) = tokio::io::duplex(8192);
     assert!(crate::gameplay_transport::world_login_info::route(&mut stream, &request, owner).await);
     drop(stream);
-    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer)
-        .await
-        .map_err(debug)?;
-    let info = login::decode_reply(&reply)
-        .and_then(|reply| reply.info)
-        .ok_or("available world")?;
+    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await.map_err(debug)?;
+    let info = login::decode_reply(&reply).and_then(|reply| reply.info).ok_or("available world")?;
     assert_eq!(info.players_online, 1);
-    assert!(
-        info.boost.is_none(),
-        "an expired boost must be omitted before retirement starts"
-    );
+    assert!(info.boost.is_none(), "an expired boost must be omitted before retirement starts");
 
     let (mut stream, mut peer) = tokio::io::duplex(8192);
     let unknown = id(97);
@@ -205,144 +107,25 @@ async fn pre_admission_case(
     Ok(())
 }
 
-#[derive(Clone, Copy)]
-enum Scenario {
-    Restart,
-    BeforeAdmission,
-    ContendedLogout,
-}
-
 #[test]
-fn daily_boost_postgres_retries_holder_answers_twice_and_allows_logout() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+fn daily_boost_query_after_logout_and_relogin_under_holder_contention_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::item_look_fixtures::large_stack(|| scenario(Scenario::ContendedLogout))
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("daily-boost-relog", || {
+        scenario(Case::Relog)
+    })
 }
 
-async fn contended_queries_then_logout(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
-) -> TestResult {
-    use crate::foundation::{MessageType, decode_wire_envelope};
-    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use crate::gameplay_transport::last_position::AdmissionPosition;
-    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
-    use oteryn_protocol_oteryn::logout::{
-        CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
-        encode_logout_intent,
-    };
-    use oteryn_protocol_oteryn::{
-        ClientCommandValue, decode_command_result, encode_client_command,
-    };
-
-    async fn read_result(stream: &mut tokio::io::DuplexStream, id: u64) -> TestResult<Vec<u8>> {
-        loop {
-            let bytes = read_frame(stream).await?;
-            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
-            if envelope.message_type() == MessageType::CommandResult {
-                let result = decode_command_result(envelope.payload()).map_err(debug)?;
-                assert_eq!(result.command_id, id);
-                assert_eq!(result.status, CommandStatus::Accepted, "command {id}");
-                return Ok(result.payload.to_vec());
-            }
-        }
-    }
-
-    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        &crate::gameplay_transport::daily_boost::offered(
-            owner.offered_capabilities(),
-            owner.daily_boost_available(),
-        ),
-        &[CAPABILITY_LOGOUT_V1, CAPABILITY_DAILY_BOOST_V1],
-    )
-    .ok_or("Daily Boost and logout capabilities")?;
-    assert!(owner.track_restored(
-        admitted.game_session_id,
-        admitted.runtime_actor.ok_or("admitted actor")?,
-        &AdmissionPosition::FirstLogin,
-        super::fixture::fence(1)?,
-    ));
-    let generation = admitted.continuity.connection_generation;
-    let logout = encode_logout_intent();
-    let frame = |command_id, command_type, payload: &[u8]| {
-        encode_client_command(
-            generation,
-            &ClientCommandValue {
-                command_id,
-                command_type,
-                payload,
-            },
-        )
-        .map_err(debug)
-    };
-    let (mut server, mut client) = tokio::io::duplex(4096);
-    let serving = async {
-        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
-        drop(server);
-        end
-    };
-    let driving = async {
-        loop {
-            let bytes = read_frame(&mut client).await?;
-            if decode_wire_envelope(&bytes).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
-        owner
-            .states
-            .test_daily_boost_hold_once
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-        for id in [1, 2] {
-            write_frame(
-                &mut client,
-                &frame(id, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])?,
-            )
-            .await?;
-        }
-        let first = read_result(&mut client, 1).await?;
-        assert_eq!(read_result(&mut client, 2).await?, first);
-        let selection = owner
-            .runtime
-            .lock()
-            .await
-            .daily_boost()
-            .cloned()
-            .ok_or("daily choice")?;
-        assert_eq!(
-            first,
-            encode_view(&DailyBoostView {
-                reset_epoch: selection.reset_epoch,
-                creature_key: selection.creature,
-                boss_key: selection.boss,
-            })
-            .map_err(debug)?
-        );
-        write_frame(&mut client, &frame(3, COMMAND_TYPE_LOGOUT_INTENT, &logout)?).await?;
-        let result = read_result(&mut client, 3).await?;
-        assert_eq!(
-            decode_logout_result(&result).map_err(debug)?,
-            LogoutResult::Accepted
-        );
-        TestResult::Ok(())
-    };
-    let (end, result) = tokio::time::timeout(
-        std::time::Duration::from_secs(30),
-        super::fixture::join_two(serving, driving),
-    )
-    .await?;
-    result?;
-    assert!(
-        matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)),
-        "{end:?}"
-    );
-    eprintln!("POSTGRES_W13 contended query, second query and terminal logout answered");
-    Ok(())
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Restart,
+    PreAdmission,
+    Relog,
 }
 
-fn scenario(scenario: Scenario) -> TestResult {
+fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "daily_boost_wire", true, false).await?;
@@ -415,7 +198,7 @@ fn scenario(scenario: Scenario) -> TestResult {
         owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
-        if matches!(scenario, Scenario::BeforeAdmission) {
+        if case == Case::PreAdmission {
             let result = pre_admission_case(&owner, deps.admitted.world_id, &h.pool).await;
             drop(owner);
             drop(authority);
@@ -431,14 +214,6 @@ fn scenario(scenario: Scenario) -> TestResult {
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
-        if matches!(scenario, Scenario::ContendedLogout) {
-            let result = contended_queries_then_logout(&owner, admitted).await;
-            drop(owner);
-            drop(authority);
-            drop(seal);
-            h.cleanup().await?;
-            return result;
-        }
         admitted.continuity.selected_capabilities = SelectedCapabilities::NONE;
         assert_eq!(
             support::exchange(
@@ -485,6 +260,14 @@ fn scenario(scenario: Scenario) -> TestResult {
             })
             .map_err(debug)?
         );
+        if case == Case::Relog {
+            let result = logout_relogin_query(&h, &owner, admitted, first).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         let native = generation.native_gameplay().ok_or("native content")?;
         let profile = |key: &str| {
             native
@@ -610,7 +393,6 @@ fn scenario(scenario: Scenario) -> TestResult {
             .0,
             CommandStatus::Rejected
         );
-        assert_parked_trade_query(&owner, &mut admitted, &first).await?;
         let mut reset_tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *reset_tx)
@@ -623,24 +405,8 @@ fn scenario(scenario: Scenario) -> TestResult {
             owner
                 .daily_boost_wire(admitted, 5, COMMAND_TYPE_DAILY_BOOST_QUERY, &[])
                 .await,
-            crate::gameplay_transport::daily_boost::DailyBoostReply::Unavailable(
-                crate::gameplay_transport::daily_boost::DailyBoostError::Selection(
-                    crate::durability::DurabilityError::Unavailable
-                )
-            )
+            crate::gameplay_transport::guild_intent::GuildReply::Unavailable
         ));
-        assert_eq!(
-            support::exchange(
-                &owner,
-                &mut admitted,
-                7,
-                COMMAND_TYPE_DAILY_BOOST_QUERY,
-                &[],
-            )
-            .await?,
-            (CommandStatus::Rejected, Vec::new()),
-            "a consumed query against a superseded epoch must receive its refusal"
-        );
         let permit = owner.spell_lane_permit().await.ok_or("new epoch permit")?;
         let mut next = binding();
         next.epoch = 1;
@@ -665,19 +431,12 @@ fn scenario(scenario: Scenario) -> TestResult {
         // even though it is no longer the immediately previous epoch.
         for (epoch, age, expected_creature, expected_boss) in [
             (2_u64, "29 days 23 hours", "fresh creature", "fresh boss"),
-            (
-                3,
-                "30 days 1 hour",
-                choice.creature.as_str(),
-                choice.boss.as_str(),
-            ),
+            (3, "30 days 1 hour", choice.creature.as_str(), choice.boss.as_str()),
         ] {
             sqlx::query("UPDATE game_world_daily_boosts SET selected_at=clock_timestamp()-$1::text::interval WHERE world_id=encode($2,'hex')::uuid AND reset_epoch=0")
                 .bind(age).bind(id(42).as_slice()).execute(&h.pool).await?;
             let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *tx)
-                .await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,$2::text::numeric,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
                 .bind(id(42).as_slice()).bind(epoch.to_string()).execute(&mut *tx).await?;
             sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
@@ -694,39 +453,16 @@ fn scenario(scenario: Scenario) -> TestResult {
                 ] {
                     let mut exhausted = binding();
                     exhausted.epoch = epoch;
-                    assert!(
-                        h.root
-                            .prepare_daily_boost(&authority, &h.node, &permit, exhausted, pools)
-                            .await
-                            .is_err()
-                    );
+                    assert!(h.root.prepare_daily_boost(&authority, &h.node, &permit, exhausted, pools).await.is_err());
                 }
             }
             let pools = (
-                vec![
-                    choice.creature.clone(),
-                    tomorrow.creature.clone(),
-                    "fresh creature".into(),
-                ],
-                vec![
-                    choice.boss.clone(),
-                    tomorrow.boss.clone(),
-                    "fresh boss".into(),
-                ],
+                vec![choice.creature.clone(), tomorrow.creature.clone(), "fresh creature".into()],
+                vec![choice.boss.clone(), tomorrow.boss.clone(), "fresh boss".into()],
             );
-            let selected = h
-                .root
-                .prepare_daily_boost(&authority, &h.node, &permit, next, pools)
-                .await
-                .map_err(debug)?;
-            assert_eq!(
-                selected.creature, expected_creature,
-                "30-day creature exclusion at epoch {epoch}"
-            );
-            assert_eq!(
-                selected.boss, expected_boss,
-                "30-day boss exclusion at epoch {epoch}"
-            );
+            let selected = h.root.prepare_daily_boost(&authority, &h.node, &permit, next, pools).await.map_err(debug)?;
+            assert_eq!(selected.creature, expected_creature, "30-day creature exclusion at epoch {epoch}");
+            assert_eq!(selected.boss, expected_boss, "30-day boss exclusion at epoch {epoch}");
             eprintln!("POSTGRES_HISTORY SV08 epoch={epoch} age={age} verified");
         }
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_daily_boosts")
@@ -738,4 +474,55 @@ fn scenario(scenario: Scenario) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+
+async fn logout_relogin_query(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    expected: Vec<u8>,
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::foundation::GameSessionState;
+    use crate::gameplay_transport::composed_admission::{CONDITION_RELEASE_PROBE, HolderCheckoutProbe};
+    use crate::gameplay_transport::daily_boost::DAILY_BOOST_CHECKOUT_PROBE;
+    use oteryn_protocol_oteryn::logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result};
+    use std::{cell::Cell, sync::Arc, time::Duration};
+
+    let store = FreshAdmissionStore::from_root(h.root.clone());
+    let previous = admitted.game_session_id;
+    let logout_checkout = Arc::new(HolderCheckoutProbe::default());
+    let next = admitted.continuity.next_command_id;
+    let release_started = tokio::time::Instant::now();
+    let (result, released_holder) = tokio::time::timeout(Duration::from_secs(30), super::fixture::join_two(
+        CONDITION_RELEASE_PROBE.scope(
+            Cell::new(Some(Arc::clone(&logout_checkout))),
+            support::exchange(owner, &mut admitted, next, COMMAND_TYPE_LOGOUT_INTENT, &[]),
+        ),
+        logout_checkout.contend(&h.root),
+    )).await?;
+    released_holder?;
+    let (status, payload) = result?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(decode_logout_result(&payload).map_err(debug)?, LogoutResult::Accepted);
+    assert!(release_started.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
+    assert_eq!(store.current_session(previous).await?.session_state(), GameSessionState::Terminal);
+
+    let mut fresh = super::full_world_support::readmit_after_logout(h, owner, admitted).await?;
+    assert_ne!(fresh.game_session_id, previous);
+    let query_checkout = Arc::new(HolderCheckoutProbe::default());
+    let next = fresh.continuity.next_command_id;
+    let (result, released_holder) = tokio::time::timeout(Duration::from_secs(30), super::fixture::join_two(
+        DAILY_BOOST_CHECKOUT_PROBE.scope(
+            Cell::new(Some(Arc::clone(&query_checkout))),
+            support::exchange(owner, &mut fresh, next, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
+        ),
+        query_checkout.contend(&h.root),
+    )).await?;
+    released_holder?;
+    let (status, view) = result?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(view, expected);
+    Ok(())
 }

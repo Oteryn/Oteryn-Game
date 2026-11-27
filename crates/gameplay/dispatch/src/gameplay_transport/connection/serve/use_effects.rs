@@ -16,7 +16,11 @@ where
     if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT
         && outcome.disposition == UseDisposition::OfflineTraining
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(command::disconnect(
+            command,
+            "use_bed_effects",
+            "training_logged_out",
+        ));
     }
     // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
     // backpack or open bags; their deltas follow the durable commit when changed.
@@ -35,7 +39,11 @@ where
         .await
         .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(command::disconnect(
+            command,
+            "use_inventory_refresh",
+            "update_failed",
+        ));
     }
     // ITEM-USE-1c: a committed food or potion changed the owner's vitals revision
     // (fed time or health/mana); its ACTOR_VITALS delta follows at once, as a spell's.
@@ -55,13 +63,17 @@ where
             to,
             &value,
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "use_vitals_delta",
+                "encode_failed",
+            ));
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
-        if write_frame(stream, &delta).await.is_err() {
-            return Err(ServeEnd::Disconnected);
-        }
+        write_frame(stream, &delta)
+            .await
+            .map_err(|error| command::disconnect(command, "use_vitals_write", error.kind()))?;
         session.admitted.continuity.vitals_revision = to;
     }
     // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
@@ -74,18 +86,25 @@ where
         // that selected capability 18 has no domain 17 form: fail closed, never send
         // domain 2 or drop the state.
         if !session.overlay_served {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "use_overlay_delta",
+                "overlay_not_served",
+            ));
         }
         let (Some(delta_sequence), Some(prior_revision)) = (
             session.sequence.checked_add(1),
             entry.revision.checked_sub(1),
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(command::disconnect(
+                command,
+                "use_overlay_delta",
+                "revision_or_sequence_out_of_range",
+            ));
         };
-        let Ok(payload) = encode_world_object_overlay_delta(&entry) else {
-            return Err(ServeEnd::Disconnected);
-        };
-        let Ok(delta) = encode_state_delta(
+        let payload = encode_world_object_overlay_delta(&entry)
+            .map_err(|error| command::disconnect(command, "use_overlay_payload", error))?;
+        let delta = encode_state_delta(
             session.generation,
             delta_sequence,
             STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
@@ -93,19 +112,22 @@ where
             entry.revision,
             DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
             &payload,
-        ) else {
-            return Err(ServeEnd::Disconnected);
-        };
+        )
+        .map_err(|error| command::disconnect(command, "use_overlay_delta", error))?;
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
-        if write_frame(stream, &delta).await.is_err() {
-            return Err(ServeEnd::Disconnected);
-        }
+        write_frame(stream, &delta)
+            .await
+            .map_err(|error| command::disconnect(command, "use_overlay_write", error.kind()))?;
         // r4122508665: only record the new overlay revision once the delta that
         // carries it has actually been transmitted.
         session.admitted.continuity.overlay_revision = entry.revision;
     }
-    achievement_notices::immediate(stream, authority, session, &outcome.earned).await?;
+    achievement_notices::immediate(stream, authority, session, &outcome.earned)
+        .await
+        .map_err(|end| {
+            command::disconnect_at(command, "use_achievement_notices", "emit_failed", end)
+        })?;
     // W09: queued item-use status text follows its result and inventory delta immediately,
     // rather than waiting for a later movement command. The existing capability gate applies.
     tutorial_notices_transport::emit(
@@ -115,6 +137,6 @@ where
         &mut session.sequence,
     )
     .await
-    .ok_or(ServeEnd::Disconnected)?;
+    .ok_or_else(|| command::disconnect(command, "use_tutorial_notices", "emit_failed"))?;
     Ok(())
 }
