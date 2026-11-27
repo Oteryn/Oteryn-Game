@@ -1036,12 +1036,10 @@ class QuestRewards(unittest.TestCase):
         numbered_keys = json.loads(
             (q.ROOT / "tools/content-schema/quest-authoring/cwdoor-npc-keys.json").read_bytes()
         )["callbacks"]
-        numbered_ids = {callback["key"] for callback in numbered_keys}
         self.assertEqual(
-            sorted((callback for callback in callbacks if callback["key"] in numbered_ids), key=lambda callback: callback["key"]),
-            sorted(numbered_keys, key=lambda callback: callback["key"]),
+            json.loads(self.outputs["content/quests/npc-callbacks/numbered-keys.json"])["callbacks"],
+            numbered_keys,
         )
-        callbacks = [callback for callback in callbacks if callback["key"] not in numbered_ids]
         self.assertEqual(
             {
                 c["key"].split("/")[-1]

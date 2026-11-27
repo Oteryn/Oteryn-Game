@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/prisoner-apples",
+      "quest": "oteryn:quest.mad_mage_room_quest",
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/mad_mage_room/a_prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Mnjam - excellent apples. Now - about that key. You are sure want it?"
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3585",
+          "count": 7
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_prisoner.lua:77-85:sha256:a3b582c47aabc693835fe18959ba03e58100602779df215315627e613502e9e4"
+      ],
+      "failure_reply": [
+        "Get some more apples first!"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/quest/u7_24/mad_mage_room/apple_payments",
+        "maximum": 2147483647
+      },
+      "failure_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/prisoner-key-3666",
+      "quest": "oteryn:quest.mad_mage_room_quest",
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/mad_mage_room/a_prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Then take it and get happy - or die, hehe."
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i2969",
+        "count": 1,
+        "contents": [],
+        "key_number": 3666
+      },
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_prisoner.lua:92-99:sha256:a3b582c47aabc693835fe18959ba03e58100602779df215315627e613502e9e4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/shirith-key-3033",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.shirith",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Here it is."
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i2969",
+        "count": 1,
+        "contents": [],
+        "key_number": 3033
+      },
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shirith.lua:60-76:sha256:269fda17fbbd0db25bc06c0f10c97b2eead9306c88f9c94cf2d5c8fa8266a100"
+      ],
+      "fee": {
+        "gold": 50,
+        "include_bank": true
+      },
+      "repeatable": true,
+      "failure_reply": [
+        "You don't have enough money."
+      ],
+      "failure_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/skjaar-quiz-donation",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noble_armor/skjaar-test-paid",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "All right then. Here comes the first question. What was the name of Dago's favourite pet?"
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:62-70:sha256:b5174d99af285953f0a4fb5eab85b6a61fb1168d9d189915a13859c246c2dad2"
+      ],
+      "give": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "counter": {
+        "track": "oteryn:quest-progress/noble_armor/skjaar-donations",
+        "maximum": 2147483647
+      },
+      "failure_reply": [
+        "You don't have enough money"
+      ],
+      "failure_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/skjaar-key-3142",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noble_armor/skjaar-test-paid",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Here you are"
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:79-84:sha256:b5174d99af285953f0a4fb5eab85b6a61fb1168d9d189915a13859c246c2dad2"
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i2970",
+        "count": 1,
+        "contents": [],
+        "key_number": 3142
+      },
+      "counter": {
+        "track": "oteryn:quest-progress/noble_armor/skjaar-keys-issued",
+        "maximum": 2147483647
+      }
+    }
+  ]
+}

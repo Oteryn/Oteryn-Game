@@ -685,7 +685,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Clearing the NPC request and retaining its command result have no
         // suspension point between them.
-        finish(self, session, receipt.is_some());
+        let completion = if receipt.is_some() {
+            Completion::Committed
+        } else {
+            pending.failure_topic.map_or(Completion::Refused, |topic| {
+                Completion::RefusedAt(Topic::from(topic))
+            })
+        };
+        finish(self, session, completion);
         true
     }
 }
@@ -727,7 +734,9 @@ pub(in crate::gameplay_transport) async fn resume(
             let completion = if receipt.is_some() {
                 Completion::Committed
             } else {
-                Completion::Refused
+                pending.failure_topic.map_or(Completion::Refused, |topic| {
+                    Completion::RefusedAt(Topic::from(topic))
+                })
             };
             finish(admission, command.game_session_id, completion);
             if receipt.is_some() {

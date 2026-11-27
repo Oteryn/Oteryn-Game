@@ -668,7 +668,7 @@ pub(super) fn unhandled_confirmation(
     let text = if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
         text
     } else {
-        callback_keyword(&admission.states.chat, &context.2, &intent.text)
+        callback_keyword(admission, command, &context.2, &intent.text)
     };
     if admission.has_pending_paid_confirmation(command, intent, &context, received_at) {
         return false;
@@ -682,11 +682,6 @@ pub(super) fn unhandled_confirmation(
     let topic = state.quest_dialogue.topic(&context).number;
     let requested = state.quest_dialogue.reward_request.as_ref() == Some(&context);
     drop(sessions);
-    let text = if context.2 == storkus::NPC {
-        callback_keyword(admission, command, &context.2, &intent.text)
-    } else {
-        text
-    };
     let Some(catalogue) = admission.quest_catalogue.as_deref() else {
         return false;
     };
@@ -791,7 +786,7 @@ fn callback_keyword(
 ) -> String {
     use oteryn_gameplay_quests::quest::classic_talk;
     if npc == crate::durability::npc_trade::sinatuki_exchange::NPC {
-        if super::npc_item_exchanges::sinatuki_default_keyword(chat, text) {
+        if super::npc_item_exchanges::sinatuki_default_keyword(&admission.states.chat, text) {
             return "nupi".into();
         }
         return String::new();

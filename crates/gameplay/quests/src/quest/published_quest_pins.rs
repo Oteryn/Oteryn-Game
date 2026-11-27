@@ -416,6 +416,29 @@ const NEW_FRONTIER_NATIVE_PREDECESSORS: GameplayPredecessors = (
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
+    // Current main at e2750951e and the exact restored World route successors.
+    (
+        "oteryn:quest.authored.magic_sword_quest",
+        hash(b"b4c39f0264af5ac1d290b16d312f3d836f016120b222155c52fecac8d9a3851a"),
+        &[hash(
+            b"be324e0177ccefdfb5275e84ebebcd7a420128b352aadb233b8a2508a6f72dcf",
+        )],
+    ),
+    (
+        "oteryn:quest.the_gravedigger_of_drefia_quest",
+        hash(b"35fe5d0a0cff3a0feee0c14d2d1c8a81bc1c86a3f676a450a33903202d0c7586"),
+        &[hash(
+            b"08c3c13a5037239a0a9d19a9b41f8b4ac6846d4569fe74897edbd10bc36a50d2",
+        )],
+    ),
+    (
+        "oteryn:quest.troll_sabotage_quest",
+        hash(b"d21062c47e89ef2ed8ce2a3a73c505a8e0e0beb710aeb3ed8d99af3d04f79d51"),
+        &[
+            hash(b"2f409e8112005dd200f7c6dcb80bbb77b756e32555b8acc0ce56f25c65d3bb7f"),
+            hash(b"f20fac3b939f0dbc0553079fd2894eb82c2e098e82944370cfecf0c150c49d96"),
+        ],
+    ),
     // Captured by quest_definition_hashes on main 9295760b3 and the reviewed route definitions.
     (
         "oteryn:quest.factions",
@@ -787,6 +810,11 @@ const TIBIA_TALES_WITHOUT_ARITO_REFERRAL: DefinitionHash =
 // Exact successors captured from the integrated production loader. The unit
 // hashes remain valid predecessors for their own quest.
 const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
+    (
+        "oteryn:quest.mad_mage_room_quest",
+        hash(b"cfa1db835dd1b1ef55b513276870506dd0cf38587ee1667b32f8d062243486f6"),
+        hash(b"6d5f8a2f8c0f362b64b94a955a9a6865bf621280db4f0d3a050c73a1cdfb0f1f"),
+    ),
     (
         "oteryn:quest.the_explorer_society_quest",
         hash(b"f51489994ea4f58e5ed3bd18de0a2120cb2852b8005a63eaee08ff86b4128fb1"),

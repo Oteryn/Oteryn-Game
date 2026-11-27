@@ -16,8 +16,9 @@ mod selector_partitions;
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
-// The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280;
+// The published world, native, and restored Twenty Miles cohorts share a boot bound.
+// Standalone source documents retain the 512-callback bound above.
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1536;
 const MAX_COFFIN_RECOVERY_VARIANTS: usize = 2;
 pub(super) const MAX_EMBEDDED_CALLBACKS: usize =
     MAX_RUNTIME_CALLBACKS + MAX_COFFIN_RECOVERY_VARIANTS;

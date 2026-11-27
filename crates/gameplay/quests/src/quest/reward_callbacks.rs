@@ -645,9 +645,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     include_str!("../../../../../content/quests/npc-callbacks/nomads-land.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/numbered-keys.json"),
     include_str!("../../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
@@ -2316,6 +2315,46 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
             ],
         ),
         (
+            "oteryn:quest.koshei_the_deathless_quest",
+            [
+                0x51, 0xc4, 0x3b, 0x54, 0xb9, 0x68, 0x03, 0x6f, 0x6d, 0xef, 0x0b, 0xc1, 0xbb, 0xb5,
+                0x72, 0x0f, 0x3f, 0xcb, 0x0f, 0x72, 0xd5, 0xab, 0x1a, 0x1c, 0x6d, 0x50, 0x13, 0xd5,
+                0xec, 0x05, 0x8d, 0xa3,
+            ],
+            &[
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
+                    0,
+                ),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 0),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet_started_at", 0),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/claimed",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/claimed",
+                    0,
+                ),
+            ],
+        ),
+        (
             "oteryn:quest.twenty_miles_beneath_the_sea_quest",
             [
                 0x95, 0x57, 0x24, 0xdf, 0xc1, 0xc9, 0xb0, 0x39, 0x2d, 0x23, 0xea, 0xa2, 0x2a, 0x2b,
@@ -3685,11 +3724,6 @@ mod tests {
             "oteryn:quest-reward/m36-rock-steady-second",
             "oteryn:quest-reward/m36-rock-steady-start",
             "oteryn:quest-reward/m36-rock-steady-weapon",
-            "oteryn:quest-reward/prisoner-apples",
-            "oteryn:quest-reward/prisoner-key-3666",
-            "oteryn:quest-reward/shirith-key-3033",
-            "oteryn:quest-reward/skjaar-key-3142",
-            "oteryn:quest-reward/skjaar-quiz-donation",
         ];
         let added: BTreeSet<_> = legacy
             .iter()
@@ -3697,7 +3731,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 228 + 5);
+        assert_eq!(legacy.len(), 228);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))

@@ -1834,18 +1834,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
-    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
-    creatures = json.loads(generated[creature_path])
-    koshei = next(
-        row
-        for row in creatures["records"]
-        if row["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless"
-    )
-    details = koshei["profile"]["data"]["profile"]["details"]
-    if details["corpse_item"]["key"] != "oteryn:item.tibia.i7538":
-        raise ValueError("KOSHEI_CORPSE_SOURCE_CHANGED")
-    details["corpse_item"]["key"] = "oteryn:item.tibia.i7535"
-    generated[creature_path] = spell_import.canonical_bytes(creatures)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     import cyclopedia_creatures

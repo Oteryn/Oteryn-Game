@@ -254,8 +254,8 @@ class ItemBootstrapTests(unittest.TestCase):
                 ranged_call.assert_called_once_with(root)
             index = json.loads((root / "content/items/index.json").read_bytes())
             expected_identities = [row["identity"] for row in reference["records"]] + [
-                identity(8748),
                 *(identity(appearance) for appearance in galthen.APPEARANCES),
+                identity(8748),
             ]
             count = len(expected_identities)
             expected_shards = [
@@ -287,8 +287,8 @@ class ItemBootstrapTests(unittest.TestCase):
                 [row["definition"]["identity"] for row in rows], expected_identities
             )
             self.assertTrue(rows[0]["definition"]["materializable"])
-            self.assertTrue(rows[3]["definition"]["materializable"])
-            for row, appearance in zip(rows[4:], galthen.APPEARANCES, strict=True):
+            self.assertTrue(rows[-1]["definition"]["materializable"])
+            for row, appearance in zip(rows[-3:-1], galthen.APPEARANCES, strict=True):
                 self.assertEqual(
                     row,
                     {"definition": conditional.definition(identity(appearance)["key"])},

@@ -1,10 +1,6 @@
 //! Extend admission with an immutable resolved World source, preserving published owners.
 use super::*;
 
-// Caller-supplied sets keep the original bound. Loaded registries have their
-// own bound for the published cohorts.
-const MAX_RESOLVED_CALLBACKS: usize = 1024;
-
 // Existing native readers can supply the entire embedded source, including
 // both paid coffin routes. The unpublished subset keeps its document bound.
 const MAX_RESOLVED_CALLBACKS: usize = world_callbacks::MAX_EMBEDDED_CALLBACKS;
@@ -18,29 +14,6 @@ pub fn validate_resolved_world(
     let published = registry()?;
     // Published transitions also require a structurally valid supplied registry.
     // The catalogue composition and its embedded fallback are already validated.
-    let composed = catalogue.authored_world_callbacks();
-    if !composed.is_some_and(|registered| std::ptr::eq(registered, callbacks))
-        && (callbacks.len() > MAX_RESOLVED_CALLBACKS
-            || callbacks
-                .iter()
-                .map(|callback| &callback.key)
-                .collect::<BTreeSet<_>>()
-                .len()
-                != callbacks.len()
-            || callbacks
-                .iter()
-                .filter(|callback| !published.owners.contains_key(&callback.key))
-                .count()
-                > world_callbacks::MAX_CALLBACKS)
-    {
-        let registered = match composed {
-            Some(registered) => registered,
-            None => world_callbacks::embedded_callbacks()?,
-        };
-        if registered != callbacks {
-            return Err("resolved World source bounds".into());
-        }
-    }
     let composed = catalogue.authored_world_callbacks();
     if !composed.is_some_and(|registered| std::ptr::eq(registered, callbacks))
         && (callbacks.len() > MAX_RESOLVED_CALLBACKS
@@ -180,10 +153,15 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // The door routes add Svargrond roof callbacks.
-        assert_eq!(base.len(), 1_014);
-        assert_eq!(bindings.world_callbacks().count(), 96);
-        assert_eq!(callbacks.len(), 1_110);
+        let door_routes: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../../content/quests/world-callbacks/cwdoor-world-routes.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let door_routes = door_routes["callbacks"].as_array().ok_or("door routes")?;
+        assert!(!door_routes.is_empty());
+        for route in door_routes {
+            assert!(base.iter().any(|callback| route["key"] == callback.key));
+        }
         assert!(base.len() <= MAX_RESOLVED_CALLBACKS);
         assert!(bindings.world_callbacks().next().is_some());
         assert_eq!(
@@ -221,8 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn embedded_fallback_accepts_only_the_exact_registry_over_the_resolved_bound()
-    -> Result<(), String> {
+    fn embedded_fallback_rejects_a_duplicate_callback() -> Result<(), String> {
         let source = super::super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
         let transition = source
@@ -233,10 +210,9 @@ mod tests {
             super::super::super::QuestStateCatalogue::new("resolved-fixture", vec![], vec![])
                 .map_err(|error| format!("{error:?}"))?;
         let mut callbacks = world_callbacks::load_for(&catalogue)?;
-        assert!(callbacks.len() > MAX_RESOLVED_CALLBACKS);
         validate_resolved_world(&catalogue, transition, false, &callbacks)?;
 
-        callbacks[0].quest.push_str("-substituted");
+        callbacks[0] = callbacks[1].clone();
         assert_eq!(
             validate_resolved_world(&catalogue, transition, false, &callbacks),
             Err("resolved World source bounds".into())

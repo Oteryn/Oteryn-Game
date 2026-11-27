@@ -47,6 +47,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/rookgaard-exchanges.json"),
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/nomads-land.json"),
+    include_str!("../../../../content/quests/npc-callbacks/numbered-keys.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/outfit-completions.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
@@ -62,6 +63,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../content/quests/npc-callbacks/quest-contacts.json"),
     include_str!("../../../../content/quests/npc-callbacks/tibia-tales.json"),
+    include_str!("../../../../content/quests/npc-callbacks/travora-tickets.json"),
 ];
 #[cfg(test)]
 mod m09_rookie_tests;

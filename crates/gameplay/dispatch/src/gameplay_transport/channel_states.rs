@@ -152,15 +152,6 @@ pub struct ChannelSessionStates {
 }
 
 impl ChannelSessionStates {
-    pub(super) fn meets_quest_door_storage(&self, session: GameSessionId, action: u16) -> bool {
-        self.quest_sessions.lock().ok().is_some_and(|sessions| {
-            sessions
-                .get(&session)
-                .and_then(|quest| quest.copy.as_ref())
-                .is_some_and(|copy| copy.meets_door_storage(action))
-        })
-    }
-
     pub(super) fn insert_lost(&self, session: AdmittedSession) -> Result<(), ()> {
         self.lost
             .lock()

@@ -82,6 +82,15 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
     **QUEST_PLAN_PLACEMENT_RELOCATIONS,
+    # Crystal traversal adds exact qualified map-only scenery to these indexes.
+    ("content/world/objects/index.json", "1a7e2a2a99b2dd5b59cb52970928e58d46296884c3fa519319da905d4b62bb30"): (
+        "content/world/objects/index.json",
+        "6520f27a874811fc407265e1393104fbc12031e6a31d6a70baa97021562b06d9",
+    ),
+    ("content/world/terrain/index.json", "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b"): (
+        "content/world/terrain/index.json",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
+    ),
     ('tools/content-schema/item-authoring/historical_world_owner_context.py', "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898"): (
         'tools/content-schema/item-authoring/historical_world_owner_context.py',
         "1905e47821f82acf0e4cb039104d2d6390aa5136defff4cc99085b891a7ccaf1",
@@ -91,7 +100,7 @@ RELOCATIONS = {
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
@@ -123,7 +132,7 @@ RELOCATIONS = {
         "704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "content/world/terrain/terrain-05500-05999.json",
@@ -238,63 +247,63 @@ RELOCATIONS = {
         "1e2f278f385c502dcd59e6859fab3bb096f71d6c3f327b1b2e56e85f85e1b431",
     ): (
         "content/world/objects/index.json",
-        "1a7e2a2a99b2dd5b59cb52970928e58d46296884c3fa519319da905d4b62bb30",
+        "6520f27a874811fc407265e1393104fbc12031e6a31d6a70baa97021562b06d9",
     ),
     (
         "content/world/objects/index.json",
         "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7",
     ): (
         "content/world/objects/index.json",
-        "1a7e2a2a99b2dd5b59cb52970928e58d46296884c3fa519319da905d4b62bb30",
+        "6520f27a874811fc407265e1393104fbc12031e6a31d6a70baa97021562b06d9",
     ),
     (
         "content/world/objects/index.json",
         "f23cb0a1a89c20e9957834fe63e1e8a01531cbba6ecb76a1e0ffde5c90a6b7cc",
     ): (
         "content/world/objects/index.json",
-        "1a7e2a2a99b2dd5b59cb52970928e58d46296884c3fa519319da905d4b62bb30",
+        "6520f27a874811fc407265e1393104fbc12031e6a31d6a70baa97021562b06d9",
     ),
     (
         "content/world/terrain/index.json",
         "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "content/world/terrain/index.json",
         "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "content/world/terrain/index.json",
         "360e65beb939450179cb6c99b5c19a0e2842051fd9c3beaf21e6366b9c9245a4",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "content/world/terrain/index.json",
         "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "content/world/terrain/index.json",
         "abffe2dd83dfec1ce1afd657bd0fcaae3760a10a509f8e1034e35834a714ba79",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "content/world/terrain/index.json",
         "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "cad3667f163b4e957efed226f4c5a708b782588623f3432ace8b270426c9dcc0",
     ),
     (
         "content/world/terrain/terrain-08614-08668.json",

@@ -480,17 +480,15 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
             facts[definition['identity']['key']] = {
                 'item': definition['identity'], 'materializable': definition['materializable'] is True,
                 'container_capacity': capacity['value'] if capacity.get('state') == 'KNOWN' else None}
-            stack = definition.get('semantics', {}).get('stack', {})
-            stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
-            if stackable.get('state') == 'KNOWN' and stackable.get('value') is True:
-                facts[definition['identity']['key']]['stackable'] = True
             if charge_count.get('state') == 'KNOWN' and charge_count['value'] > 0:
                 facts[definition['identity']['key']]['charges'] = charge_count['value']
-            if (
-                'charges' in facts[definition['identity']['key']]
-                or definition['identity']['key'] in QUALIFIED_STACK_YIELDS
-            ) and stackable.get('state') == 'KNOWN' and stackable.get('value') is False:
-                facts[definition['identity']['key']]['stackable'] = False
+            if 'charges' in facts[definition['identity']['key']] or definition['identity']['key'] in QUALIFIED_STACK_YIELDS:
+                stack = definition.get('semantics', {}).get('stack', {})
+                stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
+                if stackable.get('state') == 'KNOWN' and type(stackable.get('value')) is bool:
+                    # Preserve the exact known false fact as well as true; the
+                    # serialized default must not hide a qualified predecessor.
+                    facts[definition['identity']['key']]['stackable'] = stackable['value']
             client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
             if client is not None and int(client.group(1)) in products:
                 facts[definition['identity']['key']]['creature_product'] = True

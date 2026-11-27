@@ -1,6 +1,7 @@
 use tokio::io::AsyncReadExt;
-use crate::foundation::{MessageType, decode_wire_envelope};
+use tokio::io::AsyncWriteExt;
 use super::*;
+use crate::foundation::{MessageType, decode_wire_envelope};
 
 pub(super) const TRANSFER_TEST_HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 
@@ -274,7 +275,47 @@ impl RecoverySource {
         Self::fresh_token_for(nonce, id(40), id(41))
     }
 
-pub(super) use shared::{RecoverySource, prepare_owned_session, prepare_owned_session_request};
+    pub(super) fn fresh_token_for(
+        nonce: u8,
+        account: [u8; 16],
+        character: [u8; 16],
+    ) -> TestResult<String> {
+        use base64::Engine;
+        use ed25519_dalek::Signer;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        let encode = |value: String| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(value);
+        let header =
+            serde_json::json!({"alg":"Ed25519","kid":"house-fresh","typ":"oteryn-admission+jwt"});
+        let payload = serde_json::json!({
+            "iss":"urn:oteryn:platform:game-admission", "aud":"urn:oteryn:game:admission",
+            "iat":now, "nbf":now, "exp":now+10,
+            "jti":base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([nonce;32]),
+            "profile":"oteryn-pre-admission-v1", "purpose":"fresh_entry",
+            "attempt_ref":crate::gameplay_transport::canonical_uuid(&id(nonce)),
+            "account_id":crate::gameplay_transport::canonical_uuid(&account),
+            "character_id":crate::gameplay_transport::canonical_uuid(&character),
+            "world_id":"2a020304-0506-7008-800a-0b0c0d0e0f2a",
+            "channel_id":"2b020304-0506-7008-800a-0b0c0d0e0f2b",
+            "account_security_generation":"1", "route_revision":"route-1",
+            "runtime_observation_revision":"runtime-1", "scope_ownership_generation":"1",
+            "protocol_major":1, "transport_profile":1, "ruleset_revision":"ruleset-1",
+            "content_revision":"content-1", "map_revision":"map-1",
+            "world_policy_revision":"policy-1", "offer_revision":"offer-1"
+        });
+        let input = format!(
+            "{}.{}",
+            encode(header.to_string()),
+            encode(payload.to_string())
+        );
+        let signature = ed25519_dalek::SigningKey::from_bytes(&[31; 32]).sign(input.as_bytes());
+        Ok(format!(
+            "{input}.{}",
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(signature.to_bytes())
+        ))
+    }
+}
 
 pub(super) async fn resume_same_session(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

@@ -251,7 +251,7 @@ fn open_level_gate_checks_the_entering_player() -> TestResult {
                 actor,
                 session,
                 direction| {
-        let blocking = player_bundle_doors(world.facts(), states, &owner.states, runtime, actor, session);
+        let blocking = player_bundle_doors(world.facts(), states, runtime, actor, session);
         step_in_channel(
             runtime, states, &cells, actor, session, 1, direction, &blocking, None,
         )

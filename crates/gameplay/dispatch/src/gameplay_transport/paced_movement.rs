@@ -12,29 +12,11 @@ pub(super) mod underwater_drown;
 pub(super) struct PlayerBundleDoors<'a> {
     facts: &'a crate::map::facts::BundleFacts,
     level: Option<u32>,
-    jimmy_passage: bool,
 }
 
 impl crate::map::floor::CellBlocker for PlayerBundleDoors<'_> {
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
-        use oteryn_gameplay_quests::quest::top_of_the_city::{JIMMY_DOOR, JIMMY_DOOR_ACTION};
         self.facts.doors_block_player(cell, self.level.unwrap_or(0))
-            || (!self.jimmy_passage
-                && cell.x == i32::from(JIMMY_DOOR.x)
-                && cell.y == i32::from(JIMMY_DOOR.y)
-                && cell.z == -i32::from(JIMMY_DOOR.floor)
-                && crate::map::view::placement_key(
-                    crate::map::overlay::TilePos {
-                        x: JIMMY_DOOR.x,
-                        y: JIMMY_DOOR.y,
-                        floor: JIMMY_DOOR.floor,
-                    },
-                    1,
-                )
-                .is_some_and(|key| {
-                    self.facts.doors().contains(key)
-                        && self.facts.action_at(key) == Some(JIMMY_DOOR_ACTION)
-                }))
     }
 
     fn admits_door_entry(&self, requirement: crate::map::door::DoorEntryRequirement) -> bool {
@@ -46,17 +28,12 @@ impl crate::map::floor::CellBlocker for PlayerBundleDoors<'_> {
 pub(super) fn player_bundle_doors<'a>(
     facts: &'a crate::map::facts::BundleFacts,
     states: &ChannelSpellStates,
-    channel: &channel_states::ChannelSessionStates,
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
 ) -> PlayerBundleDoors<'a> {
     PlayerBundleDoors {
         facts,
-        jimmy_passage: channel.door_storage_met(
-            session,
-            oteryn_gameplay_quests::quest::top_of_the_city::JIMMY_DOOR_ACTION,
-        ),
         level: states
             .get(runtime, actor, session)
             .map(|state| state.character_facts().level),
@@ -275,8 +252,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors =
-                player_bundle_doors(&map.facts, &states, &self.states, &runtime, actor, session);
+            bundle_doors = player_bundle_doors(&map.facts, &states, &runtime, actor, session);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();

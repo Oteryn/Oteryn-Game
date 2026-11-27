@@ -4,7 +4,9 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::connection::{
+    FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
+};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -19,7 +21,14 @@ pub(super) fn retained_world(
         chest,
         native,
         &[
-            (-1, 0), (0, 1), (1, 0), (0, -1), (-1, 1), (1, 1), (-1, -1), (1, -1),
+            (-1, 0),
+            (0, 1),
+            (1, 0),
+            (0, -1),
+            (-1, 1),
+            (1, 1),
+            (-1, -1),
+            (1, -1),
         ],
     )
 }
@@ -51,7 +60,11 @@ fn retained_world_from(
     )?;
     pins.digest = compiled.digest;
     let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
-    for &(dx, dy) in approaches {
+    for (dx, dy) in (chest == DREAMERS_BOOK)
+        .then_some((0, 2))
+        .into_iter()
+        .chain(approaches.iter().copied())
+    {
         let start = crate::map::overlay::TilePos {
             x: u16::try_from(i32::from(chest.0) + dx)?,
             y: u16::try_from(i32::from(chest.1) + dy)?,
@@ -211,10 +224,16 @@ pub(super) fn claim_case_with_reward_check(
             report
                 .served
                 .iter()
-                .any(|entry| entry.key.as_str() == claim),
-            "{claim}: {:?}",
-            report.unbound
-        );
+                .find(|entry| entry.key.as_str() == claim)
+                .and_then(|entry| {
+                    entry
+                        .placements
+                        .iter()
+                        .find(|p| p.cell.x == chest.0 && p.cell.y == chest.1)
+                })
+                .ok_or("bound source placement")?
+                .bundle_placement_key
+        };
         let entry_cells = if outfox {
             activated_pin.qualified_room().movement_cells()
         } else {
@@ -349,6 +368,7 @@ pub(super) fn claim_case_with_reward_check(
                 deps.initialize(&owner).await;
                 owner
             };
+            let mut connection = admitted;
             let actual = if outfox && commands.len() == 1 {
                 // The new owner has no socket history. Exercise the same USE
                 // dispatcher directly with the original durable command ID.
@@ -363,11 +383,27 @@ pub(super) fn claim_case_with_reward_check(
                     command_id: first,
                     item_fence: Some(fence.item_fence()),
                 };
-                vec![owner.use_object(actor, command, target.clone()).await.disposition]
+                vec![
+                    owner
+                        .use_object(actor, command, target.clone())
+                        .await
+                        .disposition,
+                ]
             } else {
-                super::quest_callbacks::wire_uses(&owner, admitted, commands, &target)
-                    .await
-                    .map_err(|e| format!("claim={claim} commands={commands:?}: {e}"))?
+                let targets = commands
+                    .iter()
+                    .map(|&command| (command, &target))
+                    .collect::<Vec<_>>();
+                super::quest_callbacks_fixtures::wire_use_targets_retained(
+                    &owner,
+                    &mut connection,
+                    &targets,
+                )
+                .await
+                .map_err(|e| format!("claim={claim} commands={commands:?}: {e}"))?
+                .into_iter()
+                .map(|(_, disposition)| disposition)
+                .collect::<Vec<_>>()
             };
             assert_eq!(actual, expected);
             let bag = harness
@@ -389,7 +425,7 @@ pub(super) fn claim_case_with_reward_check(
                 .await?;
                 assert_eq!(text, (digest.into(), 1), "{claim}");
             }
-            if matches!(check, RewardCheck::Lantern) && commands == [1] {
+            if matches!(check, RewardCheck::Lantern) && commands.len() == 1 {
                 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
                 use oteryn_protocol_oteryn::world_object::{
                     UseIntent, UseTarget, encode_item_use_intent,
@@ -535,8 +571,9 @@ async fn enter_mining_helmet_room(
         expected_revision: 0,
     };
     let first = admitted.continuity.next_command_id;
-    let locked = super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(first, &target)])
-        .await?;
+    let locked =
+        super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(first, &target)])
+            .await?;
     assert_eq!(locked[0].1, UseDisposition::Locked);
 
     let [budrik] = super::classic_quests_fixtures::install_with_offsets(
@@ -554,8 +591,9 @@ async fn enter_mining_helmet_room(
         );
     }
     let next = admitted.continuity.next_command_id;
-    let opened = super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(next, &target)])
-        .await?;
+    let opened =
+        super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(next, &target)])
+            .await?;
     assert_eq!(opened[0].1, UseDisposition::Committed);
     super::desert_earned_route_fixtures::step(owner, admitted, StepDirection::South).await
 }
@@ -1157,9 +1195,21 @@ fn time_ring_shadowthorn_source_boxes_mint_exact_rewards_once() -> TestResult {
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("time-ring-source-boxes", || {
         for (claim, x, reward) in [
-            ("oteryn:reward-claim.kv.timering1", 33038, "oteryn:item.tibia.i3076"),
-            ("oteryn:reward-claim.kv.timering2", 33039, "oteryn:item.tibia.i3053"),
-            ("oteryn:reward-claim.kv.timering3", 33040, "oteryn:item.tibia.i3082"),
+            (
+                "oteryn:reward-claim.kv.timering1",
+                33038,
+                "oteryn:item.tibia.i3076",
+            ),
+            (
+                "oteryn:reward-claim.kv.timering2",
+                33039,
+                "oteryn:item.tibia.i3053",
+            ),
+            (
+                "oteryn:reward-claim.kv.timering3",
+                33040,
+                "oteryn:item.tibia.i3082",
+            ),
         ] {
             claim_case(claim, (x, 32171, -9), &[], 2472, reward, 1)?;
         }

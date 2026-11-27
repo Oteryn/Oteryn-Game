@@ -205,10 +205,10 @@ impl super::DurabilityRoot {
                         .bind(&callback.quest)
                         .bind(oteryn_gameplay_quests::quest::world_callbacks::phase::legacy_read_track(storage))
                         .fetch_optional(&mut *tx).await?;
-                    let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
+                    let value = value.or_else(|| defaults?.get(&storage.track).copied())
                         .or_else(|| venore_predecessor::inherited_value(&storage.track, &legacy))
                         .unwrap_or(track.initial);
-                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(initial)) {
+                    if !(storage.minimum..=storage.maximum).contains(&value) {
                         return Ok(Ok(false));
                     }
                 }
