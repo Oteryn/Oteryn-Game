@@ -36,14 +36,19 @@ BEGIN
         RAISE EXCEPTION 'Koshei corpse chain diverges from its source policy';
     END IF;
 
-    -- Keep the newest inert Koshei remains in this scope. The bound policy's
-    -- terminal duration proves this corpse belongs to the restored chain.
+    -- Corpses minted before the chain was installed keep their 60s deadline.
+    -- Only scheduled Koshei corpses can leave inert remains in this scope.
     body := pg_get_functiondef('game_corpse_retirement_deadline(uuid)'::regprocedure);
     IF (length(body)-length(replace(body,deadline_anchor,'')))/length(deadline_anchor) <> 1 THEN
         RAISE EXCEPTION 'Existing corpse retirement deadline anchor changed';
     END IF;
     EXECUTE replace(body, deadline_anchor, $deadline$
  SELECT CASE
+  WHEN m.loot_table_production_key='oteryn:item.tibia.i7535' AND NOT EXISTS (
+    SELECT 1 FROM game_spell_field_temporal_schedules s
+    WHERE s.item_instance_id=m.item_instance_id AND s.source_transaction_id=m.transaction_id
+      AND s.source_ordinal=0 AND s.source_stage=1
+  ) THEN m.materialized_at+60000
   WHEN m.loot_table_production_key='oteryn:item.tibia.i7535'
     AND original.d[array_length(original.d,1)]=0 THEN
    CASE WHEN EXISTS(
