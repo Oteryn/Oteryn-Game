@@ -130,13 +130,13 @@ pub(super) async fn fixture_stackable_deliveries(
     let mut data = fixture_board_data(harness).await?;
     let catalogue = owner.task_board_catalogue().ok_or("task catalogue")?;
     // Select deterministic historical custody only after proving that the real
-    // generation admits the entire donor pool. Choosing two convenient native
+    // generation admits the entire delivery pool. Choosing two convenient native
     // rows must never hide an unfulfillable generated delivery elsewhere.
-    assert_eq!(DELIVERY_ITEMS.len(), 436);
+    assert_eq!(DELIVERY_ITEMS.len(), 489);
     for delivery in DELIVERY_ITEMS {
         assert!(
             catalogue.items.contains_key(&delivery.item_id),
-            "donor delivery {} needs its qualified production Item profile and index entry",
+            "delivery {} needs its qualified production Item profile and index entry",
             delivery.item_id
         );
     }

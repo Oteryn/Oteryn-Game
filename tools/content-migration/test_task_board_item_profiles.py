@@ -46,7 +46,7 @@ class TaskBoardItemProfiles(unittest.TestCase):
 
     def test_every_delivery_and_talisman_has_a_registered_portable_native_profile(self):
         ids = tool.cohort_ids()
-        self.assertEqual(len(ids), 438)
+        self.assertEqual(len(ids), 490)
         self.assertFalse(ids - self.records.keys(), 'missing production native policies')
         for item in sorted(ids):
             record = self.records[item]
