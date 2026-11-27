@@ -26,6 +26,7 @@ use crate::gameplay_transport::capabilities::{
 use crate::gameplay_transport::connection::{
     ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
 };
+use crate::gameplay_transport::rune_use_bridge::test_faults::watch_contention;
 use crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities;
 use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use crate::spell::cast::CharacterCastFacts;
@@ -485,28 +486,23 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             COMMAND_TYPE_USE_INTENT,
             &payload,
         );
-        let held = if case == Case::AnimateBusy {
-            Some(owner.root.try_issue_semantic_pass().map_err(debug)?)
+        let door_busy = if case == Case::AnimateBusy {
+            Some((owner.door.lock().await, watch_contention()))
         } else {
             None
         };
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        if let Some(held) = held {
-            // Keep the real owner busy long enough for the original USE to
-            // encounter it. A closed peer or premature typed reply fails here.
-            let early = tokio::time::timeout(std::time::Duration::from_millis(50), async {
-                loop {
-                    let frame = read_frame(&mut client).await?;
-                    if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                        == MessageType::CommandResult
-                    {
-                        return Ok::<_, Box<dyn std::error::Error>>(());
-                    }
-                }
-            })
-            .await;
-            assert!(early.is_err(), "cast settled or lost its peer while the holder was busy: {early:?}");
+        if let Some((door, observed)) = door_busy {
+            observed.await?;
+            let holder_busy = watch_contention();
+            // The cast must yield the runtime turn while it waits for the map,
+            // so the current owner can finish and return its locks.
+            let runtime = owner.runtime.try_lock().map_err(debug)?;
+            let held = owner.root.try_issue_semantic_pass().map_err(debug)?;
+            drop(runtime);
+            drop(door);
+            holder_busy.await?;
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         }
         loop {

@@ -43,6 +43,17 @@ pub(super) mod test_faults {
     }
     thread_local! {
         static STOP: Cell<Option<Point>> = const { Cell::new(None) };
+        static CONTENTION: Cell<Option<tokio::sync::oneshot::Sender<()>>> = const { Cell::new(None) };
+    }
+    pub(in crate::gameplay_transport) fn watch_contention() -> tokio::sync::oneshot::Receiver<()> {
+        let (send, receive) = tokio::sync::oneshot::channel();
+        CONTENTION.set(Some(send));
+        receive
+    }
+    pub(in crate::gameplay_transport) fn observed_contention() {
+        if let Some(send) = CONTENTION.take() {
+            let _ = send.send(());
+        }
     }
     pub(in crate::gameplay_transport) fn arm(point: Point) {
         STOP.set(Some(point));
@@ -328,7 +339,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(outcome(spell_disposition(cast.disposition)));
             }
             NativeCastDispatch::RuneRefused(reason) => return Some(outcome(reason)),
-            NativeCastDispatch::Pending => return None,
+            NativeCastDispatch::Pending => {
+                return (!self
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .has_pending_native(actor, command.game_session_id))
+                .then(UseOutcome::rejected);
+            }
             NativeCastDispatch::NotApplicable => (),
         }
         // A retained original is resolved before current handles, custody or target reads.
