@@ -13,6 +13,7 @@ The expression runs after the existing ingress, input and capability gates. It h
 same `authority`, `session`, `command`, `stream`, and `outcome` bindings as the old router.
 Use `command_unavailable(command, cause)` when an owner cannot supply a result.
 It logs the cause and returns a `COMMAND_REFUSED` receipt for the original command.
+A session release with unknown custody is reconciled by the existing loss lifecycle.
 
 ```text
 name=example

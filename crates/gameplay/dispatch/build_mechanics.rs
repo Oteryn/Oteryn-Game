@@ -29,7 +29,7 @@ fn parse(text: &str) -> Result<Mechanic, String> {
     if route.trim().is_empty() {
         return Err("empty [route] expression".into());
     }
-    if route.contains("ServeEnd::server") || route.contains("ServeEnd::ControlLost") {
+    if route.contains("ServeEnd::server") {
         return Err(
             "mechanic routes must return a command refusal for unavailable outcomes".into(),
         );

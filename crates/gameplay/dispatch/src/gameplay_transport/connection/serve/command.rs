@@ -408,9 +408,6 @@ where
         }
         Dispatch::House(None) => route::command_unavailable(command, "house_outcome_unavailable"),
         Dispatch::Vip(None) => route::command_unavailable(command, "vip_outcome_unavailable"),
-        Dispatch::ServerModal(
-            crate::gameplay_transport::server_modal::ServerModalOutcome::Unavailable,
-        ) => route::command_unavailable(command, "server_modal_outcome_unavailable"),
         other => other,
     };
     let Some(result_sequence) = session.sequence.checked_add(1) else {

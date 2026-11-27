@@ -181,6 +181,9 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>, full: bool) -> Tes
             let target = reference(key)?;
             let food = expected_capacity.is_none();
             if food {
+                assert!(admitted.continuity.selected_capabilities.contains(
+                    protocol::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1
+                ));
                 owner.states.chat.admit(session, "Aela", owner.owner_now());
             }
             if full {
@@ -255,6 +258,13 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>, full: bool) -> Tes
                     }
                 }
                 let handle = handle.ok_or("join snapshot must publish the item handle")?;
+                use crate::gameplay_transport::rune_use_bridge::test_faults::{self, Point};
+                if food {
+                    assert!(admitted.continuity.selected_capabilities.contains(
+                        protocol::world_object::CAPABILITY_RUNE_USE_V1
+                    ));
+                    test_faults::arm(Point::SessionReadBusy);
+                }
                 let payload = protocol::world_object::encode_use_item_intent(handle);
                 let frame = protocol::encode_client_command(1, &protocol::ClientCommandValue {
                     command_id: 1,
@@ -300,7 +310,9 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>, full: bool) -> Tes
                     }
                 }
                 assert_eq!(capacity, expected_capacity);
-                if expected_capacity.is_none() {
+                if food {
+                    assert!(test_faults::take(Point::SessionReadBusy),
+                        "plain food bypasses the rune owner's session read");
                     if full {
                         assert_eq!(steak_quantity_and_custody().await?, (1, true), "full keeps the food");
                         assert_eq!(food_regeneration().await?, Some(1_100_000), "full keeps the existing condition");

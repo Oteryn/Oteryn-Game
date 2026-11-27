@@ -76,8 +76,9 @@ where
     if session
         .commands
         .terminalize_with(command.command_id, &result, || {
-            authority
-                .player_trade_terminalized(session.admitted.game_session_id, command.command_id)
+            if !matches!(dispatch, Dispatch::Unavailable) {
+                authority.player_trade_terminalized(session.admitted.game_session_id, command.command_id);
+            }
         })
         .is_none()
     {
@@ -121,6 +122,9 @@ where
     }
     if let Err(error) = write_frame(stream, &result).await {
         return Err(ServeEnd::Transport(TransportEnd::Write(error.kind())));
+    }
+    if matches!(dispatch, Dispatch::Unavailable) {
+        return Ok(());
     }
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing
