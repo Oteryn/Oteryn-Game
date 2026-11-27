@@ -134,7 +134,7 @@ pub(in super::super) fn result(
             }
             (CommandStatus::Accepted, payload)
         }
-        Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
+        Dispatch::CommandRefused | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         _ => return Err(ServeEnd::Disconnected),
     })
 }

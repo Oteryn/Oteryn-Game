@@ -358,14 +358,25 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
     {
-        routing::refuse_use(
-            command,
-            if guard_deferred {
-                "input_guard_deferred"
-            } else {
-                "input_unavailable"
-            },
-        )
+        if guard_deferred
+            && matches!(
+                walk_target,
+                Some(crate::gameplay_transport::AutoWalkTarget::Item(
+                    ItemKey::Entity(_)
+                ))
+            )
+        {
+            routing::refuse_unavailable_use(command, "input_guard_deferred")
+        } else {
+            routing::refuse_use(
+                command,
+                if guard_deferred {
+                    "input_guard_deferred"
+                } else {
+                    "input_unavailable"
+                },
+            )
+        }
     } else if input_permit.is_none()
         || !session
             .admitted

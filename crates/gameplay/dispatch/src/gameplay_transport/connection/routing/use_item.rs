@@ -396,9 +396,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 }
                 Err(crate::durability::DurabilityError::RootUnavailable
                     | crate::durability::DurabilityError::RootPassDeadlineExceeded) => {
-                    return Ok(super::refuse_use(command, "bag_read_budget"));
+                    return Ok(super::refuse_unavailable_use(command, "bag_read_budget"));
                 }
-                Err(_) => return Ok(super::refuse_use(command, "bag_read_failed")),
+                Err(_) => return Ok(super::refuse_unavailable_use(command, "bag_read_failed")),
             },
             _ => None,
         },
@@ -738,6 +738,9 @@ fn refuse_corpse_open(command_id: u64, refusal: CorpseOpenRefusal) -> Dispatch {
     log_corpse_open_refusal(command_id, &refusal);
     match refusal {
         CorpseOpenRefusal::NotOwner => Dispatch::Use(UseOutcome::rejected()),
-        _ => Dispatch::UseItem(OpenDecision::StaleState, None),
+        CorpseOpenRefusal::HolderBusy | CorpseOpenRefusal::DurableRead(_) => Dispatch::CommandRefused,
+        CorpseOpenRefusal::HandleStale | CorpseOpenRefusal::CorpseAbsent => {
+            Dispatch::UseItem(OpenDecision::StaleState, None)
+        }
     }
 }

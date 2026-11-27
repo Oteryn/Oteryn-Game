@@ -109,8 +109,18 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
-        let (payload, detail) = self.item_result_payload(&result.payload)?;
-        let (disposition, gate_message_id) = world_object::decode_use_result_with_gate(payload)?;
+        let (disposition, gate_message_id, detail) =
+            if result.error_code == FoundationProtocolError::CommandRefused.code() {
+                if !result.payload.is_empty() {
+                    return Err(FoundationProtocolError::MalformedEnvelope.into());
+                }
+                (UseDisposition::Rejected, None, None)
+            } else {
+                let (payload, detail) = self.item_result_payload(&result.payload)?;
+                let (disposition, gate_message_id) =
+                    world_object::decode_use_result_with_gate(payload)?;
+                (disposition, gate_message_id, detail)
+            };
         // Dispositions 11 to 17 and the gate message id exist only under capability 11, and
         // dispositions 18 and 19 only under capability 22.
         check_use_result_negotiated(
@@ -255,6 +265,7 @@ impl<S: SessionStream> Session<S> {
                 });
             }
             return Ok(ReceivedResult {
+                error_code: result.error_code,
                 command_id,
                 status: result.status,
                 server_sequence,

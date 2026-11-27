@@ -19,8 +19,11 @@ pub(super) async fn observe(
     let fence = fence?;
     let position = WorldTilePosition { x, y, floor };
     let pos = TilePos { x: u16::try_from(x).ok()?, y: u16::try_from(y).ok()?, floor: i8::try_from(floor.checked_neg()?).ok()? };
-    if !(-15..=0).contains(&pos.floor) || !admission.ensure_source_map_initialized().await {
+    if !(-15..=0).contains(&pos.floor) {
         return Some(ContainerObservation::Gone);
+    }
+    if !admission.ensure_source_map_initialized().await {
+        return None;
     }
     // The lane serializes the actor's movement and Ground projection. It is not a
     // durable browse lock: each item move independently proves custody and its fence.

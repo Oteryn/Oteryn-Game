@@ -496,9 +496,18 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 .server_sequence
                 .checked_add(1)
                 .ok_or(ServeEnd::Disconnected)?;
-            let result =
+            let command_refused = matches!(effects, Some(Dispatch::CommandRefused));
+            let result = if command_refused {
+                encode_command_error_result(
+                    generation,
+                    sequence,
+                    command.command_id,
+                    FoundationProtocolError::CommandRefused,
+                )
+            } else {
                 encode_command_result(generation, sequence, command.command_id, status, &payload)
-                    .map_err(|_| ServeEnd::Disconnected)?;
+            }
+            .map_err(|_| ServeEnd::Disconnected)?;
             commands
                 .terminalize_with(command.command_id, &result, || {})
                 .ok_or(ServeEnd::Disconnected)?;
@@ -545,6 +554,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             write_frame(stream, &result)
                 .await
                 .map_err(|_| ServeEnd::Disconnected)?;
+            if command_refused {
+                continue;
+            }
             if second_logout {
                 return Err(close(
                     stream,

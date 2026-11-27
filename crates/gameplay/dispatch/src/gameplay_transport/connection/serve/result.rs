@@ -20,6 +20,15 @@ pub(super) fn encode(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: &mut Dispatch,
 ) -> Result<Vec<u8>, ServeEnd> {
+    if matches!(dispatch, Dispatch::CommandRefused) {
+        return encode_command_error_result(
+            session.generation,
+            session.sequence,
+            command.command_id,
+            FoundationProtocolError::CommandRefused,
+        )
+        .map_err(|error| command::disconnect(command, "result_envelope", error));
+    }
     session.integrity.observe(dispatch);
     inventory_capacity::reread_after_command(session, command.command_type, dispatch);
     let (status, result_payload) = match dispatch {
@@ -374,6 +383,7 @@ pub(super) fn encode(
             | crate::gameplay_transport::character_info::CharacterInfoReply::Terminal(_),
         )
         | Dispatch::Highscores(HighscoresReply::Terminal(_) | HighscoresReply::Rejected)
+        | Dispatch::CommandRefused
         | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
     };
     let result = if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error))
