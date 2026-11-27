@@ -116,12 +116,23 @@ pub(super) async fn chest_case(
     seed_bank(h).await?;
     seed_items(h, &[(101, SWORD, 1, 0), (102, SWORD, 1, 0)]).await?;
     let mut action = pair(Operation::Fusion, 120, 101, 102);
-    action.request.occurrence =
-        occurrence_for(h, 120, |rolls| rolls[0] < 50 && rolls[2] < 7400).await?;
+    action.request.occurrence = occurrence_for(h, 120, |rolls| {
+        rolls[0] < 50 && (9550..9950).contains(&rolls[2])
+    })
+    .await?;
     committed(
-        h, owner, admitted, action,
-        Expected { succeeded: true, bonus: 0, tiers: (1, None), cost: (100, 0, 25_000) },
-    ).await
+        h,
+        owner,
+        admitted,
+        action,
+        Expected {
+            succeeded: true,
+            bonus: 5,
+            tiers: (1, Some(0)),
+            cost: (100, 0, 25_000),
+        },
+    )
+    .await
 }
 
 pub(super) async fn full_inventory(
@@ -132,7 +143,9 @@ pub(super) async fn full_inventory(
     seed_bank(h).await?;
     // Every parent that can hold both a chest and its children has a full
     // stack of slots. Removing the pair only frees slots at maximum depth.
-    let mut items: Vec<_> = (120..139).map(|seed| (seed, FORGE_SLIVER_KEY, 1, 0)).collect();
+    let mut items: Vec<_> = (120..139)
+        .map(|seed| (seed, FORGE_SLIVER_KEY, 1, 0))
+        .collect();
     items.push((140, CHEST, 1, 0));
     for depth in 0..6 {
         items.push((141 + depth, CHEST, 1, 0));
@@ -141,9 +154,15 @@ pub(super) async fn full_inventory(
     items.extend([(101, SWORD, 1, 0), (102, SWORD, 1, 0)]);
     seed_items(h, &items).await?;
     let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     for depth in 0..=6 {
-        let pair = if depth == 6 { [101, 102] } else { [150 + depth, 141 + depth] };
+        let pair = if depth == 6 {
+            [101, 102]
+        } else {
+            [150 + depth, 141 + depth]
+        };
         for (index, item) in pair.into_iter().enumerate() {
             sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(item).as_slice()).execute(&mut *tx).await?;
@@ -456,10 +475,7 @@ async fn convergence_fusion(
     seed_items(h, &filler).await?;
     let slots: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
         .bind(id(70).as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(
-        slots, 20,
-        "the backpack is full before the pair is removed"
-    );
+    assert_eq!(slots, 20, "the backpack is full before the pair is removed");
     let action = pair(Operation::ConvergenceFusion, 130, 101, 102);
     let (action, refusal) = refused(h, owner, admitted, action, "INSUFFICIENT_GOLD").await?;
     seed_bank(h).await?;

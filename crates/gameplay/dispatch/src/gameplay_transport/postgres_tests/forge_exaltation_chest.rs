@@ -10,9 +10,10 @@ fn forge_fusion_delivers_one_chest_and_replay_preserves_contents() -> TestResult
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("forge_fusion_delivers_one_chest_and_replay_preserves_contents", || {
-        support::scenario(Case::Chest(Operation::Fusion))
-    })
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "forge_fusion_delivers_one_chest_and_replay_preserves_contents",
+        || support::scenario(Case::Chest(Operation::Fusion)),
+    )
 }
 
 #[test]
@@ -21,9 +22,10 @@ fn forge_transfer_delivers_one_chest_and_replay_preserves_contents() -> TestResu
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("forge_transfer_delivers_one_chest_and_replay_preserves_contents", || {
-        support::scenario(Case::Chest(Operation::Transfer))
-    })
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "forge_transfer_delivers_one_chest_and_replay_preserves_contents",
+        || support::scenario(Case::Chest(Operation::Transfer)),
+    )
 }
 
 #[test]
@@ -32,9 +34,10 @@ fn forge_full_inventory_refuses_chest_and_preserves_value() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("forge_full_inventory_refuses_chest_and_preserves_value", || {
-        support::scenario(Case::ChestFull)
-    })
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "forge_full_inventory_refuses_chest_and_preserves_value",
+        || support::scenario(Case::ChestFull),
+    )
 }
 
 #[test]
@@ -43,8 +46,20 @@ fn forge_receipt_guards_reject_extra_mints_and_substituted_results() -> TestResu
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("forge_receipt_guards_reject_extra_mints_and_substituted_results", || {
-        support::scenario(Case::ChestGuards)
-    })
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "forge_receipt_guards_reject_extra_mints_and_substituted_results",
+        || support::scenario(Case::ChestGuards(Operation::Fusion)),
+    )
 }
 
+#[test]
+fn forge_transfer_receipt_rejects_extra_mints_and_substituted_results() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "forge_transfer_receipt_rejects_extra_mints_and_substituted_results",
+        || support::scenario(Case::ChestGuards(Operation::Transfer)),
+    )
+}

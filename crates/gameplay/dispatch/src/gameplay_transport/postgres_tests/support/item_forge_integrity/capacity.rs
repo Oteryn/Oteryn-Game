@@ -155,7 +155,7 @@ async fn conversion(
     ordinal: i64,
     ceiling: Ceiling,
 ) -> TestResult<ForgedOperation> {
-    let mut attack = ForgedOperation::prepare(h).await?;
+    let mut attack = ForgedOperation::prepare(h, Operation::Fusion).await?;
     let (item, bytes): (String, Vec<u8>) = sqlx::query_as(
         "SELECT item::text,uuid_send(item) FROM (SELECT game_character_uuid_v7() AS item) output",
     )
