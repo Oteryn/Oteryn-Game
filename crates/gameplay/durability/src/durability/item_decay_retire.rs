@@ -443,6 +443,17 @@ async fn admit(
         RetireCause::ArenaReset(_) => return Ok(Err(DecayRetireError::AuthorityRejected)),
         RetireCause::CorpseDecay => {}
     }
+    if !step.is_corpse_step() {
+        // The child's frozen event also binds the root's Ground. Use the same
+        // root Item lock as movement, before locking the child as Quick Loot does.
+        sqlx::query(
+            "SELECT 1 FROM game_item_instances \
+             WHERE item_instance_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR NO KEY UPDATE",
+        )
+        .bind(step.corpse_item_instance_id.as_slice())
+        .execute(&mut **tx)
+        .await?;
+    }
     let item = sqlx::query(
         "SELECT world_id::text, definition_family, definition_production_key, \
                 definition_revision_ref, quantity, (SELECT coalesce(max(key_number),0)::bigint FROM game_item_keys k WHERE k.item_instance_id=game_item_instances.item_instance_id) AS key_number \

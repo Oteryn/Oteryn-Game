@@ -295,7 +295,10 @@ fn loop_error(error: LoopError) -> std::result::Result<LoopMoveRefusal, Durabili
     match error {
         LoopError::Refused(refusal) => Ok(refusal),
         LoopError::Database(sqlx::Error::Database(database))
-            if database.constraint() == Some("game_corpse_ground_cap") =>
+            if matches!(
+                database.constraint(),
+                Some("game_corpse_ground_cap" | "game_corpse_ground_retirement_reserved")
+            ) =>
         {
             Ok(LoopMoveRefusal::Blocked)
         }
@@ -2482,14 +2485,9 @@ impl DurabilityRoot {
                     // MINT provenance remains historical after a fresh owner's
                     // fenced Ground drag updates the location's generation.
                     // Current mutation authority is checked by the move owner.
-                    // The existing combined cap applies to ordinary drops, fields, and
-                    // active corpses. Read uncapped remains in the same consistent snapshot.
+                    // The combined cap covers ordinary drops, fields, and all live corpses.
                     let bound = ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX;
-                    let mut bounded_rows = 0;
-                    let mut items = Vec::new();
-                    let mut after: Option<(i64, String)> = None;
-                    loop {
-                        let rows = sqlx::query(
+                    let rows = sqlx::query(
                             "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                                     i.definition_family, i.definition_production_key, \
                                     i.definition_revision_ref, i.quantity, \
@@ -2498,8 +2496,7 @@ impl DurabilityRoot {
                                     g.corpse_ref, g.map_revision, g.content_revision, \
                                     g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
                                     CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
-                                    CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile, \
-                                    cr.item_instance_id IS NOT NULL AND NOT game_corpse_counts_toward_mint_cap(i.item_instance_id) AS permanent_corpse \
+                                    CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                                FROM game_item_ground_locations g \
                                JOIN game_item_instances i USING (item_instance_id, world_id) \
                                LEFT JOIN game_item_mint_receipts cr ON cr.item_instance_id=i.item_instance_id AND cr.transaction_id=i.minted_transaction_id \
@@ -2524,7 +2521,6 @@ impl DurabilityRoot {
                                      OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) \
                                      OR sa.transaction_id IS NOT NULL \
                                      OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref))))) \
-                              AND ($6::bigint IS NULL OR (g.stack_ordinal,i.item_instance_id) > ($6,$7::uuid)) \
                               ORDER BY g.stack_ordinal, i.item_instance_id \
                               LIMIT $3",
                         )
@@ -2532,8 +2528,6 @@ impl DurabilityRoot {
                         .bind(channel.map(|id| id.to_vec()))
                         .bind(bound + 1)
                         .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
-                        .bind(after.as_ref().map(|(ordinal, _)| *ordinal))
-                        .bind(after.as_ref().map(|(_, item)| item.as_str()))
                         // Decode before collecting: retaining every raw PgRow also retains its
                         // WP3 wire and column-offset reservations until the root budget is full.
                         .map(|row| -> Result<_, DurabilityError> {
@@ -2542,10 +2536,8 @@ impl DurabilityRoot {
                                 .try_get::<Option<i64>, _>("stack_ordinal")?
                                 .and_then(|ordinal| u64::try_from(ordinal).ok())
                                 .ok_or(DurabilityError::InvalidStoredState)?;
-                            let item_id: String = row.try_get("item_instance_id")?;
-                            let item_instance_id = uuid_text(&item_id)?;
-                            let permanent: bool = row.try_get("permanent_corpse")?;
-                            Ok((permanent, item_id, LoopGroundItem {
+                            let item_instance_id = uuid_text(row.try_get("item_instance_id")?)?;
+                            Ok(LoopGroundItem {
                                 native_corpse: row.try_get("native_corpse")?,
                                 source_native_ground: row.try_get("source_native_ground")?,
                                 source_plain_corpse: row.try_get("source_plain_corpse")?,
@@ -2579,26 +2571,14 @@ impl DurabilityRoot {
                                         row.try_get("minted_transaction_id")?,
                                     )?,
                                 },
-                            }))
+                            })
                         })
                         .fetch_all(&mut *tx)
                         .await?;
-                        let full_page = i64::try_from(rows.len()) == Ok(bound + 1);
-                        for row in rows {
-                            let (permanent, item_id, item) = row?;
-                            bounded_rows += i64::from(!permanent);
-                            if bounded_rows > bound {
-                                return Err(DurabilityError::InvalidStoredState);
-                            }
-                            let ordinal = i64::try_from(item.stack_ordinal)
-                                .map_err(|_| DurabilityError::InvalidStoredState)?;
-                            after = Some((ordinal, item_id));
-                            items.push(item);
-                        }
-                        if !full_page {
-                            break;
-                        }
+                    if i64::try_from(rows.len()) == Ok(bound + 1) {
+                        return Err(DurabilityError::InvalidStoredState);
                     }
+                    let items = rows.into_iter().collect::<Result<Vec<_>, _>>()?;
                     super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(items)
                 })

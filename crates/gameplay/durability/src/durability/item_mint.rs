@@ -75,9 +75,8 @@ const EVENT_TYPE_ID: i64 = audit::EVENT_TYPE_ID as i64;
 pub const CORPSE_MATERIALIZATION_PURPOSE_KEY: &str = "CORPSE_MATERIALIZATION";
 
 /// VSL resource-rows decision §4.1 row 6 / D3 §4.2: the one bound on live
-/// corpse projections per scope (`COMBAT01-CORPSES-PER-SCOPE`), enforced only
-/// at the corpse's own MINT commit under the per-scope `oteryn:corpse-cap:`
-/// advisory lock -- never re-decided here.
+/// Ground corpse projections per scope (`COMBAT01-CORPSES-PER-SCOPE`). MINT
+/// and carried drops enforce it under the per-scope `oteryn:corpse-cap:` lock.
 pub(super) const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
 
 /// Equality on the full tagged cause tuple, parameters `$1..$10`; never a hash.

@@ -77,8 +77,11 @@ pub(super) async fn exercise_drag(
     admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    use crate::durability::item_decay_retire::{CorpseDecayFence, DecayRetireStep};
     use crate::gameplay_transport::connection::UseCommand;
-    use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
+    use crate::gameplay_transport::item_move::{
+        LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget,
+    };
     use crate::gameplay_transport::item_view::ItemKey;
     use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 
@@ -312,5 +315,102 @@ pub(super) async fn exercise_drag(
         owner.runtime.lock().await.bound_corpse(before.identity).is_none(),
         "the committed pickup must publish current custody before replay ACK"
     );
+
+    let death = super::qengine_kill_stories_fixtures::death_actor(
+        owner,
+        admitted,
+        "oteryn:creature.cobra",
+        60005,
+    )
+    .await?;
+    let corpse = owner
+        .runtime
+        .lock()
+        .await
+        .bound_corpse(death.corpse_identity())
+        .ok_or("second Cobra corpse")?;
+    let item = corpse.item.item_instance_id;
+    owner
+        .execute_quick_loot(
+            *admitted,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 60006,
+                item_fence: Some(fence),
+            },
+            QuickLootRequest {
+                corpse: Some(item),
+                ..loot
+            },
+        )
+        .await
+        .ok_or("second corpse loot response")?;
+    let mut tx = h.pool.begin().await?;
+    super::corpse_decay_fixtures::age_past_corpse_retirement(&mut tx, item).await?;
+    tx.commit().await?;
+    owner.drain_source_item_deadlines().await;
+    let drag = |command_id, target| {
+        crate::gameplay_transport::loop_move::move_loop_item(
+            owner,
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence),
+            },
+            LoopMove {
+                slot: None,
+                item: ItemKey::Instance(item),
+                count: None,
+                target,
+            },
+        )
+    };
+    let destination = |position: crate::foundation::MovementLocalPosition| {
+        Ok::<_, &'static str>(LoopTarget::Ground(WorldTilePosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor.checked_neg().ok_or("map floor")?,
+        }))
+    };
+    // Due by itself still allows movement. Freeze must read that committed Ground.
+    assert_eq!(
+        drag(60007, destination(at)?).await,
+        LoopMoveResult::Committed
+    );
+
+    let decay_fence = CorpseDecayFence {
+        runtime_scope: fence.runtime_scope,
+        scope_ownership_generation: fence.scope_ownership_generation,
+    };
+    let mut reserved = h
+        .root
+        .freeze_decay_retire(
+            owner.character,
+            &h.node,
+            decay_fence,
+            DecayRetireStep::corpse(item),
+        )
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        drag(60008, destination(corpse.position)?).await,
+        LoopMoveResult::Refused(LoopMoveRefusal::Blocked),
+    );
+    let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+    let retired = h
+        .root
+        .commit_decay_retire(
+            &permit,
+            owner.character,
+            &h.node,
+            decay_fence,
+            &mut reserved,
+        )
+        .await
+        .map_err(debug)?
+        .into_committed();
+    assert_eq!(retired.item_instance_id, item);
+    assert_eq!(&retired.transaction_id, reserved.transaction_id());
     Ok(())
 }

@@ -1343,20 +1343,26 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
             node: &harness.node,
         };
 
-        // Fill the scope to COMBAT01-CORPSES-PER-SCOPE = 64 live corpses.
-        for actor in 10_000_u32..10_064 {
+        // A permanent body occupies the last live Ground corpse slot.
+        let cap = u32::try_from(crate::durability::item_decay_retire::COMBAT01_CORPSES_PER_SCOPE)?;
+        for offset in 0..cap {
+            let corpse = if offset == cap - 1 {
+                definition("Item", "oteryn:item.tibia.i52559", "definition-r1")
+            } else {
+                definition("ItemType", "fixture:seed.corpse", "corpse-r1")
+            };
             let request = ItemMintRequest {
                 cause: ItemMintCause::for_test(
                     WorldId::decode(&id(WORLD)).map_err(debug)?,
                     ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
                     ScopeOwnershipGeneration::new(1).map_err(debug)?,
-                    actor,
+                    10_000 + offset,
                     1,
-                    definition("ItemType", "fixture:seed.corpse", "corpse-r1"),
+                    corpse.clone(),
                     CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
                     0,
                 ),
-                item: definition("ItemType", "fixture:seed.corpse", "corpse-r1"),
+                item: corpse,
                 quantity: 1,
                 ground: GroundPlacement {
                     // Canonical 10-byte Ground64 address (x=9, y=9, floor=0).
@@ -1387,7 +1393,19 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
                 .await
                 .map_err(debug)?;
         }
-        assert_eq!(harness.ground_items().await?, 64);
+        assert_eq!(harness.ground_items().await?, i64::from(cap));
+        let schedule = harness
+            .root
+            .read_scoped_corpse_decay_schedule(&authority, scope()?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(schedule.corpses.len(), usize::try_from(cap)?);
+        let permanent = schedule
+            .corpses
+            .iter()
+            .find(|corpse| corpse.definition.production_key == "oteryn:item.tibia.i52559")
+            .ok_or("permanent corpse in the scoped schedule")?;
+        assert_eq!(permanent.decay_at_unix_ms, None);
 
         let mut fixture = death_fixture()?;
         fixture
@@ -1420,8 +1438,8 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
             return Err("XP award must commit despite the corpse cap".into());
         };
         assert_eq!(award.experience_after.get(), RAT_XP);
-        assert_eq!(harness.count("game_item_instances").await?, 64);
-        assert_eq!(harness.ground_items().await?, 64);
+        assert_eq!(harness.count("game_item_instances").await?, i64::from(cap));
+        assert_eq!(harness.ground_items().await?, i64::from(cap));
         assert_eq!(harness.corpse_entries().await?, 0);
         drop(authority);
         drop(seal);

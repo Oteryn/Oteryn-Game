@@ -1,15 +1,5 @@
--- The live corpse limit counts bodies with pending work. Permanent remains
--- still participate in Ground and corpse projections.
-CREATE FUNCTION game_corpse_counts_toward_mint_cap(p_item UUID) RETURNS BOOLEAN
-LANGUAGE sql STABLE STRICT AS $$
-    SELECT game_corpse_retirement_deadline(p_item) IS NOT NULL
-        OR NOT game_corpse_terminal_stage_ready(p_item)
-$$;
-REVOKE ALL ON FUNCTION game_corpse_counts_toward_mint_cap(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION game_corpse_counts_toward_mint_cap(UUID) TO oteryn_game_runtime;
-
--- MINT and carried drops use the same scope census while holding the corpse
--- cap lock. Ground-to-Ground relocation does not add another corpse to it.
+-- MINT and carried drops count all live Ground corpse roots, including
+-- permanent remains, while holding the same scope cap lock.
 CREATE FUNCTION game_corpse_ground_cap_recount(p_world UUID,p_channel UUID,p_instance UUID)
 RETURNS BIGINT LANGUAGE sql VOLATILE AS $$
     SELECT count(*) FROM game_item_ground_locations g
@@ -18,7 +8,7 @@ RETURNS BIGINT LANGUAGE sql VOLATILE AS $$
     WHERE g.world_id=p_world AND g.channel_id IS NOT DISTINCT FROM p_channel
       AND g.instance_id IS NOT DISTINCT FROM p_instance
       AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
-      AND i.lifecycle=1 AND game_corpse_counts_toward_mint_cap(i.item_instance_id)
+      AND i.lifecycle=1 AND m.transaction_id=i.minted_transaction_id
 $$;
 
 -- Registered corpse stages whose active native profiles admit inventory and
@@ -114,6 +104,35 @@ BEGIN
         RAISE EXCEPTION 'Ordinary corpse custody predecessor changed';
     END IF;
     body := replace(body, original, $guard$
+    -- Every ordinary retirement freezes the corpse's Ground, including a
+    -- child step. Serialize that read with relocation on the root Item row.
+    IF NEW.from_kind=3 THEN
+        SELECT loc.* INTO g FROM game_item_ground_locations loc
+        JOIN game_item_instances corpse USING(item_instance_id,world_id)
+        JOIN game_item_mint_receipts m ON m.item_instance_id=corpse.item_instance_id
+            AND m.transaction_id=corpse.minted_transaction_id
+        WHERE loc.item_instance_id=NEW.item_instance_id AND corpse.lifecycle=1
+          AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+        FOR UPDATE OF corpse;
+        IF FOUND AND EXISTS (
+            SELECT 1 FROM game_item_decay_retire_reservations v
+            WHERE v.item_instance_id=NEW.item_instance_id AND v.corpse_item_instance_id=NEW.item_instance_id
+              AND v.cause_kind='CORPSE_DECAY'
+              AND (v.world_id,v.scope_kind,v.channel_id,v.instance_id)
+                  IS NOT DISTINCT FROM (g.world_id,g.scope_kind,g.channel_id,g.instance_id)
+            UNION ALL
+            SELECT 1 FROM game_item_corpse_container_entries e
+            JOIN game_item_decay_retire_reservations v ON v.item_instance_id=e.item_instance_id
+                AND v.corpse_item_instance_id=e.parent_item_instance_id
+                AND v.placement_ordinal=e.placement_ordinal
+            WHERE e.parent_item_instance_id=NEW.item_instance_id AND v.cause_kind='CORPSE_DECAY'
+              AND (v.world_id,v.scope_kind,v.channel_id,v.instance_id)
+                  IS NOT DISTINCT FROM (g.world_id,g.scope_kind,g.channel_id,g.instance_id)
+        ) THEN
+            RAISE EXCEPTION 'Ground corpse retirement is reserved'
+                USING ERRCODE='23514', CONSTRAINT='game_corpse_ground_retirement_reserved';
+        END IF;
+    END IF;
     IF NEW.from_kind=3 AND NEW.to_kind<>3 AND EXISTS (
         SELECT 1 FROM game_item_corpse_container_entries e
         WHERE e.parent_item_instance_id=NEW.item_instance_id
@@ -128,7 +147,7 @@ BEGIN
     IF NEW.from_kind IN (1,2) AND NEW.to_kind=3 AND EXISTS (
         SELECT 1 FROM game_item_mint_receipts m
         WHERE m.item_instance_id=NEW.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
-          AND m.draw_ordinal=0 AND game_corpse_counts_toward_mint_cap(m.item_instance_id)
+          AND m.draw_ordinal=0
     ) THEN
         SELECT * INTO r FROM game_item_loop_move_receipts
         WHERE transaction_id=NEW.transaction_id AND created_xact_id=pg_current_xact_id();
@@ -139,7 +158,7 @@ BEGIN
             encode(CASE WHEN r.scope_kind=1 THEN decode('01','hex')||uuid_send(r.world_id)||uuid_send(r.channel_id)
                         ELSE game_activity_scope_key(r.world_id,r.instance_id) END,'hex'),0));
         IF game_corpse_ground_cap_recount(r.world_id,r.channel_id,r.instance_id)>=64 THEN
-            RAISE EXCEPTION 'The destination scope has too many active corpses'
+            RAISE EXCEPTION 'The destination scope has too many live Ground corpses'
                 USING ERRCODE='23514', CONSTRAINT='game_corpse_ground_cap';
         END IF;
     END IF;
@@ -184,7 +203,7 @@ BEGIN
         (g.runtime_scope_ownership_generation<=p_generation AND game_ordinary_corpse_loop_ground(p_item))))');
 
     FOREACH f IN ARRAY ARRAY['game_ordinary_corpse_loop_ground(uuid)','game_ordinary_corpse_drag_source(uuid)',
-                             'game_corpse_counts_toward_mint_cap(uuid)','game_corpse_ground_cap_recount(uuid,uuid,uuid)'] LOOP
+                             'game_corpse_ground_cap_recount(uuid,uuid,uuid)'] LOOP
         EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
         EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
         EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);
