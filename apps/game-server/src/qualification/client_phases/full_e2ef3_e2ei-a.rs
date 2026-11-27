@@ -351,7 +351,7 @@ async fn inventory_journey(
     ground_round_trip(client, provisioning::item_reference(&index, 3003)?).await?;
 
     *step = "nested-move";
-    // Lubo sells a five-slot present for six gold. Six empty presents let us
+    // Gorn sells a five-slot present for six gold. Six empty presents let us
     // fill one without needing five distinct definitions.
     let bags = provisioning::item_reference(&index, 2855)?;
     let coins = provisioning::item_reference(&index, 3031)?;
@@ -360,7 +360,7 @@ async fn inventory_journey(
         full_e2ef3_e2ei_d::hunt_for_carried_gold(client, hunt_world, &metadata.spawns, coins, 38)
             .await?;
     }
-    full_e2ef3_e2ei_d::buy_from_lubo(client, world, bags, coins, 6, 6).await?;
+    full_e2ef3_e2ei_d::buy_from_gorn(client, world, bags, coins, 6, 6).await?;
     assert_counts(entries(client)?, bags, &[1; 6])?;
     let bag = matching(entries(client)?, bags)?;
     let view = open_container(client, bag.handle).await?;

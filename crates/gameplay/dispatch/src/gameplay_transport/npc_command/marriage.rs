@@ -160,9 +160,15 @@ pub(super) async fn replay(
         command.game_session_id,
         CommandId::new(command.command_id).ok()?,
     );
-    match admission
-        .root
-        .reconcile_npc_marriage(admission.character, fence.character_id, reference)
+    let retry = super::super::AdmissionRetryBudget::for_command(admission.root);
+    match retry
+        .retry_durability("npc_marriage_receipt", || {
+            admission.root.reconcile_npc_marriage(
+                admission.character,
+                fence.character_id,
+                reference,
+            )
+        })
         .await
     {
         Ok(Some(receipt)) => {

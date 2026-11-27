@@ -98,6 +98,7 @@ mod e2ef1 {
         ("M07", &["carried-rope", "rope-ascent", "relogin"]),
     ];
     const FLOOR_EXHAUST_SPELL: &str = "exevo infir flam hur";
+    const MOVEMENT_LOGOUT_WINDOW: Duration = Duration::from_secs(70);
     const DIRS: [StepDirection; 4] = [
         StepDirection::North,
         StepDirection::East,
@@ -1357,11 +1358,7 @@ mod e2ef1 {
         Ok(items)
     }
     pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
-        logout_by(
-            client,
-            tokio::time::Instant::now() + Duration::from_secs(70),
-        )
-        .await
+        logout_by(client, tokio::time::Instant::now() + MOVEMENT_LOGOUT_WINDOW).await
     }
     async fn logout_by(
         client: &mut DevClientSession,
@@ -1380,40 +1377,137 @@ mod e2ef1 {
         }
     }
 
+    enum LandingLogoutWait {
+        First,
+        Busy,
+        Combat(Duration),
+    }
+
     async fn logout_after_combat(
         mut exchange: impl AsyncFnMut(
-            Duration,
+            LandingLogoutWait,
         )
             -> TestResult<oteryn_protocol_oteryn::logout::LogoutResult>,
     ) -> TestResult {
         use oteryn_protocol_oteryn::logout::LogoutResult;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-        let mut wait = Duration::ZERO;
+        let mut release_deadline = None;
+        let mut wait = LandingLogoutWait::First;
         loop {
             wait = match exchange(wait).await? {
                 LogoutResult::Accepted => return Ok(()),
-                // Global refreshes the lock after each hit. A new refusal at the previous
-                // expiry gives the new time remaining, even past the release retry deadline.
+                // Global refreshes the lock after each hit. The time in combat
+                // and the time retrying terminal release have separate owners.
                 LogoutResult::InFight { retry_after_ms } => {
-                    Duration::from_millis(u64::from(retry_after_ms))
+                    release_deadline = None;
+                    LandingLogoutWait::Combat(Duration::from_millis(u64::from(retry_after_ms)))
                 }
-                LogoutResult::Busy if tokio::time::Instant::now() < deadline => {
-                    Duration::from_millis(250)
+                LogoutResult::Busy => {
+                    let now = tokio::time::Instant::now();
+                    let deadline = release_deadline.get_or_insert(now + MOVEMENT_LOGOUT_WINDOW);
+                    if now >= *deadline {
+                        return Err("M07 logout release remained busy".into());
+                    }
+                    LandingLogoutWait::Busy
                 }
-                LogoutResult::Busy => return Err("M07 logout release remained busy".into()),
             };
         }
     }
 
+    async fn shelter_from_rope_combat(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+        bundle: &[u8],
+        landing: ActorPosition,
+        fight_wait: Duration,
+    ) -> TestResult {
+        let ready = tokio::time::Instant::now() + fight_wait;
+        let landing = tile(landing)?;
+        let spawns = oteryn_world_bundle::bundle::visit(bundle, |_, _| Ok(()))?.spawns;
+        let spiders: Vec<_> = spawns
+            .sources
+            .iter()
+            .filter(|source| source.floor == landing.floor)
+            .flat_map(|source| &source.points)
+            .filter(|point| {
+                spawns.creatures[point.creature as usize]
+                    .key
+                    .ends_with("spider")
+            })
+            .collect();
+        // The shortest route crosses two authored Spider spawn cells. Use the
+        // same-floor path east of the rope mouth with room to pass outside melee.
+        let step = |at, direction| {
+            destination(world, at, direction).filter(|next| {
+                next.floor == landing.floor
+                    && spiders
+                        .iter()
+                        .all(|spider| spider.x.abs_diff(next.x).max(spider.y.abs_diff(next.y)) > 2)
+            })
+        };
+        let shelter =
+            route_with_landings(landing, |at| is_logout_rest_tile(world, at), |_| true, step)
+                .ok_or("M07 landing has no route to protection")?;
+        evidence(&format!(
+            "E2EF1_LOGOUT_SHELTER row=M07 from={landing:?} steps={}",
+            shelter.len()
+        ));
+        walk_with_landings(client, &shelter, step).await?;
+        let protected = tile(client.world_spatial().actor_position)?;
+        if !is_logout_rest_tile(world, protected) {
+            return Err("M07 shelter route missed protection".into());
+        }
+
+        // A hit while retreating may extend the last advertised expiry. The live
+        // combat state keeps updating in protection, where enemies cannot prolong it.
+        let deadline = tokio::time::Instant::now() + MOVEMENT_LOGOUT_WINDOW;
+        loop {
+            let combat = client
+                .session_mut()
+                .combat_state()
+                .ok_or("M07 combat state absent")?;
+            let now = tokio::time::Instant::now();
+            if now >= ready && !combat.in_fight {
+                break;
+            }
+            if now >= deadline {
+                return Err(format!(
+                    "M07 combat lock did not clear in protection at {protected:?}"
+                )
+                .into());
+            }
+            client
+                .session_mut()
+                .service_liveness_discarding_events(Duration::from_millis(250))
+                .await?;
+        }
+
+        let back = route_with_landings(protected, |at| at == landing, |_| true, step)
+            .ok_or("M07 shelter has no return route to the exact landing")?;
+        walk_with_landings(client, &back, step).await
+    }
+
     async fn logout_on_rope_landing(
         client: &mut DevClientSession,
+        world: &BundleWorld,
+        bundle: &[u8],
         landing: ActorPosition,
     ) -> TestResult {
         use oteryn_protocol_oteryn::logout::LogoutResult;
 
+        let mut used_shelter = false;
         logout_after_combat(async |wait| {
-            if !wait.is_zero() {
-                client.session_mut().service_liveness_discarding_events(wait).await?;
+            match wait {
+                LandingLogoutWait::First => {}
+                LandingLogoutWait::Busy => {
+                    client.session_mut().service_liveness_discarding_events(Duration::from_millis(250)).await?;
+                }
+                LandingLogoutWait::Combat(wait) if !used_shelter => {
+                    shelter_from_rope_combat(client, world, bundle, landing, wait).await?;
+                    used_shelter = true;
+                }
+                LandingLogoutWait::Combat(wait) => {
+                    client.session_mut().service_liveness_discarding_events(wait).await?;
+                }
             }
             let position = client.world_spatial().actor_position;
             let vitals = client.actor_vitals();
@@ -1429,7 +1523,7 @@ mod e2ef1 {
                     .filter(|entity| {
                         entity.kind == EntityKind::Creature && entity.position.floor == landing.floor
                     })
-                    .map(|entity| (entity.display_name, entity.position))
+                    .map(|entity| (entity.display_name.as_ref().and_then(|name| name.as_str().ok()), entity.position))
                     .collect();
                 evidence(&format!(
                     "E2EF1_LOGOUT_FIGHT row=M07 position={landing:?} retry_after_ms={retry_after_ms} vitals={:?} creatures={nearby:?}",
@@ -1496,7 +1590,7 @@ mod e2ef1 {
         client: &mut DevClientSession,
         world: &BundleWorld,
     ) -> TestResult<RestingLogout> {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        let deadline = tokio::time::Instant::now() + MOVEMENT_LOGOUT_WINDOW;
         tokio::time::timeout_at(deadline, leave_fight(client, world, deadline))
             .await
             .map_err(|_| "movement logout cleanup exceeded deadline reaching protection")??;
@@ -1669,7 +1763,7 @@ mod e2ef1 {
                 .await?;
             }
             if *row == "M07" && checks.passed.contains("rope-ascent") {
-                logout_on_rope_landing(&mut client, saved).await?;
+                logout_on_rope_landing(&mut client, world, &bytes, saved).await?;
             } else {
                 logout(&mut client).await?;
             }
@@ -1744,23 +1838,30 @@ mod e2ef1 {
             let start = tokio::time::Instant::now();
             let mut attempts = Vec::new();
             logout_after_combat(async |wait| {
+                let wait = match wait {
+                    LandingLogoutWait::First => Duration::ZERO,
+                    LandingLogoutWait::Combat(wait) => wait,
+                    LandingLogoutWait::Busy => Duration::from_millis(250),
+                };
                 tokio::time::advance(wait).await;
                 let elapsed = start.elapsed().as_millis();
                 attempts.push(elapsed);
                 Ok(match elapsed {
-                    0 => LogoutResult::InFight {
+                    0 => LogoutResult::Busy,
+                    250 => LogoutResult::InFight {
                         retry_after_ms: 60_000,
                     },
-                    // A hit at 55 seconds renews the lock until 115 seconds.
-                    60_000 => LogoutResult::InFight {
+                    // A hit 55 seconds into the lock renews it through the second wait.
+                    60_250 => LogoutResult::InFight {
                         retry_after_ms: 55_000,
                     },
-                    115_000 => LogoutResult::Accepted,
+                    115_250 => LogoutResult::Busy,
+                    115_500 => LogoutResult::Accepted,
                     _ => return Err(format!("unexpected logout attempt at {elapsed} ms").into()),
                 })
             })
             .await?;
-            assert_eq!(attempts, [0, 60_000, 115_000]);
+            assert_eq!(attempts, [0, 250, 60_250, 115_250, 115_500]);
             Ok(())
         }
 

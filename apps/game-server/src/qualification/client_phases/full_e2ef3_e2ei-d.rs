@@ -191,7 +191,7 @@ async fn rejoin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Tes
     Ok(())
 }
 
-pub(super) async fn buy_from_lubo(
+pub(super) async fn buy_from_gorn(
     client: &mut DevClientSession,
     world: &BundleWorld,
     item: NonZeroU32,
@@ -199,14 +199,15 @@ pub(super) async fn buy_from_lubo(
     quantity: u32,
     unit_price: u64,
 ) -> TestResult<()> {
-    // Crystal's Lubo sells the pick (50 gp) and five-slot presents (6 gp).
+    // Gorn offers the same pick (50 gp) and five-slot presents (6 gp)
+    // at a reachable Thais placement.
     let shop = TilePos {
-        x: 32489,
-        y: 32119,
+        x: 32377,
+        y: 32200,
         floor: -7,
     };
-    walk_near(client, world, shop, 2).await?;
-    let target = e2ei_c::approach_vendor(client, world, "Lubo", |at| {
+    walk_near(client, world, shop, 3).await?;
+    let target = e2ei_c::approach_vendor(client, world, "Gorn", |at| {
         e2ei_c::near_vendor_placement(at, shop)
     })
     .await?;
@@ -220,7 +221,7 @@ pub(super) async fn buy_from_lubo(
         )
         .await?;
         if response != npc::NpcIntentDisposition::Ok {
-            return Err(format!("Lubo {text}: {response:?}").into());
+            return Err(format!("Gorn {text}: {response:?}").into());
         }
     }
     let delta = client
@@ -228,7 +229,7 @@ pub(super) async fn buy_from_lubo(
         .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
     let window = npc::decode_npc_trade_window(&delta.payload)
-        .map_err(|error| format!("Lubo trade window: {error:?}"))?;
+        .map_err(|error| format!("Gorn trade window: {error:?}"))?;
     let (offer_index, offer) = window
         .offers
         .iter()
@@ -238,14 +239,14 @@ pub(super) async fn buy_from_lubo(
                 && offer.item_definition_ref == item.get()
                 && u64::from(offer.unit_price) == unit_price
         })
-        .ok_or_else(|| format!("Lubo live window lacks definition={item} at price={unit_price}"))?;
+        .ok_or_else(|| format!("Gorn live window lacks definition={item} at price={unit_price}"))?;
     let mut expected = quantities(client)?;
     *expected.entry(item.get()).or_default() += u64::from(quantity) * u64::from(offer.count);
     let cost = u64::from(quantity) * unit_price;
     let before = carried_coin_count(&expected, coin);
     let after = before
         .checked_sub(cost)
-        .ok_or_else(|| format!("Lubo requires {cost} carried gold; observed {before}"))?;
+        .ok_or_else(|| format!("Gorn requires {cost} carried gold; observed {before}"))?;
     if after == 0 {
         expected.remove(&coin.get());
     } else {
@@ -255,7 +256,7 @@ pub(super) async fn buy_from_lubo(
         client.session_mut(),
         &npc::NpcTradeIntent {
             npc_actor: target,
-            catalogue_revision: window.open.ok_or("Lubo trade window closed")?.1,
+            catalogue_revision: window.open.ok_or("Gorn trade window closed")?.1,
             offer_index: u32::try_from(offer_index)?,
             side: offer.side,
             quantity,
@@ -265,7 +266,7 @@ pub(super) async fn buy_from_lubo(
     .await?;
     if response != npc::NpcIntentDisposition::Ok {
         return Err(
-            format!("Lubo buy definition={item}: reply={response:?} carried_gold={before} price={unit_price}").into(),
+            format!("Gorn buy definition={item}: reply={response:?} carried_gold={before} price={unit_price}").into(),
         );
     }
     wait(client, Duration::from_secs(5), |client| {
@@ -411,7 +412,7 @@ async fn refine(
     let gold = provisioning::item_reference(index, 3031)?;
     if carried(client, pick).is_none() {
         hunt_for_carried_gold(client, world, &metadata.spawns, gold, 50).await?;
-        buy_from_lubo(client, &world.bundle, pick, gold, 1, 50).await?;
+        buy_from_gorn(client, &world.bundle, pick, gold, 1, 50).await?;
     }
     if carried(client, stone).is_none() {
         hunt_for(client, world, &metadata.spawns, 10310, |client| {

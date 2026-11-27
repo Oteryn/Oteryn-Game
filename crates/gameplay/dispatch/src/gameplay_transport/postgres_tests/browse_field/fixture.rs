@@ -143,6 +143,22 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 owner.observe_container(deps.actor, Some(fence), field).await,
                 Some(ContainerObservation::BrowseField { .. })
             ));
+            let held = harness.root.try_issue_background_semantic_pass()?;
+            let mut observation = std::pin::pin!(
+                crate::durability::DurabilityRoot::with_holder_owner(
+                    owner.observe_container(deps.actor, Some(fence), field)
+                )
+            );
+            let first = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(observation.as_mut(), cx))
+            })
+            .await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(first.is_pending(), "browse observation must wait for the holder");
+            assert!(matches!(
+                observation.await,
+                Some(ContainerObservation::BrowseField { .. })
+            ));
             assert!(owner.observe_container(deps.actor, None, field).await.is_none());
             // Change one authority component at a time, retaining the real active session
             // and source map. A stale view must not publish entries under an old fence.

@@ -235,6 +235,7 @@ pub(super) enum ShopScenario {
     Bulk,
     WeightLimit,
     MissingProfile,
+    HeldTradeWindow,
     PackedBuy,
     EquippedSale,
 }
@@ -512,6 +513,41 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             ],
         )
         .ok_or("npc shop selection")?;
+        if matches!(case, ShopScenario::HeldTradeWindow) {
+            use crate::durability::DurabilityRoot;
+            use crate::gameplay_transport::npc_command::npc_bank_talk;
+            use oteryn_simulation_determinism::SemanticTimeMicros;
+
+            let first = owner.owner_now();
+            let greeted = npc_bank_talk(
+                &owner,
+                deps.actor,
+                UseCommand { game_session_id: session, command_id: 1, item_fence: Some(fence) },
+                NpcTalkIntent { npc_actor: npc, text: "hi".into() },
+                first,
+            ).await;
+            assert_eq!(greeted.disposition, NpcIntentDisposition::Ok);
+            assert!(!greeted.unknown);
+
+            let held = h.root.try_issue_background_semantic_pass()?;
+            let mut trade = std::pin::pin!(DurabilityRoot::with_holder_owner(npc_bank_talk(
+                &owner,
+                deps.actor,
+                UseCommand { game_session_id: session, command_id: 2, item_fence: Some(fence) },
+                NpcTalkIntent { npc_actor: npc, text: "trade".into() },
+                SemanticTimeMicros::from_micros(first.get() + 1_000_000),
+            )));
+            let polled = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(trade.as_mut(), cx))
+            }).await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(polled.is_pending(), "the trade dialogue must wait for the receipt read");
+            let reply = trade.await;
+            assert!(!reply.unknown);
+            assert_eq!(reply.disposition, NpcIntentDisposition::Ok);
+            assert!(reply.window.is_some(), "ordinary trade must open a window");
+            return Ok(());
+        }
         if weight_limit {
             let before = footprint(&h).await?;
             let inventory = carried(&h).await?;

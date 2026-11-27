@@ -1,9 +1,10 @@
 //! I18: session-fenced tile observation for the existing ephemeral container owner.
 
-use super::ComposedFreshAdmission;
+use super::{AdmissionRetryBudget, ComposedFreshAdmission};
 use super::container_view::{ContainerObservation, browse_projection, browse_rules};
 use super::item_ref_admission::pinned_index;
 use super::item_view::ItemKey;
+use super::loop_move::read_container_observation;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::ExactActorRef;
 use crate::map::overlay::TilePos;
@@ -25,7 +26,8 @@ pub(super) async fn observe(
     // The lane serializes the actor's movement and Ground projection. It is not a
     // durable browse lock: each item move independently proves custody and its fence.
     let _permit = admission.spell_lane_permit().await?;
-    if !current(admission, fence).await? { return Some(ContainerObservation::Gone); }
+    let retry = AdmissionRetryBudget::for_command(admission.root);
+    if !current(admission, &retry, fence).await? { return Some(ContainerObservation::Gone); }
     if admission.states.spell_states.lock().await.is_dead(actor) {
         return Some(ContainerObservation::Gone);
     }
@@ -52,7 +54,7 @@ pub(super) async fn observe(
     let entries = browse_projection::project(ground.overlay(), &ground.facts(&facts), native, index, pos, admission.reset_epoch)?;
     if entries.len() > usize::from(u16::MAX) { return Some(ContainerObservation::Gone); }
     // Durable custody reads may wait while reconnect advances the generation.
-    if !current(admission, fence).await?
+    if !current(admission, &retry, fence).await?
         || admission.runtime.lock().await.player_control_facts(actor, fence.game_session_id).is_err()
     { return Some(ContainerObservation::Gone); }
     let (entries, lease) = admission.states.browse_fields.observe(
@@ -61,8 +63,17 @@ pub(super) async fn observe(
     Some(ContainerObservation::BrowseField { position, entries, lease: Some(lease) })
 }
 
-async fn current(admission: &ComposedFreshAdmission<'_, '_, '_>, fence: CurrentCharacterItemFence) -> Option<bool> {
-    let session = super::FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(fence.game_session_id).await.ok()?.0;
+async fn current(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    retry: &AdmissionRetryBudget<'_>,
+    fence: CurrentCharacterItemFence,
+) -> Option<bool> {
+    let store = super::FreshAdmissionStore::from_root(admission.root.clone());
+    let session = read_container_observation(retry, "browse_field_session", || {
+        store.current_session_at(fence.game_session_id)
+    })
+    .await
+    .ok()?
+    .0;
     Some(session.session_state() == super::GameSessionState::Active && super::item_fence_of(session) == Some(fence))
 }

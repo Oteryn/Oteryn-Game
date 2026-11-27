@@ -21,6 +21,17 @@ fn scenario() -> TestResult {
     run_shop_scenario(false)
 }
 
+
+#[test]
+fn npc_trade_window_postgres_retries_held_receipt_read() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("npc-held-trade", || {
+        scenario_for(ShopScenario::HeldTradeWindow)
+    })
+}
+
 #[test]
 fn npc_shop_quotes_remain_available_without_an_item_profile() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

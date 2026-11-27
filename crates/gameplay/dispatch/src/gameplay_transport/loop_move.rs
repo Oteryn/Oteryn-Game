@@ -1678,7 +1678,7 @@ pub(super) async fn observe_container_with_house_capacity(
         .await
 }
 
-async fn read_container_observation<T, F, Fut>(
+pub(super) async fn read_container_observation<T, F, Fut>(
     retry: &super::AdmissionRetryBudget<'_>,
     stage: &'static str,
     mut read: F,
