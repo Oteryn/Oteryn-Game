@@ -5,12 +5,12 @@ No asset bytes, item names, new identities, or marketability decisions are emitt
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/item-authoring'))
-from client_appearance_census import load_client_appearances, DEFAULT_APPEARANCES
+from client_appearance_census import DEFAULT_APPEARANCES, load_client_appearances
 from lower_client_market_mint_packet import refresh_rust_packet_pin
 
 
