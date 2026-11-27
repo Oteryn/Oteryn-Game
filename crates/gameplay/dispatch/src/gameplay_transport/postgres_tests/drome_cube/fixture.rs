@@ -8,6 +8,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
         Case::ExistingStack => "drome_cube_stack",
         Case::ConcurrentLastUnit => "drome_cube_concurrent",
         Case::KooldownAid => "kooldown_aid",
+        Case::Logout => "drome_cube_logout",
     };
     let harness = Harness::create(admin, label, true).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -157,6 +158,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
             super::kooldown_aid::run(&owner, &harness, actor, session, index).await
         }
         Case::FullRetry => super::run(&owner, &harness, actor, session, index).await,
+        Case::Logout => super::logout::run(&owner, &harness, actor, session, index).await,
         Case::HandleReplay => super::cases::handle_replay(&owner, &harness, actor, session).await,
         Case::ExistingStack => super::cases::stack(&owner, &harness, actor, session, index).await,
         Case::ConcurrentLastUnit => {

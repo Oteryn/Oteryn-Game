@@ -75,7 +75,7 @@ pub(super) fn reward_notice(
     )))
 }
 
-fn intent(index: &ItemDefinitionIndex) -> TestResult<UseIntent> {
+pub(super) fn intent(index: &ItemDefinitionIndex) -> TestResult<UseIntent> {
     let definition = index
         .definition_ref(
             "Item",
