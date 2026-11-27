@@ -55,10 +55,12 @@ pub(super) async fn selected(
         };
         count
     };
+    let (day, weekday) =
+        check_calendar(clock.day, clock.weekday, clock.civil_day, before.check_day);
     let check = LuaRaidCheck {
         now_ms,
-        day: clock.day,
-        weekday: clock.weekday,
+        day,
+        weekday,
         server_save_at_ms: clock.server_save_at_ms,
         active_players,
         running,
@@ -73,4 +75,30 @@ pub(super) async fn selected(
     sqlx::query("UPDATE game_world_raid_lua_states SET state=$3::text::jsonb WHERE world_id=encode($1,'hex')::uuid AND raid_key=$2")
         .bind(world.as_bytes().as_slice()).bind(key.as_str()).bind(state).execute(&mut **tx).await?;
     Ok(LuaSelection::Selected(transition.start))
+}
+
+// A raid may already have checked after civil midnight under the old calendar.
+// Retain that recorded day through cutover so its budget cannot rewind. The
+// caller still rejects a recorded day beyond the current civil date.
+fn check_calendar(save_day: i64, weekday: u8, civil_day: i64, recorded_day: i64) -> (i64, u8) {
+    if recorded_day > save_day && recorded_day == civil_day {
+        (recorded_day, weekday % 7 + 1)
+    } else {
+        (save_day, weekday)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::check_calendar;
+
+    #[test]
+    fn raid_cutover_preserves_only_the_already_recorded_civil_day() {
+        // Sunday is still open at 09:59 on Monday. A raid that already checked
+        // under the old rule keeps Monday's counter through the first save.
+        assert_eq!(check_calendar(20_779, 7, 20_780, 20_780), (20_780, 1));
+        assert_eq!(check_calendar(20_779, 7, 20_780, 20_779), (20_779, 7));
+        assert_eq!(check_calendar(20_779, 7, 20_780, 20_781), (20_779, 7));
+        assert_eq!(check_calendar(20_780, 1, 20_780, 20_780), (20_780, 1));
+    }
 }

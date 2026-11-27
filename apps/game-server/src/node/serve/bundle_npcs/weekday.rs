@@ -1,6 +1,8 @@
 //! One weekly NPC follows only placements admitted by the verified bundle.
 use super::{ChannelRuntimeV1, NpcBoot, NpcPlacement, NpcPlacementError};
-use oteryn_gameplay_entities::rashid_schedule::{RASHID_NPC_KEY, destination_at};
+use oteryn_gameplay_entities::rashid_schedule::{
+    RASHID_DESTINATIONS, RASHID_NPC_KEY, server_save_weekday_index,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct WeekdayNpcSpawns {
@@ -21,8 +23,7 @@ impl WeekdayNpcSpawns {
         }
         let source = table.npcs.iter().find(|npc| npc.key == RASHID_NPC_KEY)?;
         let placements = std::array::from_fn(|day| {
-            let day = i64::try_from(day).ok()?;
-            let expected = destination_at((4 + day) * 86_400_000).placement;
+            let expected = RASHID_DESTINATIONS[day].placement;
             source.placements.iter().copied().find(|p| *p == expected)
         });
         placements.iter().any(Option::is_some).then_some(Self {
@@ -36,16 +37,7 @@ impl WeekdayNpcSpawns {
         runtime: &mut ChannelRuntimeV1,
         unix_ms: i64,
     ) -> Result<(), NpcPlacementError> {
-        // Same UTC day convention as the existing trade-availability owner.
-        let day = match (unix_ms.div_euclid(86_400_000) + 3).rem_euclid(7) {
-            0 => 0,
-            1 => 1,
-            2 => 2,
-            3 => 3,
-            4 => 4,
-            5 => 5,
-            _ => 6,
-        };
+        let day = server_save_weekday_index(unix_ms);
         reconcile(runtime, self.key, self.placements[day], unix_ms)
     }
 }

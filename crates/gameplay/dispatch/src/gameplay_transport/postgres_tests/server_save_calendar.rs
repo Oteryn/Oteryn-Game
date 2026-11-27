@@ -54,14 +54,24 @@ async fn boundaries(pool: &sqlx::PgPool) -> TestResult {
             .bind(world.as_slice()).execute(&mut *tx).await?;
         assert_periods(&mut tx, world, date, monday, false).await?;
 
-        let exact: bool = sqlx::query_scalar(
-            "SELECT game_server_save_at($1::text::date)=$2::text::timestamptz",
-        )
-        .bind(date)
-        .bind(&at)
-        .fetch_one(&mut *tx)
-        .await?;
+        let (exact, before_ms, at_ms, before_weekday, at_weekday): (bool, i64, i64, i16, i16) =
+            sqlx::query_as(
+                "SELECT game_server_save_at($1::text::date)=at_time,
+                        (extract(epoch FROM before_time)*1000)::bigint,
+                        (extract(epoch FROM at_time)*1000)::bigint,
+                        extract(isodow FROM game_server_save_day(before_time))::smallint,
+                        extract(isodow FROM game_server_save_day(at_time))::smallint
+                 FROM (SELECT $2::text::timestamptz AS before_time,$3::text::timestamptz AS at_time) v",
+            )
+            .bind(date)
+            .bind(&before)
+            .bind(&at)
+            .fetch_one(&mut *tx)
+            .await?;
         assert!(exact, "{date} must save at {utc_hour}:00 UTC");
+        use oteryn_gameplay_entities::rashid_schedule::server_save_weekday_index;
+        assert_eq!(server_save_weekday_index(before_ms), usize::try_from(before_weekday - 1)?);
+        assert_eq!(server_save_weekday_index(at_ms), usize::try_from(at_weekday - 1)?);
         tx.rollback().await?;
     }
 

@@ -3767,6 +3767,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "203edf9b0ce4083ec8fbf4adc823eac89768ea994b4953fc0dab1b90083234dd"
 dependencies = [
  "jiff-core",
+ "jiff-tzdb",
  "proc-macro2",
  "quote",
  "syn 2.0.119",
@@ -5357,6 +5358,7 @@ dependencies = [
 name = "oteryn-gameplay-entities"
 version = "0.1.0"
 dependencies = [
+ "jiff",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-foundation",
