@@ -13,29 +13,48 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt as _;
 use oteryn_protocol_oteryn::{logout::LogoutResult, quick_loot as wire};
 
+#[allow(
+    dead_code,
+    reason = "the shared mTLS fixture serves other Premium cases"
+)]
+#[path = "../../../../social/src/premium/test_producer.rs"]
+mod premium_test_producer;
+
+#[test]
+fn quick_loot_food_to_gold_pouch_waits_for_relog_snapshot_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, true)
+}
+
 #[test]
 fn quick_loot_food_to_gold_pouch_on_first_command_after_relog() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run(admin, false)
+}
+
+fn run(admin: String, live_premium: bool) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot-relog", move || {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?
-            .block_on(scenario(admin))
+            .block_on(scenario(admin, live_premium))
     })
 }
 
-async fn scenario(admin: String) -> TestResult {
+async fn scenario(admin: String, live_premium: bool) -> TestResult {
     reset();
     let h = Harness::create_with_admission_seed(admin, "quick_loot_relog", false, false).await?;
-    let result = exercise(&h).await;
+    let result = exercise(&h, live_premium).await;
     let cleanup = h.cleanup().await;
     result?;
     cleanup
 }
 
-async fn exercise(h: &Harness) -> TestResult {
+async fn exercise(h: &Harness, live_premium: bool) -> TestResult {
     let request = prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -53,6 +72,23 @@ async fn exercise(h: &Harness) -> TestResult {
     let room = pin.qualified_room().clone();
     let deps =
         Dependencies::with_content(pin.into_channel_pin(), room, native.spell_book().clone())?;
+    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+    let consumer = if live_premium {
+        Default::default()
+    } else {
+        consumer
+    };
+    let premium = SpellPremiumCoordinator::new(
+        consumer.clone(),
+        Some(clock),
+        Some(activation.clone()),
+        Some(h.root.clone()),
+    );
+    let live = if live_premium {
+        Some(LivePremium::start().await?)
+    } else {
+        None
+    };
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
     native
@@ -86,10 +122,44 @@ async fn exercise(h: &Harness) -> TestResult {
             .bind(id(41).as_slice()).bind(pouch.as_slice()).bind(id(42).as_slice())
             .execute(&mut *tx).await?;
     tx.commit().await?;
+    if let Some(live) = &live {
+        owner.premium = crate::premium::refresh::PremiumRefresher::new(
+            consumer.clone(),
+            h.root.clone(),
+            Some(live.client.clone()),
+        );
+        owner.premium_coordinator = Some(&premium);
+        owner.admit_premium(id(40), admitted.game_session_id);
+        let proof = async {
+            while !owner
+                .session_premium_gate(admitted.game_session_id)
+                .await
+                .premium_current()
+            {
+                tokio::task::yield_now().await;
+            }
+        };
+        tokio::time::timeout(std::time::Duration::from_secs(10), proof).await?;
+        let record = h.root.load_premium_fence(id(40)).await?;
+        assert_eq!(
+            record.fence.ok_or("durable Premium proof")?.latest.state,
+            crate::durability::premium_fence::EntitlementState::Active,
+        );
+        live.pause_next
+            .store(true, std::sync::atomic::Ordering::Release);
+    }
     assert_eq!(
         owner.logout_session(admitted).await,
         LogoutReply::Result(LogoutResult::Accepted)
     );
+
+    if live_premium {
+        assert_eq!(
+            consumer.refresh_after_us(id(40)),
+            None,
+            "logout drops in-memory proof"
+        );
+    }
 
     let (session, relog_request) = super::full_world_support::relogin_request(h).await?;
     let current = store.current_session(session).await?;
@@ -109,21 +179,15 @@ async fn exercise(h: &Harness) -> TestResult {
         "{outcome:?}"
     );
     assert!(fence.is_some());
-    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
-    h.root
-        .latch_premium_activation(
-            &activation.activation_id,
-            activation.switch_over_us,
-            activation.switch_over_us + 60_000_000,
-        )
-        .await?;
-    // A cold coordinator makes the first Premium check read its durable latch.
-    let premium = SpellPremiumCoordinator::new(
-        consumer,
-        Some(clock),
-        Some(activation),
-        Some(h.root.clone()),
-    );
+    if !live_premium {
+        h.root
+            .latch_premium_activation(
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await?;
+    }
     owner.premium_coordinator = Some(&premium);
     owner.admit_premium(id(40), session);
     admitted.game_session_id = session;
@@ -151,6 +215,11 @@ async fn exercise(h: &Harness) -> TestResult {
     };
     let payload = wire::encode_quick_loot_request(&command).map_err(debug)?;
     let command_type = command.action.command_type();
+    if let Some(live) = live {
+        return live
+            .assign(&owner, &mut admitted, command_type, payload)
+            .await;
+    }
     let reply = {
         let holder = h.root.try_issue_semantic_pass()?;
         let mut routed = std::pin::pin!(owner.quick_loot_destinations(
@@ -240,4 +309,93 @@ async fn exercise(h: &Harness) -> TestResult {
         recipient_id: Some(pouch),
     }));
     Ok(())
+}
+
+struct LivePremium {
+    // The producer task is stopped by its owner on drop.
+    _producer: premium_test_producer::TestProducer,
+    client: crate::premium::client::PremiumSnapshotClient,
+    pause_next: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    requested: std::sync::Arc<tokio::sync::Notify>,
+    respond: std::sync::Arc<tokio::sync::Notify>,
+}
+
+impl LivePremium {
+    async fn start() -> TestResult<Self> {
+        use crate::premium::client::{PremiumClientConfig, PremiumSnapshotClient};
+        use premium_test_producer::{Reply, TestPki, TestProducer, snapshot};
+        use std::sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        };
+        let pause_next = Arc::new(AtomicBool::new(false));
+        let requested = Arc::new(tokio::sync::Notify::new());
+        let respond = Arc::new(tokio::sync::Notify::new());
+        let pki = TestPki::new();
+        let producer = TestProducer::start(&pki, {
+            let (pause_next, requested, respond) =
+                (pause_next.clone(), requested.clone(), respond.clone());
+            move |request| {
+                let reply = Reply::json(snapshot(
+                    request,
+                    7,
+                    &[
+                        ("authority_issued_at", "2026-10-01T00:00:00Z".into()),
+                        ("authority_valid_until", "2026-10-01T01:00:00Z".into()),
+                        ("refresh_after", "2026-10-01T00:40:00Z".into()),
+                    ],
+                ));
+                if pause_next.load(Ordering::Acquire) {
+                    requested.notify_one();
+                    reply.after_notification(respond.clone())
+                } else {
+                    reply
+                }
+            }
+        })
+        .await;
+        let client = PremiumSnapshotClient::new(&PremiumClientConfig {
+            origin: producer.origin.clone(),
+            identity_pem: pki.client_identity_pem.into_bytes(),
+            platform_ca_pem: pki.ca_pem.into_bytes(),
+        })?;
+        Ok(Self {
+            _producer: producer,
+            client,
+            pause_next,
+            requested,
+            respond,
+        })
+    }
+
+    async fn assign(
+        self,
+        owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+        admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+        command_type: u32,
+        payload: Vec<u8>,
+    ) -> TestResult {
+        use std::time::Duration;
+        tokio::time::timeout(Duration::from_secs(5), self.requested.notified()).await?;
+        let commands = [(command_type, payload)];
+        let mut wire = std::pin::pin!(super::parameter_spell_fixtures::exchange(
+            owner, admitted, &commands, false, false,
+        ));
+        eprintln!(
+            "POSTGRES_STARTED quick_loot_food_to_gold_pouch_waits_for_relog_snapshot_postgres"
+        );
+        // A bounded negative assertion: hold the actual response while the old
+        // join can complete and the client can attempt its first assignment.
+        if let Ok(early) = tokio::time::timeout(Duration::from_secs(2), &mut wire).await {
+            return Err(format!(
+                "first assignment completed before Premium arrived: {:?}",
+                early?
+            )
+            .into());
+        }
+        self.respond.notify_one();
+        let (replies, _) = wire.await?;
+        assert_eq!(replies, [(CommandStatus::Accepted, Vec::new())]);
+        Ok(())
+    }
 }
