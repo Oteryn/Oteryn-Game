@@ -197,6 +197,7 @@ sys.exit(not (start <= 2 and 2 - start < count <= max_usize))
 PY_C12_BATCH
         then
           WORLD_REGIONS+=";131,123"
+          WORLD_REGIONS+=";125,126"
         fi
         ;;
     esac

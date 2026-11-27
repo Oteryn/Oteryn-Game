@@ -964,17 +964,12 @@ impl PreparedNativeCombatCast {
             && let Some(magnitude) = self.magnitude.as_deref()
         {
             let command = self.batch.command;
+            let losses = result.effects.iter().filter_map(|effect| {
+                Some((effect.target, effect.health?.committed_health_loss()?))
+            });
+            let committed_hits = losses.clone().count();
             for &(target, before, after, critical, element) in magnitude.base_damage_evidence() {
-                if let Some(committed) = result
-                    .effects
-                    .iter()
-                    .filter(|effect| effect.target == target)
-                    .find_map(|effect| {
-                        effect
-                            .health
-                            .and_then(|health| health.committed_health_loss())
-                    })
-                {
+                for (_, committed) in losses.clone().filter(|(actor, _)| *actor == target) {
                     let target_id = target
                         .placement_identity()
                         .iter()
@@ -987,7 +982,7 @@ impl PreparedNativeCombatCast {
                         .map(|byte| format!("{byte:02x}"))
                         .collect::<String>();
                     eprintln!(
-                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after} critical={critical} element={element} committed={}",
+                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after} critical={critical} element={element} committed={} committed_hits={committed_hits}",
                         command.command_id().get(),
                         target.actor_local_generation(),
                         committed.get()

@@ -365,7 +365,7 @@ async fn select_target<S: SessionStream>(
     Ok(own)
 }
 
-fn collect_hits(
+pub(super) fn collect_hits(
     events: &[SessionEvent],
     own: EntityRef,
     target: EntityRef,

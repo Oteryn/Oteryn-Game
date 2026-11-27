@@ -453,6 +453,11 @@ class KnownFailRowsTests(unittest.TestCase):
         log = 'SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1\n'
         self.assertEqual(self.rows(log, 'FAIL', ''), ('C01.full', ''))
 
+    def test_c12_full_failure_is_never_allowlisted(self):
+        log = 'SEAM_EVIDENCE e2e_all scenario=C12.full status=FAIL seconds=1\n'
+        known = SOURCE.with_name('known_fail_rows.txt').read_text()
+        self.assertEqual(self.rows(log, 'FAIL', known), ('C12.full', ''))
+
     def test_seed_list_has_one_reason_per_row(self):
         listed = SOURCE.with_name('known_fail_rows.txt').read_text().splitlines()
         rows = [line.split(None, 1) for line in listed if line.strip() and not line.startswith('#')]

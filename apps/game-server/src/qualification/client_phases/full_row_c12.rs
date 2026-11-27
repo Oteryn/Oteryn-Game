@@ -399,19 +399,24 @@ impl Hunt {
         if client.actor_vitals() != Some(&vitals) {
             return Err("C12 cast vitals were not applied to the client view".into());
         }
-        let mut damage = in_flight
-            .iter()
-            .map(|event| cast_damage_in(event, own, victim, spell.get()))
-            .sum::<u64>();
-        let window = tokio::time::Instant::now() + Duration::from_secs(3);
-        while damage == 0 && tokio::time::Instant::now() < window {
-            client.service_liveness(Duration::from_millis(50)).await?;
-            damage = client
-                .take_events()
-                .iter()
-                .map(|event| cast_damage_in(event, own, victim, spell.get()))
-                .sum();
+        // No other Greater Tiger Clash can run during this cooldown. Retain every
+        // attributed hit before advancing to the next action, including late batches.
+        let mut hits = Vec::new();
+        super::client_row_c12::collect_hits(&in_flight, own, victim, spell, &mut hits);
+        let window = tokio::time::Instant::now() + Duration::from_secs(8);
+        while let Some(remaining) = window.checked_duration_since(tokio::time::Instant::now()) {
+            client
+                .service_liveness(remaining.min(Duration::from_millis(250)))
+                .await?;
+            super::client_row_c12::collect_hits(
+                &client.take_events(),
+                own,
+                victim,
+                spell,
+                &mut hits,
+            );
         }
+        let damage = hits.first().copied().unwrap_or(0);
         let after = *client.actor_vitals().ok_or("post-cast vitals absent")?;
         if damage == 0 {
             return Err(format!(
@@ -436,9 +441,9 @@ impl Hunt {
             victim.generation,
         );
         let paired = committed_base_damage(&self.cast_evidence_log, evidence_start, &marker, bps)?;
-        if paired.committed != damage {
+        if !super::client_row_c12::frame_capture::exact_hit(&hits, paired.committed) {
             return Err(format!(
-                "C12 owner HP loss does not match served damage: owner={paired:?} served={damage}"
+                "C12 owner HP loss does not match served damage: owner={paired:?} served={hits:?}"
             )
             .into());
         }
@@ -495,6 +500,12 @@ fn read_base_damage(
         let (critical, committed) = modifiers
             .split_once(" element=physical committed=")
             .ok_or("C12 physical committed HP loss missing")?;
+        let (committed, hits) = committed
+            .split_once(" committed_hits=")
+            .ok_or("C12 committed hit count missing")?;
+        if hits.parse::<usize>()? != 1 {
+            return Err(format!("C12 cast committed {hits} HP losses instead of one").into());
+        }
         if observed
             .replace(CommittedDamage {
                 before: before.parse()?,
@@ -620,9 +631,6 @@ async fn samples(
             )
             .into());
         }
-        // Greater Tiger Clash has an authored 8 s spell cooldown. Let the successful
-        // cast finish cooling down before the next sample or equipment phase.
-        client.service_liveness(Duration::from_secs(8)).await?;
     }
     Ok(out)
 }
@@ -902,15 +910,112 @@ async fn walk_exact_route(
     Ok(())
 }
 
+#[derive(Debug, Clone, Copy)]
+struct GuildPortals {
+    entrance: TilePos,
+    valley_landing: TilePos,
+    exit: TilePos,
+    guild_landing: TilePos,
+}
+
+// TibiaWiki BR marks the sphere beside Pema at (33605, 31468, 7).
+// Global places the other sphere on the Adventurers' Guild island. The World
+// callback supplies the exact landing, which must lie in the Guild's sector.
+fn guild_portals(callbacks: &serde_json::Value) -> TestResult<GuildPortals> {
+    let guild = |pos: TilePos| pos.x / 256 == 125 && pos.y / 256 == 126;
+    let read_tile = |value: &serde_json::Value| -> TestResult<TilePos> {
+        Ok(TilePos {
+            x: value["x"]
+                .as_u64()
+                .ok_or("C12 callback x missing")?
+                .try_into()?,
+            y: value["y"]
+                .as_u64()
+                .ok_or("C12 callback y missing")?
+                .try_into()?,
+            floor: value["floor"]
+                .as_i64()
+                .ok_or("C12 callback floor missing")?
+                .try_into()?,
+        })
+    };
+    let route = |id| -> TestResult<(TilePos, TilePos)> {
+        let key = format!("oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-{id}");
+        let rows = callbacks["callbacks"]
+            .as_array()
+            .ok_or("C12 callback registry missing")?;
+        let mut matches = rows
+            .iter()
+            .filter(|row| row["key"] == key && row["trigger"] == "use");
+        let row = matches
+            .next()
+            .ok_or_else(|| format!("C12 Global USE callback missing: {key}"))?;
+        if matches.next().is_some() {
+            return Err(format!("C12 ambiguous Global USE callback: {key}").into());
+        }
+        Ok((
+            read_tile(&row["selector"]["position"])?,
+            read_tile(&row["teleport"])?,
+        ))
+    };
+    let (entrance, valley_landing) = route(5)?;
+    let (exit, guild_landing) = route(2)?;
+    if !guild(guild_landing) {
+        return Err(format!(
+            "BLOCKED-CONTENT: blue-valley-2 Guarded Crystal Sphere at ({},{},{}) returns to ({},{},{}), outside Adventurers' Guild",
+            exit.x, exit.y, exit.floor, guild_landing.x, guild_landing.y, guild_landing.floor,
+        ).into());
+    }
+    if entrance
+        != (TilePos {
+            x: 32203,
+            y: 32303,
+            floor: -6,
+        })
+        || valley_landing
+            != (TilePos {
+                x: 33614,
+                y: 31494,
+                floor: -7,
+            })
+        || exit
+            != (TilePos {
+                x: 33605,
+                y: 31468,
+                floor: -7,
+            })
+    {
+        return Err(format!("C12 Global portal source or Blue Valley landing mismatch: {entrance:?} -> {valley_landing:?}; {exit:?} -> {guild_landing:?}").into());
+    }
+    Ok(GuildPortals {
+        entrance,
+        valley_landing,
+        exit,
+        guild_landing,
+    })
+}
+
 async fn use_blue_valley_portal(
     client: &mut DevClientSession,
     world: &BundleWorld,
     source: TilePos,
-    ordinal: u8,
+    sphere: u16,
     landing: TilePos,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+    let source_tile = world
+        .base()
+        .tile(source.x, source.y, source.floor)
+        .ok_or_else(|| format!("C12 Global sphere tile missing from World bundle: {source:?}"))?;
+    let mut ordinals =
+        (0..=u8::MAX).filter(|&ordinal| source_tile.appearance(ordinal) == Some(sphere));
+    let ordinal = ordinals
+        .next()
+        .ok_or_else(|| format!("C12 Global sphere {sphere} absent at {source:?}"))?;
+    if ordinals.next().is_some() {
+        return Err(format!("C12 Global sphere {sphere} ambiguous at {source:?}").into());
+    }
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == source.floor && at.x.abs_diff(source.x).max(at.y.abs_diff(source.y)) <= 1
     })
@@ -948,6 +1053,7 @@ async fn acquire_pema(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
     definition: NonZeroU32,
+    portals: GuildPortals,
 ) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service as npc;
@@ -974,21 +1080,12 @@ async fn acquire_pema(
         })
         .ok_or("no playable route within three tiles of a compiled Enpa-Deia Pema placement")
     };
-    // Crystal 201189f8 actions_blue_valley_teleports.lua:4 is the mainland ingress.
     use_blue_valley_portal(
         client,
         world,
-        TilePos {
-            x: 32456,
-            y: 32290,
-            floor: -7,
-        },
-        1,
-        TilePos {
-            x: 33614,
-            y: 31494,
-            floor: -7,
-        },
+        portals.entrance,
+        50_310,
+        portals.valley_landing,
     )
     .await?;
     let path = route_to_seller(tile(client.world_spatial().actor_position)?)?;
@@ -1148,23 +1245,7 @@ async fn acquire_pema(
         )
         .into());
     }
-    // Crystal's return portal next to Pema leads back to the mainland hunt.
-    use_blue_valley_portal(
-        client,
-        world,
-        TilePos {
-            x: 33605,
-            y: 31468,
-            floor: -7,
-        },
-        3,
-        TilePos {
-            x: 32456,
-            y: 32291,
-            floor: -7,
-        },
-    )
-    .await?;
+    use_blue_valley_portal(client, world, portals.exit, 50_227, portals.guild_landing).await?;
     Ok(gold_after)
 }
 
@@ -1533,6 +1614,7 @@ pub(super) async fn prepare_client_capture(
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let portals = guild_portals(&read_json("content/quests/world-callbacks.json")?)?;
     let definition = item_ref()?;
     let dedicated =
         character_prep::dedicated_character(clients, "NODE_BOOT_C12_MONK_ACCOUNT").await?;
@@ -1568,7 +1650,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     character_prep::grant_item(&client, CRYSTAL_COIN, u32::try_from(coins)?).await?;
     client = fresh_c12_admission(client, clients).await?;
     verify_seeded_monk(&mut client).await?;
-    let purchase_balance = acquire_pema(&mut client, world, &metadata.npcs, definition).await?;
+    let purchase_balance =
+        acquire_pema(&mut client, world, &metadata.npcs, definition, portals).await?;
     let acquired = carried_count(&client, definition);
     if acquired != 1 {
         return Err(format!(
@@ -1682,13 +1765,47 @@ mod tests {
     use super::*;
 
     #[test]
+    fn c12_global_route_rejects_the_crystal_mainland_return() -> TestResult {
+        let mut callbacks = serde_json::json!({"callbacks": [
+            {"key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5", "trigger": "use",
+             "selector": {"position": {"x": 32203, "y": 32303, "floor": -6}},
+             "teleport": {"x": 33614, "y": 31494, "floor": -7}},
+            {"key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2", "trigger": "use",
+             "selector": {"position": {"x": 33605, "y": 31468, "floor": -7}},
+             "teleport": {"x": 32200, "y": 32303, "floor": -7}}
+        ]});
+        assert!(guild_portals(&callbacks).is_ok());
+        callbacks["callbacks"][1]["teleport"] =
+            serde_json::json!({"x": 32456, "y": 32291, "floor": -7});
+        let error = guild_portals(&callbacks).expect_err("the mainland return cannot qualify");
+        assert!(error.to_string().starts_with("BLOCKED-CONTENT:"));
+        Ok(())
+    }
+
+    #[test]
+    fn c12_rejects_additional_committed_health_loss() {
+        let marker =
+            "SEAM_EVIDENCE c12_base_damage session=test command=12 target=rat generation=2 ";
+        let line = format!(
+            "{marker}before=28 after=30 critical=false element=physical committed=30 committed_hits=1"
+        );
+        assert!(read_base_damage(line.as_bytes(), marker, AUGMENT_BPS).is_ok());
+        let second_target = line.replace("committed_hits=1", "committed_hits=2");
+        assert!(read_base_damage(second_target.as_bytes(), marker, AUGMENT_BPS).is_err());
+        let duplicate = format!("{line}\n{line}");
+        assert!(read_base_damage(duplicate.as_bytes(), marker, AUGMENT_BPS).is_err());
+    }
+
+    #[test]
     fn c12_unequipped_control_rejects_an_unconditional_augment() -> TestResult {
         let marker =
             "SEAM_EVIDENCE c12_base_damage session=test command=11 target=rat generation=2 ";
-        let unchanged =
-            format!("{marker}before=28 after=28 critical=false element=physical committed=28");
-        let augmented =
-            format!("{marker}before=28 after=30 critical=false element=physical committed=30");
+        let unchanged = format!(
+            "{marker}before=28 after=28 critical=false element=physical committed=28 committed_hits=1"
+        );
+        let augmented = format!(
+            "{marker}before=28 after=30 critical=false element=physical committed=30 committed_hits=1"
+        );
         assert_eq!(
             read_base_damage(unchanged.as_bytes(), marker, 0)?.committed,
             28
@@ -1711,7 +1828,7 @@ mod tests {
         };
         assert_eq!(
             read(
-                "before=37 after=40 critical=true element=physical committed=44",
+                "before=37 after=40 critical=true element=physical committed=44 committed_hits=1",
                 1_000
             )?,
             CommittedDamage {
@@ -1723,7 +1840,7 @@ mod tests {
         );
         assert_eq!(
             read(
-                "before=37 after=37 critical=false element=physical committed=37",
+                "before=37 after=37 critical=false element=physical committed=37 committed_hits=1",
                 0
             )?,
             CommittedDamage {
@@ -1736,56 +1853,56 @@ mod tests {
         assert!(read("before=37 after=40", 1_000).is_err());
         assert!(
             read(
-                "before=37 after=40 critical=false element=physical committed=0",
+                "before=37 after=40 critical=false element=physical committed=0 committed_hits=1",
                 1_000
             )
             .is_err()
         );
         assert!(
             read(
-                "before=37 after=41 critical=false element=physical committed=41",
+                "before=37 after=41 critical=false element=physical committed=41 committed_hits=1",
                 1_000
             )
             .is_err()
         );
         assert!(
             read(
-                "before=37 after=37 critical=false element=physical committed=37",
+                "before=37 after=37 critical=false element=physical committed=37 committed_hits=1",
                 1_000
             )
             .is_err()
         );
         assert!(
             read(
-                "before=37 after=40 critical=false element=physical committed=40",
+                "before=37 after=40 critical=false element=physical committed=40 committed_hits=1",
                 0
             )
             .is_err()
         );
         assert!(
             read(
-                "before=37 after=40 critical=false element=physical committed=37",
+                "before=37 after=40 critical=false element=physical committed=37 committed_hits=1",
                 1_000
             )
             .is_err()
         );
         assert!(
             read(
-                "before=37 after=40 critical=true element=physical committed=40",
+                "before=37 after=40 critical=true element=physical committed=40 committed_hits=1",
                 1_000
             )
             .is_err()
         );
         assert!(
             read(
-                "before=37 after=40 critical=false element=fire committed=40",
+                "before=37 after=40 critical=false element=fire committed=40 committed_hits=1",
                 1_000
             )
             .is_err()
         );
         let duplicate = format!(
-            "{MARKER}before=37 after=40 critical=false element=physical committed=40
-{MARKER}before=37 after=40 critical=false element=physical committed=40"
+            "{MARKER}before=37 after=40 critical=false element=physical committed=40 committed_hits=1
+{MARKER}before=37 after=40 critical=false element=physical committed=40 committed_hits=1"
         );
         assert!(read_base_damage(duplicate.as_bytes(), MARKER, 1_000).is_err());
         Ok(())
