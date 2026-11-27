@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Exercise the shared Item writer without native, Prey, or World generation."""
 
 import importlib.util

@@ -97,6 +97,7 @@ def stopped_merge(
         ["git", "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "theirs"],
         cwd=root,
         capture_output=True,
+        check=False,
     )
     assert merged.returncode != 0, "fixture merge must stop on conflicts"
     assert sorted(unmerged(root)) == sorted(conflicting), unmerged(root)
@@ -849,7 +850,7 @@ def test_materializer_copies_only_a_complete_document_inventory() -> None:
                 if p.is_file()
             }
 
-            def generate(command):
+            def generate(command, scenario=scenario):
                 assert command[:8] == [
                     "cargo",
                     "run",
@@ -1092,7 +1093,7 @@ def test_callback_or_w01_witness_refusal_stops_later_generation() -> None:
     for checks in (False, True):
         for refused in (callback, death):
 
-            def refuse(command, _events):
+            def refuse(command, _events, refused=refused):
                 if command == refused:
                     raise subprocess.CalledProcessError(23, list(command))
 
@@ -1175,7 +1176,7 @@ def test_rotten_death_witness_refusal_stops_every_later_consumer() -> None:
     for checks in (False, True):
         for index, refused in enumerate(chain[:3]):
 
-            def refuse(command, _events):
+            def refuse(command, _events, refused=refused):
                 if command == refused:
                     raise subprocess.CalledProcessError(1, list(command))
 
@@ -1293,7 +1294,7 @@ def test_downstream_quest_producer_refusal_stops_later_work() -> None:
     check = ("python3", "fixture/final_check.py", "--check")
     for index, refused in enumerate(commands):
 
-        def refuse(command, _events):
+        def refuse(command, _events, refused=refused):
             if command == refused:
                 raise subprocess.CalledProcessError(1, list(command))
 
@@ -1316,7 +1317,7 @@ def test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_cap
     index_path = "content/quests/definitions/index.json"
     for invalid in ("empty", "duplicate", "stale", "escape"):
 
-        def prepare(root):
+        def prepare(root, invalid=invalid):
             index = json.loads((root / index_path).read_bytes())
             descriptor = index["authoring_sources"][0]
             if invalid == "empty":
@@ -1350,7 +1351,7 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
     for checks in (False, True):
         for repin in (False, True):
 
-            def change_feedback(command, _events):
+            def change_feedback(command, _events, repin=repin):
                 if command != donor:
                     return
                 index = json.loads((rc.ROOT / index_path).read_bytes())
@@ -1407,7 +1408,7 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
     )
     for refused in (imbuement, bootstrap, tree, native, store):
 
-        def refuse(command, _events):
+        def refuse(command, _events, refused=refused):
             if command == refused:
                 raise subprocess.CalledProcessError(1, list(command))
 
@@ -1637,7 +1638,14 @@ def test_native_generation_refreshes_custody_census_before_first_pin() -> None:
         state = {"provider": initial, "census": initial}
         calls, pinned = [], []
 
-        def owner(command):
+        def owner(
+            command,
+            calls=calls,
+            state=state,
+            fresh=fresh,
+            refuse_census=refuse_census,
+            pinned=pinned,
+        ):
             calls.append(command)
             if command[1] == register and "--check" not in command:
                 state["provider"] = fresh
