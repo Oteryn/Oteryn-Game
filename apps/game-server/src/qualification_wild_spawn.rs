@@ -9,6 +9,7 @@ use crate::foundation::{
     ChannelRuntimeV1, CompanionSnapshot, GameSessionId, MovementLocalPosition,
 };
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::sync::atomic::{AtomicU16, Ordering};
 
@@ -33,6 +34,10 @@ pub(crate) enum SpawnRefusal {
     SessionUnknown,
     NoFreeTile(String),
     Fence(String),
+    StaticTile(String),
+    ItemBlocked,
+    Occupied,
+    Physical(CarrierError),
 }
 
 impl SpawnRefusal {
@@ -43,14 +48,23 @@ impl SpawnRefusal {
             Self::SessionUnknown => "session_unknown",
             Self::NoFreeTile(_) => "no_free_tile",
             Self::Fence(_) => "fence",
+            Self::StaticTile(_) => "tile_ineligible",
+            Self::ItemBlocked => "tile_item_blocked",
+            Self::Occupied => "tile_occupied",
+            Self::Physical(CarrierError::PlanConflict) => "placement_conflict",
+            Self::Physical(CarrierError::CapacityExceeded) => "capacity_exceeded",
+            Self::Physical(_) => "placement_refused",
         }
     }
 
     /// The refused rule, for the node's diagnostic line.
-    pub(crate) fn detail(&self) -> Option<&str> {
+    pub(crate) fn detail(&self) -> Option<std::borrow::Cow<'_, str>> {
         match self {
-            Self::NoFreeTile(message) | Self::Fence(message) => Some(message),
-            Self::UnknownCreature | Self::SessionUnknown => None,
+            Self::NoFreeTile(message) | Self::Fence(message) | Self::StaticTile(message) => {
+                Some(std::borrow::Cow::Borrowed(message))
+            }
+            Self::Physical(error) => Some(std::borrow::Cow::Owned(error.to_string())),
+            _ => None,
         }
     }
 
@@ -59,7 +73,9 @@ impl SpawnRefusal {
         match self {
             Self::UnknownCreature => "qualification spawn active Creature policies: unknown".into(),
             Self::SessionUnknown => "qualification spawn session has no positioned actor".into(),
-            Self::NoFreeTile(message) | Self::Fence(message) => message,
+            Self::NoFreeTile(message) | Self::Fence(message) | Self::StaticTile(message) => message,
+            Self::Physical(error) => error.to_string(),
+            Self::ItemBlocked | Self::Occupied => self.token().to_owned(),
         }
     }
 }
@@ -128,7 +144,10 @@ enum Placement {
     // Only the cfg(test) seam rat (realize_rat_in_transaction) places at a fixed cell.
     #[cfg_attr(not(test), allow(dead_code))]
     Fixed(MovementLocalPosition),
-    Adjacent(GameSessionId),
+    Session {
+        session: GameSessionId,
+        exact: Option<MovementLocalPosition>,
+    },
 }
 
 /// The Rat of the seam harness, at its Thalom cell, unchanged.
@@ -156,6 +175,7 @@ pub(crate) struct SpawnPlan {
     pin: ChannelContentPin,
     scope: crate::foundation::RuntimeScopeRefV1,
     scope_generation: u64,
+    exact: Option<MovementLocalPosition>,
     player: Option<(
         GameSessionId,
         crate::foundation::ExactActorRef,
@@ -167,14 +187,21 @@ pub(crate) struct SpawnPlan {
     )>,
 }
 
-pub(crate) fn snapshot_adjacent_spawn(
+pub(crate) fn snapshot_session_spawn(
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     runtime: &mut ChannelRuntimeV1,
     key: &str,
     session: GameSessionId,
+    exact: Option<MovementLocalPosition>,
 ) -> Result<SpawnPlan, SpawnRefusal> {
-    snapshot_spawn(room, native, runtime, key, Placement::Adjacent(session))
+    snapshot_spawn(
+        room,
+        native,
+        runtime,
+        key,
+        Placement::Session { session, exact },
+    )
 }
 
 fn snapshot_spawn(
@@ -207,21 +234,25 @@ fn snapshot_spawn(
             ))
         })?;
     require_policy(runtime, key)?;
-    let (candidates, player) = match placement {
-        Placement::Fixed(position) => (vec![position], None),
-        Placement::Adjacent(session) => {
+    let (candidates, player, exact) = match placement {
+        Placement::Fixed(position) => (vec![position], None, None),
+        Placement::Session { session, exact } => {
             let (actor, snapshot) = runtime
                 .positioned_player_for_session(session)
                 .map_err(|error| fence(format!("qualification spawn session actor: {error:?}")))?
                 .ok_or(SpawnRefusal::SessionUnknown)?;
             let position = snapshot.position();
-            (adjacent_cells(position), Some((session, actor, position)))
+            let candidates = exact.map_or_else(|| adjacent_cells(position), |tile| vec![tile]);
+            (candidates, Some((session, actor, position)), exact)
         }
     };
     let mut targets = Vec::with_capacity(candidates.len());
     let mut skipped = "qualification spawn has no eligible cell".to_owned();
     for position in candidates {
         if let Err(reason) = static_cell_refusal(room, position) {
+            if exact.is_some() {
+                return Err(SpawnRefusal::StaticTile(reason));
+            }
             skipped = reason;
             continue;
         }
@@ -237,6 +268,7 @@ fn snapshot_spawn(
         pin,
         scope: runtime.binding().runtime_scope(),
         scope_generation: runtime.binding().scope_generation().get(),
+        exact,
         player,
         targets,
     })
@@ -278,6 +310,8 @@ pub(crate) async fn read_spawn_tiles(
             .any(|item| item.blocks_movement || item.immovable_block_solid)
         {
             eligible.push(*position);
+        } else if plan.exact.is_some() {
+            return Err(SpawnRefusal::ItemBlocked);
         }
     }
     if eligible.is_empty() {
@@ -313,6 +347,21 @@ pub(crate) fn publish_spawn(
             current_actor == actor && snapshot.position() == position
         }) {
             return Err(SpawnRefusal::SessionUnknown);
+        }
+        if let Some(tile) = plan.exact {
+            if !eligible.contains(&tile) {
+                return Err(SpawnRefusal::ItemBlocked);
+            }
+            if tile == position
+                || runtime
+                    .position_occupied_by_other(actor, tile)
+                    .map_err(SpawnRefusal::Physical)?
+            {
+                return Err(SpawnRefusal::Occupied);
+            }
+            return runtime
+                .realize_native_qualification_spawn_for_source(source, plan.pin, key, tile)
+                .map_err(SpawnRefusal::Physical);
         }
     }
     place_first(runtime, &plan.pin, source, key, eligible)

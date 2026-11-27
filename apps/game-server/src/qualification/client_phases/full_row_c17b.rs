@@ -621,15 +621,20 @@ async fn spawn_rat(
     Defence { armour, total, equipment }: Defence,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let caster_site = tile(caster.world_spatial().actor_position)?;
-    let placement = request_spawn(
+    let rat_site = TilePos {
+        y: caster_site.y.checked_sub(1).ok_or("C17b Rat tile outside the map")?,
+        ..caster_site
+    };
+    let placement = request_fixture_control(
         uuid_text(caster.join_snapshot().game_session_id.as_bytes()),
-        "oteryn:creature.rat".into(),
+        "--spawn-at",
+        format!("{},{},{}:oteryn:creature.rat", rat_site.x, rat_site.y, rat_site.floor),
     )
     .await
-    .map_err(|error| format!("FIXTURE_PLACEMENT C17b Rat failed: {error}"))?;
+    .map_err(|error| format!("FIXTURE_PLACEMENT C17b Rat failed at {rat_site:?}: {error}"))?;
     let rat = parse_spawned_entity(&placement)?;
     evidence(&format!(
-        "FIXTURE_PLACEMENT C17b caster={caster_site:?} rat={rat:?} armour={armour} defence={total:?} equipment_defence={equipment:?}"
+        "FIXTURE_PLACEMENT C17b caster={caster_site:?} rat_site={rat_site:?} rat={rat:?} armour={armour} defence={total:?} equipment_defence={equipment:?}"
     ));
     Ok(rat)
 }
