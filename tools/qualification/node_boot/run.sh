@@ -594,16 +594,17 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 game_platform_start
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
-  # The packet accounts are disposable. Their Premium comes from the same
-  # Platform ledger on every admission, including after a terminal logout.
+  # I07.full uses the second core account. P19 and W15c use the packet pair.
+  # Seed these disposable accounts at the Platform snapshot authority before admission.
   platform_db="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
   [[ "$platform_db" =~ ^portal_e2e_[0-9a-f]{12}$ ]] || fail "invalid Premium fixture database"
   docker exec -i "$GP_PG_CONTAINER" psql -Xq -v ON_ERROR_STOP=1 \
     -U game_platform_admin -d "$platform_db" \
-    -v first="$PACKET_ACCOUNT_ID" -v second="$SECOND_PACKET_ACCOUNT_ID" <<'SQL_PREMIUM_FIXTURE'
+    -v core_second="$SECOND_ACCOUNT_ID" -v packet_first="$PACKET_ACCOUNT_ID" \
+    -v packet_second="$SECOND_PACKET_ACCOUNT_ID" <<'SQL_PREMIUM_FIXTURE'
 WITH accounts AS (
     INSERT INTO premium_authority (account_id)
-    VALUES (:'first'::uuid), (:'second'::uuid)
+    VALUES (:'core_second'::uuid), (:'packet_first'::uuid), (:'packet_second'::uuid)
     RETURNING account_id
 ), grants AS (
     INSERT INTO premium_ledger (
@@ -611,7 +612,7 @@ WITH accounts AS (
         entitlement_id, lifecycle_revision, delta_seconds, effective_from, effective_until
     )
     SELECT uuidv7(), account_id, account_id, 'GRANT', 1,
-           sha256(convert_to('Disposable node-boot packet Premium fixture', 'UTF8')),
+           sha256(convert_to('Disposable node-boot Premium fixture', 'UTF8')),
            uuidv7(), 1, 86400, date_trunc('second', statement_timestamp()),
            date_trunc('second', statement_timestamp()) + interval '86400 seconds'
     FROM accounts
@@ -855,7 +856,7 @@ PY_WORLD
     cat >> "$WORK/node.toml" <<'TOML_PREMIUM_FIXTURE'
 
 [premium_activation]
-activation_id = "node-boot-packet-premium"
+activation_id = "node-boot-fixture-premium"
 switch_over_us = 0
 TOML_PREMIUM_FIXTURE
   fi
