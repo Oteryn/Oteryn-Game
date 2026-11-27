@@ -464,6 +464,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
 fn expected_qengine_reward_speed(key: &str) -> Option<i32> {
     match key {
         "oteryn:item.tibia.i3456" | "oteryn:item.tibia.i31266" | "oteryn:item.tibia.i31268" => None,
+        "oteryn:item.tibia.i16110" | "oteryn:item.tibia.i16112" => Some(15),
         "oteryn:item.tibia.i19357" => Some(10),
         _ => Some(0),
     }

@@ -17,44 +17,42 @@ def document(*ids):
 
 
 def qengine_speed_packet():
-    packet = document(*(f'oteryn:item.tibia.i{item}' for item in (3456, 31266, 31268, 19357)))
-    for row, speed in zip(packet['records'], ({}, {}, {}, {'speed_bonus': 10}), strict=True):
-        row['attributes'] = speed
+    values = {3456: None, 16110: 15, 16112: 15, 19357: 10, 31266: None, 31268: None}
+    packet = document(*(f"oteryn:item.tibia.i{item}" for item in values))
+    for row, speed in zip(packet["records"], values.values(), strict=True):
+        row["attributes"] = {} if speed is None else {"speed_bonus": speed}
     return packet
 
 
 class EquipmentPinTests(unittest.TestCase):
     def test_source_speed_pin_requires_exact_exceptions_and_rejects_other_nonzero_facts(self):
         packet = qengine_speed_packet()
-        ordinary, = document('oteryn:item.tibia.i123')['records']
-        ordinary['attributes'] = {'speed_bonus': 0}
-        packet['records'].append(ordinary)
+        ordinary, = document("oteryn:item.tibia.i123")["records"]
+        ordinary["attributes"] = {"speed_bonus": 0}
+        packet["records"].append(ordinary)
         source = TEST.read_text()
         fixed = source_speed_pin(source, packet)
-        self.assertIn('("qengine-reward-item-profiles.json", 5)', fixed)
-        self.assertIn('expected_qengine_reward_speed(key)', fixed)
-        self.assertIn('assert_eq!(actual.attributes.speed_bonus, expected', fixed)
+        self.assertIn('("qengine-reward-item-profiles.json", 7)', fixed)
+        self.assertIn("expected_qengine_reward_speed(key)", fixed)
+        self.assertIn("assert_eq!(actual.attributes.speed_bonus, expected", fixed)
         self.assertEqual(source_speed_pin(fixed, packet), fixed)
-        for index, mutated_speed in [(0, 0), (1, 0), (2, 0), (3, 9), (4, None), (4, 1)]:
-            with self.subTest(index=index, speed=mutated_speed):
+        invalid = [
+            (0, 0), (1, 0), (1, 15.0), (2, 14), (3, 9),
+            (4, 0), (5, 0), (6, None), (6, 1), (6, False),
+        ]
+        for index, speed in invalid:
+            with self.subTest(index=index, speed=speed):
                 changed = copy.deepcopy(packet)
-                changed['records'][index]['attributes'] = {'speed_bonus': mutated_speed}
-                with self.assertRaisesRegex(ValueError, 'QENGINE exact source speed facts differ'):
+                changed["records"][index]["attributes"] = {"speed_bonus": speed}
+                with self.assertRaisesRegex(ValueError, "QENGINE exact source speed facts differ"):
                     source_speed_pin(source, changed)
 
     def test_token_exchange_speed_pin_preserves_exact_provider_values(self):
-        values = {3456: None, 16110: 15, 16112: 15, 31266: None, 31268: None}
-        packet = document(*(f"oteryn:item.tibia.i{item}" for item in values))
-        for row, speed in zip(packet["records"], values.values()):
-            row["attributes"] = {"speed_bonus": speed}
+        packet = qengine_speed_packet()
         fixed = source_speed_pin(TEST.read_text(), packet)
-        self.assertIn("oteryn:item.tibia.i31266", fixed)
-        self.assertIn("oteryn:item.tibia.i16112", fixed)
-        self.assertIn("assert_eq!(actual.attributes.speed_bonus, Some(15)", fixed)
-        self.assertEqual(source_speed_pin(fixed, packet), fixed)
-        packet["records"][1]["attributes"]["speed_bonus"] = 0
-        with self.assertRaisesRegex(ValueError, "unknown-speed pick"):
-            source_speed_pin(TEST.read_text(), packet)
+        self.assertIn('"oteryn:item.tibia.i16110" | "oteryn:item.tibia.i16112" => Some(15)', fixed)
+        self.assertIn('"oteryn:item.tibia.i19357" => Some(10)', fixed)
+        self.assertIn("_ => Some(0)", fixed)
 
     SOURCE = """const ORIGINAL_PROFILES: usize = 1;
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];

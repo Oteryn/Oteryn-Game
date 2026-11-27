@@ -485,14 +485,30 @@ def source_speed_pin(source, qengine):
     marker = '("qengine-reward-item-profiles.json",'
     if marker not in source:
         return source
-    # The Pigeon Trophy and Jade Amulet retain their existing unknown speed.
-    # The Shrunken Head Necklace's pinned XML explicitly supplies speed 10.
-    expected = {f'oteryn:item.tibia.i{item}': speed for item, speed in
-                {3456: None, 31266: None, 31268: None, 19357: 10}.items()}
-    observed = {row['production_definition']['production_key']: row['attributes'].get('speed_bonus')
-                for row in qengine['records'] if row['attributes'].get('speed_bonus') != 0}
-    if observed != expected:
-        raise ValueError('QENGINE exact source speed facts differ')
+    # Preserve the three prior unknowns. The pinned Item XML gives the
+    # Shrunken Head Necklace speed 10 and the Prismatic Armor and Boots 15.
+    expected = {
+        f"oteryn:item.tibia.i{item}": speed
+        for item, speed in {
+            3456: None,
+            16110: 15,
+            16112: 15,
+            19357: 10,
+            31266: None,
+            31268: None,
+        }.items()
+    }
+    speeds = {
+        row["production_definition"]["production_key"]: row["attributes"].get("speed_bonus")
+        for row in qengine["records"]
+    }
+    observed = {key: speed for key, speed in speeds.items() if speed != 0}
+    if observed != expected or any(
+        speed is not None and type(speed) is not int for speed in speeds.values()
+    ):
+        raise ValueError(
+            f"QENGINE exact source speed facts differ: expected {expected}, observed {observed}"
+        )
     source = re.sub(
         r'\("qengine-reward-item-profiles.json", [\d_]+\)',
         f'("qengine-reward-item-profiles.json", {len(keys(qengine))})',
