@@ -844,7 +844,7 @@ fn rejects_an_unexplained_cast_refund() {
         (18, 30, 100, 9_100),
     ];
     let mut early_credit = verified;
-    early_credit[1].3 -= 1;
+    early_credit[1].3 -= 201;
     assert!(!crate::qualification_mana_history(
         charged,
         &early_credit,
@@ -854,6 +854,27 @@ fn rejects_an_unexplained_cast_refund() {
     assert!(crate::qualification_mana_history(
         charged, &verified, 30, logout
     ));
+    // Receive-time jitter can shorten one measured gap without moving a server tick.
+    let jittered = [
+        (12, 24, 100, 3_934),
+        (14, 26, 100, 14_554),
+        (16, 28, 100, 21_691),
+        (18, 30, 100, 24_663),
+    ];
+    assert!(crate::qualification_mana_history(
+        charged, &jittered, 30, logout
+    ));
+    // Three early intervals cannot all fit one timeline within the sampling window.
+    let too_fast = [
+        (12, 24, 100, 1_000),
+        (14, 26, 100, 3_900),
+        (16, 28, 100, 6_800),
+        (18, 30, 100, 9_700),
+    ];
+    assert!(!crate::qualification_mana_history(
+        charged, &too_fast, 30, logout
+    ));
+
     assert!(!crate::qualification_mana_history(charged, &[], 30, logout));
     assert!(!crate::qualification_mana_history(
         charged,

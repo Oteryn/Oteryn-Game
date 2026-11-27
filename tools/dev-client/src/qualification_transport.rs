@@ -136,6 +136,8 @@ pub fn qualification_runner_identity() -> io::Result<String> {
 
 /// Verify ordered authoritative publications for the fed Sorcerer.
 /// Each completed outdoor mana interval can credit two points, capped at max.
+/// Observed timestamps are client queue samples. Require one consistent schedule
+/// of server credits separated by at least three seconds within those windows.
 pub fn qualification_mana_history(
     charged: (u64, u32, u32),
     history: &[(u64, u32, u32, u64)],
@@ -144,10 +146,12 @@ pub fn qualification_mana_history(
 ) -> bool {
     let mut last = charged;
     let mut last_observation_ms = 0;
-    let mut last_credit_ms = None;
+    let mut earliest_credit_ms: Option<u64> = None;
     let mut observed_full_interval = false;
     // The caster may already have a partial interval when Scorch is cast.
     const FED_MANA_INTERVAL_MS: u64 = 3_000;
+    // The row drains events after each 200 ms liveness poll while waiting out combat.
+    const OBSERVATION_WINDOW_MS: u64 = 200;
     for &(sequence, mana, soul, elapsed_ms) in history {
         if sequence <= last.0
             || sequence >= logout.0
@@ -158,16 +162,21 @@ pub fn qualification_mana_history(
             return false;
         }
         if mana != last.1 {
-            if last_credit_ms.is_some_and(|previous| elapsed_ms - previous < FED_MANA_INTERVAL_MS) {
+            let window_start = elapsed_ms.saturating_sub(OBSERVATION_WINDOW_MS);
+            let earliest = earliest_credit_ms.map_or(window_start, |previous| {
+                window_start.max(previous.saturating_add(FED_MANA_INTERVAL_MS))
+            });
+            if earliest > elapsed_ms {
                 return false;
             }
-            observed_full_interval |= last_credit_ms.is_some();
-            last_credit_ms = Some(elapsed_ms);
+            observed_full_interval |= earliest_credit_ms.is_some();
+            earliest_credit_ms = Some(earliest);
         }
         last_observation_ms = elapsed_ms;
         last = (sequence, mana, soul);
     }
-    (last_credit_ms.is_none() || observed_full_interval) && (last.1, last.2) == (logout.1, logout.2)
+    (earliest_credit_ms.is_none() || observed_full_interval)
+        && (last.1, last.2) == (logout.1, logout.2)
 }
 
 /// The first changed stats frame in the cast exchange must carry exactly the Scorch debit.
