@@ -292,19 +292,46 @@ impl<'a> MapModel<'a> {
         )
     }
 
-    fn samples(&self, start: TilePos, seed: u64) -> Vec<Sample> {
-        let mut reachable = BTreeSet::from([start]);
-        let mut queue = VecDeque::from([start]);
-        while let Some(at) = queue.pop_front() {
-            for direction in DIRECTIONS {
-                if let Some(next) = self.destination(at, direction)
-                    && in_town(next, start)
-                    && reachable.insert(next)
-                {
-                    queue.push_back(next);
-                }
-            }
+    fn approach_allowed(
+        &self,
+        sample: &Sample,
+        at: TilePos,
+        landing: Option<TilePos>,
+        returnable: Option<&BTreeSet<TilePos>>,
+    ) -> bool {
+        let Some(origin) = self.tiles.get(&at).filter(|facts| facts.walkable) else {
+            return false;
+        };
+        // Tool probes can change the route graph by roping up or opening a hole.
+        if let Some(returnable) = returnable
+            && !matches!(sample.kind, "rope_spot" | "shovel_hole")
+            && (!returnable.contains(&at)
+                || (!matches!(sample.kind, "npc" | "monster_spawn")
+                    && landing.is_some_and(|landed| !returnable.contains(&landed))))
+        {
+            return false;
         }
+        match sample.kind {
+            "stairs_up" => landing.is_some_and(|landed| landed.floor > at.floor),
+            "stairs_down" | "hole_down" => landing.is_some_and(|landed| landed.floor < at.floor),
+            "ladder" if self.world.floors().contains(sample.position) => {
+                landing.is_some_and(|landed| landed.floor != at.floor)
+            }
+            "teleport" => landing.is_some_and(|landed| {
+                self.tiles.get(&sample.position).and_then(|facts| facts.teleport) == Some(landed)
+            }),
+            "pz_border" => self
+                .tiles
+                .get(&sample.position)
+                .is_some_and(|target| target.protection_zone != origin.protection_zone),
+            _ => true,
+        }
+    }
+
+    fn samples(&self, start: TilePos, seed: u64) -> TestResult<(Vec<Sample>, BTreeSet<TilePos>)> {
+        let (reachable, returnable) = town_reachability(start, |at, direction| {
+            self.destination(at, direction)
+        });
         let mut groups: BTreeMap<_, Vec<_>> = BTreeMap::new();
         for sample in &self.samples {
             if in_town(sample.position, start) {
@@ -313,7 +340,7 @@ impl<'a> MapModel<'a> {
         }
         let mut output = Vec::new();
         let mut state = seed;
-        for mut group in groups.into_values() {
+        for (kind, mut group) in groups {
             let approachable: Vec<_> = group
                 .iter()
                 .filter(|sample| {
@@ -324,7 +351,8 @@ impl<'a> MapModel<'a> {
                 })
                 .cloned()
                 .collect();
-            if !approachable.is_empty() {
+            let has_approach = !approachable.is_empty();
+            if has_approach {
                 group = approachable;
             }
             let count = group.len().min(5);
@@ -333,12 +361,72 @@ impl<'a> MapModel<'a> {
                 let chosen = at + (state % (group.len() - at) as u64) as usize;
                 group.swap(at, chosen);
             }
+            if has_approach {
+                let has_eligible_approach = |sample: &Sample, returnable| {
+                    approach_steps(sample.position).any(|(at, direction)| {
+                        reachable.contains(&at)
+                            && self.approach_allowed(
+                                sample,
+                                at,
+                                self.destination(at, direction),
+                                returnable,
+                            )
+                    })
+                };
+                let (selected, alternatives) = group.split_at_mut(count);
+                for sample in selected {
+                    if has_eligible_approach(sample, None)
+                        && !has_eligible_approach(sample, Some(&returnable))
+                    {
+                        let replacement = alternatives
+                            .iter_mut()
+                            .find(|alternative| has_eligible_approach(alternative, Some(&returnable)))
+                            .ok_or_else(|| {
+                                format!("map journey needs {count} returnable {kind} samples")
+                            })?;
+                        std::mem::swap(sample, replacement);
+                    }
+                }
+            }
             group.truncate(count);
             group.sort_by_key(|sample| sample.position);
             output.extend(group);
         }
-        output
+        Ok((output, returnable))
     }
+}
+
+fn town_reachability(
+    start: TilePos,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> (BTreeSet<TilePos>, BTreeSet<TilePos>) {
+    let mut reachable = BTreeSet::from([start]);
+    let mut queue = VecDeque::from([start]);
+    let mut predecessors = BTreeMap::<TilePos, Vec<TilePos>>::new();
+    while let Some(at) = queue.pop_front() {
+        for direction in DIRECTIONS {
+            if let Some(next) = landing(at, direction)
+                && in_town(next, start)
+            {
+                predecessors.entry(next).or_default().push(at);
+                if reachable.insert(next) {
+                    queue.push_back(next);
+                }
+            }
+        }
+    }
+
+    // Floor changes and teleports are directed STEP edges.
+    let mut returnable = BTreeSet::from([start]);
+    queue.push_back(start);
+    while let Some(at) = queue.pop_front() {
+        for &previous in predecessors.remove(&at).iter().flatten() {
+            if returnable.insert(previous) {
+                queue.push_back(previous);
+            }
+        }
+    }
+    (reachable, returnable)
 }
 
 pub(super) fn in_town(at: TilePos, start: TilePos) -> bool {
@@ -383,6 +471,17 @@ fn adjacent(at: TilePos, direction: StepDirection) -> Option<TilePos> {
         y: at.y.checked_add_signed(dy)?,
         floor: at.floor,
     })
+}
+
+fn approach_steps(target: TilePos) -> impl Iterator<Item = (TilePos, StepDirection)> {
+    DIRECTIONS
+        .into_iter()
+        .filter_map(move |outward| adjacent(target, outward))
+        .flat_map(move |at| {
+            DIRECTIONS.into_iter().filter_map(move |direction| {
+                (adjacent(at, direction) == Some(target)).then_some((at, direction))
+            })
+        })
 }
 
 /// A* over real STEP edges. Cardinal steps cost 10, as in movement/path_search.rs.

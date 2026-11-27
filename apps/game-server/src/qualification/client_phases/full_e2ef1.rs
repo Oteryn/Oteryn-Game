@@ -502,12 +502,14 @@ mod e2ef1 {
         }
         checks.pass("turn", own(client)?);
         let peer_at = tile(peer.world_spatial().actor_position)?;
-        let path = route(world, peer_at, |at| {
-            distance(
-                at,
-                tile(client.world_spatial().actor_position).unwrap_or(start),
-            ) == 3
-        })
+        let actor_at = tile(client.world_spatial().actor_position)?;
+        let occupied = full_e2ef3::occupied_tiles(peer);
+        let path = route_avoiding(
+            world,
+            peer_at,
+            |at| distance(at, actor_at) == 3,
+            |at| !occupied.contains(&at),
+        )
         .ok_or("follow peer approach")?;
         with_peer_liveness(client, walk(peer, world, &path)).await?;
         let reference = own(peer)?.entity;
@@ -527,8 +529,14 @@ mod e2ef1 {
         })
         .await?;
         let follower_at = tile(client.world_spatial().actor_position)?;
-        let path = route(world, peer_at, |at| distance(at, follower_at) == 4)
-            .ok_or("moving follow target lane")?;
+        let occupied = full_e2ef3::occupied_tiles(peer);
+        let path = route_avoiding(
+            world,
+            peer_at,
+            |at| distance(at, follower_at) == 4,
+            |at| !occupied.contains(&at),
+        )
+        .ok_or("moving follow target lane")?;
         with_peer_liveness(client, walk(peer, world, &path)).await?;
         let peer_at = tile(peer.world_spatial().actor_position)?;
         until_with_peer(client, peer, |c| {

@@ -17,6 +17,22 @@ fn map_journey_path_around_wall_and_no_path_through_blocking_item() -> TestResul
 }
 
 #[test]
+fn map_journey_distinguishes_one_way_approaches_from_round_trips() {
+    use StepDirection::{East, South, West};
+    let town = at(0, 0, -7);
+    let street = at(1, 0, -7);
+    let cave = at(1, 1, -8);
+    let (reachable, returnable) = town_reachability(town, |at, direction| match (at, direction) {
+        (at, East) if at == town => Some(street),
+        (at, West) if at == street => Some(town),
+        (at, South) if at == street => Some(cave),
+        _ => None,
+    });
+    assert_eq!(reachable, BTreeSet::from([town, street, cave]));
+    assert_eq!(returnable, BTreeSet::from([town, street]));
+}
+
+#[test]
 fn map_journey_detours_around_occupant_on_a_long_route() -> TestResult {
     let center = at(1, RADIUS, -7);
     let from = at(center.x, 0, center.floor);
@@ -68,10 +84,14 @@ fn map_journey_synthetic_bundle_stairs_hole_collision_and_seeded_samples() -> Te
         "solid box must remain unreachable"
     );
     assert!(!model.tiles[&at(1, 0, -7)].walkable);
-    assert_eq!(model.samples(from, 123), model.samples(from, 123));
+    // The lower start is cut off in the reverse direction by the automatic stair.
+    assert!(model.path(upstairs, from, None).is_none());
+    assert!(model.samples(from, 123).is_err());
+    assert_eq!(model.samples(upstairs, 123)?, model.samples(upstairs, 123)?);
     assert!(
         model
-            .samples(from, 123)
+            .samples(upstairs, 123)?
+            .0
             .iter()
             .any(|sample| sample.kind == "stairs_up")
     );
@@ -230,7 +250,7 @@ fn map_journey_bundle_wall_detour_rope_and_unknown_ladder_facts() -> TestResult 
     );
     assert_eq!(model.tiles[&at(4, 0, -8)].house, 7);
     assert!(model.tiles[&at(4, 0, -8)].protection_zone);
-    let selected = model.samples(from, 1);
+    let (selected, _) = model.samples(from, 1)?;
     for kind in selected.iter().map(|sample| sample.kind) {
         assert!(selected.iter().filter(|sample| sample.kind == kind).count() <= 5);
     }

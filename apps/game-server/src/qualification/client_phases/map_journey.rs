@@ -8,8 +8,9 @@ pub(super) async fn run(
 ) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
     let mut totals: BTreeMap<&str, [usize; 3]> = BTreeMap::new();
-    for sample in model.samples(start, 1) {
-        let result = check(client, model, &sample, start).await;
+    let (samples, returnable) = model.samples(start, 1)?;
+    for sample in samples {
+        let result = check(client, model, &sample, start, &returnable).await;
         let (index, reason) = match result {
             Ok(None) => (0, "position_and_protocol_result_match_bundle".to_owned()),
             Ok(Some(reason)) => (2, reason.to_owned()),
@@ -86,6 +87,7 @@ async fn check(
     model: &MapModel<'_>,
     sample: &Sample,
     bounds: TilePos,
+    returnable: &BTreeSet<TilePos>,
 ) -> TestResult<Option<&'static str>> {
     let from = tile(client.world_spatial().actor_position)?;
     let target = sample.position;
@@ -95,46 +97,15 @@ async fn check(
                 .tiles
                 .get(&target)
                 .is_some_and(|facts| !facts.walkable));
-    let transition = matches!(
-        sample.kind,
-        "stairs_up" | "stairs_down" | "hole_down" | "teleport"
-    ) || (sample.kind == "ladder" && model.world.floors().contains(target));
     let mut approaches = Vec::new();
-    for at in DIRECTIONS
-        .into_iter()
-        .filter_map(|direction| adjacent(target, direction))
-    {
-        for direction in DIRECTIONS {
-            if adjacent(at, direction) != Some(target) {
-                continue;
-            }
-            let landing = model.destination(at, direction);
-            if transition
-                && !landing.is_some_and(|landed| match sample.kind {
-                    "stairs_up" => landed.floor > at.floor,
-                    "stairs_down" | "hole_down" => landed.floor < at.floor,
-                    "ladder" => landed.floor != at.floor,
-                    _ => Some(landed) == model.tiles.get(&target).and_then(|facts| facts.teleport),
-                })
-            {
-                continue;
-            }
-            if model.tiles.get(&at).is_none_or(|facts| !facts.walkable) {
-                continue;
-            }
-            if sample.kind == "pz_border"
-                && model
-                    .tiles
-                    .get(&target)
-                    .zip(model.tiles.get(&at))
-                    .is_none_or(|(target, origin)| target.protection_zone == origin.protection_zone)
-            {
-                continue;
-            }
-            // An automatic transition can make an apparently adjacent tile unstandable.
-            if let Some(path) = model.path(from, at, Some(bounds)) {
-                approaches.push((path, at, direction, landing));
-            }
+    for (at, direction) in approach_steps(target) {
+        let landing = model.destination(at, direction);
+        if !model.approach_allowed(sample, at, landing, Some(returnable)) {
+            continue;
+        }
+        // An automatic transition can make an apparently adjacent tile unstandable.
+        if let Some(path) = model.path(from, at, Some(bounds)) {
+            approaches.push((path, at, direction, landing));
         }
     }
     approaches.sort_by_key(|(path, at, _, _)| (path.len(), *at));

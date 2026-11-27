@@ -868,35 +868,28 @@ async fn walk_with_landing_budget(
         }?;
         let from = tile(before)?;
         let expected = landing(from, direction);
+        // A Blocked reply can arrive before the entity update that explains it.
+        // A transit detour must still reach the original waypoint via real STEP replies.
         if outcome.disposition == StepDisposition::Blocked
+            && outcome.world_spatial_delta.is_none()
             && client.world_spatial().actor_position == before
-            && let Some(occupied) = expected
-            && let Some(entities) = client.world_entities()
+            && let Some(refused) = expected
+            && !path.is_empty()
+            && blocked.len() < 8
+            && blocked.insert(refused)
         {
-            use oteryn_dev_client::EntityKind;
-            let visible_blockers: std::collections::BTreeSet<_> = entities
-                .iter()
-                .filter(|entity| {
-                    &entity.entity.identity != entities.own_identity()
-                        && matches!(
-                            entity.kind,
-                            EntityKind::Creature | EntityKind::Npc | EntityKind::Player
-                        )
-                })
-                .filter_map(|entity| tile(entity.position).ok())
-                .collect();
-            if visible_blockers.contains(&occupied)
-                && blocked.len() < 8
-                && blocked.insert(occupied)
-                && let Some(detour) = route_around_occupant(
-                    from,
-                    detour_center.unwrap_or(from),
-                    occupied,
-                    &path,
-                    |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
-                    &landing,
-                )
-            {
+            let visible_blockers = full_e2ef3::occupied_tiles(client);
+            if let Some(detour) = route_around_occupant(
+                from,
+                detour_center.unwrap_or(from),
+                refused,
+                &path,
+                |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
+                &landing,
+            ) {
+                evidence(&format!(
+                    "town_route detour from={from:?} refused={refused:?}"
+                ));
                 path = detour.into();
                 continue;
             }
