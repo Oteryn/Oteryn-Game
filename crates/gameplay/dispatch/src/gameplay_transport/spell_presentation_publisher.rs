@@ -698,7 +698,6 @@ impl SoundPublisher {
         }
     }
 
-
     pub(super) fn record_item_effect(
         &mut self,
         runtime: &ChannelRuntimeV1,
