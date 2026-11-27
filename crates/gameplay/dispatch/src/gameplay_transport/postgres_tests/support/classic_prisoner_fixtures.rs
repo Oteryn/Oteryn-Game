@@ -1,9 +1,11 @@
 use super::fixture::{Harness, debug};
 use super::quest_world_callbacks_fixtures::wire;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::npc_service::{
-    COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result,
-    encode_npc_talk_intent,
+    CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition, NpcTalkIntent,
+    decode_npc_intent_result, encode_npc_talk_intent,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
@@ -57,6 +59,9 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let [npc] =
         super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.a_prisoner"]).await?;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[CAPABILITY_NPC_SERVICE_V1])
+            .ok_or("Prisoner NPC service capability")?;
     let mut mint_command = 900;
     super::qengine_voucher_stories_fixtures::mint(owner, admitted, 3585, 14, &mut mint_command)
         .await?;

@@ -633,6 +633,21 @@ pub(super) async fn exercise(
     let actor = admitted.runtime_actor.ok_or("Koshei player")?;
     let stage = super::quest_world_callbacks_fixtures::local(member.from);
     assert_eq!(owner.home_temple(session).await, Some(stage));
+    move_to(owner, admitted, member.from).await?;
+    let switch = target(owner, SWITCH, 1)?;
+    assert_eq!(
+        use_next(owner, admitted, &switch).await?,
+        UseDisposition::Occupied,
+        "a live visit still owns the native defender"
+    );
+    let entry_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(ENTRY)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(entry_receipts, 1, "a live defender cannot be claimed again");
+    move_to(owner, admitted, member.to).await?;
     let mut seed = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *seed)
