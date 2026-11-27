@@ -484,6 +484,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("Forge UI did not select Fusion".into());
     }
     let browse = capture_preview(&mut client, panel, wire::Selection::Browse { after: 0 }).await?;
+    let item = |handle| wire::Item {
+        handle, definition_ref: dagger.get(), appearance: 3267, name: "dagger".into(),
+        classification: 1, tier: 0, maximum_tier: 1, container: false,
+    };
+    if panel.preview.item(pair.0.get()) != Some(&item(pair.0))
+        || panel.preview.item(pair.1.get()) != Some(&item(pair.1))
+    {
+        return Err("Forge browse displayed incorrect dagger metadata before selection".into());
+    }
     if !panel.choose_item(true, pair.0.get()) || !panel.choose_item(false, pair.1.get())
         || panel.selection() != Some(selection)
     {
@@ -495,10 +504,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     quotes.push(capture_preview(&mut client, panel, selection).await?);
     quotes.push(browse);
-    let item = |handle| wire::Item {
-        handle, definition_ref: dagger.get(), appearance: 3267, name: "dagger".into(),
-        classification: 1, tier: 0, maximum_tier: 1, container: false,
-    };
     let expected_quote = wire::Quote {
         selection, first: item(pair.0), second: item(pair.1),
         resources: wire::Resources {

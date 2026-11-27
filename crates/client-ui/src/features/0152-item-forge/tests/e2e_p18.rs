@@ -229,9 +229,26 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             }
             let submitted =
                 Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
+            let mut browsed_pair = None;
             let selection = if index == 3 {
                 let first = submitted.first_item.ok_or("Fusion receiver absent")?;
                 let second = submitted.second_item.ok_or("Fusion donor absent")?;
+                let browse_item = |handle| {
+                    panel
+                        .preview
+                        .item(handle)
+                        .filter(|item| {
+                            item.name == "dagger"
+                                && item.appearance == 3267
+                                && item.classification == 1
+                                && item.tier == 0
+                                && item.maximum_tier == 1
+                                && !item.container
+                        })
+                        .cloned()
+                        .ok_or("Forge picker rendered incorrect browse metadata")
+                };
+                browsed_pair = Some((browse_item(first.get())?, browse_item(second.get())?));
                 if !panel.choose_item(true, first.get()) || !panel.choose_item(false, second.get())
                 {
                     return Err("Forge picker could not select the captured daggers".into());
@@ -273,6 +290,15 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                     "Available: 30050 carried gold; 0 bank gold; 15 / 101 dust; 0 cores; 3 slivers\n",
                     "The original server writer independently rechecks the current state."
                 );
+                let quote = panel
+                    .preview
+                    .quote
+                    .as_ref()
+                    .ok_or("Fusion quote missing after review")?;
+                let (first, second) = browsed_pair.ok_or("Fusion browse pair missing")?;
+                if quote.first != first || quote.second != second {
+                    return Err("Fusion quote changed the picker item metadata".into());
+                }
                 if crate::item_forge::selected_pair_text(&panel) != expected
                     || panel.paid_request(submitted.occurrence) != Some(submitted)
                 {
