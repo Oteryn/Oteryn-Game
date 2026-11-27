@@ -4101,14 +4101,24 @@ async fn c16c_rat_corpse(
             .saturating_add(200_000),
     );
     let corpse_ref = provisioning::item_reference(&provisioning::item_index()?, 5964)?;
-    approach_melee(client, world, rat.position).await?;
+    let identity = rat.entity.identity.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    let answer = request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--inspect-damage",
+        format!("{identity} {}", rat.entity.generation),
+    ).await?;
+    let expected_corpse = answer.strip_prefix("damage 0 ")
+        .ok_or_else(|| format!("C16c expected untouched Rat, got {answer:?}"))?;
+    let expected_corpse = crate::node::operator_files::hex_bytes::<16>(expected_corpse)
+        .map_err(|_| "C16c invalid exact corpse identity")?;
     use oteryn_protocol_oteryn::presentation::{
         PresentationColor, PresentationEventKind, PresentationValueKind,
     };
     const RAT_MAX_HP: u64 = 20;
     let existing = census(client)?;
     let attacker = own_entity(client)?;
-    let mut position = creature(client, rat.entity)?.position;
+    let mut position = rat.position;
+    let mut visible = true;
     let mut health = hp(&creature(client, rat.entity)?)?;
     if health != 100 {
         return Err(format!("C16c fixture Rat started at {health}% HP").into());
@@ -4165,22 +4175,28 @@ async fn c16c_rat_corpse(
             let SessionEvent::WorldSpatialEntities(delta) = event else {
                 continue;
             };
-            for entry in &delta.value.update {
+            for entry in delta.value.enter.iter().chain(&delta.value.update) {
                 if entry.entity == rat.entity {
+                    visible = true;
                     position = entry.position;
                     health = hp(entry)?;
                 }
             }
-            removed |= delta.value.leave.contains(&rat.entity);
+            if !delta.value.leave.contains(&rat.entity) {
+                continue;
+            }
+            visible = false;
             for entry in delta.value.enter {
                 if entry.kind == EntityKind::Corpse
                     && !existing.contains(&entry.entity)
-                    && entry.position == position
+                    && entry.entity.identity == expected_corpse
                     && matches!(entry.detail,
                         EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. }
                         | EntityDetail::ObjectWithAppearance { item_definition_ref, item_handle: Some(_), .. }
                         if item_definition_ref == corpse_ref.get())
                 {
+                    removed = true;
+                    evidence(&format!("C16C_EXACT_DEATH rat={:?} corpse={:?} tile={:?} sequence={}", rat.entity, entry.entity, entry.position, delta.server_sequence));
                     corpse = Some(entry);
                 }
             }
@@ -4201,7 +4217,36 @@ async fn c16c_rat_corpse(
         if proved_damage && strike_before.is_none() && removed && let Some(corpse) = corpse {
             return Ok(corpse);
         }
-        if strike_before.is_none() && !removed && tokio::time::Instant::now() >= next_cast {
+        if !removed && (!visible || (strike_before.is_none() && tokio::time::Instant::now() >= next_cast)) {
+            let caster = client.world_spatial().actor_position;
+            if let Ok(current) = creature(client, rat.entity) {
+                visible = true;
+                position = current.position;
+                health = hp(&current)?;
+            }
+            let from = tile(caster)?;
+            let toward = tile(position)?;
+            let adjacent = from.floor == toward.floor
+                && from.x.abs_diff(toward.x).max(from.y.abs_diff(toward.y)) <= 1;
+            if !adjacent {
+                let next = route(world, from, |at| {
+                    at.floor == toward.floor && at.x.abs_diff(toward.x).max(at.y.abs_diff(toward.y)) <= 1
+                }).and_then(|path| path.into_iter().next());
+                if let Some(step) = next {
+                    evidence(&format!("C16C_CHASE action=step caster={caster:?} rat={position:?} visible={visible}"));
+                    walk(client, world, &[step]).await?;
+                } else {
+                    evidence(&format!("C16C_CHASE action=wait caster={caster:?} rat={position:?} visible={visible}"));
+                }
+                client.service_liveness(Duration::from_millis(100)).await?;
+                continue;
+            }
+            if !visible || strike_before.is_some() {
+                evidence(&format!("C16C_CHASE action=wait caster={caster:?} rat={position:?} visible={visible}"));
+                client.service_liveness(Duration::from_millis(100)).await?;
+                continue;
+            }
+            evidence(&format!("C16C_CHASE action=strike caster={caster:?} rat={position:?} visible={visible}"));
             let target = SpellTarget::Position(SpellTargetPosition {
                 x: position.x,
                 y: position.y,
