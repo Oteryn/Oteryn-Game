@@ -1,3 +1,4 @@
+use sha2::Digest;
 use super::TestResult;
 
 use super::fixture::{Harness, debug, id};
@@ -223,6 +224,7 @@ pub(super) async fn qualify_first_transform(
     actor: crate::foundation::ExactActorRef,
     command: crate::gameplay_transport::connection::UseCommand,
     floor_destination: Option<crate::foundation::MovementLocalPosition>,
+    successor_drag: bool,
 ) -> TestResult {
     let corpse = owner
         .runtime
@@ -382,6 +384,54 @@ pub(super) async fn qualify_first_transform(
     }));
 
 
+    let session = command.game_session_id;
+    let (decay_actor, decay_fence, terminal_destination) = if successor_drag {
+        let (successor, fence) = restart_rat_session(owner, h, session).await?;
+        super::journal_inventory::runtime_role(owner.root).await?;
+        use crate::durability::item_loop_move::{QuickLootCommand, QuickLootInput};
+        use crate::foundation::{CommandId, CommandRef};
+        use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+        use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, QuickLootRequest, decode_quick_loot_result};
+        {
+            let permit = owner.spell_lane_permit().await.ok_or("successor item lane")?;
+            let native = owner.active_generation.and_then(|generation| generation.native_gameplay())
+                .ok_or("Rat fixture native content")?;
+            let cell: Vec<u8> = sqlx::query_scalar(
+                "SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+            ).bind(item.as_slice()).fetch_one(&h.pool).await?;
+            let result = owner.root.commit_quick_loot(
+                &permit, owner.character, owner.holder, fence, &NativeItemWeights(native),
+                QuickLootCommand {
+                    command: CommandRef::new(session, CommandId::new(command.command_id + 2).map_err(debug)?),
+                    cell: cell.try_into().map_err(|_| "Rat loot cell")?,
+                    premium: true,
+                    input: QuickLootInput::Legacy(QuickLootRequest {
+                        action: QuickLootAction::Click, corpse: Some(item), category: None,
+                        recipient: None, recipient_id: None, fallback_to_main: false,
+                        filter_mode: None, filter_definition_ref: None,
+                    }),
+                    selected_corpse: Some(item),
+                },
+            ).await?.map_err(debug)?;
+            let result = decode_quick_loot_result(&result).map_err(debug)?;
+            assert!(result.items.iter().any(|entry| entry.accepted), "successor must loot the moved Rat: {result:?}");
+        }
+        qualify_rat_ground_move(owner, h, successor, crate::gameplay_transport::connection::UseCommand {
+            command_id: command.command_id + 3, item_fence: Some(fence), ..command
+        }, item, corpse.position).await?;
+        let move_generation: String = sqlx::query_scalar(
+            "SELECT runtime_scope_ownership_generation::text FROM game_item_ground_locations
+             WHERE item_instance_id=encode($1,'hex')::uuid",
+        ).bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(move_generation, fence.scope_ownership_generation.get().to_string());
+        let (successor, fence) = restart_rat_session(owner, h, session).await?;
+        super::journal_inventory::runtime_role(owner.root).await?;
+        (successor, Some(fence), floor_destination)
+    } else {
+        (actor, command.item_fence, corpse.position)
+    };
+    let remaining = owner.root.read_corpse_contents(owner.character, item).await?
+        .ok_or("remaining Rat contents")?.len();
     let before_retirement: i64 = sqlx::query_scalar(
         "SELECT game_corpse_retirement_deadline(encode($1,'hex')::uuid) - materialized_at
            FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
@@ -393,22 +443,63 @@ pub(super) async fn qualify_first_transform(
     ).bind(item.as_slice()).fetch_one(&h.pool).await?;
     set_corpse_age(h, item, terminal_age).await?;
     sweep_until(owner, async || Ok(current_definition(h, item).await? == "oteryn:item.tibia.i3996")).await?;
-    qualify_rat_ground_move(owner, h, actor, crate::gameplay_transport::connection::UseCommand {
-        command_id: command.command_id + 2,
-        ..command
-    }, item, corpse.position).await?;
-    // Publish the replacement as the control role. Both decay passes still
-    // run with the restricted runtime role.
-    owner.root.try_issue_semantic_pass()?.run(|holder, _| Box::pin(async move {
-        sqlx::query("RESET ROLE").execute(&mut **holder).await?;
-        Ok(())
-    })).await?;
-    restart_channel_owner(owner, h).await?;
-    super::journal_inventory::runtime_role(owner.root).await?;
+    if successor_drag {
+        let generations: Vec<String> = sqlx::query_scalar(
+            "SELECT ownership_generation::text FROM game_spell_field_temporal_receipts
+             WHERE item_instance_id=encode($1,'hex')::uuid AND source_stage IN(2,3)
+             ORDER BY source_stage",
+        ).bind(item.as_slice()).fetch_all(&h.pool).await?;
+        assert_eq!(generations, vec![decay_actor.scope_generation().get().to_string(); 2]);
+    }
+    let later_command = crate::gameplay_transport::connection::UseCommand {
+        command_id: command.command_id + 5, item_fence: decay_fence, ..command
+    };
+    qualify_rat_ground_move(owner, h, decay_actor, later_command, item, terminal_destination).await?;
+    let (later_actor, later_command) = if successor_drag {
+        (decay_actor, later_command)
+    } else {
+        let (actor, fence) = restart_rat_session(owner, h, session).await?;
+        super::journal_inventory::runtime_role(owner.root).await?;
+        (actor, crate::gameplay_transport::connection::UseCommand { item_fence: Some(fence), ..later_command })
+    };
+    let map = owner.bundle_map().ok_or("Rat map")?;
+    let index = {
+        let runtime = owner.runtime.lock().await;
+        crate::gameplay_transport::item_ref_admission::pinned_index(&runtime, owner.active_generation)
+    };
+    let base = map.overlay.base();
+    let overlay = crate::gameplay_transport::loop_move::loop_ground(owner, base, index)
+        .await.ok_or("Rat Ground overlay before retirement")?;
+    assert!(overlay.ground_entry(&item).is_some());
     set_corpse_age(h, item, before_retirement).await?;
-    let expected_retirements = i64::try_from(contents.len())? + 1;
+    let expected_retirements = i64::try_from(remaining)? + 1;
     sweep_until(owner, async || Ok(retire_count(h).await? == expected_retirements)).await?;
     owner_sweep(owner).await?;
+    use crate::gameplay_transport::item_move::{LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget};
+    use crate::gameplay_transport::item_view::ItemKey;
+    use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+    let map = owner.bundle_map().ok_or("Rat map")?;
+    let base = map.overlay.base();
+    let index = {
+        let runtime = owner.runtime.lock().await;
+        assert!(owner.states.loop_ground.current_for(&runtime, base)
+            .is_none_or(|cached| cached.ground_entry(&item).is_none()), "retired Rat remains cached");
+        crate::gameplay_transport::item_ref_admission::pinned_index(&runtime, owner.active_generation)
+    };
+    let overlay = crate::gameplay_transport::loop_move::loop_ground(owner, base, index)
+        .await.ok_or("Rat Ground overlay after retirement")?;
+    assert!(overlay.ground_entry(&item).is_none(), "retired Rat remains visible");
+    let outcome = crate::gameplay_transport::loop_move::move_loop_item(
+        owner, later_actor, crate::gameplay_transport::connection::UseCommand {
+            command_id: later_command.command_id + 2, ..later_command
+        },
+        LoopMove { item: ItemKey::Instance(item), count: None, slot: None,
+            target: LoopTarget::Ground(WorldTilePosition {
+                x: corpse.position.x, y: corpse.position.y, floor: -corpse.position.floor,
+            }),
+        },
+    ).await;
+    assert_eq!(outcome, LoopMoveResult::Refused(LoopMoveRefusal::Stale));
     assert_eq!(transform_count(h, item).await?, 3);
     assert_eq!(retire_count(h).await?, expected_retirements);
     let handoffs: i64 = sqlx::query_scalar(
@@ -417,7 +508,7 @@ pub(super) async fn qualify_first_transform(
     .bind(item.as_slice())
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(handoffs, 2, "each floor move preserves its stage lineage once");
+    assert_eq!(handoffs, if successor_drag { 3 } else { 2 }, "each floor move preserves its stage lineage once");
     eprintln!("RAT_CORPSE_ITEM_MOVE_REACHED inventory=NotPickupable floor=Moved handoffs={handoffs}");
     Ok(())
 }
@@ -570,6 +661,34 @@ pub(super) async fn restart_channel_owner(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
 ) -> TestResult<crate::foundation::ExactActorRef> {
+    replace_channel_owner(owner, harness, crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?).await
+}
+
+pub(super) async fn restart_rat_session(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    session: crate::foundation::GameSessionId,
+) -> TestResult<(crate::foundation::ExactActorRef, crate::durability::item_transfer::CurrentCharacterItemFence)> {
+    owner.root.try_issue_semantic_pass()?.run(|holder, _| Box::pin(async move {
+        sqlx::query("RESET ROLE").execute(&mut **holder).await?;
+        Ok(())
+    })).await?;
+    let actor = replace_channel_owner(owner, harness, session).await?;
+    let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=$2::text::numeric
+        WHERE game_session_id=encode($1,'hex')::uuid AND scope_ownership_generation=$2::text::numeric-1")
+        .bind(session.as_bytes().as_slice()).bind(actor.scope_generation().get().to_string())
+        .execute(&harness.pool).await?;
+    assert_eq!(updated.rows_affected(), 1);
+    let (current, _) = crate::durability::fresh_admission::FreshAdmissionStore::from_root(harness.root.clone())
+        .current_session_at(session).await?;
+    Ok((actor, crate::gameplay_transport::item_fence_of(current).ok_or("successor item fence")?))
+}
+
+async fn replace_channel_owner(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    session: crate::foundation::GameSessionId,
+) -> TestResult<crate::foundation::ExactActorRef> {
     use crate::durability::runtime_scope_assignment::{
         AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
         RuntimeScopeAssignmentWriter,
@@ -582,13 +701,13 @@ pub(super) async fn restart_channel_owner(
         .await
         .map_err(debug)?
         .ok_or("scope predecessor")?;
-    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)").bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2) ON CONFLICT DO NOTHING").bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice()).execute(&harness.pool).await?;
     let writer = RuntimeScopeAssignmentWriter::open(owner.root.clone(), "sequencer-writer")
         .await
         .map_err(debug)?;
     let AssignmentOutcome::Committed(replacement) = writer
         .submit(&AssignmentRequest {
-            operation_key: OperationKey::from_bytes([99; 32]),
+            operation_key: OperationKey::from_bytes(sha2::Sha256::digest(predecessor.ownership_generation.to_be_bytes()).into()),
             actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
             command: AssignmentCommand::Replace {
                 scope,
@@ -626,7 +745,7 @@ pub(super) async fn restart_channel_owner(
     };
     change.publication_revision += 1;
     change.source.source_revision += 1;
-    change.source.decision_identity = "field-runtime-ready-2".into();
+    change.source.decision_identity = format!("corpse-fixture-runtime-ready-{generation}");
     change.source.source_observed_at = now;
     let AdmissionAuthorityGuardStateV1::Runtime {
         ownership_generation,
@@ -663,7 +782,6 @@ pub(super) async fn restart_channel_owner(
         runtime.content_pin().clone(),
     )
     .map_err(debug)?;
-    let session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
     let reserved = restarted.reserve_fresh_session(session).map_err(debug)?;
     let peer = restarted.commit_fresh_session(reserved).map_err(debug)?;
     restarted

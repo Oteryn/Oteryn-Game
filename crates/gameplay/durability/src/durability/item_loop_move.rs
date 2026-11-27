@@ -1177,7 +1177,8 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
                 i.definition_production_key=$2 AND game_item_loop_map_mint_source(i.item_instance_id) AS fixed_map_cask, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup, \
-                game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
+                game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse, \
+                COALESCE(game_dragged_rat_ground_current(i.item_instance_id,g.world_id,g.channel_id,$3::text::numeric,g.stack_ordinal),false) AS historical_rat_custody \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
@@ -1188,6 +1189,7 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
     )
     .bind(request.item.as_slice())
     .bind(super::map_item_mint::MAP_DISPENSER_KEY)
+    .bind(fence.scope_ownership_generation.get().to_string())
     .fetch_one(&mut **tx)
     .await?;
     let entry_character = optional_uuid(row.try_get("entry_character")?)?;
@@ -1304,6 +1306,13 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
         if let LoopDestination::Ground(to) = &request.destination {
             let source_map: String = row.try_get("ground_map")?;
             let loop_drop: bool = row.try_get("loop_drop")?;
+            if rat_corpse && loop_drop
+                && row.try_get::<String, _>("ground_generation")?
+                    != fence.scope_ownership_generation.get().to_string()
+                && !row.try_get::<bool, _>("historical_rat_custody")?
+            {
+                return refuse(LoopMoveRefusal::Stale);
+            }
             // A corpse MINT binds the native pin's revision-string digest.
             // Its first loop drop binds the underlying bundle revision instead.
             let native_revision = || {
@@ -2354,7 +2363,8 @@ impl DurabilityRoot {
                        JOIN game_item_instances target ON target.item_instance_id=encode($9,'hex')::uuid \
                       WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 \
                         AND i.world_id=encode($2,'hex')::uuid AND g.scope_kind=$10 AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($11,'hex')::uuid \
-                        AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
+                        AND (g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
+                             OR game_dragged_rat_ground_current(i.item_instance_id,g.world_id,g.channel_id,$4::text::numeric,g.stack_ordinal)) \
                         AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
                             = ($5,$6,$7,$8) \
                         AND (game_item_loop_drop_ref(g.corpse_ref) \

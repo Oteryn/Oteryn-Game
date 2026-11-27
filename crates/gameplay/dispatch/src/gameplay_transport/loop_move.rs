@@ -295,7 +295,7 @@ pub struct LoopGroundOverlay {
     facts: HashMap<[u8; 16], EntryFacts>,
     ordinals: HashMap<[u8; 16], u64>,
     native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
-    source_plain_corpses: HashSet<[u8; 16]>,
+    retirement_tracked_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
@@ -350,11 +350,19 @@ impl LoopGroundOverlay {
         let mut facts = HashMap::new();
         let mut ordinals = HashMap::new();
         let mut native_pickup_cells = HashMap::new();
-        let mut source_plain_corpses = HashSet::new();
+        let mut retirement_tracked_corpses = HashSet::new();
         for entry in items {
             let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
             let committed_corpse = entry.native_corpse && entry.field_collision.is_none();
+            let dragged_rat = committed_corpse
+                && crate::durability::item_loop_move::rat_drag_stage(
+                    &item.definition.production_key,
+                )
+                && item
+                    .ground
+                    .corpse_ref
+                    .starts_with(crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX);
             // A native MINT uses runtime coordinates. After an ordinary loop
             // move, the same nonportable corpse uses the loop's map coordinates.
             let native_axes = entry.field_collision.is_some()
@@ -466,8 +474,8 @@ impl LoopGroundOverlay {
                 overlay.add_ground(item)
             };
             if added.is_ok() {
-                if entry.source_plain_corpse {
-                    source_plain_corpses.insert(id);
+                if entry.source_plain_corpse || dragged_rat {
+                    retirement_tracked_corpses.insert(id);
                 }
                 facts.insert(id, entry_facts);
                 ordinals.insert(id, ordinal);
@@ -481,7 +489,7 @@ impl LoopGroundOverlay {
             facts,
             ordinals,
             native_pickup_cells,
-            source_plain_corpses,
+            retirement_tracked_corpses,
             field_pin,
             taken_sources: Default::default(),
             ground_push_definition,
@@ -672,7 +680,7 @@ impl LoopGroundCache {
 
     /// The complete scoped corpse read also reconciles an ambiguous retirement.
     /// Only representation metadata is compared; Ground custody stays in Items.
-    pub(super) fn reconcile_plain_corpses(
+    pub(super) fn reconcile_retired_corpses(
         &self,
         scope: crate::foundation::RuntimeScopeRefV1,
         live: &[[u8; 16]],
@@ -681,7 +689,7 @@ impl LoopGroundCache {
             && state.current.as_ref().is_some_and(|current| {
                 current.overlay.runtime_scope() == scope
                     && current
-                        .source_plain_corpses
+                        .retirement_tracked_corpses
                         .iter()
                         .any(|item| !live.contains(item))
             })

@@ -163,21 +163,25 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
 
 #[derive(Clone, Copy)]
 enum CorpseDecayCheck {
-    RatTransform { drag: bool },
+    RatTransform { drag: bool, successor: bool },
     Retirement(bool),
 }
 
 pub(super) fn scenario_with_rat_transform() -> TestResult {
-    scenario_with_rat_decay(false)
+    scenario_with_rat_decay(false, false)
 }
 
 pub(super) fn scenario_with_rat_drag() -> TestResult {
-    scenario_with_rat_decay(true)
+    scenario_with_rat_decay(true, false)
 }
 
-fn scenario_with_rat_decay(drag: bool) -> TestResult {
+pub(super) fn scenario_with_rat_successor() -> TestResult {
+    scenario_with_rat_decay(true, true)
+}
+
+fn scenario_with_rat_decay(drag: bool, successor: bool) -> TestResult {
     scenario_with_creature_observed(
-        Some(CorpseDecayCheck::RatTransform { drag }),
+        Some(CorpseDecayCheck::RatTransform { drag, successor }),
         false,
         None,
         false,
@@ -1173,7 +1177,7 @@ fn scenario_with_creature_observed(
         // ARCH-PROGRESSION-SOURCE-0 §1.5: the session's progression binding, formed by the
         // production admission step from the Character root's stored revisions.
         owner.admit_progression_session(&mut admitted).await;
-        if letter_creature.is_some() {
+        if letter_creature.is_some() || matches!(decay_check, Some(CorpseDecayCheck::RatTransform { successor: true, .. })) {
             super::item_look_fixtures::seed_main_backpack(&harness, &[]).await?;
         }
         if analyser {
@@ -1715,7 +1719,7 @@ fn scenario_with_creature_observed(
             children
         };
         let decay = match decay_check.filter(|_| !settle_radiant) {
-            Some(CorpseDecayCheck::RatTransform { drag }) => {
+            Some(CorpseDecayCheck::RatTransform { drag, successor }) => {
                 let (current, _) = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
                     harness.root.clone(),
                 )
@@ -1731,6 +1735,7 @@ fn scenario_with_creature_observed(
                         item_fence: Some(item_fence),
                     },
                     if drag { Some(open_player) } else { None },
+                    successor,
                 ).await
             }
             Some(CorpseDecayCheck::Retirement(reconcile)) => {
