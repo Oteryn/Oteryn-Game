@@ -386,6 +386,35 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs() -> Res
     Ok(())
 }
 
+#[test]
+fn repeated_tile_selection_uses_the_lower_server_ordinal_and_revision() -> Result<(), BatchError> {
+    use oteryn_client_runtime::world_interaction::Target;
+    use oteryn_session::world_map::MapOrigin;
+    let mut view = view()?;
+    let mut map = live_snapshot(101);
+    let tile = &mut map.tiles[0];
+    tile.position.x += 1;
+    let at = TileCoord::new(tile.position.x, tile.position.y);
+    let key = (102_u64 << 32) | (200_u64 << 16);
+    tile.items[0].origin = MapOrigin::BaseOrdinal { ordinal: 1, object_revision: 37 };
+    let mut fire = tile.items[0];
+    fire.appearance_id = 2123;
+    fire.origin = MapOrigin::BaseOrdinal { ordinal: 2, object_revision: 11 };
+    tile.items.push(fire);
+    let digest = map.header.bundle_digest;
+    view.apply_pushed(&Pushed { map: Some(Box::new(map)), ..Pushed::default() })?;
+    for (ordinal, revision) in [(2, 11), (1, 37), (2, 11)] {
+        view.click(at)?;
+        let Some(Target::Object(target)) = view.world_context_target_for(at, true) else {
+            return Err(BatchError::InvalidView);
+        };
+        assert_eq!(target.expected_revision, revision);
+        assert_eq!(target.placement[..32], digest);
+        assert_eq!(target.placement[32..], ((key & !255) | ordinal).to_be_bytes());
+    }
+    Ok(())
+}
+
 // Floor sprite assertions isolate world rendering from the package-5 minimap overlay.
 fn hide_minimap(view: &mut PlayView) -> Result<(), BatchError> {
     let mut preferences = view.preferences().clone();
