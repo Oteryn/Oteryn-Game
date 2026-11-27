@@ -144,6 +144,10 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
     ) -> Result<Option<UseOutcome>, ()> {
         self.0.use_drome_cube(actor, command, intent, source).await
     }
+
+    async fn drome_use_unresolved(&self, actor: ExactActorRef, command: UseCommand) -> bool {
+        self.0.drome_use_unresolved(actor, command).await
+    }
 }
 
 async fn run(
