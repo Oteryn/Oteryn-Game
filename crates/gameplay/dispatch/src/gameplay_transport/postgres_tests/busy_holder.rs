@@ -185,7 +185,10 @@ fn quest_callback_resume_waits_for_the_grizzly_lookup_postgres() -> TestResult {
             let playable = owner.prepare_quest_callback_resume(&mut admitted).await;
 
             busy.await??;
-            assert!(playable, "a returning holder must allow the first Grizzly visit lookup");
+            assert!(
+                playable.is_ok(),
+                "a returning holder must allow the first Grizzly visit lookup: {playable:?}"
+            );
             drop(owner);
             drop(seal);
             h.cleanup().await
