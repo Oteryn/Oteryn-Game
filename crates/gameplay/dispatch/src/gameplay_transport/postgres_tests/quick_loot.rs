@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
-use super::fixture::{Harness, debug, id, join_two};
 use super::autowalk_fixtures::{read, send};
+use super::fixture::{Harness, debug, id, join_two};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
@@ -16,7 +16,8 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
 };
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
+    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta,
+    decode_wire_envelope,
 };
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
@@ -85,6 +86,30 @@ fn gold_pouch_first_assignment_from_fulfilment_id_postgres() -> TestResult {
     run_routed_case(admin, Case::PouchFulfilment)
 }
 
+#[test]
+fn managed_assign_loot_resolves_gold_pouch_fulfilment_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::ManagedPouchFulfilment)
+}
+
+#[test]
+fn corpse_use_refuses_initial_durable_read_failure_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::CorpseReadFailure)
+}
+
+#[test]
+fn selected_loot_all_uses_the_corpse_neighborhood_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_routed_case(admin, Case::SelectedLootAll)
+}
+
 fn run_routed_case(admin: String, case: Case) -> TestResult {
     scenario_thread::run("quick-loot", move || {
         tokio::runtime::Builder::new_current_thread()
@@ -102,12 +127,21 @@ enum Case {
     StaleHandle,
     FilterReview,
     PouchFulfilment,
+    ManagedPouchFulfilment,
+    CorpseReadFailure,
+    SelectedLootAll,
     PouchLogout,
 }
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
     async move |admin| {
-        let pouch = matches!(case, Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout);
+        let pouch = matches!(
+            case,
+            Case::GoldPouch
+                | Case::PouchFulfilment
+                | Case::ManagedPouchFulfilment
+                | Case::PouchLogout
+        );
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -258,12 +292,12 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
             production_key: key.into(),
             revision_ref: "definition-r1".into(),
         };
-        let cause = |purpose: &str, ordinal: u32| {
+        let cause = |kill, purpose: &str, ordinal: u32| {
             ItemMintCause::for_test(
                 world,
                 deps.admitted.channel_id,
                 fence.scope_ownership_generation,
-                99,
+                kill,
                 1,
                 TypedDefinitionRef {
                     family: "LootTable".into(),
@@ -274,61 +308,33 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 ordinal,
             )
         };
-        let mut corpse = harness
-            .root
-            .freeze_item_mint(
-                &authority,
-                &harness.node,
-                ItemMintRequest {
-                    cause: cause(CORPSE_MATERIALIZATION_PURPOSE_KEY, 0),
-                    item: typed("oteryn:item.tibia.i5973"),
-                    quantity: 1,
-                    ground: GroundPlacement {
-                        spatial_position:
-                            crate::durability::map_item_mint_audit::map_item_spatial_position(
-                                7, 0, 7,
-                            ),
-                        corpse_ref: id(99).to_vec(),
-                        map_revision: "map-1".into(),
-                        content_revision: "content-1".into(),
-                        native_room_placement_context: id(6).to_vec(),
-                    },
-                    content_revision: "content-1".into(),
-                    ruleset_revision: "ruleset-1".into(),
-                    sim_revision: "sim-1".into(),
-                },
-            )
-            .await
-            .map_err(debug)?;
+        let mut corpses = Vec::new();
         let permit = owner.spell_lane_permit().await.ok_or("permit")?;
-        let corpse_id = match harness
-            .root
-            .commit_corpse_mint(&permit, &authority, &harness.node, &mut corpse, id(41))
-            .await
-            .map_err(debug)?
-        {
-            ItemMintOutcome::Committed(value) => value.item_instance_id,
-            other => return Err(debug(other)),
+        let entries: &[(u8, i32)] = if case == Case::SelectedLootAll {
+            // Actor x=7, selected corpse x=8. x=9 is in the corpse area only.
+            &[(99, 8), (100, 9), (101, 6)]
+        } else {
+            &[(99, 7)]
         };
-        let mut items = Vec::new();
-        for ordinal in 1..=if pouch { 3 } else { 2 } {
-            let mut entry = harness
+        for &(kill, x) in entries {
+            let mut corpse = harness
                 .root
-                .freeze_corpse_loot_mint(
+                .freeze_item_mint(
                     &authority,
                     &harness.node,
-                    CorpseLootMintRequest {
-                        cause: cause("fixture:purpose.quick", ordinal),
-                        item: typed(if ordinal == 3 {
-                            "oteryn:item.tibia.i3577"
-                        } else {
-                            "oteryn:item.tibia.i3031"
-                        }),
-                        quantity: if ordinal == 3 { 1 } else { 60 },
-                        placement: CorpseContainerPlacement {
-                            corpse_item_instance_id: corpse_id,
-                            placement_ordinal: ordinal,
-                            fluid_subtype: None,
+                    ItemMintRequest {
+                        cause: cause(u32::from(kill), CORPSE_MATERIALIZATION_PURPOSE_KEY, 0),
+                        item: typed("oteryn:item.tibia.i5973"),
+                        quantity: 1,
+                        ground: GroundPlacement {
+                            spatial_position:
+                                crate::durability::map_item_mint_audit::map_item_spatial_position(
+                                    7, 0, 7,
+                                ),
+                            corpse_ref: id(kill).to_vec(),
+                            map_revision: "map-1".into(),
+                            content_revision: "content-1".into(),
+                            native_room_placement_context: id(6).to_vec(),
                         },
                         content_revision: "content-1".into(),
                         ruleset_revision: "ruleset-1".into(),
@@ -337,17 +343,63 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 )
                 .await
                 .map_err(debug)?;
-            match harness
+            let corpse_id = match harness
                 .root
-                .commit_corpse_loot_mint(&permit, &authority, &harness.node, &mut entry)
+                .commit_corpse_mint(&permit, &authority, &harness.node, &mut corpse, id(41))
                 .await
                 .map_err(debug)?
             {
-                ItemMintOutcome::Committed(value) => items.push(value.item_instance_id),
+                ItemMintOutcome::Committed(value) => value.item_instance_id,
                 other => return Err(debug(other)),
+            };
+            let mut items = Vec::new();
+            for ordinal in 1..=if pouch { 3 } else { 2 } {
+                let mut entry = harness
+                    .root
+                    .freeze_corpse_loot_mint(
+                        &authority,
+                        &harness.node,
+                        CorpseLootMintRequest {
+                            cause: cause(u32::from(kill), "fixture:purpose.quick", ordinal),
+                            item: typed(if ordinal == 3 {
+                                "oteryn:item.tibia.i3577"
+                            } else {
+                                "oteryn:item.tibia.i3031"
+                            }),
+                            quantity: if ordinal == 3 { 1 } else { 60 },
+                            placement: CorpseContainerPlacement {
+                                corpse_item_instance_id: corpse_id,
+                                placement_ordinal: ordinal,
+                                fluid_subtype: None,
+                            },
+                            content_revision: "content-1".into(),
+                            ruleset_revision: "ruleset-1".into(),
+                            sim_revision: "sim-1".into(),
+                        },
+                    )
+                    .await
+                    .map_err(debug)?;
+                match harness
+                    .root
+                    .commit_corpse_loot_mint(&permit, &authority, &harness.node, &mut entry)
+                    .await
+                    .map_err(debug)?
+                {
+                    ItemMintOutcome::Committed(value) => items.push(value.item_instance_id),
+                    other => return Err(debug(other)),
+                }
             }
+            if x != 7 {
+                let cell =
+                    crate::durability::map_item_mint_audit::map_item_spatial_position(x, 0, 7)
+                        .try_into()
+                        .map_err(|_| "corpse fixture cell")?;
+                fixture_corpse(&harness.pool, corpse_id, cell, id(41), 0).await?;
+            }
+            corpses.push((corpse_id, items));
         }
         drop(permit);
+        let (corpse_id, items) = corpses.remove(0);
         let assign = QuickLootRequest {
             recipient: Some(if pouch {
                 QuickLootRecipient::GoldPouch
@@ -421,7 +473,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 .map_err(|_| "far cell")?;
         if !matches!(case, Case::Bulk | Case::GoldPouch | Case::PouchLogout) {
             match case {
-                Case::SelectedItem | Case::StaleHandle => {
+                Case::SelectedItem | Case::StaleHandle | Case::CorpseReadFailure => {
                     selected_item_cases(
                         &owner,
                         admitted,
@@ -452,10 +504,57 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                     )
                     .await?;
                 }
-                Case::PouchFulfilment => {
-                    pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool).await?
+                Case::PouchFulfilment | Case::ManagedPouchFulfilment => {
+                    let action = if case == Case::ManagedPouchFulfilment {
+                        owner.premium_coordinator = Some(&premium);
+                        owner.admit_premium(id(40), admitted.game_session_id);
+                        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                            owner.offered_capabilities(),
+                            &[4, 6, 98, 607],
+                        )
+                        .ok_or("quick loot destination capability")?;
+                        QuickLootAction::AssignLoot
+                    } else {
+                        QuickLootAction::Assign
+                    };
+                    pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool, action).await?
                 }
-                Case::Bulk | Case::GoldPouch | Case::PouchLogout => return Err("unexpected dedicated case".into()),
+                Case::SelectedLootAll => {
+                    let [(nearby, nearby_items), (actor_only, actor_only_items)] =
+                        corpses.as_slice()
+                    else {
+                        return Err("expected two neighboring corpse fixtures".into());
+                    };
+                    let selected_all = QuickLootRequest {
+                        corpse: Some(corpse_id),
+                        ..all
+                    };
+                    let next = admitted.continuity.next_command_id;
+                    let replies =
+                        wire_requests(&owner, &mut admitted, &[(next, selected_all)]).await?;
+                    let [(CommandStatus::Accepted, result)] = replies.as_slice() else {
+                        return Err(debug(replies).into());
+                    };
+                    let observed: Vec<_> = result.items.iter().map(|row| row.item).collect();
+                    assert_eq!(
+                        observed,
+                        items
+                            .iter()
+                            .chain(nearby_items)
+                            .copied()
+                            .collect::<Vec<_>>()
+                    );
+                    assert!(result.items.iter().all(|row| row.accepted));
+                    assert!(corpse_items(&harness.pool, corpse_id).await?.is_empty());
+                    assert!(corpse_items(&harness.pool, *nearby).await?.is_empty());
+                    assert_eq!(
+                        corpse_items(&harness.pool, *actor_only).await?,
+                        *actor_only_items
+                    );
+                }
+                Case::Bulk | Case::GoldPouch | Case::PouchLogout => {
+                    return Err("unexpected dedicated case".into());
+                }
             }
             drop(owner);
             drop(authority);
@@ -903,6 +1002,23 @@ async fn selected_item_cases(
                 &encode_use_item_intent(corpse_handle),
             )
             .await?;
+            if case == Case::CorpseReadFailure {
+                let (status, payload) = command_reply(&mut client, command_id).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(
+                    decode_use_result(&payload).map_err(debug)?,
+                    UseDisposition::StaleState
+                );
+                assert_eq!(corpse_items(pool, corpse).await?, items);
+                command_id += 1;
+                send(
+                    &mut client,
+                    command_id,
+                    COMMAND_TYPE_USE_INTENT,
+                    &encode_use_item_intent(corpse_handle),
+                )
+                .await?;
+            }
             let (status, payload) = command_reply(&mut client, command_id).await?;
             assert_eq!(status, CommandStatus::Accepted);
             assert_eq!(
@@ -914,6 +1030,9 @@ async fn selected_item_cases(
             let [keep, take] = opened.entries.as_slice() else {
                 return Err("open corpse should show both entries".into());
             };
+            if case == Case::CorpseReadFailure {
+                return Ok(());
+            }
             if case == Case::StaleHandle {
                 for handle in [corpse_handle, ItemHandle::MAX] {
                     command_id += 1;
@@ -972,14 +1091,19 @@ async fn selected_item_cases(
         client.shutdown().await?;
         result
     };
-    let (end, result) = join_two(
-        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
-        drive,
-    )
-    .await;
+    let serving = async {
+        let serving = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS);
+        if case == Case::CorpseReadFailure {
+            crate::durability::item_transfer::with_refused_first_corpse_read(serving).await
+        } else {
+            serving.await
+        }
+    };
+    let (end, result) =
+        tokio::time::timeout(std::time::Duration::from_secs(30), join_two(serving, drive)).await?;
     result?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
-    if case == Case::StaleHandle {
+    if matches!(case, Case::StaleHandle | Case::CorpseReadFailure) {
         return Ok(());
     }
     assert_eq!(corpse_items(pool, corpse).await?, [*untouched]);
@@ -1149,6 +1273,7 @@ async fn pouch_fulfilment_cases(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     pool: &sqlx::PgPool,
+    action: QuickLootAction,
 ) -> TestResult {
     let uuid = |seed| sqlx::types::Uuid::from_bytes(id(seed));
     let pouch = uuid(71);
@@ -1175,9 +1300,10 @@ async fn pouch_fulfilment_cases(
     tx.commit().await?;
 
     let assign = |id| QuickLootRequest {
+        category: (action == QuickLootAction::AssignLoot).then_some(QuickLootCategory::Food),
         recipient: Some(QuickLootRecipient::GoldPouch),
         recipient_id: Some(id),
-        ..request(QuickLootAction::Assign)
+        ..request(action)
     };
     let command = admitted.continuity.next_command_id;
     assert_eq!(
@@ -1214,13 +1340,25 @@ async fn pouch_fulfilment_cases(
             .0,
         CommandStatus::Accepted
     );
-    let saved: (sqlx::types::Uuid, bool) = sqlx::query_as(
-        "SELECT unassigned_container_id, unassigned_gold_pouch
-         FROM game_character_quick_loot_settings WHERE character_id=$1",
-    )
-    .bind(uuid(41))
-    .fetch_one(pool)
-    .await?;
+    let saved: (sqlx::types::Uuid, bool) =
+        if let Some(category) = assign(*fulfilment.as_bytes()).category {
+            sqlx::query_as(
+                "SELECT container_id, gold_pouch FROM game_character_quick_loot_categories
+             WHERE character_id=$1 AND category=$2",
+            )
+            .bind(uuid(41))
+            .bind(category as i16 - 1)
+            .fetch_one(pool)
+            .await?
+        } else {
+            sqlx::query_as(
+                "SELECT unassigned_container_id, unassigned_gold_pouch
+             FROM game_character_quick_loot_settings WHERE character_id=$1",
+            )
+            .bind(uuid(41))
+            .fetch_one(pool)
+            .await?
+        };
     assert_eq!(saved, (pouch, true));
     let command = admitted.continuity.next_command_id;
     assert_eq!(
@@ -1304,7 +1442,11 @@ async fn quick_loot_destination_management(
         super::parameter_spell_fixtures::exchange(owner, admitted, &commands, false, false).await?;
     assert_eq!(replies.len(), commands.len());
     for ((kind, _), (status, _)) in commands.iter().zip(&replies) {
-        assert_eq!(*status, CommandStatus::Accepted, "quick-loot command {kind}");
+        assert_eq!(
+            *status,
+            CommandStatus::Accepted,
+            "quick-loot command {kind}"
+        );
     }
     let first = decode_quick_loot_destinations(&replies[1].1).map_err(debug)?;
     assert_eq!(first.loot.len(), QuickLootCategory::ALL.len() + 1);
@@ -1337,7 +1479,10 @@ async fn quick_loot_destination_management(
         distribution_id,
     )
     .await?;
-    assert_eq!(retry, [(CommandStatus::DuplicateReplay, replies[5].1.clone())]);
+    assert_eq!(
+        retry,
+        [(CommandStatus::DuplicateReplay, replies[5].1.clone())]
+    );
 
     // A cold ingress must recover the same durable result even if the new item view cannot
     // resolve the original handle. An unresolved handle on its own cannot authorize a move.
@@ -1371,7 +1516,7 @@ async fn wire_requests(
             1,
             &oteryn_protocol_oteryn::ClientCommandValue {
                 command_id,
-                command_type: COMMAND_TYPE_QUICK_LOOT,
+                command_type: req.action.command_type(),
                 payload: &payload,
             },
         )

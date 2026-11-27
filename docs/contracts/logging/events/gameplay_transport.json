@@ -218,6 +218,14 @@
       "note": "Corpse target observation refusal. Records the command actor scope generation, the current scope generation and the corpse projection revision when available. Correlate with item_use_view_stale using the connection trace."
     },
     {
+      "event": "corpse_use_read_refused",
+      "level": "warn",
+      "span": false,
+      "fields": ["reason"],
+      "codes": [],
+      "note": "Typed failure of the initial corpse USE contents read or its view projection."
+    },
+    {
       "event": "fresh_admission_pending",
       "level": "warn",
       "span": false,

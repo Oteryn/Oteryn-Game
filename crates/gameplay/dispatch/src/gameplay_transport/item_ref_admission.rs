@@ -7,6 +7,7 @@
 //! The index is read from the active generation rather than carried on `ChannelContentPin`:
 //! `foundation` is also compiled into the durability integration tests without `content`.
 
+use super::ComposedFreshAdmission;
 use super::capabilities::{
     ITEM_VIEW_OFFERED_CAPABILITIES, OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES,
 };
@@ -16,7 +17,6 @@ use super::item_view::{
     inventory_from_backpack,
 };
 use super::world_spatial::{ActorPosition, ChannelEntity, VisibleKind};
-use super::{AdmissionRetryBudget, ComposedFreshAdmission};
 use super::{FreshAdmissionStore, GameSessionId, GameSessionState};
 use crate::combat_pickup::GroundPickupError;
 use crate::content::ActiveGeneration;
@@ -232,32 +232,23 @@ pub(super) async fn observe_item_target(
         log("runtime_binding");
         return gone();
     };
-    // The source and corpse deadline workers share the durable holder with USE.
-    // Wait for a transient checkout failure under the existing in-session budget.
-    let entries = match AdmissionRetryBudget::for_command(admission.root)
-        .retry_command_guard(async || {
-            match admission
-                .root
-                .read_corpse_contents(admission.character, corpse.item.item_instance_id)
-                .await
-            {
-                Err(ItemTransferError::Unavailable(error)) => Err(error),
-                result => Ok(result),
-            }
-        })
+    let checkout_deadline = tokio::time::Instant::now() + super::COMMAND_HOLDER_WINDOW;
+    let entries = match admission
+        .root
+        .read_corpse_contents_for_use(
+            admission.character,
+            corpse.item.item_instance_id,
+            checkout_deadline,
+        )
         .await
     {
-        Ok(Ok(Some(entries))) => entries,
-        Ok(Ok(None)) => {
+        Ok(Some(entries)) => entries,
+        Ok(None) => {
             log("durable_corpse_gone");
             return gone();
         }
-        Ok(Err(_)) => {
-            log("durable_contents_refused");
-            return None;
-        }
-        Err(_) => {
-            log("durable_contents_unavailable");
+        Err(error) => {
+            super::operator_event(&format!("event=corpse_use_read_refused reason={error:?}"));
             return None;
         }
     };
