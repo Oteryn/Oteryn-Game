@@ -61,6 +61,6 @@ pub(super) async fn write_view<S: AsyncWrite + Unpin>(
     .map_err(|_| ServeEnd::Disconnected)?;
     write_frame(stream, &frame)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|error| ServeEnd::Transport(TransportEnd::Write(error.kind())))?;
     Ok((sequence, revision))
 }

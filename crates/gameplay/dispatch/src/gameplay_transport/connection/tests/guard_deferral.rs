@@ -2,9 +2,15 @@
 use super::*;
 use crate::durability::DurabilityError;
 use crate::gameplay_transport::world_spatial::decode_step_result;
+use oteryn_protocol_oteryn::actor_spell::{
+    COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, decode_spell_cast_result,
+};
 use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, ChatDisposition, ChatSpeechMode,
     decode_chat_intent_result, encode_chat_intent,
+};
+use oteryn_protocol_oteryn::cyclopedia_character::{
+    CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, CharacterTab,
 };
 
 struct GuardAuthority {
@@ -136,6 +142,15 @@ fn guard_case(
                             payload: &payload,
                         },
                     )?
+                } else if command_type == COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB {
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload: &[CharacterTab::Defence as u8, 0, 0, 20],
+                        },
+                    )?
                 } else if command_type == COMMAND_TYPE_USE_INTENT {
                     use_command(1, 1, u64::from(command_type), b"oteryn:cell/entry-door", 0)
                 } else {
@@ -239,11 +254,29 @@ fn guard_case(
                                 ),
                                 Ok(UseDisposition::Rejected)
                             ),
-                            _ => assert!(results[0].payload.is_empty()),
+                            COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
+                                assert_eq!(
+                                    decode_spell_cast_result(results[0].payload),
+                                    Ok(SpellCastDisposition::Rejected)
+                                );
+                            }
+                            COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB
+                                if capabilities.contains(&CAPABILITY_CYCLOPEDIA_CHARACTER_V1) =>
+                            {
+                                assert_eq!(
+                                    results[0].error_code,
+                                    FoundationProtocolError::CommandRefused.code(),
+                                );
+                            }
+                            _ => {
+                                assert!(results[0].payload.is_empty());
+                                assert_eq!(results[0].error_code, 0);
+                            }
                         }
                         assert_eq!(results[1].command_id, 1);
                         assert_eq!(results[1].status, CommandStatus::DuplicateReplay);
                         assert_eq!(results[1].payload, results[0].payload);
+                        assert_eq!(results[1].error_code, results[0].error_code);
                         assert_eq!(results[2].command_id, 2);
                         assert_eq!(results[2].status, CommandStatus::Accepted);
                         assert_eq!(
@@ -309,6 +342,31 @@ fn selected_chat_guard_deferral_returns_typed_rejection() -> Result<(), Box<dyn 
         true,
         COMMAND_TYPE_CHAT_INTENT,
         &[CAPABILITY_CHAT_V1],
+        false,
+    )
+}
+
+#[test]
+fn selected_defence_tab_guard_refusal_is_terminal_and_replayable() -> Result<(), Box<dyn Error>> {
+    for capabilities in [&[CAPABILITY_CYCLOPEDIA_CHARACTER_V1][..], &[]] {
+        guard_case(
+            || DurabilityError::RootUnavailable,
+            true,
+            COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            capabilities,
+            false,
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn deferred_native_cast_keeps_its_typed_disposition() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+        &[],
         false,
     )
 }

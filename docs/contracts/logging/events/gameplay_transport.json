@@ -205,6 +205,14 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "cyclopedia_read_attempt",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "stage", "attempt", "holder"],
+      "codes": [],
+      "note": "A Cyclopedia read or combat snapshot pass attempts the shared foreground holder before its session deadline. The holder field is the readiness observed before the attempt."
+    },
+    {
       "event": "fresh_admission_pending",
       "level": "warn",
       "span": false,
@@ -391,9 +399,9 @@
       "event": "serve_end",
       "level": "info",
       "span": false,
-      "fields": [],
+      "fields": ["reason", "path", "phase", "reason_code", "source", "next_command_id", "server_sequence"],
       "codes": [],
-      "note": "Seeded from current server code."
+      "note": "Actor, transport I/O, entry or listener interruption ending a physical gameplay serve. Path and actor sequence fields are included when available."
     },
     {
       "event": "session_durability_failed",

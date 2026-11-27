@@ -209,9 +209,17 @@ pub(super) async fn read_current_equipment(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
 ) -> Option<character_equipment::EquipmentSnapshot> {
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    read_current_equipment_within(admission, game_session_id, &retry).await
+}
+
+async fn read_current_equipment_within(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    game_session_id: GameSessionId,
+    retry: &super::AdmissionRetryBudget<'_>,
+) -> Option<character_equipment::EquipmentSnapshot> {
     use super::connection::AdmissionRefusal::{Rejected, Unavailable};
     use crate::durability::DurabilityError;
-    let retry = super::AdmissionRetryBudget::for_command(admission.root);
     let store = FreshAdmissionStore::from_root(admission.root.clone());
     // Join snapshots interleave these reads for multiple admitted players.
     // A busy holder proves neither an absent equipment view nor stale control.
@@ -221,7 +229,8 @@ pub(super) async fn read_current_equipment(
                 .current_session_at(game_session_id)
                 .await
                 .map_err(|error| match error {
-                    DurabilityError::RootUnavailable => Unavailable,
+                    DurabilityError::RootUnavailable
+                    | DurabilityError::RootPassDeadlineExceeded => Unavailable,
                     _ => Rejected,
                 })
         })
@@ -251,7 +260,7 @@ pub(super) async fn read_current_equipment(
         }
         digest
     };
-    read_equipment_within(admission, &retry, &fence, digest).await
+    read_equipment_within(admission, retry, &fence, digest).await
 }
 
 /// Read equipment under an already resolved active or reconnectable fence.
@@ -271,7 +280,8 @@ pub(super) async fn read_equipment_within(
                 .await
                 .map_err(|error| match error {
                     character_equipment::EquipmentError::Durability(
-                        DurabilityError::RootUnavailable,
+                        DurabilityError::RootUnavailable
+                        | DurabilityError::RootPassDeadlineExceeded,
                     ) => Unavailable,
                     _ => Rejected,
                 })

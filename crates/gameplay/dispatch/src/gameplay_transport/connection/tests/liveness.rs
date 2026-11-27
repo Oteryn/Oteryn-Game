@@ -32,46 +32,55 @@ fn command_result_backpressure_does_not_hold_the_connection_forever() -> Result<
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| {
-            run(async {
-                tokio::time::pause();
-                let authority = StepAuthority {
-                    steps: RefCell::new(Vec::new()),
-                    tutorial_notices: Default::default(),
-                };
-                let (mut server, mut client) = tokio::io::duplex(1);
-                let serving = serve_admitted(&mut server, positioned()?, &authority, IDLE_LIVENESS);
-                let reading = async {
-                    loop {
-                        let frame =
-                            crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
-                        if decode_wire_envelope(&frame)?.message_type()
-                            == MessageType::SnapshotCommit
-                        {
-                            break;
+            let mut checked = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                checked = run(async {
+                    tokio::time::pause();
+                    let authority = StepAuthority {
+                        steps: RefCell::new(Vec::new()),
+                        tutorial_notices: Default::default(),
+                    };
+                    let (mut server, mut client) = tokio::io::duplex(1);
+                    let serving = serve_admitted(&mut server, positioned()?, &authority, IDLE_LIVENESS);
+                    let reading = async {
+                        loop {
+                            let frame =
+                                crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+                            if decode_wire_envelope(&frame)?.message_type()
+                                == MessageType::SnapshotCommit
+                            {
+                                break;
+                            }
                         }
-                    }
-                    client
-                        .write_all(&framed(&command(1, 1, 0x7fff, StepDirection::North)))
-                        .await?;
-                    Ok::<_, Box<dyn Error>>(())
-                };
-                let result = tokio::time::timeout(IDLE_LIVENESS.interval * 2, async {
-                    tokio::join!(serving, reading)
+                        client
+                            .write_all(&framed(&command(1, 1, 0x7fff, StepDirection::North)))
+                            .await?;
+                        Ok::<_, Box<dyn Error>>(())
+                    };
+                    let result = tokio::time::timeout(IDLE_LIVENESS.interval * 2, async {
+                        tokio::join!(serving, reading)
+                    })
+                    .await;
+                    assert!(
+                        result.is_ok(),
+                        "command result write exceeded the liveness deadline"
+                    );
+                    let (end, read) = result?;
+                    read?;
+                    assert!(
+                        matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                        "{end:?}"
+                    );
+                    Ok(())
                 })
-                .await;
-                assert!(
-                    result.is_ok(),
-                    "command result write exceeded the liveness deadline"
-                );
-                let (end, read) = result?;
-                read?;
-                assert!(
-                    matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
-                    "{end:?}"
-                );
-                Ok(())
-            })
-            .map_err(|e| e.to_string())
+                    .map_err(|e| e.to_string());
+            });
+            checked?;
+            assert!(
+                lines.iter().any(|line| line.contains("event=serve_end reason=io_deadline path=write")),
+                "{lines:?}"
+            );
+            Ok::<_, String>(())
         })?
         .join()
         .map_err(|_| "backpressure test thread panicked")?

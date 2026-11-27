@@ -1271,6 +1271,30 @@ impl ChannelActorCarrier {
             }
         }
         self.native_move_events.extend(translation_events);
+        if current.position != next_position
+            && matches!(
+                &self.slots[index],
+                Slot::CreatureOccupied { generation, .. }
+                    if *generation == expected.actor_ref.actor_local_generation.0
+            )
+        {
+            let reason = if registered_source {
+                "source_relocation"
+            } else if current.position.floor == next_position.floor
+                && current.position.x.abs_diff(next_position.x) <= 1
+                && current.position.y.abs_diff(next_position.y) <= 1
+            {
+                "adjacent_move"
+            } else {
+                "relocation"
+            };
+            creature_lifecycle::record(
+                ExactActorRef(expected.actor_ref),
+                "moved",
+                reason,
+                Some((current.position, next_position)),
+            );
+        }
         Ok(PositionSnapshot {
             actor_ref: expected.actor_ref,
             version,

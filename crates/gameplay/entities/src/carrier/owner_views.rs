@@ -204,6 +204,9 @@ impl CurrentOwnerExactActorCommit<'_> {
         )?;
         if result.applied {
             self.carrier.install_cloak_blood_events(blood);
+            if result.health_before > 0 && result.health_after == 0 {
+                creature_lifecycle::record(actor, "died", "player_swing", None);
+            }
         }
         if result.applied && result.health_after < result.health_before {
             self.carrier

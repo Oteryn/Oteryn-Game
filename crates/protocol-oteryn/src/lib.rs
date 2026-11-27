@@ -214,6 +214,8 @@ pub enum FoundationProtocolError {
     /// HIGHSCORES0 §6 (HS-WIRE-1): the echoed snapshot token is no longer retained; the client
     /// starts the list again at page 1 with token 0.
     SnapshotExpired = 1201,
+    /// The selected command could not be completed and has no mechanic-specific refusal.
+    CommandRefused = 1202,
     // FND-04A §11 fresh-admission refusal rows (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2, N8): written
     // once before admission with generation 0, then the server closes. `admission_refusal_class`
     // gives each its progression and public class.
@@ -295,6 +297,7 @@ impl FoundationProtocolError {
             | Self::AccountDataIntegrity
             | Self::NotSupported
             | Self::SnapshotExpired
+            | Self::CommandRefused
             | Self::ReconnectCapabilityRequired
             | Self::RecoveryCapabilityRequired => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
@@ -332,6 +335,7 @@ impl Display for FoundationProtocolError {
             Self::SessionJoinUnavailable => "session join is temporarily unavailable",
             Self::NotSupported => "query is not supported",
             Self::SnapshotExpired => "snapshot is no longer retained",
+            Self::CommandRefused => "command was refused",
             Self::AdmissionGrantMalformed => "admission grant is malformed",
             Self::AdmissionGrantAuthenticationFailed => "admission grant authentication failed",
             Self::AdmissionGrantBindingMismatch => "admission grant binding mismatch",
@@ -557,7 +561,16 @@ pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
-use registered_capabilities::{CAPABILITY_REQUIREMENTS_V1, REGISTERED_CAPABILITY_IDS_V1};
+use registered_capabilities::{
+    CAPABILITY_REQUIREMENTS_V1, REGISTERED_CAPABILITY_IDS_V1, REGISTERED_COMMAND_IDS_V1,
+};
+
+/// Whether the v1 registry assigns this command type.
+pub fn is_registered_command(command_type: u32) -> bool {
+    REGISTERED_COMMAND_IDS_V1
+        .binary_search(&command_type)
+        .is_ok()
+}
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input

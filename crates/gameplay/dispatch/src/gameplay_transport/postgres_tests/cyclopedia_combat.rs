@@ -22,7 +22,7 @@ fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> Test
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "P12c combat scenario panicked")??;
     Ok(())
@@ -35,13 +35,26 @@ fn self_defence_tab_reports_weapon_base_when_extra_defence_is_unauthored() -> Te
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Hand defence scenario panicked")??;
     Ok(())
 }
 
-fn scenario(hand_defence_only: bool) -> TestResult {
+#[test]
+fn self_defence_tab_retries_busy_combat_snapshot_holder() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario(true, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Busy Defence scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(hand_defence_only: bool, busy_holder: bool) -> TestResult {
     use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
@@ -201,6 +214,24 @@ fn scenario(hand_defence_only: bool) -> TestResult {
             SelectedCapabilities::select(&offers, &[6, 17, CAPABILITY_CYCLOPEDIA_CHARACTER_V1])
                 .ok_or("capabilities")?;
         if hand_defence_only {
+            if busy_holder {
+                // Hold only the durability pass. Drive the named tab owner to its
+                // first refusal before freeing it, with no wall-clock sleeps.
+                use std::future::{Future, poll_fn};
+                use std::task::Poll;
+                let held = h.root.try_issue_semantic_pass()?;
+                let mut request = std::pin::pin!(
+                    owner.cyclopedia_character_wire(admitted, 2, tab, &[9, 0, 0, 20])
+                );
+                assert!(
+                    poll_fn(|cx| Poll::Ready(request.as_mut().poll(cx))).await.is_pending(),
+                    "the tab must wait for the occupied holder during combat refresh"
+                );
+                drop(held);
+                let response = request.await.map_err(|()| "Defence read after holder returned")?;
+                let view = CombatStats::decode(&response).map_err(debug)?;
+                assert_eq!(view.get(Stat::DefenceEquipment), Some(22));
+            }
             let (status, bytes) = exchange(&owner, &mut admitted, 2, tab, &[9, 0, 0, 20]).await?;
             assert_eq!(status, CommandStatus::Accepted);
             let defence = CombatStats::decode(&bytes).map_err(debug)?;
