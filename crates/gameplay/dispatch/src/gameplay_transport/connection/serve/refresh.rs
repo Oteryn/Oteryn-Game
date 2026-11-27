@@ -731,15 +731,16 @@ where
             if let (Some(view), Some(items)) =
                 (session.world_map.as_mut(), session.item_view.as_mut())
             {
-                let update = world_map_frames(
-                    authority,
-                    session.actor,
-                    session.generation,
-                    session.sequence,
-                    view,
-                    items,
-                )
-                .await;
+                let update = match authority
+                    .refresh_world_map(session.actor, view, items)
+                    .await
+                {
+                    Some(Ok(update)) => {
+                        encode_world_map_update(session.generation, session.sequence, update)
+                    }
+                    Some(Err(MapViewError::HolderBusy)) => Some(None),
+                    _ => None,
+                };
                 session.admitted.continuity.item_view = items.continuity();
                 let Some(update) = update else {
                     return Err(ServeEnd::Disconnected);

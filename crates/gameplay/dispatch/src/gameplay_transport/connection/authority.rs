@@ -1856,6 +1856,16 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Periodic map observation can defer on resource contention.
+    fn refresh_world_map(
+        &self,
+        actor: ExactActorRef,
+        view: &mut SessionMapView,
+        items: &mut SessionItemView,
+    ) -> impl Future<Output = Option<Result<Option<MapUpdate>, MapViewError>>> {
+        self.observe_world_map(actor, view, items)
+    }
+
     /// ATTACK-1b: run the Channel's due auto-attack swings, every [`COMBAT_REFRESH`] while the
     /// session has domain 10, and return the actor's current combat state.
     fn tick_combat(

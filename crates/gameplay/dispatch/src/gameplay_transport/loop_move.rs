@@ -735,6 +735,32 @@ async fn projection_read_with_budget<T, E>(
         .ok()
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum GroundProjectionError {
+    HolderBusy,
+    Unavailable,
+}
+
+async fn ground_projection_read<T, E>(
+    root: &super::DurabilityRoot,
+    mut read: impl AsyncFnMut() -> Result<T, E>,
+    busy: impl Fn(&E) -> bool,
+    retry_busy: bool,
+) -> Result<T, GroundProjectionError> {
+    if retry_busy {
+        return projection_read(root, read, busy)
+            .await
+            .ok_or(GroundProjectionError::Unavailable);
+    }
+    read().await.map_err(|error| {
+        if busy(&error) {
+            GroundProjectionError::HolderBusy
+        } else {
+            GroundProjectionError::Unavailable
+        }
+    })
+}
+
 /// Movement shares the runtime's static collision index with Ground USE-WITH.
 pub(super) async fn reconcile_cask_collision(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -794,8 +820,10 @@ pub(super) async fn reconcile_cask_collision(
                 )
             )
         },
+        true,
     )
-    .await?;
+    .await
+    .ok()?;
     let runtime = admission.runtime.lock().await;
     if runtime.owner_fence().is_err()
         || runtime.binding().runtime_scope() != scope
@@ -820,6 +848,17 @@ pub async fn loop_ground(
     base: &Arc<WorldBase>,
     index: Option<&ItemDefinitionIndex>,
 ) -> Option<Arc<LoopGroundOverlay>> {
+    loop_ground_projection(admission, base, index, true)
+        .await
+        .ok()
+}
+
+pub(super) async fn loop_ground_projection(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    base: &Arc<WorldBase>,
+    index: Option<&ItemDefinitionIndex>,
+    retry_busy: bool,
+) -> Result<Arc<LoopGroundOverlay>, GroundProjectionError> {
     let (scope, field_pin) = {
         let runtime = admission.runtime.lock().await;
         (
@@ -837,13 +876,14 @@ pub async fn loop_ground(
             && cached.overlay.runtime_scope() == scope
             && cached.overlay.base().digest() == base.digest()
     }) {
-        return Some(cached);
+        return Ok(cached);
     }
-    let index = index?;
-    let items = projection_read(
+    let index = index.ok_or(GroundProjectionError::Unavailable)?;
+    let items = ground_projection_read(
         admission.root,
         async || admission.root.read_item_loop_ground_for_scope(scope).await,
         super::root_holder_busy,
+        retry_busy,
     )
     .await?;
     let taken = if let crate::foundation::RuntimeScopeRefV1::Channel {
@@ -851,7 +891,7 @@ pub async fn loop_ground(
         channel_id,
     } = scope
     {
-        projection_read(
+        ground_projection_read(
             admission.root,
             async || {
                 admission
@@ -873,6 +913,7 @@ pub async fn loop_ground(
                     )
                 )
             },
+            retry_busy,
         )
         .await?
     } else {
@@ -895,7 +936,7 @@ pub async fn loop_ground(
                 .is_some_and(|map| map.facts.captured_map_item(key).is_some())
     };
     if taken.iter().any(|(key, _)| !valid_source(*key)) {
-        return None;
+        return Err(GroundProjectionError::Unavailable);
     }
     if taken.iter().any(|(_, retired_cask)| *retired_cask) {
         let runtime = admission.runtime.lock().await;
@@ -903,15 +944,18 @@ pub async fn loop_ground(
             || runtime.binding().runtime_scope() != scope
             || runtime.binding().scope_generation().get() != field_pin.2
         {
-            return None;
+            return Err(GroundProjectionError::Unavailable);
         }
-        let map = admission.bundle_map()?;
+        let map = admission
+            .bundle_map()
+            .ok_or(GroundProjectionError::Unavailable)?;
         if map.overlay.base().digest() != base.digest() {
-            return None;
+            return Err(GroundProjectionError::Unavailable);
         }
         for &(key, retired_cask) in &taken {
             if retired_cask {
-                map_sources::hide_retired_cask(map, key)?;
+                map_sources::hide_retired_cask(map, key)
+                    .ok_or(GroundProjectionError::Unavailable)?;
             }
         }
     }
@@ -923,26 +967,28 @@ pub async fn loop_ground(
         .map(|(key, _)| key)
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots)
+        .map_err(|_| GroundProjectionError::Unavailable)?;
     let pending: Vec<_> = admission
         .states
         .loop_ground
         .state
         .lock()
-        .ok()?
+        .map_err(|_| GroundProjectionError::Unavailable)?
         .pending_origins
         .keys()
         .copied()
         .collect();
     if pending.iter().any(|key| !valid_source(*key)) {
-        return None;
+        return Err(GroundProjectionError::Unavailable);
     }
     built.taken_sources.extend(pending.iter().copied());
     let roots: Vec<_> = pending
         .into_iter()
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots)
+        .map_err(|_| GroundProjectionError::Unavailable)?;
     {
         let runtime = admission.runtime.lock().await;
         super::echo_warden::append_portals(
@@ -954,7 +1000,7 @@ pub async fn loop_ground(
     }
     let built = Arc::new(built);
     admission.states.loop_ground.store(epoch, &built);
-    Some(built)
+    Ok(built)
 }
 /// The loop item receipt of command 9's CommandRef. A session without an item fence has none.
 pub(super) async fn committed_loop_move(

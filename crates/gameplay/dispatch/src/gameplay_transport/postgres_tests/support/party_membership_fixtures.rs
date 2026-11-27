@@ -487,13 +487,14 @@ async fn scenario(
             .bind_attacker_lease(actor, session, current.current_character_lease())
             .map_err(debug)?;
         if eligibility_fixture {
-            let x = entry.x + i32::try_from(admitted.len())?;
-            runtime
-                .initialize_pinned_test_position(
-                    actor,
-                    crate::foundation::MovementLocalPosition { x, y: entry.y, floor: entry.floor },
-                )
-                .map_err(debug)?;
+            runtime.initialize_pinned_test_position(
+                actor,
+                crate::foundation::MovementLocalPosition {
+                    x: entry.x + i32::try_from(admitted.len())?,
+                    y: entry.y,
+                    floor: entry.floor,
+                },
+            ).map_err(debug)?;
         } else {
             runtime.initialize_first_entry_position(actor).map_err(debug)?;
         }
@@ -550,7 +551,7 @@ async fn scenario(
         runtime: &runtime, door: &door, spells: &spells, achievements: &achievements, imported_charms: &charms, room: &room,
     }.build()
     };
-    if partyskull || matches!(notices, Some(NoticeCase::JoinedEligibility)) {
+    if partyskull || eligibility_fixture {
         sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'world-policy-1')").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'world-policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'party-skull-fixture')").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
     }
@@ -561,19 +562,21 @@ async fn scenario(
                 .ok_or("party offer")?;
     }
     if eligibility_fixture {
-        let leader = admitted[0].runtime_actor.ok_or("fixture leader actor")?;
-        let peer = admitted[1].runtime_actor.ok_or("fixture peer actor")?;
-        let leader = entities.iter().find(|entry| entry.actor == leader).ok_or("fixture leader placement")?;
-        let peer = entities.iter().find(|entry| entry.actor == peer).ok_or("fixture peer placement")?;
+        let [leader, peer] = [&admitted[0], &admitted[1]].map(|player| {
+            entities.iter().find(|entry| Some(entry.actor) == player.runtime_actor)
+        });
+        let (Some(leader), Some(peer)) = (leader, peer) else {
+            return Err("both admitted actors must be in the visibility census".into());
+        };
         assert_eq!(peer.position.x, leader.position.x + 1);
         assert_eq!(peer.position.y, leader.position.y);
         assert_eq!(peer.position.floor, leader.position.floor);
-        let target = EntityRef {
-            identity: peer.actor.placement_identity(),
-            generation: peer.generation,
-        };
+        let peers = [leader, peer].map(|entry| EntityRef {
+            identity: entry.actor.placement_identity(),
+            generation: entry.generation,
+        });
         return invite_disband::check_joined_eligibility(
-            &owner, &mut admitted, target, characters, h,
+            &owner, &mut admitted, peers, characters, h,
         ).await;
     }
     if matches!(notices, Some(NoticeCase::Fanout | NoticeCase::LeaderJoined)) {
