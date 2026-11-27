@@ -27,13 +27,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain_update(id)
             .finalize()
             .into();
-        let replay = self
-            .root
-            .read_timed_command(
-                self.character,
-                command.game_session_id,
-                transaction,
-                binding,
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let replay = budget
+            .retry_use_holder(
+                "timed_item_receipt",
+                async || {
+                    self.root
+                        .read_timed_command(
+                            self.character,
+                            command.game_session_id,
+                            transaction,
+                            binding,
+                        )
+                        .await
+                },
+                |error| {
+                    matches!(
+                        error,
+                        crate::durability::item_timed_state::TimedWriteError::Unavailable(error)
+                            if super::root_holder_busy(error)
+                    )
+                },
             )
             .await;
         if matches!(

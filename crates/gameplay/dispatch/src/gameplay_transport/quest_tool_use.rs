@@ -58,13 +58,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         };
-        if let Some(matches) = self
-            .root
-            .reconcile_quest_carried_use(
-                self.character,
-                item_fence.character_id,
-                command_ref,
-                encoded.clone(),
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        if let Some(matches) = budget
+            .retry_use_holder(
+                "quest_tool_receipt",
+                async || {
+                    self.root
+                        .reconcile_quest_carried_use(
+                            self.character,
+                            item_fence.character_id,
+                            command_ref,
+                            encoded.clone(),
+                        )
+                        .await
+                },
+                super::progression_holder_busy,
             )
             .await
             .map_err(|_| ())?
@@ -78,9 +86,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(ItemKey::Instance(source)) = source else {
             return Ok(None);
         };
-        let Ok(inventory) = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, item_fence)
+        let Ok(inventory) = budget
+            .retry_use_holder(
+                "quest_tool_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, item_fence)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
         else {
             return Ok(None);

@@ -500,19 +500,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map(|(gold, platinum, crystal)| [gold, platinum, crystal])
         };
         // Read the retained command before inspecting the possibly retired input stack.
-        match self
-            .root
-            .exchange_carried_coins(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                reference,
-                None,
-                Some(id),
-                Some(&content),
-                coins,
-                None,
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_use_holder(
+                "coin_receipt",
+                async || {
+                    self.root
+                        .exchange_carried_coins(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            reference,
+                            None,
+                            Some(id),
+                            Some(&content),
+                            coins.clone(),
+                            None,
+                        )
+                        .await
+                },
+                super::root_holder_busy,
             )
             .await
         {
@@ -532,9 +540,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = match budget
+            .retry_use_holder(
+                "coin_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
         {
             Ok(inventory) => inventory,

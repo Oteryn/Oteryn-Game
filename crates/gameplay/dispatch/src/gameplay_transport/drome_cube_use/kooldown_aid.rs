@@ -51,10 +51,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .gate(&runtime, actor, command.game_session_id)
                 .and_then(|gate| gate.cube_pending.clone())
         };
-        match self
-            .root
-            .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
-            .await
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        match retry_read(&budget, "kooldown_aid_receipt", async || {
+            self.root
+                .read_kooldown_aid_receipt(self.character, fence, command_ref, binding)
+                .await
+        })
+        .await
         {
             Ok(true) => {
                 self.finish_kooldown_aid(actor, command, binding, UseDisposition::Committed)
@@ -110,12 +113,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
+        let inventory = match retry_read(&budget, "kooldown_aid_inventory", async || {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await
         {
             Ok(inventory) => inventory,
+            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable)) => {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
             Err(ItemUseError::Unavailable(_)) => return Err(()),
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         };

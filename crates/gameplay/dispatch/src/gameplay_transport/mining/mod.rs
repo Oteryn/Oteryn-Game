@@ -131,9 +131,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(UseDisposition::Rejected);
             }
         }
-        match self
-            .root
-            .read_pick_refining_receipt(self.character, fence, command_ref, binding)
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_use_holder(
+                "pick_receipt",
+                async || {
+                    self.root
+                        .read_pick_refining_receipt(self.character, fence, command_ref, binding)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
         {
             Ok(Some(_)) => return Ok(Some(UseDisposition::Committed)),
@@ -149,9 +157,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             pinned_index(&runtime, self.active_generation).ok_or(UseDisposition::Rejected)?
         };
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = budget
+            .retry_use_holder(
+                "pick_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
             .map_err(|_| UseDisposition::Rejected)?;
         let bag = inventory

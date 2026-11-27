@@ -140,17 +140,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(outcome(receipt.disposition));
         }
-        if let Some(receipt) = self
-            .root
-            .consume_transform_detailed(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &weights,
-                true,
+        let budget = super::super::AdmissionRetryBudget::for_command(self.root);
+        if let Some(receipt) = budget
+            .retry_use_holder(
+                "dispenser_receipt",
+                async || {
+                    self.root
+                        .consume_transform_detailed(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &weights,
+                            true,
+                        )
+                        .await
+                },
+                super::super::root_holder_busy,
             )
             .await
             .map_err(|_| ())?
@@ -177,9 +185,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (None, Some(mint))
             }
         };
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = budget
+            .retry_use_holder(
+                "dispenser_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::super::item_use_holder_busy,
+            )
             .await
             .map_err(|_| ())?;
         let mut entries = inventory

@@ -146,17 +146,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
         };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
-        match self
-            .root
-            .craft_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_use_holder(
+                "reward_bag_receipt",
+                async || {
+                    self.root
+                        .craft_item(
+                            &permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            native,
+                            &content,
+                            true,
+                        )
+                        .await
+                },
+                super::root_holder_busy,
             )
             .await
         {
@@ -164,9 +172,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(_) => return Some(None),
         }
-        let inventory = match self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = match budget
+            .retry_use_holder(
+                "reward_bag_inventory",
+                async || {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                },
+                super::item_use_holder_busy,
+            )
             .await
         {
             Ok(inventory) => inventory,

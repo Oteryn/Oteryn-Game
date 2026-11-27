@@ -408,6 +408,9 @@ where
     if guard_deferred
         && matches!(dispatch, Dispatch::Unregistered)
         && command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
     {
         dispatch = Dispatch::UseUnavailable;
     }

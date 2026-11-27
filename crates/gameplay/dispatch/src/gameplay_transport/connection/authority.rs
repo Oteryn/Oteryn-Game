@@ -30,6 +30,7 @@ pub enum ItemUseKind {
     Food,
     Container,
     Cube,
+    KooldownAid,
     Catalyst,
     Rune,
     SoulWar,
