@@ -637,7 +637,6 @@ impl RenderModel {
                     }
                     next.overlay_revision = delta.new_revision;
                 }
-                SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
                 SessionEvent::ChatLine(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.push(delta.value.clone());
@@ -658,7 +657,11 @@ impl RenderModel {
                         items.corpse = delta.value.clone();
                     }
                 }
-                _ => {}
+                _ => {
+                    if let Some(delta) = event.actor_vitals() {
+                        next.vitals = Some(delta.value);
+                    }
+                }
             }
         }
         next

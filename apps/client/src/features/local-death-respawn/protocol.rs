@@ -5,8 +5,17 @@ use crate::play::{
     mailbox::{Mailbox, lock},
 };
 use oteryn_renderer::BatchError;
-use oteryn_session::ActorVitals;
+use oteryn_session::{ActorVitals, SessionEvent};
 use tokio::sync::mpsc::{UnboundedReceiver, error::TryRecvError};
+
+pub(in crate::play) fn event_actor_vitals(event: &SessionEvent) -> Option<&ActorVitals> {
+    match event {
+        SessionEvent::ActorVitals(delta) | SessionEvent::GiftOfLife { vitals: delta, .. } => {
+            Some(&delta.value)
+        }
+        _ => None,
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct DeathState {
@@ -46,9 +55,14 @@ impl Mailbox {
     /// not schedule another query, otherwise query responses would feed themselves.
     pub(in crate::play) fn death_protection_events(
         &mut self,
-        events: &[oteryn_session::SessionEvent],
+        events: &[SessionEvent],
     ) {
-        if self.death.selected && events.iter().any(|event| matches!(event, oteryn_session::SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 && delta.value.health > 0)) {
+        if self.death.selected
+            && events
+                .iter()
+                .filter_map(event_actor_vitals)
+                .any(|vitals| vitals.max_health > 0 && vitals.health > 0)
+        {
             self.death.refresh = true;
         }
     }
@@ -225,6 +239,7 @@ pub(in crate::play) fn receive_command(
             PlayCommand::Step(_)
                 | PlayCommand::TargetWalk(_)
                 | PlayCommand::Combat(_)
+                | PlayCommand::BarCast(..)
                 | PlayCommand::StopAttacking(_)
                 | PlayCommand::DailyReward(_)
                 | PlayCommand::Battle(_)

@@ -6,6 +6,7 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Destination {
     scope: ActivityScopeSnapshot,
     events: Vec<SessionEvent>,
+    cooldown_snapshot: oteryn_session::ActorCooldownUpdate,
     queries: Arc<Mutex<Vec<u32>>>,
     served: Arc<tokio::sync::Notify>,
 }
@@ -17,6 +18,9 @@ impl Stepper for Destination {
         (domain == 99)
             .then(|| encode_activity_scope(&self.scope).ok())
             .flatten()
+    }
+    fn actor_cooldown_snapshot(&self) -> Option<oteryn_session::ActorCooldownUpdate> {
+        Some(self.cooldown_snapshot.clone())
     }
     async fn feature(
         &mut self,
@@ -95,14 +99,51 @@ async fn modal_and_marks_wait_for_presentation_then_keep_fetched_marks() -> Resu
     let (link, commands, outbox) = play_channel();
     let queries = Arc::<Mutex<Vec<u32>>>::default();
     let served = Arc::new(tokio::sync::Notify::new());
+    use oteryn_session::{ActorCooldown, ActorCooldownKind, ActorCooldownUpdate, ActorCooldowns};
+    let decoded_at = std::time::Instant::now();
+    let spell = std::num::NonZeroU32::MIN;
+    let cooldown_snapshot = ActorCooldownUpdate {
+        value: ActorCooldowns {
+            server_now_ms: 1000,
+            rtt_ms: None,
+            entries: vec![ActorCooldown {
+                kind: ActorCooldownKind::Spell,
+                id: spell.get(),
+                expires_at_ms: 91_000,
+            }],
+        },
+        received_at: decoded_at,
+        snapshot: true,
+    };
+    let unaffected = std::num::NonZeroU32::new(2).ok_or("unaffected spell")?;
+    let mut cooldown_snapshot = cooldown_snapshot;
+    cooldown_snapshot.value.entries.push(ActorCooldown {
+        kind: ActorCooldownKind::Spell,
+        id: unaffected.get(),
+        expires_at_ms: 11_000,
+    });
+    let mut shortened = cooldown_snapshot.clone();
+    shortened.value.entries.truncate(1);
+    shortened.snapshot = false;
+    shortened.value.server_now_ms = 0;
+    shortened.value.entries[0].expires_at_ms = 30_000;
     let task = tokio::spawn(run_session(
         Destination {
-            events: vec![SessionEvent::ActivityScope(AppliedDelta {
-                server_sequence: 1,
-                base_revision: 0,
-                new_revision: 1,
-                value: scope.clone(),
-            })],
+            events: vec![
+                SessionEvent::ActivityScope(AppliedDelta {
+                    server_sequence: 1,
+                    base_revision: 0,
+                    new_revision: 1,
+                    value: scope.clone(),
+                }),
+                SessionEvent::ActorCooldowns(AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 0,
+                    new_revision: 1,
+                    value: shortened,
+                }),
+            ],
+            cooldown_snapshot,
             scope,
             queries: queries.clone(),
             served: served.clone(),
@@ -117,6 +158,20 @@ async fn modal_and_marks_wait_for_presentation_then_keep_fetched_marks() -> Resu
             .unwrap_or_else(PoisonError::into_inner)
             .is_empty(),
         "destination modal or mark query ran before presentation"
+    );
+    assert_eq!(
+        lock(&link.mailbox)
+            .spell_bar
+            .remaining_ms_at(spell, &[], decoded_at),
+        30_000,
+        "destination delta must apply while the scope waits for presentation"
+    );
+    assert_eq!(
+        lock(&link.mailbox)
+            .spell_bar
+            .remaining_ms_at(unaffected, &[], decoded_at),
+        10_000,
+        "destination snapshot must be installed before presentation"
     );
     let mut view = view()?;
     view.tick(&link).map_err(|error| format!("{error:?}"))?;
@@ -137,6 +192,13 @@ async fn modal_and_marks_wait_for_presentation_then_keep_fetched_marks() -> Resu
     assert_eq!(
         *queries.lock().unwrap_or_else(PoisonError::into_inner),
         vec![450, 451]
+    );
+    assert_eq!(
+        lock(&link.mailbox)
+            .spell_bar
+            .remaining_ms_at(spell, &[], decoded_at),
+        30_000,
+        "destination initialization must preserve the shortened cooldown"
     );
     drop(link);
     task.await?;

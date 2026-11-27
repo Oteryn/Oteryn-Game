@@ -1,7 +1,7 @@
 //! Production delegation to the existing mechanic owners.
 
 use crate::gameplay_transport::connection::{
-    AchievementNoticeObservation, SelectedCapabilities, SpellCooldownPublisher, UseCommand,
+    AchievementNoticeObservation, SelectedCapabilities, UseCommand,
 };
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
@@ -1674,49 +1674,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
-    async fn spell_cooldown_delta(
+    async fn observe_join_vitals(
         &self,
+        actor: ExactActorRef,
         admitted: AdmittedSession,
-        publisher: &mut SpellCooldownPublisher,
-    ) -> Option<Vec<u8>> {
-        let actor = admitted.runtime_actor?;
-        let fence = admitted.item_fence?;
-        let controller = admitted.controller?;
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let budget = AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
-        let (current, _) = budget
-            .retry_command_guard(async || store.current_session_at(admitted.game_session_id).await)
-            .await
-            .ok()?;
-        if current.session_state() != GameSessionState::Active
-            || current.current_transport() != Some(controller.transport)
-            || item_fence_of(current) != Some(fence)
-            || fence.connection_generation.get() != admitted.continuity.connection_generation
-        {
-            return None;
-        }
-        let runtime = self.runtime.lock().await;
-        runtime.owner_fence().ok()?;
-        let binding = runtime.binding();
-        if binding.runtime_scope() != fence.runtime_scope
-            || binding.scope_generation() != fence.scope_ownership_generation
-            || self.active_generation.is_some_and(|active| {
-                active.identity().server_artifact_digest()
-                    != runtime.content_pin().server_artifact_digest()
-            })
-            || runtime
-                .player_control_facts(actor, admitted.game_session_id)
-                .ok()?
-                .control_loss
-                .is_some()
-        {
-            return None;
-        }
-        let states = self.states.spell_states.lock().await;
-        let state = states.get(&runtime, actor, admitted.game_session_id)?;
-        publisher
-            .live_delta(state, self.spells, self.owner_now())
-            .ok()?
+        house: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        self.observe_actor_join(actor, admitted, house).await
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        self.owner_now().get()
     }
 
     async fn observe_house_vitals(
@@ -1729,12 +1697,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let runtime = self.runtime.lock().await;
-        self.states.spell_states.lock().await.house_vitals(
-            &runtime,
-            actor,
-            admitted.game_session_id,
-            fence,
-        )
+        let states = self.states.spell_states.lock().await;
+        let session = admitted.game_session_id;
+        if !states.current_cooldown_transport(actor, session, fence.connection_generation.get()) {
+            return None;
+        }
+        states.house_vitals(&runtime, actor, session, fence)
     }
 
     /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
@@ -1871,7 +1839,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.expire_house_furniture_on_tick(actor, game_session_id)
+        self.expire_house_furniture_on_tick(actor, game_session_id, None)
             .await;
         self.tick_actor_vitals(actor, game_session_id).await
     }
@@ -1881,8 +1849,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         admitted: AdmittedSession,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.expire_house_furniture_on_tick(actor, admitted.game_session_id)
-            .await;
         self.tick_house_actor_vitals(actor, admitted).await
     }
 

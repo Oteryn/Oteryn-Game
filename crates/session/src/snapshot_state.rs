@@ -20,6 +20,7 @@ pub(super) struct SnapshotState {
     pub(super) inventory_revision: u64,
     pub(super) container_revision: u64,
     pub(super) gated_snapshots: Vec<GatedSnapshot>,
+    pub(super) actor_cooldown_snapshot: Option<ActorCooldownUpdate>,
     pub(super) gated_revisions: Vec<(u32, u64)>,
     pub(super) appearance: Option<appearance_state::AppearanceState>,
     pub(super) map_header: Option<world_map::MapViewHeader>,
@@ -326,7 +327,15 @@ impl SnapshotState {
         tutorial_notices::validate_join(selected_capabilities, &state.gated_snapshots)?;
         pvp_expert::validate_join(selected_capabilities, &state.gated_snapshots)?;
         world_light::validate_join(selected_capabilities, &state.gated_snapshots)?;
-        presentation::validate_join(selected_capabilities, &state.gated_snapshots)?;
+        let cooldowns = presentation::validate_join(selected_capabilities, &state.gated_snapshots)?;
+        if previous.is_none()
+            || domains.iter().any(|domain| {
+                domain.domain_id
+                    == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ACTOR_COOLDOWNS
+            })
+        {
+            state.actor_cooldown_snapshot = cooldowns;
+        }
         server_save_countdown::validate_join(selected_capabilities, &state.gated_snapshots)?;
         achievement_notices_transport::validate_join(
             selected_capabilities,

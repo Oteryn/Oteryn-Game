@@ -37,13 +37,6 @@ use oteryn_protocol_oteryn::{
 
 use std::time::Duration;
 
-#[path = "parameter_spell/cooldowns.rs"]
-mod cooldowns;
-
-// Keep this separate from the Exiva world-rule cases (7 through 17).
-pub(super) const COOLDOWN_CASE: u8 = 254;
-pub(super) const COOLDOWN_WITHOUT_PRESENTATION_CASE: u8 = 253;
-
 pub(super) fn scenario(case: u8) -> TestResult {
     scenario_in_world(case, None)
 }
@@ -74,10 +67,17 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     eprintln!(
         "PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}"
     );
-    let cooldown_case = matches!(case, COOLDOWN_CASE | COOLDOWN_WITHOUT_PRESENTATION_CASE);
-    let has_observer = !matches!(case, 1 | 5 | 6) && !cooldown_case;
-    prepare_current_session(&h).await?;
+    let recovery = if matches!(case, 104 | 106) {
+        let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+        Some(source)
+    } else {
+        prepare_current_session(&h).await?;
+        None
+    };
     h.seed_pvp_target().await?;
+    let cooldown_cast_replay_case = matches!(case, COOLDOWN_CASE | COOLDOWN_WITHOUT_PRESENTATION_CASE);
+    let has_observer = !matches!(case, 1 | 5 | 6) && !cooldown_cast_replay_case;
     if has_observer {
         observer::admit(&h).await?;
     }
@@ -110,7 +110,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         pin.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        if cooldown_case {
+        if cooldown_cast_replay_case {
             (12, 14, -7) // Walkable, ground-only protection-zone tile in the pinned Thalom map.
         } else {
             (2, 11, -7)
@@ -125,6 +125,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
+    if let Some(recovery) = &recovery {
+        owner.evidence = &recovery.evidence;
+    }
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
@@ -304,13 +307,6 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .ok_or("install equipment effects")?;
     }
     admitted.first_entry = FirstEntryOutcome::Positioned;
-    if cooldown_case {
-        cooldowns::check(&owner, admitted, &deps.spells, case == COOLDOWN_CASE).await?;
-        drop(owner);
-        drop(authority);
-        drop(seal);
-        return h.cleanup().await;
-    }
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
@@ -366,6 +362,20 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .mana,
             before - 20
         );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
+    if cooldown_cast_replay_case {
+        cooldown_cast_replay::check(&owner, admitted, native.spell_book(), case == COOLDOWN_CASE).await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
+    if (101..=108).contains(&case) {
+        cooldowns::exercise(&owner, admitted, native.spell_book(), case).await?;
         drop(owner);
         drop(authority);
         drop(seal);
@@ -776,3 +786,12 @@ pub(super) async fn exchange_from(
 
 #[path = "parameter_spell/exiva_settings.rs"]
 pub(super) mod exiva_settings;
+
+#[path = "parameter_spell/cooldown_cast_replay.rs"]
+mod cooldown_cast_replay;
+
+#[path = "parameter_spell/cooldowns.rs"]
+mod cooldowns;
+
+pub(super) const COOLDOWN_WITHOUT_PRESENTATION_CASE: u8 = 253;
+pub(super) const COOLDOWN_CASE: u8 = 254;

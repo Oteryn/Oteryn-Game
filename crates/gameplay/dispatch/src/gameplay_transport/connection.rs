@@ -3,7 +3,6 @@
 //! decides admission itself and fails closed for every message it does not own.
 
 pub(super) mod appearance_change;
-pub use super::spell_presentation_publisher::cooldowns::CandidateCooldownPublisher as SpellCooldownPublisher;
 mod authority;
 pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
 mod gameplay_idle;
@@ -357,6 +356,7 @@ pub struct SessionContinuity {
     pub overlay_revision: u64,
     /// Last complete own-actor vitals state actually transmitted.
     pub vitals_revision: u64,
+    pub cooldown_revision: u64,
     /// `ACCOUNT_ACHIEVEMENT_NOTICES` (domain 13, ACHIEVEMENT-0 §5): `None` when the session did
     /// not select capability 8, which production never does before capability negotiation is
     /// composed. Otherwise the domain's revision: 0 at the session's first snapshot, plus 1 for
@@ -423,6 +423,7 @@ impl SessionContinuity {
         presentation_revision: 0,
         overlay_revision: 0,
         vitals_revision: 0,
+        cooldown_revision: 0,
         achievement_notice_revision: None,
         selected_capabilities: SelectedCapabilities::NONE,
         house_input_pending: None,

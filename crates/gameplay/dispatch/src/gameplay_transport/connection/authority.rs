@@ -1614,13 +1614,24 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
-    /// Cooldown presentation from the admitted caster's committed runtime state.
-    fn spell_cooldown_delta(
+    fn observe_join_vitals(
         &self,
-        _admitted: AdmittedSession,
-        _publisher: &mut SpellCooldownPublisher,
-    ) -> impl Future<Output = Option<Vec<u8>>> {
-        async { None }
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        house: bool,
+    ) -> impl Future<Output = super::super::spell_cooldowns::JoinVitals> {
+        async move {
+            let vitals = if house {
+                self.observe_house_vitals(actor, admitted).await
+            } else {
+                self.observe_vitals(actor, admitted.game_session_id).await
+            };
+            (vitals, None)
+        }
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        0
     }
 
     fn observe_house_vitals(

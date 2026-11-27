@@ -554,8 +554,10 @@ pub(super) mod ambient_sounds;
 #[path = "spell_presentation_publisher_tests.rs"]
 mod tests;
 
+// Retain the historical candidate's unit coverage without compiling its probe logic into the server.
+#[cfg(test)]
 #[path = "spell_presentation_cooldowns.rs"]
-pub(super) mod cooldowns;
+mod cooldowns;
 
 /// Bounded production fan-out journal. Connections keep independent cursors.
 #[derive(Debug, Default)]
