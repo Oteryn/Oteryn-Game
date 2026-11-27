@@ -340,7 +340,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass_by(deadline.into_std())?.run(move|holder,deadline|Box::pin(async move{
+        self.try_issue_semantic_pass_by(deadline)?.run(move|holder,deadline|Box::pin(async move{
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&record).await?;
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(command),content).await.is_err(){return Ok(Some(UseDisposition::StaleState))}
