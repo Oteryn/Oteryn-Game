@@ -252,8 +252,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         if own.position != here || selected.position != rat.position {
             return Err("C18a caster or selected Rat moved during the turn".into());
         }
-        if matches!(own.detail, EntityDetail::Actor { direction, .. } if direction == facing) {
-            let EntityDetail::Actor { health_percent, .. } = selected.detail else {
+        if matches!(actor_state(own.detail), Some((direction, _)) if direction == facing) {
+            let Some((_, health_percent)) = actor_state(selected.detail) else {
                 return Err("C18a selected Rat has no creature health".into());
             };
             if health_percent != 100 {
@@ -331,8 +331,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                         .iter()
                         .filter(|entry| entry.entity == target)
                     {
-                        if let EntityDetail::Actor { health_percent, .. }
-                        | EntityDetail::ActorWithIcons { health_percent, .. } = entry.detail
+                        if let Some((_, health_percent)) = actor_state(entry.detail)
                             && health_percent != health_before
                         {
                             if health
@@ -564,8 +563,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .world_entities()
         .and_then(|entities| entities.get(&target))
         .ok_or("C18a relog did not observe the same Rat generation")?;
-    if !matches!(relogged.detail, EntityDetail::Actor { health_percent, .. }
-        | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent == health_after)
+    if !matches!(actor_state(relogged.detail), Some((_, health_percent)) if health_percent == health_after)
     {
         return Err(format!(
             "C18a relog Rat health differs from {health_after}: {:?}",
@@ -868,4 +866,64 @@ fn item_count(
         .filter(|entry| entry.item_definition_ref == reference)
         .map(|entry| u64::from(entry.count.get()))
         .sum())
+}
+
+fn actor_state(detail: EntityDetail) -> Option<(StepDirection, u8)> {
+    match detail {
+        EntityDetail::Actor {
+            direction,
+            health_percent,
+            ..
+        }
+        | EntityDetail::ActorWithIcons {
+            direction,
+            health_percent,
+            ..
+        } => Some((direction, health_percent)),
+        EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. } => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn c18a_actor_state_reads_direction_and_health_with_or_without_icons() {
+        use oteryn_protocol_oteryn::world_spatial_entities::{
+            NativeCreatureIcon, NativeCreatureIcons,
+        };
+
+        let icons = NativeCreatureIcons::new(&[NativeCreatureIcon {
+            category: 1,
+            id: 6,
+            count: 1,
+        }])
+        .expect("qualified creature icon");
+        assert_eq!(
+            actor_state(EntityDetail::Actor {
+                direction: StepDirection::West,
+                appearance_ref: 1,
+                health_percent: 100,
+            }),
+            Some((StepDirection::West, 100)),
+        );
+        assert_eq!(
+            actor_state(EntityDetail::ActorWithIcons {
+                direction: StepDirection::East,
+                appearance_ref: 1,
+                health_percent: 70,
+                icons,
+            }),
+            Some((StepDirection::East, 70)),
+        );
+        assert_eq!(
+            actor_state(EntityDetail::Object {
+                item_definition_ref: 1,
+                quantity: 1,
+                item_handle: None,
+            }),
+            None,
+        );
+    }
 }
