@@ -217,6 +217,19 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     let here = client.world_spatial().actor_position;
+    let occupants = client
+        .world_entities()
+        .ok_or("C18a missing cast-tile projection")?
+        .iter()
+        .filter(|entity| {
+            tile(entity.position).ok() == Some(RAT_TILE) && actor_state(entity.detail).is_some()
+        })
+        .count();
+    if occupants != 1 {
+        return Err(
+            format!("C18a expected one actor on the Rat tile, observed {occupants}").into(),
+        );
+    }
     let rat = *client
         .world_entities()
         .and_then(|view| view.get(&target))
@@ -404,6 +417,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if combat_after.target != Some(target) || combat_after.modes != combat_before.modes {
         return Err("C18a aimed cast changed the attack target or fight modes".into());
     }
+    if combat_before.in_fight || !combat_after.in_fight {
+        return Err("C18a Scorch did not establish an outdoor combat lock".into());
+    }
     evidence(&format!(
         "SEAM_EVIDENCE c18a_health command={} reply_sequence={} delta_sequence={health_sequence} target={target:?} before={health_before} after={health_after} damage={damage_value}",
         command_id, result_server_sequence
@@ -565,6 +581,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
     if tile(fresh.world_spatial().actor_position)? != rest {
         return Err("C18a relog did not retain the fixed outdoor tile".into());
+    }
+    if item_count(&fresh, blank)? != blank_after || item_count(&fresh, missile)? != missile_after {
+        return Err("C18a conjure inventory changed across relog".into());
     }
     let fresh_vitals = *fresh.actor_vitals().ok_or("C18a missing relogged vitals")?;
     if (fresh_vitals.mana, fresh_vitals.soul) != (logout_vitals.mana, logout_vitals.soul) {

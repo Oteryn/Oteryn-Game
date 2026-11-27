@@ -201,6 +201,14 @@ pub fn qualification_scorch_impact(
                     ));
                 }
             }
+            Kind::MagicEffect { .. }
+            | Kind::ValueText {
+                kind:
+                    PresentationValueKind::DamageDealt
+                    | PresentationValueKind::DamageReceived
+                    | PresentationValueKind::DamageOthers,
+                ..
+            } => return Err("C18a unexpected effect or damage in Scorch's decision".into()),
             _ => {}
         }
     }

@@ -384,14 +384,14 @@ fn place_c18a_rat(
     if origins.next().is_some() || snapshot.state.policy.definition_key != C18A_RAT_KEY {
         return Err(refusal("fixed native spawn is not one Rat".into()));
     }
-    if snapshot.position == C18A_RAT_POSITION {
-        return Ok(snapshot);
-    }
     if runtime
         .position_occupied_by_other(*rat, C18A_RAT_POSITION)
         .map_err(|error| refusal(format!("read fixed occupancy: {error:?}")))?
     {
         return Err(refusal("fixed tile is occupied by another actor".into()));
+    }
+    if snapshot.position == C18A_RAT_POSITION {
+        return Ok(snapshot);
     }
     let before = runtime
         .read_actor_position(*rat)

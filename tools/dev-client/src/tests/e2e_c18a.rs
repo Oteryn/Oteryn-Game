@@ -403,6 +403,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
     assert_eq!(before.target, Some(rat));
     assert_eq!(after.target, Some(rat));
     assert_eq!(before.modes, after.modes);
+    assert!(!before.in_fight && after.in_fight);
     let cleared = attack::decode_actor_combat_state(&proof.cleared_combat)
         .map_err(|error| format!("{error:?}"))?;
     assert_eq!(cleared.target, None);
@@ -639,6 +640,30 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         crate::qualification_scorch_impact(events, origin, caster, rat_tile, target, spell)
     };
     assert_eq!(verify(&events)?, Some(7));
+    events.push(event(Kind::MagicEffect {
+        position: rat_tile,
+        effect_id: 17,
+        source: PresentationSource::Own,
+    }));
+    assert!(verify(&events).is_err());
+    events.pop();
+    events.push(event(Kind::ValueText {
+        kind: PresentationValueKind::DamageDealt,
+        position: rat_tile,
+        target: EntityRef {
+            identity: [3; 16],
+            ..target
+        },
+        attacker: Some(caster),
+        primary: PresentationValue {
+            value: 1,
+            color: PresentationColor::Orange,
+        },
+        secondary: None,
+    }));
+    assert!(verify(&events).is_err());
+    events.pop();
+
     assert!(verify(&events[..3]).is_err());
     events.push(event(Kind::MagicEffect {
         position: ActorPosition {
