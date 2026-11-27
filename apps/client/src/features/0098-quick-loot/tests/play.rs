@@ -790,12 +790,14 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             payload: foreign.payload,
         },
     );
+    // The refusal is keyed to the requested corpse. It must not leak into the
+    // foreign corpse pane now on screen.
+    let menu_link = menu::corpse_menu_link(&menu_app)?;
     assert_eq!(
-        menu::corpse_menu_link(&menu_app)?
-            .corpse_loot_view()
-            .feedback,
-        Some("Item is no longer available")
+        menu_link.discovery_panel().loot.item_feedback,
+        Some((expected.corpse, "Item is no longer available"))
     );
+    assert_eq!(menu_link.corpse_loot_view().feedback, None);
     menu_app.update();
     assert_eq!(
         menu::rendered_corpse_items(&mut menu_app),
