@@ -142,6 +142,8 @@ async fn exercise(h: &Harness) -> TestResult {
     let command = wire::QuickLootRequest {
         action: wire::QuickLootAction::AssignLoot,
         corpse: None,
+        selected_item: None,
+        review_filters: false,
         category: Some(wire::QuickLootCategory::Food),
         recipient: Some(wire::QuickLootRecipient::GoldPouch),
         recipient_id: Some(pouch),
