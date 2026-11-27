@@ -781,7 +781,7 @@ async fn cast_and_logout(
             &cast,
         )
         .await?;
-        let (status, payload) = super::quick_loot::command_reply(&mut client, command_id).await?;
+        let (status, payload) = super::autowalk_fixtures::command_reply(&mut client, command_id).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
             actor_spell::decode_spell_cast_result(&payload).map_err(debug)?,
@@ -803,7 +803,7 @@ async fn cast_and_logout(
         let command_id = command_id + 1;
         send(&mut client, command_id, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
         probe.contend(&harness.root).await?;
-        let (_, payload) = super::quick_loot::command_reply(&mut client, command_id).await?;
+        let (_, payload) = super::autowalk_fixtures::command_reply(&mut client, command_id).await?;
         client.shutdown().await?;
         assert_eq!(
             decode_logout_result(&payload).map_err(debug)?,

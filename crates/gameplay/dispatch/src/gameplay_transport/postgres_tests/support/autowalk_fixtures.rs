@@ -2,7 +2,7 @@ use super::fixture::debug;
 
 use super::TestResult;
 
-use crate::foundation::MovementLocalPosition;
+use crate::foundation::{CommandStatus, MovementLocalPosition};
 
 use crate::gameplay_transport::connection::AdmittedSession;
 
@@ -215,6 +215,21 @@ pub(super) async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Ve
             let result = decode_command_result(envelope.payload())?;
             assert_eq!(result.command_id, id);
             return Ok((result.payload.to_vec(), steps));
+        }
+    }
+}
+
+pub(super) async fn command_reply(
+    client: &mut DuplexStream,
+    id: u64,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            return Ok((result.status, result.payload.to_vec()));
         }
     }
 }

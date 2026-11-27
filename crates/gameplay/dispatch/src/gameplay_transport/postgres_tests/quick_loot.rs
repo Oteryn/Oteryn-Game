@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
 use super::fixture::{Harness, debug, id, join_two};
-use super::autowalk_fixtures::{read, send};
+use super::autowalk_fixtures::{command_reply, read, send};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
 };
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
+    MessageType, decode_snapshot_chunk, decode_state_delta, decode_wire_envelope,
 };
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
@@ -1001,21 +1001,6 @@ async fn snapshot_corpse_handle(
                 return handle.ok_or_else(|| "missing corpse handle".into());
             }
             _ => {}
-        }
-    }
-}
-
-pub(super) async fn command_reply(
-    client: &mut DuplexStream,
-    id: u64,
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    loop {
-        let frame = read(client).await?;
-        let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() == MessageType::CommandResult {
-            let result = decode_command_result(envelope.payload())?;
-            assert_eq!(result.command_id, id);
-            return Ok((result.status, result.payload.to_vec()));
         }
     }
 }
