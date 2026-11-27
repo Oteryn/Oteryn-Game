@@ -75,7 +75,7 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None, None, false)
+    scenario_case(case, None, None, None, false, None)
 }
 
 pub(super) struct CatalogueBatch<'a> {
@@ -95,7 +95,22 @@ pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, false)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, false, None)
+}
+
+pub(super) fn catalogue_scenario_on_retained_map(
+    chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
+    activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
+    world: &crate::map::boot::BundleWorld,
+) -> TestResult {
+    scenario_case(
+        Case::Catalogue,
+        Some(chest),
+        Some(activation),
+        None,
+        false,
+        Some(world),
+    )
 }
 
 pub(super) fn catalogue_scenario_in_batch(
@@ -104,7 +119,14 @@ pub(super) fn catalogue_scenario_in_batch(
     batch: &CatalogueBatch,
     committed: bool,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch), committed)
+    scenario_case(
+        Case::Catalogue,
+        Some(chest),
+        Some(activation),
+        Some(batch),
+        committed,
+        None,
+    )
 }
 
 type NativeRegion = (&'static [u8], (u8, u16, u16));
@@ -138,6 +160,7 @@ fn scenario_case(
     activation: Option<&super::quest_catalogue_chests_fixtures::CatalogueActivation>,
     batch: Option<&CatalogueBatch>,
     committed: bool,
+    retained: Option<&crate::map::boot::BundleWorld>,
 ) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
         Case::Catalogue => {
@@ -330,7 +353,9 @@ fn scenario_case(
             .and(catalogue)
             .and_then(|case| restored_classic_region(case.unique));
         let grease_shelf = unique == 6290;
-        let start = if grease_shelf {
+        let start = if let Some(world) = retained {
+            (world.start().x, world.start().y)
+        } else if grease_shelf {
             (chest.0, chest.1 + 1)
         } else if classic_region.is_some() {
             match unique {
@@ -349,8 +374,12 @@ fn scenario_case(
         } else {
             (chest.0 - u16::from(!matches!(case, Case::ChoiceDoor)), chest.1)
         };
-        let pinned_source = pinned_completion_chest || committed || classic_region.is_some() || grease_shelf;
-        let world = if grease_shelf {
+        let use_source_start =
+            committed || classic_region.is_some() || grease_shelf || retained.is_some();
+        let pinned_source = pinned_completion_chest || use_source_start;
+        let world = if let Some(world) = retained {
+            world.fresh_channel_for_test()?
+        } else if grease_shelf {
             let source = crate::map::overlay::TilePos { x: chest.0, y: chest.1, floor: chest.2 };
             let south = crate::map::overlay::TilePos { y: start.1, ..source };
             super::source_world_crop::world(source, south, south, native)?
@@ -527,7 +556,7 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(if classic_region.is_some() || committed || grease_shelf { start.0 } else { chest.0 - 1 }),
+                i32::from(if use_source_start { start.0 } else { chest.0 - 1 }),
                 i32::from(start.1),
                 -i16::from(chest.2),
             ),
@@ -1237,6 +1266,12 @@ fn scenario_case(
                     let number: Option<i32> = sqlx::query_scalar("SELECT key_number FROM game_item_keys WHERE item_instance_id=encode($1,'hex')::uuid")
                         .bind(root.item_instance_id.as_slice()).fetch_optional(&harness.pool).await?;
                     assert_eq!(number, chest.key_number, "source root key number");
+                    if retained.is_some() && let Some(number) = chest.key_number {
+                        let keys: Vec<i32> = sqlx::query_scalar("SELECT key_number FROM game_item_keys")
+                            .fetch_all(&harness.pool)
+                            .await?;
+                        assert_eq!(keys, [number], "exactly one source key minted");
+                    }
                     // Exact donor defaults are independent of the generated
                     // recipe's count: every charged leaf is one full instance.
                     for (key, charges) in [
