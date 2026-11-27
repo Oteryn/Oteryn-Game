@@ -665,9 +665,6 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
                 let mut view = None;
                 let mut held = Vec::new();
                 oteryn_session::test_support::p19_session(&root.join(folder), |session, target, event, final_state| {
-                    if !death && !final_state {
-                        return Ok(());
-                    }
                     let own = session.world_spatial().actor_position;
                     let view = match &mut view {
                         Some(view) => view,
@@ -676,7 +673,7 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
                         )?),
                     };
                     let entity = session.world_entities().and_then(|entities| entities.get(&target));
-                    let must_be_live = !death || (event.is_none() && !final_state);
+                    let must_be_live = if death { event.is_none() && !final_state } else { final_state };
                     if must_be_live && entity.is_none() || death && final_state && entity.is_some() {
                         return Err(format!("{folder}: exact actor violates its live/death boundary").into());
                     }
