@@ -71,6 +71,7 @@
       "level": "warn",
       "span": false,
       "fields": [
+        "attacker",
         "command_id",
         "target",
         "reason"
@@ -233,10 +234,24 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "daily_boost_query_attempt",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "seq",
+        "phase",
+        "attempt"
+      ],
+      "codes": [],
+      "note": "Daily Boost runtime wait or durable selection attempt under the command deadline."
+    },
+    {
       "event": "daily_boost_refused",
       "level": "warn",
       "span": false,
       "fields": [
+        "phase",
         "command_id",
         "seq",
         "reason"

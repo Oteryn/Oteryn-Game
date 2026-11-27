@@ -570,21 +570,20 @@ async fn logout_relogin_query(
         LogoutResult::Accepted
     );
     assert!(release_started.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
-    assert_eq!(
-        store.current_session(previous).await?.session_state(),
-        GameSessionState::Terminal
-    );
-
     let mut fresh = super::full_world_support::readmit_after_logout(h, owner, admitted).await?;
     assert_ne!(fresh.game_session_id, previous);
+    assert_eq!(
+        fresh.item_fence.ok_or("fresh fence")?.character_id,
+        admitted.item_fence.ok_or("previous fence")?.character_id
+    );
+    assert_eq!(fresh.continuity.next_command_id, 1);
     let query_checkout = Arc::new(HolderCheckoutProbe::default());
-    let next = fresh.continuity.next_command_id;
     let (result, released_holder) = tokio::time::timeout(
         Duration::from_secs(30),
         super::fixture::join_two(
             DAILY_BOOST_CHECKOUT_PROBE.scope(
                 Cell::new(Some(Arc::clone(&query_checkout))),
-                support::exchange(owner, &mut fresh, next, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
+                support::exchange(owner, &mut fresh, 1, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
             ),
             query_checkout.contend(&h.root),
         ),
@@ -592,7 +591,16 @@ async fn logout_relogin_query(
     .await?;
     released_holder?;
     let (status, view) = result?;
-    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(
+        status,
+        CommandStatus::Accepted,
+        "fresh command 1: {:?}",
+        DailyBoostRefusal::decode(&view)
+    );
     assert_eq!(view, expected);
+    assert_eq!(
+        store.current_session(previous).await?.session_state(),
+        GameSessionState::Terminal
+    );
     Ok(())
 }

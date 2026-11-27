@@ -1,7 +1,7 @@
 //! World-owned selection, serialized against server-save activation and fenced by the Channel owner.
 use super::character_authority::ReconciledCharacterAuthority;
 use super::character_progression::numeric_u64;
-use super::db::begin_type2_transaction;
+use super::db::{IssuedSemanticPass, begin_type2_transaction};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
@@ -26,8 +26,49 @@ impl DurabilityRoot {
         binding: DailyBoostBinding,
         pools: (Vec<String>, Vec<String>),
     ) -> Result<DailyBoostSelection, DurabilityError> {
+        self.prepare_daily_boost_with_pass(
+            authority,
+            node,
+            permit,
+            binding,
+            pools,
+            self.try_issue_semantic_pass()?,
+        )
+        .await
+    }
+
+    /// Use the caller's deadline for both checkout and the epoch transaction.
+    pub async fn prepare_daily_boost_by(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &SpellLanePermit,
+        binding: DailyBoostBinding,
+        pools: (Vec<String>, Vec<String>),
+        deadline: tokio::time::Instant,
+    ) -> Result<DailyBoostSelection, DurabilityError> {
+        self.prepare_daily_boost_with_pass(
+            authority,
+            node,
+            permit,
+            binding,
+            pools,
+            self.try_issue_semantic_pass_by(deadline)?,
+        )
+        .await
+    }
+
+    async fn prepare_daily_boost_with_pass(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &SpellLanePermit,
+        binding: DailyBoostBinding,
+        pools: (Vec<String>, Vec<String>),
+        pass: IssuedSemanticPass,
+    ) -> Result<DailyBoostSelection, DurabilityError> {
         let mut context = (authority, node, permit);
-        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
+        pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let (authority, node, permit) = context;
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::spell_item_transaction::assert_spell_item_scope_in_transaction(

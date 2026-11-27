@@ -9,9 +9,10 @@ pub(in super::super) fn refuse(
     reason: DailyBoostRefusal,
 ) -> Dispatch {
     crate::gameplay_transport::operator_event(&format!(
-        "event=daily_boost_refused command_id={} seq={} reason={reason:?}",
+        "event=daily_boost_refused command_id={} seq={} reason={reason:?} phase={}",
         command.command_id,
         admitted.continuity.server_sequence.saturating_add(1),
+        reason.runtime_phase().unwrap_or("none"),
     ));
     Dispatch::Reply(CommandStatus::Rejected, reason.encode().to_vec())
 }

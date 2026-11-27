@@ -640,7 +640,29 @@ fn scenario_with_quiver(
         let mut killed = false;
         for _ in 0..if weapon == 3287 { 100 } else { 30 } {
             owner.refresh_attack_weapon(actor, session).await;
-            owner.drain_auto_attacks().await;
+            if blocked {
+                use crate::gameplay_transport::attack::SWING_SKIP_PROBE;
+                use std::cell::RefCell;
+                let logs = SWING_SKIP_PROBE
+                    .scope(RefCell::new(Vec::new()), async {
+                        owner.drain_auto_attacks().await;
+                        SWING_SKIP_PROBE.with(|lines| std::mem::take(&mut *lines.borrow_mut()))
+                    })
+                    .await;
+                let attacker = actor
+                    .placement_identity()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                assert!(
+                    logs.iter()
+                        .any(|line| line.contains(&format!("attacker={attacker} "))
+                            && line.ends_with("reason=RangedPaymentUnavailable")),
+                    "{logs:?}"
+                );
+            } else {
+                owner.drain_auto_attacks().await;
+            }
             killed = owner
                 .states
                 .attack
