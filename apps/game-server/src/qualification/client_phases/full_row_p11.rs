@@ -954,34 +954,35 @@ pub(super) async fn earn_and_logout(
     let earliest = achievement_clock_ms()?;
     client.take_events();
     let use_reply = client.session_mut().use_object(&placement, 0).await?;
-    client.service_liveness(Duration::from_millis(250)).await?;
-    let earned = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            SessionEvent::AchievementEarned(delta) => Some(delta.value),
-            _ => None,
-        });
     if use_reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!(
             "step=granter achievement={achievement} authored chest declined: {use_reply:?}"
         )
         .into());
     }
-    let Some(earned) = earned else {
-        // Still complete the durable lifecycle so this is runtime evidence, not a source probe.
-        let unchanged = page(&mut client, 0).await?;
-        logout(&mut client).await?;
-        drop(client);
-        let mut fresh = connect_world(clients, 0xc2).await?;
-        let persisted = page(&mut fresh, 0).await?;
-        logout(&mut fresh).await?;
-        return Err(format!(
-            "step=granter observed_reply={use_reply:?},missing_delta=AchievementEarned,query_unchanged={},relogin_unchanged={};need=reachable_quest_or_event_source_granter",
-            unchanged == before,
-            persisted == before
-        )
-        .into());
+    // The Server may defer notice delivery to its next liveness refresh.
+    let notice_deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let earned = loop {
+        if let Some(earned) = client
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::AchievementEarned(delta) => Some(delta.value),
+                _ => None,
+            })
+        {
+            break earned;
+        }
+        let remaining = notice_deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(format!(
+                "step=granter committed chest did not send AchievementEarned: {use_reply:?}"
+            )
+            .into());
+        }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(250)))
+            .await?;
     };
     full_row_p05::wait_for_inventory(&mut client, "P11 chest reward", |client| {
         bag_count(client, reward) == Some(1)
