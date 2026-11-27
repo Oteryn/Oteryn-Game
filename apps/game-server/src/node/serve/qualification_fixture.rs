@@ -55,6 +55,8 @@ const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
 #[cfg(feature = "qualification-spawn")]
 const Q_C18A_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000024";
 #[cfg(feature = "qualification-spawn")]
+const Q_C18A_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000025";
+#[cfg(feature = "qualification-spawn")]
 const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000021";
 
 #[cfg(feature = "qualification-spawn")]
@@ -818,6 +820,7 @@ async fn prepare_build(
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("q_c18a", Q_C18A_ACCOUNT)
+            | ("q_c18a", Q_C18A_FULL_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
