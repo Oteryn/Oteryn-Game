@@ -71,6 +71,13 @@ pub(super) async fn hunt_target(
                 damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100));
             }
         }
+        if bounded_corpse_wait.is_some()
+            && let Some(live_target) = client
+                .world_entities()
+                .and_then(|entities| entities.get(&target.entity))
+        {
+            last_position = live_target.position;
+        }
         if let Some(corpse) = client
             .world_entities()
             .and_then(|entities| {

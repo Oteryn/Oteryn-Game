@@ -322,6 +322,36 @@ fn confirm_braindeath(
     Ok(())
 }
 
+async fn enable_chase(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode};
+
+    let before = client
+        .session_mut()
+        .combat_state()
+        .ok_or("W13 chase setup missing the combat state snapshot")?
+        .modes;
+    if before.chase != ChaseMode::Stand {
+        return Err(format!("W13 chase expected Stand before command; observed {before:?}").into());
+    }
+    let expected = oteryn_protocol_oteryn::attack::FightModes {
+        chase: ChaseMode::Chase,
+        ..before
+    };
+    let reply = client.session_mut().set_fight_modes(&expected).await?;
+    let observed = client.session_mut().combat_state().map(|state| state.modes);
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != AttackIntentDisposition::Ok
+        || observed != Some(expected)
+    {
+        return Err(format!(
+            "W13 chase expected {expected:?}; observed {observed:?}, reply={reply:?}"
+        )
+        .into());
+    }
+    evidence("W13_CHECK chase changed from Stand to Chase");
+    Ok(())
+}
+
 async fn fixture_braindeath(
     client: &mut DevClientSession,
     spawns: &oteryn_world_bundle::spawn::Table,
@@ -480,6 +510,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     verdict::Harness::global().progress("daily-boost-verified");
+    enable_chase(&mut client).await?;
     let first = fixture_braindeath(&mut client, &metadata.spawns).await?;
     let home = tile(first.position)?;
     verdict::Harness::global().progress("dedicated-braindeath-visible");
