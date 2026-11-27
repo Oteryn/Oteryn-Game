@@ -16,6 +16,7 @@ pub(in crate::play::tests) struct Exchange {
     pub status: CommandStatus,
 }
 struct Peer {
+    response_identity: (u64, u64),
     exchanges: Arc<Mutex<Exchanges>>,
     events: Vec<SessionEvent>,
     entities: Vec<oteryn_session::WorldSpatialEntity>,
@@ -36,9 +37,9 @@ impl Stepper for Peer {
         assert_eq!(command, &exchange.command);
         self.events.extend(events);
         Ok(ServerMechanicResponse {
-            command_id: 1,
+            command_id: self.response_identity.0,
             status: exchange.status,
-            server_sequence: 1,
+            server_sequence: self.response_identity.1,
             payload: exchange.payload,
         })
     }
@@ -82,6 +83,7 @@ async fn quick_loot_restore_refusal_keeps_saved_settings() -> Result<(), Box<dyn
         status: CommandStatus::Rejected,
     };
     let mut peer = Peer {
+        response_identity: (1, 1),
         exchanges: Arc::new(Mutex::new(Exchanges::from([(exchange, vec![])]))),
         events: vec![],
         entities: vec![],
@@ -92,12 +94,14 @@ async fn quick_loot_restore_refusal_keeps_saved_settings() -> Result<(), Box<dyn
         let panel = &mut mailbox.discovery.loot;
         panel.filter_mode = Some(QuickLootFilterMode::Skip);
         panel.skipped.insert(4097);
-        panel.destinations.push(oteryn_client_ui::quick_loot::Action::Destination {
-            category: Some(QuickLootCategory::Gold),
-            recipient: QuickLootRecipient::MainContainer,
-            id: None,
-            fallback: true,
-        });
+        panel
+            .destinations
+            .push(oteryn_client_ui::quick_loot::Action::Destination {
+                category: Some(QuickLootCategory::Gold),
+                recipient: QuickLootRecipient::MainContainer,
+                id: None,
+                fallback: true,
+            });
     }
     let mut expected = link.quick_loot_panel();
     expected.feedback = "The server refused the request".into();
@@ -164,6 +168,7 @@ pub(in crate::play::tests) fn scenario_with_events(
             let task = runtime
                 .spawn(run_session(
                     Peer {
+                        response_identity: (1, 1),
                         exchanges: queue.clone(),
                         events,
                         entities,
@@ -203,4 +208,28 @@ pub(in crate::play::tests) fn scenario_with_events(
         .join()
         .map_err(|_| "scenario thread failed")??;
     Ok(())
+}
+
+#[cfg(bevy_shell)]
+pub(super) async fn restore_capture(
+    exchange: Exchange,
+    response_identity: (u64, u64),
+) -> Result<oteryn_client_ui::quick_loot::Panel, SessionError> {
+    let (link, _, outbox) = play_channel();
+    let exchanges = Arc::new(Mutex::new(Exchanges::from([(exchange, vec![])])));
+    let mut peer = Peer {
+        response_identity,
+        exchanges: Arc::clone(&exchanges),
+        events: vec![],
+        entities: vec![],
+    };
+    outbox.discovery_initialize(&peer);
+    outbox.restore_quick_loot(&mut peer).await?;
+    assert!(
+        exchanges
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_empty()
+    );
+    Ok(link.quick_loot_panel())
 }

@@ -510,7 +510,7 @@ pub(super) async fn journey(
            AND g.spatial_position=ANY($5)
          ORDER BY (SELECT count(*) FROM game_item_corpse_container_entries e
                    WHERE e.parent_item_instance_id=r.item_instance_id) DESC, r.item_instance_id
-         LIMIT 3",
+         LIMIT 4",
     )
     .bind(clients.world.as_slice())
     .bind(clients.channel.as_slice())
@@ -519,25 +519,42 @@ pub(super) async fn journey(
     .bind(vec![on_tile.clone(), adjacent.clone()])
     .fetch_all(&mut database)
     .await?;
-    let [(corpse, primary_cell), (stacked, adjacent_cell)] = corpses.as_slice() else {
-        return Err("I07 requires exactly two nearby fixture corpses".into());
+    let [
+        (corpse, primary_cell),
+        (adjacent_a, cell_a),
+        (adjacent_b, cell_b),
+    ] = corpses.as_slice()
+    else {
+        return Err("I07 requires exactly three nearby fixture corpses".into());
     };
-    if primary_cell != &on_tile || adjacent_cell != &adjacent {
-        return Err("I07 requires one corpse on the actor tile and one east of it".into());
-    }
-    if full {
-        evidence("I07_FULL_INPUT corpses=2 adjacent=1 source=qualification_fixture");
+    if primary_cell != &on_tile || cell_a != &adjacent || cell_b != &adjacent {
+        return Err("I07 requires a primary corpse and two corpses stacked one tile east".into());
     }
     let before = placements(&mut database, Storage::Corpse, character, corpse).await?;
-    let stacked_before = placements(&mut database, Storage::Corpse, character, stacked).await?;
-    let ([coin, armor, filtered, spare], [other, listed]) =
-        (before.as_slice(), stacked_before.as_slice())
-    else {
+    let a = placements(&mut database, Storage::Corpse, character, adjacent_a).await?;
+    let b = placements(&mut database, Storage::Corpse, character, adjacent_b).await?;
+    let (stacked, stacked_before, listed_corpse, listed_before) = if a
+        .first()
+        .is_some_and(|entry| entry.key == "oteryn:item.tibia.i3578")
+    {
+        (adjacent_a, a, adjacent_b, b)
+    } else {
+        (adjacent_b, b, adjacent_a, a)
+    };
+    let ([coin, armor, filtered, spare], [other], [listed]) = (
+        before.as_slice(),
+        stacked_before.as_slice(),
+        listed_before.as_slice(),
+    ) else {
         return Err("I07 fixture corpse count differs".into());
     };
+    if full {
+        evidence("I07_FULL_INPUT corpses=3 east_stack=2 source=qualification_fixture");
+    }
     if !before
         .iter()
         .chain(&stacked_before)
+        .chain(&listed_before)
         .map(|row| (row.key.as_str(), row.quantity, row.slot))
         .eq([
             ("oteryn:item.tibia.i3031", 7, 1),
@@ -545,7 +562,7 @@ pub(super) async fn journey(
             ("oteryn:item.tibia.i3577", 1, 3),
             ("oteryn:item.tibia.i3577", 1, 4),
             ("oteryn:item.tibia.i3578", 1, 1),
-            ("oteryn:item.tibia.i3577", 1, 2),
+            ("oteryn:item.tibia.i3577", 1, 1),
         ])
     {
         return Err("I07 fixture item definition, count or slot differs".into());
@@ -898,6 +915,54 @@ pub(super) async fn journey(
         )
         .await?;
     require_filters(&mut database, character, false, &expected_filters).await?;
+    if full {
+        capture
+            .probe(&mut fresh, 21, unassigned_pouch.clone(), &[])
+            .await?;
+        let unassigned: (bool, bool, Option<Vec<u8>>) = sqlx::query_as(
+            "SELECT fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
+             FROM game_character_quick_loot_settings WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character.as_slice())
+        .fetch_one(&mut database)
+        .await?;
+        if unassigned != (false, true, Some(pouch.to_vec())) {
+            return Err("I07 expected Unassigned to resolve to the exact Inbox pouch".into());
+        }
+        capture
+            .probe(
+                &mut fresh,
+                22,
+                request(QuickLootAction::LootAll),
+                &[(other, false), (listed, false), (spare, false)],
+            )
+            .await?;
+        require_placements(
+            &mut database,
+            Storage::Corpse,
+            character,
+            stacked,
+            &stacked_before,
+        )
+        .await?;
+        require_placements(
+            &mut database,
+            Storage::Backpack,
+            character,
+            &backpack,
+            &expected_backpack,
+        )
+        .await?;
+        capture
+            .probe(
+                &mut fresh,
+                23,
+                route(None, QuickLootRecipient::MainContainer, None, false),
+                &[],
+            )
+            .await?;
+        evidence("I07_FULL_UNASSIGNED_TRANSFER destination=exact_pouch food=retained fallback=off");
+    }
     let late_pouch = if full {
         route(
             Some(QuickLootCategory::Food),
@@ -983,11 +1048,12 @@ pub(super) async fn journey(
     }
     stack.quantity += other.quantity;
     require_retired_donor(&mut database, &other.item).await?;
+    require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
         character,
-        stacked,
+        listed_corpse,
         std::slice::from_ref(listed),
     )
     .await?;
@@ -1007,7 +1073,11 @@ pub(super) async fn journey(
         &expected_pouch,
     )
     .await?;
-    evidence("I07_LOOT_CUSTODY unassigned=pouch_refused_then_main_moved");
+    evidence(if full {
+        "I07_LOOT_CUSTODY food=pouch_refused_then_main_moved"
+    } else {
+        "I07_LOOT_CUSTODY unassigned=pouch_refused_then_main_moved"
+    });
     capture
         .probe(
             &mut fresh,
@@ -1030,11 +1100,12 @@ pub(super) async fn journey(
         std::slice::from_ref(spare),
     )
     .await?;
+    require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
         character,
-        stacked,
+        listed_corpse,
         std::slice::from_ref(listed),
     )
     .await?;
@@ -1078,11 +1149,12 @@ pub(super) async fn journey(
         std::slice::from_ref(spare),
     )
     .await?;
+    require_placements(&mut database, Storage::Corpse, character, stacked, &[]).await?;
     require_placements(
         &mut database,
         Storage::Corpse,
         character,
-        stacked,
+        listed_corpse,
         std::slice::from_ref(listed),
     )
     .await?;
@@ -1090,6 +1162,36 @@ pub(super) async fn journey(
     require_routes(&mut database, character, &pouch, false, false, full).await?;
     require_retired_donor(&mut database, &other.item).await?;
     evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true");
+    let restore_request = encode_quick_loot_request(
+        &oteryn_protocol_oteryn::quick_loot::quick_loot_filter_review_request(),
+    )
+    .map_err(|error| format!("I07 restore request: {error:?}"))?;
+    let restore_reply = readback
+        .session_mut()
+        .gated_command(
+            oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            &restore_request,
+        )
+        .await?;
+    if restore_reply.status != CommandStatus::Accepted {
+        return Err(format!("I07 final restore refused: {restore_reply:?}").into());
+    }
+    write_capture(
+        &capture_dir.join("i07-restore-request.bin"),
+        &restore_request,
+    )?;
+    write_capture(
+        &capture_dir.join("i07-restore.json"),
+        &capture_envelope(
+            readback_session.as_bytes(),
+            restore_reply.command_id,
+            restore_reply.server_sequence,
+            restore_reply.status,
+            &restore_reply.payload,
+        )?,
+    )?;
+
     let inventory = readback
         .inventory()
         .ok_or("I07 fresh client inventory snapshot absent")?;
@@ -1146,6 +1248,7 @@ pub(super) async fn journey(
         write_capture(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
+                "final_session": uuid_text(readback_session.as_bytes()),
                 "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "fulfilment": fulfilment, "selected_handle": selected.get(),
                 "corpse_kind": corpse_entity.kind as u8,
                 "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
@@ -1380,19 +1483,38 @@ async fn open_primary_corpse(
                 item_definition_ref,
                 item_handle,
                 ..
-            } if item_definition_ref == definition && entity.position == position => {
-                item_handle.map(|handle| (*entity, handle))
-            }
+            } if item_definition_ref == definition => item_handle.map(|handle| (*entity, handle)),
             _ => None,
         })
         .collect();
-    let [(entity, corpse)] = corpses.as_slice() else {
+    let (primary, stack): (Vec<_>, Vec<_>) = corpses
+        .into_iter()
+        .partition(|(entity, _)| entity.position == position);
+    let [(entity, corpse)] = primary.as_slice() else {
         return Err(
-            format!("I07 expected one published corpse at the admitted tile: {corpses:?}").into(),
+            format!("I07 expected one published corpse at the admitted tile: {primary:?}").into(),
         );
     };
     if entity.kind != oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Corpse {
         return Err(format!("I07 published the loot target as {:?}", entity.kind).into());
+    }
+
+    let east = position
+        .x
+        .checked_add(1)
+        .ok_or("I07 corpse position overflow")?;
+    if stack
+        .iter()
+        .filter(|(entity, _)| {
+            entity.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Corpse
+                && entity.position.x == east
+                && entity.position.y == position.y
+                && entity.position.floor == position.floor
+        })
+        .count()
+        != 2
+    {
+        return Err("I07 world view omitted the two east-tile stacked corpses".into());
     }
     let reply = client.use_item(*corpse).await?;
     if reply.status != CommandStatus::Accepted || reply.disposition != UseDisposition::Committed {
