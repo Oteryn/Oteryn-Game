@@ -128,8 +128,9 @@ pub(super) async fn seed(
             u32::MAX - 7,
             &[(1, 3031, 7), (2, 3357, 1), (3, 3577, 1), (4, 3577, 1)][..],
         ),
-        (u32::MAX - 8, &[(1, 3578, 1)][..]),
-        (u32::MAX - 9, &[(1, 3577, 1)][..]),
+        (u32::MAX - 8, &[(1, 3578, 1), (2, 3582, 1)][..]),
+        (u32::MAX - 9, &[(1, 3577, 1), (2, 3585, 1)][..]),
+        (u32::MAX - 10, &[(1, 3031, 3)][..]),
     ] {
         let mut corpse = root
             .freeze_item_mint(
@@ -148,7 +149,11 @@ pub(super) async fn seed(
                                 } else {
                                     32370
                                 },
-                                32238,
+                                if death_slot == u32::MAX - 10 {
+                                    32239
+                                } else {
+                                    32238
+                                },
                                 7,
                             ),
                         corpse_ref: [transaction_id.as_slice(), &death_slot.to_be_bytes()].concat(),
@@ -211,6 +216,7 @@ pub(super) async fn seed(
             fence.game_session_id,
             corpse.item_instance_id,
             i32::from(death_slot != u32::MAX - 7),
+            i32::from(death_slot == u32::MAX - 10),
         )
         .await?;
     }
@@ -222,6 +228,7 @@ async fn publish_corpse(
     session: crate::foundation::GameSessionId,
     item: [u8; 16],
     east: i32,
+    south: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_gameplay_entities::MovementLocalPosition;
     let mut runtime = spawn.runtime.lock().await;
@@ -236,7 +243,10 @@ async fn publish_corpse(
                 .x
                 .checked_add(east)
                 .ok_or("I07 corpse position overflow")?,
-            y: position.y,
+            y: position
+                .y
+                .checked_add(south)
+                .ok_or("I07 corpse position overflow")?,
             floor: position.floor,
         })
         .map_err(qualification_build::debug)?;
