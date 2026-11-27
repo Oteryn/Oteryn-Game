@@ -183,6 +183,8 @@ pub enum UseDisposition {
     BedOccupied = 21,
     BedWoken = 22,
     OfflineTraining = 23,
+    /// Successful use of an in-world Exaltation Forge, under capability 152.
+    ForgeOpened = 24,
 }
 
 impl UseDisposition {
@@ -712,6 +714,7 @@ pub fn decode_use_result_with_gate(
         21 => UseDisposition::BedOccupied,
         22 => UseDisposition::BedWoken,
         23 => UseDisposition::OfflineTraining,
+        24 => UseDisposition::ForgeOpened,
         _ => return Err(WorldObjectError::Malformed),
     };
     let gate_message_id = match (disposition, gate) {

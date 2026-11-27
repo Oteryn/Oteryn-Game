@@ -1,6 +1,8 @@
 //! Exaltation Forge command and reply wire contract.
 use std::num::NonZeroU64;
 
+pub const FORGE_STATION_REQUIRED: &str = "FORGE_STATION_REQUIRED";
+
 pub const CAPABILITY_ITEM_FORGE_V1: u32 = 152;
 pub const COMMAND_TYPE_ITEM_FORGE: u32 = 181;
 pub const COMMAND_TYPE_FORGE_DUST_QUERY: u32 = 668;

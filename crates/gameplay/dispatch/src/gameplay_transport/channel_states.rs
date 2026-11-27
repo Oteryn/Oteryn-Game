@@ -50,6 +50,7 @@ pub struct ChannelSessionStates {
     pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
     /// RAIDS-GLOBAL: copies of the idle owner's facts, removed with the session.
     pub(super) gameplay_idle_presence: super::gameplay_idle_presence::GameplayIdlePresence,
+    pub(super) forge_stations: super::item_forge::Stations,
     pub(super) grizzly_boss: super::grizzly_boss::GrizzlyBossSessions,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
     pub(super) kill_source_owner: super::public_kill_statistics::ActivityKillSourceOwner,
@@ -223,6 +224,7 @@ impl ChannelSessionStates {
         self.gameplay_idle_presence.forget(session);
         self.player_trades.forget(session);
         self.inspection_permissions.forget(session);
+        self.forge_stations.forget(session);
         self.npc_conversations.forget(session);
         self.grizzly_boss.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {

@@ -41,7 +41,6 @@ pub(in crate::bevy_shell) const DEFAULT: &[&str] = &[
     "shell.analysers",         // analyticsSelectorWidget
     "bestiary_tracker",        // bestiaryTrackerWidget
     "tibia.imbuement_tracker", // imbuementTrackerWidget
-    "forge",                   // exaltationForgeDialog
     "proficiency",             // weaponProficiency
     "bosstiary",               // bosstiaryDialog
     "bosstiary_tracker",       // bosstiaryTrackerWidget
