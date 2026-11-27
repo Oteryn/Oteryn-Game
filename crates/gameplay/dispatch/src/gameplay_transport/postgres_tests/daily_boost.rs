@@ -540,7 +540,10 @@ async fn logout_relogin_query(
     use crate::gameplay_transport::composed_admission::{
         CONDITION_RELEASE_PROBE, HolderCheckoutProbe,
     };
-    use crate::gameplay_transport::daily_boost::DAILY_BOOST_CHECKOUT_PROBE;
+    use crate::gameplay_transport::composed_admission::FIRST_ENTRY_CHECKOUT_PROBE;
+    use crate::gameplay_transport::daily_boost::{
+        DAILY_BOOST_CHECKOUT_PROBE, DAILY_BOOST_RUNTIME_PROBE,
+    };
     use oteryn_protocol_oteryn::logout::{
         COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
     };
@@ -570,7 +573,20 @@ async fn logout_relogin_query(
         LogoutResult::Accepted
     );
     assert!(release_started.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
-    let mut fresh = super::full_world_support::readmit_after_logout(h, owner, admitted).await?;
+    let admission_checkout = Arc::new(HolderCheckoutProbe::default());
+    let (fresh, released_holder) = tokio::time::timeout(
+        Duration::from_secs(30),
+        super::fixture::join_two(
+            FIRST_ENTRY_CHECKOUT_PROBE.scope(
+                Cell::new(Some(Arc::clone(&admission_checkout))),
+                super::full_world_support::readmit_after_logout(h, owner, admitted),
+            ),
+            admission_checkout.contend(&h.root),
+        ),
+    )
+    .await?;
+    released_holder?;
+    let mut fresh = fresh?;
     assert_ne!(fresh.game_session_id, previous);
     assert_eq!(
         fresh.item_fence.ok_or("fresh fence")?.character_id,
@@ -578,14 +594,30 @@ async fn logout_relogin_query(
     );
     assert_eq!(fresh.continuity.next_command_id, 1);
     let query_checkout = Arc::new(HolderCheckoutProbe::default());
+    let query_started = Arc::new(tokio::sync::Notify::new());
+    let runtime_held = Arc::new(tokio::sync::Notify::new());
+    let contend = async {
+        query_started.notified().await;
+        let runtime = owner.runtime.lock().await;
+        tokio::time::pause();
+        runtime_held.notify_one();
+        tokio::task::yield_now().await;
+        tokio::time::advance(crate::gameplay_transport::COMMAND_HOLDER_WINDOW).await;
+        tokio::time::resume();
+        drop(runtime);
+        query_checkout.contend(&h.root).await
+    };
     let (result, released_holder) = tokio::time::timeout(
         Duration::from_secs(30),
         super::fixture::join_two(
             DAILY_BOOST_CHECKOUT_PROBE.scope(
                 Cell::new(Some(Arc::clone(&query_checkout))),
-                support::exchange(owner, &mut fresh, 1, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
+                DAILY_BOOST_RUNTIME_PROBE.scope(
+                    (Arc::clone(&query_started), Arc::clone(&runtime_held)),
+                    support::exchange(owner, &mut fresh, 1, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]),
+                ),
             ),
-            query_checkout.contend(&h.root),
+            contend,
         ),
     )
     .await?;

@@ -322,11 +322,11 @@ where
         Some(trace) => {
             connection::with_connection_trace(
                 trace,
-                admit_frame(&mut stream, &frame, authority, identifiers),
+                connection::admit_frame_for_join(&mut stream, &frame, authority, identifiers),
             )
             .await
         }
-        None => admit_frame(&mut stream, &frame, authority, identifiers).await,
+        None => connection::admit_frame_for_join(&mut stream, &frame, authority, identifiers).await,
     };
     drop(unit);
     match &admitted {
@@ -351,42 +351,59 @@ where
         // still has a controller that is gone: it enters the loss lifecycle, never limbo.
         Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
         Err(end) => (end, false),
-        Ok(admitted) => match first(
-            async {
-                match trace {
-                    Some(trace)
-                        if admitted.continuity.selected_capabilities.contains(
-                            oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
-                        ) => connection::with_selected_connection_trace(
-                            trace,
-                            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
-                        )
-                        .await,
-                    Some(_) | None => {
-                        serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS).await
+        Ok((admitted, mut acceptance)) => {
+            let serving = connection::serve_admitted_for_join(
+                &mut stream,
+                admitted,
+                authority,
+                IDLE_LIVENESS,
+                &mut acceptance,
+            );
+            let served = first(
+                async {
+                    match trace.filter(|_| {
+                        admitted.continuity.selected_capabilities.contains(
+                        oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
+                    )
+                    }) {
+                        Some(trace) => {
+                            connection::with_selected_connection_trace(trace, serving).await
+                        }
+                        None => serving.await,
                     }
-                }
-            },
-            async {
-                match drain {
-                    Some(drain) => {
-                        let _ = first(shutdown.cancelled(), drain.requested()).await;
+                },
+                async {
+                    match drain {
+                        Some(drain) => {
+                            let _ = first(shutdown.cancelled(), drain.requested()).await;
+                        }
+                        None => shutdown.cancelled().await,
                     }
-                    None => shutdown.cancelled().await,
+                },
+            )
+            .await;
+            match served {
+                Some(
+                    end @ ConnectionEnd::AdmittedThenClosed(
+                        session,
+                        FoundationProtocolError::SessionJoinUnavailable,
+                    ),
+                ) if acceptance.is_some() => {
+                    // This committed owner never sent its acceptance. Release it
+                    // before waiting for normal transport-loss grace.
+                    let released = authority.release_abandoned(session).await;
+                    (end, released != GraceExpiryResult::Released)
                 }
-            },
-        )
-        .await
-        {
-            Some(end) => (end, true),
-            // A shutdown drain is not evidence of lost playable control.
-            None => (
-                ConnectionEnd::AdmittedThenDisconnected(
-                    authority.current_activity_connection(admitted),
+                Some(end) => (end, true),
+                // A shutdown drain is not evidence of lost playable control.
+                None => (
+                    ConnectionEnd::AdmittedThenDisconnected(
+                        authority.current_activity_connection(admitted),
+                    ),
+                    drain.and_then(|d| d.reset()).is_some(),
                 ),
-                drain.and_then(|d| d.reset()).is_some(),
-            ),
-        },
+            }
+        }
     };
     report_transport_close(&end, served, admit_started.elapsed(), trace);
     if let ConnectionEnd::AdmittedThenClosed(session, _)

@@ -1975,6 +1975,13 @@ impl DurabilityRoot {
         self.pool.num_idle() > 0
     }
 
+    /// Call site of the in-flight semantic pass, if one has the holder. A
+    /// background or raw checkout can make the holder busy without this evidence.
+    pub fn checked_out_pass_site(&self) -> Option<&'static std::panic::Location<'static>> {
+        let owner = self.holder_owner.lock().ok()?;
+        owner.filter(|_| !self.is_ready()).map(|(site, ..)| site)
+    }
+
     /// A readiness hint for a background retry outside its previous operation grant.
     /// The checkout still arbitrates priority and readiness together.
     pub fn background_holder_ready(&self) -> bool {

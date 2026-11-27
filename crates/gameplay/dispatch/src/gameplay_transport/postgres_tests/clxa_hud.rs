@@ -13,7 +13,20 @@ fn clxa_hud_postgres_general_stats_preserve_skill_values_and_stamina_boundaries(
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
+    general_stats(false)
+}
+
+#[test]
+fn w13_general_stats_waits_for_a_contended_holder_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    general_stats(true)
+}
+
+fn general_stats(contend: bool) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("clxa-hud", move || {
         run(async |admin| {
             use super::cyclopedia_fixtures::support::exchange;
             reset();
@@ -46,7 +59,24 @@ fn clxa_hud_postgres_general_stats_preserve_skill_values_and_stamina_boundaries(
                 sqlx::query("UPDATE game_character_build_state SET stamina_minutes=$2 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).bind(i32::from(minutes)).execute(&mut *tx).await?;
                 tx.commit().await?;
-                let (status, bytes) = exchange(&owner, &mut admitted, command, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 1]).await?;
+                let request = exchange(&owner, &mut admitted, command, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 1]);
+                let (status, bytes) = if contend && command == 1 {
+                    use crate::gameplay_transport::composed_admission::HolderCheckoutProbe;
+                    use crate::gameplay_transport::cyclopedia_character::GENERAL_STATS_CHECKOUT_PROBE;
+                    use std::{cell::Cell, sync::Arc, time::Duration};
+
+                    let probe = Arc::new(HolderCheckoutProbe::default());
+                    let (reply, released) = tokio::time::timeout(Duration::from_secs(30),
+                        super::fixture::join_two(
+                            GENERAL_STATS_CHECKOUT_PROBE.scope(Cell::new(Some(Arc::clone(&probe))), request),
+                            probe.contend(&h.root),
+                        )
+                    ).await?;
+                    released?;
+                    reply?
+                } else {
+                    request.await?
+                };
                 assert_eq!(status, CommandStatus::Accepted);
                 assert_eq!(bytes.len(), 42, "the complete native GeneralStats layout");
                 assert_eq!(bytes[0], 1);
@@ -62,7 +92,6 @@ fn clxa_hud_postgres_general_stats_preserve_skill_values_and_stamina_boundaries(
             drop(authority);
             drop(seal);
             h.cleanup().await
-        }).map_err(|e| e.to_string())
-    })?.join().map_err(|_| "CLX-A PostgreSQL scenario panicked")??;
-    Ok(())
+        })
+    })
 }

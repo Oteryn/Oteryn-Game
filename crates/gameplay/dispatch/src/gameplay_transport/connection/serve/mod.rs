@@ -241,11 +241,34 @@ async fn close<S: AsyncWrite + Unpin>(
     ServeEnd::Closed(error)
 }
 
-pub(super) async fn serve_admitted_actor<S, A>(
+async fn refuse_pending_join<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+) -> ConnectionEnd {
+    send_join_unavailable(stream, 0).await;
+    ServeEnd::Closed(FoundationProtocolError::SessionJoinUnavailable).finish(admitted)
+}
+
+#[cfg(test)]
+async fn serve_admitted_actor<S, A>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    serve_admitted_actor_for_join(stream, admitted, authority, policy, &mut None).await
+}
+
+pub(super) async fn serve_admitted_actor_for_join<S, A>(
     stream: &mut S,
     mut admitted: AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
+    acceptance: &mut Option<Vec<u8>>,
 ) -> ConnectionEnd
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -268,18 +291,28 @@ where
         match authority.resolve_native_scope(admitted).await {
             Ok(Some(next)) => scoped_authority = Some(next),
             Ok(None) => {}
+            Err(()) if acceptance.is_some() => return refuse_pending_join(stream, admitted).await,
             Err(()) => return ServeEnd::Disconnected.finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         // Resolve the admitted scope before checking its actor, including a
         // reconnect whose actor already belongs to an activity Instance.
         if !Box::pin(authority.staff_refresh(admitted)).await {
+            if acceptance.is_some() {
+                return refuse_pending_join(stream, admitted).await;
+            }
             return ServeEnd::Disconnected.finish(admitted);
         }
         if !authority.remember_activity_connection(admitted) {
+            if acceptance.is_some() {
+                return refuse_pending_join(stream, admitted).await;
+            }
             return ServeEnd::Disconnected.finish(admitted);
         }
         if !authority.prepare_quest_callback_resume(&mut admitted).await {
+            if acceptance.is_some() {
+                return refuse_pending_join(stream, admitted).await;
+            }
             return ServeEnd::Disconnected.finish(admitted);
         }
         if admitted.item_fence.is_some_and(|fence| {
@@ -323,23 +356,32 @@ where
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         );
         let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
+            if acceptance.is_some() {
+                return refuse_pending_join(stream, admitted).await;
+            }
             record_join_progress("held_unplayable", admitted.first_entry);
             return hold_refused(stream, admitted, policy).await;
         };
         record_join_progress("baseline", admitted.first_entry);
         let Some(baseline) = authority.observe(actor).await else {
+            if acceptance.is_some() {
+                return refuse_pending_join(stream, admitted).await;
+            }
             record_join_progress("held_no_baseline", admitted.first_entry);
             return hold_refused(stream, admitted, policy).await;
         };
         // Keep the join snapshot and its temporary session state out of the
         // connection coroutine, which also carries the live command path.
-        let mut session = match Box::pin(setup::prepare(
+        let mut session = match Box::pin(setup::prepare_for_join(
             stream,
             &mut admitted,
             authority,
             policy,
-            actor,
-            baseline,
+            setup::JoinProjection {
+                actor,
+                baseline,
+                acceptance,
+            },
             integrity,
         ))
         .await

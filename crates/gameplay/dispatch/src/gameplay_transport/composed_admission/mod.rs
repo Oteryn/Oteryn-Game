@@ -33,6 +33,8 @@ mod control_loss;
 mod death;
 mod familiar;
 mod first_entry;
+#[cfg(test)]
+pub(super) use first_entry::FIRST_ENTRY_CHECKOUT_PROBE;
 mod grace_expiry;
 mod items;
 mod npc;

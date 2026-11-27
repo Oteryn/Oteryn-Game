@@ -200,8 +200,8 @@ fn fixture_approach(
     Ok(BRAINDEATH_APPROACH)
 }
 
-// Global Demonrage Sword, level 60 Knight, attack 47.
-const HUNTER_SWORD_ID: u32 = 7382;
+// Global Relic Sword, one-handed, level 50, attack 42.
+const HUNTER_SWORD_ID: u32 = 7383;
 
 async fn stage_hunter(clients: &SeamClients<'_>, approach: TilePos) -> TestResult {
     wait_character_released(clients, 0).await?;

@@ -7,6 +7,12 @@ use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::{Admission
 use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
 use oteryn_protocol_oteryn::cyclopedia_character as wire;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static GENERAL_STATS_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
+}
+
 macro_rules! authority_methods {
     () => {
         fn cyclopedia_character_command(
@@ -300,39 +306,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await?;
                 }
-                let read_tab = || {
-                    self.root.read_cyclopedia_character_tab_extended(
-                        self.character, self.holder, fence, target, request.tab, request.page, now,
-                    )
-                };
-                let (view, mut extension) = if request.tab == wire::CharacterTab::GeneralStats {
-                    let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
-                        .map_err(|_| ())?;
-                    retry.retry_durability("cyclopedia_general_stats", || async {
-                        read_tab().await.map_err(|error| match error {
-                            CharacterAuthorityError::Unavailable(error) => error,
-                            CharacterAuthorityError::Rejected
-                            | CharacterAuthorityError::Conflict
-                            | CharacterAuthorityError::NameUnavailable => DurabilityError::CommitRejected,
-                        })
-                    }).await.map_err(|error| {
-                        super::operator_event(&format!(
-                            "event=cyclopedia_tab_refused tab=GeneralStats reason={error:?}",
-                        ));
-                    })?
+                let general_stats = request.tab == wire::CharacterTab::GeneralStats;
+                let budget = if general_stats {
+                    AdmissionRetryBudget::for_session_read(self.root).map_err(|_| ())?
                 } else {
                     AdmissionRetryBudget::for_command(self.root)
-                        .retry_unavailable(async || {
-                            read_tab().await.map_err(|error| match error {
-                                CharacterAuthorityError::Unavailable(
-                                    DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded,
-                                ) => AdmissionRefusal::Unavailable,
-                                _ => AdmissionRefusal::Rejected,
-                            })
-                        })
-                        .await
-                        .map_err(|_| ())?
                 };
+                #[cfg(test)]
+                let probe = GENERAL_STATS_CHECKOUT_PROBE.try_with(std::cell::Cell::take)
+                    .ok().flatten().filter(|_| general_stats);
+                #[cfg(test)]
+                if let Some(probe) = &probe {
+                    probe.pause().await;
+                }
+                let mut attempt = 0_u32;
+                let (view, mut extension) = budget
+                    .retry_unavailable(async || {
+                        let read = self.root.read_cyclopedia_character_tab_extended(
+                            self.character, self.holder, fence, target, request.tab, request.page, now,
+                        );
+                        let result = if general_stats {
+                            attempt = attempt.saturating_add(1);
+                            let holder = self.root.checked_out_pass_site()
+                                .map_or_else(|| "unobserved".to_owned(), |site| site.to_string());
+                            super::operator_event(&format!(
+                                "event=cyclopedia_general_stats_attempt command_id={command_id} attempt={attempt} holder={holder}"
+                            ));
+                            tokio::time::timeout_at(budget.deadline, read)
+                                .await
+                                .map_err(|_| AdmissionRefusal::Unavailable)?
+                        } else {
+                            read.await
+                        };
+                        match result {
+                            Ok(view) => Ok(view),
+                            Err(CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable)) => {
+                                #[cfg(test)]
+                                if attempt == 1 && let Some(probe) = &probe {
+                                    tokio::time::pause();
+                                    tokio::time::advance(super::COMMAND_HOLDER_WINDOW).await;
+                                    tokio::time::resume();
+                                    probe.blocked();
+                                }
+                                Err(AdmissionRefusal::Unavailable)
+                            }
+                            Err(CharacterAuthorityError::Unavailable(DurabilityError::RootPassDeadlineExceeded)) => {
+                                Err(AdmissionRefusal::Unavailable)
+                            }
+                            Err(_) => Err(AdmissionRefusal::Rejected),
+                        }
+                    })
+                    .await
+                    .map_err(|_| ())?;
                 // Each extension field reaches only a session that selected its capability.
                 if !admitted
                     .continuity

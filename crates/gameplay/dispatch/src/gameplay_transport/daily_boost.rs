@@ -12,6 +12,9 @@ use oteryn_protocol_oteryn::daily_boost::{self as wire, DailyBoostRefusal};
 
 #[cfg(test)]
 tokio::task_local! {
+    pub(in crate::gameplay_transport) static DAILY_BOOST_RUNTIME_PROBE:
+        (std::sync::Arc<tokio::sync::Notify>, std::sync::Arc<tokio::sync::Notify>);
+
     pub(in crate::gameplay_transport) static DAILY_BOOST_CHECKOUT_PROBE:
         std::cell::Cell<Option<std::sync::Arc<super::composed_admission::HolderCheckoutProbe>>>;
 }
@@ -24,9 +27,9 @@ struct DailyBoostQuery {
 }
 
 impl DailyBoostQuery {
-    fn attempt(self, phase: &'static str, attempt: u32) {
+    fn attempt(self, phase: &'static str, attempt: u32, holder: impl std::fmt::Display) {
         operator_event(&format!(
-            "event=daily_boost_query_attempt command_id={} seq={} phase={phase} attempt={attempt}",
+            "event=daily_boost_query_attempt command_id={} seq={} phase={phase} attempt={attempt} holder={holder}",
             self.command_id,
             self.admitted.continuity.server_sequence.saturating_add(1),
         ));
@@ -113,16 +116,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         query: Option<DailyBoostQuery>,
         busy: DailyBoostRefusal,
     ) -> Result<tokio::sync::MutexGuard<'_, ChannelRuntimeV1>, DailyBoostRefusal> {
-        if let Some(query) = query
-            && let Some(phase) = busy.runtime_phase()
+        #[cfg(test)]
+        if busy == DailyBoostRefusal::RuntimeBusyBeforeSelection
+            && let Ok((query_started, runtime_held)) = DAILY_BOOST_RUNTIME_PROBE.try_with(Clone::clone)
         {
-            query.attempt(phase, 1);
+            query_started.notify_one();
+            runtime_held.notified().await;
         }
-        // Keep one FIFO ticket for the whole wait. Retrying try_lock would
-        // lose this command's place every time a Channel owner released it.
-        let runtime = tokio::time::timeout_at(budget.deadline, self.runtime.lock())
-            .await
-            .map_err(|_| busy)?;
+        let runtime = match self.runtime.try_lock() {
+            Ok(runtime) => {
+                if let Some(query) = query
+                    && let Some(phase) = busy.runtime_phase()
+                {
+                    query.attempt(phase, 1, "none");
+                }
+                runtime
+            }
+            Err(_) => {
+                if let Some(query) = query
+                    && let Some(phase) = busy.runtime_phase()
+                {
+                    query.attempt(phase, 1, "channel_runtime");
+                    query.attempt(phase, 2, "channel_runtime");
+                }
+                // Retain the FIFO ticket until the command's deadline.
+                tokio::time::timeout_at(budget.deadline, self.runtime.lock())
+                    .await
+                    .map_err(|_| busy)?
+            }
+        };
         if let Some(query) = query {
             Self::check_daily_boost_session(&runtime, query.admitted, query.fence)?;
         }
@@ -185,7 +207,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .retry_durability("daily_boost_selection", || {
                 attempt = attempt.saturating_add(1);
                 if let Some(query) = query {
-                    query.attempt("selection", attempt);
+                    let holder = self.root.checked_out_pass_site();
+                    query.attempt(
+                        "selection",
+                        attempt,
+                        holder.map_or_else(|| "unobserved".to_owned(), |site| site.to_string()),
+                    );
                 }
                 async {
                     budget.check_deadline()?;
@@ -289,7 +316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(DailyBoostRefusal::ConnectionGenerationMismatch);
         }
         let budget =
-            AdmissionRetryBudget::for_foreground_command(self.root).map_err(selection_refusal)?;
+            AdmissionRetryBudget::for_session_read(self.root).map_err(selection_refusal)?;
         let view = self
             .load_daily_boost(
                 &budget,
