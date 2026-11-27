@@ -4,7 +4,7 @@
 //!    bounty, shop, points and soulseal projection.
 //! 2. Send START_WEEKLY with an invalid/locked difficulty; expect a refusal and
 //!    no board delta (the negative path).
-//! 3. Admit the capacity fixture at seeded level 1500, send START_WEEKLY(Beginner),
+//! 3. Admit the capacity fixture at seeded knight level 650, send START_WEEKLY(Beginner),
 //!    and expect an accepted board containing kill and delivery assignments.
 //! 4. Send DELIVER for a real assignment; expect either item consumption plus
 //!    completion/XP deltas, or the explicit insufficient-items refusal.
@@ -157,7 +157,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         character_prep::dedicated_character(clients, "NODE_BOOT_Q_P04_399_ACCOUNT").await?;
     let underlevel_clients = underlevel.clients(clients);
     let client = connect_character(&underlevel_clients, 0x9a, 0).await?;
-    let mut client = seed_build(&underlevel_clients, client, "p04-master-399", 399, "Master refusal").await?;
+    let mut client = seed_build(&underlevel_clients, client, "p04-master-399", ("sorcerer", 399), "Master refusal").await?;
     let initial = query(&mut client).await?;
     journey.check(1, initial.refusal == 0 && !initial.shop.is_empty(), &initial);
     let refused = send(&mut client, 5, 3).await?;
@@ -180,7 +180,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let scoped_clients = identity.clients(clients);
     let clients = &scoped_clients;
     let client = connect_character(clients, 0x9a, 0).await?;
-    let mut client = seed_build(clients, client, "p04-task-board", 1500, "authored maximum delivery capacity").await?;
+    let mut client = seed_build(clients, client, "p04-task-board", ("knight", 650), "authored maximum delivery capacity").await?;
     let capacity_board = query(&mut client).await?;
     if capacity_board.refusal != 0 || capacity_board.weekly.started || capacity_board.shop.is_empty() {
         return Err("P04 capacity fixture did not start with a fresh board".into());
@@ -469,12 +469,12 @@ async fn seed_build(
     clients: &SeamClients<'_>,
     mut client: oteryn_dev_client::DevClientSession,
     profile: &'static str,
-    level: u32,
+    (vocation, level): (&'static str, u32),
     reason: &'static str,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     character_prep::declare_seeded(
         "P04.full",
-        &format!("sorcerer-level-{level}"),
+        &format!("{vocation}-level-{level}"),
         reason,
     );
     let original_session = client.join_snapshot().game_session_id;
@@ -489,12 +489,12 @@ async fn seed_build(
     drop(client);
     let mut client = connect_character(clients, 0x9a, 0).await?;
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
-        "sorcerer",
+        vocation,
         level,
         oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
         oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
     )
-    .ok_or("missing P04 sorcerer maxima")?;
+    .ok_or("missing P04 vocation maxima")?;
     if client.join_snapshot().game_session_id == original_session
         || full_e2ef7::player_level(&mut client).await? != level
         || !client
@@ -505,7 +505,7 @@ async fn seed_build(
             "fresh Task Board admission did not serve the seeded level and derived vitals".into(),
         );
     }
-    evidence(&format!("FIXTURE row=P04.full fixture_level={level} vocation=sorcerer reason={reason}"));
+    evidence(&format!("FIXTURE row=P04.full fixture_level={level} vocation={vocation} reason={reason}"));
     Ok(client)
 }
 
