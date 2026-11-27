@@ -325,16 +325,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         #[cfg(test)]
-        let probe = CUBE_INVENTORY_CHECKOUT_PROBE.try_with(std::cell::Cell::take).ok().flatten();
+        let probe = CUBE_INVENTORY_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
         #[cfg(test)]
         if let Some(probe) = &probe {
             probe.pause().await;
         }
         let inventory = probe_read(deadline, &budget, "cube_inventory", async || {
-            let result = self.root.read_item_use_inventory(self.character, self.holder, fence).await;
+            let result = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await;
             #[cfg(test)]
-            if matches!(result, Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable)))
-                && let Some(probe) = &probe
+            if matches!(
+                result,
+                Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
+            ) && let Some(probe) = &probe
             {
                 probe.blocked();
             }
