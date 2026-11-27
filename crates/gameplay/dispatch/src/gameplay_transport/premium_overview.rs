@@ -4,6 +4,7 @@ use super::{
     ComposedFreshAdmission, character_info::CharacterInfoReply, connection::AdmittedSession,
 };
 use crate::durability::premium_fence::EntitlementState;
+use crate::premium::PremiumClass;
 use oteryn_protocol_oteryn::premium_overview::{Feature, Overview, State};
 
 pub(super) async fn query(
@@ -36,43 +37,8 @@ async fn observe(
         valid_for_us: 0,
         features: features(false),
     };
-    if let Some(coordinator) = owner.premium_coordinator {
-        let gate = coordinator.premium_gate(account).await;
-        let view = coordinator.view(account);
-        if let RegisteredSpellAccessOwner::Premium {
-            consumer, clock, ..
-        } = view.as_ref()
-            && let Some(now) = clock.read_current_window()
-        {
-            result.observed_at_us = now.upper_us().max(0);
-            let record = owner.root.load_premium_fence(account).await.ok()?;
-            if !record.conflicting
-                && let Some(fence) = record.fence.filter(|f| !f.conflicting)
-            {
-                let e = fence.latest;
-                result.authority_revision = e.authority_revision;
-                result.expires_at_us = (e.effective_until_us > 0).then_some(e.effective_until_us);
-                result.state = match e.state {
-                    EntitlementState::None => State::None,
-                    EntitlementState::Active => State::Active,
-                    EntitlementState::Expired => State::Expired,
-                    EntitlementState::Revoked => State::Revoked,
-                    EntitlementState::NotYetEffective => State::Scheduled,
-                };
-                if gate.require().is_ok()
-                    && let Some(current) = consumer
-                        .current_premium(account, Some(now))
-                        .filter(|c| c.authority_revision == e.authority_revision)
-                {
-                    result.valid_for_us =
-                        u64::try_from(current.benefit_until_us.checked_sub(now.upper_us())?)
-                            .ok()?
-                            .min(60_000_000);
-                }
-                result.features = features(result.valid_for_us > 0);
-            }
-        }
-    }
+    let snapshot = owner.premium.wait_for_snapshot(account).await;
+    let projection = populate(owner, account, &mut result).await;
     // An ownership/lease takeover during the observation cannot return a predecessor's account.
     if owner
         .root
@@ -84,8 +50,103 @@ async fn observe(
     {
         return None;
     }
+    if let Err(reason) = projection {
+        super::operator_event(&format!(
+            "event=premium_overview_unavailable reason={} snapshot={:?}",
+            reason.label(),
+            snapshot.err(),
+        ));
+    }
     Some(result)
 }
+#[derive(Debug)]
+enum OverviewUnavailable {
+    CoordinatorUnavailable,
+    ClockUnavailable,
+    FenceUnavailable,
+    ConflictingEvidence,
+    Consumer(PremiumClass),
+    ActivationOrRevisionUnavailable,
+}
+
+impl OverviewUnavailable {
+    fn label(&self) -> String {
+        match self {
+            Self::Consumer(class) => format!("{class:?}"),
+            reason => format!("{reason:?}"),
+        }
+    }
+}
+
+async fn populate(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    account: [u8; 16],
+    result: &mut Overview,
+) -> Result<(), OverviewUnavailable> {
+    use OverviewUnavailable as Unavailable;
+    let coordinator = owner
+        .premium_coordinator
+        .ok_or(Unavailable::CoordinatorUnavailable)?;
+    let gate = coordinator.premium_gate(account).await;
+    let view = coordinator.view(account);
+    let RegisteredSpellAccessOwner::Premium {
+        consumer, clock, ..
+    } = view.as_ref()
+    else {
+        return Err(Unavailable::ClockUnavailable);
+    };
+    let record = super::AdmissionRetryBudget::for_command(owner.root)
+        .retry_command_guard(async || owner.root.load_premium_fence(account).await)
+        .await
+        .map_err(|_| Unavailable::FenceUnavailable)?;
+    let now = clock
+        .read_current_window()
+        .ok_or(Unavailable::ClockUnavailable)?;
+    result.observed_at_us = now.upper_us().max(0);
+    if record.conflicting || record.fence.as_ref().is_some_and(|fence| fence.conflicting) {
+        return Err(Unavailable::ConflictingEvidence);
+    }
+    let evidence = record
+        .fence
+        .ok_or(Unavailable::Consumer(PremiumClass::AuthorityUnavailable))?
+        .latest;
+    let mut stale = None;
+    result.state = match evidence.state {
+        EntitlementState::None => State::None,
+        EntitlementState::Expired => State::Expired,
+        EntitlementState::Revoked => State::Revoked,
+        EntitlementState::NotYetEffective => State::Scheduled,
+        EntitlementState::Active => {
+            if let Some(current) = consumer.current_premium(account, Some(now)) {
+                if gate.require().is_err()
+                    || current.authority_revision != evidence.authority_revision
+                {
+                    return Err(Unavailable::ActivationOrRevisionUnavailable);
+                }
+                result.valid_for_us = u64::try_from(
+                    current
+                        .benefit_until_us
+                        .saturating_sub(now.upper_us())
+                        .clamp(0, 60_000_000),
+                )
+                .map_err(|_| Unavailable::ClockUnavailable)?;
+            } else {
+                let class = consumer.class(account, Some(now));
+                if class != PremiumClass::StaleWithinBound {
+                    return Err(Unavailable::Consumer(class));
+                }
+                // Keep historical expiry visible while its feature lease is closed.
+                stale = Some(Unavailable::Consumer(class));
+            }
+            State::Active
+        }
+    };
+    result.authority_revision = evidence.authority_revision;
+    result.expires_at_us = (evidence.effective_until_us > 0).then_some(evidence.effective_until_us);
+    result.features = features(result.valid_for_us > 0);
+    stale.map_or(Ok(()), Err)
+}
+
 fn features(enabled: bool) -> Vec<Feature> {
     [
         (
