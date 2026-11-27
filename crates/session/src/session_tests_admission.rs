@@ -29,7 +29,7 @@ async fn refuse_admission(
 }
 
 /// N8: a refusal frame with a code in 1100..=1199 surfaces the code, and the code maps to
-/// its FND-04A class; any other `ProtocolError` stays `NotAdmitted`.
+/// its FND-04A class. A general protocol violation stays `NotAdmitted`.
 #[test]
 fn an_admission_refusal_frame_surfaces_its_code() -> Result<(), BoxError> {
     block_on(async {
@@ -68,6 +68,17 @@ fn an_admission_refusal_frame_surfaces_its_code() -> Result<(), BoxError> {
             result,
             Err(SessionError::NotAdmitted(MessageType::ProtocolError))
         ));
+        Ok(())
+    })?
+}
+
+#[test]
+fn pending_join_refusal_preserves_the_typed_code_before_acceptance() -> Result<(), BoxError> {
+    block_on(async {
+        let reason = FoundationProtocolError::SessionJoinUnavailable;
+        assert!(matches!(refuse_admission(reason).await?,
+            Err(SessionError::ServerProtocolError { code, connection_trace: None })
+                if code == reason.code()));
         Ok(())
     })?
 }

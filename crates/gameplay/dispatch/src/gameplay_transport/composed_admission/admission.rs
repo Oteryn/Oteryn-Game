@@ -59,7 +59,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // transient holder absence is not an authenticated grant verdict.
         if budget
             .retry_unavailable(async || {
-                self.root.await_ready().await.map_err(|_| Unavailable)?;
+                let started = tokio::time::Instant::now();
+                let readiness = self.root.await_ready().await;
+                record_admission_stage(
+                    "readiness",
+                    "durability_holder_pg_pool",
+                    if readiness.is_ok() {
+                        "ready"
+                    } else {
+                        "unavailable"
+                    },
+                    started.elapsed(),
+                );
+                readiness.map_err(|_| Unavailable)?;
                 self.root
                     .staff_account_banned(self.character, record.account_id)
                     .await

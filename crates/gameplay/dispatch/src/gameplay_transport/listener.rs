@@ -349,6 +349,15 @@ where
     }
     let mut unpublished_join = false;
     let (end, served) = match admitted {
+        Err(
+            end @ ConnectionEnd::AdmittedThenClosed(
+                _,
+                FoundationProtocolError::SessionJoinUnavailable,
+            ),
+        ) => {
+            unpublished_join = true;
+            (end, true)
+        }
         // A durably admitted or resumed session whose acceptance could not be delivered
         // still has a controller that is gone: it enters the loss lifecycle, never limbo.
         Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),

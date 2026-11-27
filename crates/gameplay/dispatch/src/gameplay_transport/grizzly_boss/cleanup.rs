@@ -159,6 +159,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> bool {
+        self.reconcile_grizzly_boss_with_probe(session, false).await
+    }
+
+    pub(in crate::gameplay_transport) async fn reconcile_grizzly_boss_for_join(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
+        self.reconcile_grizzly_boss_with_probe(session, true).await
+    }
+
+    async fn reconcile_grizzly_boss_with_probe(
+        &self,
+        session: GameSessionId,
+        joining: bool,
+    ) -> bool {
         let pending = match self.states.grizzly_boss.pending.lock() {
             Ok(pending) => pending.get(&session).cloned(),
             Err(_) => return false,
@@ -180,15 +195,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return true;
         }
-        let budget = AdmissionRetryBudget::for_command(self.root);
-        match budget
-            .retry_command_guard(async || {
-                self.root
-                    .grizzly_boss_entry_exists_for_session(session, budget.deadline)
-                    .await
-            })
-            .await
-        {
+        let budget = if joining {
+            AdmissionRetryBudget::for_holder_window(
+                self.root,
+                crate::durability::ROOT_RECOVERY_WINDOW,
+            )
+        } else {
+            AdmissionRetryBudget::for_command(self.root)
+        };
+        let probe = async || {
+            let started = tokio::time::Instant::now();
+            let result = self
+                .root
+                .grizzly_boss_entry_exists_for_session(session, budget.deadline, joining)
+                .await;
+            if joining || result.is_err() {
+                let outcome = match &result {
+                    Ok(_) => "completed",
+                    Err(crate::durability::DurabilityError::RootPassDeadlineExceeded) => "deadline",
+                    Err(crate::durability::DurabilityError::Database(
+                        crate::durability::SqlxFailureClass::Pool,
+                    )) => "pool_unavailable",
+                    Err(_) => "unavailable",
+                };
+                crate::gameplay_transport::record_admission_stage(
+                    "grizzly_input_probe",
+                    "receipt_pg_pool_or_query",
+                    outcome,
+                    started.elapsed(),
+                );
+            }
+            result
+        };
+        let result = if joining {
+            // This scalar read uses the receipt PG pool, independently of the semantic
+            // holder. Let SQLx queue there; retry one expired acquisition inside the same
+            // admission window, without competing for an unrelated root holder.
+            match probe().await {
+                Err(crate::durability::DurabilityError::Database(
+                    crate::durability::SqlxFailureClass::Pool,
+                )) if tokio::time::Instant::now() < budget.deadline => probe().await,
+                result => result,
+            }
+        } else {
+            budget.retry_command_guard(probe).await
+        };
+        match result {
             Ok(false) => return self.remember_grizzly_session(session),
             Ok(true) => {}
             Err(error) => {

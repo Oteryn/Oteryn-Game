@@ -930,7 +930,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
-        if !self.reconcile_grizzly_boss(session).await {
+        self.reconcile_quest_callbacks_with_grizzly(session, false)
+            .await
+    }
+
+    pub(super) async fn reconcile_quest_callbacks_with_grizzly(
+        &self,
+        session: GameSessionId,
+        joining: bool,
+    ) -> bool {
+        let grizzly_ready = if joining {
+            self.reconcile_grizzly_boss_for_join(session).await
+        } else {
+            self.reconcile_grizzly_boss(session).await
+        };
+        if !grizzly_ready {
             return false;
         }
         let session = match self.states.quest_callbacks.records.lock() {

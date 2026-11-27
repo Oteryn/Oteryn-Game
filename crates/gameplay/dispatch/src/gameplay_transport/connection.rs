@@ -522,6 +522,40 @@ pub enum AdmissionRefusal {
 /// N8: the one pre-admission refusal frame is written and flushed within this bound, or dropped.
 const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::from_secs(2);
 
+// The supported client waits 20 seconds for its first response. Reserve time for the
+// refusal write and give fresh admission three ordinary root recovery windows.
+const FRESH_ADMISSION_BOUND: std::time::Duration =
+    crate::durability::ROOT_RECOVERY_WINDOW.saturating_mul(3);
+
+pub(super) struct PendingJoin {
+    frame: Vec<u8>,
+    deadline: tokio::time::Instant,
+}
+
+async fn admission_stage<T>(
+    deadline: Option<tokio::time::Instant>,
+    phase: &'static str,
+    wait_on: &'static str,
+    work: impl Future<Output = T>,
+) -> Result<T, tokio::time::error::Elapsed> {
+    let Some(deadline) = deadline else {
+        return Ok(work.await);
+    };
+    let started = tokio::time::Instant::now();
+    let result = tokio::time::timeout_at(deadline, work).await;
+    super::record_admission_stage(
+        phase,
+        wait_on,
+        if result.is_ok() {
+            "completed"
+        } else {
+            "deadline"
+        },
+        started.elapsed(),
+    );
+    result
+}
+
 /// DEFLAKE-2: the closed-schema operator line of a silent fresh-admission or resume refusal.
 /// It names the refusal kind alone, never a session, account, character or transport.
 #[cfg(test)]
@@ -830,7 +864,7 @@ pub(super) async fn admit_frame_for_join<S, A, I>(
     frame: &[u8],
     authority: &A,
     identifiers: &I,
-) -> Result<(AdmittedSession, Option<Vec<u8>>), ConnectionEnd>
+) -> Result<(AdmittedSession, Option<PendingJoin>), ConnectionEnd>
 where
     S: AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
@@ -849,7 +883,7 @@ async fn admit_frame_inner<S, A, I>(
     authority: &A,
     identifiers: &I,
     defer_fresh_acceptance: bool,
-) -> Result<(AdmittedSession, Option<Vec<u8>>), ConnectionEnd>
+) -> Result<(AdmittedSession, Option<PendingJoin>), ConnectionEnd>
 where
     S: AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
@@ -982,18 +1016,30 @@ where
         Ok(bootstrap) => bootstrap,
         Err(error) => return Err(reject(stream, error, 0).await),
     };
+    let deadline = tokio::time::Instant::now() + FRESH_ADMISSION_BOUND;
     let (Some(game_session_id), Some(transport)) =
         (identifiers.game_session_id(), identifiers.transport_ref())
     else {
+        if defer_fresh_acceptance {
+            send_fresh_unavailable(stream).await;
+        }
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
         ));
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
     // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
-    let Some(selected) =
-        fresh_capability_selection(authority, bootstrap.supported_capabilities).await
+    let Ok(Some(selected)) = admission_stage(
+        defer_fresh_acceptance.then_some(deadline),
+        "capability_selection",
+        "runtime_lock",
+        fresh_capability_selection(authority, bootstrap.supported_capabilities),
+    )
+    .await
     else {
+        if defer_fresh_acceptance {
+            send_fresh_unavailable(stream).await;
+        }
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
         ));
@@ -1010,10 +1056,36 @@ where
         transport,
         supported_capabilities: bootstrap.supported_capabilities,
     };
-    let mut admitted = match authority.admit(attempt).await {
+    let mut decision = std::pin::pin!(authority.admit(attempt));
+    let decision = match admission_stage(
+        defer_fresh_acceptance.then_some(deadline),
+        "root_pass",
+        "durability_holder_pg_runtime",
+        decision.as_mut(),
+    )
+    .await
+    {
+        Ok(decision) => decision,
+        Err(_) => {
+            send_fresh_unavailable(stream).await;
+            // A durable commit may be in flight. Keep polling its owning future and return
+            // any resulting controller to the listener's unpublished-join cleanup.
+            return Err(match decision.await {
+                Ok(admitted) => ConnectionEnd::AdmittedThenClosed(
+                    admitted,
+                    FoundationProtocolError::SessionJoinUnavailable,
+                ),
+                Err(refusal) => ConnectionEnd::AdmissionRefused(refusal),
+            });
+        }
+    };
+    let mut admitted = match decision {
         Ok(admitted) => admitted,
         Err(refusal) => {
             report_admission_refusal(refusal);
+            if defer_fresh_acceptance && refusal == AdmissionRefusal::Unavailable {
+                send_fresh_unavailable(stream).await;
+            }
             if let AdmissionRefusal::Classified(error) = refusal {
                 // N8: exactly one ProtocolError at generation 0, then close. A slow or
                 // failed peer write changes nothing: the refusal already stands.
@@ -1069,7 +1141,21 @@ where
     }) else {
         return Err(join_unavailable(stream, admitted, 0).await);
     };
-    let accepted = if let Some(document) = authority.client_bulletin().await {
+    let bulletin = admission_stage(
+        defer_fresh_acceptance.then_some(deadline),
+        "bulletin",
+        "owner_read",
+        authority.client_bulletin(),
+    )
+    .await;
+    let Ok(bulletin) = bulletin else {
+        send_join_unavailable(stream, 0).await;
+        return Err(ConnectionEnd::AdmittedThenClosed(
+            admitted,
+            FoundationProtocolError::SessionJoinUnavailable,
+        ));
+    };
+    let accepted = if let Some(document) = bulletin {
         oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
             .unwrap_or(accepted)
     } else {
@@ -1087,7 +1173,13 @@ where
             )
         })
     {
-        return Ok((admitted, Some(accepted)));
+        return Ok((
+            admitted,
+            Some(PendingJoin {
+                frame: accepted,
+                deadline,
+            }),
+        ));
     }
     write_frame(stream, &accepted)
         .await
@@ -1342,7 +1434,7 @@ pub(super) async fn serve_admitted_for_join<S, A>(
     admitted: AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
-    acceptance: &mut Option<Vec<u8>>,
+    acceptance: &mut Option<PendingJoin>,
 ) -> ConnectionEnd
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -1725,6 +1817,18 @@ async fn send_join_unavailable<S: AsyncWrite + Unpin>(stream: &mut S, generation
             stream,
             FoundationProtocolError::SessionJoinUnavailable,
             generation,
+        ),
+    )
+    .await;
+}
+
+async fn send_fresh_unavailable<S: AsyncWrite + Unpin>(stream: &mut S) {
+    let _ = tokio::time::timeout(
+        ADMISSION_REFUSAL_WRITE_BOUND,
+        send_error(
+            stream,
+            FoundationProtocolError::AdmissionAttemptReconciliationRequired,
+            0,
         ),
     )
     .await;

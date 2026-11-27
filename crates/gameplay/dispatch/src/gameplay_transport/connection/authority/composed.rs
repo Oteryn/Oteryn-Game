@@ -1609,7 +1609,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             record_entry_decision("playable", 1, started.elapsed(), phase);
             phase = "quest_callbacks";
             started = tokio::time::Instant::now();
-            self.reconcile_quest_callbacks(admitted.game_session_id)
+            self.reconcile_quest_callbacks_with_grizzly(admitted.game_session_id, true)
                 .await
         })
         .await

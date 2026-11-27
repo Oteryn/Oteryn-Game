@@ -156,6 +156,14 @@
       "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
+      "event": "receipt_probe_wait",
+      "level": "info",
+      "span": false,
+      "fields": ["operation", "wait_on", "outcome", "elapsed_ms"],
+      "codes": [],
+      "note": "Admission receipt-probe timings distinguish PostgreSQL connection checkout from query execution. No identifiers, SQL, or payloads."
+    },
+    {
       "event": "wheel_reset_refused",
       "level": "warn",
       "span": false,

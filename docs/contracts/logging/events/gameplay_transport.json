@@ -16,6 +16,14 @@
       "note": "First-entry retry decision and pre-snapshot callback phase completion. Outcome is phase-local playable, unplayable or retries_exhausted; attempts counts actual first-entry calls (one for each callback phase); elapsed_ms covers the retry loop or named callback phase. Phase identifies the last first-entry participant or callback phase. Connection trace when available; no player identity or raw errors."
     },
     {
+      "event": "admission_stage",
+      "level": "info",
+      "span": false,
+      "fields": ["phase", "wait_on", "outcome", "elapsed_ms"],
+      "codes": [],
+      "note": "Fresh wire admission work and durability probes. wait_on names the lock, holder, or pool and outcome records completion or the observed failure. No player identifiers or payloads."
+    },
+    {
       "event": "appearance_companion_unavailable",
       "level": "warn",
       "span": false,

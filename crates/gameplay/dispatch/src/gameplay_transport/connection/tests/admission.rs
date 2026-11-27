@@ -213,6 +213,76 @@ fn admission_refusal_writes_no_acceptance() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn contended_fresh_admission_and_snapshot_send_typed_refusals_within_budget()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        run(async {
+            struct ContendedAdmission {
+                admitted: AdmittedSession,
+                root_contended: bool,
+                contention: tokio::sync::Mutex<()>,
+            }
+
+            impl FreshAdmissionAuthority for ContendedAdmission {
+                async fn admit(&self, _: FreshAdmissionAttempt<'_>) -> Result<AdmittedSession, AdmissionRefusal> {
+                    if self.root_contended {
+                        drop(self.contention.lock().await);
+                    }
+                    Ok(self.admitted)
+                }
+
+                async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+                    Some(at(0))
+                }
+
+                async fn activity_scope_snapshot(&self, _: &mut AdmittedSession) -> Result<Option<Vec<u8>>, ()> {
+                    drop(self.contention.lock().await);
+                    Ok(None)
+                }
+            }
+
+            tokio::time::pause();
+            for (root_contended, refusal) in [
+                (true, FoundationProtocolError::AdmissionAttemptReconciliationRequired),
+                (false, FoundationProtocolError::SessionJoinUnavailable),
+            ] {
+                let authority = ContendedAdmission {
+                    admitted: positioned()?, root_contended, contention: tokio::sync::Mutex::new(()),
+                };
+                let holder = authority.contention.lock().await;
+                let (mut server, mut client) = tokio::io::duplex(1 << 16);
+                let request = bootstrap(1, 1, b"grant");
+                let serve = async {
+                    match admit_frame_for_join(&mut server, &request, &authority, &Identifiers).await {
+                        Ok((admitted, mut acceptance)) => serve_admitted_for_join(
+                            &mut server, admitted, &authority, FAST, &mut acceptance,
+                        ).await,
+                        Err(end) => end,
+                    }
+                };
+                let read = async {
+                    let started = tokio::time::Instant::now();
+                    let frame = tokio::time::timeout(std::time::Duration::from_secs(20), read_frame(&mut client)).await??;
+                    let envelope = decode_wire_envelope(&frame)?;
+                    assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+                    assert_eq!(envelope.connection_generation(), 0);
+                    assert_eq!(oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?.error_code, refusal.code());
+                    assert!(started.elapsed() <= FRESH_ADMISSION_BOUND + ADMISSION_REFUSAL_WRITE_BOUND);
+                    // In the root case the refusal arrives while the owner is still blocked.
+                    // Releasing it now must return the resulting controller for cleanup.
+                    drop(holder);
+                    Ok::<_, Box<dyn Error>>(())
+                };
+                let (end, read) = tokio::join!(serve, read);
+                read?;
+                assert!(matches!(end, ConnectionEnd::AdmittedThenClosed(_, FoundationProtocolError::SessionJoinUnavailable)));
+            }
+            Ok(())
+        }).map_err(|error| error.to_string())
+    })?.join().map_err(|_| "fresh admission contention thread panicked")?.map_err(Into::into)
+}
+
+#[test]
 fn join_progress_distinguishes_refused_baseline_and_flushed_snapshot()
 -> Result<(), Box<dyn Error + Send + Sync>> {
     std::thread::Builder::new()

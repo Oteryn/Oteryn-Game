@@ -128,8 +128,9 @@ impl DurabilityRoot {
         &self,
         session: GameSessionId,
         deadline: tokio::time::Instant,
+        joining: bool,
     ) -> std::result::Result<bool, DurabilityError> {
-        self.read_gameplay_scalar(
+        self.read_gameplay_scalar_observed(
             sqlx::query_scalar(
                 "SELECT EXISTS(
                     SELECT 1 FROM game_character_grizzly_boss_entries b
@@ -140,6 +141,7 @@ impl DurabilityRoot {
             )
             .bind(session.as_bytes().as_slice()),
             deadline,
+            joining.then_some("grizzly_input_probe"),
         )
         .await
     }
