@@ -128,7 +128,8 @@ pub(super) async fn seed(
             u32::MAX - 7,
             &[(1, 3031, 7), (2, 3357, 1), (3, 3577, 1), (4, 3577, 1)][..],
         ),
-        (u32::MAX - 8, &[(1, 3578, 1), (2, 3577, 1)][..]),
+        (u32::MAX - 8, &[(1, 3578, 1)][..]),
+        (u32::MAX - 9, &[(1, 3577, 1)][..]),
     ] {
         let mut corpse = root
             .freeze_item_mint(
@@ -205,9 +206,13 @@ pub(super) async fn seed(
                 return Err("I07 fixture corpse entry did not commit".into());
             }
         }
-        if death_slot == u32::MAX - 7 {
-            publish_corpse(spawn, fence.game_session_id, corpse.item_instance_id).await?;
-        }
+        publish_corpse(
+            spawn,
+            fence.game_session_id,
+            corpse.item_instance_id,
+            i32::from(death_slot != u32::MAX - 7),
+        )
+        .await?;
     }
     Ok(())
 }
@@ -216,6 +221,7 @@ async fn publish_corpse(
     spawn: SpawnOwners<'_>,
     session: crate::foundation::GameSessionId,
     item: [u8; 16],
+    east: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_gameplay_entities::MovementLocalPosition;
     let mut runtime = spawn.runtime.lock().await;
@@ -226,7 +232,10 @@ async fn publish_corpse(
     let position = position.position();
     let creature = runtime
         .admit_pinned_test_creature(MovementLocalPosition {
-            x: position.x,
+            x: position
+                .x
+                .checked_add(east)
+                .ok_or("I07 corpse position overflow")?,
             y: position.y,
             floor: position.floor,
         })
