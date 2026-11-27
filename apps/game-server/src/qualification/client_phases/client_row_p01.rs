@@ -73,6 +73,22 @@ fn kills(reply: &CharmProgressionReply, race: NonZeroU32) -> u32 {
         .map_or(0, |entry| entry.kill_count)
 }
 
+fn occupied_rat_route_tiles(client: &DevClientSession) -> std::collections::BTreeSet<TilePos> {
+    use oteryn_dev_client::EntityKind;
+    client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entity| {
+            matches!(
+                entity.kind,
+                EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+            )
+        })
+        .filter_map(|entity| tile(entity.position).ok())
+        .collect()
+}
+
 async fn walk_rat_route(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -322,6 +338,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // Leave this same spawn's view for its authored respawn interval before
     // the second hunt. A player in view would defer the spawn.
     let from = tile(client.world_spatial().actor_position)?;
+    let occupied = occupied_rat_route_tiles(&client);
     let retreat = route_avoiding(
         world,
         from,
@@ -330,7 +347,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 && (!(-8..=9).contains(&(i32::from(spawn.x) - i32::from(at.x)))
                     || !(-6..=7).contains(&(i32::from(spawn.y) - i32::from(at.y))))
         },
-        &can_land,
+        |at| can_land(at) && !occupied.contains(&at),
     )
     .ok_or("authored Rat spawn has no offscreen waiting tile")?;
     walk_rat_route(&mut client, world, &retreat).await?;
