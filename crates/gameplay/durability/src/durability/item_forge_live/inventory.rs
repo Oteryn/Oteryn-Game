@@ -2,10 +2,19 @@
 use super::*;
 use crate::domain::death::EquipmentSlot;
 use crate::domain::item_definition::{ItemDefinitionFacts, ProjectV2ItemForgeProfile};
-use crate::durability::item_loop_move::{ItemLoopContent, LoopError, carried_weight};
+use crate::durability::item_loop_move::{
+    ITEM_LOOP_DEPTH_MAX, ItemLoopContent, LoopError, carried_weight,
+};
 use crate::durability::item_transfer::read_derived_transfer_capacity_centi_oz;
 use oteryn_gameplay_content::content::{ReferenceEquipmentSlot, ReferenceItemField};
 use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
+use oteryn_gameplay_items::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
+
+use crate::domain::currency::{Coin, CoinStack, FeePlanError, plan_fee_within};
+use crate::durability::item_fee_burn::bank_part;
+use crate::durability::item_mint_audit::{Type2EventTuple, Type2Transaction};
+
+const EXALTATION_CHEST_KEY: &str = "oteryn:item.tibia.i37561";
 
 #[derive(Debug, Clone)]
 pub(super) struct Item {
@@ -252,6 +261,208 @@ impl Inventory {
         }
         None
     }
+}
+
+// The fee owner burns direct-backpack coins in the same order and places its
+// change before the chest. Project its occupancy without issuing a second debit.
+fn fee_placement(
+    coins: &[CoinStack],
+    direct_count: usize,
+    capacity: usize,
+    gold: u64,
+    tuple: Type2EventTuple,
+    character: crate::domain::CharacterId,
+) -> std::result::Result<(Vec<u64>, usize), &'static str> {
+    let eligible = coins
+        .iter()
+        .map(|stack| u64::from(stack.quantity) * stack.coin.worth())
+        .sum();
+    let bank = bank_part(
+        gold,
+        eligible,
+        tuple,
+        crate::durability::bank::fee_payer_is_junior(character),
+    )
+    .map_err(|_| "INSUFFICIENT_GOLD")?;
+    let paid = gold - bank;
+    if paid == 0 {
+        return Ok((Vec::new(), 0));
+    }
+    let plan =
+        plan_fee_within(paid, coins, direct_count, capacity).map_err(|error| match error {
+            FeePlanError::InsufficientFunds => "INSUFFICIENT_GOLD",
+            FeePlanError::CapacityExceeded | FeePlanError::ChangeDoesNotFit => "NO_ROOM",
+            FeePlanError::InvalidInput => "INVALID_INPUT",
+        })?;
+    let retired = plan
+        .lines
+        .iter()
+        .filter_map(|line| {
+            let coin = &coins[line.input];
+            (coin.quantity == line.burned).then_some(coin.placement_ordinal)
+        })
+        .collect();
+    Ok((retired, plan.change_outputs()))
+}
+
+impl Inventory {
+    fn chest_location(
+        &self,
+        content: &dyn ItemLoopContent,
+        inputs: &[Value],
+        gold: u64,
+        tuple: Type2EventTuple,
+        character: crate::domain::CharacterId,
+    ) -> std::result::Result<Value, &'static str> {
+        let removed = |item: &Item| {
+            inputs.iter().enumerate().any(|(index, line)| {
+                line["item"] == item.identity && (index < 2 || line["quantity_after"] == 0)
+            })
+        };
+        let mut children = std::collections::HashMap::<&str, Vec<(u64, &Item)>>::new();
+        for item in self.items.iter().filter(|item| !removed(item)) {
+            let parent = item.location["parent"].as_str().ok_or("INVALID_INPUT")?;
+            let ordinal = item.location["ordinal"]
+                .as_str()
+                .and_then(|value| value.parse().ok())
+                .ok_or("INVALID_INPUT")?;
+            children.entry(parent).or_default().push((ordinal, item));
+        }
+        for entries in children.values_mut() {
+            entries.sort_unstable_by_key(|entry| std::cmp::Reverse(entry.0));
+        }
+
+        let capacity = self
+            .bag_facts
+            .container_capacity
+            .ok_or("UNSUPPORTED_ITEM")? as usize;
+        let direct = children
+            .get(self.bag_identity.as_str())
+            .map_or(&[][..], Vec::as_slice);
+        let coins = direct
+            .iter()
+            .filter_map(|(ordinal, item)| {
+                Some(CoinStack {
+                    coin: Coin::from_production_key(&item.facts.definition.production_key)?,
+                    quantity: item.quantity,
+                    placement_ordinal: *ordinal,
+                })
+            })
+            .collect::<Vec<_>>();
+        let (burned, change) =
+            fee_placement(&coins, direct.len(), capacity, gold, tuple, character)?;
+        let retired_resources = inputs
+            .iter()
+            .filter(|line| line["quantity_after"] == 0)
+            .count();
+        if self.items.len() + change + 1 - retired_resources - burned.len() > 500 {
+            return Err("NO_ROOM");
+        }
+
+        let mut queue =
+            std::collections::VecDeque::from([(self.bag_identity.as_str(), capacity, 0)]);
+        // Crystal Player::queryDestination searches carried containers breadth-first.
+        while let Some((parent, capacity, depth)) = queue.pop_front() {
+            let entries = children.get(parent).map_or(&[][..], Vec::as_slice);
+            let (occupied, last) = if depth == 0 {
+                let count = entries.len() - burned.len() + change;
+                let last = if change == 0 {
+                    entries
+                        .iter()
+                        .find(|(ordinal, _)| !burned.contains(ordinal))
+                        .map_or(0, |entry| entry.0)
+                } else {
+                    entries
+                        .first()
+                        .map_or(0, |entry| entry.0)
+                        .checked_add(change as u64)
+                        .ok_or("NO_ROOM")?
+                };
+                (count, last)
+            } else {
+                (entries.len(), entries.first().map_or(0, |entry| entry.0))
+            };
+            if occupied < capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX as usize) {
+                let ordinal = last.checked_add(1).ok_or("NO_ROOM")?;
+                return Ok(
+                    json!({"kind": if depth == 0 { 1 } else { 2 }, "parent":parent,
+                    "ordinal":ordinal.to_string()}),
+                );
+            }
+            // The resulting chest and its contents occupy the following two levels.
+            if depth + 2 < ITEM_LOOP_DEPTH_MAX {
+                queue.extend(entries.iter().filter_map(|(_, item)| {
+                    let definition = &item.facts.definition;
+                    if content.is_quiver(definition)
+                        || definition.production_key == "oteryn:item.tibia.i23721"
+                    {
+                        return None;
+                    }
+                    Some((
+                        item.identity.as_str(),
+                        item.facts.container_capacity? as usize,
+                        depth + 1,
+                    ))
+                }));
+            }
+        }
+        Err("NO_ROOM")
+    }
+}
+
+pub(super) async fn chest_output(
+    tx: &mut Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    native: &NativeGameplayState,
+    inventory: &Inventory,
+    content: &dyn ItemLoopContent,
+    inputs: &[Value],
+    gold: u64,
+) -> NativeResult<std::result::Result<Value, &'static str>> {
+    let Some(definition) = current_definition(native, EXALTATION_CHEST_KEY) else {
+        return Ok(Err("UNSUPPORTED_ITEM"));
+    };
+    let location = match inventory.chest_location(
+        content,
+        inputs,
+        gold,
+        tx.tuple().tuple(),
+        fence.character_id,
+    ) {
+        Ok(location) => location,
+        Err(reason) => return Ok(Err(reason)),
+    };
+    let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+        .fetch_one(&mut ***tx)
+        .await?;
+    Ok(Ok(json!({"item":item,"key":definition.production_key,
+        "revision":definition.revision_ref,"count":1,"location":location})))
+}
+
+pub(super) async fn carried_capacity_check(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterItemFence,
+    content: &dyn ItemLoopContent,
+) -> NativeResult<std::result::Result<(), &'static str>> {
+    let carried = match carried_weight(
+        tx,
+        fence.character_id,
+        *fence.runtime_scope.world_id().as_bytes(),
+        content,
+    )
+    .await
+    {
+        Ok(weight) => weight,
+        Err(LoopError::Refused(_)) => return Ok(Err("UNSUPPORTED_ITEM")),
+        Err(LoopError::Durability(error)) => return Err(error),
+        Err(LoopError::Database(error)) => return Err(error.into()),
+    };
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+    Ok(if carried > capacity {
+        Err("OVERWEIGHT")
+    } else {
+        Ok(())
+    })
 }
 
 pub(super) async fn produce(
