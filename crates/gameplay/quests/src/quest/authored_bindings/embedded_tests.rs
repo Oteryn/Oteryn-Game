@@ -743,6 +743,7 @@ mod main_native_contract {
         )?)?;
         crate::quest::published_quest_pins::retain_predecessors(&mut expected);
         crate::quest::published_quest_pins::retain_hunt_and_wrath_predecessors(&mut expected);
+        crate::quest::published_quest_pins::retain_daily_predecessors(&mut expected);
         assert_eq!(expected.tracks, after.tracks);
         assert_eq!(expected.transitions, after.transitions);
         assert_eq!(expected.hashes, after.hashes);

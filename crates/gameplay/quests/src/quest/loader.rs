@@ -264,6 +264,7 @@ fn admit_native_bindings(
     super::published_quest_pins::retain_hunt_and_wrath_predecessors(&mut lowered.catalogue);
     // An empty binding snapshot keeps the predecessor set from the legacy loader.
     super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
+    super::published_quest_pins::retain_daily_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 

@@ -774,24 +774,38 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
     ),
 ];
 
-// Captured from 3e099164 and origin/main with quest_definition_hashes.
-// The daily bindings add tracks and operations while retaining existing defaults.
-const DAILY_PREDECESSORS: &[(&str, DefinitionHash)] = &[
+const BIGFOOT: &str = "oteryn:quest.bigfoot_s_burden_quest";
+const BIGFOOT_DAILY_PIN: DefinitionHash =
+    hash(b"91fe6ba3798095b75eed90c90ed2db0985dae1549dd4923ccc53d070f31fe542");
+const DANGEROUS_DEPTHS: &str = "oteryn:quest.dangerous_depths_quest";
+const DANGEROUS_DEPTHS_DAILY_PIN: DefinitionHash =
+    hash(b"0e54cafb1c5ad445756bf3046d5e08a0f3f081cf0d73672908e927cc795a6e87");
+const BIGFOOT_CRYSTAL_PACKAGES: &str =
+    "oteryn:quest-progress/bigfoot-daily/crystal-packages-opened";
+
+// Exact daily successors and predecessor pins captured with quest_definition_hashes.
+const DAILY_PREDECESSORS: &[GameplayPredecessors] = &[
     (
-        "oteryn:quest.bigfoot_s_burden_quest",
-        hash(b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258"),
+        BIGFOOT,
+        BIGFOOT_DAILY_PIN,
+        &[hash(
+            b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258",
+        )],
     ),
     (
-        "oteryn:quest.dangerous_depths_quest",
-        hash(b"b19e1d3f99ecdaf123501f7ba3a54ca184be811b7e4e6a9f8c6f3307f32a0acb"),
-    ),
-    (
-        "oteryn:quest.dangerous_depths_quest",
-        hash(b"7fa750757e1538451eef088596b846c0bd4369b78b40a0c57efdbcb047ee6830"),
+        DANGEROUS_DEPTHS,
+        DANGEROUS_DEPTHS_DAILY_PIN,
+        &[
+            hash(b"b19e1d3f99ecdaf123501f7ba3a54ca184be811b7e4e6a9f8c6f3307f32a0acb"),
+            hash(b"7fa750757e1538451eef088596b846c0bd4369b78b40a0c57efdbcb047ee6830"),
+        ],
     ),
     (
         "oteryn:quest.spike_task",
-        hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+        hash(b"5a2063fae29f95f46a05fb17185d0f836cdbbec830f73556f48600dc99527b1e"),
+        &[hash(
+            b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb",
+        )],
     ),
 ];
 
@@ -853,6 +867,11 @@ const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
         "oteryn:quest.grimvale_quest",
         hash(b"ec073be1d536c213bf81c914202b663a7f862ae7f78316fd97053173e3127823"),
         hash(b"a12ba535924a59362bc81815385cc2164cd29b0a666f71c94340ff98a5a3970d"),
+    ),
+    (
+        "oteryn:quest.hunting_for_tokens",
+        hash(b"2d9c2d53f7ad233d907fd87905dd9686aa5ba0c7b170e9a365b9ec056cec4a4a"),
+        hash(b"697aa47c5147077c4931644597aefe3ef96698212b6e1f4c84143d90d32a9592"),
     ),
     (
         "oteryn:quest.hydra_egg_quest",
@@ -920,7 +939,6 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 }
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
-    retain_daily_predecessors(catalogue);
     retain(
         catalogue,
         GAMEPLAY_PREDECESSORS
@@ -986,37 +1004,56 @@ pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatal
 }
 
 // Generated with quest_definition_hashes on main and the reviewed exchange catalogue.
-const TOKEN_EXCHANGE_PREDECESSORS: &[GameplayPredecessors] = &[
-    (
-        "oteryn:quest.hunting_for_tokens",
-        hash(b"48caf0d645e2b8d2763906efe45fb95363aaa5115f2e8a918f57c05417e7a979"),
-        &[hash(
-            b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3",
-        )],
-    ),
-    (
-        "oteryn:quest.rift_warrior_outfits_quest",
-        hash(b"2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49"),
-        &[hash(
-            b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94",
-        )],
-    ),
-];
+const TOKEN_EXCHANGE_PREDECESSORS: &[GameplayPredecessors] = &[(
+    "oteryn:quest.rift_warrior_outfits_quest",
+    hash(b"2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49"),
+    &[hash(
+        b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94",
+    )],
+)];
 
-fn retain_daily_predecessors(catalogue: &mut QuestStateCatalogue) {
-    for &(quest, previous) in DAILY_PREDECESSORS {
-        if catalogue
-            .definition_hash(quest)
-            .is_some_and(|current| current != previous)
-        {
-            catalogue
-                .predecessors
-                .entry(quest.into())
-                .or_default()
-                .push(NpcDefinitionPredecessor {
-                    hash: previous,
-                    defaults: Default::default(),
-                });
+pub(super) fn retain_daily_predecessors(catalogue: &mut QuestStateCatalogue) {
+    retain(catalogue, DAILY_PREDECESSORS);
+
+    // On e2750951, NPC lowering admitted these pre-NPC definitions with their
+    // historical absent-track values. The only newly declared track is Bigfoot's
+    // crystal package counter, which was absent from those saves.
+    for (quest, active, current_npc, previous, added_track) in [
+        (
+            BIGFOOT,
+            BIGFOOT_DAILY_PIN,
+            hash(b"dfe6bb5c8b930d54b72eec6ac8092638ec142437e0e9277984770e617641bf6e"),
+            hash(b"f4aea058bd9f28e4c1f12b44413cc4f37ad6ad8488246bc66626f8d7b497ddc8"),
+            Some(BIGFOOT_CRYSTAL_PACKAGES),
+        ),
+        (
+            DANGEROUS_DEPTHS,
+            DANGEROUS_DEPTHS_DAILY_PIN,
+            hash(b"7eeeb51a19ab487323a17ca610d6c4add87a0497a2ad0afe6f40c05cd22d1b73"),
+            hash(b"b40749d3d6b71955c959b55b17a6041183beb23d80ac97e6ce96a5997ea25722"),
+            None,
+        ),
+    ] {
+        if catalogue.definition_hash(quest) != Some(active) {
+            continue;
+        }
+        let Some((_, source_defaults)) = catalogue
+            .npc_legacy
+            .get(quest)
+            .filter(|(pin, _)| *pin == current_npc)
+        else {
+            continue;
+        };
+        let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+        if predecessors.iter().all(|entry| entry.hash != previous) {
+            let mut defaults = source_defaults.clone();
+            if let Some(track) = added_track {
+                defaults.remove(track);
+            }
+            predecessors.push(NpcDefinitionPredecessor {
+                hash: previous,
+                defaults,
+            });
         }
     }
 }
@@ -1031,8 +1068,7 @@ mod tests {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
-        // Captured with quest_definition_hashes on the merge base d481467205
-        // and origin/main 896958e567 (identical quest loader inputs).
+        // Active production definitions captured on e2750951.
         let saved = [
             (
                 "oteryn:quest.bigfoot_s_burden_quest",
@@ -1040,15 +1076,19 @@ mod tests {
             ),
             (
                 "oteryn:quest.dangerous_depths_quest",
-                hash(b"7fa750757e1538451eef088596b846c0bd4369b78b40a0c57efdbcb047ee6830"),
+                hash(b"b19e1d3f99ecdaf123501f7ba3a54ca184be811b7e4e6a9f8c6f3307f32a0acb"),
             ),
             (
                 "oteryn:quest.hunting_for_tokens",
-                hash(b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3"),
+                hash(b"2d9c2d53f7ad233d907fd87905dd9686aa5ba0c7b170e9a365b9ec056cec4a4a"),
             ),
             (
                 "oteryn:quest.killing_in_the_name_of_quest",
                 hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
+            ),
+            (
+                "oteryn:quest.rift_warrior_outfits_quest",
+                hash(b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94"),
             ),
             (
                 "oteryn:quest.spike_task",
@@ -1068,6 +1108,42 @@ mod tests {
             }
         }
         assert!(refused.is_empty(), "merge-base saves refused: {refused:?}");
+        Ok(())
+    }
+
+    #[test]
+    fn daily_bindings_retain_historical_npc_defaults_once() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let mut catalogue = loaded.catalogue().clone();
+        let before = catalogue.predecessors.clone();
+        retain_daily_predecessors(&mut catalogue);
+        assert_eq!(catalogue.predecessors, before);
+
+        for (quest, pin, added_track) in [
+            (
+                BIGFOOT,
+                hash(b"f4aea058bd9f28e4c1f12b44413cc4f37ad6ad8488246bc66626f8d7b497ddc8"),
+                Some(BIGFOOT_CRYSTAL_PACKAGES),
+            ),
+            (
+                DANGEROUS_DEPTHS,
+                hash(b"b40749d3d6b71955c959b55b17a6041183beb23d80ac97e6ce96a5997ea25722"),
+                None,
+            ),
+        ] {
+            let (_, current) = catalogue
+                .npc_legacy
+                .get(quest)
+                .ok_or("daily NPC defaults")?;
+            let actual = npc_rules::legacy_defaults(&catalogue, quest, &pin)
+                .ok_or("historical daily NPC defaults")?;
+            let mut expected = current.clone();
+            if let Some(track) = added_track {
+                assert_eq!(expected.remove(track), Some(0));
+            }
+            assert_eq!(actual, &expected);
+        }
         Ok(())
     }
 
@@ -1235,13 +1311,15 @@ mod tests {
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
 
-        for &(quest, pin) in DAILY_PREDECESSORS {
-            assert_ne!(catalogue.definition_hash(quest), Some(pin), "{quest}");
-            assert_eq!(
-                npc_rules::legacy_defaults(catalogue, quest, &pin),
-                Some(&Default::default()),
-                "{quest}"
-            );
+        for &(quest, current, previous) in DAILY_PREDECESSORS {
+            assert_eq!(catalogue.definition_hash(quest), Some(current), "{quest}");
+            for pin in previous {
+                assert_eq!(
+                    npc_rules::legacy_defaults(catalogue, quest, pin),
+                    Some(&Default::default()),
+                    "{quest}"
+                );
+            }
         }
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
