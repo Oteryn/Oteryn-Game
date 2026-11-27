@@ -1,7 +1,7 @@
 //! Logout immediately after a committed Cube reply on the same connection.
 use super::*;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{GameSessionState, MessageType, decode_wire_envelope};
+use crate::foundation::GameSessionState;
 use crate::gameplay_transport::COMMAND_HOLDER_WINDOW;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::composed_admission::{CONDITION_RELEASE_PROBE, HolderCheckoutProbe};
@@ -23,7 +23,7 @@ pub(super) async fn run(
     index: &ItemDefinitionIndex,
     case: Case,
 ) -> TestResult {
-    use super::super::autowalk_fixtures::{command_reply, send};
+    use super::super::autowalk_fixtures::{acknowledge_while_held, command_reply, send};
 
     let store = FreshAdmissionStore::from_root(harness.root.clone());
     let current = store.current_session(session).await?;
@@ -120,31 +120,5 @@ pub(super) async fn run(
         store.current_session(session).await?.session_state(),
         GameSessionState::Terminal
     );
-    Ok(())
-}
-
-async fn acknowledge_while_held(
-    client: &mut tokio::io::DuplexStream,
-    policy: LivenessPolicy,
-) -> TestResult {
-    use super::super::autowalk_fixtures::{ack_probe, read};
-
-    // Each ACK is sent before the next cadence and before we return the holder.
-    for _ in 0..=policy.missed_limit {
-        tokio::time::advance(policy.interval).await;
-        loop {
-            let frame = read(client).await?;
-            match decode_wire_envelope(&frame)?.message_type() {
-                MessageType::LivenessProbe => {
-                    ack_probe(client, &frame).await?;
-                    break;
-                }
-                MessageType::CommandResult => {
-                    return Err("logout replied while the pass was held".into());
-                }
-                _ => {}
-            }
-        }
-    }
     Ok(())
 }
