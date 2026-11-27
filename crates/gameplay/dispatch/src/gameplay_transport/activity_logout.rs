@@ -2,9 +2,12 @@
 //! retained handoff owner, then uses the existing origin terminal release.
 use super::native_activity::NativeActivityOutcome;
 use super::{
-    ComposedFreshAdmission, connection::AdmittedSession, logout::LogoutReply, operator_event,
+    ComposedFreshAdmission,
+    connection::AdmittedSession,
+    logout::{LogoutReply, ReleaseProgress, ReleaseRetryStage},
+    operator_event,
 };
-use crate::durability::activity_handoff::ActivityReturnReason;
+use crate::durability::activity_handoff::{ActivityRefusal, ActivityReturnReason};
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_protocol_oteryn::logout::LogoutResult;
 
@@ -44,11 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         command: Option<u64>,
     ) -> LogoutReply {
-        // Instance logout also owns the durable return before ordinary release.
-        // Keep its preference across that handoff and the destination logout.
-        let Ok(_foreground) = self.root.foreground_demand() else {
-            return LogoutReply::Result(LogoutResult::Busy);
-        };
+        let mut progress = ReleaseProgress::for_logout(self.root, command);
         let admitted = self.activity_runtimes.current_connection(admitted);
         let scoped = match self.resolve_runtime_view(admitted).await {
             Ok(scoped) => scoped,
@@ -62,33 +61,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .item_fence
             .is_none_or(|fence| !matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }))
         {
-            return owner.logout_session_for_command(admitted, command).await;
+            return owner.logout_session_with_progress(admitted, progress).await;
         }
-        // NOLOGOUT, paid work and PvP/PvE fight gates keep their existing policy.
-        // The native return rechecks the combat hold under its reservation locks.
-        if let Err(reply) = owner.logout_preflight(admitted).await {
-            return reply;
-        }
-        let returned = match command {
-            Some(command_id) => {
-                owner
-                    .return_native_activity(admitted, command_id, ActivityReturnReason::Logout)
-                    .await
+        // Instance logout owns a durable return before ordinary release.
+        let _foreground = loop {
+            if let Ok(demand) = self.root.foreground_demand() {
+                break demand;
             }
-            None => {
-                owner
-                    .return_due_activity(admitted, ActivityReturnReason::IdleLogout)
-                    .await
-            }
-        };
-        let commit = match returned {
-            Ok(NativeActivityOutcome::Committed(commit)) => commit,
-            Ok(NativeActivityOutcome::Refused(_)) => {
+            if !progress.retry(ReleaseRetryStage::Foreground).await {
                 return LogoutReply::Result(LogoutResult::Busy);
             }
-            Err(()) => {
-                operator_event("event=logout_unknown stage=activity_return kind=unknown");
-                return LogoutReply::Unknown;
+        };
+        // NOLOGOUT and fight gates apply before the handoff and on arrival.
+        if let Err(reply) = owner.logout_preflight(admitted, &mut progress).await {
+            return reply;
+        }
+        let commit = loop {
+            let returned = match command {
+                Some(command_id) => {
+                    owner
+                        .return_native_activity(admitted, command_id, ActivityReturnReason::Logout)
+                        .await
+                }
+                None => {
+                    owner
+                        .return_due_activity(admitted, ActivityReturnReason::IdleLogout)
+                        .await
+                }
+            };
+            match returned {
+                Ok(NativeActivityOutcome::Committed(commit)) => break commit,
+                Ok(NativeActivityOutcome::Refused(ActivityRefusal::NoCapacity))
+                    if progress.retry(ReleaseRetryStage::ActivityCapacity).await => {}
+                Ok(NativeActivityOutcome::Refused(_)) => {
+                    return LogoutReply::Result(LogoutResult::Busy);
+                }
+                Err(()) => {
+                    operator_event("event=logout_unknown stage=activity_return kind=unknown");
+                    return LogoutReply::Unknown;
+                }
             }
         };
         if self.publish_activity_commit(&commit).is_err() {
@@ -110,7 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         destination
             .as_ref()
             .unwrap_or(self)
-            .logout_session_for_command(next, command)
+            .logout_session_with_progress(next, progress)
             .await
     }
 }

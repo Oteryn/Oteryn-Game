@@ -336,7 +336,7 @@
         "elapsed_ms"
       ],
       "codes": [],
-      "note": "Terminal logout completed after a deferred actor-end checkpoint. No player identifiers or command payload."
+      "note": "Terminal logout completed after a deferred release step. No player identifiers or command payload."
     },
     {
       "event": "logout_release_retry",
@@ -351,7 +351,7 @@
         "held_ms"
       ],
       "codes": [],
-      "note": "Actor-end checkpoint that deferred the logout release. Elapsed time is measured from the first release attempt. Holder and held_ms describe the competing semantic pass when available. No player identifiers or command payload."
+      "note": "Step that deferred logout. Elapsed time is measured from the start of the logout budget. Holder and held_ms describe the competing semantic pass when available. No player identifiers or command payload."
     },
     {
       "event": "logout_unknown",

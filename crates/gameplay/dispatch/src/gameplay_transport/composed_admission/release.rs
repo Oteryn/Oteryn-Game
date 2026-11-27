@@ -210,7 +210,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         #[cfg(test)]
         if let Ok(probe) = super::super::logout::LOGOUT_RELEASE_PROBE.try_with(Clone::clone) {
-            probe.conditions_entries.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            probe
+                .conditions_entries
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             if probe.first_retry.get().is_none() {
                 probe.before_conditions.notify_one();
                 probe.resume_conditions.notified().await;
@@ -250,32 +252,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(ReleaseRetryStage::OfflineTraining);
         };
         let releasing = self.journal_logout_store(releasing, admitted.world_id);
-        // The terminal release and logout callers already retain foreground demand.
-        // Use the lifecycle recovery window for the final write's holder checkout.
-        let outcome = AdmissionRetryBudget::for_root(&session, self.root)
-            .retry_durability("release_commit", async || match release {
-                TerminalRelease::Abandoned(transport) => {
-                    releasing
-                        .release_abandoned_session(session, &account_id, transport)
-                        .await
+        let commit = async || match release {
+            TerminalRelease::Abandoned(transport) => {
+                releasing
+                    .release_abandoned_session(session, &account_id, transport)
+                    .await
+            }
+            TerminalRelease::CapabilityMismatch(epoch) => {
+                releasing
+                    .release_capability_mismatch(session, &account_id, epoch)
+                    .await
+            }
+            TerminalRelease::StaffKickLost(epoch) => {
+                releasing
+                    .release_staff_lost_session(session, &account_id, epoch)
+                    .await
+            }
+            TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
+                releasing
+                    .release_logout_session(session, &account_id, transport)
+                    .await
+            }
+        };
+        let outcome = if progress.has_logout_budget() {
+            loop {
+                match commit().await {
+                    Err(crate::durability::DurabilityError::RootUnavailable) => {
+                        if !progress.retry(ReleaseRetryStage::Commit).await {
+                            // Reconciliation can itself miss the holder after an
+                            // ambiguous commit. Keep the fence until the durable
+                            // release's outcome is known.
+                            self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                            return Ok(ReleaseAttempt::Unknown);
+                        }
+                    }
+                    result => break result,
                 }
-                TerminalRelease::CapabilityMismatch(epoch) => {
-                    releasing
-                        .release_capability_mismatch(session, &account_id, epoch)
-                        .await
-                }
-                TerminalRelease::StaffKickLost(epoch) => {
-                    releasing
-                        .release_staff_lost_session(session, &account_id, epoch)
-                        .await
-                }
-                TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
-                    releasing
-                        .release_logout_session(session, &account_id, transport)
-                        .await
-                }
-            })
-            .await;
+            }
+        } else {
+            AdmissionRetryBudget::for_root(&session, self.root)
+                .retry_durability("release_commit", commit)
+                .await
+        };
         if ends_session(&outcome) {
             // PREM-1b (D476): the session is over, whether abandoned, mismatched or logged out;
             // its Premium pulls stop, as at grace expiry.

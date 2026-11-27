@@ -1096,6 +1096,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         original: PreparedFamiliarLogout,
     ) -> Option<FamiliarCleanEndResolution> {
+        // Keep the injected logout outcome ambiguous until the scenario ends
+        // the fault, even when the same request now retries reconciliation.
+        #[cfg(test)]
+        if matches!(original.end, FamiliarActorEnd::Logout(..))
+            && FAMILIAR_CLEAN_END_FAULT
+                .try_with(Option::is_some)
+                .unwrap_or(false)
+        {
+            return None;
+        }
         let (actor, session, end) = (original.actor, original.session, original.end);
         let fresh = self
             .familiar_logout_fence(session, end)

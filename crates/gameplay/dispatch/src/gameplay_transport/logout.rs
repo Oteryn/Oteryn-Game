@@ -27,6 +27,10 @@ pub enum LogoutReply {
 /// A release checkpoint that could not settle before the lease transaction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ReleaseRetryStage {
+    Foreground,
+    Travel,
+    SpellReconcile,
+    ActivityCapacity,
     Drome,
     Death,
     TimedItems,
@@ -40,11 +44,16 @@ pub(super) enum ReleaseRetryStage {
     KillRewards,
     Familiar,
     OfflineTraining,
+    Commit,
 }
 
 impl ReleaseRetryStage {
     fn label(self) -> &'static str {
         match self {
+            Self::Foreground => "foreground_demand",
+            Self::Travel => "newhaven_travel",
+            Self::SpellReconcile => "spell_reconcile",
+            Self::ActivityCapacity => "activity_return_capacity",
             Self::Drome => "drome_sync",
             Self::Death => "death_save",
             Self::TimedItems => "timed_items",
@@ -58,6 +67,7 @@ impl ReleaseRetryStage {
             Self::KillRewards => "kill_rewards",
             Self::Familiar => "familiar_save",
             Self::OfflineTraining => "offline_training",
+            Self::Commit => "release_commit",
         }
     }
 }
@@ -79,7 +89,10 @@ struct LogoutReleaseRetry<'r> {
 }
 
 impl<'r> ReleaseProgress<'r> {
-    fn for_logout(root: &'r crate::durability::DurabilityRoot, command_id: Option<u64>) -> Self {
+    pub(super) fn for_logout(
+        root: &'r crate::durability::DurabilityRoot,
+        command_id: Option<u64>,
+    ) -> Self {
         let started = tokio::time::Instant::now();
         Self {
             retry: Some(LogoutReleaseRetry {
@@ -94,6 +107,10 @@ impl<'r> ReleaseProgress<'r> {
             }),
             ..Self::default()
         }
+    }
+
+    pub(super) fn has_logout_budget(&self) -> bool {
+        self.retry.is_some()
     }
 
     pub(super) async fn retry(&mut self, stage: ReleaseRetryStage) -> bool {
@@ -230,7 +247,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         command_id: Option<u64>,
     ) -> LogoutReply {
-        self.logout_session_inner(admitted, false, command_id)
+        self.logout_session_with_progress(
+            admitted,
+            ReleaseProgress::for_logout(self.root, command_id),
+        )
+        .await
+    }
+
+    pub(super) async fn logout_session_with_progress(
+        &self,
+        admitted: AdmittedSession,
+        progress: ReleaseProgress<'_>,
+    ) -> LogoutReply {
+        self.logout_session_inner(admitted, false, progress)
             .await
             .unwrap_or(LogoutReply::Result(LogoutResult::Busy))
     }
@@ -242,15 +271,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         channel_switch: bool,
     ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
-        self.logout_session_inner(admitted, channel_switch, None)
-            .await
+        self.logout_session_inner(
+            admitted,
+            channel_switch,
+            ReleaseProgress::for_logout(self.root, None),
+        )
+        .await
     }
 
     async fn logout_session_inner(
         &self,
         admitted: AdmittedSession,
         channel_switch: bool,
-        command_id: Option<u64>,
+        mut progress: ReleaseProgress<'_>,
     ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
         let _trade_hold = channel_switch
             .then(|| {
@@ -259,11 +292,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .hold_for_switch(admitted.game_session_id)
             })
             .transpose()?;
-        let Ok(_foreground) = self.root.foreground_demand() else {
-            operator_event("event=logout_busy stage=foreground_demand");
-            return Ok(LogoutReply::Result(LogoutResult::Busy));
+        let _foreground = loop {
+            if let Ok(demand) = self.root.foreground_demand() {
+                break demand;
+            }
+            if !progress.retry(ReleaseRetryStage::Foreground).await {
+                operator_event("event=logout_busy stage=foreground_demand");
+                return Ok(LogoutReply::Result(LogoutResult::Busy));
+            }
         };
-        let (actor, controller) = match self.logout_preflight(admitted).await {
+        let (actor, controller) = match self.logout_preflight(admitted, &mut progress).await {
             Ok(proven) => proven,
             Err(reply) => return Ok(reply),
         };
@@ -276,13 +314,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=logout_busy stage=activity_scope");
             return Ok(LogoutReply::Result(LogoutResult::Busy));
         }
-        self.release_logout(admitted, actor, controller, channel_switch, command_id)
+        self.release_logout(admitted, actor, controller, channel_switch, &mut progress)
             .await
     }
 
     pub(super) async fn logout_preflight(
         &self,
         admitted: AdmittedSession,
+        progress: &mut ReleaseProgress<'_>,
     ) -> Result<(ExactActorRef, ControllerBinding), LogoutReply> {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
             operator_event("event=logout_busy stage=admitted_binding");
@@ -296,16 +335,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if zones.no_logout {
             return Err(LogoutReply::NoLogout);
         }
-        if self.states.newhaven_travel.held(session) {
-            operator_event("event=logout_busy stage=newhaven_travel");
-            return Err(LogoutReply::Result(LogoutResult::Busy));
+        while self.states.newhaven_travel.held(session) {
+            if !progress.retry(ReleaseRetryStage::Travel).await {
+                operator_event("event=logout_busy stage=newhaven_travel");
+                return Err(LogoutReply::Result(LogoutResult::Busy));
+            }
         }
-        if !self
+        while !self
             .reconcile_spells_before_control_loss(actor, session)
             .await
         {
-            operator_event("event=logout_busy stage=spell_reconcile");
-            return Err(LogoutReply::Result(LogoutResult::Busy));
+            if !progress.retry(ReleaseRetryStage::SpellReconcile).await {
+                operator_event("event=logout_busy stage=spell_reconcile");
+                return Err(LogoutReply::Result(LogoutResult::Busy));
+            }
         }
         if !self.refresh_pvp_locks(actor, session).await {
             // An unreadable fence or PvP row proves no fight deadline. Close through the
@@ -448,7 +491,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         controller: ControllerBinding,
         channel_switch: bool,
-        command_id: Option<u64>,
+        progress: &mut ReleaseProgress<'_>,
     ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
@@ -473,40 +516,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             token
         };
         let mut hold = FenceHold::new(session, token);
-        let step = {
-            let mut progress = if channel_switch {
-                ReleaseProgress::default()
-            } else {
-                ReleaseProgress::for_logout(self.root, command_id)
+        let step = loop {
+            let step = self
+                .release_attempt(&admitted, &store, release, &mut hold, progress)
+                .await;
+            let Err(stage) = step else {
+                break step;
             };
-            let step = loop {
-                let step = self
-                    .release_attempt(&admitted, &store, release, &mut hold, &mut progress)
-                    .await;
-                let Err(stage) = step else {
-                    break step;
-                };
-                // Conditions already used the remaining window at their save point.
-                if stage == ReleaseRetryStage::Conditions || !progress.retry(stage).await {
-                    break step;
-                }
-            };
-            if matches!(&step, Ok(ReleaseAttempt::Done(GraceExpiryResult::Released)))
-                && let Some(retry) = &progress.retry
-                && retry.attempts > 0
+            // These steps already used the remaining window in place.
+            if matches!(
+                stage,
+                ReleaseRetryStage::Conditions | ReleaseRetryStage::Commit
+            ) || !progress.retry(stage).await
             {
-                operator_event(&format!(
-                    "event=logout_release_completed command_id={} attempt={} elapsed_ms={}",
-                    retry.command_id.unwrap_or_default(),
-                    retry.attempts + 1,
-                    retry.started.elapsed().as_millis(),
-                ));
+                break step;
             }
-            step
         };
-        if let Err(stage) = step
-            && !channel_switch
+        if matches!(&step, Ok(ReleaseAttempt::Done(GraceExpiryResult::Released)))
+            && let Some(retry) = &progress.retry
+            && retry.attempts > 0
         {
+            operator_event(&format!(
+                "event=logout_release_completed command_id={} attempt={} elapsed_ms={}",
+                retry.command_id.unwrap_or_default(),
+                retry.attempts + 1,
+                retry.started.elapsed().as_millis(),
+            ));
+        }
+        if let Err(stage) = step {
             #[cfg(test)]
             let _ = LOGOUT_RELEASE_PROBE.try_with(|probe| probe.retry_exhausted.notify_one());
             operator_event(&format!(
