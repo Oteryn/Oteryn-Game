@@ -1025,11 +1025,12 @@ class QuestRewards(unittest.TestCase):
 
     def test_token_exchange_refusals_clear_the_quote(self):
         exchange_shard = json.loads(self.outputs[q.token_exchanges.SHARD])
-        callbacks = self.callbacks["callbacks"] + exchange_shard["callbacks"]
+        vampire = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_CALLBACKS).read_text())
+        callbacks = self.callbacks["callbacks"] + exchange_shard["callbacks"] + vampire["callbacks"]
         exchanges = [
             callback
             for callback in callbacks
-            if "-exchange-" in callback["key"] or "/storkus-rank-" in callback["key"]
+            if "-exchange-" in callback["key"] or "/vampire-hunter-rank-" in callback["key"]
         ]
         self.assertEqual(len(exchanges), 90)
         stale = [
@@ -1040,6 +1041,7 @@ class QuestRewards(unittest.TestCase):
 
     def test_token_exchange_keyword_matching_follows_the_donor(self):
         exchange_shard = json.loads(self.outputs[q.token_exchanges.SHARD])
+        vampire = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_CALLBACKS).read_text())
         callbacks = self.callbacks["callbacks"] + exchange_shard["callbacks"]
         for prefix, rows in (
             ("cledwyn", q.token_exchanges.CLEDWYN),
@@ -1052,13 +1054,12 @@ class QuestRewards(unittest.TestCase):
                 callback = next(c for c in callbacks if c["key"] == key)
                 with self.subTest(callback=key):
                     self.assertTrue(callback.get("msg_contains"))
-        for rank in range(1, len(q.token_exchanges.RANKS) + 1):
-            key = f"oteryn:quest-reward/storkus-rank-{rank}"
-            callback = next(c for c in callbacks if c["key"] == key)
-            with self.subTest(callback=key):
+        for callback in vampire["callbacks"]:
+            with self.subTest(callback=callback["key"]):
                 self.assertTrue(callback.get("msg_contains"))
 
         offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        offers += json.loads(self.outputs[q.token_exchanges.VAMPIRE_OFFERS])["offers"]
         expected = {
             ("cledwyn", "enchant"),
             ("gnomally", "equipment"),
@@ -1071,7 +1072,7 @@ class QuestRewards(unittest.TestCase):
             offer for offer in offers
             if (offer["npc"].removeprefix("oteryn:npc."), offer["keywords"][0]) in expected
         ]
-        self.assertEqual(len(migrated), 5 + len(q.token_exchanges.RANKS))
+        self.assertEqual(len(migrated), 5 + len(vampire["callbacks"]))
         self.assertTrue(all(offer.get("msg_contains") for offer in migrated))
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):

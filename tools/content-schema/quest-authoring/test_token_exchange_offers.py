@@ -11,6 +11,12 @@ class TokenExchangeOffers(unittest.TestCase):
         offers = json.loads(
             (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
         )["offers"]
+        offers += json.loads((q.ROOT / q.token_exchanges.VAMPIRE_OFFERS).read_text())[
+            "offers"
+        ]
+        ranks = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_CALLBACKS).read_text())[
+            "callbacks"
+        ]
         for name, products, first_topic in (
             ("cledwyn", q.token_exchanges.CLEDWYN, 101),
             ("gnomally", q.token_exchanges.GNOMALLY, 106),
@@ -31,7 +37,7 @@ class TokenExchangeOffers(unittest.TestCase):
             ("cledwyn", "token", 1, "before"),
             ("gnomally", "major", 1, "before"),
             ("gnomally", "minor", 1, "before"),
-            ("storkus", "vampire lord token", len(q.token_exchanges.RANKS), "before"),
+            ("storkus", "vampire lord token", len(ranks), "before"),
             ("jorge", "souvenir", 1, "before"),
             ("ruprecht", "offers", 1, "alongside"),
         ):
@@ -97,10 +103,13 @@ class TokenExchangeOffers(unittest.TestCase):
                 ["token", "information", "talk", "enchant"],
             )
         with self.subTest(npc="storkus"):
-            first = next(row for row in offers if row["npc"] == "oteryn:npc.storkus")
+            first = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_OFFERS).read_text())[
+                "offers"
+            ][0]
             self.assertEqual(first["keywords"], ["mission"])
             self.assertTrue(first.get("preserve_topic"))
             self.assertEqual(first.get("reward_order"), "before")
+
         gnomally = [row for row in offers if row["npc"] == "oteryn:npc.gnomally"]
         self.assertEqual(
             [
@@ -129,6 +138,42 @@ class TokenExchangeOffers(unittest.TestCase):
                     ),
                     "cannot cancel pending quote",
                 )
+
+    def test_storkus_quotes_use_the_published_rank_owner(self):
+        vampire = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_CALLBACKS).read_text())
+        token = json.loads((q.ROOT / q.token_exchanges.SHARD).read_text())
+        shared = json.loads(
+            (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
+        )
+        offers = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_OFFERS).read_text())
+        self.assertEqual(q.token_exchanges.vampire_offers(q.ROOT), offers)
+        self.assertTrue(
+            {row["key"] for row in vampire["tracks"]}.isdisjoint(
+                row["key"] for row in token["tracks"]
+            )
+        )
+        self.assertFalse(
+            any(
+                row["npc"] == "oteryn:npc.storkus"
+                for row in token["callbacks"] + shared["offers"]
+            )
+        )
+        self.assertEqual(len(offers["offers"]), len(vampire["callbacks"]) + 1)
+        for offer, reward in zip(
+            offers["offers"][1:], vampire["callbacks"], strict=True
+        ):
+            self.assertEqual(offer["requires"], reward["requires"])
+            self.assertEqual(offer["next_topic"], reward["topic"])
+            self.assertEqual(
+                offer["storage"],
+                [
+                    {
+                        **reward["storage"][0],
+                        "set": reward["storage"][0]["minimum"],
+                        "preserve": True,
+                    }
+                ],
+            )
 
     def test_committed_gnomally_relations_covers_unset_progress(self):
         offers = json.loads(

@@ -126,7 +126,7 @@ pub(super) async fn exercise(
                 "gnomally-exchange-",
                 "jorge-exchange-",
                 "ruprecht-exchange-",
-                "storkus-rank-",
+                "vampire-hunter-rank-",
             ]
             .iter()
             .any(|prefix| name.starts_with(prefix))
@@ -387,7 +387,7 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 6526).await?, 1);
     assert_eq!(quantity(h, 20310).await?, 1);
 
-    let first = find("storkus-rank-1")?;
+    let first = find("vampire-hunter-rank-1")?;
     let words = vec!["hi", "vampire lord token", "yes"];
     mint(owner, admitted, 8192, 100, 900_000).await?;
     wire_conversation(
@@ -438,7 +438,7 @@ pub(super) async fn exercise(
     .enumerate()
     {
         let rank = i64::try_from(index)? + 1;
-        let callback = find(&format!("storkus-rank-{rank}"))?;
+        let callback = find(&format!("vampire-hunter-rank-{rank}"))?;
         assert_eq!(
             wire_conversation(owner, admitted, storkus, callback, false, words.clone())
                 .await?
@@ -470,7 +470,7 @@ pub(super) async fn exercise(
         owner,
         admitted,
         storkus,
-        find("storkus-rank-6")?,
+        find("vampire-hunter-rank-6")?,
         false,
         vec!["hi", "vampire lord token"],
     )

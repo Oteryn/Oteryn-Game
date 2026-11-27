@@ -8,6 +8,8 @@ from pathlib import Path
 
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 SHARD = "content/quests/npc-callbacks/token-exchanges.json"
+VAMPIRE_CALLBACKS = "content/quests/npc-callbacks/vampire-hunter.json"
+VAMPIRE_OFFERS = "content/quests/npc-offers/vampire-hunter.json"
 BIGFOOT_RULES = "content/dialogues/quest-rules/quest-batch3-a-bigfoot_burden.json"
 GNOMALLY_SOURCE = "content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json"
 SOURCES = {
@@ -23,9 +25,6 @@ SOURCES = {
     "ruprecht": "crystal:"
     + PIN
     + ":data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
-    "storkus": "crystal:"
-    + PIN
-    + ":data-global/npc/storkus.lua:100-197:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd",
 }
 
 CLEDWYN = (
@@ -125,11 +124,6 @@ RUPRECHT = (
 )
 
 
-INQUISITION = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline"
-VAMPIRE_HUNTER = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/"
-RANKS = ((1, 1000), (4, 5000), (5, 10000), (10, 20000), (30, 50000), (50, 100000))
-
-
 def donor_replies():
     """Extract the new dialogue branches from the committed, digest-checked corpus."""
     archive = Path(__file__).parent / "samples/donor-source/corpus.tar.gz"
@@ -166,7 +160,7 @@ def donor_replies():
     return reply
 
 
-def append(add, storage, callbacks, offers):
+def append(add, callbacks, offers):
     def offer(npc, word, topic, next_topic, reply, *, msg_contains=False, **predicates):
         offers.append(
             {
@@ -433,74 +427,45 @@ def append(add, storage, callbacks, offers):
             failure,
         )
 
-    tracks = [
+
+def vampire_offers(root):
+    """Generate Storkus's quotes from the published rank reward authority."""
+    ranks = json.loads((root / VAMPIRE_CALLBACKS).read_text())["callbacks"]
+    common = {
+        "npc": ranks[0]["npc"],
+        "topic": 0,
+        "msg_contains": True,
+        "any_topic": True,
+        "reward_order": "before",
+    }
+    # The earlier mission branch preserves a pending quote after the parent quest.
+    offers = [
         {
-            "key": VAMPIRE_HUNTER + name,
-            "quest": "oteryn:quest.vampire_hunter_quest",
-            "initial": -1,
-            "min": -1,
-            "max": maximum,
-            "writable": True,
-            "sources": [SOURCES["storkus"]],
+            **common,
+            "keywords": ["mission"],
+            "next_topic": 0,
+            "storage": [],
+            "requires": ranks[0]["requires"],
+            "reply": [],
+            "preserve_topic": True,
         }
-        for name, maximum in (("rank", 6), ("door", 1))
     ]
-    next_rank = [{"track": INQUISITION, "minimum": 11, "maximum": 2147483647}]
-    # At this stage the earlier mission branch consumes the request without
-    # changing the pending quote or reopening the completed parent mission.
-    offer(
-        "storkus",
-        "mission",
-        0,
-        0,
-        [],
-        requires=next_rank,
-        msg_contains=True,
-        any_topic=True,
-        preserve_topic=True,
-        reward_order="before",
-    )
-    for previous, (cost, xp) in enumerate(RANKS):
-        rank = previous + 1
-        topic = 3 + previous
-        before = -1 if previous == 0 else previous
-        states = [storage(VAMPIRE_HUNTER + "rank", before, rank, previous)]
-        final = rank == len(RANKS)
-        if final:
-            states.append(storage(VAMPIRE_HUNTER + "door", -1, 1, 1))
-        offer(
-            "storkus",
-            "vampire lord token",
-            0,
-            topic,
-            f"Would ye' give me {cost} Vampire Lord Token{'s' if cost != 1 else ''} for rank {rank}?",
-            storage=[
-                storage(
-                    VAMPIRE_HUNTER + "rank", before, previous, previous, preserve=True
-                )
-            ],
-            requires=next_rank,
-            msg_contains=True,
-            any_topic=True,
-            reward_order="before",
+    for callback in ranks:
+        rank = next(
+            step for step in callback["storage"] if step["track"].endswith("/rank")
         )
-        add(
-            f"storkus-rank-{rank}",
-            "vampire_hunter_quest",
-            "storkus",
-            ["yes"],
-            states,
-            take=[(8192, cost)],
-            give=(8191, 1) if final else None,
-            topic=topic,
-            requires=next_rank,
-            source=SOURCES["storkus"],
+        cost = callback["take"][0]["count"]
+        currency = "Vampire Lord Token" if cost == 1 else "Vampire Lord Tokens"
+        offers.append(
+            {
+                **common,
+                "keywords": ["vampire lord token"],
+                "next_topic": callback["topic"],
+                "storage": [{**rank, "set": rank["minimum"], "preserve": True}],
+                "requires": callback["requires"],
+                "reply": [
+                    f"Would ye' give me {cost} {currency} for rank {rank['set']}?"
+                ],
+            }
         )
-        callbacks[-1].update(
-            experience=xp,
-            msg_contains=True,
-            clear_topic_on_refusal=True,
-            reply=[f"Ye' brought the tokens needed for vampire hunter rank {rank}."],
-            failure_reply=["Ye' don't have enough tokens."],
-        )
-    return tracks
+    return {"schema": 1, "offers": offers}

@@ -27,8 +27,8 @@ import qmech_m39
 import questl2_ready
 import questpc7_smith_programme
 import taming_cosmetics
-import wizard_cosmetics
 import token_exchanges
+import wizard_cosmetics
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -3672,10 +3672,10 @@ def build():
     fibula.append_simon(fibula_callbacks, offers, fibula_tracks, inputs)
     # Keep every registered document within the runtime's 256-record bound.
     exchange_start = len(callbacks)
-    exchange_tracks = token_exchanges.append(add, storage, callbacks, offers)
+    token_exchanges.append(add, callbacks, offers)
     exchange_callbacks = callbacks[exchange_start:]
     del callbacks[exchange_start:]
-    exchange_document = {"schema": 1, "tracks": exchange_tracks,
+    exchange_document = {"schema": 1, "tracks": [],
                          # The stable sort retains Jorge's authored table order.
                          "callbacks": sorted(exchange_callbacks, key=lambda c:
                              c["key"] if c["npc"] != "oteryn:npc.jorge"
@@ -3900,6 +3900,7 @@ def build():
         "content/quests/shared-reward-offers.json": encoded({"schema": 1, "offers": offers}),
     }
     generated[token_exchanges.SHARD] = encoded(exchange_document)
+    generated[token_exchanges.VAMPIRE_OFFERS] = encoded(token_exchanges.vampire_offers(ROOT))
     generated["content/quests/npc-callbacks/l2-ready-stories.json"] = encoded(
         {"schema": 1, "tracks": [], "callbacks": ready_callbacks}
     )

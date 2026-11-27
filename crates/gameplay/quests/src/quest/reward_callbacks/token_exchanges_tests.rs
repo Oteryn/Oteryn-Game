@@ -156,15 +156,27 @@ fn ruprecht_exchange_recipes() -> Result<(), String> {
 
 #[test]
 fn storkus_rank_hand_ins() -> Result<(), String> {
-    let callbacks = load()?;
     let rank = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank";
     let door = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door";
     let prerequisite = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
     let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
         .map_err(|error| format!("{error:?}"))?;
     let catalogue = loaded.catalogue();
-    assert_eq!(catalogue.track(rank).ok_or("rank track")?.initial, -1);
-    assert_eq!(catalogue.track(door).ok_or("door track")?.initial, -1);
+    let callbacks: Vec<_> = offered_for(catalogue)?
+        .into_iter()
+        .filter(|callback| callback.quest == "oteryn:quest.vampire_hunter_quest")
+        .collect();
+    assert_eq!(callbacks.len(), 6);
+    let rank_track = catalogue.track(rank).ok_or("rank track")?;
+    let door_track = catalogue.track(door).ok_or("door track")?;
+    assert_eq!(
+        (rank_track.initial, rank_track.min, rank_track.max),
+        (0, 0, 6)
+    );
+    assert_eq!(
+        (door_track.initial, door_track.min, door_track.max),
+        (0, 0, 1)
+    );
     assert!(catalogue.track(prerequisite).is_some());
 
     for (previous, (cost, xp)) in (0_i64..).zip([
@@ -178,22 +190,23 @@ fn storkus_rank_hand_ins() -> Result<(), String> {
         let next = previous + 1;
         let callback = callbacks
             .iter()
-            .find(|row| row.key == format!("oteryn:quest-reward/storkus-rank-{next}"))
+            .find(|row| row.key == format!("oteryn:quest-reward/vampire-hunter-rank-{next}"))
             .ok_or_else(|| format!("missing Storkus rank {next}"))?;
         assert_eq!(callback.npc, "oteryn:npc.storkus");
         assert_eq!(callback.keywords, ["yes"]);
+        assert!(callback.msg_contains && callback.clear_topic_on_refusal);
         assert_eq!(callback.take.len(), 1);
         assert_eq!(callback.take[0].item, "oteryn:item.tibia.i8192");
         assert_eq!(callback.take[0].count, cost);
         assert_eq!(callback.experience, Some(xp));
         assert_eq!(callback.requires.len(), 1);
         assert_eq!(callback.requires[0].track, prerequisite);
-        assert_eq!(callback.requires[0].minimum, 11);
-        assert_eq!(callback.storage[0].track, rank);
         assert_eq!(
-            callback.storage[0].minimum,
-            if previous == 0 { -1 } else { previous }
+            (callback.requires[0].minimum, callback.requires[0].maximum),
+            (11, 25)
         );
+        assert_eq!(callback.storage[0].track, rank);
+        assert_eq!(callback.storage[0].minimum, previous);
         assert_eq!(callback.storage[0].maximum, previous);
         assert_eq!(callback.storage[0].set, next);
         if next == 6 {
@@ -203,7 +216,7 @@ fn storkus_rank_hand_ins() -> Result<(), String> {
             assert_eq!(callback.storage[1].track, door);
             assert_eq!(
                 (callback.storage[1].minimum, callback.storage[1].maximum),
-                (-1, 1)
+                (0, 1)
             );
             assert_eq!(callback.storage[1].set, 1);
         } else {
