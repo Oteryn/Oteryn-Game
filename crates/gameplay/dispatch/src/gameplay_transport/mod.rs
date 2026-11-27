@@ -1225,8 +1225,6 @@ impl FenceHolders {
 
 /// One attempt of a terminal release.
 enum ReleaseAttempt {
-    /// A step before the durable transaction had no outcome; nothing was sent.
-    Retry,
     /// The transaction's outcome, or its settle, is unknown: the fence and the kill mark stay.
     Unknown,
     /// The release settled.
@@ -1545,6 +1543,13 @@ impl<'r> AdmissionRetryBudget<'r> {
             _foreground: root.foreground_demand().ok(),
             waiter: std::sync::OnceLock::new(),
         }
+    }
+
+    /// Leave time for a final pass within one liveness interval.
+    fn holder_wait_window() -> Duration {
+        connection::IDLE_LIVENESS
+            .interval
+            .saturating_sub(crate::durability::DB_PASS_DEADLINE)
     }
 
     /// [`Self::new`] whose retries wait for `root`'s holder instead of sleeping blind
