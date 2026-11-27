@@ -569,7 +569,7 @@ def test_package_tree_contract():
         "index": "content/dialogues/definitions/index.json",
     }
     assert manifest["families"]["Service.Trade"] == {
-        "records": 325,
+        "records": 326,
         "index": "content/services/trade/index.json",
     }
     assert manifest["families"]["Service.Travel"] == {
