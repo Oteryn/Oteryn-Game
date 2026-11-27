@@ -625,7 +625,12 @@ pub(super) async fn exercise(
         assert!(matching.next().is_none(), "entry must keep one live boss");
         boss
     };
-    let encounter = callback()?.effects.encounter.ok_or("Koshei encounter")?;
+    let callback = callback()?;
+    let encounter = callback
+        .effects
+        .encounter
+        .as_ref()
+        .ok_or("Koshei encounter")?;
     let [member] = encounter.players.as_slice() else {
         return Err("one Koshei staging position".into());
     };

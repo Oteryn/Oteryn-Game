@@ -161,11 +161,36 @@ fn source_quest_doors_apply_levels_and_keys() -> TestResult {
     }
     let pos = TilePos { x: 32506, y: 32175, floor: -14 };
     let actor = TilePos { x: 32507, ..pos };
-    let target = target(pos)?;
-    for (action, expected) in [(3599, UseDisposition::KeyMismatch), (3600, UseDisposition::Committed)] {
-        let (result, _) =
-            map_door::use_key_observed(world.overlay(), world.facts(), generation, actor, action, &target);
+    let placement_key =
+        crate::map::view::placement_key(pos, 1).ok_or("source key door placement")?;
+    let key_number = 3600;
+    let mut target = target(pos)?;
+    for (action, admitted, revision, expected, opening_revision) in [
+        (key_number, false, 0, UseDisposition::Exhausted, None),
+        (3599, true, 0, UseDisposition::KeyMismatch, None),
+        (key_number, true, 0, UseDisposition::Committed, Some(1)),
+        (key_number, true, 1, UseDisposition::Committed, None),
+        (key_number, true, 2, UseDisposition::Committed, Some(3)),
+    ] {
+        target.expected_revision = revision;
+        let (result, opening) = map_door::use_key_observed(
+            world.overlay(),
+            world.facts(),
+            generation,
+            actor,
+            action,
+            &target,
+            || admitted,
+        );
         assert_eq!(result.disposition, expected);
+        assert_eq!(
+            opening.map(|opening| (
+                opening.placement_key(),
+                opening.key_number(),
+                opening.revision()
+            )),
+            opening_revision.map(|revision| (placement_key, action, revision)),
+        );
     }
     assert!(world.enterable(pos));
     Ok(())
