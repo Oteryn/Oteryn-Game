@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     match verdict::observe(journey(clients)).await {
         Ok(()) => evidence(
-            "e2e_capture scenario=C17b.client status=CAPTURED evidence=live-cast-and-visibility",
+            "e2e_all scenario=C17b.client status=PASS evidence=live-cast-and-visibility-captured",
         ),
         Err(error) => {
             evidence(&format!(

@@ -961,6 +961,32 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_c17b_pass_requires_both_captures_and_runs_registered_replay(self):
+        replay = load('client_replay')
+        with tempfile.TemporaryDirectory() as tmp:
+            captures = Path(tmp)
+            log = captures / 'node.log'
+            log.write_text('SEAM_EVIDENCE e2e_all scenario=C17b.client status=PASS seconds=1.000\n')
+            (captures / 'c17b-cast.json').write_text('{}')
+            test = 'e2e_c17b_invisibility_keeps_player_visible_and_rejects_duplicate_frame'
+            result = subprocess.CompletedProcess([], 0, stdout=(
+                f'test tests::e2e_c17b::{test} ... ok\n'
+                'test result: ok. 1 passed; 0 failed; 0 ignored\n'
+            ))
+            with patch.dict(os.environ, {'E2E_ALL_CAPTURE_DIR': tmp, 'CARGO': 'cargo'}), \
+                    patch.object(replay.subprocess, 'run', return_value=result) as cargo, \
+                    patch('builtins.print'):
+                self.assertEqual(replay.main(log, '106:1', validate=True), 0)
+                self.assertEqual(replay.main(log, '106:1'), 1)
+                cargo.assert_not_called()
+                (captures / 'c17b-expected.json').write_text('{}')
+                self.assertEqual(replay.main(log, '106:1'), 0)
+                cargo.assert_called_once_with(
+                    ['cargo', 'test', '--locked', '-p', 'oteryn-session',
+                     '--lib', test, '--', '--nocapture'],
+                    cwd=replay.ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                )
+
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'node.log'

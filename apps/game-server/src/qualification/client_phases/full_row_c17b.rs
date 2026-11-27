@@ -292,10 +292,21 @@ impl<'a> Staging<'a> {
         goal: impl Fn(TilePos) -> bool,
     ) -> TestResult<Vec<StepDirection>> {
         let from = tile(client.world_spatial().actor_position)?;
+        let occupied = Self::occupied(client, peer)?;
+        route_avoiding(self.world, from, goal, |at| {
+            !self.spawn_cells.contains(&at) && !occupied.contains(&at)
+        })
+        .ok_or_else(|| format!("C17b no eligible route from {from:?}").into())
+    }
+
+    fn occupied(
+        client: &DevClientSession,
+        peer: Option<&DevClientSession>,
+    ) -> TestResult<BTreeSet<TilePos>> {
         let view = client
             .world_entities()
             .ok_or("C17b route needs an entity snapshot")?;
-        let occupied = view
+        Ok(view
             .iter()
             .filter(|entry| &entry.entity.identity != view.own_identity())
             .chain(
@@ -304,11 +315,36 @@ impl<'a> Staging<'a> {
                     .flat_map(|view| view.iter()),
             )
             .filter_map(|entry| tile(entry.position).ok())
-            .collect::<BTreeSet<_>>();
-        route_avoiding(self.world, from, goal, |at| {
-            !self.spawn_cells.contains(&at) && !occupied.contains(&at)
-        })
-        .ok_or_else(|| format!("C17b no eligible route from {from:?}").into())
+            .collect())
+    }
+
+    async fn return_to_town(&self, client: &mut DevClientSession) -> TestResult {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        let path = loop {
+            let from = tile(client.world_spatial().actor_position)?;
+            let occupied = Self::occupied(client, None)?;
+            // Use the outbound map bounds. During cleanup, vacant spawn tiles
+            // are eligible landings and walk still checks each before STEP.
+            if let Ok(path) = find_route(
+                from,
+                |at| at == TOWN,
+                |at, direction| {
+                    destination(self.world, at, direction).filter(|next| {
+                        map_journey::in_town(*next, TOWN) && !occupied.contains(next)
+                    })
+                },
+            ) {
+                break path;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(
+                    format!("C17b no eligible return route from {from:?} to {TOWN:?}").into(),
+                );
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        };
+        self.walk(client, &path).await
     }
 
     async fn walk(&self, client: &mut DevClientSession, path: &[StepDirection]) -> TestResult {
@@ -799,11 +835,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("C17b invisibility was absent or reset after relog".into());
     }
     row.pass("fresh-admission-condition", enter_sequence)?;
-    let back = staging.path(&caster, Some(&observer), |at| at == TOWN)?;
-    provisioning::with_peer_liveness(&mut observer, staging.walk(&mut caster, &back)).await?;
+    provisioning::with_peer_liveness(&mut observer, staging.return_to_town(&mut caster)).await?;
     logout(&mut caster).await?;
-    let back = staging.path(&observer, None, |at| at == TOWN)?;
-    staging.walk(&mut observer, &back).await?;
+    staging.return_to_town(&mut observer).await?;
     logout(&mut observer).await
 }
 
