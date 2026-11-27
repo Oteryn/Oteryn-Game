@@ -250,6 +250,113 @@ fn starting_dust(case: Case) -> u32 {
     }
 }
 
+pub(super) async fn assert_fiendish_corpse_delta(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    target: ExactActorRef,
+    (killer, session): (ExactActorRef, GameSessionId),
+    observer: ExactActorRef,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+    use crate::gameplay_transport::{
+        item_view::SessionItemView,
+        kill_reward::{DrainOutcome, KillSink, record_creature_kill},
+        world_spatial::{EntityKind, EntityRef, SessionVisibility, VisibilityUpdate},
+    };
+    use oteryn_protocol_oteryn::{
+        world_spatial::WorldSpatialError, world_spatial_entities::EntityDetail,
+    };
+    use std::{future::Future, task::Poll, time::Duration};
+
+    let channel = owner.observe_channel_entities(observer).await.ok_or("initial observer scene")?;
+    let entity = EntityRef {
+        identity: target.placement_identity(),
+        generation: target.actor_local_generation(),
+    };
+    let mut view = SessionVisibility::with_objects(true);
+    let mut items = SessionItemView::resume(
+        crate::gameplay_transport::connection::SessionContinuity::FRESH.item_view,
+    );
+    let mut attach = |entities: &mut [_]| {
+        items.attach_spatial_handles(entities).map_err(|_| WorldSpatialError::Malformed)
+    };
+    let snapshot = view.snapshot(&channel, &mut attach).map_err(debug)?;
+    let death_tile = snapshot.entities.iter().find(|entry| entry.entity == entity)
+        .ok_or("observer must know the living Fiendish rat")?.position;
+
+    let now = owner.owner_now();
+    let principal = {
+        let mut runtime = owner.runtime.lock().await;
+        let creature = runtime.companion_snapshot(target).map_err(debug)?;
+        assert_eq!(creature.forge, Some(crate::domain::forge_creature::ForgeCreature::Fiendish));
+        let lease = runtime.bound_attacker_lease(killer, session).map_err(debug)?;
+        let damage = runtime.borrow_exact_actor_commit_at(now.get() / 1_000)
+            .commit_damage_for_bound_attacker(
+                target,
+                killer,
+                CommandRef::new(session, CommandId::new(30).map_err(debug)?),
+                0,
+                OwnerDamageCommand {
+                    target: b"oteryn:creature.rat",
+                    occurrence: session.as_bytes(),
+                    binding: b"fiendish-observer",
+                    damage: creature.health,
+                },
+            ).map_err(debug)?;
+        assert!(damage.applied && damage.health_after == 0);
+        crate::combat::CapturedRewardPrincipal {
+            character: lease.character_id(),
+            lease_generation: lease.generation(),
+            session,
+            actor: killer,
+        }
+    };
+    // Model producers whose committed damage is observed before reward queue ingress.
+    let before_queue = owner.observe_channel_entities(observer).await.ok_or("lethal scene")?;
+    assert!(!matches!(view.refresh(&before_queue, &mut attach).map_err(debug)?,
+        VisibilityUpdate::Delta(delta) if delta.leave.contains(&entity)));
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let attack = owner.states.attack.lock().await;
+        record_creature_kill(&mut runtime, KillSink {
+            prey: Some(&states),
+            activity: &[],
+            queue: attack.kills(),
+            rewards: owner.reward_table(),
+            charms: Some(owner.imported_charms),
+        }, target, principal, now.get() / 1_000, Some(now));
+    }
+    let held = owner.root.try_issue_semantic_pass()?;
+    let mut drain = std::pin::pin!(owner.drain_kill_rewards(session));
+    let first = std::future::poll_fn(|cx| Poll::Ready(drain.as_mut().poll(cx))).await;
+    let before_mint = owner.observe_channel_entities(observer).await.ok_or("pending corpse scene")?;
+    assert!(!matches!(view.refresh(&before_mint, &mut attach).map_err(debug)?,
+        VisibilityUpdate::Delta(delta) if delta.leave.contains(&entity)));
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    let result = match first {
+        Poll::Ready(result) => result,
+        Poll::Pending => tokio::time::timeout(Duration::from_secs(10), drain).await?,
+    };
+    assert_eq!(result, DrainOutcome::Drained);
+
+    let identity = target.corpse_identity();
+    let after = owner.observe_channel_entities(observer).await.ok_or("committed corpse scene")?;
+    let VisibilityUpdate::Delta(delta) = view.refresh(&after, &mut attach).map_err(debug)? else {
+        return Err("observer must receive the death delta".into());
+    };
+    assert!(delta.leave.contains(&entity));
+    let corpse = delta.enter.iter().find(|entry| {
+        entry.kind == EntityKind::Corpse && entry.entity == EntityRef { identity, generation: 0 }
+    }).ok_or("exact corpse must enter in the same delta as the creature leaves")?;
+    assert_eq!(corpse.position, death_tile);
+    assert!(matches!(corpse.detail,
+        EntityDetail::Object { item_handle: Some(_), .. }
+        | EntityDetail::ObjectWithAppearance { item_handle: Some(_), .. }
+    ));
+    assert_committed_sliver_in_corpse(&h.pool).await
+}
+
 pub(super) async fn assert_kill_reward(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -263,7 +370,6 @@ pub(super) async fn assert_kill_reward(
             AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, SessionContinuity,
         },
         kill_reward::DrainOutcome,
-        world_spatial::VisibleKind,
     };
     use oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1;
     use std::{future::Future, task::Poll, time::Duration};
@@ -276,41 +382,6 @@ pub(super) async fn assert_kill_reward(
         forge.kind,
         crate::domain::forge_creature::ForgeCreature::Fiendish
     );
-
-    if matches!(case, Case::ForgeKillCorpse) {
-        let held = owner.root.try_issue_semantic_pass()?;
-        let mut drain = std::pin::pin!(owner.drain_kill_rewards(session));
-        let first = std::future::poll_fn(|cx| Poll::Ready(drain.as_mut().poll(cx))).await;
-        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-        let result = match first {
-            Poll::Ready(result) => result,
-            Poll::Pending => tokio::time::timeout(Duration::from_secs(10), drain).await?,
-        };
-        assert_eq!(
-            result,
-            DrainOutcome::Drained,
-            "the death settles when the busy holder returns"
-        );
-        let identity = pending.target.corpse_identity();
-        let corpse = owner
-            .runtime
-            .lock()
-            .await
-            .bound_corpse(identity)
-            .ok_or("bound fiendish corpse")?;
-        assert_eq!(corpse.position, pending.facts.corpse);
-        let visible = owner
-            .observe_channel_entities(actor)
-            .await
-            .ok_or("spatial projection")?;
-        assert!(
-            visible.entities.iter().any(|entity| {
-                entity.identity == identity && matches!(entity.kind, VisibleKind::Corpse { .. })
-            }),
-            "the fiendish corpse is published in the ordinary spatial view"
-        );
-        return assert_committed_sliver_in_corpse(&h.pool).await;
-    }
 
     let Some(fence) = owner
         .current_quest_fence(session)

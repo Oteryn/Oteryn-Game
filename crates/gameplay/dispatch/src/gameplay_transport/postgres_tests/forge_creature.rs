@@ -80,7 +80,7 @@ fn fiendish_kill_credits_authored_dust_and_serves_capped_balance() -> TestResult
 }
 
 #[test]
-fn fiendish_kill_publishes_corpse_at_death_tile_after_busy_holder() -> TestResult {
+fn fiendish_kill_publishes_exact_corpse_and_removal_in_one_delta() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
