@@ -7,6 +7,23 @@ use oteryn_protocol_oteryn::{
 
 pub const FRAME_LIMIT: usize = 1024 * 1024;
 
+/// External admission input, carried beside the transcript without modifying any frame.
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ItemDictionaryPin {
+    pub generation: [u8; 32],
+    pub count: u32,
+}
+
+impl ItemDictionaryPin {
+    pub fn sorted_refs(&self) -> Result<Vec<u32>, &'static str> {
+        if !(1..=100_000).contains(&self.count) {
+            return Err("C12 Item dictionary count outside bounds");
+        }
+        Ok((1..=self.count).collect())
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Envelope {

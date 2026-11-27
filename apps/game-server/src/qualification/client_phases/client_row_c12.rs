@@ -14,24 +14,45 @@ use std::task::{Context, Poll};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 #[path = "../../../../../tools/qualification/c12_frame_capture.rs"]
-mod frame_capture;
+pub(super) mod frame_capture;
 
 const COMMAND_BUDGET: Duration = Duration::from_secs(8);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(capture(clients)))
-            .await
-            .unwrap_or_else(|_| Err("C12.client capture deadline=360s".into()));
+    let received = Arc::new(Mutex::new(Vec::new()));
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(360),
+        verdict::observe(capture(clients, Arc::clone(&received))),
+    )
+    .await
+    .unwrap_or_else(|_| Err("C12.client capture deadline=360s".into()));
     match result {
         Ok(()) => evidence("e2e_capture scenario=C12.client status=CAPTURED"),
-        Err(error) => evidence(&format!(
-            "e2e_all scenario=C12.client status=FAIL evidence={error}"
-        )),
+        Err(error) => {
+            if let (Some(root), Ok(bytes)) =
+                (std::env::var_os("E2E_ALL_CAPTURE_DIR"), received.lock())
+            {
+                if !bytes.is_empty() {
+                    let name = "c12-failed-wire.bin";
+                    match write_packet(Path::new(&root), name, &bytes) {
+                        Ok(()) => evidence(&format!(
+                            "C12_FAILED_WIRE file={name} bytes={}",
+                            bytes.len()
+                        )),
+                        Err(save_error) => {
+                            evidence(&format!("C12_FAILED_WIRE save_error={save_error}"))
+                        }
+                    }
+                }
+            }
+            evidence(&format!(
+                "e2e_all scenario=C12.client status=FAIL evidence={error}"
+            ));
+        }
     }
 }
 
-async fn capture(clients: &SeamClients<'_>) -> TestResult {
+async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> TestResult {
     use full_row_c12::hex_bytes;
 
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C12 capture directory absent")?;
@@ -57,14 +78,18 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             TcpStream::connect(clients.address).await?,
         )
         .await?;
-    let received = Arc::new(Mutex::new(Vec::new()));
+    let item_pin = full_row_c12::item_dictionary_pin(clients)?;
+    let item_refs = item_pin.sorted_refs()?;
     let mut session = Session::admit(
         WireCapture {
             stream,
             received: Arc::clone(&received),
         },
         Admission {
-            appearance_items: None,
+            appearance_items: Some(oteryn_dev_client::AppearanceItemDictionary {
+                content_generation: item_pin.generation,
+                definition_refs: &item_refs,
+            }),
             schema_revision: 1,
             character_id: CharacterId::decode(&characters[1])?,
             admission_material: grant.as_bytes(),
@@ -120,7 +145,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut traveled = String::new();
     for (direction, expected) in route {
         let before = tile(session.world_spatial().actor_position)?;
-        let step = session.step(direction).await?;
+        let step = session.step(direction).await.inspect_err(|error| {
+            evidence(&format!("C12_CLIENT_STEP_ERROR from={before:?} expected={expected:?} direction={direction:?} error={error}"));
+        })?;
         require_mechanic_acceptance(step.status, "C12.client STEP")?;
         let actual = tile(session.world_spatial().actor_position)?;
         if step.disposition != StepDisposition::Moved
@@ -137,10 +164,22 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         verdict::Harness::global().progress("client-hunt");
         session
             .service_liveness_discarding_events(Duration::from_millis(u64::from(step.step_wait_ms)))
-            .await?;
+            .await
+            .inspect_err(|error| {
+                evidence(&format!(
+                    "C12_CLIENT_STEP_LIVENESS_ERROR at={actual:?} command={} error={error}",
+                    step.command_id
+                ));
+            })?;
     }
     let position = session.world_spatial().actor_position;
-    let target = full_row_c12::client_fixture_target(&mut session).await?;
+    let target = full_row_c12::client_fixture_target(&mut session)
+        .await
+        .inspect_err(|error| {
+            evidence(&format!(
+                "C12_CLIENT_FIXTURE_TARGET_ERROR at={position:?} error={error}"
+            ));
+        })?;
     let entities = session
         .world_entities()
         .ok_or("C12 fresh entity projection absent")?;
@@ -295,6 +334,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let frames = frame_capture::envelopes(&bytes, id)
         .map_err(|error| error as Box<dyn std::error::Error>)?;
     let frames = serde_json::to_vec(&frames)?;
+    write_packet(
+        &root,
+        "c12-item-dictionary.json",
+        &serde_json::to_vec(&item_pin)?,
+    )?;
     write_packet(&root, "c12-wire.bin", &bytes)?;
     write_packet(&root, "c12-frames.json", &frames)?;
     write_packet(&root, "c12-expected.txt", expected.as_bytes())?;
@@ -343,7 +387,7 @@ async fn verify_post_cast_relog<S: oteryn_dev_client::native_session::SessionStr
         return Err(format!("C12.client logout refused on first attempt: {logout:?}").into());
     }
     drop(session);
-    let fresh = connect_character(clients, 0xc3, 1).await?;
+    let fresh = full_row_c12::connect_c12_character(clients).await?;
     let durable_mana = fresh
         .actor_vitals()
         .ok_or("C12.client post-relog vitals absent")?

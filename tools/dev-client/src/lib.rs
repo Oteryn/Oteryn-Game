@@ -26,12 +26,12 @@ pub use oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
 pub use oteryn_session::SessionError;
 use oteryn_session::{Admission, Session};
 pub use oteryn_session::{
-    AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
-    ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, ChatWireError, CommandOutcome,
-    DuplicateOutcome, EntityDetail, EntityKind, EntityRef, GuildChatLine, GuildRoomState,
-    ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
-    ItemMoveOutcomeResult, JoinSnapshot, MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHAT_LOG_LINES,
-    MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS,
+    AppearanceItemDictionary, AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition,
+    ChatIntent, ChatLine, ChatLog, ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode,
+    ChatWireError, CommandOutcome, DuplicateOutcome, EntityDetail, EntityKind, EntityRef,
+    GuildChatLine, GuildRoomState, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
+    ItemMoveOutcome, ItemMoveOutcomeResult, JoinSnapshot, MAX_CHARACTER_INVENTORY_ITEMS,
+    MAX_CHAT_LOG_LINES, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS,
     MAX_CORPSE_CONTAINER_48_ENTRIES, MAX_OPEN_CONTAINER_ENTRIES, MAX_QUEUED_EVENTS, OpenContainer,
     SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
     WorldSpatialEntity,
@@ -235,6 +235,14 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 /// `connect_and_join`'s full join, but keeps the admitted connection: see
 /// `oteryn_session::Session` for the sequence, revision and liveness discipline it carries.
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
+    connect_session_with_appearance_items(request, None).await
+}
+
+/// Admit with the caller's independently pinned client Item references for Item-look actors.
+pub async fn connect_session_with_appearance_items(
+    request: JoinRequest<'_>,
+    appearance_items: Option<AppearanceItemDictionary<'_>>,
+) -> Result<DevClientSession, DevClientError> {
     let started = Instant::now();
     let stream = oteryn_session_tcp::connect(TcpConnect {
         address: request.address,
@@ -247,7 +255,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     let session = Session::admit(
         stream,
         Admission {
-            appearance_items: None,
+            appearance_items,
             schema_revision: request.schema_revision,
             character_id: request.character_id,
             admission_material: request.admission_material,

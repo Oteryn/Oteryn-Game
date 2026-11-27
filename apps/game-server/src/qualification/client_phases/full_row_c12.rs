@@ -1131,6 +1131,68 @@ async fn wait_fixture_target<S: oteryn_dev_client::native_session::SessionStream
     }
 }
 
+pub(super) fn item_dictionary_pin(
+    clients: &SeamClients<'_>,
+) -> TestResult<super::client_row_c12::frame_capture::ItemDictionaryPin> {
+    let world_bundle = std::path::PathBuf::from(required("NODE_BOOT_WORLD_BUNDLE")?);
+    let deploy = world_bundle
+        .parent()
+        .and_then(Path::parent)
+        .ok_or("C12 activation directory absent")?;
+    let activation: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(deploy.join("state/content-1.json"))?)?;
+    if activation["world_id"].as_str() != Some(uuid_text(&clients.world).as_str())
+        || activation["channel_id"].as_str() != Some(uuid_text(&clients.channel).as_str())
+        || activation["activation_sequence"].as_u64() != Some(1)
+    {
+        return Err("C12 Item dictionary activation scope differs".into());
+    }
+    let generation = hex32(
+        activation["client_artifact_digest"]
+            .as_str()
+            .ok_or("C12 Item dictionary generation absent")?,
+    )?;
+    let index = provisioning::item_index()?;
+    let count = (1..=100_001)
+        .take_while(|&reference| {
+            NonZeroU32::new(reference)
+                .is_some_and(|reference| index.definition_at(reference).is_some())
+        })
+        .count();
+    Ok(super::client_row_c12::frame_capture::ItemDictionaryPin {
+        generation,
+        count: u32::try_from(count)?,
+    })
+}
+
+pub(super) async fn connect_c12_character(
+    clients: &SeamClients<'_>,
+) -> TestResult<DevClientSession> {
+    wait_character_released(clients, 1).await?;
+    let grant = platform_row_grant(clients, 1).await?;
+    let pin = item_dictionary_pin(clients)?;
+    let refs = pin.sorted_refs()?;
+    let client = oteryn_dev_client::connect_session_with_appearance_items(
+        oteryn_dev_client::JoinRequest {
+            address: clients.address,
+            server_name: "localhost",
+            root_certificate: clients.certificate,
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(&clients.characters[1])?,
+            admission_material: grant.as_bytes(),
+            client_build_id: "oteryn-dev-client/world-qualification",
+            deadline: Duration::from_secs(20),
+        },
+        Some(oteryn_dev_client::AppearanceItemDictionary {
+            content_generation: pin.generation,
+            definition_refs: &refs,
+        }),
+    )
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(client)
+}
+
 async fn fresh_c12_admission(
     mut client: DevClientSession,
     clients: &SeamClients<'_>,
@@ -1138,7 +1200,7 @@ async fn fresh_c12_admission(
     let previous = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let fresh = connect_character(clients, 0xc3, 1).await?;
+    let fresh = connect_c12_character(clients).await?;
     if fresh.join_snapshot().game_session_id == previous {
         return Err("C12 preparation reused its previous session".into());
     }
@@ -1150,7 +1212,7 @@ async fn prepare_c12_monk(clients: &SeamClients<'_>) -> TestResult<DevClientSess
         "character_preparation mode=Seeded profile={} reason={:?}",
         PREPARATION.profile, PREPARATION.reason
     ));
-    let client = connect_character(clients, 0xc2, 1).await?;
+    let client = connect_c12_character(clients).await?;
     request_fixture_control_at(
         "NODE_BOOT_CONTROL_SOCKET",
         uuid_text(client.join_snapshot().game_session_id.as_bytes()),
@@ -1390,7 +1452,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0xc3, 1).await?;
+    let mut fresh = connect_c12_character(clients).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || !equipped_right(&fresh, definition)
         || carried_count(&fresh, definition) != 0

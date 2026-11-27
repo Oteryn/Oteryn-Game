@@ -182,9 +182,22 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         offset: 0,
         visible: Rc::clone(&visible),
     };
-    let mut admission = admission()?;
-    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
-    admission.deadline = Duration::from_secs(2);
+    let dictionary = root.join("c12-item-dictionary.json");
+    if !(1..=4096).contains(&dictionary.metadata()?.len()) {
+        return Err("C12 Item dictionary pin size outside bounds".into());
+    }
+    let pin: frame_capture::ItemDictionaryPin =
+        serde_json::from_slice(&std::fs::read(dictionary)?)?;
+    let refs = pin.sorted_refs()?;
+    let admission = crate::Admission {
+        appearance_items: Some(crate::AppearanceItemDictionary {
+            content_generation: pin.generation,
+            definition_refs: &refs,
+        }),
+        supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+        deadline: Duration::from_secs(2),
+        ..admission()?
+    };
     let mut session = Session::admit(wire, admission).await?;
     let steps_and_premium = u64::try_from(witness.traveled.len())? + 1;
     if session.join_snapshot().game_session_id.as_bytes() != &witness.session

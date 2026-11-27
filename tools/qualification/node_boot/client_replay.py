@@ -114,7 +114,7 @@ def replay_targets():
                 targets.setdefault(module, []).append((
                     "oteryn-session",
                     "e2e_c12_replays_augmented_cast_payload_and_refuses_invalid_payload",
-                    {"c12-expected.txt", "c12-frames.json", "c12-wire.bin"},
+                    {"c12-expected.txt", "c12-frames.json", "c12-item-dictionary.json", "c12-wire.bin"},
                 ))
                 continue
             if "E2E_ALL_CAPTURE_DIR" not in source:
