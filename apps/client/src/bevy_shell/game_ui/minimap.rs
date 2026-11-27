@@ -48,9 +48,12 @@ struct State {
 }
 #[derive(Component)]
 struct MiniImage(u64);
+#[derive(Component)]
+struct MarkDescription;
 pub(super) fn install(app: &mut App) {
     markers::install(app);
     mouse::install(app);
+    app.add_systems(Update, mark_description);
     app.add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (project, shortcuts, camera_label).chain());
 }
@@ -171,6 +174,22 @@ fn project(
         ))
         .id();
     commands.entity(viewport).add_child(clock);
+    let description = commands
+        .spawn((
+            MarkDescription,
+            source::text("", source::font(skins.font.clone(), true)),
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: px(1.),
+                left: px(2.),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0., 0., 0., 0.85)),
+            Visibility::Hidden,
+        ))
+        .id();
+    commands.entity(viewport).add_child(description);
+
     let controls = commands
         .spawn(Node {
             width: px(ROSE),
@@ -219,6 +238,49 @@ fn click(
         f64::from(point.x) * f64::from(SIZE.x),
         f64::from(point.y) * f64::from(SIZE.y),
     );
+}
+
+fn mark_description(
+    owner: NonSend<HostOwner>,
+    images: Query<(&MiniImage, &RelativeCursorPosition)>,
+    mut labels: Query<(&mut Text, &mut Visibility), With<MarkDescription>>,
+) {
+    let label = owner.play.as_ref().and_then(|play| {
+        let (node, cursor) = images.single().ok()?;
+        if node.0 != owner.generation() || owner.modal_active() {
+            return None;
+        }
+        let point = image_position(cursor)?;
+        let (x, y, floor, zoom, _) = play.view.minimap_camera();
+        let at = (
+            x.checked_add(((point.x * 31.) as i32 - 15) * zoom)?,
+            y.checked_add(((point.y * 25.) as i32 - 12) * zoom)?,
+            floor,
+        );
+        play.view
+            .satellite_map(|_, marks| {
+                marks
+                    .iter()
+                    .find(|mark| (mark.x, mark.y, mark.floor) == at)
+                    .map(|mark| mark.label.clone())
+            })
+            .or_else(|| {
+                play.view
+                    .remembered_minimap_mark(at)
+                    .map(|mark| mark.label.clone())
+            })
+            .filter(|label| !label.is_empty())
+    });
+    for (mut text, mut visibility) in &mut labels {
+        if let Some(label) = &label {
+            if text.0 != *label {
+                text.0.clone_from(label);
+            }
+            *visibility = Visibility::Visible;
+        } else {
+            *visibility = Visibility::Hidden;
+        }
+    }
 }
 
 /// Convert Bevy's centred node coordinates to the full, uncropped image.

@@ -4,10 +4,14 @@ use bevy::{
     asset::AssetPlugin,
     camera::RenderTargetInfo,
     image::ImagePlugin,
-    input::{ButtonState, InputPlugin, mouse::MouseButtonInput},
+    input::{
+        ButtonState, InputPlugin,
+        keyboard::{Key, KeyboardInput},
+        mouse::MouseButtonInput,
+    },
     picking::DefaultPickingPlugins,
     render::{RenderPlugin, renderer::RenderDevice, view::screenshot::ScreenshotCaptured},
-    text::{EditableText, TextEdit, TextPlugin},
+    text::{EditableText, TextPlugin},
     ui::UiGlobalTransform,
     window::{CursorMoved, PrimaryWindow, WindowEvent},
 };
@@ -49,6 +53,8 @@ pub(in crate::bevy_shell) fn app(owner: HostOwner, render: bool) -> Result<App, 
             ImagePlugin::default_nearest(),
             window,
             InputPlugin,
+            bevy::input_focus::InputDispatchPlugin,
+            bevy::ui_widgets::TextInputPlugin,
             TextPlugin,
             bevy::ui::UiPlugin,
             bevy::mesh::MeshPlugin,
@@ -201,15 +207,47 @@ pub(in crate::bevy_shell) fn open_menu(app: &mut App, cell: [i32; 2]) -> Result<
 }
 
 pub(in crate::bevy_shell) fn description(app: &mut App, label: &str) -> Result<(), String> {
-    let world = app.world_mut();
-    let mut field = world
-        .query::<(&Name, &mut EditableText)>()
-        .iter_mut(world)
-        .find_map(|(name, field)| (name.as_str() == "Mark description").then_some(field))
-        .ok_or("missing mark description field")?;
-    field.clear();
-    field.queue_edit(TextEdit::Insert(label.into()));
-    app.update();
+    let entity = named(app.world_mut(), "Mark description")?;
+    let (center, _) = bounds(app.world(), entity)?;
+    click(app, center, MouseButton::Left)?;
+    let window = window(app)?;
+    let count = app
+        .world()
+        .get::<EditableText>(entity)
+        .ok_or("missing mark description field")?
+        .value()
+        .chars()
+        .count();
+    let mut key = |code, logical_key, text| {
+        app.world_mut().write_message(KeyboardInput {
+            key_code: code,
+            logical_key,
+            state: ButtonState::Pressed,
+            text,
+            repeat: false,
+            window,
+        });
+        app.update();
+    };
+    key(KeyCode::End, Key::End, None);
+    for _ in 0..count {
+        key(KeyCode::Backspace, Key::Backspace, None);
+    }
+    for character in label.chars() {
+        let text = character.to_string();
+        key(
+            KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+            Key::Character(text.as_str().into()),
+            Some(text.as_str().into()),
+        );
+    }
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(entity)
+            .ok_or("missing mark description field")?
+            .value(),
+        label
+    );
     Ok(())
 }
 

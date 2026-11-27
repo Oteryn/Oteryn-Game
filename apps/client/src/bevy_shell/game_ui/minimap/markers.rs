@@ -259,33 +259,12 @@ fn activate(
             if owner.generation() != generation || owner.modal_active() {
                 return;
             }
-            let owner = &mut *owner;
-            let Some(play) = &mut owner.play else { return };
+            let Some(play) = &owner.play else { return };
             if play.view.minimap_binding_generation() != binding
                 || play.view.gameplay_input_blocked(&play.link)
+                || !remove_mark(&mut owner, at)
             {
                 return;
-            }
-            if has_world_mark(&play.view, at) {
-                if play.view.remove_minimap_marker(at).is_err() {
-                    return;
-                }
-            } else if let Some(index) = remembered_index(&play.view, &owner.settings, at) {
-                if let Err(error) = play.view.require_minimap_preferences_writer() {
-                    owner.status = error.to_string();
-                    return;
-                }
-                let mut preferences = owner.settings.preferences.clone();
-                preferences.minimap.remove_mark(index);
-                owner
-                    .settings
-                    .apply_minimap_marks_in_background(preferences);
-                if let Err(error) = play
-                    .view
-                    .set_preferences(owner.settings.preferences.clone())
-                {
-                    owner.status = error.to_string();
-                }
             }
             editor.at = None;
             editor.pending = None;
@@ -365,7 +344,35 @@ fn finish(
     }
 }
 
-fn has_world_mark(view: &crate::play::PlayView, at: (i32, i32, i16)) -> bool {
+pub(super) fn remove_mark(owner: &mut HostOwner, at: (i32, i32, i16)) -> bool {
+    let Some(play) = &mut owner.play else {
+        return false;
+    };
+    if has_world_mark(&play.view, at) {
+        if play.view.remove_minimap_marker(at).is_err() {
+            return false;
+        }
+    } else if let Some(index) = remembered_index(&play.view, &owner.settings, at) {
+        if let Err(error) = play.view.require_minimap_preferences_writer() {
+            owner.status = error.to_string();
+            return false;
+        }
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.minimap.remove_mark(index);
+        owner
+            .settings
+            .apply_minimap_marks_in_background(preferences);
+        if let Err(error) = play
+            .view
+            .set_preferences(owner.settings.preferences.clone())
+        {
+            owner.status = error.to_string();
+        }
+    }
+    true
+}
+
+pub(super) fn has_world_mark(view: &crate::play::PlayView, at: (i32, i32, i16)) -> bool {
     view.satellite_map(|_, marks| marks.iter().any(|mark| (mark.x, mark.y, mark.floor) == at))
 }
 

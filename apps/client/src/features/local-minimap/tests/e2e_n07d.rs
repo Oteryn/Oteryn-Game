@@ -470,6 +470,19 @@ async fn verify(
         assert_eq!(minimap.cells, remembered);
         assert_eq!(minimap.markers, std::slice::from_ref(&marker));
     }
+    // The marker is one tile west of the actor. The glyph's left border covers
+    // the edge of this tile, so sample its interior in the rendered image.
+    let marker_tile = oteryn_renderer::TileCoord::new(
+        15 + marker.x - destination.x,
+        12 + marker.y - destination.y,
+    );
+    let [marker_x, marker_y] = oteryn_client_ui::minimap::view()?.tile_to_screen(marker_tile);
+    let stride = (oteryn_client_ui::minimap::COLUMNS * oteryn_client_ui::minimap::TILE_PX) as usize;
+    assert_eq!(
+        pixels[(marker_y as usize + 2) * stride + marker_x as usize + 2],
+        palette_rgba(180),
+        "N07d restored mark must appear beneath the transparent part of the actor glyph"
+    );
     check_markers(host, &cache_path, marker).await?;
     assert_eq!(super::lock(&host.view()?.minimap).cells, remembered);
 
@@ -477,7 +490,6 @@ async fn verify(
         .iter()
         .find(|(key, _)| key.0 == destination.floor && retained.contains(key))
         .ok_or("N07d needs retained terrain on the actor floor")?;
-    host.click_minimap_button("Rose centre")?;
     host.drag_minimap([x - destination.x, y - destination.y])?;
     assert_eq!(
         host.view()?.minimap_camera(),
@@ -486,6 +498,11 @@ async fn verify(
     let grid = oteryn_client_ui::minimap::view()?;
     let center = grid.tile_to_screen(oteryn_renderer::TileCoord::new(15, 12));
     assert_sidebar_tile(&host.minimap_pixels()?, center, palette_rgba(color));
+    host.click_minimap_button("Rose centre")?;
+    assert_eq!(
+        host.view()?.minimap_camera(),
+        (destination.x, destination.y, destination.floor, zoom, true)
+    );
     Ok(())
 }
 
@@ -705,6 +722,7 @@ async fn check_markers(
     path: &Path,
     mut marker: Marker,
 ) -> Result<(), Error> {
+    let expected_terrain = super::lock(&host.view()?.minimap).cells.clone();
     let (x, y, floor, zoom, _) = host.view()?.minimap_camera();
     assert_eq!(floor, marker.floor);
     assert_eq!(zoom, 1);
@@ -719,7 +737,7 @@ async fn check_markers(
         ("Temple", "Blue mark icon", 1),
     ] {
         host.open_mark_menu_at_cell(cell)?;
-        host.click_minimap_button("Set Mark")?;
+        host.click_minimap_button("Edit Mark")?;
         host.enter_mark_description(label)?;
         host.click_minimap_button(icon)?;
         host.click_minimap_button("Save mark")?;
@@ -730,10 +748,11 @@ async fn check_markers(
             std::slice::from_ref(&marker)
         );
         wait_for_saved_marks(host, path, std::slice::from_ref(&marker)).await?;
+        assert_saved_terrain(path, &expected_terrain)?;
     }
 
     host.open_mark_menu_at_cell(cell)?;
-    host.click_minimap_button("Set Mark")?;
+    host.click_minimap_button("Edit Mark")?;
     host.enter_mark_description("  ")?;
     host.click_minimap_button("Save mark")?;
     assert_eq!(
@@ -744,11 +763,46 @@ async fn check_markers(
         Saved::read_from(path)?
             .ok_or("N07d edited marks file missing")?
             .markers,
-        [marker]
+        [marker.clone()]
     );
-    host.click_minimap_button("Remove mark")?;
+    let before_invalid_floor = std::fs::read(path)?;
+    {
+        let mut minimap = super::lock(&host.view()?.minimap);
+        let error = minimap.edit_marker(marker.x, marker.y, -5, marker.label.clone(), marker.color)
+            .err().ok_or("N07d invalid marker floor must be refused")?;
+        assert_eq!(error.kind(), std::io::ErrorKind::Other);
+        assert_eq!(minimap.markers, std::slice::from_ref(&marker));
+    }
+    assert_eq!(std::fs::read(path)?, before_invalid_floor);
+    host.click_minimap_button("Cancel mark")?;
+    host.open_mark_menu_at_cell(cell)?;
+    host.click_minimap_button("Edit Mark")?;
+    host.enter_mark_description("")?;
+    host.click_minimap_button("Save mark")?;
+    marker.label.clear();
+    assert_eq!(
+        super::lock(&host.view()?.minimap).markers,
+        std::slice::from_ref(&marker)
+    );
+    wait_for_saved_marks(host, path, std::slice::from_ref(&marker)).await?;
+    assert_saved_terrain(path, &expected_terrain)?;
+
+    host.open_mark_menu_at_cell(cell)?;
+    host.click_minimap_button("Delete Mark")?;
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
     wait_for_saved_marks(host, path, &[]).await?;
+    assert_saved_terrain(path, &expected_terrain)?;
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+fn assert_saved_terrain(path: &Path, expected: &BTreeMap<CellPosition, u8>) -> Result<(), Error> {
+    let saved = Saved::read_from(path)?.ok_or("N07d edited cache missing")?;
+    let expected: BTreeSet<_> = expected.iter().map(|(&(floor, x, y), &color)| {
+        [i32::from(floor), x, y, i32::from(color)]
+    }).collect();
+    assert_eq!(saved.cells.len(), expected.len());
+    assert_eq!(saved.cells.into_iter().collect::<BTreeSet<_>>(), expected);
     Ok(())
 }
 

@@ -162,6 +162,15 @@ pub(super) fn secondary_click(
         return;
     }
 
+    let at = (x, y, floor);
+    let names: &[&str] = if super::markers::has_world_mark(&play.view, at)
+        || play.view.remembered_minimap_mark(at).is_some()
+    {
+        &["Edit Mark", "Delete Mark"]
+    } else {
+        &["Set Mark"]
+    };
+    let items: Vec<_> = names.iter().map(|name| popup::Item::entry(*name)).collect();
     let look = popup::Look {
         font: skins.font.clone(),
         frame: skins.frame.clone(),
@@ -173,14 +182,17 @@ pub(super) fn secondary_click(
         &look,
         event.pointer.location().position,
         scale.as_deref(),
-        &[popup::Item::entry("Set Mark")],
+        &items,
     );
     commands.entity(opened.scrim).observe(dismiss_menu);
-    for entry in opened.entries {
-        commands
-            .entity(entry)
-            .insert(Name::new("Set Mark"))
-            .observe(set_mark);
+    for (entry, &name) in opened.entries.into_iter().zip(names) {
+        let mut entity = commands.entity(entry);
+        entity.insert(Name::new(name));
+        if name == "Delete Mark" {
+            entity.observe(delete_mark);
+        } else {
+            entity.observe(set_mark);
+        }
     }
     let key = (
         node.0,
@@ -244,5 +256,20 @@ fn set_mark(
         && menu_target_is_current(&owner, key)
     {
         editor.open(key);
+    }
+}
+
+fn delete_mark(
+    event: On<Activate>,
+    guard: ModalGuard,
+    mut owner: NonSendMut<HostOwner>,
+    mut menu: ResMut<MarkMenu>,
+    mut commands: Commands,
+) {
+    if guard.allows(event.entity)
+        && let Some(key) = menu.close(&mut commands)
+        && menu_target_is_current(&owner, key)
+    {
+        super::markers::remove_mark(&mut owner, key.1);
     }
 }
