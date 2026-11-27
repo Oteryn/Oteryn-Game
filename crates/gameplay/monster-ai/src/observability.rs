@@ -1,8 +1,53 @@
-//! Low-cardinality AI counters and sampled budget-breach diagnostics.
+//! AI counters, sampled budget breaches and debug decision diagnostics.
 
+use crate::foundation::ExactActorRef;
 use oteryn_error_codes::metrics::{Counter, Registry};
 use oteryn_error_codes::{FieldValue, Level, Line, emit};
 use std::sync::{Arc, OnceLock};
+
+pub(super) fn record_target_decision(
+    monster: ExactActorRef,
+    target: Option<ExactActorRef>,
+    reason: &str,
+) {
+    if !oteryn_error_codes::filter().allows(Level::Debug, "monster_ai", false) {
+        return;
+    }
+    emit(
+        "oteryn-game-server",
+        &Line::new(Level::Debug, "monster_ai", "target_decision")
+            .field("monster", FieldValue::Owned(monster_identity(monster)))
+            .field(
+                "target",
+                target.map_or(FieldValue::Token("none"), |actor| {
+                    FieldValue::Owned(format!(
+                        "{}/{}",
+                        actor.actor_local_id(),
+                        actor.actor_local_generation()
+                    ))
+                }),
+            )
+            .field("reason", FieldValue::Token(reason)),
+    );
+}
+
+fn monster_identity(actor: ExactActorRef) -> String {
+    let identity = u128::from_be_bytes(actor.placement_identity());
+    format!("{identity:032x}/{}", actor.actor_local_generation())
+}
+
+pub fn record_melee_outcome(monster: ExactActorRef, outcome: &str, reason: &str) {
+    if !oteryn_error_codes::filter().allows(Level::Debug, "monster_ai", false) {
+        return;
+    }
+    emit(
+        "oteryn-game-server",
+        &Line::new(Level::Debug, "monster_ai", "melee_drain")
+            .field("monster", FieldValue::Owned(monster_identity(monster)))
+            .field("outcome", FieldValue::Token(outcome))
+            .field("reason", FieldValue::Token(reason)),
+    );
+}
 
 fn evaluation_total() -> &'static Counter {
     static COUNTER: OnceLock<Arc<Counter>> = OnceLock::new();
