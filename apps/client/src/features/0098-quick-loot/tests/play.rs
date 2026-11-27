@@ -270,6 +270,50 @@ fn cp02_destination_controls_encode_existing_wire_and_reject_invalid_ids()
     assert!(link.discovery_panel().loot.confirmed.is_empty());
     Ok(())
 }
+fn check_managed_destination_category(
+    category: oteryn_session::quick_loot::QuickLootCategory,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::quick_loot::*;
+    let (link, mut rx, outbox) = crate::play::play_channel();
+    let fields = [
+        String::new(),
+        String::new(),
+        (category as u8).to_string(),
+        "0".into(),
+        "3".into(),
+    ];
+    outbox.discovery_initialize(&Selected(false));
+    assert!(!link.discovery_action(98, 6, &fields, 0));
+    assert!(rx.try_recv().is_err());
+
+    outbox.discovery_initialize(&Selected(true));
+    assert!(link.discovery_action(98, 6, &fields, 0), "{category:?}");
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
+        return Err("wrong command".into());
+    };
+    assert_eq!(command.capability, CAPABILITY_QUICK_LOOT_DESTINATIONS_V1);
+    assert_eq!(command.command_type, COMMAND_TYPE_QUICK_LOOT_DESTINATIONS);
+    let wire = decode_quick_loot_request(&command.payload).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(wire.action, QuickLootAction::AssignLoot);
+    assert_eq!(wire.category, Some(category));
+    assert_eq!(wire.recipient, Some(QuickLootRecipient::MainContainer));
+    Ok(())
+}
+
+#[test]
+fn managed_destination_category_armor() -> Result<(), Box<dyn std::error::Error>> {
+    check_managed_destination_category(oteryn_session::quick_loot::QuickLootCategory::Armor)
+}
+
+#[test]
+fn managed_destination_category_highest() -> Result<(), Box<dyn std::error::Error>> {
+    let category = oteryn_session::quick_loot::QuickLootCategory::ALL
+        .last()
+        .copied()
+        .ok_or("empty protocol category range")?;
+    check_managed_destination_category(category)
+}
+
 #[test]
 fn cp02_shortcuts_are_exclusive_and_session_end_clears_all_panels()
 -> Result<(), Box<dyn std::error::Error>> {

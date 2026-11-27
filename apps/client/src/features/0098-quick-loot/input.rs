@@ -164,14 +164,20 @@ impl PlayLink {
             4 => Action::Clear(mode),
             5 => Action::Select(mode),
             6 => {
-                let category = match fields.get(2).map(String::as_str) {
-                    Some("0") => None,
-                    Some("1") => Some(Category::Gold),
-                    Some("2") => Some(Category::CreatureProduct),
-                    Some("3") => Some(Category::Equipment),
-                    Some("4") => Some(Category::Consumable),
-                    Some("5") => Some(Category::Other),
-                    _ => return false,
+                let category = match fields.get(2).and_then(|value| value.parse::<u32>().ok()) {
+                    Some(0) => None,
+                    Some(value) => {
+                        let Some(category) = Category::from_wire(value) else {
+                            return false;
+                        };
+                        if value > Category::Other as u32
+                            && !lock(&self.mailbox).discovery.loot.destinations_selected
+                        {
+                            return false;
+                        }
+                        Some(category)
+                    }
+                    None => return false,
                 };
                 let recipient = match fields.get(4).map(String::as_str) {
                     Some("1") => QuickLootRecipient::Container,
