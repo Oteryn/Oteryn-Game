@@ -702,7 +702,9 @@ where
     if let Some(observation) = npc_relocation {
         effects::movement(stream, authority, session, observation)
             .await
-            .map_err(|end| command::disconnect_at(command, "command_relocation", "update_failed", end))?;
+            .map_err(|end| {
+                command::disconnect_at(command, "command_relocation", "update_failed", end)
+            })?;
     }
     if observe_achievements {
         achievement_notices::refresh(stream, authority, session)
