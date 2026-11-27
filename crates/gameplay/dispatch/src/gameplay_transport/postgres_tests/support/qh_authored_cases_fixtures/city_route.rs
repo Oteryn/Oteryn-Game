@@ -506,8 +506,32 @@ async fn walk_to(
         path.push((cursor, direction));
         cursor = parent;
     }
-    for (expected, direction) in path.into_iter().rev() {
-        step_to(owner, admitted, direction, expected, deadline).await?;
+    if path.is_empty() {
+        return Ok(());
     }
-    Ok(())
+    let actor = admitted.runtime_actor.ok_or("city actor")?;
+    let caps = admitted.continuity.selected_capabilities;
+    let diagonal = caps.contains(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
+    let owner = &*owner;
+    let mut revision = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.revision();
+    super::super::admitted_wire_fixtures::drive(owner, admitted, async |peer| {
+        for (expected, direction) in path.into_iter().rev() {
+            let command = peer.next;
+            let reply = timeout_at(
+                command_deadline(deadline),
+                peer.send(command, 1, &encode_step_intent(direction)),
+            )
+            .await
+            .map_err(|_| format!("STEP_INTENT {command} to {expected:?} timed out"))??;
+            let result = decode_step_result_profile(&reply, caps.contains(13), diagonal).map_err(debug)?;
+            assert_eq!(result.disposition, StepDisposition::Moved);
+            let after = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+            let position = after.position();
+            assert_eq!((position.x, position.y, i32::from(position.floor)), expected, "STEP {direction:?}");
+            assert_eq!(after.revision(), revision + 1);
+            revision = after.revision();
+        }
+        Ok(())
+    })
+    .await
 }

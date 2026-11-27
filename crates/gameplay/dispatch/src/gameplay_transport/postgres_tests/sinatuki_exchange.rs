@@ -279,16 +279,7 @@ fn scenario(name: &str, case: Case) -> TestResult {
 }
 
 fn shipped_placement() -> TestResult<NpcPlacement> {
-    let source: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../content/world/npc-placements/placements-00000-00055.json"
-    ))?;
-    let entry = source["records"]
-        .as_array()
-        .ok_or("NPC records")?
-        .iter()
-        .map(|record| &record["declaration"])
-        .find(|record| record["npc"] == NPC)
-        .ok_or("shipped Sinatuki")?;
+    let entry = super::npc_placement_fixtures::published(NPC)?.ok_or("shipped Sinatuki")?;
     let cell = &entry["cell"];
     assert_eq!(
         (

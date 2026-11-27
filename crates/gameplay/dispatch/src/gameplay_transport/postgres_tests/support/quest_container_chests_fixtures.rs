@@ -421,7 +421,10 @@ fn scenario_case(
             (chest.0 - u16::from(!matches!(case, Case::ChoiceDoor)), chest.1)
         };
         let pinned_source = pinned_completion_chest || committed || classic_region.is_some();
-        let world = if committed && classic_region.is_none() {
+        let corrected_reward = committed && matches!(unique, 6196 | 6202 | 6310);
+        let world = if corrected_reward {
+            super::qc_pinned_world::world_near(native, &[(chest.0, chest.1)])?
+        } else if committed && classic_region.is_none() {
             use oteryn_gameplay_quests::quest::world_callbacks::Position;
             let floor = chest.2;
             super::qc_pinned_world::crop(
@@ -479,6 +482,20 @@ fn scenario_case(
                 }
             };
             source_world(chest, unique, appearance, 0)?
+        };
+        let start = if corrected_reward && unique == 6196 {
+            // The loose book blocks boot on this approach, but its ground is walkable.
+            assert!(world.base().tile(start.0, start.1, chest.2).is_some_and(|tile| tile.walkable()));
+            start
+        } else if corrected_reward {
+            // Boot uses the published entry. Stage USE at an enterable neighbor.
+            let at = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, 1), (1, 1), (-1, -1), (1, -1)]
+                .into_iter().map(|(dx, dy)| crate::map::overlay::TilePos {
+                    x: chest.0.saturating_add_signed(dx), y: chest.1.saturating_add_signed(dy), floor: chest.2,
+                }).find(|at| world.enterable(*at)).ok_or("no enterable chest approach")?;
+            (at.x, at.y)
+        } else {
+            start
         };
         let mut authored_shard = None;
         let report = if production_forgemaster {
