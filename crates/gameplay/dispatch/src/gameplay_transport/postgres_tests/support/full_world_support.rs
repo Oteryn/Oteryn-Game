@@ -78,6 +78,10 @@ pub(super) mod premium_test_producer;
 
 // Exercise the exact helper used by the node's root-only qualification socket.
 #[allow(
+    unexpected_cfgs,
+    reason = "the shared Game Server module owns the qualification-spawn feature"
+)]
+#[allow(
     dead_code,
     reason = "this mount uses the served-policy provisioning entry point"
 )]
