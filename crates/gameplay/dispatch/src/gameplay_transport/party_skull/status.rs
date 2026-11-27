@@ -8,12 +8,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Result<PvpStatus, DurabilityError> {
+        self.retry_party_observation("pvp_status", async || {
+            self.observe_own_pvp_once(admitted).await
+        })
+        .await
+    }
+
+    async fn observe_own_pvp_once(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<PvpStatus, PartyObservationError> {
         if !admitted
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_PARTY_SKULL_V1)
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
         let identified = admitted
             .continuity
@@ -24,21 +34,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
-        let permit = self.spell_lane.try_acquire_observation()?;
+        let permit = self
+            .spell_lane
+            .try_acquire_observation()
+            .map_err(|_| observation_busy("spell_lane"))?;
         let runtime = self
             .runtime
             .try_lock()
-            .map_err(|_| DurabilityError::RootUnavailable)?;
+            .map_err(|_| observation_busy("channel_runtime"))?;
         runtime
             .assert_actor_spell_unreserved(actor)
             .map_err(|_| DurabilityError::Unavailable)?;
         if !crate::gameplay_transport::battle_instinct_status::actor_is_current(&runtime, admitted)
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
-        let pass = self.root.try_issue_semantic_pass()?;
+        let pass = self
+            .root
+            .try_issue_semantic_pass()
+            .map_err(PartyObservationError::Holder)?;
         let mut context = (self, &*runtime, &permit);
         pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
@@ -79,6 +95,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tx.commit().await?;
                 Ok(status)
             })
-        }).await
+        }).await.map_err(PartyObservationError::Holder)
     }
 }

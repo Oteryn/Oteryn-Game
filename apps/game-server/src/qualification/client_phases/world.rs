@@ -3444,9 +3444,32 @@ async fn reset_core_fixture_position(
     let index = 1;
     wait_character_released(clients, index).await?;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    // Only the disposable fixture's ordinary saved position is reset. A
-    // missing row already takes the normal first-entry path. Leave any pending
-    // respawn or arrival to its owner and let admission verify the result.
+    let pending_respawn = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns
+          WHERE character_id=encode($1,'hex')::uuid)",
+    )
+    .bind(clients.characters[index].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    if pending_respawn {
+        // A previous journey can die after losing its transport. Let ordinary
+        // admission consume that respawn before resetting the released fixture.
+        database.close().await?;
+        let mut respawned = connect_world(clients, 0x7c).await?;
+        let (result, detail, attempts, busy_timed_out) =
+            logout_retrying_busy(&mut respawned).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!(
+                "core fixture respawn logout refused: {detail}; attempts={attempts}; busy_timed_out={busy_timed_out}"
+            ).into());
+        }
+        drop(respawned);
+        wait_character_released(clients, index).await?;
+        database = sqlx::PgConnection::connect(clients.url).await?;
+        evidence("world_fixture role=core phase=respawn_released");
+    }
+    // Reset the disposable fixture's ordinary saved position. A missing row
+    // follows normal first entry. A pending placement still belongs to its owner.
     let previous: Option<(i32, i32, i16)> = sqlx::query_as(
         "UPDATE game_character_last_positions AS p
          SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=p.write_sequence+1

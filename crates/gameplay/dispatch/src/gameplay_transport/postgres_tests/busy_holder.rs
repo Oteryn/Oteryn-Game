@@ -102,6 +102,114 @@ fn party_skull_query_refuses_without_waiting_on_a_busy_holder() -> TestResult {
 }
 
 #[test]
+fn item_move_receipt_waits_for_the_busy_holder_postgres() -> TestResult {
+    use crate::durability::DurabilityRoot;
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_move::{self, ItemMoveStep};
+    use crate::gameplay_transport::item_view::SessionItemView;
+    use oteryn_protocol_oteryn::item_view::{
+        ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+        encode_item_move_intent,
+    };
+    use std::{future::Future, task::Poll};
+
+    super::kill_reward_e2e_fixtures::scenario_thread::run("move-receipt-busy-holder", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "move_receipt_busy", true, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let deps = Dependencies::new()?;
+            let owner = deps.owner(&h, &authority);
+            let session = deps.admitted.game_session_id;
+            let command = UseCommand {
+                game_session_id: session,
+                command_id: deps.admitted.continuity.next_command_id,
+                item_fence: crate::gameplay_transport::item_fence_of(
+                    FreshAdmissionStore::from_root(h.root.clone()).current_session_at(session).await?.0,
+                ),
+            };
+            let mut view = SessionItemView::resume(deps.admitted.continuity.item_view);
+            let selection = ItemMoveSelection {
+                equip_drop: true, container_tree: false, world_interaction: false, manual_sort: false,
+            };
+            let payload = encode_item_move_intent(&ItemMoveIntent {
+                source: ItemHandle::MIN,
+                destination: ItemMoveDestination::MainBackpack,
+            }).map_err(debug)?;
+            let held = h.root.try_issue_background_semantic_pass()?;
+            {
+                let mut attempt = std::pin::pin!(DurabilityRoot::with_holder_owner(item_move::item_move(
+                    &owner, deps.actor, command, &payload, selection, false, &mut view,
+                )));
+                let first = std::future::poll_fn(|cx| Poll::Ready(attempt.as_mut().poll(cx))).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(first.is_pending(), "MOVE must wait to read its receipt: {first:?}");
+                assert_eq!(attempt.await, ItemMoveStep::Result(ItemMoveOutcome::Stale, Vec::new()));
+            }
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+#[test]
+fn party_queries_get_a_foreground_turn_when_only_the_holder_is_busy() -> TestResult {
+    use crate::durability::DurabilityRoot;
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use std::{future::Future, task::Poll};
+
+    super::kill_reward_e2e_fixtures::scenario_thread::run("party-query-holder-turn", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "party_query_turn", true, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let deps = Dependencies::new()?;
+            let owner = deps.owner(&h, &authority);
+            let mut admitted = deps.admitted;
+            let session = admitted.game_session_id;
+            let (current, _) = FreshAdmissionStore::from_root(h.root.clone()).current_session_at(session).await?;
+            {
+                let mut runtime = owner.runtime.lock().await;
+                runtime.bind_attacker_lease(deps.actor, session, current.current_character_lease()).map_err(debug)?;
+                runtime.initialize_first_entry_position(deps.actor).map_err(debug)?;
+            }
+            deps.initialize(&owner).await;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(), &[6, 42, 134],
+            ).ok_or("party icon selection")?;
+
+            let held = h.root.try_issue_background_semantic_pass()?;
+            {
+                let mut query = std::pin::pin!(DurabilityRoot::with_holder_owner(owner.observe_pvp_status(admitted)));
+                let first = std::future::poll_fn(|cx| Poll::Ready(query.as_mut().poll(cx))).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(first.is_pending(), "PvP query must queue for the holder: {first:?}");
+                assert!(h.root.try_issue_background_semantic_pass().is_err(), "the waiting observation owns the next holder turn");
+                assert_eq!(query.await?.points_milli, [0; 3]);
+            }
+            {
+                let held = h.root.try_issue_background_semantic_pass()?;
+                let mut refresh = std::pin::pin!(DurabilityRoot::with_background_holder(
+                    owner.observe_party_icons(admitted),
+                ));
+                let first = std::future::poll_fn(|cx| Poll::Ready(refresh.as_mut().poll(cx))).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(matches!(first, Poll::Ready(Err(crate::durability::DurabilityError::RootUnavailable))),
+                    "a periodic party refresh must leave the holder to player commands: {first:?}");
+            }
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+#[test]
 fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("first-entry-busy-holder", || {
         run(async |admin| {

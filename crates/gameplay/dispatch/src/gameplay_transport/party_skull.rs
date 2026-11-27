@@ -1,6 +1,8 @@
 //! Observer-relative party icons, read under the existing Channel and World owners.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
-use crate::durability::{DurabilityError, spell_item_transaction as item_tx, world_party};
+use crate::durability::{
+    DurabilityError, DurabilityRoot, spell_item_transaction as item_tx, world_party,
+};
 use crate::foundation::PartySnapshot;
 use oteryn_protocol_oteryn::{party_skull::PartyIcon, world_spatial_entities::EntityRef};
 use sqlx::Row;
@@ -70,11 +72,72 @@ fn eligible(
         && member.y.abs_diff(leader.y) <= 30
 }
 
+fn observation_busy(stage: &str) -> DurabilityError {
+    super::operator_event(&format!("event=party_observation_busy stage={stage}"));
+    DurabilityError::RootUnavailable
+}
+
+enum PartyObservationError {
+    Guard(DurabilityError),
+    Holder(DurabilityError),
+}
+
+impl From<DurabilityError> for PartyObservationError {
+    fn from(error: DurabilityError) -> Self {
+        Self::Guard(error)
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn retry_party_observation<T>(
+        &self,
+        query: &str,
+        mut observe: impl AsyncFnMut() -> Result<T, PartyObservationError>,
+    ) -> Result<T, DurabilityError> {
+        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        loop {
+            match observe().await {
+                Ok(value) => return Ok(value),
+                Err(PartyObservationError::Guard(error)) => return Err(error),
+                Err(PartyObservationError::Holder(error)) => {
+                    if DurabilityRoot::is_background_holder()
+                        || !matches!(
+                            error,
+                            DurabilityError::RootUnavailable
+                                | DurabilityError::RootPassDeadlineExceeded
+                        )
+                    {
+                        return Err(error);
+                    }
+                    super::operator_event(&format!(
+                        "event=party_observation_busy query={query} stage=holder error={error:?}"
+                    ));
+                    // The failed attempt has dropped all runtime and lane guards.
+                    if !retry
+                        .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return Err(error);
+                    }
+                }
+            }
+        }
+    }
+
     pub(super) async fn observe_party_skull(
         &self,
         admitted: AdmittedSession,
     ) -> Result<Vec<PartyIcon>, DurabilityError> {
+        self.retry_party_observation("icons", async || {
+            self.observe_party_skull_once(admitted).await
+        })
+        .await
+    }
+
+    async fn observe_party_skull_once(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Vec<PartyIcon>, PartyObservationError> {
         use oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1;
         if !admitted
             .continuity
@@ -89,20 +152,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .selected_capabilities
                 .contains(oteryn_protocol_oteryn::party::CAPABILITY_PARTY_LIST_V1)
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
         let actor = admitted.runtime_actor.ok_or(DurabilityError::Unavailable)?;
         let fence = admitted.item_fence.ok_or(DurabilityError::Unavailable)?;
         if fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
-        let permit = self.spell_lane.try_acquire_observation()?;
+        let permit = self
+            .spell_lane
+            .try_acquire_observation()
+            .map_err(|_| observation_busy("spell_lane"))?;
         let runtime = self
             .runtime
             .try_lock()
-            .map_err(|_| DurabilityError::RootUnavailable)?;
+            .map_err(|_| observation_busy("channel_runtime"))?;
         runtime
             .assert_actor_spell_unreserved(actor)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -112,7 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if lease.character_id().as_bytes() != fence.character_id.as_bytes()
             || lease.generation() != fence.character_lease_generation
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
         if runtime
             .player_control_facts(actor, admitted.game_session_id)
@@ -120,19 +186,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .control_loss
             .is_some()
         {
-            return Err(DurabilityError::Unavailable);
+            return Err(DurabilityError::Unavailable.into());
         }
         let states = self
             .states
             .spell_states
             .try_lock()
-            .map_err(|_| DurabilityError::RootUnavailable)?;
+            .map_err(|_| observation_busy("spell_states"))?;
         let attack = self
             .states
             .attack
             .try_lock()
-            .map_err(|_| DurabilityError::RootUnavailable)?;
-        let pass = self.root.try_issue_semantic_pass()?;
+            .map_err(|_| observation_busy("attack_state"))?;
+        let pass = self
+            .root
+            .try_issue_semantic_pass()
+            .map_err(PartyObservationError::Holder)?;
         let mut context = (self, &*runtime, &*states, &*attack, &permit);
         let result = pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
@@ -186,7 +255,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Err(error) = &result {
             eprintln!("PARTY-SKULL-1 observation unavailable: {error:?}");
         }
-        result
+        result.map_err(PartyObservationError::Holder)
     }
 }
 
