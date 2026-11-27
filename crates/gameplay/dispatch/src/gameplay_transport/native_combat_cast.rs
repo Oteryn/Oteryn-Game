@@ -2276,10 +2276,23 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         // installed. Resolve this command's retained occurrence before handing
         // its result back. The lane resolver and physical replay share the
         // original binding, so neither can pay, damage, or enqueue a kill twice.
-        self.cast_native_combat_inner(
-            actor, session, command_id, intent, None, None, None, &mut None, access, true, None,
-        )
-        .await
+        let result = self
+            .cast_native_combat_inner(
+                actor, session, command_id, intent, None, None, None, &mut None, access, true, None,
+            )
+            .await;
+        // A stale fence or source can stop the retry before it takes the
+        // attempt. An unresolved occurrence still owns the command result.
+        if self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .has_pending_native(actor, session)
+        {
+            return NativeCastDispatch::Pending;
+        }
+        result
     }
     /// Gated legacy USE port: the current Item owner resolves the revision for a fresh
     /// direct source; a retained attempt keeps its original instance and revision.
