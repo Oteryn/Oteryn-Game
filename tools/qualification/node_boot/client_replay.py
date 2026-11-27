@@ -198,6 +198,14 @@ def main(log, batch, validate=False):
             )
             verdict = f"FAIL cause={cause}" if cause else "PASS"
             print(f"SEAM_EVIDENCE e2e_all scenario={scenario} nameplate={native_test} status={verdict}")
+        if row == "P19" and cause is None:
+            dust_test = "p19_native_current_dust_replays_live_balances"
+            cause = replay_cause(
+                row, "oteryn-client", dust_test, {"p19-current-dust.jsonl"}, captures,
+                server_rows.get(scenario), log, suffix="-dust", capture_only=True,
+            )
+            verdict = f"FAIL cause={cause}" if cause else "PASS"
+            print(f"SEAM_EVIDENCE e2e_all scenario={scenario} dust={dust_test} status={verdict}")
         if row == "P19":
             for package, check, detail in (
                 ("oteryn-gameplay-entities",

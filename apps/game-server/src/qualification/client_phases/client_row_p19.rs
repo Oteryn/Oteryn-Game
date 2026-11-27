@@ -101,7 +101,18 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         .ok_or("P19 FIXTURE_PLACEMENT no approach with two open spawn tiles")?;
         move_first_attempt(&mut client, world, path).await?;
     let positions = cells(tile(client.world_spatial().actor_position)?);
-        let before = rewards(&mut client).await?;
+    let position = positions[0];
+    let denied = request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--spawn-forge",
+        format!("oteryn:creature.druid_familiar {} {} {} fiendish", position.x, position.y, position.floor),
+    ).await;
+    if denied.as_ref().err().map(String::as_str) != Some("ineligible_forge_creature") {
+        return Err(format!("P19 live familiar refusal mismatch: {denied:?}").into());
+    }
+    evidence("P19 familiar class rejected reason=ineligible_forge_creature");
+
+        let before = rewards(&mut client, Path::new(&capture)).await?;
         if before
                 != (Rewards {
                     dust: 0,
@@ -223,7 +234,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let approach = route(world, tile(client.world_spatial().actor_position)?, |at| at == combat_tile)
             .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile")?;
         move_first_attempt(&mut client, world, approach).await?;
-        let pre_attack = rewards(&mut client).await?;
+        let pre_attack = rewards(&mut client, Path::new(&capture)).await?;
         if pre_attack != before {
             return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
         }
@@ -236,7 +247,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             std::fs::write(directory.join(name), bytes)?;
         }
 
-        let killed = rewards(&mut client).await?;
+        let killed = rewards(&mut client, Path::new(&capture)).await?;
         dead.push(exact);
         require_dead_markers_absent(&mut client, &dead)?;
         let stopped = client.session_mut().attack_target(None).await?;
@@ -259,7 +270,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         }
         let expected_items = corpse_item_ids(clients, durable_corpse, source.len()).await?;
         quick_loot_corpse(&mut client, corpse, &expected_items).await?;
-        let after = rewards(&mut client).await?;
+        let after = rewards(&mut client, Path::new(&capture)).await?;
         let remaining_items = corpse_contents(&mut client, corpse).await?.1.len();
         if remaining_items != 0 {
             return Err(format!("P19 Quick Loot left {remaining_items} stacks in exact corpse {corpse:?}").into());
@@ -298,7 +309,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 "P19 fresh admission did not restore the saved position in a new session".into(),
             );
         }
-        let restored = rewards(&mut client).await?;
+        let restored = rewards(&mut client, Path::new(&capture)).await?;
         require_dead_markers_absent(&mut client, &dead)?;
         if restored != after || sliver_count(&client, sliver)? != restored.slivers
             || backpack_quantities(&client)? != destination
@@ -587,7 +598,7 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
     ));
 }
 
-async fn rewards(client: &mut DevClientSession) -> TestResult<Rewards> {
+async fn rewards(client: &mut DevClientSession, capture: &Path) -> TestResult<Rewards> {
     let request = forge_preview::Request {
         nonce: 1,
         selection: forge_preview::Selection::Browse { after: 0 },
@@ -615,6 +626,28 @@ async fn rewards(client: &mut DevClientSession) -> TestResult<Rewards> {
     {
         return Err("P19 invalid Forge resource page".into());
     }
+    use oteryn_protocol_oteryn::item_forge::{
+        CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_FORGE_DUST_QUERY,
+    };
+    let native = client.session_mut()
+        .gated_command(CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_FORGE_DUST_QUERY, &[])
+        .await?;
+    require_mechanic_acceptance(native.status, "P19 Current Dust")?;
+    let native_balance: serde_json::Value = serde_json::from_slice(&native.payload)?;
+    if native_balance["current_dust"].as_u64() != Some(u64::from(page.resources.dust))
+        || native_balance["dust_limit"].as_u64() != Some(u64::from(page.resources.dust_limit))
+    {
+        return Err(format!("P19 Current Dust disagrees with exact resources: {native_balance}").into());
+    }
+    use std::io::Write;
+    let mut output = std::fs::OpenOptions::new().create(true).append(true)
+        .open(capture.join("p19-current-dust.jsonl"))?;
+    serde_json::to_writer(&mut output, &(
+        page.resources.dust,
+        page.resources.dust_limit,
+        native.payload,
+    ))?;
+    writeln!(output)?;
     Ok(Rewards {
         dust: u64::from(page.resources.dust),
         limit: u64::from(page.resources.dust_limit),

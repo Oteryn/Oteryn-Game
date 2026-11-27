@@ -150,3 +150,35 @@ fn forge_resource_enter_reaches_dialog_dispatch_and_escape_cancels() {
     assert!(resource_cancel_key(27));
     assert!(!resource_cancel_key(32));
 }
+
+#[test]
+#[ignore = "requires fresh P19 Current Dust replies"]
+fn p19_native_current_dust_replays_live_balances() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing P19 capture directory")?;
+    let records = std::fs::read_to_string(std::path::PathBuf::from(root).join("p19-current-dust.jsonl"))?;
+    assert_eq!(records.lines().count(), 9, "one opening query and four per kill");
+    let (link, mut rx, outbox) = play_channel();
+    outbox.item_forge_initialize(true);
+    let mut inputs = native::Inputs::default();
+    inputs.0[0] = "8".into();
+    for (index, record) in records.lines().enumerate() {
+        let (dust, limit, payload): (u32, u32, Vec<u8>) = serde_json::from_str(record)?;
+        native::submit(&link, &inputs);
+        let crate::combat_input::PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
+            return Err("Current Dust emitted the wrong native action".into());
+        };
+        assert_eq!((command.capability, command.command_type), (152, 668));
+        assert!(command.payload.is_empty());
+        outbox.item_forge_result(&ServerMechanicResponse {
+            command_id: (index + 1) as u64,
+            status: CommandStatus::Accepted,
+            server_sequence: (index + 1) as u64,
+            payload,
+        });
+        let text = native::presentation(&link.item_forge_panel());
+        let expected = format!("Current dust: {dust} / {limit}");
+        assert!(text.lines().any(|line| line == expected), "{text}");
+    }
+    Ok(())
+}
