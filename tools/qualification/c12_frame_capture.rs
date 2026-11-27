@@ -256,7 +256,7 @@ mod tests {
         inventory.equipment.push(EquippedItem {
             slot: EquipmentSlot::LeftHand,
             item: ItemEntry {
-                item_definition_ref: NonZeroU32::new(2).expect("shield"),
+                item_definition_ref: NonZeroU32::MIN.saturating_add(1),
                 ..item
             },
         });

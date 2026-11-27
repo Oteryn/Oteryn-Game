@@ -50,7 +50,7 @@ const GUILD_WEST_EXIT: TilePos = TilePos {
     y: 32292,
     floor: -6,
 };
-const AUGMENT_BPS: u64 = 800;
+pub(super) const AUGMENT_BPS: u64 = 800;
 const PEMA_PRICE: u64 = 20_000;
 const PREREQUISITES: &str = "level-80-monk,premium,purchase-gold,mana-potions,magma-crystal,adventurers-stone,greater-proficiency-catalyst";
 const FIXTURE_TARGET: &str = "oteryn:creature.magma_crystal";
@@ -513,9 +513,9 @@ pub(super) fn hex_bytes(bytes: &[u8]) -> String {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct CommittedDamage {
-    before: u64,
-    augmented: u64,
-    critical: bool,
+    pub(super) before: u64,
+    pub(super) augmented: u64,
+    pub(super) critical: bool,
     pub(super) committed: u64,
 }
 
@@ -1249,6 +1249,32 @@ async fn fists_proficiency(
     .await?)
 }
 
+fn fists_damage_perks_selected(track: Option<(i64, Vec<Option<i16>>)>) -> bool {
+    track.is_some_and(|(xp, perks)| xp == 100_000 && perks == [Some(0), None, Some(0), None])
+}
+
+pub(super) async fn require_fists_damage_perks(clients: &SeamClients<'_>) -> TestResult {
+    if !fists_damage_perks_selected(fists_proficiency(clients).await?) {
+        return Err("C12 expected durable Fists proficiency of 100000 XP and perks 1 and 3".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_durable_fists_perks_refuse_missing_xp_or_selections() {
+    let selected = vec![Some(0), None, Some(0), None];
+    assert!(fists_damage_perks_selected(Some((
+        100_000,
+        selected.clone()
+    ))));
+    assert!(!fists_damage_perks_selected(Some((99_999, selected))));
+    assert!(!fists_damage_perks_selected(Some((
+        100_000,
+        vec![Some(0), None, None, None]
+    ))));
+    assert!(!fists_damage_perks_selected(None));
+}
+
 async fn select_fists_damage_perks(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -1841,7 +1867,7 @@ pub(super) async fn prepare_client_capture(
 ) -> TestResult<ClientCaptureSetup> {
     character_prep::declare_seeded(
         "C12.client",
-        "level-80-monk,premium,item-50271,magma-crystal",
+        "level-80-monk,premium,item-50271,greater-proficiency-catalyst,magma-crystal",
         "capture Greater Tiger Clash with the augment equipped",
     );
     let dedicated =
@@ -1859,12 +1885,15 @@ pub(super) async fn prepare_client_capture(
     character_prep::grant_premium(&client).await?;
     eprintln!("FIXTURE C12 Premium grant applied once for the dedicated Monk");
     character_prep::grant_item(&client, ITEM_ID, 1).await?;
+    character_prep::grant_item(&client, GREATER_PROFICIENCY_CATALYST, 1).await?;
+    eprintln!("FIXTURE C12.client Greater Proficiency Catalyst 51589 granted once");
     client = fresh_c12_admission(client, dedicated_clients).await?;
     verify_seeded_monk(&mut client).await?;
     let definition = item_ref()?;
     if carried_count(&client, definition) != 1 {
         return Err("C12.client expected one carried weapon before equip".into());
     }
+    select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
     equip_right(&mut client, definition).await?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -2009,10 +2038,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     drop(client);
     let durable_mana = saved_mana(clients).await?;
     let mut fresh = connect_c12_character(clients).await?;
-    let expected_perks = vec![Some(0), None, Some(0), None];
-    if fists_proficiency(clients).await? != Some((100_000, expected_perks)) {
-        return Err("C12 selected damage perks did not survive relog".into());
-    }
+    require_fists_damage_perks(clients).await?;
     let fresh_vitals = fresh.actor_vitals().ok_or("C12 post-relog vitals absent")?;
     if !mana_survived(
         pre_logout_mana,
@@ -2068,7 +2094,9 @@ mod tests {
         assert!(guild_portals(&callbacks).is_ok());
         callbacks["callbacks"][1]["teleport"] =
             serde_json::json!({"x": 32456, "y": 32291, "floor": -7});
-        let error = guild_portals(&callbacks).expect_err("the mainland return cannot qualify");
+        let Err(error) = guild_portals(&callbacks) else {
+            return Err("the mainland return cannot qualify".into());
+        };
         assert!(error.to_string().starts_with("BLOCKED-CONTENT:"));
         Ok(())
     }

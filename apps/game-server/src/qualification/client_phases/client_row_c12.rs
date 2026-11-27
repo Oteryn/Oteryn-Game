@@ -35,19 +35,19 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     match result {
         Ok(()) => evidence("e2e_capture scenario=C12.client status=CAPTURED"),
         Err(error) => {
-            if let (Some(root), Ok(bytes)) =
-                (std::env::var_os("E2E_ALL_CAPTURE_DIR"), received.lock())
-            {
-                if !bytes.is_empty() {
-                    let name = "c12-failed-wire.bin";
-                    match write_packet(Path::new(&root), name, &bytes) {
-                        Ok(()) => evidence(&format!(
-                            "C12_FAILED_WIRE file={name} bytes={}",
-                            bytes.len()
-                        )),
-                        Err(save_error) => {
-                            evidence(&format!("C12_FAILED_WIRE save_error={save_error}"))
-                        }
+            if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+                let saved = received
+                    .lock()
+                    .map_err(|_| "C12 failure capture lock unavailable".into())
+                    .and_then(|bytes| {
+                        write_failed_capture(Path::new(&root), &bytes, &error.to_string())
+                    });
+                match saved {
+                    Ok(()) => evidence(
+                        "C12_FAILED_CAPTURE file=c12-capture-status.json wire=c12-failed-wire.bin",
+                    ),
+                    Err(save_error) => {
+                        evidence(&format!("C12_FAILED_CAPTURE save_error={save_error}"))
                     }
                 }
             }
@@ -117,6 +117,7 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     }
     evidence("C12_CLIENT_EQUIPPED item=50271 right_hand_count=1 fresh_session=true");
     full_row_c12::require_current_premium(&mut session).await?;
+    full_row_c12::require_fists_damage_perks(clients).await?;
     let spell = spell_index(&session, "exori nia")?;
     let builder = spell_index(&session, "exori infir pug")?;
     let mut traveled = String::new();
@@ -164,7 +165,15 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     let builder_damage = build_harmony(&mut session, own, target, position, builder).await?;
     let before_sequence = session.last_server_sequence();
     let before_bytes = wire_boundary(&received)?;
-    let mut cast = cast_checked(&mut session, own, target, position, spell, 0).await?;
+    let mut cast = cast_checked(
+        &mut session,
+        own,
+        target,
+        position,
+        spell,
+        full_row_c12::AUGMENT_BPS,
+    )
+    .await?;
     let clear_start = wire_boundary(&received)?;
     let clear_sequence = session.last_server_sequence();
     let (bytes, logout_start, logout_sequence, mut fresh) = verify_post_cast_relog(
@@ -178,6 +187,41 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     ) {
         return Err("C12 successor lost equipped Fists or has an occupied off hand".into());
     }
+    full_row_c12::require_fists_damage_perks(clients).await?;
+    let fresh_spell = spell_index(fresh.session_mut(), "exori nia")?;
+    let fresh_builder = spell_index(fresh.session_mut(), "exori infir pug")?;
+    let fresh_own = select_target(fresh.session_mut(), target, position).await?;
+    build_harmony(
+        fresh.session_mut(),
+        fresh_own,
+        target,
+        position,
+        fresh_builder,
+    )
+    .await?;
+    let mut durable_cast = cast_checked(
+        fresh.session_mut(),
+        fresh_own,
+        target,
+        position,
+        fresh_spell,
+        full_row_c12::AUGMENT_BPS,
+    )
+    .await?;
+    // Keep the entire authored cooldown free of another Greater Tiger Clash.
+    fresh.service_liveness(Duration::from_secs(8)).await?;
+    collect_hits(
+        &fresh.take_events(),
+        fresh_own,
+        target,
+        fresh_spell,
+        &mut durable_cast.hits,
+    );
+    durable_cast.verify_hits()?;
+    evidence(&format!(
+        "C12_CLIENT_DURABLE_AUGMENT xp=100000 perks=1,3 augment_bps=800 damage={}",
+        durable_cast.damage
+    ));
     let handle = fresh
         .inventory()
         .and_then(|inventory| {
@@ -245,13 +289,16 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         vitals,
         mana_before: before,
         damage,
+        damage_before,
+        damage_augmented,
+        damage_critical,
         ..
     } = cast;
     let session_id = hex_bytes(id.as_bytes());
     let target_identity = hex_bytes(&target.identity);
     let earlier = hex_bytes(previous.as_bytes());
     let expected = format!(
-        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {before_sequence} {before_bytes} {builder} {builder_damage} {builder_start} {builder_sequence} {clear_start} {clear_sequence} {logout_start} {logout_sequence} {traveled} {x} {y} {floor}\n",
+        "{}\n{session_id} {earlier} {command} {result_sequence} {sequence} {attack_id} {spell} {target_identity} {target_generation} {definition} {before} {health} {max_health} {mana} {max_mana} {soul} {harmony} {serene} {damage} {damage_before} {damage_augmented} {damage_critical} {before_sequence} {before_bytes} {builder} {builder_damage} {builder_start} {builder_sequence} {clear_start} {clear_sequence} {logout_start} {logout_sequence} {traveled} {x} {y} {floor}\n",
         root.display(),
         target_generation = target.generation,
         health = vitals.health,
@@ -283,6 +330,11 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     write_packet(&root, "c12-client-wire.bin", &commands)?;
     write_packet(&root, "c12-frames.json", &frames)?;
     write_packet(&root, "c12-expected.txt", expected.as_bytes())?;
+    write_packet(
+        &root,
+        "c12-capture-status.json",
+        br#"{"scenario":"C12.client","status":"CAPTURED"}"#,
+    )?;
     evidence(&format!(
         "C12_CAPTURE session={session_id} command={command} result_sequence={result_sequence} delta_sequence={sequence}"
     ));
@@ -415,7 +467,7 @@ async fn build_harmony<S: SessionStream>(
     // Swift Jab's authored attack-group cooldown is two seconds.
     session.service_liveness(Duration::from_secs(2)).await?;
     collect_hits(&session.take_events(), own, target, spell, &mut hits);
-    let damage = committed_damage(session, target, reply.command_id, &path, offset, 0)?;
+    let damage = committed_damage(session, target, reply.command_id, &path, offset, 0)?.committed;
     if !frame_capture::exact_hit(&hits, damage) {
         return Err(format!(
             "C12 Swift Jab expected one unaugmented hit of {damage}, observed {hits:?}"
@@ -432,6 +484,9 @@ struct CheckedCast {
     mana_before: u32,
     vitals: ActorVitals,
     damage: u64,
+    damage_before: u64,
+    damage_augmented: u64,
+    damage_critical: bool,
     hits: Vec<u64>,
 }
 
@@ -505,7 +560,10 @@ async fn cast_checked<S: SessionStream>(
         sequence: delta.server_sequence,
         mana_before,
         vitals,
-        damage,
+        damage: damage.committed,
+        damage_before: damage.before,
+        damage_augmented: damage.augmented,
+        damage_critical: damage.critical,
         hits,
     };
     cast.verify_hits()?;
@@ -519,14 +577,14 @@ fn committed_damage<S: SessionStream>(
     path: &Path,
     offset: u64,
     bps: u64,
-) -> TestResult<u64> {
+) -> TestResult<full_row_c12::CommittedDamage> {
     let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
     let target_id = full_row_c12::hex_bytes(&target.identity);
     let marker = format!(
         "SEAM_EVIDENCE c12_base_damage session={id} command={} target={target_id} generation={} ",
         command, target.generation
     );
-    Ok(full_row_c12::committed_base_damage(path, offset, &marker, bps)?.committed)
+    full_row_c12::committed_base_damage(path, offset, &marker, bps)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -608,6 +666,46 @@ async fn verify_post_cast_relog<S: SessionStream>(
         cast.mana_before
     ));
     Ok((bytes, logout_start, logout_sequence, fresh))
+}
+
+fn write_failed_capture(root: &Path, wire: &[u8], error: &str) -> TestResult {
+    let failure = serde_json::json!({
+        "scenario": "C12.client",
+        "status": "FAIL",
+        "server_wire_bytes": wire.len(),
+        "error": error,
+    });
+    write_packet(root, "c12-failed-wire.bin", wire)?;
+    write_packet(
+        root,
+        "c12-capture-status.json",
+        &serde_json::to_vec(&failure)?,
+    )
+}
+
+#[test]
+fn c12_admission_failure_records_a_zero_frame_capture() -> TestResult {
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
+    let root = std::env::temp_dir().join(format!(
+        "oteryn-c12-{}-{}",
+        std::process::id(),
+        stamp.as_nanos()
+    ));
+    std::fs::create_dir(&root)?;
+    let result = (|| -> TestResult {
+        let error = "Platform-issued row grant unavailable";
+        write_failed_capture(&root, &[], error)?;
+        let diagnostic: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(root.join("c12-capture-status.json"))?)?;
+        assert_eq!(diagnostic["status"], "FAIL");
+        assert_eq!(diagnostic["server_wire_bytes"], 0);
+        assert_eq!(diagnostic["error"], error);
+        assert_eq!(root.join("c12-failed-wire.bin").metadata()?.len(), 0);
+        assert!(!root.join("c12-expected.txt").exists());
+        Ok(())
+    })();
+    std::fs::remove_dir_all(&root)?;
+    result
 }
 
 fn write_packet(root: &Path, name: &str, bytes: &[u8]) -> TestResult {

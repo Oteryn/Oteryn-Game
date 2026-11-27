@@ -85,6 +85,9 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         harmony,
         serene,
         damage,
+        damage_before,
+        damage_augmented,
+        damage_critical,
         before_sequence,
         before_bytes,
         builder,
@@ -158,6 +161,16 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
             },
         },
     };
+    if !exact_equipped_damage(
+        damage_before.parse()?,
+        damage_augmented.parse()?,
+        damage_critical.parse()?,
+        witness.damage,
+    ) {
+        return Err(
+            "C12 replay needs exact equipped Greater Tiger Clash damage at 800 basis points".into(),
+        );
+    }
     if witness.session == witness.prior
         || witness.attack_command.checked_add(2) != Some(witness.command)
         || witness.before_sequence >= witness.result_sequence
@@ -177,6 +190,15 @@ fn read_witness(root: &Path, text: &str) -> Result<Witness, BoxError> {
         return Err("C12 fresh-session or cast correlation mismatch".into());
     }
     Ok(witness)
+}
+
+fn exact_equipped_damage(before: u64, augmented: u64, critical: bool, committed: u64) -> bool {
+    before.checked_mul(8).is_some_and(|scaled| {
+        let increase = scaled / 100;
+        increase != 0
+            && before.checked_add(increase) == Some(augmented)
+            && augmented.checked_add(if critical { augmented / 10 } else { 0 }) == Some(committed)
+    })
 }
 
 fn capture_root(root: Option<PathBuf>) -> Result<PathBuf, BoxError> {
@@ -225,7 +247,27 @@ fn verify_recorded_command(commands: &mut VecDeque<Vec<u8>>, frame: &[u8]) -> io
     Ok(())
 }
 
+fn require_complete_capture(status: &serde_json::Value) -> Result<(), BoxError> {
+    if status["scenario"] != "C12.client" || status["status"] != "CAPTURED" {
+        return Err(format!("C12 live capture incomplete: {status}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_failed_capture_cannot_pass_replay() {
+    let failed = serde_json::json!({
+        "scenario": "C12.client",
+        "status": "FAIL",
+        "server_wire_bytes": 0,
+        "error": "Platform-issued row grant unavailable",
+    });
+    assert!(require_complete_capture(&failed).is_err());
+}
+
 async fn replay(root: &Path) -> Result<(), BoxError> {
+    let status = std::fs::read(root.join("c12-capture-status.json"))?;
+    require_complete_capture(&serde_json::from_slice(&status)?)?;
     let expected_path = root.join("c12-expected.txt");
     if !(1..=4096).contains(&expected_path.metadata()?.len()) {
         return Err("C12 provenance size outside bounds".into());
@@ -596,7 +638,7 @@ fn c12_capture_provenance_refuses_stale_or_mismatched_fields() -> Result<(), Box
     let prior = "01a218115a6578e2a6913d169380b741";
     let target = "00000000000000000000000000000009";
     let current = format!(
-        "/current-run\n{session} {prior} 8 4 5 6 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 3 26013 41 22 20000 2 28000 6 30000 9 1234 32295 32334 8\n"
+        "/current-run\n{session} {prior} 8 4 5 6 42 {target} 1 27000 120 305 305 70 210 100 0 0 48 45 48 false 3 26013 41 22 20000 2 28000 6 30000 9 1234 32295 32334 8\n"
     );
     let witness = read_witness(run, &current)?;
     assert_eq!(witness.command, 8);
@@ -607,6 +649,9 @@ fn c12_capture_provenance_refuses_stale_or_mismatched_fields() -> Result<(), Box
         current.replace(prior, session),
         current.replace(" 8 4 5 6 ", " 8 5 4 6 "),
         current.replace(" 305 305 70 210 ", " 305 305 120 210 "),
+        current.replace(" 48 45 48 false ", " 45 45 45 false "),
+        current.replace(" 48 45 48 false ", " 45 45 48 false "),
+        current.replace(" 48 45 48 false ", " 48 45 48 true "),
         current.replace(" 1234 32295 ", " 1934 32295 "),
     ] {
         assert!(read_witness(run, &invalid).is_err());
