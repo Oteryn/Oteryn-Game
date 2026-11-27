@@ -24,18 +24,19 @@ enum Case {
     FullBag,
     MissingBag,
     MissingReagent,
+    WireHand,
     WandInventory,
     WandCooldowns,
 }
 
 #[test]
 fn magic2_conjure_postgres_full_bag_rolls_back_then_merges_mints_and_replays() -> TestResult {
-    large_stack(|| scenarios(&[Case::FullBag]))
+    large_stack(|| scenarios(&[Case::FullBag], false))
 }
 
 #[test]
 fn magic2_conjure_postgres_missing_bag_rolls_back_and_missing_reagent_is_terminal() -> TestResult {
-    large_stack(|| scenarios(&[Case::MissingReagent, Case::MissingBag]))
+    large_stack(|| scenarios(&[Case::MissingReagent, Case::MissingBag], false))
 }
 
 #[test]
@@ -44,7 +45,7 @@ fn conjure_wand_publishes_one_inventory_delta_and_debits_mana_once() -> TestResu
         return Ok(());
     };
     drop(admin);
-    large_stack(|| scenarios(&[Case::WandInventory]))
+    large_stack(|| scenarios(&[Case::WandInventory], false))
 }
 
 #[test]
@@ -53,10 +54,20 @@ fn conjure_publishes_spell_and_group_cooldown_cue() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    large_stack(|| scenarios(&[Case::WandCooldowns]))
+    large_stack(|| scenarios(&[Case::WandCooldowns], false))
 }
 
-fn scenarios(cases: &[Case]) -> TestResult {
+#[test]
+fn magic2_conjure_postgres_publishes_paid_inventory_and_vitals() -> TestResult {
+    large_stack(|| scenarios(&[Case::WireHand], false))
+}
+
+#[test]
+fn magic2_conjure_postgres_without_qualified_room() -> TestResult {
+    large_stack(|| scenarios(&[Case::FullBag, Case::MissingBag], true))
+}
+
+fn scenarios(cases: &[Case], combat_room_only: bool) -> TestResult {
     run(async |admin| {
         // Compile content before opening the admission holder; cold Native setup can exceed
         // the holder's idle lifetime on a contended CI worker.
@@ -69,7 +80,15 @@ fn scenarios(cases: &[Case]) -> TestResult {
             )),
         )?;
         for &case in cases {
-            scenario(admin.clone(), world, &controller, &pin, case).await?;
+            scenario(
+                admin.clone(),
+                world,
+                &controller,
+                &pin,
+                case,
+                combat_room_only,
+            )
+            .await?;
         }
         Ok(())
     })
@@ -83,6 +102,7 @@ async fn scenario(
     controller: &crate::content::ContentActivationController,
     pin: &crate::content::NativeEntryContentPin,
     case: Case,
+    combat_room_only: bool,
 ) -> TestResult {
     let full = matches!(case, Case::FullBag);
     let missing_reagent = matches!(case, Case::MissingReagent);
@@ -139,7 +159,9 @@ async fn scenario(
     }
     let formula = native.training_formula().ok_or("training formula")?;
     let (vocation_key, vocation) = match case {
-        Case::FullBag | Case::MissingReagent => ("druid", crate::spell::Vocation::Druid),
+        Case::FullBag | Case::MissingReagent | Case::WireHand => {
+            ("druid", crate::spell::Vocation::Druid)
+        }
         Case::MissingBag => ("paladin", crate::spell::Vocation::Paladin),
         Case::WandInventory | Case::WandCooldowns => ("sorcerer", crate::spell::Vocation::Sorcerer),
     };
@@ -220,6 +242,7 @@ async fn scenario(
     let intent = find(match case {
         Case::FullBag | Case::MissingReagent => 3198,
         Case::MissingBag => 3447,
+        Case::WireHand => 3174,
         Case::WandInventory | Case::WandCooldowns => 25760,
     })?;
     assert!(
@@ -274,6 +297,17 @@ async fn scenario(
         drop(authority);
         drop(seal);
         return h.cleanup().await;
+    }
+    if combat_room_only {
+        owner.rooms = SeamRooms::new(None, Some(room));
+    }
+    if matches!(case, Case::WireHand) {
+        let result = check_conjure_wire(&h, &deps, &owner, intent).await;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        let cleanup = h.cleanup().await;
+        return result.and(cleanup);
     }
     // A pending response keeps the original command outstanding. The direct test
     // owner must resubmit that command to obtain its terminal result.
@@ -488,7 +522,10 @@ async fn assert_wand_on_wire(
                     match delta.domain_id {
                         cooldown_wire::STATE_DOMAIN_ACTOR_COOLDOWNS => {
                             assert_eq!((delta.base_revision, delta.new_revision), (0, 1));
-                            assert_eq!(delta.delta_type, cooldown_wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1);
+                            assert_eq!(
+                                delta.delta_type,
+                                cooldown_wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1
+                            );
                             cooldowns.push(
                                 cooldown_wire::decode_actor_cooldowns(delta.payload)
                                     .map_err(debug)?,
@@ -517,7 +554,9 @@ async fn assert_wand_on_wire(
         if check_cooldowns {
             use cooldown_wire::{ActorCooldown, ActorCooldownKind};
             let [cue] = cooldowns.as_slice() else {
-                return Err("expected one committed cooldown delta and none on duplicate replay".into());
+                return Err(
+                    "expected one committed cooldown delta and none on duplicate replay".into(),
+                );
             };
             assert_eq!(cue.server_now_ms, CAST_TIME_MS);
             assert_eq!(
@@ -536,7 +575,10 @@ async fn assert_wand_on_wire(
                 ]
             );
         } else {
-            assert!(cooldowns.is_empty(), "presentation capability was not selected");
+            assert!(
+                cooldowns.is_empty(),
+                "presentation capability was not selected"
+            );
         }
         assert_eq!(mana, [before.mana - 250], "one debit of exactly 250 mana");
         assert_eq!(
@@ -583,7 +625,10 @@ async fn assert_wand_on_wire(
                 .ok_or("resume omitted the negotiated cooldown domain")?;
             client.shutdown().await?;
             assert_eq!(snapshot.server_now_ms, live.server_now_ms + 500);
-            assert_eq!(snapshot.entries, live.entries, "resume keeps the original deadlines");
+            assert_eq!(
+                snapshot.entries, live.entries,
+                "resume keeps the original deadlines"
+            );
             Ok(())
         };
         let ((), result): ((), TestResult) =
@@ -610,7 +655,8 @@ async fn read_join_cooldowns(
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
         match envelope.message_type() {
             MessageType::SnapshotChunk => {
-                let (_, bytes) = decode_snapshot_chunk_framing(envelope.payload()).map_err(debug)?;
+                let (_, bytes) =
+                    decode_snapshot_chunk_framing(envelope.payload()).map_err(debug)?;
                 body.extend_from_slice(bytes);
             }
             MessageType::SnapshotCommit => break,
@@ -625,8 +671,13 @@ async fn read_join_cooldowns(
         return Ok(None);
     };
     assert_eq!(domain.revision, 0);
-    assert_eq!(domain.snapshot_type, cooldown_wire::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1);
-    Ok(Some(cooldown_wire::decode_actor_cooldowns(domain.payload).map_err(debug)?))
+    assert_eq!(
+        domain.snapshot_type,
+        cooldown_wire::SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1
+    );
+    Ok(Some(
+        cooldown_wire::decode_actor_cooldowns(domain.payload).map_err(debug)?,
+    ))
 }
 
 async fn receipt_count(h: &Harness) -> TestResult<i64> {
@@ -640,4 +691,203 @@ async fn receipt_count(h: &Harness) -> TestResult<i64> {
 async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.definition_production_key=$1 AND i.lifecycle=1 AND e.character_id=encode($2,'hex')::uuid")
         .bind(key).bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+}
+
+async fn check_conjure_wire(
+    h: &Harness,
+    deps: &Dependencies,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    intent: SpellCastIntent,
+) -> TestResult {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::connection::FirstEntryOutcome;
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, CommandStatus, MessageType, actor_spell, decode_command_result,
+        decode_snapshot_chunk, decode_state_delta, decode_wire_envelope, encode_client_command,
+        item_view,
+    };
+
+    const LIGHT_MISSILE: &str = "oteryn:item.tibia.i3174";
+    const HAND_SLOT: i16 = 5;
+    const HELD_BLANK: u8 = 98;
+    seed_main_backpack(h, &[]).await?;
+    {
+        let mut tx = h.pool.begin().await?;
+        // Fixture custody only. The rune consumption, mint and cast payment use the real owners.
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            crate::durability::item_fee_burn::test_support::item(
+                HELD_BLANK,
+                BLANK,
+                "definition-r1",
+                1,
+            ),
+        ))
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
+            .bind(id(41).as_slice())
+            .bind(id(42).as_slice())
+            .bind(HAND_SLOT)
+            .bind(id(HELD_BLANK).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+    }
+    let item_index = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("native item index")?;
+    let blank = item_index
+        .definition_ref("Item", BLANK, "definition-r1")
+        .ok_or("blank rune")?;
+    let missile = item_index
+        .definition_ref("Item", LIGHT_MISSILE, "definition-r1")
+        .ok_or("light missile rune")?;
+    let mut admitted = deps.admitted;
+    let current = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session_at(admitted.game_session_id)
+        .await?
+        .0;
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 7, 12])
+            .ok_or("inventory and spell capabilities")?;
+    let generation = admitted.continuity.connection_generation;
+    let payload = actor_spell::encode_spell_cast_intent(&intent);
+    let mut input = Vec::new();
+    for command_id in [1, 2] {
+        let frame = encode_client_command(
+            generation,
+            &ClientCommandValue {
+                command_id,
+                command_type: actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                payload: &payload,
+            },
+        )?;
+        input.extend(u32::try_from(frame.len())?.to_be_bytes());
+        input.extend(frame);
+    }
+    let (_, output) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::weather_wire_fixtures::fixture_access::serve_input(owner, admitted, &input),
+    )
+    .await??;
+    let mut before = None;
+    let mut held = None;
+    let mut debited = None;
+    let mut inventory = None;
+    let mut results = Vec::new();
+    let mut frames = output.as_slice();
+    while !frames.is_empty() {
+        let length =
+            u32::from_be_bytes(frames.get(..4).ok_or("frame length")?.try_into()?) as usize;
+        let envelope = decode_wire_envelope(frames.get(4..4 + length).ok_or("frame")?)?;
+        frames = &frames[4 + length..];
+        match envelope.message_type() {
+            MessageType::SnapshotChunk => {
+                for domain in decode_snapshot_chunk(envelope.payload())?.1 {
+                    match domain.domain_id {
+                        actor_spell::STATE_DOMAIN_ACTOR_VITALS => {
+                            before = Some(
+                                actor_spell::decode_actor_vitals(domain.payload).map_err(debug)?,
+                            );
+                        }
+                        item_view::STATE_DOMAIN_CHARACTER_INVENTORY => {
+                            let snapshot = item_view::decode_character_inventory_with_equip_drop(
+                                domain.payload,
+                                true,
+                            )
+                            .map_err(debug)?;
+                            held = snapshot
+                                .equipment
+                                .iter()
+                                .find(|entry| entry.item.item_definition_ref == blank)
+                                .copied();
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            MessageType::CommandResult => {
+                let result = decode_command_result(envelope.payload())?;
+                let disposition =
+                    actor_spell::decode_spell_cast_result(result.payload).map_err(debug)?;
+                results.push((result.command_id, result.status, disposition));
+            }
+            MessageType::StateDelta => {
+                let delta = decode_state_delta(envelope.payload())?;
+                match delta.domain_id {
+                    actor_spell::STATE_DOMAIN_ACTOR_VITALS => {
+                        assert_eq!(
+                            results.len(),
+                            1,
+                            "only the committed cast publishes a debit"
+                        );
+                        assert!(
+                            debited
+                                .replace(
+                                    actor_spell::decode_actor_vitals(delta.payload)
+                                        .map_err(debug)?
+                                )
+                                .is_none()
+                        );
+                    }
+                    item_view::STATE_DOMAIN_CHARACTER_INVENTORY => {
+                        assert_eq!(
+                            results.len(),
+                            1,
+                            "inventory must follow the commit before the next command's refusal"
+                        );
+                        let changed = item_view::decode_character_inventory_with_equip_drop(
+                            delta.payload,
+                            true,
+                        )
+                        .map_err(debug)?;
+                        assert!(inventory.replace(changed).is_none());
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+    }
+    assert_eq!(results.len(), 2);
+    assert_eq!(
+        results[0],
+        (1, CommandStatus::Accepted, SpellCastDisposition::Cast)
+    );
+    assert_ne!(results[1].2, SpellCastDisposition::Cast);
+    let before = before.ok_or("initial vitals snapshot")?;
+    let held = held.ok_or("blank rune in the initial equipment snapshot")?;
+    assert_eq!(held.slot, item_view::EquipmentSlot::RightHand);
+    let debited = debited.ok_or("committed conjure must publish ActorVitals")?;
+    assert_eq!(before.mana.checked_sub(120), Some(debited.mana));
+    assert_eq!(before.soul.checked_sub(1), Some(debited.soul));
+    let inventory = inventory.ok_or("committed conjure must publish the inventory delta")?;
+    assert!(
+        !inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.slot == held.slot)
+    );
+    assert!(
+        !inventory
+            .entries
+            .iter()
+            .any(|entry| entry.item_definition_ref == blank)
+    );
+    // The current durable mint places the output in the backpack.
+    let rune = inventory
+        .entries
+        .iter()
+        .find(|entry| entry.item_definition_ref == missile)
+        .ok_or("conjured rune in committed inventory")?;
+    assert_eq!(rune.count.get(), 10);
+    Ok(())
 }

@@ -1125,7 +1125,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/m26_static_instance.rs",
         2,
     ),
-    ("gameplay_transport/postgres_tests/magic2_conjure.rs", 4),
+    ("gameplay_transport/postgres_tests/magic2_conjure.rs", 6),
     ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
