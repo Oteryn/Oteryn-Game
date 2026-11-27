@@ -3350,17 +3350,22 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
         let quest = "oteryn:quest.battle_mage_outfits_quest";
-        let mut transitions = catalogue.transitions.clone();
         for suffix in ["book", "epaulettes"] {
             let key = format!("oteryn:quest-reward/l2-battle-mage-{suffix}-complete");
-            assert!(transitions.remove(&key).is_some(), "{key}");
+            assert!(catalogue.transition(&key).is_some(), "{key}");
         }
-        let published = super::super::definition_hash(quest, &catalogue.tracks, &transitions);
+        // The production catalogue at e2750951e, before the source hand-ins.
+        let published = super::super::published_quest_pins::hash(
+            b"292c00bd7c415835a998f3f249239c9b0b78d2f712bd8a347cb0759bfbdc81e8",
+        );
         assert_ne!(catalogue.definition_hash(quest), Some(published));
         assert_eq!(
             super::super::npc_rules::legacy_defaults(catalogue, quest, &published),
             Some(&BTreeMap::new())
         );
+        let mut foreign = published;
+        foreign[0] ^= 1;
+        assert!(super::super::npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());
         Ok(())
     }
 
@@ -3658,9 +3663,8 @@ mod tests {
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
-                // M47 counters retain -1; distinct native seals also bind their
-                // separately owned painted-target counter and Inukaya sled rides.
-                "fdaedce30df4cf940d0022e341e5c0e9be4025a17564ae8f0fed960e350cfe4e",
+                // The source Sven route binds the Barbarian Test and native mammoth.
+                "026ddacf9e11904f68123efbfaf0f8b19337ad6fd717809e2bf18e426d30a0ae",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",

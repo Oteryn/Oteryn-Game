@@ -151,10 +151,14 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // The base registry includes distinct bare and selected-tool bear actions.
-        assert_eq!(base.len(), 1_049);
-        assert_eq!(bindings.world_callbacks().count(), 100);
-        assert_eq!(callbacks.len(), 1_149);
+        assert_eq!(
+            (
+                base.len(),
+                bindings.world_callbacks().count(),
+                callbacks.len()
+            ),
+            (1_268, 101, 1_369)
+        );
         assert!(base.len() <= MAX_RESOLVED_CALLBACKS);
         assert!(bindings.world_callbacks().next().is_some());
         assert_eq!(
