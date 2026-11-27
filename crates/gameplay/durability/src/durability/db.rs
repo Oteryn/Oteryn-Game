@@ -2405,6 +2405,18 @@ pub async fn commit_semantic_transaction(
     commit_semantic_transaction_by(deadline, || transaction.commit()).await
 }
 
+pub(super) async fn commit_semantic_read(
+    transaction: Transaction<'_, Postgres>,
+    deadline: TokioInstant,
+) -> Result<(), DurabilityError> {
+    match commit_semantic_transaction(transaction, deadline.into_std()).await {
+        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::CommitTransactionTimeout) => {
+            Err(DurabilityError::RootUnavailable)
+        }
+        result => result,
+    }
+}
+
 async fn commit_semantic_transaction_by<F, Fut>(
     deadline: Instant,
     commit: F,

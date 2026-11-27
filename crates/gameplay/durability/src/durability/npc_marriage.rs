@@ -5,7 +5,7 @@ use super::character_progression::{
     state_matches_root,
 };
 use super::db::{
-    DB_PASS_DEADLINE, begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    DB_PASS_DEADLINE, begin_semantic_transaction, begin_type2_transaction, commit_semantic_read,
     lock_admission_relations,
 };
 use super::item_loop_move::ItemLoopContent;
@@ -279,11 +279,11 @@ impl DurabilityRoot {
             .await
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
         match tokio::time::timeout_at(deadline, async {
-            let mut tx = begin_semantic_transaction(&mut connection, deadline).await?;
+            let mut tx = begin_semantic_transaction(&mut connection, deadline.into_std()).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             let receipt = load(&mut tx, character, command).await?
                 .ok_or(DurabilityError::InvalidStoredState)?.1;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Some(receipt))
         }).await {
             Ok(result) => result,
