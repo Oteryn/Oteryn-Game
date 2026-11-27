@@ -19,7 +19,9 @@ use oteryn_protocol_oteryn::world_spatial::{ActorPosition, StepDirection};
 use oteryn_protocol_oteryn::world_spatial_entities::{
     WorldSpatialDeltaView, decode_world_spatial_delta_view,
 };
-use oteryn_protocol_oteryn::{self as wire, MessageType, world_map, world_object};
+use oteryn_protocol_oteryn::{
+    self as wire, MessageType, world_interaction, world_map, world_object,
+};
 use tokio::io::AsyncWriteExt;
 
 const BAG: u8 = 170;
@@ -162,6 +164,18 @@ async fn scenario(admin: String, name: &str, case: Case) -> TestResult {
         world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     ];
     let mut offered = owner.offered_capabilities().to_vec();
+    if matches!(case, Case::BattleSign) {
+        supported.push(world_interaction::CAPABILITY_WORLD_INTERACTION_V1);
+        if !offered
+            .iter()
+            .any(|capability| capability.id == world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
+        {
+            offered.push(OfferedCapability {
+                id: world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+                requires: &world_interaction::CAPABILITY_WORLD_INTERACTION_V1_REQUIRES,
+            });
+        }
+    }
     if matches!(case, Case::WireWithRuneUse) {
         supported.push(world_object::CAPABILITY_RUNE_USE_V1);
         offered.push(OfferedCapability {
@@ -171,8 +185,19 @@ async fn scenario(admin: String, name: &str, case: Case) -> TestResult {
     }
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(&offered, &supported)
         .ok_or("Stone USE and map capabilities")?;
+    if matches!(case, Case::BattleSign) {
+        assert!(
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
+        );
+    }
     assert_eq!(
-        admitted.continuity.selected_capabilities.contains(world_object::CAPABILITY_RUNE_USE_V1),
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(world_object::CAPABILITY_RUNE_USE_V1),
         matches!(case, Case::WireWithRuneUse),
     );
     let session = admitted.game_session_id;
