@@ -1052,7 +1052,7 @@ async fn filter_review_cases(
         (CommandStatus::Accepted, extended),
     ] = replies.as_slice()
     else {
-        return Err(debug(replies).into());
+        return Err(debug(replies));
     };
     let legacy = decode_quick_loot_destinations(legacy).map_err(debug)?;
     assert_eq!(legacy.filters, None);

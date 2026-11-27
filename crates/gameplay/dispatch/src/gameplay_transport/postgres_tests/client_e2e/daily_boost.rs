@@ -115,7 +115,13 @@ pub(super) async fn exercise_relog(
         Ok::<_, Box<dyn std::error::Error>>(())
     };
     tokio::time::timeout(Duration::from_secs(15), async {
-        tokio::try_join!(async { Ok(serving.await) }, driving)
+        tokio::try_join!(
+            async {
+                serving.await;
+                Ok(())
+            },
+            driving
+        )
     })
     .await??;
     Ok(())
