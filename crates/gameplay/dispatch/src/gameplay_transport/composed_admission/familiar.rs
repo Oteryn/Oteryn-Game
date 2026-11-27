@@ -6,15 +6,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         logout: Option<(AuthenticatedTransportRefV1, u64)>,
+        checkout: Option<&AdmissionRetryBudget<'_>>,
     ) -> actor_spell::FamiliarLogoutSave {
         // LOGOUT-WIRE-1 (#2127 Codex P1 4278730847): an ACTIVE session's own logout ends the
         // actor too; the familiar is saved on the exact transport before the terminal release.
         if let Some((transport, attempt)) = logout {
             return self
-                .save_familiar_logout(
+                .save_familiar_logout_with_checkout(
                     actor,
                     session,
                     actor_spell::FamiliarActorEnd::Logout(transport, attempt),
+                    checkout,
                 )
                 .await;
         }
