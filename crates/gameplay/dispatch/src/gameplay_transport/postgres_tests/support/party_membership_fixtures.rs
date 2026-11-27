@@ -464,6 +464,8 @@ async fn scenario(
     } else {
         ChannelContentPin::test(world)
     };
+    let eligibility_fixture = matches!(notices, Some(NoticeCase::JoinedEligibility));
+    let entry = channel_pin.entry_start();
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
         channel,
@@ -484,9 +486,17 @@ async fn scenario(
         runtime
             .bind_attacker_lease(actor, session, current.current_character_lease())
             .map_err(debug)?;
-        runtime
-            .initialize_first_entry_position(actor)
-            .map_err(debug)?;
+        if eligibility_fixture {
+            let x = entry.x + i32::try_from(admitted.len())?;
+            runtime
+                .initialize_pinned_test_position(
+                    actor,
+                    crate::foundation::MovementLocalPosition { x, y: entry.y, floor: entry.floor },
+                )
+                .map_err(debug)?;
+        } else {
+            runtime.initialize_first_entry_position(actor).map_err(debug)?;
+        }
         admitted.push(AdmittedSession {
             game_session_id: session,
             world_id: world,
@@ -550,9 +560,20 @@ async fn scenario(
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42])
                 .ok_or("party offer")?;
     }
-    if matches!(notices, Some(NoticeCase::JoinedEligibility)) {
+    if eligibility_fixture {
+        let leader = admitted[0].runtime_actor.ok_or("fixture leader actor")?;
+        let peer = admitted[1].runtime_actor.ok_or("fixture peer actor")?;
+        let leader = entities.iter().find(|entry| entry.actor == leader).ok_or("fixture leader placement")?;
+        let peer = entities.iter().find(|entry| entry.actor == peer).ok_or("fixture peer placement")?;
+        assert_eq!(peer.position.x, leader.position.x + 1);
+        assert_eq!(peer.position.y, leader.position.y);
+        assert_eq!(peer.position.floor, leader.position.floor);
+        let target = EntityRef {
+            identity: peer.actor.placement_identity(),
+            generation: peer.generation,
+        };
         return invite_disband::check_joined_eligibility(
-            &owner, &mut admitted, targets[1], characters, h,
+            &owner, &mut admitted, target, characters, h,
         ).await;
     }
     if matches!(notices, Some(NoticeCase::Fanout | NoticeCase::LeaderJoined)) {
