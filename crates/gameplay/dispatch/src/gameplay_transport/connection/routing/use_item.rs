@@ -7,8 +7,8 @@ use super::super::{
     SessionItemView, SessionVisibility, UseCommand, UseIntent, UseOutcome, UseTarget,
     decode_use_intent_target,
 };
-use super::Dispatch;
-use oteryn_protocol_oteryn::ClientCommandView;
+use super::{Dispatch, StaleUseReason};
+use oteryn_protocol_oteryn::{ClientCommandView, world_object::UseDisposition};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -341,6 +341,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         container,
         Some(ContainerObservation::Container { .. } | ContainerObservation::TooFar)
     );
+    // A live spatial handle is not a carried rune source. Legacy corpse opens use
+    // the domain 11 observer below and never appear in the carried-container probe.
+    let plain_item_handle = match &decoded {
+        Ok(UseIntent {
+            target: UseTarget::Item(handle),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        }) => Some(item_view.as_ref().and_then(|view| view.resolve(*handle))),
+        _ => None,
+    };
+    let direct_spatial_item = matches!(plain_item_handle, Some(Some(ItemKey::Entity(_))));
     Ok({
         match decoded {
             Ok(intent) if intent.use_with_map_item.is_some() => {
@@ -472,7 +484,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     None => return Err("mining_unresolved"),
                 }
             }
-            Ok(intent) if !opens_container
+            Ok(intent) if !opens_container && !direct_spatial_item
                 && transport::rune_use_bridge::routes(
                     &intent, &admitted.continuity.selected_capabilities,
                 ) => match transport::rune_use_bridge::dispatch(
@@ -485,6 +497,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 intent, item_view.as_ref(), visibility.as_ref(),
                 &admitted.continuity.selected_capabilities,
             ).await {
+                Some(outcome) if outcome.disposition == UseDisposition::StaleState
+                    && plain_item_handle == Some(None) => Dispatch::UseItem(
+                        OpenDecision::StaleState, None, Some(StaleUseReason::ItemHandleNotLive),
+                    ),
                 Some(outcome) => Dispatch::Use(outcome),
                 None => return Err("rune_use_unresolved"),
             },
@@ -590,6 +606,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                                 }
                             },
                             delta,
+                            Some(StaleUseReason::ContainerViewStale),
                         )
                     }
                     (Some(view), Some(key), Some(observation)) => {
@@ -598,9 +615,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         let Ok((decision, delta)) = opened else {
                             return Ok(super::refuse_use(command, "corpse_view_projection"));
                         };
-                        Dispatch::UseItem(decision, delta)
+                        Dispatch::UseItem(decision, delta, Some(StaleUseReason::CorpseNotLive))
                     }
-                    _ => Dispatch::UseItem(OpenDecision::StaleState, None),
+                    (_, key, _) => Dispatch::UseItem(
+                        OpenDecision::StaleState,
+                        None,
+                        Some(if key.is_none() {
+                            StaleUseReason::ItemHandleNotLive
+                        } else {
+                            StaleUseReason::ItemTargetNotObserved
+                        }),
+                    ),
                 }
             }
             Ok(UseIntent {

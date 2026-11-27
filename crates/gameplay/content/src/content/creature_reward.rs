@@ -1533,6 +1533,63 @@ mod protected_loot_tests {
         Ok((creatures, loot))
     }
 
+    /// Use the same native corpse proof as activation, including qualified non-container
+    /// corpses and capacity exceptions. Print the unresolved source cohort on the PC lane.
+    #[test]
+    fn bug_reward_admits_exact_corpse_and_audits_every_declared_corpse()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let native_items = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let rewards = CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            Some(&section),
+            Some(&native_items),
+        );
+
+        for record in &creatures.records {
+            let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                continue;
+            };
+            let Some(corpse) = profile
+                .details
+                .as_ref()
+                .and_then(|details| details.corpse_item.as_ref())
+            else {
+                continue;
+            };
+            let creature = &record.profile.target.key;
+            if matches!(
+                rewards.row(creature),
+                Err(NoSettlementReason::CorpseItemInadmissible)
+            ) {
+                eprintln!(
+                    "{}\t{}@{}\tcorpse_item_inadmissible",
+                    creature, corpse.key, corpse.revision
+                );
+            }
+        }
+
+        let reward = rewards
+            .row("oteryn:creature.bug")
+            .map_err(NoSettlementReason::as_str)?;
+        let corpse = reward
+            .corpse_item
+            .as_ref()
+            .ok_or("Bug must leave a corpse")?;
+        assert_eq!(corpse.family, "Item");
+        assert_eq!(corpse.production_key, "oteryn:item.tibia.i5990");
+        assert_eq!(corpse.revision_ref, "definition-r1");
+        assert_eq!(reward.xp_amount, ExactI64::new(18));
+        assert!(!reward.loot_table.entries.is_empty());
+        Ok(())
+    }
+
     #[test]
     fn slice_three_tables_load_every_qualified_yield() -> Result<(), Box<dyn std::error::Error>> {
         fn missing_yields<'a>(

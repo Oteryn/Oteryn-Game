@@ -30,7 +30,7 @@ CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
 # The source projection budget includes the two Vampire Hunter roots and Poison Spider.
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 67, 8, 256
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 72, 8, 259
 
 
 def item_id(reference):
