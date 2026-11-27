@@ -1,0 +1,1297 @@
+{
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "source_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+  "records": {
+    "12141": {
+      "fluidsource": "blood",
+      "duration": "60",
+      "decayto": "0",
+      "containersize": "10",
+      "weight": "4000"
+    },
+    "48257": {
+      "decayto": "0",
+      "duration": "5"
+    },
+    "48258": {
+      "containersize": "8",
+      "decayto": "48257",
+      "duration": "5"
+    },
+    "48259": {
+      "containersize": "8",
+      "decayto": "48258",
+      "duration": "5",
+      "fluidsource": "blood"
+    },
+    "49987": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "49988": {
+      "duration": "300",
+      "decayto": "49987",
+      "containersize": "48"
+    },
+    "49989": {
+      "duration": "300",
+      "decayto": "49988",
+      "containersize": "48"
+    },
+    "49990": {
+      "duration": "10",
+      "decayto": "49989",
+      "containersize": "48"
+    },
+    "49991": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "49992": {
+      "duration": "300",
+      "decayto": "49991",
+      "containersize": "48"
+    },
+    "49993": {
+      "duration": "300",
+      "decayto": "49992",
+      "containersize": "48"
+    },
+    "49994": {
+      "duration": "10",
+      "decayto": "49993",
+      "containersize": "48"
+    },
+    "51494": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51495": {
+      "duration": "60",
+      "decayto": "51494",
+      "containersize": "24"
+    },
+    "51496": {
+      "duration": "300",
+      "decayto": "51495",
+      "containersize": "24"
+    },
+    "51497": {
+      "duration": "300",
+      "decayto": "51496",
+      "containersize": "24"
+    },
+    "51498": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51499": {
+      "duration": "60",
+      "decayto": "51498",
+      "containersize": "24"
+    },
+    "51500": {
+      "duration": "300",
+      "decayto": "51499",
+      "containersize": "24"
+    },
+    "51501": {
+      "duration": "300",
+      "decayto": "51500",
+      "containersize": "24"
+    },
+    "51504": {
+      "duration": "300",
+      "decayto": "0"
+    },
+    "51505": {
+      "duration": "300",
+      "decayto": "51504",
+      "containersize": "24"
+    },
+    "51506": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51507": {
+      "duration": "60",
+      "decayto": "51506",
+      "containersize": "24"
+    },
+    "51508": {
+      "duration": "300",
+      "decayto": "51507",
+      "containersize": "24"
+    },
+    "51509": {
+      "duration": "300",
+      "decayto": "51508",
+      "containersize": "24"
+    },
+    "51529": {
+      "duration": "300",
+      "decayto": "51530",
+      "containersize": "24"
+    },
+    "51530": {
+      "duration": "300",
+      "decayto": "51531",
+      "containersize": "24"
+    },
+    "51531": {
+      "duration": "60",
+      "decayto": "51532",
+      "containersize": "24"
+    },
+    "51532": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51533": {
+      "duration": "300",
+      "decayto": "51534",
+      "containersize": "24"
+    },
+    "51534": {
+      "duration": "300",
+      "decayto": "51535",
+      "containersize": "24"
+    },
+    "51535": {
+      "duration": "60",
+      "decayto": "51536",
+      "containersize": "24"
+    },
+    "51536": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51537": {
+      "duration": "300",
+      "decayto": "51540",
+      "containersize": "24"
+    },
+    "51538": {
+      "duration": "300",
+      "decayto": "51543",
+      "containersize": "24"
+    },
+    "51540": {
+      "duration": "300",
+      "decayto": "51541",
+      "containersize": "24"
+    },
+    "51541": {
+      "duration": "60",
+      "decayto": "51542",
+      "containersize": "24"
+    },
+    "51542": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51543": {
+      "duration": "300",
+      "decayto": "51544",
+      "containersize": "24"
+    },
+    "51544": {
+      "duration": "60",
+      "decayto": "51545",
+      "containersize": "24"
+    },
+    "51545": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51546": {
+      "duration": "300",
+      "decayto": "51547",
+      "containersize": "24"
+    },
+    "51547": {
+      "duration": "300",
+      "decayto": "51548",
+      "containersize": "24"
+    },
+    "51548": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51549": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51550": {
+      "duration": "60",
+      "decayto": "51549",
+      "containersize": "24"
+    },
+    "51551": {
+      "duration": "300",
+      "decayto": "51550",
+      "containersize": "24"
+    },
+    "51552": {
+      "duration": "300",
+      "decayto": "51551",
+      "containersize": "24"
+    },
+    "51553": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51554": {
+      "duration": "60",
+      "decayto": "51553",
+      "containersize": "24"
+    },
+    "51555": {
+      "duration": "300",
+      "decayto": "51554",
+      "containersize": "24"
+    },
+    "51556": {
+      "duration": "300",
+      "decayto": "51555",
+      "containersize": "24"
+    },
+    "51561": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51562": {
+      "duration": "60",
+      "decayto": "51561",
+      "containersize": "24"
+    },
+    "51563": {
+      "duration": "300",
+      "decayto": "51562",
+      "containersize": "24"
+    },
+    "51564": {
+      "duration": "300",
+      "decayto": "51563",
+      "containersize": "24"
+    },
+    "51569": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51570": {
+      "duration": "60",
+      "decayto": "51569",
+      "containersize": "24"
+    },
+    "51571": {
+      "duration": "300",
+      "decayto": "51570",
+      "containersize": "24"
+    },
+    "51572": {
+      "duration": "300",
+      "decayto": "51571",
+      "containersize": "24"
+    },
+    "51584": {
+      "duration": "300",
+      "decayto": "51585",
+      "containersize": "24"
+    },
+    "51585": {
+      "duration": "300",
+      "decayto": "51586",
+      "containersize": "24"
+    },
+    "51586": {
+      "duration": "60",
+      "decayto": "51587",
+      "containersize": "24"
+    },
+    "51587": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51592": {
+      "duration": "60",
+      "decayto": "0"
+    },
+    "51593": {
+      "duration": "60",
+      "decayto": "51592",
+      "containersize": "24"
+    },
+    "51594": {
+      "duration": "300",
+      "decayto": "51593",
+      "containersize": "24"
+    },
+    "51595": {
+      "duration": "300",
+      "decayto": "51594",
+      "containersize": "24"
+    },
+    "52113": {
+      "duration": "600",
+      "decayto": "52114",
+      "containersize": "48"
+    },
+    "52114": {
+      "duration": "600",
+      "decayto": "52115",
+      "containersize": "48"
+    },
+    "52115": {
+      "duration": "10",
+      "decayto": "52116",
+      "containersize": "48"
+    },
+    "52116": {
+      "duration": "600",
+      "decayto": "0"
+    },
+    "52117": {
+      "duration": "600",
+      "decayto": "52118",
+      "containersize": "48"
+    },
+    "52118": {
+      "duration": "600",
+      "decayto": "52119",
+      "containersize": "48"
+    },
+    "52119": {
+      "duration": "10",
+      "decayto": "52120",
+      "containersize": "48"
+    },
+    "52120": {
+      "duration": "600",
+      "decayto": "0"
+    },
+    "52548": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52549": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52548",
+      "containersize": "10"
+    },
+    "52550": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52549",
+      "containersize": "10"
+    },
+    "52551": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52550",
+      "containersize": "10"
+    },
+    "52552": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52553": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52552",
+      "containersize": "10"
+    },
+    "52554": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52553",
+      "containersize": "10"
+    },
+    "52555": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52554",
+      "containersize": "10"
+    },
+    "52559": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52559",
+      "containersize": "10"
+    },
+    "52560": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52561": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52560",
+      "containersize": "10"
+    },
+    "52562": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52561",
+      "containersize": "10"
+    },
+    "52563": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52562",
+      "containersize": "10"
+    },
+    "52564": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52565": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52564",
+      "containersize": "10"
+    },
+    "52566": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52565",
+      "containersize": "10"
+    },
+    "52567": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52566",
+      "containersize": "10"
+    },
+    "52568": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52569": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52568",
+      "containersize": "10"
+    },
+    "52570": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52569",
+      "containersize": "10"
+    },
+    "52571": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52570",
+      "containersize": "10"
+    },
+    "52572": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52573": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52572",
+      "containersize": "10"
+    },
+    "52574": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52573",
+      "containersize": "10"
+    },
+    "52575": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52574",
+      "containersize": "10"
+    },
+    "52677": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52678": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52677",
+      "containersize": "10"
+    },
+    "52679": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52678",
+      "containersize": "10"
+    },
+    "52680": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52679",
+      "containersize": "10"
+    },
+    "52681": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52682": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52681",
+      "containersize": "10"
+    },
+    "52683": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52682",
+      "containersize": "10"
+    },
+    "52684": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52683",
+      "containersize": "10"
+    },
+    "52685": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52686": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52685",
+      "containersize": "10"
+    },
+    "52687": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52686",
+      "containersize": "10"
+    },
+    "52688": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52687",
+      "containersize": "10"
+    },
+    "52689": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52690": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52689",
+      "containersize": "10"
+    },
+    "52691": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52690",
+      "containersize": "10"
+    },
+    "52692": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52691",
+      "containersize": "10"
+    },
+    "52693": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52694": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52693",
+      "containersize": "10"
+    },
+    "52695": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52694",
+      "containersize": "10"
+    },
+    "52696": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52695",
+      "containersize": "10"
+    },
+    "52838": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52839": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52838",
+      "containersize": "10"
+    },
+    "52840": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52839",
+      "containersize": "10"
+    },
+    "52841": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52840",
+      "containersize": "10"
+    },
+    "52842": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52843": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52842",
+      "containersize": "10"
+    },
+    "52844": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52843",
+      "containersize": "10"
+    },
+    "52845": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52844",
+      "containersize": "10"
+    },
+    "52850": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52851": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52850",
+      "containersize": "10"
+    },
+    "52852": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52851",
+      "containersize": "10"
+    },
+    "52853": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52852",
+      "containersize": "10"
+    },
+    "52854": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52855": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52854",
+      "containersize": "10"
+    },
+    "52856": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52855",
+      "containersize": "10"
+    },
+    "52857": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52856",
+      "containersize": "10"
+    },
+    "52858": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "0",
+      "containersize": "10"
+    },
+    "52859": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52858",
+      "containersize": "10"
+    },
+    "52860": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52859",
+      "containersize": "10"
+    },
+    "52861": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "52860",
+      "containersize": "10"
+    },
+    "53078": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53082": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53086": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53090": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53094": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53098": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53103": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53108": {
+      "containersize": "30",
+      "duration": "900",
+      "decayto": "0"
+    },
+    "53110": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53113": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53119": {
+      "fluidsource": "blood",
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53122": {
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53125": {
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53128": {
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "53132": {
+      "containersize": "20",
+      "duration": "600",
+      "decayto": "0"
+    },
+    "54335": {
+      "containersize": "30",
+      "decayto": "54336",
+      "duration": "10"
+    },
+    "54336": {
+      "containersize": "30",
+      "decayto": "54337",
+      "duration": "300"
+    },
+    "54337": {
+      "decayto": "0",
+      "duration": "60"
+    },
+    "54339": {
+      "decayto": "0",
+      "duration": "60"
+    },
+    "54340": {
+      "containersize": "30",
+      "decayto": "54339",
+      "duration": "300"
+    },
+    "54341": {
+      "containersize": "30",
+      "decayto": "54340",
+      "duration": "300"
+    },
+    "54342": {
+      "containersize": "30",
+      "decayto": "54341",
+      "duration": "10"
+    },
+    "54343": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54344": {
+      "containersize": "30",
+      "decayto": "54343",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54345": {
+      "containersize": "30",
+      "decayto": "54344",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54346": {
+      "containersize": "30",
+      "decayto": "54345",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54352": {
+      "containersize": "30",
+      "decayto": "54353",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54353": {
+      "containersize": "30",
+      "decayto": "54354",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54354": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54369": {
+      "decayto": "0",
+      "duration": "60"
+    },
+    "54370": {
+      "containersize": "30",
+      "decayto": "54369",
+      "duration": "300"
+    },
+    "54371": {
+      "containersize": "30",
+      "decayto": "54370",
+      "duration": "300"
+    },
+    "54372": {
+      "containersize": "30",
+      "decayto": "54371",
+      "duration": "10"
+    },
+    "54373": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54374": {
+      "containersize": "30",
+      "decayto": "54373",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54375": {
+      "containersize": "30",
+      "decayto": "54374",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54376": {
+      "containersize": "30",
+      "decayto": "54375",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54386": {
+      "containersize": "30",
+      "decayto": "54387",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54387": {
+      "containersize": "30",
+      "decayto": "54388",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54388": {
+      "containersize": "30",
+      "decayto": "54389",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54389": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54396": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54397": {
+      "containersize": "30",
+      "decayto": "54396",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54398": {
+      "containersize": "30",
+      "decayto": "54397",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54399": {
+      "containersize": "30",
+      "decayto": "54398",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54404": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54405": {
+      "containersize": "30",
+      "decayto": "54404",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54406": {
+      "containersize": "30",
+      "decayto": "54405",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54407": {
+      "containersize": "30",
+      "decayto": "54406",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54408": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54409": {
+      "containersize": "30",
+      "decayto": "54408",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54410": {
+      "containersize": "30",
+      "decayto": "54409",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54411": {
+      "containersize": "30",
+      "decayto": "54410",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54412": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54413": {
+      "containersize": "30",
+      "decayto": "54412",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54414": {
+      "containersize": "30",
+      "decayto": "54413",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54415": {
+      "containersize": "30",
+      "decayto": "54414",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54416": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54417": {
+      "containersize": "30",
+      "decayto": "54416",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54418": {
+      "containersize": "30",
+      "decayto": "54417",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54419": {
+      "containersize": "30",
+      "decayto": "54418",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54433": {
+      "containersize": "30",
+      "decayto": "54434",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54434": {
+      "containersize": "30",
+      "decayto": "54435",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54435": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54436": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "slime"
+    },
+    "54437": {
+      "containersize": "30",
+      "decayto": "54436",
+      "duration": "300",
+      "fluidsource": "slime"
+    },
+    "54438": {
+      "containersize": "30",
+      "decayto": "54437",
+      "duration": "300",
+      "fluidsource": "slime"
+    },
+    "54439": {
+      "containersize": "30",
+      "decayto": "54438",
+      "duration": "10",
+      "fluidsource": "slime"
+    },
+    "54440": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "slime"
+    },
+    "54441": {
+      "containersize": "30",
+      "decayto": "54440",
+      "duration": "300",
+      "fluidsource": "slime"
+    },
+    "54442": {
+      "containersize": "30",
+      "decayto": "54441",
+      "duration": "300",
+      "fluidsource": "slime"
+    },
+    "54443": {
+      "containersize": "30",
+      "decayto": "54442",
+      "duration": "10",
+      "fluidsource": "slime"
+    },
+    "54568": {
+      "containersize": "30",
+      "decayto": "54569",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54569": {
+      "containersize": "30",
+      "decayto": "54570",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54570": {
+      "containersize": "30",
+      "decayto": "54571",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54571": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54647": {
+      "containersize": "30",
+      "decayto": "54648",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54648": {
+      "containersize": "30",
+      "decayto": "54649",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54649": {
+      "containersize": "30",
+      "decayto": "54650",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54650": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54667": {
+      "containersize": "32",
+      "decayto": "54668",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54668": {
+      "containersize": "32",
+      "decayto": "54669",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54669": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54670": {
+      "containersize": "30",
+      "decayto": "54671",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54671": {
+      "containersize": "30",
+      "decayto": "54672",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54672": {
+      "containersize": "30",
+      "decayto": "54673",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54673": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54674": {
+      "containersize": "30",
+      "decayto": "54675",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54675": {
+      "containersize": "30",
+      "decayto": "54676",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54676": {
+      "containersize": "30",
+      "decayto": "54677",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54677": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    },
+    "54678": {
+      "containersize": "30",
+      "decayto": "54679",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "54679": {
+      "containersize": "30",
+      "decayto": "54680",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54680": {
+      "containersize": "30",
+      "decayto": "54681",
+      "duration": "300",
+      "fluidsource": "blood"
+    },
+    "54681": {
+      "decayto": "0",
+      "duration": "60",
+      "fluidsource": "blood"
+    }
+  }
+}
