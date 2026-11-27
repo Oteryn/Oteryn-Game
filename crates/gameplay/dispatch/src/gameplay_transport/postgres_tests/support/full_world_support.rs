@@ -241,8 +241,12 @@ pub(super) async fn readmit_after_logout(
     };
     let (session, request) = relogin_request(harness).await?;
     let store = FreshAdmissionStore::from_root(harness.root.clone());
-    let transport = store
-        .current_session(session)
+    let budget = crate::gameplay_transport::AdmissionRetryBudget::for_foreground_root(
+        &session,
+        &harness.root,
+    )?;
+    let transport = budget
+        .retry_durability("readmit_transport", || store.current_session(session))
         .await?
         .current_transport()
         .ok_or("relog transport")?;
@@ -252,7 +256,7 @@ pub(super) async fn readmit_after_logout(
         runtime.commit_fresh_session(reserved).map_err(debug)?
     };
     let (first_entry, item_fence, _) =
-        Box::pin(owner.initialize_first_entry(&request, session, transport, actor)).await;
+        Box::pin(owner.enter_committed_actor(&budget, &request, session, transport, actor)).await;
     assert!(
         matches!(
             first_entry,

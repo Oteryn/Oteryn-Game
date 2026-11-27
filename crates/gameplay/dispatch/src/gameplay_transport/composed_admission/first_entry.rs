@@ -1,5 +1,11 @@
 use super::*;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static FIRST_ENTRY_CHECKOUT_PROBE:
+        std::cell::Cell<Option<std::sync::Arc<super::HolderCheckoutProbe>>>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// [`Self::initialize_first_entry`], repeated from fresh reads while it is refused before
     /// the Channel-owner write: on a busy holder under `budget` (NODEBOOT-1), on stale authority
@@ -80,10 +86,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         stage("resolve_session");
         phase.set("resolve_session");
         let store = FreshAdmissionStore::from_root(self.root.clone());
+        #[cfg(test)]
+        let probe = FIRST_ENTRY_CHECKOUT_PROBE
+            .try_with(std::cell::Cell::take)
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        if let Some(probe) = &probe {
+            probe.pause().await;
+        }
         let current = match store.reconcile(request.operation()).await {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
             Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
-            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+            Err(_error) => {
+                #[cfg(test)]
+                if matches!(_error, crate::durability::DurabilityError::RootUnavailable)
+                    && let Some(probe) = &probe
+                {
+                    probe.blocked();
+                }
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
+            }
         };
         phase.set("reserve_precondition");
         match self.reserve_precondition().await {

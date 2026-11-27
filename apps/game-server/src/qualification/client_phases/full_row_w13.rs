@@ -86,6 +86,68 @@ async fn required_hunt(
     ))
 }
 
+async fn prepare_hunter(
+    clients: &SeamClients<'_>,
+    mut client: oteryn_dev_client::DevClientSession,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    use oteryn_dev_client::ItemMoveDestination;
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
+
+    let session = client.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(session.as_bytes()), "--profile", "q_w13".into()).await?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("W13 hunter preparation logout refused".into());
+    }
+    drop(client);
+    let mut hunter = connect_world(clients, 0xd5).await?;
+    if hunter.join_snapshot().game_session_id == session {
+        return Err("W13 hunter preparation reused its original session".into());
+    }
+    use oteryn_protocol_oteryn::cyclopedia_character as stats;
+    let reply = hunter.session_mut().gated_command(
+        stats::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        stats::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[stats::CharacterTab::GeneralStats as u8, 0, 0, 1],
+    ).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("W13 GeneralStats refused: {reply:?}").into());
+    }
+    let data = &reply.payload;
+    let vocation = general_stats::validate(data, general_stats::selected(&hunter))?;
+    let level = u32::from_le_bytes(data[9..13].try_into()?);
+    let sword = u16::from_le_bytes(data[19..21].try_into()?);
+    if level != 200 || vocation != stats::vocation_id("knight")
+        || sword != crate::qualification_w13::W13_SWORD_SKILL
+    {
+        return Err(format!("W13 hunter build differs: vocation={vocation:?} level={level} sword={sword}").into());
+    }
+    let index = provisioning::item_index()?;
+    let definition = provisioning::item_reference(
+        &index,
+        crate::qualification_w13::W13_HUNTER_SWORD_ID,
+    )?;
+    let source = hunter.inventory().and_then(|inventory| {
+        inventory.entries.iter().find(|entry| entry.item_definition_ref == definition)
+    }).ok_or("W13 Relic Sword missing from backpack after readmission")?.handle;
+    let moved = hunter.session_mut().move_item_counted(MoveRequest {
+        source,
+        destination: ItemMoveDestination::Equipment(EquipmentSlot::RightHand),
+        count: None,
+    }).await?;
+    if moved.outcome != ItemMoveOutcome::Moved {
+        return Err(format!("W13 fixture sword equip observed {moved:?}").into());
+    }
+    full_row_p05::wait_for_inventory(&mut hunter, "w13-fixture-sword-equip", |client| {
+        client.inventory().is_some_and(|inventory| inventory.equipment.iter().any(|entry| {
+            entry.slot == EquipmentSlot::RightHand && entry.item.item_definition_ref == definition
+        }))
+    }).await?;
+    Ok(hunter)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -130,6 +192,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step-3: malformed query observed reply {refused:?}").into());
     }
     evidence("W13_CHECK step=3 malformed-query-rejected");
+    let mut client = prepare_hunter(clients, client).await?;
 
     travel_to_spawn(&mut client, world, &metadata.spawns, &selected.creature_key)
         .await

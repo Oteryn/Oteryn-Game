@@ -54,6 +54,14 @@
       "note": "Semantic transaction lifecycle; successful slow operations are promoted to warn."
     },
     {
+      "event": "equipment_move_slot_refused",
+      "level": "warn",
+      "span": false,
+      "fields": ["phase", "predicate", "command_id", "slot", "definition", "revision"],
+      "codes": [],
+      "note": "Equipment move SlotMismatch predicate from precheck or apply. Definition and revision are public Content identity."
+    },
+    {
       "event": "game_journal_quarantined",
       "level": "error",
       "span": false,

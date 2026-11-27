@@ -234,6 +234,18 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "cyclopedia_general_stats_attempt",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "attempt",
+        "holder"
+      ],
+      "codes": [],
+      "note": "GeneralStats durable read attempt and observed holder call site within the command budget."
+    },
+    {
       "event": "daily_boost_query_attempt",
       "level": "warn",
       "span": false,
@@ -241,7 +253,8 @@
         "command_id",
         "seq",
         "phase",
-        "attempt"
+        "attempt",
+        "holder"
       ],
       "codes": [],
       "note": "Daily Boost runtime wait or durable selection attempt under the command deadline."

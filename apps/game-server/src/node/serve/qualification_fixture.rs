@@ -34,7 +34,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     );
     #[cfg(feature = "qualification-spawn")]
-    let allowed = allowed || p04_delivery_profile(profile).is_some();
+    let allowed = allowed || profile == "q_w13" || p04_delivery_profile(profile).is_some();
     allowed.then_some((session, profile))
 }
 
@@ -707,6 +707,8 @@ async fn prepare_build(
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
     let (vocation, level) = match profile {
+        #[cfg(feature = "qualification-spawn")]
+        "q_w13" => ("knight", 200),
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
         _ => (profile, 100),
@@ -732,7 +734,25 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    #[cfg(feature = "qualification-spawn")]
+    let weapon = if profile == "q_w13" {
+        crate::qualification_w13::prepare_w13_sword_skill(
+            root,
+            authority,
+            proof,
+            &current,
+            content_revision,
+            fixture_occurrence(character.as_bytes(), profile, b"sword-skill"),
+            deadline,
+        )
+        .await?;
+        crate::qualification_w13::W13_HUNTER_SWORD_ID
+    } else {
+        3276
+    };
+    #[cfg(not(feature = "qualification-spawn"))]
+    let weapon = 3276;
+    prepare_items(root, authority, proof, &current, native, weapon, deadline).await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -988,6 +1008,7 @@ async fn prepare_items(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
+    weapon: u32,
     deadline: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
@@ -1061,9 +1082,8 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    // A weapon, rope and shovel supply the fixture's melee and map prerequisites.
+    for (ordinal, id) in [weapon, 3003, 3457].into_iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),

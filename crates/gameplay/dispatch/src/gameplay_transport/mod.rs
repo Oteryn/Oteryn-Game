@@ -322,7 +322,6 @@ use connection::{
     AccountAchievementsReply, AdmissionRefusal, AdmittedSession, ConnectionIdentifiers,
     ControlLossResult, ControllerBinding, FirstEntryOutcome, FreshAdmissionAttempt,
     FreshAdmissionAuthority, GraceExpiryResult, SessionContinuity, StepOutcome, UseOutcome,
-    admit_frame, serve_admitted,
 };
 pub use fresh_evidence::{EvidenceUnavailable, FreshEvidenceSource};
 use kill_reward::{KillRelease, KillReleaseMark, ReleaseEnd};
@@ -1557,6 +1556,17 @@ impl<'r> AdmissionRetryBudget<'r> {
         Ok(Self {
             _foreground: Some(root.foreground_demand()?),
             ..budget
+        })
+    }
+
+    /// Read commands that can collide with session setup or another semantic pass
+    /// share one idle-liveness interval. The budget is never renewed between stages.
+    fn for_session_read(
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        Ok(Self {
+            deadline: tokio::time::Instant::now() + connection::IDLE_LIVENESS.interval,
+            ..Self::for_foreground_command(root)?
         })
     }
 

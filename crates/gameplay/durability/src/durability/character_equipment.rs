@@ -1507,6 +1507,31 @@ fn move_refusal(reason: &'static str) -> EquipmentMoveRefusal {
     }
 }
 
+fn log_slot_refusal(
+    command: Option<CommandRef>,
+    slot: Option<u8>,
+    phase: &'static str,
+    predicate: &'static str,
+    definition: Option<(&str, &str)>,
+) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let mut line = Line::new(Level::Warn, "durability", "equipment_move_slot_refused")
+        .field("phase", FieldValue::Token(phase))
+        .field("predicate", FieldValue::Token(predicate));
+    if let Some(command) = command {
+        line = line.field("command_id", FieldValue::U64(command.command_id().get()));
+    }
+    if let Some(slot) = slot {
+        line = line.field("slot", FieldValue::U64(slot.into()));
+    }
+    if let Some((key, revision)) = definition {
+        line = line
+            .field("definition", FieldValue::Token(key))
+            .field("revision", FieldValue::Token(revision));
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
+}
+
 /// An owner error inside the move transaction: a rejection or an integrity violation is a known
 /// refusal (nothing committed); any other database error leaves the connection's outcome to the
 /// replay, so it is unavailable.
@@ -1547,29 +1572,50 @@ async fn precheck_move(
             };
             let key: String = row.try_get("definition_production_key")?;
             let revision: String = row.try_get("definition_revision_ref")?;
-            let Some(policy) = content.equipment_policy(&key, &revision) else {
-                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            let refuse_slot = |predicate| {
+                log_slot_refusal(authority.command, Some(to), "precheck", predicate, Some((&key, &revision)));
+                Ok(Some(EquipmentMoveRefusal::SlotMismatch))
             };
+            let Some(policy) = content.equipment_policy(&key, &revision) else {
+                return refuse_slot("missing_equipment_policy");
+            };
+            if let Err(error) = claims(&policy, to) {
+                return match error {
+                    EquipmentError::Rejected(reason) => refuse_slot(reason),
+                    other => Err(other),
+                };
+            }
             let quiver = content.is_quiver_item(&key, &revision) && matches!(to, 6 | 10);
-            if claims(&policy, to).is_err()
-                || (!quiver
-                    && (policy.container_capacity().is_some()
-                        || !content.is_plain_item(&key, &revision)))
-            {
-                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            if !quiver {
+                if policy.container_capacity().is_some() {
+                    return refuse_slot("source_container_capacity");
+                }
+                if !content.is_plain_item(&key, &revision) {
+                    return refuse_slot("source_not_plain");
+                }
             }
             let contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
                 .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
             if contents && !quiver {
-                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+                return refuse_slot("source_has_contents");
             }
             if quiver {
                 let rows=sqlx::query("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid ORDER BY i.item_instance_id LIMIT 21 FOR UPDATE OF i")
                     .bind(request.item.as_slice()).fetch_all(&mut **tx).await?;
-                if rows.len()>20 || rows.iter().any(|row| {
-                    let key=row.try_get::<String,_>("definition_production_key");let revision=row.try_get::<String,_>("definition_revision_ref");
-                    !matches!((key,revision),(Ok(key),Ok(revision)) if content.is_ammunition_item(&key,&revision))
-                }) {return Ok(Some(EquipmentMoveRefusal::SlotMismatch));}
+                if rows.len() > 20 {
+                    return refuse_slot("quiver_capacity");
+                }
+                for row in rows {
+                    let (Ok(key), Ok(revision)) = (
+                        row.try_get::<String, _>("definition_production_key"),
+                        row.try_get::<String, _>("definition_revision_ref"),
+                    ) else {
+                        return refuse_slot("quiver_item_definition");
+                    };
+                    if !content.is_ammunition_item(&key, &revision) {
+                        return refuse_slot("quiver_non_ammunition");
+                    }
+                }
             }
             if unhosted_timed_item(tx, content, request.item, &key, &revision).await? {
                 return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
@@ -1580,7 +1626,7 @@ async fn precheck_move(
                     && !content
                         .is_plain_item(&old.definition.production_key, &old.definition.revision_ref)
                 {
-                    return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+                    return refuse_slot("displaced_item_not_plain");
                 }
                 if unhosted_timed_item(
                     tx,
@@ -1901,6 +1947,13 @@ impl DurabilityRoot {
                             &mut tx, &authority, &snapshot, content, &resolved, &intent,
                         )
                         .await
+                        .inspect_err(|error| {
+                            if let EquipmentError::Rejected(reason) = error
+                                && move_refusal(reason) == EquipmentMoveRefusal::SlotMismatch
+                            {
+                                log_slot_refusal(Some(command), to_slot, "apply", reason, None);
+                            }
+                        })
                         .map(Ok)
                     }
                     .await;
