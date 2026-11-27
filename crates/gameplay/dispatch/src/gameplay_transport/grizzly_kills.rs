@@ -514,20 +514,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// database await holds these guards; a task must be visible before a later death can
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
+        let queue = self.states.attack.lock().await.kills().clone();
         let runtime = self.runtime.lock().await;
-        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session)
-            .await;
+        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session, &queue);
     }
 
     /// Publish capture eligibility while the callback already holds the runtime owner.
-    pub(super) async fn refresh_grizzly_kill_snapshot_in_runtime(
+    pub(super) fn refresh_grizzly_kill_snapshot_in_runtime(
         &self,
         runtime: &ChannelRuntimeV1,
         session: GameSessionId,
+        queue: &KillSettlementQueue,
     ) {
         let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(runtime, session);
-        let attack = self.states.attack.lock().await;
-        let Ok(mut cache) = attack.kills().1.lock() else {
+        let Ok(mut cache) = queue.1.lock() else {
             return;
         };
         if !cache.hits.install(runtime, session, hit_snapshot) {

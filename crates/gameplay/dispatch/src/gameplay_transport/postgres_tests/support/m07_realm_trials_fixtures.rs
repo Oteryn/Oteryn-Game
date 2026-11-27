@@ -76,7 +76,49 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(phase(owner,fence,callback).await?,Some(1));
     assert_eq!(receipts(harness).await?,1);assert_eq!(key_count(harness).await?,1);
     assert!(owner.runtime.lock().await.kill_creature_for_test(blocker));
-    assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,3,0)).await?,UseDisposition::Committed,"cleared trial commits despite >4096 live creatures outside its area");
+    // Block only the quest receipt write. Once PostgreSQL reports the waiter,
+    // unrelated channel work must still be able to acquire both owners.
+    let mut blocker = harness.pool.begin().await?;
+    sqlx::query("LOCK game_character_quest_receipts IN SHARE MODE")
+        .execute(&mut *blocker)
+        .await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *blocker)
+        .await?;
+    let runtime = owner.runtime.clone();
+    let states = std::sync::Arc::clone(&owner.states);
+    let observe = async {
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            loop {
+                let waiting: bool = sqlx::query_scalar(
+                    "SELECT EXISTS (SELECT FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid)))"
+                ).bind(pid).fetch_one(&harness.pool).await?;
+                if waiting { break; }
+                tokio::task::yield_now().await;
+            }
+            Ok::<_, sqlx::Error>(())
+        }).await??;
+        let available = (
+            runtime.try_lock().is_ok(),
+            states.spell_states.try_lock().is_ok(),
+        );
+        blocker.rollback().await?;
+        Ok::<_, Box<dyn std::error::Error>>(available)
+    };
+    let (pulled, available) = tokio::join!(
+        Box::pin(use_source(owner, admitted, 5, CONTROL, 3, 0)),
+        observe
+    );
+    assert_eq!(
+        available?,
+        (true, true),
+        "callback held channel guards during commit"
+    );
+    assert_eq!(
+        pulled?,
+        UseDisposition::Committed,
+        "cleared trial commits despite >4096 live creatures outside its area"
+    );
     assert_eq!(phase(owner,fence,callback).await?,Some(2));
     assert_eq!(receipts(harness).await?,2);assert_eq!(key_count(harness).await?,1,"both native uses retain the exact key");
     assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,3,0)).await?,UseDisposition::Committed,"historical command replays without another write");
