@@ -24,7 +24,8 @@ use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, RUNE_USE_OFFERED, SelectedCapabilities, test_command,
 };
 use crate::gameplay_transport::connection::{
-    ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
+    AdmissionRefusal, AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAttempt,
+    FreshAdmissionAuthority, IDLE_LIVENESS, SessionContinuity, serve_admitted,
 };
 use crate::gameplay_transport::rune_use_bridge::test_faults::{self, Point, watch_contention};
 use crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities;
@@ -60,6 +61,7 @@ enum Case {
     SummonLimit,
     Animate,
     AnimateRat,
+    AnimateRatVisibility,
     AnimateRatWithLoot,
     AnimateBusy,
     AnimateBeforeCommit,
@@ -93,6 +95,17 @@ fn utility_runes_fresh_rat_corpse_raises_skeleton_with_correlated_acceptance() -
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |_| {
         run_case(admin, Case::AnimateRat).await
+    })
+}
+
+#[test]
+fn utility_runes_animate_dead_publishes_corpse_leave_with_skeleton_to_both_clients() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        run_case(admin, Case::AnimateRatVisibility).await
     })
 }
 
@@ -184,6 +197,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         case,
         Case::Animate
             | Case::AnimateRat
+            | Case::AnimateRatVisibility
             | Case::AnimateRatWithLoot
             | Case::AnimateBusy
             | Case::AnimateBeforeCommit
@@ -198,6 +212,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         Case::Convince
             | Case::Animate
             | Case::AnimateRat
+            | Case::AnimateRatVisibility
             | Case::AnimateRatWithLoot
             | Case::AnimateBusy
             | Case::AnimateBeforeCommit
@@ -407,7 +422,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?,
         BuildCommitOutcome::Committed(_)
     ));
-    let magic_level = if matches!(case, Case::AnimateRat | Case::AnimateRatWithLoot) { 4 } else { 10 };
+    let magic_level = if matches!(case, Case::AnimateRat | Case::AnimateRatVisibility | Case::AnimateRatWithLoot) { 4 } else { 10 };
     let trained =
         DurableBuildState::new(druid.vocation(), (magic_level, 0), druid.skills()).map_err(debug)?;
     harness
@@ -508,18 +523,28 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     if animate {
         // Free the tile used by the Convince fixture. Corpse custody is independently durable.
         let mut runtime = owner.runtime.lock().await;
-        let before = runtime.read_actor_position(target_actor).map_err(debug)?;
-        runtime
-            .borrow_movement_position()
-            .commit_cardinal(
-                before,
-                MovementLocalPosition {
-                    x: 102,
-                    y: 100,
-                    floor: 7,
-                },
-            )
-            .map_err(debug)?;
+        if case == Case::AnimateRatVisibility {
+            runtime.commit_monster_lab_damage(target_actor, b"animate-rat-corpse", 20).map_err(debug)?;
+            let mut death = runtime.borrow_combat_death();
+            let lethal = death.committed_lethal_receipt(target_actor).map_err(debug)?;
+            death.project_committed_lethal(lethal).map_err(debug)?;
+            let corpse = native.item_policy_for_source_id(3994).ok_or("Rat corpse profile")?;
+            let definition = &corpse.record().production_definition;
+            runtime.bind_corpse_item(target_actor, id(180), &definition.family, &definition.production_key, &definition.revision_ref).map_err(debug)?;
+        } else {
+            let before = runtime.read_actor_position(target_actor).map_err(debug)?;
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(
+                    before,
+                    MovementLocalPosition {
+                        x: 102,
+                        y: 100,
+                        floor: 7,
+                    },
+                )
+                .map_err(debug)?;
+        }
         let address =
             crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
                 &room, &runtime, VICTIM,
@@ -549,13 +574,57 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         );
         Ok::<_, Box<dyn std::error::Error>>(())
     };
+    let corpse_entity = EntityRef { identity: target_actor.corpse_identity(), generation: 0 };
+    let (observer_ready, ready) = tokio::sync::oneshot::channel();
+    let observing = async {
+        if case != Case::AnimateRatVisibility {
+            return Ok(None);
+        }
+        let peer_session = crate::foundation::GameSessionId::decode(&id(188)).map_err(debug)?;
+        let peer = {
+            let mut runtime = owner.runtime.lock().await;
+            let reserved = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
+            let peer = runtime.commit_fresh_session(reserved).map_err(debug)?;
+            runtime.initialize_pinned_test_position(peer, MovementLocalPosition { y: 101, ..CASTER }).map_err(debug)?;
+            peer
+        };
+        let mut observer = admitted;
+        observer.runtime_actor = Some(peer);
+        observer.game_session_id = peer_session;
+        observer.item_fence = None;
+        observer.continuity = SessionContinuity::FRESH;
+        observer.continuity.selected_capabilities =
+            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[4, 6])
+                .ok_or("observer capabilities")?;
+        let (mut wire, mut observer_client) = tokio::io::duplex(1 << 20);
+        let observer_authority = AnimateObserver(&owner);
+        let serving = async {
+            let end = serve_admitted(&mut wire, observer, &observer_authority, IDLE_LIVENESS).await;
+            drop(wire);
+            end
+        };
+        let reading = async {
+            read_visible_corpse_snapshot(&mut observer_client, corpse_entity).await?;
+            observer_ready.send(()).map_err(|_| "caster left before observer joined")?;
+            let skeleton = read_animate_publication(&mut observer_client, corpse_entity, false).await?;
+            observer_client.shutdown().await?;
+            Ok::<_, Box<dyn std::error::Error>>(skeleton)
+        };
+        let (end, skeleton) = join_two(serving, reading).await;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+        Ok::<_, Box<dyn std::error::Error>>(Some(skeleton?))
+    };
     let casting = async {
         let mut source = None;
+        let mut corpse_visible = false;
         loop {
             let frame = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if envelope.message_type() == MessageType::SnapshotChunk {
                 for domain in decode_snapshot_chunk(envelope.payload()).map_err(debug)?.1 {
+                    if case == Case::AnimateRatVisibility {
+                        corpse_visible |= snapshot_shows_corpse(domain, corpse_entity)?;
+                    }
                     if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
                         source = decode_character_inventory(domain.payload)
                             .map_err(debug)?
@@ -568,6 +637,10 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             if envelope.message_type() == MessageType::SnapshotCommit {
                 break;
             }
+        }
+        if case == Case::AnimateRatVisibility {
+            assert!(corpse_visible, "the caster must first receive the exact corpse");
+            ready.await?;
         }
         let intent = UseIntent {
             target: UseTarget::Item(source.ok_or("rune handle")?),
@@ -679,16 +752,29 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 "the writer must reach the injected rollback"
             );
         }
+        let skeleton = if case == Case::AnimateRatVisibility {
+            Some(read_animate_publication(&mut client, corpse_entity, true).await?)
+        } else {
+            None
+        };
         client.shutdown().await?;
-        Ok::<_, Box<dyn std::error::Error>>(())
+        Ok::<_, Box<dyn std::error::Error>>(skeleton)
     };
     tokio::time::timeout(std::time::Duration::from_secs(60), async {
-        let (served, cast) = join_two(serving, casting).await;
+        let ((served, cast), observed) = join_two(join_two(serving, casting), observing).await;
         served?;
-        cast
+        assert_eq!(cast?, observed?, "caster and observer must see the same Skeleton");
+        Ok::<_, Box<dyn std::error::Error>>(())
     })
     .await??;
-    let runtime = owner.runtime.lock().await;
+    let mut runtime = owner.runtime.lock().await;
+    if case == Case::AnimateRatVisibility {
+        assert!(runtime.bound_corpse(corpse_entity.identity).is_none());
+        let corpse = native.item_policy_for_source_id(3994).ok_or("Rat corpse profile")?;
+        let definition = &corpse.record().production_definition;
+        runtime.bind_corpse_item(target_actor, id(180), &definition.family, &definition.production_key, &definition.revision_ref).map_err(debug)?;
+        assert!(runtime.bound_corpse(corpse_entity.identity).is_none(), "mint replay cannot resurrect a consumed corpse");
+    }
     let after = {
         let states = owner.states.spell_states.lock().await;
         if matches!(case, Case::AnimateBusy | Case::AnimateReplayDeadline) {
@@ -782,13 +868,108 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     harness.cleanup().await
 }
 
+/// A passive socket shares the production Channel observer. It has no inventory
+/// writes and uses the fixture's empty inventory rather than a second character database row.
+struct AnimateObserver<'a, A>(&'a A);
+impl<A: FreshAdmissionAuthority> FreshAdmissionAuthority for AnimateObserver<'_, A>
+{
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn observe(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+    ) -> Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation> {
+        self.0.observe(actor).await
+    }
+
+    async fn observe_visible_entities(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+    ) -> Option<crate::gameplay_transport::world_spatial::ChannelEntities> {
+        self.0.observe_visible_entities(actor).await
+    }
+
+    async fn observe_character_inventory(
+        &self,
+        _: crate::foundation::ExactActorRef,
+        _: crate::foundation::GameSessionId,
+    ) -> Option<crate::gameplay_transport::item_view::InventoryItems> {
+        Some(Default::default())
+    }
+}
+
+fn snapshot_shows_corpse(
+    domain: oteryn_protocol_oteryn::DomainSnapshot<'_>,
+    corpse: EntityRef,
+) -> TestResult<bool> {
+    use oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
+    use oteryn_protocol_oteryn::world_spatial_entities as wire;
+    if domain.domain_id != STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+        return Ok(false);
+    }
+    let snapshot = wire::decode_world_spatial_entities_snapshot_with_item_handles(domain.payload).map_err(debug)?;
+    Ok(snapshot.entities.iter().any(|entry| entry.entity == corpse && entry.kind == wire::EntityKind::Corpse))
+}
+
+async fn read_visible_corpse_snapshot(
+    client: &mut tokio::io::DuplexStream, corpse: EntityRef,
+) -> TestResult {
+    let mut visible = false;
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() == MessageType::SnapshotChunk {
+            for domain in decode_snapshot_chunk(envelope.payload()).map_err(debug)?.1 {
+                visible |= snapshot_shows_corpse(domain, corpse)?;
+            }
+        }
+        if envelope.message_type() == MessageType::SnapshotCommit {
+            assert!(visible, "the observer must first receive the exact corpse");
+            return Ok(());
+        }
+    }
+}
+
+async fn read_animate_publication(
+    client: &mut tokio::io::DuplexStream, corpse: EntityRef, caster: bool,
+) -> TestResult<EntityRef> {
+    use oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
+    use oteryn_protocol_oteryn::world_spatial_entities as wire;
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() != MessageType::StateDelta {
+            continue;
+        }
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+        if caster {
+            assert_ne!(delta.domain_id, STATE_DOMAIN_CHARACTER_INVENTORY, "publish the consumed corpse before the rune debit becomes visible");
+        }
+        if delta.domain_id != STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+            continue;
+        }
+        let delta = wire::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
+        let leaves = delta.leave.contains(&corpse);
+        let spawn = delta.enter.iter().find(|entry| entry.kind == wire::EntityKind::Creature);
+        assert_eq!(leaves, spawn.is_some(), "exact corpse leave and Skeleton enter must share one delta");
+        if let Some(spawn) = spawn {
+            return Ok(spawn.entity);
+        }
+    }
+}
+
 async fn seed_target(
     h: &Harness,
     native: &crate::content::native_gameplay::NativeGameplayState,
     target: &crate::durability::native_world_items::SpellGroundTarget,
     case: Case,
 ) -> TestResult {
-    let rat = matches!(case, Case::AnimateRat | Case::AnimateRatWithLoot);
+    let rat = matches!(case, Case::AnimateRat | Case::AnimateRatVisibility | Case::AnimateRatWithLoot);
     let policy = if rat {
         // The production Rat's initial i5964 stage becomes i3994 after its first transform.
         native.item_policy_for_source_id(3994).ok_or("first transformed Rat corpse policy")?
@@ -825,8 +1006,8 @@ async fn seed_target(
     sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,$7,$8,100)")
         .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(&target.spatial_position).bind(id(182).as_slice()).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).execute(&mut *tx).await?;
     if case != Case::NonCorpse {
-        sqlx::query("INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(1,game_item_death_scope_key(encode($1,'hex')::uuid,1::smallint,encode($2,'hex')::uuid,NULL),encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable','fixture:cultist','r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,1)")
-            .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(vec![1_u8;33]).bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(180).as_slice()).bind(vec![1_u8;32]).bind(id(41).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(1,game_item_death_scope_key(encode($1,'hex')::uuid,1::smallint,encode($2,'hex')::uuid,NULL),encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable','fixture:cultist','r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,CASE WHEN $9 THEN (extract(epoch FROM clock_timestamp())*1000)::bigint ELSE 1 END)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(vec![1_u8;33]).bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(180).as_slice()).bind(vec![1_u8;32]).bind(id(41).as_slice()).bind(case == Case::AnimateRatVisibility).execute(&mut *tx).await?;
     }
     if case == Case::AnimateRatWithLoot {
         let gold = native.item_policy_for_source_id(3031).ok_or("Gold Coin policy")?;

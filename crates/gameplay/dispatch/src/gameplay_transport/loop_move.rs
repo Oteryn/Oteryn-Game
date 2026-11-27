@@ -294,7 +294,7 @@ pub struct LoopGroundOverlay {
     facts: HashMap<[u8; 16], EntryFacts>,
     ordinals: HashMap<[u8; 16], u64>,
     native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
-    source_plain_corpses: HashSet<[u8; 16]>,
+    corpse_items: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
@@ -349,7 +349,7 @@ impl LoopGroundOverlay {
         let mut facts = HashMap::new();
         let mut ordinals = HashMap::new();
         let mut native_pickup_cells = HashMap::new();
-        let mut source_plain_corpses = HashSet::new();
+        let mut corpse_items = HashSet::new();
         for entry in items {
             let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
@@ -465,8 +465,8 @@ impl LoopGroundOverlay {
                 overlay.add_ground(item)
             };
             if added.is_ok() {
-                if entry.source_plain_corpse {
-                    source_plain_corpses.insert(id);
+                if committed_corpse || entry.source_plain_corpse {
+                    corpse_items.insert(id);
                 }
                 facts.insert(id, entry_facts);
                 ordinals.insert(id, ordinal);
@@ -480,7 +480,7 @@ impl LoopGroundOverlay {
             facts,
             ordinals,
             native_pickup_cells,
-            source_plain_corpses,
+            corpse_items,
             field_pin,
             taken_sources: Default::default(),
             ground_push_definition,
@@ -671,7 +671,7 @@ impl LoopGroundCache {
 
     /// The complete scoped corpse read also reconciles an ambiguous retirement.
     /// Only representation metadata is compared; Ground custody stays in Items.
-    pub(super) fn reconcile_plain_corpses(
+    pub(super) fn reconcile_corpses(
         &self,
         scope: crate::foundation::RuntimeScopeRefV1,
         live: &[[u8; 16]],
@@ -679,10 +679,7 @@ impl LoopGroundCache {
         if let Ok(mut state) = self.state.lock()
             && state.current.as_ref().is_some_and(|current| {
                 current.overlay.runtime_scope() == scope
-                    && current
-                        .source_plain_corpses
-                        .iter()
-                        .any(|item| !live.contains(item))
+                    && current.corpse_items.iter().any(|item| !live.contains(item))
             })
         {
             state.epoch = state.epoch.wrapping_add(1);
@@ -1923,6 +1920,18 @@ mod tests {
         assert_eq!(
             project(item.clone()).pickup_cell(&id(3)),
             Some(ground_cell(1, 0, 7))
+        );
+        let cache = LoopGroundCache::default();
+        cache.store(0, &Arc::new(project(item.clone())));
+        cache.reconcile_corpses(scope, &[id(3)]);
+        assert!(
+            cache.cached().1.is_some(),
+            "live corpse retains the cached tile"
+        );
+        cache.reconcile_corpses(scope, &[]);
+        assert!(
+            cache.cached().1.is_none(),
+            "corpse retirement invalidates the cached tile"
         );
         let mut moved = item.clone();
         moved.item.ground.map_revision = map_revision(&base);

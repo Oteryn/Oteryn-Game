@@ -18,6 +18,19 @@ where
     {
         return Err(ServeEnd::Disconnected);
     }
+    if outcome.disposition == UseDisposition::Committed
+        && command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+        && decode_use_intent_target(session.selected_capabilities.as_slice(), command.payload)
+            .is_ok_and(|intent| {
+                intent.use_with_position.is_some()
+                    && crate::gameplay_transport::rune_use_bridge::routes(
+                        &intent,
+                        &session.selected_capabilities,
+                    )
+            })
+    {
+        Box::pin(refresh::committed_position_use(stream, authority, session)).await?;
+    }
     // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
     // backpack or open bags; their deltas follow the durable commit when changed.
     // A busy display read defers to the visibility cadence; writes still prove authority.

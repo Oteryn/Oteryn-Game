@@ -28,6 +28,7 @@ pub(super) struct CorpseItemBinding {
     actor: ExactActorRef,
     // Original MINT binding stays immutable when the displayed Item transforms.
     minted_item: RuntimeCorpseItem,
+    retired: bool,
     item: RuntimeCorpseItem,
 }
 
@@ -80,6 +81,7 @@ impl ChannelActorCarrier {
         self.corpse_item_bindings.push(CorpseItemBinding {
             actor,
             minted_item: item.clone(),
+            retired: false,
             item,
         });
         Ok(())
@@ -99,7 +101,7 @@ impl ChannelActorCarrier {
                 let binding = self
                     .corpse_item_bindings
                     .iter()
-                    .find(|binding| binding.actor == actor)?;
+                    .find(|binding| binding.actor == actor && !binding.retired)?;
                 Some(VisibleRuntimeCorpse {
                     identity: actor.corpse_identity(),
                     position: projection.position(),
@@ -295,15 +297,26 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
-    /// Forget corpse Item bindings absent from the owner's complete durable live-corpse read.
-    /// The caller holds the Channel's item writer lane through that read and this update, so
-    /// a new MINT cannot race the snapshot. Keep bounded death/projection evidence for reward
-    /// retries; without an Item binding the corpse is neither visible nor usable.
+    /// Hide the exact corpse after its Item owner proves consumption. Keep its original
+    /// mint binding until the death projection ages out so a replay cannot show it again.
+    pub fn retire_committed_corpse_item(&mut self, item: [u8; 16]) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        for binding in &mut self.carrier.corpse_item_bindings {
+            if binding.item.item_instance_id == item {
+                binding.retired = true;
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    /// Reconcile corpses absent from a complete durable live-corpse read.
+    /// The caller holds the Channel's item writer lane through both turns.
     pub fn retain_live_corpse_items(&mut self, live: &[[u8; 16]]) -> Result<(), CarrierError> {
         self.owner_fence()?;
         self.carrier
             .corpse_item_bindings
-            .retain(|binding| live.contains(&binding.item.item_instance_id));
+            .retain(|binding| binding.retired || live.contains(&binding.item.item_instance_id));
         Ok(())
     }
 

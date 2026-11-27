@@ -324,6 +324,16 @@ impl SessionVisibility {
         self.published
     }
 
+    pub(super) fn loses_corpse(&self, channel: &ChannelEntities) -> bool {
+        self.entities.values().any(|known| {
+            known.kind == EntityKind::Corpse
+                && !channel.entities.iter().any(|current| {
+                    current.identity == known.entity.identity
+                        && current.generation == known.entity.generation
+                })
+        })
+    }
+
     /// Reuse published names for exact incarnations and defer actors without a name.
     pub(crate) fn defer_unnamed_actors(&self, channel: &mut ChannelEntities) {
         channel.entities.retain_mut(|entity| {

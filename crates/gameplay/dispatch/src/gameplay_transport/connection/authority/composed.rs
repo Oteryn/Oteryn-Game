@@ -967,7 +967,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             Box::pin(self.named_channel_entities(actor, forecasts)).await
         } else {
-            self.observe_channel_entities_projected(actor, forecasts)
+            self.observe_channel_entity_frame(actor, forecasts, true)
                 .await
                 .ok_or(AdmissionRefusal::Rejected)
         }

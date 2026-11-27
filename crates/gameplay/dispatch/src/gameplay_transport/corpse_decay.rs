@@ -70,6 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|corpse| corpse.corpse_item_instance_id)
             .collect();
+        let mut retired = None;
         if retire_due {
             let due: Vec<_> = schedule
                 .corpses
@@ -95,6 +96,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     Ok(_) => {
                         live.retain(|item| *item != corpse.corpse_item_instance_id);
+                        retired = Some(corpse.corpse_item_instance_id);
                         if let Ok(mut cursors) = self.states.background_cursors.lock() {
                             cursors.insert("corpse", start + 1);
                         }
@@ -123,7 +125,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             self.states
                 .loop_ground
-                .reconcile_plain_corpses(fence.runtime_scope, &live);
+                .reconcile_corpses(fence.runtime_scope, &live);
+            if let Some(item) = retired {
+                let _ = runtime.retire_committed_corpse_item(item);
+            }
             let _ = runtime.retain_live_corpse_items(&live);
             for corpse in &schedule.corpses {
                 let _ = runtime.refresh_corpse_item(
