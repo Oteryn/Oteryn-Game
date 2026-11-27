@@ -84,18 +84,14 @@ pub fn is_envelope(bytes: &[u8]) -> bool {
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
 const MAX_PROFILES: usize = 8 * 1024 * 1024;
-/// The item-profile section alone: the production file passed 8 MiB once the Soulpit
-/// (#2786) and Task Board records were both present (2210 records, 8_742_152 bytes).
-/// MAX_ITEM_RECORDS separately bounds the Item record count.
-const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
+// Only Item profiles carry the complete source-backed corpse decay chains.
+const MAX_ITEM_PROFILES: usize = 24 * 1024 * 1024;
 // W01c: the measured 1,863 canonical attack closures add ~19 MiB to the ~7 MiB
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
-/// W18's admitted furniture and bed cohorts bring the native Item provider to
-/// 4,956 records. Keep the existing 16 MiB Item byte bound and the other families'
-/// 4,096-record bound; only this source-backed Item cohort needs more entries.
-const MAX_ITEM_RECORDS: usize = 8192;
+// Independent record bound for the Item provider, including corpse decay stages.
+const MAX_ITEM_RECORDS: usize = 12_288;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
