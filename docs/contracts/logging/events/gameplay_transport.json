@@ -218,6 +218,14 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "forge_owner_unavailable",
+      "level": "warn",
+      "span": false,
+      "fields": ["command_id", "stage", "error"],
+      "codes": [],
+      "note": "Forge owner failure at lane, receipt, execute or balance. Error is a classified durability outcome."
+    },
+    {
       "event": "fresh_admission_pending",
       "level": "warn",
       "span": false,

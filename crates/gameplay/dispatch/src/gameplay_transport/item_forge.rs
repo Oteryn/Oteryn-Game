@@ -4,6 +4,7 @@ use super::{
     connection::{AdmittedSession, UseCommand, UseOutcome},
     item_view::{ItemKey, SessionItemView},
 };
+use crate::durability::DurabilityError;
 use crate::durability::character_forge_dust::{ForgeDustLimitError, ForgeResolvedItems};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId};
@@ -266,6 +267,13 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
+fn unavailable(command_id: u64, stage: &'static str, error: &DurabilityError) -> Option<Vec<u8>> {
+    super::operator_event(&format!(
+        "event=forge_owner_unavailable command_id={command_id} stage={stage} error={error:?}"
+    ));
+    None
+}
+
 pub(super) async fn balance(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -313,7 +321,7 @@ pub(super) async fn balance(
         .await
     {
         Ok(value) => serde_json::to_vec(&value).ok(),
-        Err(ForgeDustLimitError::Unavailable(_)) => None,
+        Err(ForgeDustLimitError::Unavailable(error)) => unavailable(command_id, "balance", &error),
         Err(_) => Some(Vec::new()),
     }
 }
@@ -343,7 +351,10 @@ pub(super) async fn execute(
         return Some(Vec::new());
     }
     // The item mutation lane precedes Channel and database locks.
-    let permit = owner.spell_lane_permit().await?;
+    let permit = match owner.try_spell_lane_permit().await {
+        Ok(permit) => permit,
+        Err(error) => return unavailable(command_id, "lane", &error),
+    };
     {
         let runtime = owner.runtime.lock().await;
         let binding = runtime.binding();
@@ -364,7 +375,9 @@ pub(super) async fn execute(
         .await
     {
         Ok(result) => result,
-        Err(ForgeDustLimitError::Unavailable(_)) => return None,
+        Err(ForgeDustLimitError::Unavailable(error)) => {
+            return unavailable(command_id, "receipt", &error);
+        }
         Err(_) => return Some(Vec::new()),
     };
     // A consumed item, changed content, new trade or cooldown must not change a retained reply.
@@ -435,7 +448,7 @@ pub(super) async fn execute(
         .await
     {
         Ok(result) => serde_json::to_vec(&result).ok(),
-        Err(ForgeDustLimitError::Unavailable(_)) => None,
+        Err(ForgeDustLimitError::Unavailable(error)) => unavailable(command_id, "execute", &error),
         Err(_) => Some(Vec::new()),
     }
 }
