@@ -156,41 +156,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P04_ACCOUNT").await?;
     let scoped_clients = identity.clients(clients);
     let clients = &scoped_clients;
-    character_prep::declare_seeded(
-        "P04.full",
-        "sorcerer-level-399",
-        "weekly Task Board eligibility",
-    );
-    let mut client = connect_character(clients, 0x9a, 0).await?;
-    let original_session = client.join_snapshot().game_session_id;
-    request_fixture_control_at(
-        "NODE_BOOT_CONTROL_SOCKET",
-        uuid_text(original_session.as_bytes()),
-        "--profile",
-        "p04-task-board".into(),
-    )
-    .await?;
-    logout_once(&mut client).await?;
-    drop(client);
-    let mut client = connect_character(clients, 0x9a, 0).await?;
-    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
-        "sorcerer",
-        399,
-        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
-        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
-    )
-    .ok_or("missing level-8 sorcerer maxima")?;
-    if client.join_snapshot().game_session_id == original_session
-        || full_e2ef7::player_level(&mut client).await? != 399
-        || !client
-            .actor_vitals()
-            .is_some_and(|vitals| vitals.max_health == max_health && vitals.max_mana == max_mana)
-    {
-        return Err(
-            "fresh Task Board admission did not serve the seeded level and derived vitals".into(),
-        );
-    }
-    evidence("FIXTURE row=P04.full fixture_level=399 vocation=sorcerer");
+    let client = connect_character(clients, 0x9a, 0).await?;
+    let mut client = seed_build(clients, client, "p04-task-board", 399, "Master refusal").await?;
     let initial = query(&mut client).await?;
     journey.check(
         1,
@@ -206,6 +173,12 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         refused.refusal == 3 && unchanged == initial,
         (&refused.refusal, &refused.weekly),
     );
+
+    client = seed_build(clients, client, "p04-delivery-build", 1500, "authored maximum delivery capacity").await?;
+    let after_fixture = query(&mut client).await?;
+    if after_fixture != initial {
+        return Err("P04 board changed during capacity fixture readmission".into());
+    }
 
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -484,6 +457,50 @@ async fn carried_delivery_count(
             .sum::<u32>();
     }
     Ok(count)
+}
+
+async fn seed_build(
+    clients: &SeamClients<'_>,
+    mut client: oteryn_dev_client::DevClientSession,
+    profile: &'static str,
+    level: u32,
+    reason: &'static str,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    character_prep::declare_seeded(
+        "P04.full",
+        &format!("sorcerer-level-{level}"),
+        reason,
+    );
+    let original_session = client.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(original_session.as_bytes()),
+        "--profile",
+        profile.into(),
+    )
+    .await?;
+    logout_once(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(clients, 0x9a, 0).await?;
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        level,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("missing P04 sorcerer maxima")?;
+    if client.join_snapshot().game_session_id == original_session
+        || full_e2ef7::player_level(&mut client).await? != level
+        || !client
+            .actor_vitals()
+            .is_some_and(|vitals| vitals.max_health == max_health && vitals.max_mana == max_mana)
+    {
+        return Err(
+            "fresh Task Board admission did not serve the seeded level and derived vitals".into(),
+        );
+    }
+    evidence(&format!("FIXTURE row=P04.full fixture_level={level} vocation=sorcerer reason={reason}"));
+    Ok(client)
 }
 
 async fn fund_delivery(
