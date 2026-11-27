@@ -33,32 +33,64 @@ tokio::task_local! {
     pub(in crate::gameplay_transport) static CUBE_INVENTORY_CHECKOUT_PROBE: std::cell::Cell<Option<std::sync::Arc<crate::gameplay_transport::composed_admission::HolderCheckoutProbe>>>;
 }
 
+#[derive(Clone, Copy)]
+enum CubeStage {
+    Receipt,
+    Inventory,
+    Commit,
+    Reconcile,
+}
+
+impl CubeStage {
+    fn report(self, error: &DurabilityError) {
+        let stage = match self {
+            Self::Receipt => "cube_receipt",
+            Self::Inventory => "cube_inventory",
+            Self::Commit => "cube_commit",
+            Self::Reconcile => "cube_reconcile",
+        };
+        let kind = match error {
+            DurabilityError::RootUnavailable => "holder_busy",
+            DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitTransactionTimeout => "deadline",
+            DurabilityError::CommitOutcomeUnknown => "commit_unknown",
+            _ => "unavailable",
+        };
+        operator_event(&format!(
+            "event=session_durability_failed stage={stage} kind={kind}"
+        ));
+    }
+}
+
+fn retryable_pass_failure(error: &DurabilityError) -> bool {
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitTransactionTimeout
+            | DurabilityError::CommitOutcomeUnknown
+    )
+}
+
 async fn retry_read<T>(
     budget: &AdmissionRetryBudget<'_>,
-    stage: &'static str,
+    stage: CubeStage,
     mut read: impl AsyncFnMut() -> Result<T, ItemUseError>,
 ) -> Result<T, ItemUseError> {
-    // Only a failed checkout is retryable. Preserve unknown receipt outcomes.
     loop {
         match read().await {
-            Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
-                if budget
-                    .retries_unavailable(AdmissionRefusal::Unavailable)
-                    .await =>
-            {
-                continue;
-            }
-            result => {
-                if matches!(
-                    result,
-                    Err(ItemUseError::Unavailable(DurabilityError::RootUnavailable))
-                ) {
-                    operator_event(&format!(
-                        "event=session_durability_failed stage={stage} kind=holder_busy"
-                    ));
+            Err(ItemUseError::Unavailable(error)) => {
+                if retryable_pass_failure(&error)
+                    && budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                {
+                    continue;
                 }
-                return result;
+                stage.report(&error);
+                return Err(ItemUseError::Unavailable(error));
             }
+            result => return result,
         }
     }
 }
@@ -107,11 +139,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let binding: [u8; 32] =
             Sha256::digest(encode_item_use_intent(&intent).map_err(|_| ())?).into();
         let _permit = self.spell_lane_permit().await.ok_or(())?;
-        let budget = AdmissionRetryBudget::for_command(self.root);
-        match retry_read(&budget, "cube_receipt", async || {
-            self.root
-                .read_drome_cube_receipt(self.character, fence, command_ref, binding)
-                .await
+        let pending = {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            states
+                .item_uses
+                .gate(&runtime, actor, command.game_session_id)
+                .and_then(|gate| gate.cube_pending.clone())
+        };
+        let reconcile = pending
+            .as_ref()
+            .is_some_and(|pending| pending.request.command_id == command.command_id);
+        let budget = AdmissionRetryBudget::for_release_holder(self.root);
+        let stage = if reconcile {
+            CubeStage::Reconcile
+        } else {
+            CubeStage::Receipt
+        };
+        match retry_read(&budget, stage, async || {
+            if reconcile {
+                self.root
+                    .reconcile_drome_cube_receipt(self.character, fence, command_ref, binding)
+                    .await
+            } else {
+                self.root
+                    .read_drome_cube_receipt(self.character, fence, command_ref, binding)
+                    .await
+            }
         })
         .await
         {
@@ -128,14 +182,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(ItemUseError::Unavailable(_)) => return Err(()),
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         }
-        let pending = {
-            let runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            states
-                .item_uses
-                .gate(&runtime, actor, command.game_session_id)
-                .and_then(|gate| gate.cube_pending.clone())
-        };
         let Some(native) = self
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
@@ -187,7 +233,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(probe) = &probe {
             probe.pause().await;
         }
-        let inventory = match retry_read(&budget, "cube_inventory", async || {
+        let inventory = match retry_read(&budget, CubeStage::Inventory, async || {
             let result = self
                 .root
                 .read_item_use_inventory(self.character, self.holder, fence)
@@ -373,39 +419,86 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
         );
-        let written = self
-            .root
-            .commit_drome_cube(self.character, self.holder, fence, request, content)
-            .await;
-        #[cfg(test)]
-        if matches!(
-            &written,
-            Ok(crate::durability::item_use::ItemUseOutcome::Written { .. })
-        ) && test_faults::take_lost_ack()
-        {
-            // The storage acknowledgement is lost: keep the PREPARE and both reservations.
-            self.mark_cube_unknown(actor, command).await;
-            return Err(());
-        }
-        let disposition = match written {
-            Ok(_) => UseDisposition::Committed,
-            Err(error) => {
-                match self
-                    .root
-                    .read_drome_cube_receipt(self.character, fence, command_ref, wire_binding)
+        let budget = AdmissionRetryBudget::for_release_holder(self.root);
+        let mut retried = false;
+        let (disposition, index) = loop {
+            let write = self.root.commit_drome_cube(
+                self.character,
+                self.holder,
+                fence,
+                request.clone(),
+                content,
+            );
+            #[cfg(test)]
+            let written = if test_faults::take_stalled_commit() {
+                let (result, reached) =
+                    crate::durability::with_stalled_commit_response(write).await;
+                assert!(reached, "Cube COMMIT response fault did not fire");
+                assert!(
+                    matches!(
+                        &result,
+                        Err(DromeCubeError::ItemUse(ItemUseError::Unavailable(
+                            DurabilityError::CommitOutcomeUnknown
+                        )))
+                    ),
+                    "Cube COMMIT response fault returned {result:?}"
+                );
+                result
+            } else {
+                write.await
+            };
+            #[cfg(not(test))]
+            let written = write.await;
+            #[cfg(test)]
+            if matches!(
+                &written,
+                Ok(crate::durability::item_use::ItemUseOutcome::Written { .. })
+            ) && test_faults::take_lost_ack()
+            {
+                self.mark_cube_unknown(actor, command).await;
+                return Err(());
+            }
+            let error = match written {
+                Ok(_) => break (UseDisposition::Committed, index),
+                Err(error) => error,
+            };
+            // A failed checkout can be retried directly. Other transient write failures
+            // may have reached COMMIT, so settle the receipt before retrying or replying.
+            let transient = match &error {
+                DromeCubeError::ItemUse(ItemUseError::Unavailable(error)) => {
+                    CubeStage::Commit.report(error);
+                    if matches!(error, DurabilityError::RootUnavailable)
+                        && budget
+                            .retries_unavailable(AdmissionRefusal::Unavailable)
+                            .await
+                    {
+                        continue;
+                    }
+                    retryable_pass_failure(error)
+                }
+                _ => false,
+            };
+            match retry_read(&budget, CubeStage::Reconcile, async || {
+                self.root
+                    .reconcile_drome_cube_receipt(self.character, fence, command_ref, wire_binding)
                     .await
+            })
+            .await
+            {
+                Ok(Some(receipt)) => break (UseDisposition::Committed, receipt.reward_index),
+                Ok(None) if transient && !retried && budget.check_deadline().is_ok() => {
+                    // The writer's fence proved there was no commit. Keep the prepared
+                    // source, output, transaction and event identities for the retry.
+                    retried = true;
+                }
+                Ok(None)
+                    if !matches!(error, DromeCubeError::ItemUse(ItemUseError::Unavailable(_))) =>
                 {
-                    Ok(Some(_)) => UseDisposition::Committed,
-                    Err(ItemUseError::Unavailable(_)) => {
-                        self.mark_cube_unknown(actor, command).await;
-                        return Err(());
-                    }
-                    _ if matches!(error, DromeCubeError::ItemUse(ItemUseError::Unavailable(_))) => {
-                        // No visible row after an unknown COMMIT does not prove rollback.
-                        self.mark_cube_unknown(actor, command).await;
-                        return Err(());
-                    }
-                    _ => refusal(&error),
+                    break (refusal(&error), index);
+                }
+                _ => {
+                    self.mark_cube_unknown(actor, command).await;
+                    return Err(());
                 }
             }
         };
@@ -475,7 +568,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 pub(in crate::gameplay_transport) mod test_faults {
     use std::cell::Cell;
-    thread_local! { static LOSE_ACK: Cell<bool> = const { Cell::new(false) }; }
+    thread_local! {
+        static LOSE_ACK: Cell<bool> = const { Cell::new(false) };
+        static STALL_COMMIT: Cell<bool> = const { Cell::new(false) };
+    }
+
+    pub(crate) fn stall_next_commit() {
+        STALL_COMMIT.set(true);
+    }
+
+    pub(super) fn take_stalled_commit() -> bool {
+        STALL_COMMIT.replace(false)
+    }
     pub(crate) fn lose_next_ack() {
         LOSE_ACK.set(true);
     }

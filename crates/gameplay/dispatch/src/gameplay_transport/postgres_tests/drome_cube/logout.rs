@@ -1,8 +1,9 @@
 //! Logout immediately after a committed Cube reply on the same connection.
 use super::*;
+use crate::durability::DurabilityError;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::GameSessionState;
-use crate::gameplay_transport::COMMAND_HOLDER_WINDOW;
+use crate::gameplay_transport::{AdmissionRetryBudget, COMMAND_HOLDER_WINDOW, item_fence_of};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::composed_admission::{CONDITION_RELEASE_PROBE, HolderCheckoutProbe};
 use crate::gameplay_transport::connection::{
@@ -15,6 +16,24 @@ use oteryn_protocol_oteryn::world_object::{COMMAND_TYPE_USE_INTENT, decode_use_r
 use std::{cell::Cell, sync::Arc};
 use tokio::io::AsyncWriteExt;
 
+#[derive(Debug)]
+enum LogoutCheckoutError {
+    AdmissionSession(DurabilityError),
+    TerminalSession(DurabilityError),
+}
+
+impl std::fmt::Display for LogoutCheckoutError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (stage, error) = match self {
+            Self::AdmissionSession(error) => ("Cube logout admission session checkout", error),
+            Self::TerminalSession(error) => ("Cube logout terminal session checkout", error),
+        };
+        write!(f, "{stage}: {error:?}")
+    }
+}
+
+impl std::error::Error for LogoutCheckoutError {}
+
 pub(super) async fn run(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -26,7 +45,10 @@ pub(super) async fn run(
     use super::super::autowalk_fixtures::{acknowledge_while_held, command_reply, send};
 
     let store = FreshAdmissionStore::from_root(harness.root.clone());
-    let current = store.current_session(session).await?;
+    let current = AdmissionRetryBudget::for_release_holder(&harness.root)
+        .retry_durability("cube_logout_admission", || store.current_session(session))
+        .await
+        .map_err(LogoutCheckoutError::AdmissionSession)?;
     owner
         .runtime
         .lock()
@@ -47,6 +69,7 @@ pub(super) async fn run(
             account_id: id(40),
             transport: current.current_transport().ok_or("active transport")?,
         }),
+        item_fence: Some(item_fence_of(current).ok_or("Cube logout item fence")?),
         ..fixture
     };
     let payload = encode_item_use_intent(&cases::intent(index)?).map_err(debug)?;
@@ -107,17 +130,20 @@ pub(super) async fn run(
         );
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    let (end, result) = tokio::time::timeout(Duration::from_secs(30), async {
-        tokio::join!(biased; serve, drive)
+    let ((), end) = tokio::time::timeout(Duration::from_secs(30), async {
+        tokio::try_join!(biased; drive, async { Ok(serve.await) })
     })
-    .await?;
-    result?;
+    .await??;
     assert!(
         matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)),
         "{end:?}"
     );
     assert_eq!(
-        store.current_session(session).await?.session_state(),
+        AdmissionRetryBudget::for_release_holder(&harness.root)
+            .retry_durability("cube_logout_terminal", || store.current_session(session))
+            .await
+            .map_err(LogoutCheckoutError::TerminalSession)?
+            .session_state(),
         GameSessionState::Terminal
     );
     Ok(())

@@ -148,6 +148,29 @@ pub(super) async fn handle_replay(
     Ok(())
 }
 
+pub(super) async fn commit_unknown(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::encode_use_item_intent;
+    let open = encode_use_item_intent(NonZeroU64::new(2).ok_or("bag handle")?);
+    let draw = encode_use_item_intent(NonZeroU64::new(3).ok_or("cube handle")?);
+    let admitted = admitted(owner, actor, session)?;
+    let command_id = admitted.continuity.next_command_id + 1;
+    crate::gameplay_transport::item_use::drome_cube::test_faults::stall_next_commit();
+    let result = wire::exchange(owner, admitted, &[open, draw.clone()]).await?;
+    assert_eq!(result.results, vec![UseDisposition::Committed; 2]);
+    let selected = reward_index(id(110), 1).and_then(reward).ok_or("reward")?;
+    assert_eq!(result.notices, vec![reward_notice(owner, selected)?]);
+    assert_eq!(source_quantity(harness).await?, 0);
+    assert_eq!(harness.count("game_drome_cube_uses").await?, 1);
+    assert_eq!(harness.count("game_item_use_records").await?, 1);
+    reload(harness, session, command_id, &draw, selected.index() as u8).await?;
+    Ok(())
+}
+
 pub(super) async fn stack(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,

@@ -330,15 +330,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut hold = FenceHold::new(session, token);
         let budget = AdmissionRetryBudget::for_command(self.root);
-        // Reserve one normal durability pass within the production idle probe cadence.
-        let holder_wait_deadline = tokio::time::Instant::now()
-            + super::connection::IDLE_LIVENESS
-                .interval
-                .saturating_sub(crate::durability::DB_PASS_DEADLINE);
-        let familiar_checkout = AdmissionRetryBudget {
-            deadline: holder_wait_deadline,
-            ..AdmissionRetryBudget::for_command(self.root)
-        };
+        let familiar_checkout = AdmissionRetryBudget::for_release_holder(self.root);
+        let holder_wait_deadline = familiar_checkout.deadline;
         let mut progress = super::composed_admission::ReleaseProgress {
             familiar_checkout: Some(&familiar_checkout),
             ..Default::default()
@@ -531,6 +524,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 impl AdmissionRetryBudget<'_> {
+    /// Reserve one normal durability pass within the production idle probe cadence.
+    pub(super) fn for_release_holder(
+        root: &crate::durability::DurabilityRoot,
+    ) -> AdmissionRetryBudget<'_> {
+        AdmissionRetryBudget {
+            deadline: tokio::time::Instant::now()
+                + super::connection::IDLE_LIVENESS
+                    .interval
+                    .saturating_sub(crate::durability::DB_PASS_DEADLINE),
+            ..AdmissionRetryBudget::for_command(root)
+        }
+    }
+
     /// Retry only a holder acquisition failure. Storage and ambiguous commit failures
     /// retain their original outcome; neither is evidence that replay is safe.
     /// Each attempt returns its own future, without borrowing mutable callback

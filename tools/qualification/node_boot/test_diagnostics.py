@@ -61,6 +61,19 @@ class RuntimeEvidenceTests(unittest.TestCase):
         self.assertIn('event=logout_unknown kind=unknown failure_stage=pvp_refresh', result.stdout)
         self.assertNotIn('secret', result.stdout)
 
+    def test_cube_durability_failures_keep_holder_stage(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        stages = ('cube_commit', 'cube_inventory', 'cube_receipt', 'cube_reconcile')
+        lines = [f'oteryn-game-server event=session_durability_failed stage={stage} kind=holder_busy'
+                 for stage in stages]
+        script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        for stage in stages:
+            self.assertIn(f'event=session_durability_failed kind=holder_busy failure_stage={stage}',
+                          result.stdout)
+
     def test_loss_blockers_keep_closed_stages_without_sensitive_fields(self):
         monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
         prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]

@@ -34,6 +34,7 @@ mod wire;
 enum Case {
     FullRetry,
     HandleReplay,
+    CommitUnknown,
     ExistingStack,
     ConcurrentLastUnit,
     KooldownAid,
@@ -70,6 +71,14 @@ fn drome_cube_full_retry_same_reward_lost_ack_replay_and_restart() -> TestResult
 #[test]
 fn drome_cube_consumed_handle_replays_after_reconnect_and_emits_the_reward_text() -> TestResult {
     scenario(Case::HandleReplay)
+}
+
+#[test]
+fn drome_cube_reconciles_unknown_commit_before_replying() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    routed_scenario(admin, Case::CommitUnknown)
 }
 
 #[test]
