@@ -119,19 +119,27 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
-        && matches!(intent.target, UseTarget::Item(_) | UseTarget::WorldObject(_))
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+        && matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::WorldObject(_)
         )
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-        )
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1)
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
     {
         let resolved = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
+        if let Some(outcome) = authority
+            .server_modal_offer_bed(*admitted, intent.target.clone(), resolved)
+            .await
+        {
             return Some(Dispatch::Use(outcome));
         }
     }
@@ -321,14 +329,16 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Some(view),
             Some(views),
         ) => match view.resolve(*handle) {
-            Some(key) => authority
-                .observe_container_with_house_capacity(
-                    actor,
-                    admitted.item_fence,
-                    key,
-                    views.house_capacity_v2(),
-                )
-                .await,
+            Some(key) => {
+                authority
+                    .observe_container_with_house_capacity(
+                        actor,
+                        admitted.item_fence,
+                        key,
+                        views.house_capacity_v2(),
+                    )
+                    .await
+            }
             None => None,
         },
         _ => None,
@@ -523,6 +533,16 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => {
                 let key = item_view.as_ref().and_then(|view| view.resolve(handle));
+                let command_id = command.command_id;
+                let connection_generation = admitted.continuity.connection_generation;
+                let server_sequence = admitted.continuity.server_sequence;
+                let last_handle = item_view.as_ref().map_or(0, |view| view.table().last_issued());
+                let stale = |stage: &str| {
+                    transport::operator_event(&format!(
+                        "event=item_use_view_stale stage={stage} command_id={command_id} server_sequence={server_sequence} connection_generation={connection_generation} requested_handle={handle} last_handle={last_handle}"
+                    ));
+                    OpenDecision::StaleState
+                };
                 let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
                 let container = container.filter(|_| opens_container);
                 // BAGS-USE-1: a carried entry of an open view can be used under capability
@@ -572,7 +592,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                                 ContainerViewOutcome::Opened => OpenDecision::Open,
                                 ContainerViewOutcome::TooFar => OpenDecision::TooFar,
                                 ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
-                                    OpenDecision::StaleState
+                                    stale("container_view")
                                 }
                                 ContainerViewOutcome::NotAContainer
                                 | ContainerViewOutcome::TooManyViews => {
@@ -588,9 +608,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         let Ok((decision, delta)) = opened else {
                             return None;
                         };
+                        if decision == OpenDecision::StaleState {
+                            stale("corpse_gone");
+                        }
                         Dispatch::UseItem(decision, delta)
                     }
-                    _ => Dispatch::UseItem(OpenDecision::StaleState, None),
+                    _ => Dispatch::UseItem(
+                        stale(if key.is_none() { "handle_resolution" } else { "item_observation" }),
+                        None,
+                    ),
                 }
             }
             Ok(UseIntent {
