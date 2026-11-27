@@ -491,7 +491,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     use oteryn_client_ui::chat::NoticeScope;
     use oteryn_client_ui::quick_loot::*;
     use oteryn_session::{CommandStatus, GatedCommandResult};
-    use std::collections::BTreeMap;
 
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]
@@ -529,6 +528,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         skip: u32,
         gold: u32,
         listed: [u8; 16],
+        food_corpse_first: bool,
         backpack: [u8; 16],
         accept: u32,
         pouch: [u8; 16],
@@ -569,6 +569,15 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         id,
         fallback,
     };
+    let east_outcomes = |move_food| {
+        let mut items = [(expected.other, move_food), (expected.listed, false)];
+        if !expected.food_corpse_first {
+            items.reverse();
+        }
+        items
+    };
+    let east_refused = east_outcomes(false);
+    let east_moved = east_outcomes(true);
     let gold = route(
         Some(QuickLootCategory::Gold),
         QuickLootRecipient::GoldPouch,
@@ -812,11 +821,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
-        (
-            Action::LootAll,
-            &[(expected.other, false), (expected.listed, false)],
-            Some("Looted 0 of 2 items"),
-        ),
+        (Action::LootAll, &east_refused, Some("Looted 0 of 2 items")),
         (
             if full {
                 route(
@@ -831,11 +836,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             &[],
             None,
         ),
-        (
-            Action::LootAll,
-            &[(expected.other, true), (expected.listed, false)],
-            Some("Looted 1 of 2 items"),
-        ),
+        (Action::LootAll, &east_moved, Some("Looted 1 of 2 items")),
         (
             route(
                 None,
@@ -856,11 +857,15 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         .game_window
         .loot_messages = true;
     outbox.discovery_initialize(&Selected(true));
+    ui::prepare_filter_picker(
+        &mut app,
+        &outbox,
+        [expected.skip, expected.gold, expected.accept],
+    )?;
     ui::open(&mut app)?;
     let mut sessions = [String::new(), String::new()];
     let mut previous = (0, 0);
     let mut probes: Vec<_> = (1..=20).zip(steps).collect();
-    let unassigned_items = [(expected.other, false), (expected.listed, false)];
     if full {
         probes.splice(
             14..14,
@@ -882,7 +887,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     22,
                     (
                         Action::LootAll,
-                        &unassigned_items[..],
+                        &east_refused[..],
                         Some("Looted 0 of 2 items"),
                     ),
                 ),
@@ -893,10 +898,14 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]
     struct LootTile {
+        game_session_id: String,
+        command_id: u64,
+        server_sequence: u64,
+        actor_x: i32,
         x: i32,
         y: i32,
         floor: i16,
-        corpses: Vec<([u8; 16], u64)>,
+        corpses: Vec<(i32, [u8; 16], u64)>,
     }
     let gold_pouch = route(
         Some(QuickLootCategory::Gold),
@@ -976,7 +985,6 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         if matches!(key, 13 | 20) {
             continue;
         }
-        let mode = |mode| (mode as u8).to_string();
         let dispatched = if action == Action::LootAll {
             let tile: LootTile = serde_json::from_slice(
                 &std::fs::read(directory.join(format!("i07-{key}-tile.json"))).map_err(
@@ -984,20 +992,29 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 )?,
             )?;
             assert_eq!(
-                tile.corpses.len(),
+                tile.corpses.iter().filter(|(x, _, _)| *x == tile.x).count(),
                 if key >= 15 { 2 } else { 1 },
                 "I07 probe {key}"
             );
-            let position = oteryn_session::ActorPosition {
-                x: tile.x,
-                y: tile.y,
-                floor: tile.floor,
-            };
+            assert_eq!(
+                tile.game_session_id, reply.game_session_id,
+                "I07 probe {key} tile session"
+            );
+            assert_eq!(
+                (tile.command_id, tile.server_sequence),
+                (reply.command_id, reply.server_sequence),
+                "I07 probe {key} tile command"
+            );
+            assert_eq!(
+                tile.corpses.len(),
+                3,
+                "I07 probe {key} competing corpse omitted"
+            );
             outbox.entities(
                 tile.corpses
                     .into_iter()
                     .map(
-                        |(identity, generation)| oteryn_session::WorldSpatialEntity {
+                        |(x, identity, generation)| oteryn_session::WorldSpatialEntity {
                             motion: None,
                             display_name: None,
                             kind: oteryn_session::EntityKind::Corpse,
@@ -1005,7 +1022,11 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                                 identity,
                                 generation,
                             },
-                            position,
+                            position: oteryn_session::ActorPosition {
+                                x,
+                                y: tile.y,
+                                floor: tile.floor,
+                            },
                             detail: oteryn_session::EntityDetail::Object {
                                 item_definition_ref: expected.corpse_definition,
                                 quantity: 1,
@@ -1015,25 +1036,11 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     )
                     .collect(),
             );
+            let actor = oteryn_renderer::TileCoord::new(tile.actor_x, tile.y);
             let click = oteryn_renderer::TileCoord::new(tile.x, tile.y);
-            let mut view = crate::play::PlayView::new(click, tile.floor, &[])?;
-            let mut preferences = view.preferences().clone();
-            preferences.gameplay.loot_click = 1;
-            view.set_preferences(preferences)?;
-            let link = ui::link(&app)?;
-            view.tick(link)
-                .map_err(|error| format!("I07 probe {key} ground click view: {error:?}"))?;
-            view.loot_click(link, click, true, None)
-        } else if matches!(key, 4 | 5 | 7 | 24)
-            || matches!(
-                &action,
-                Action::Select(_)
-                    | Action::Destination {
-                        recipient: QuickLootRecipient::MainContainer,
-                        ..
-                    }
-            )
-        {
+            ui::click_corpse_tile(&mut app, actor, click, tile.floor)?;
+            true
+        } else if matches!(&action, Action::Select(_) | Action::Destination { .. }) && key != 19 {
             let control = format!("{action:?}");
             ui::click_action(&mut app, action)
                 .map_err(|error| format!("I07 probe {key} control {control}: {error}"))?;
@@ -1041,10 +1048,15 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         } else {
             let link = ui::link(&app)?;
             match action {
-                Action::Add {
-                    mode: filter,
-                    definition,
-                } => link.discovery_action(98, 2, &[definition.to_string(), mode(filter)], 0),
+                Action::Add { mode, definition } => {
+                    let handle = [expected.skip, expected.gold, expected.accept]
+                        .iter()
+                        .position(|item| *item == definition)
+                        .ok_or("I07 filter definition omitted from picker inventory")?
+                        + 1;
+                    ui::add_filter_item(&mut app, mode == skip, handle)?;
+                    true
+                }
                 Action::Destination {
                     category,
                     recipient,
@@ -1104,8 +1116,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         };
         let before = notices();
         let before_panel = link.discovery_panel().loot;
-        outbox.discovery_result(
-            command.capability,
+        crate::play::session_loop::route_server_mechanic_reply(
+            &outbox,
+            &command,
             &GatedCommandResult {
                 command_id: reply.command_id,
                 server_sequence: reply.server_sequence,
@@ -1138,8 +1151,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             items
                 .iter()
                 .map(|item| (item.item, item.accepted))
-                .collect::<BTreeMap<_, _>>(),
-            expected_items.iter().copied().collect(),
+                .collect::<Vec<_>>(),
+            expected_items,
             "I07 probe {key}"
         );
         let after = notices();

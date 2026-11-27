@@ -52,6 +52,99 @@ pub(crate) fn open(app: &mut App) -> TestResult {
     app.update();
     Ok(())
 }
+pub(crate) fn click_corpse_tile(
+    app: &mut App,
+    actor: oteryn_renderer::TileCoord,
+    tile: oteryn_renderer::TileCoord,
+    floor: i16,
+) -> TestResult {
+    use oteryn_input_actions::{
+        ButtonState, Modifiers, MouseButton, NormalizedInputEvent, PointerCoordinate, PointerDelta,
+        PointerMotion, PointerPosition,
+    };
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    owner.settings.preferences.gameplay.loot_click = 1;
+    let preferences = owner.settings.preferences.clone();
+    let play = owner.play.as_mut().ok_or("play")?;
+    play.view = PlayView::new(actor, floor, &[])?;
+    play.view.use_shared_frontend();
+    play.view.set_preferences(preferences)?;
+    play.view
+        .tick(&play.link)
+        .map_err(|error| format!("I07 pointer scene: {error:?}"))?;
+    let view = play.view.scene().view();
+    let size = i32::try_from(view.tile_px())?;
+    let px = (tile.x - view.origin().x) * size + size / 2;
+    let py = (tile.y - view.origin().y) * size + size / 2;
+    owner.route_input(
+        &[
+            NormalizedInputEvent::PointerMoved {
+                position: PointerPosition::new(
+                    PointerCoordinate::new(px)?,
+                    PointerCoordinate::new(py)?,
+                ),
+                motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+            },
+            NormalizedInputEvent::MouseButton {
+                button: MouseButton::SECONDARY,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::NONE,
+            },
+        ],
+        false,
+    );
+    owner.route_input(
+        &[NormalizedInputEvent::MouseButton {
+            button: MouseButton::SECONDARY,
+            state: ButtonState::Released,
+            modifiers: Modifiers::NONE,
+        }],
+        false,
+    );
+    Ok(())
+}
+pub(crate) fn prepare_filter_picker(
+    app: &mut App,
+    outbox: &Outbox,
+    definitions: [u32; 3],
+) -> TestResult {
+    let entries = definitions
+        .into_iter()
+        .enumerate()
+        .map(|(index, definition)| {
+            Ok(oteryn_session::ItemEntry {
+                appearance_id: 0,
+                handle: u64::try_from(index + 1)?.try_into()?,
+                item_definition_ref: definition.try_into()?,
+                count: 1.try_into()?,
+                sub_type: 0,
+            })
+        })
+        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+    outbox.push(vec![oteryn_session::SessionEvent::Inventory(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: None,
+                equipment: vec![],
+                entries,
+            },
+        },
+    )]);
+    super::super::install::install_scroll_memory(app);
+    Ok(())
+}
+
+pub(crate) fn add_filter_item(app: &mut App, skip: bool, handle: usize) -> TestResult {
+    let mode = if skip { "skip" } else { "accept" };
+    let add = named(app, &format!("quick_loot.add.{mode}"))?;
+    click(app, add);
+    let pick = named(app, &format!("quick_loot.pick.{handle}"))?;
+    click(app, pick);
+    Ok(())
+}
 fn control(app: &mut App, kind: Kind) -> Result<Entity, Box<dyn std::error::Error>> {
     app.world_mut()
         .query::<(Entity, &Control)>()

@@ -252,6 +252,27 @@ async fn require_retired_donor(database: &mut sqlx::PgConnection, item: &[u8]) -
     Ok(())
 }
 
+async fn require_unassigned_pouch(
+    database: &mut sqlx::PgConnection,
+    character: &[u8],
+    pouch: &[u8],
+) -> TestResult {
+    let actual: (bool, bool, Option<Vec<u8>>) = sqlx::query_as(
+        "SELECT fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
+         FROM game_character_quick_loot_settings WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character)
+    .fetch_one(database)
+    .await?;
+    if actual != (false, true, Some(pouch.to_vec())) {
+        return Err(
+            "I07 expected Unassigned to resolve to the exact Inbox pouch with fallback disabled"
+                .into(),
+        );
+    }
+    Ok(())
+}
+
 async fn require_routes(
     database: &mut sqlx::PgConnection,
     character: &[u8],
@@ -305,35 +326,35 @@ impl Capture<'_> {
             .x
             .checked_add(i32::from(east_stack))
             .ok_or("I07 corpse tile overflow")?;
-        let corpses: Vec<_> = client
+        let nearby: Vec<_> = client
             .world_entities()
             .ok_or("I07 live corpse view missing")?
             .others()
             .filter(|entity| {
                 entity.kind == EntityKind::Corpse
-                    && entity.position.x == x
+                    && (entity.position.x == actor.x
+                        || actor.x.checked_add(1) == Some(entity.position.x))
                     && entity.position.y == actor.y
                     && entity.position.floor == actor.floor
             })
+            .map(|entity| {
+                (
+                    entity.position.x,
+                    entity.entity.identity,
+                    entity.entity.generation,
+                )
+            })
             .collect();
-        if corpses.len() != if east_stack { 2 } else { 1 } {
-            return Err(format!("I07 probe {key} expected the exact corpse tile stack").into());
-        }
-        let anchor = corpses
-            .last()
-            .ok_or("I07 missing selected corpse")?
-            .entity
-            .identity;
-        let entities: Vec<_> = corpses
+        let clicked: Vec<_> = nearby
             .iter()
-            .map(|entry| (entry.entity.identity, entry.entity.generation))
+            .filter(|(tile_x, _, _)| *tile_x == x)
             .collect();
-        write_capture(
-            &self.directory.join(format!("i07-{key}-tile.json")),
-            &serde_json::to_vec(&serde_json::json!({
-                "x": x, "y": actor.y, "floor": actor.floor, "corpses": entities,
-            }))?,
-        )?;
+        if nearby.len() != 3 || clicked.len() != if east_stack { 2 } else { 1 } {
+            return Err(
+                format!("I07 probe {key} expected the exact corpse tiles and stack").into(),
+            );
+        }
+        let anchor = clicked.last().ok_or("I07 missing selected corpse")?.1;
         self.probe(
             client,
             key,
@@ -343,7 +364,17 @@ impl Capture<'_> {
             },
             expected,
         )
-        .await
+        .await?;
+        write_capture(
+            &self.directory.join(format!("i07-{key}-tile.json")),
+            &serde_json::to_vec(&serde_json::json!({
+                "game_session_id": uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+                "command_id": self.previous.0,
+                "server_sequence": self.previous.1,
+                "actor_x": actor.x, "x": x, "y": actor.y, "floor": actor.floor,
+                "corpses": nearby,
+            }))?,
+        )
     }
 
     async fn probe(
@@ -404,16 +435,16 @@ impl Capture<'_> {
         } else {
             let result =
                 decode_quick_loot_result(&reply.payload).map_err(|error| format!("{error:?}"))?;
-            let actual: std::collections::BTreeMap<_, _> = result
+            let actual: Vec<_> = result
                 .items
                 .iter()
                 .map(|item| (item.item.as_slice(), item.accepted))
                 .collect();
-            let expected: std::collections::BTreeMap<_, _> = expected
+            let expected: Vec<_> = expected
                 .iter()
                 .map(|(item, accepted)| (item.item.as_slice(), *accepted))
                 .collect();
-            if actual != expected || result.items.len() != expected.len() {
+            if actual != expected {
                 return Err(format!(
                     "I07 probe {key} outcomes differ: expected={expected:?} actual={actual:?}"
                 )
@@ -603,7 +634,8 @@ pub(super) async fn journey(
            AND loot_purpose_key='CORPSE_MATERIALIZATION' AND draw_ordinal=0
            AND g.spatial_position=ANY($5)
          ORDER BY (SELECT count(*) FROM game_item_corpse_container_entries e
-                   WHERE e.parent_item_instance_id=r.item_instance_id) DESC, r.item_instance_id
+                   WHERE e.parent_item_instance_id=r.item_instance_id) DESC,
+                  g.stack_ordinal DESC NULLS FIRST, r.item_instance_id
          LIMIT 4",
     )
     .bind(clients.world.as_slice())
@@ -663,6 +695,15 @@ pub(super) async fn journey(
     {
         return Err("I07 fixture item definition, count or slot differs".into());
     }
+    // The fixture query orders the east corpses top first. Their distinct
+    // items distinguish traversal even when one or both are refused.
+    let east_outcomes = |move_food| {
+        if stacked == adjacent_a {
+            [(other, move_food), (listed, false)]
+        } else {
+            [(listed, false), (other, move_food)]
+        }
+    };
     let mut expected_backpack =
         placements(&mut database, Storage::Backpack, character, &backpack).await?;
     require_placements(&mut database, Storage::InboxPouch, character, &pouch, &[]).await?;
@@ -988,18 +1029,9 @@ pub(super) async fn journey(
         capture
             .probe(&mut fresh, 21, unassigned_pouch.clone(), &[])
             .await?;
-        let unassigned: (bool, bool, Option<Vec<u8>>) = sqlx::query_as(
-            "SELECT fallback_to_main, unassigned_gold_pouch, uuid_send(unassigned_container_id)
-             FROM game_character_quick_loot_settings WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(character.as_slice())
-        .fetch_one(&mut database)
-        .await?;
-        if unassigned != (false, true, Some(pouch.to_vec())) {
-            return Err("I07 expected Unassigned to resolve to the exact Inbox pouch".into());
-        }
+        require_unassigned_pouch(&mut database, character, &pouch).await?;
         capture
-            .loot_all(&mut fresh, 22, true, &[(other, false), (listed, false)])
+            .loot_all(&mut fresh, 22, true, &east_outcomes(false))
             .await?;
         require_placements(
             &mut database,
@@ -1057,9 +1089,11 @@ pub(super) async fn journey(
         if food != (true, Some(pouch.to_vec())) || unassigned_to_pouch {
             return Err("I07 full expected a Food-only route to the exact Gold Pouch".into());
         }
+    } else {
+        require_unassigned_pouch(&mut database, character, &pouch).await?;
     }
     capture
-        .loot_all(&mut fresh, 16, true, &[(other, false), (listed, false)])
+        .loot_all(&mut fresh, 16, true, &east_outcomes(false))
         .await?;
     require_placements(
         &mut database,
@@ -1089,7 +1123,7 @@ pub(super) async fn journey(
     };
     capture.probe(&mut fresh, 17, late_main, &[]).await?;
     capture
-        .loot_all(&mut fresh, 18, true, &[(other, true), (listed, false)])
+        .loot_all(&mut fresh, 18, true, &east_outcomes(true))
         .await?;
     // The starter backpack already contains one of this food. The transfer merges
     // into that existing identity and slot rather than placing the corpse identity.
@@ -1140,7 +1174,9 @@ pub(super) async fn journey(
             &[],
         )
         .await?;
-    evidence("I07_INVALID_POUCH status=rejected");
+    require_routes(&mut database, character, &pouch, false, false, full, false).await?;
+    require_filters(&mut database, character, false, &expected_filters).await?;
+    evidence("I07_INVALID_POUCH status=rejected settings=unchanged");
     let _ = fresh.take_events();
     capture.probe(&mut fresh, 20, click, &[]).await?;
     fresh.service_liveness(Duration::from_secs(2)).await?;
@@ -1293,7 +1329,7 @@ pub(super) async fn journey(
             &capture_dir.join("i07-expected.txt"),
             &serde_json::to_vec(&serde_json::json!({
                 "final_session": uuid_text(readback_session.as_bytes()),
-                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "fulfilment": fulfilment, "selected_handle": selected.get(),
+                "skip": skip_reference, "gold": gold_reference, "listed": listed.item, "food_corpse_first": stacked == adjacent_a, "backpack": backpack, "accept": accept_reference, "pouch": pouch, "fulfilment": fulfilment, "selected_handle": selected.get(),
                 "corpse_kind": corpse_entity.kind as u8,
                 "corpse": corpse_entity.entity.identity, "corpse_generation": corpse_entity.entity.generation,
                 "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
@@ -1488,16 +1524,16 @@ fn matching_corpse_delta(
         .take_events()
         .into_iter()
         .filter_map(|event| match event {
-            oteryn_dev_client::SessionEvent::OpenContainer(delta)
-                if delta.value.container_handle == Some(corpse) =>
-            {
-                Some(delta)
-            }
+            oteryn_dev_client::SessionEvent::OpenContainer(delta) => Some(delta),
             _ => None,
         });
     let first = matching.next();
-    if matching.next().is_some() {
-        return Err("I07 command emitted multiple deltas for the same corpse".into());
+    if matching.next().is_some()
+        || first
+            .as_ref()
+            .is_some_and(|delta| delta.value.container_handle != Some(corpse))
+    {
+        return Err("I07 command emitted an extra or wrong-container delta".into());
     }
     Ok(first)
 }
@@ -1607,6 +1643,12 @@ async fn require_corpse_view(
                 .eq(expected.iter().copied())
             {
                 return Err("I07 selected Click emitted a wrong corpse view delta".into());
+            }
+            client
+                .service_liveness(deadline.saturating_duration_since(tokio::time::Instant::now()))
+                .await?;
+            if matching_corpse_delta(client, corpse)?.is_some() {
+                return Err("I07 selected Click emitted an extra corpse delta".into());
             }
             return Ok(delta);
         }

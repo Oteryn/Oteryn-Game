@@ -315,29 +315,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             Ok(PlayCommand::ServerMechanic(request)) => {
                 match session.server_mechanic(&request).await {
                     Ok(response) => {
-                        match request.capability {
-                            290 if request.command_type==505 => outbox.cast_chat_result(&response),
-                            290 => outbox.cast_control_result(&response),
-                            291 => outbox.cast_chat_result(&response),
-                            292 => outbox.cast_consent_result(&response),
-                            63 if request.command_type==oteryn_client_runtime::coin_market::COMMAND => outbox.coin_market_result(&response),
-                            64 => outbox.target_move_result(&request, &response),
-                            82 => outbox.creature_push_result(&response),
-                            98 | 132 | 200 | 232 | 285 | oteryn_session::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1 => outbox.discovery_result(request.capability, &response),
-                            9 | 507 => outbox.highscores_result(&response),
-                            17 if request.command_type == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY => outbox.battle_metadata_result(&response),
-                            14 => outbox.browse_field_result(&response),
-                            152 => outbox.item_forge_result(&response),
-                            153 => outbox.depot_search_result(&response),
-                            154 if request.command_type==oteryn_client_runtime::coin_transfer::COMMAND => outbox.coin_gift_result(&response),
-                            154 | 479 => outbox.store_result(&response),
-                            15 if request.command_type == oteryn_client_runtime::world_interaction::world_object::COMMAND_TYPE_USE_INTENT =>
-                                outbox.store_lamp_result(&response),
-                            450 if request.command_type == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION => outbox.store_result(&response),
-                            179 => outbox.hotkey_equip_result(&response),
-                            230 => outbox.browse_field_result(&response),
-                            _ => {}
-                        }
+                        route_server_mechanic_reply(&outbox, &request, &response);
                         publish(&mut session, &outbox, &mut held);
                         continue;
                     }
@@ -604,5 +582,57 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         }
         outbox.end(public_class(&ended));
         return;
+    }
+}
+
+pub(super) fn route_server_mechanic_reply(
+    outbox: &Outbox,
+    request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
+    response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+) {
+    match request.capability {
+        290 if request.command_type == 505 => outbox.cast_chat_result(response),
+        290 => outbox.cast_control_result(response),
+        291 => outbox.cast_chat_result(response),
+        292 => outbox.cast_consent_result(response),
+        63 if request.command_type == oteryn_client_runtime::coin_market::COMMAND => {
+            outbox.coin_market_result(response)
+        }
+        64 => outbox.target_move_result(request, response),
+        82 => outbox.creature_push_result(response),
+        98
+        | 132
+        | 200
+        | 232
+        | 285
+        | oteryn_session::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1 => {
+            outbox.discovery_result(request.capability, response)
+        }
+        9 | 507 => outbox.highscores_result(response),
+        17 if request.command_type
+            == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY =>
+        {
+            outbox.battle_metadata_result(response)
+        }
+        14 => outbox.browse_field_result(response),
+        152 => outbox.item_forge_result(response),
+        153 => outbox.depot_search_result(response),
+        154 if request.command_type == oteryn_client_runtime::coin_transfer::COMMAND => {
+            outbox.coin_gift_result(response)
+        }
+        154 | 479 => outbox.store_result(response),
+        15 if request.command_type
+            == oteryn_client_runtime::world_interaction::world_object::COMMAND_TYPE_USE_INTENT =>
+        {
+            outbox.store_lamp_result(response)
+        }
+        450 if request.command_type
+            == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION =>
+        {
+            outbox.store_result(response)
+        }
+        179 => outbox.hotkey_equip_result(response),
+        230 => outbox.browse_field_result(response),
+        _ => {}
     }
 }
