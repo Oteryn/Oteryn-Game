@@ -282,6 +282,60 @@ async fn assert_logout_committed(clients: &SeamClients<'_>, session: &str) -> Te
     Ok(())
 }
 
+fn assert_cache_identity(
+    actual: ([u8; 32], [u8; 32], u64),
+    expected: ([u8; 32], [u8; 32], u64),
+) -> TestResult {
+    if actual != expected {
+        return Err(format!("N07d cache identity differs from pinned World and activation: actual={actual:?} expected={expected:?}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn n07d_rejects_matching_logins_with_wrong_cache_identity() -> TestResult {
+    let pinned = ([1; 32], [2; 32], 0);
+    assert_cache_identity(pinned, pinned)?;
+    for wrong in [([3; 32], pinned.1, 0), (pinned.0, [3; 32], 0), (pinned.0, pinned.1, 1)] {
+        assert!(assert_cache_identity(wrong, pinned).is_err());
+        assert!(assert_cache_identity(wrong, pinned).is_err());
+    }
+    Ok(())
+}
+
+async fn pinned_cache_identity(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+) -> TestResult<([u8; 32], [u8; 32], u64)> {
+    let (generation, epoch) = tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_as::<_, (Vec<u8>, String)>(
+            "SELECT a.client_artifact_digest, r.reset_epoch::text \
+             FROM game_content_activations a JOIN game_world_reset_active r USING (world_id) \
+             WHERE a.world_id=encode($1,'hex')::uuid AND a.channel_id=encode($2,'hex')::uuid \
+               AND a.activation_sequence=1",
+        )
+        .bind(clients.world.as_slice())
+        .bind(clients.channel.as_slice())
+        .fetch_one(&mut connection)
+        .await
+    }).await??;
+    let epoch: u64 = epoch.parse()?;
+    if epoch != 0 {
+        return Err(format!("N07d expected the fixture's initialized epoch zero, observed {epoch}").into());
+    }
+    let generation = generation.try_into().map_err(|_| "N07d activation digest has invalid width")?;
+    Ok((generation, world.base().digest(), epoch))
+}
+
+fn hex_digest(digest: &[u8; 32]) -> String {
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn map_cache_identity(map: &WorldMapViewSnapshot) -> ([u8; 32], [u8; 32], u64) {
+    (map.header.content_generation, map.header.bundle_digest, map.header.reset_epoch)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let capture_dir = required("E2E_ALL_CAPTURE_DIR")?;
     let root = Path::new(&capture_dir);
@@ -293,6 +347,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let cache_identity = pinned_cache_identity(clients, world).await?;
     let origin = ActorPosition {
         x: i32::from(TOWN.x),
         y: i32::from(TOWN.y),
@@ -320,6 +375,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if row.payload.is_empty() {
         return Err("empty world-map snapshot payload".into());
     }
+    assert_cache_identity(map_cache_identity(&map), cache_identity)?;
     let header = map.header;
     let initial_ground = viewport_ground(world, &map, origin)?;
     if client.world_spatial().actor_position != origin {
@@ -353,6 +409,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let moved = client
         .world_map_snapshot()
         .ok_or("N07d moved viewport missing")?;
+    assert_cache_identity(map_cache_identity(&moved), cache_identity)?;
     let moved_ground = viewport_ground(world, &moved, destination)?;
     if !initial_ground
         .iter()
@@ -361,13 +418,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("N07d step left no previously observed ground outside relog viewport".into());
     }
     let expected = format!(
-        "revision={}\norigin={},{},{}\nfirst_visible_floor={}\nreset_epoch={}\ntiles={}\nwalkable={walkable}\n",
+        "revision={}\norigin={},{},{}\nfirst_visible_floor={}\nreset_epoch={}\ncontent_generation={}\nbundle_digest={}\ntiles={}\nwalkable={walkable}\n",
         row.revision,
         header.origin.x,
         header.origin.y,
         header.origin.floor,
         header.first_visible_floor,
-        header.reset_epoch,
+        cache_identity.2,
+        hex_digest(&cache_identity.0),
+        hex_digest(&cache_identity.1),
         map.tiles.len()
     );
     let logout = client.logout().await?;
@@ -392,6 +451,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let relog_map = relogged
         .world_map_snapshot()
         .ok_or("N07d relogged viewport missing")?;
+    assert_cache_identity(map_cache_identity(&relog_map), cache_identity)?;
     if relogged.world_spatial().actor_position != destination
         || viewport_ground(world, &relog_map, destination)? != moved_ground
     {

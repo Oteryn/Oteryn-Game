@@ -105,6 +105,18 @@ fn assert_remembered_cells(minimap: &Minimap, walkable: &BTreeSet<CellPosition>)
 }
 
 #[cfg(bevy_shell)]
+fn pinned_digest(hex: &str) -> Result<[u8; 32], Error> {
+    if hex.len() != 64 || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("N07d invalid pinned cache digest".into());
+    }
+    let mut digest = [0; 32];
+    for (index, byte) in digest.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)?;
+    }
+    Ok(digest)
+}
+
+#[cfg(bevy_shell)]
 fn binding(map: &WorldMapViewSnapshot) -> ([u8; 32], [u8; 32], u64) {
     (
         map.header.content_generation,
@@ -232,10 +244,12 @@ async fn verify(
         map.header.first_visible_floor.to_string(),
         value(expected, "first_visible_floor")?
     );
-    assert_eq!(
-        map.header.reset_epoch.to_string(),
-        value(expected, "reset_epoch")?
+    let pinned_binding = (
+        pinned_digest(value(expected, "content_generation")?)?,
+        pinned_digest(value(expected, "bundle_digest")?)?,
+        value(expected, "reset_epoch")?.parse()?,
     );
+    assert_eq!(binding(&map), pinned_binding);
     assert_eq!(map.tiles.len().to_string(), value(expected, "tiles")?);
 
     let open = |session: &Session<DuplexStream>| -> Result<crate::play::PlayView, Error> {
@@ -249,8 +263,6 @@ async fn verify(
     host.admit(open(&session)?, link);
     let view = host.view();
     let first_colors = assert_projected_ground(view, &map, &walkable)?;
-    host.view_mut().set_live_map(&map)?;
-    assert_eq!(super::lock(&host.view().minimap).cells, first_colors, "N07d repeated snapshot changed exploration");
     {
         let minimap = super::lock(&host.view().minimap);
         assert_eq!(
@@ -285,6 +297,8 @@ async fn verify(
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     }).await.map_err(|_| "N07d periodic exploration save did not complete")??;
+    host.view_mut().set_live_map(&map)?;
+    assert_eq!(super::lock(&host.view().minimap).cells, first_colors, "N07d repeated snapshot changed exploration");
     let key = oteryn_input_actions::NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(16)?,
         state: oteryn_input_actions::ButtonState::Pressed,
@@ -353,11 +367,18 @@ async fn verify(
     let before_logout = std::fs::read(&cache_path)?;
     let before = Saved::read_from(&cache_path)?.ok_or("N07d baseline save missing")?;
     assert!(moved_ground.difference(&walkable).all(|&(floor, x, y)| !before.cells.iter().any(|cell| cell[..3] == [i32::from(floor), x, y])));
-    assert!(super::lock(&view.minimap).cells_dirty, "N07d movement needs a pending save at logout");
+    // Keep the final cache owner alive so dropping the view cannot save it.
+    let retained_cache = view.minimap.clone();
+    let periodic_deadline = {
+        let cache = super::lock(&retained_cache);
+        assert!(cache.cells_dirty, "N07d movement needs a pending save at logout");
+        assert!(cache.save_task.is_none(), "N07d movement was already scheduled for save");
+        tokio::time::Instant::from_std(cache.saved_at + cache.retry_delay)
+    };
     assert_remembered_cells(&super::lock(&view.minimap), &union);
     check_reply(&logout, &first_id, step.command_id + 1).await?;
     host.logout();
-    tokio::time::timeout(Duration::from_secs(5), async {
+    tokio::time::timeout_at(periodic_deadline, async {
         while !host.logged_out() {
             host.poll();
             tokio::task::yield_now().await;
@@ -365,7 +386,7 @@ async fn verify(
     }).await?;
     worker.await?;
     first_peer.await??;
-    tokio::time::timeout(Duration::from_secs(5), async {
+    tokio::time::timeout_at(periodic_deadline, async {
         while host.has_retired_saves() {
             host.poll();
             tokio::time::sleep(Duration::from_millis(5)).await;
@@ -376,6 +397,9 @@ async fn verify(
     let expected_disk: BTreeSet<_> = remembered.iter().map(|(&(floor, x, y), &color)| [i32::from(floor), x, y, i32::from(color)]).collect();
     assert_eq!(saved.cells.into_iter().collect::<BTreeSet<_>>(), expected_disk);
     assert_eq!(saved.markers, [marker.clone()]);
+
+    assert!(tokio::time::Instant::now() < periodic_deadline, "N07d logout save reached the periodic deadline");
+    drop(retained_cache);
 
     let (client, mut peer) = tokio::io::duplex(second.payload.len());
     let second_wire = second.payload.clone();
@@ -389,7 +413,7 @@ async fn verify(
     let relogged_map = relogged
         .world_map_snapshot()
         .ok_or("N07d missing relogged map")?;
-    assert_eq!(binding(&map), binding(&relogged_map));
+    assert_eq!(binding(&relogged_map), pinned_binding);
 
     assert_eq!(relogged.world_spatial().actor_position, destination);
     assert_eq!(relogged_map.header.origin, destination);
