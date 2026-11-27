@@ -310,8 +310,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             store.current_session_at(command.game_session_id).await
         };
-        let budget = super::AdmissionRetryBudget::for_command(self.root);
-        let (current, _) = match budget.retry_command_guard(read_session).await {
+        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let (current, _) = match retry.retry_command_guard(read_session).await {
             Ok(current) => current,
             Err(error) => {
                 super::operator_event(&format!("event=rune_session_read_failed error={error:?}"));

@@ -54,7 +54,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     }) = &decoded
         && let Some(view) = item_view.as_mut()
         && let Some(key @ ItemKey::Entity(identity)) = view.resolve(*handle)
-        && visibility.as_ref().is_some_and(|shown| shown.shows_corpse(identity))
+        && visibility.as_ref().is_some_and(|shown| shown.shows_corpse_identity(identity))
     {
         let use_command = UseCommand {
             game_session_id: admitted.game_session_id,

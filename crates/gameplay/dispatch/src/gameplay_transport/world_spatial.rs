@@ -313,7 +313,7 @@ impl SessionVisibility {
     }
 
     /// A corpse the current session can select from its published spatial view.
-    pub(crate) fn shows_corpse(&self, identity: [u8; ENTITY_IDENTITY_BYTES]) -> bool {
+    pub(crate) fn shows_corpse_identity(&self, identity: [u8; ENTITY_IDENTITY_BYTES]) -> bool {
         self.entities
             .get(&identity)
             .is_some_and(|entity| entity.kind == EntityKind::Corpse)
