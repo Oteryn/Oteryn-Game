@@ -601,7 +601,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
     });
     menu_outbox.push(vec![oteryn_session::SessionEvent::OpenContainer(opened)]);
     use crate::bevy_shell::corpse_menu_replay as menu;
-    let mut menu_app = menu::corpse_menu_app(menu_link.clone())?;
+    let mut menu_app = menu::corpse_menu_app(menu_link)?;
     assert_eq!(menu::rendered_corpse_items(&mut menu_app), initial);
     menu::click_corpse_loot(&mut menu_app, selected)?;
     let crate::combat_input::PlayCommand::ServerMechanic(command) = menu_commands.try_recv()?
@@ -622,17 +622,26 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             payload: moved.payload,
         },
     );
-    assert_eq!(menu_link.corpse_loot_view().feedback, Some("Item moved"));
+    assert_eq!(
+        menu::corpse_menu_link(&menu_app)?
+            .corpse_loot_view()
+            .feedback,
+        Some("Item moved")
+    );
     menu_outbox.push(vec![oteryn_session::SessionEvent::OpenContainer(
         after_click,
     )]);
     menu_app.update();
     assert_eq!(menu::rendered_corpse_items(&mut menu_app), vec![sibling]);
-    assert!(!menu_link.quick_loot_corpse_item(container, expected.corpse, selected));
+    assert!(!menu::corpse_menu_link(&menu_app)?.quick_loot_corpse_item(
+        container,
+        expected.corpse,
+        selected
+    ));
 
     // Replay the captured stale receipt against the obsolete action. The rendered
     // menu has already removed that row and correctly refuses to submit it again.
-    assert!(menu_link.quick_loot_action(click.clone()));
+    assert!(menu::corpse_menu_link(&menu_app)?.quick_loot_action(click.clone()));
     let crate::combat_input::PlayCommand::ServerMechanic(command) = menu_commands.try_recv()?
     else {
         return Err("I07 stale replay dispatched a different command".into());
@@ -651,7 +660,9 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         },
     );
     assert_eq!(
-        menu_link.corpse_loot_view().feedback,
+        menu::corpse_menu_link(&menu_app)?
+            .corpse_loot_view()
+            .feedback,
         Some("Item is no longer available")
     );
     menu_app.update();

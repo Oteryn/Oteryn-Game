@@ -62,6 +62,16 @@ pub(crate) fn corpse_menu_app(link: PlayLink) -> Result<App, Box<dyn std::error:
     Ok(app)
 }
 
+pub(crate) fn corpse_menu_link(app: &App) -> Result<&PlayLink, Box<dyn std::error::Error>> {
+    Ok(&app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("corpse menu play link")?
+        .link)
+}
+
 pub(crate) fn rendered_corpse_items(app: &mut App) -> Vec<oteryn_session::ItemHandle> {
     let mut handles: Vec<_> = app
         .world_mut()
