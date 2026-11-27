@@ -146,6 +146,10 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     }
     let vitals_before = *caster.actor_vitals().ok_or("C17b pre-cast vitals absent")?;
     let spell = full_row_c17b::spell_index(&book)?;
+    let light = super::spell_journey::spell_index(&book, "utevo lux")?;
+    if vitals_before.mana < 460 {
+        return Err("C17b lacks mana for both Invisibility and the 20-mana Support probe".into());
+    }
     let cast_sent = tokio::time::Instant::now();
     let (cast, frames) = oteryn_session::test_support::capture_command_results(caster.cast_spell(
         spell,
@@ -168,6 +172,16 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         SessionEvent::ActorVitals(delta) if delta.server_sequence > paid.server_sequence)) {
         return Err("C17b client recast changed vitals without an established regeneration source".into());
     }
+    let group_started = tokio::time::Instant::now();
+    let group = caster.cast_spell(light, SpellTarget::None, false).await?;
+    let group_events = caster.take_events();
+    full_row_c17b::verify_recast(&group, paid.value, cooldown.result_server_sequence, caster.actor_vitals().copied(), &group_events, group_started.elapsed())?;
+    if caster.actor_vitals() != Some(&paid.value) || group_events.iter().any(|event| matches!(event,
+        SessionEvent::ActorVitals(delta) if delta.server_sequence > cooldown.result_server_sequence)) {
+        return Err("C17b Support cooldown probe changed vitals".into());
+    }
+    events.extend(group_events);
+    evidence(&format!("C17B_CLIENT_SUPPORT spell={light} sequence={} disposition={:?}", group.result_server_sequence, group.disposition));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     let support = support_group_ordinal()?;
     loop {
