@@ -273,13 +273,13 @@ pub(super) async fn apply(
                 },
             )
         };
-        let Ok(Some(backpack)) = admission
-            .root
-            .read_character_backpack(admission.character, pending.fence.character_id)
-            .await
-        else {
-            return rejected();
-        };
+        let budget = super::super::AdmissionRetryBudget::for_command(admission.root);
+        let backpack =
+            match super::read_npc_backpack(admission, pending.fence.character_id, &budget).await {
+                Ok(Some(backpack)) => backpack,
+                Ok(None) => return rejected(),
+                Err(error) => return error.reply(&intent, command, "yeo_backpack"),
+            };
         let Ok(backpack) = generation_item_facts(native, &backpack.backpack.definition) else {
             return rejected();
         };

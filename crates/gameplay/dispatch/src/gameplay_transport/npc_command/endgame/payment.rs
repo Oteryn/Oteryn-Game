@@ -6,11 +6,13 @@ pub(super) async fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
     fence: CurrentCharacterGameplayFence,
+    intent: &NpcTalkIntent,
 ) -> Result<RottenBloodAccessPayment, Box<NpcTalkOutcome>> {
     prepare_with_domain(
         admission,
         command,
         fence,
+        intent,
         "oteryn:rotten-blood-access-purchase:v1",
     )
     .await
@@ -20,9 +22,16 @@ pub(in crate::gameplay_transport::npc_command) async fn prepare_reward_fee(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
     fence: CurrentCharacterGameplayFence,
+    intent: &NpcTalkIntent,
 ) -> Result<crate::durability::reward_claim_mint::QuestRewardFeePayment, Box<NpcTalkOutcome>> {
-    let payment =
-        prepare_with_domain(admission, command, fence, "oteryn:quest-reward-fee:v1").await?;
+    let payment = prepare_with_domain(
+        admission,
+        command,
+        fence,
+        intent,
+        "oteryn:quest-reward-fee:v1",
+    )
+    .await?;
     Ok(
         crate::durability::reward_claim_mint::QuestRewardFeePayment {
             command: payment.command,
@@ -40,6 +49,7 @@ async fn prepare_with_domain(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
     fence: CurrentCharacterGameplayFence,
+    intent: &NpcTalkIntent,
     domain: &str,
 ) -> Result<RottenBloodAccessPayment, Box<NpcTalkOutcome>> {
     let rejected = || Box::new(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
@@ -66,11 +76,10 @@ async fn prepare_with_domain(
             },
         )
     };
-    let current = admission
-        .root
-        .read_character_backpack(admission.character, fence.character_id)
+    let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(admission.root);
+    let current = super::super::read_npc_backpack(admission, fence.character_id, &budget)
         .await
-        .map_err(|_| Box::new(unknown()))?;
+        .map_err(|error| Box::new(error.reply(intent, command, "quest_purchase_backpack")))?;
     let native = admission
         .active_generation
         .and_then(crate::content::ActiveGeneration::native_gameplay)

@@ -1130,8 +1130,8 @@ async fn confirm_with_fence_fault(
         }
     };
     assert!(!outcome.unknown);
-    let receipts: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_newhaven_travel_receipts WHERE command_id=8 AND arrived_at IS NOT NULL",
+    let receipts: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(arrived_at) FROM game_newhaven_travel_receipts WHERE command_id=8",
     )
     .fetch_one(&h.pool)
     .await?;
@@ -1139,12 +1139,12 @@ async fn confirm_with_fence_fault(
         FenceFault::Busy => {
             assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
             assert_eq!(line(&outcome), "Set the sails!");
-            assert_eq!(receipts, 1);
+            assert_eq!(receipts, (1, 1));
         }
         FenceFault::MissingRelation => {
             assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
             assert_eq!(line(&outcome), "I could not verify your request.");
-            assert_eq!(receipts, 0);
+            assert_eq!(receipts, (0, 0));
             assert_eq!(bank(h).await?, 200);
             assert_eq!(fees(h).await?, 0);
         }

@@ -110,7 +110,7 @@ pub(super) async fn inventory(
         npc_read_attempt(admission.root.read_current_npc_program_inventory(
             admission.character, admission.holder, fence, reference, &npc, catalogue, &weights,
         ).await, progression_read_error)
-    }).await.map_err(|error| NpcReadRefusal::from_durability(&error))?
+    }).await.map_err(NpcReadRefusal::Durability)?
         .map(Some).map_err(|error| match error {
             crate::durability::character_progression::CharacterProgressionError::AuthorityRejected =>
                 NpcReadRefusal::Stale,
@@ -173,7 +173,7 @@ pub(super) async fn appearance(
             .await
         })
         .await
-        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map_err(NpcReadRefusal::Durability)?
         .ok_or(NpcReadRefusal::Stale)?;
     if Some(fence.item_fence()) != command.item_fence {
         return Err(NpcReadRefusal::Stale);
@@ -198,8 +198,14 @@ pub(super) async fn appearance(
             )
         })
         .await
-        .map_err(|error| NpcReadRefusal::from_durability(&error))?
+        .map_err(NpcReadRefusal::Durability)?
         .map_err(|error| match error {
+            AppearanceWriteError::Unavailable(error)
+            | AppearanceWriteError::Fence(
+                crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                    error,
+                ),
+            ) => NpcReadRefusal::Durability(error),
             AppearanceWriteError::Fence(_) => NpcReadRefusal::Stale,
             _ => NpcReadRefusal::Unavailable,
         })?;

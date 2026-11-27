@@ -183,6 +183,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         })
     }
+    fn paid_confirmation_refusal(
+        &self,
+        command: connection::UseCommand,
+        intent: &NpcTalkIntent,
+        prompt: Prompt,
+        error: TravelPreparationError,
+    ) -> npc_command::NpcTalkOutcome {
+        let mut outcome = error.reply(intent, command);
+        if outcome.disposition == NpcIntentDisposition::RateLimited
+            && let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock()
+        {
+            prompts.insert(command.game_session_id, prompt);
+            if let Some(conversation) = outcome.conversation.as_mut() {
+                conversation.open = Some((intent.npc_actor, NpcConversationState::Confirming));
+            }
+        }
+        outcome
+    }
+
     pub(super) async fn paid_travel_talk(
         &self,
         actor: ExactActorRef,
@@ -308,7 +327,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Err(TravelPreparationError::Route(
                             TravelRefusal::UnavailableRoute | TravelRefusal::PremiumRequired,
                         )) => {}
-                        Err(error) => return error.reply(intent, command),
+                        Err(error) => {
+                            return self.paid_confirmation_refusal(command, intent, prompt, error);
+                        }
                     }
                 }
             }
@@ -333,10 +354,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_ref()
                 != Some(&context)
             {
-                return ordinary;
+                return NpcReadRefusal::Stale.reply(intent, command, "paid_travel_fare");
             }
             let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
-                return ordinary;
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_fare");
             };
             prompts.insert(
                 session,
@@ -361,7 +382,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(request) => request,
-            Err(error) => return error.reply(intent, command),
+            Err(error) => return self.paid_confirmation_refusal(command, intent, prompt, error),
         };
         let frozen = FrozenTravel {
             command: request.command,
@@ -486,10 +507,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             })
             .await
-            .map_err(|error| NpcReadRefusal::from_durability(&error))?
+            .map_err(NpcReadRefusal::Durability)?
             .map_err(|error| match error {
                 CharacterProgressionError::AuthorityRejected
                 | CharacterProgressionError::CharacterRevisionMismatch => NpcReadRefusal::Stale,
+                CharacterProgressionError::Unavailable(error) => NpcReadRefusal::Durability(error),
                 _ => NpcReadRefusal::Unavailable,
             })?
             .map_err(TravelPreparationError::Route)

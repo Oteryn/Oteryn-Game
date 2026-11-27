@@ -433,7 +433,7 @@ pub(super) async fn apply(
         });
     let value_callback = reward_callback.is_some();
     let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
-        match super::endgame::prepare_reward_fee(admission, command, fence).await {
+        match super::endgame::prepare_reward_fee(admission, command, fence, &intent).await {
             Ok(payment) => Some(payment),
             Err(outcome) => {
                 finish(admission, command.game_session_id, false);

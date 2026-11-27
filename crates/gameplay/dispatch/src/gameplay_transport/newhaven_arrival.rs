@@ -75,6 +75,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         true
     }
 
+    async fn travel_recovery_fence(
+        &self,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+        stage: &'static str,
+    ) -> Option<crate::durability::character_progression::CurrentCharacterGameplayFence> {
+        match budget
+            .retry_command_guard(async || self.current_quest_fence_durable(session).await)
+            .await
+        {
+            Ok(fence) => fence,
+            Err(error) => {
+                operator_event(&format!(
+                    "event=session_durability_failed stage={stage} kind={error:?}"
+                ));
+                None
+            }
+        }
+    }
+
     /// None keeps the invocation held. A typed refusal is a known abort; a database
     /// error never releases the hold or repeats a placement already recorded in memory.
     pub(super) async fn reconcile_newhaven_travel(
@@ -82,7 +102,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<bool> {
-        let fence = self.current_quest_fence(session).await.ok()??;
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let fence = self
+            .travel_recovery_fence(session, &budget, "travel_commit_fence")
+            .await?;
         let (frozen, capture, route, committed, mut placed) = {
             let holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get(&session)?;
@@ -172,7 +195,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if placed.is_none() {
-            let current = self.current_quest_fence(session).await.ok()??;
+            let current = self
+                .travel_recovery_fence(session, &budget, "travel_placement_fence")
+                .await?;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let position = runtime.read_actor_position(actor).ok()?;
@@ -282,13 +307,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             placed = Some(record);
             self.states.chat.close_out_of_range(&runtime, session);
         }
-        let mut current = self.current_quest_fence(session).await.ok()??;
+        let mut current = self
+            .travel_recovery_fence(session, &budget, "travel_consume_fence")
+            .await?;
         if current.item_fence() != capture.session {
             return None;
         }
         let placed = placed?;
         let mut slot = self.revision_sequencer.acquire(current.character_id).await;
-        current.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
+        use crate::durability::character_authority::CharacterAuthorityError;
+        let cursor = budget
+            .retry_command_guard(async || {
+                npc_command::npc_read_attempt(
+                    slot.cursor(self.root, self.character).await,
+                    |error| match error {
+                        CharacterAuthorityError::Unavailable(error) => Some(error),
+                        _ => None,
+                    },
+                )
+            })
+            .await;
+        current.expected_character_revision = match cursor {
+            Ok(Ok(revision)) => revision,
+            Ok(Err(error)) => {
+                operator_event(&format!(
+                    "event=session_durability_failed stage=travel_consume_cursor kind={error:?}"
+                ));
+                return None;
+            }
+            Err(error) => {
+                operator_event(&format!(
+                    "event=session_durability_failed stage=travel_consume_cursor kind={error:?}"
+                ));
+                return None;
+            }
+        };
         let consumed = self
             .root
             .consume_npc_pending_arrival_placed(
@@ -300,7 +353,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         slot.observe_home_town();
-        let consumed = consumed.ok()?;
+        let consumed = match consumed {
+            Ok(consumed) => consumed,
+            Err(error) => {
+                operator_event(&format!(
+                    "event=session_durability_failed stage=travel_consume kind={error:?}"
+                ));
+                return None;
+            }
+        };
         if consumed == crate::durability::npc_travel::ArrivalConsume::Consumed {
             self.track_respawned(session, actor, &placed, current);
         }
