@@ -485,11 +485,7 @@ fn validate_request(r: &QuickLootRequest, has_handle: bool) -> WireResult<()> {
                 && !r.fallback_to_main
         }
         QuickLootAction::LootAll => {
-            !has_source
-                && r.category.is_none()
-                && r.recipient.is_none()
-                && !has_recipient
-                && !r.fallback_to_main
+            r.category.is_none() && r.recipient.is_none() && !has_recipient && !r.fallback_to_main
         }
         QuickLootAction::Assign
         | QuickLootAction::AssignLoot
@@ -881,6 +877,30 @@ mod tests {
         let mut bad = r;
         bad.fallback_to_main = true;
         assert!(encode_quick_loot_request(&bad).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn loot_all_round_trips_with_and_without_corpse_source() -> WireResult<()> {
+        let source = [7; 16];
+        let legacy = [0x08, 2];
+        let selected = [&[0x08, 2, 0x12, 16][..], &source].concat();
+        for (corpse, bytes) in [(None, legacy.as_slice()), (Some(source), &selected)] {
+            let request = QuickLootRequest {
+                action: QuickLootAction::LootAll,
+                corpse,
+                selected_item: None,
+                review_filters: false,
+                category: None,
+                recipient: None,
+                recipient_id: None,
+                fallback_to_main: false,
+                filter_mode: None,
+                filter_definition_ref: None,
+            };
+            assert_eq!(encode_quick_loot_request(&request)?, bytes);
+            assert_eq!(decode_quick_loot_request(bytes), Ok(request));
+        }
         Ok(())
     }
     #[test]

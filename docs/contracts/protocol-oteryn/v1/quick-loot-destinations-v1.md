@@ -5,6 +5,22 @@ Command 114 retains actions 1–7 and the existing accepted results for requests
 valid only on its registered command. Requests use the tagged field layout in
 [quick_loot_v1.proto](quick_loot_v1.proto).
 
+## Loot All (114)
+
+The owner decision of 2026-11-27 allows optional field 2 on action 2 (`LootAll`).
+It accepts the same corpse references and applies the same reachability checks as
+`Click`. An unreachable source returns `QuickLootRefusalV1` with reason `Stale`.
+A reachable source selects its exact tile and floor. Loot All considers up to 30
+corpses from the top of that stack down, applying the existing loot filters,
+rights, destination routing and Gold Pouch rules.
+
+Omitting field 2 preserves the existing scan of the actor's tile and eight
+neighbours. Protocol Oteryn v1 has no separate nearby action.
+
+[Tibia Fandom archive, Quick Looting](https://tibia.fandom.com/wiki/Quick_Looting).
+[Tibia Fandom archive, Update 12.60](https://tibia.fandom.com/wiki/Updates/12.60).
+[Tibia Fandom archive, Update 13.40](https://tibia.fandom.com/wiki/Updates/13.40).
+
 ## Manage destinations (6376)
 
 - Action 8 removes a Loot assignment. Field 3 selects a category. Omission
