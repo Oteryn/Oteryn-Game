@@ -877,10 +877,14 @@ start_x = 32369
 start_y = 32238
 start_floor = 7''')
 PY_WORLD
-    cat >> "$WORK/node.toml" <<'TOML'
+    local premium_switch_over_us=1
+    if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+      premium_switch_over_us=0
+    fi
+    cat >> "$WORK/node.toml" <<TOML
 [premium_activation]
 activation_id = "node-boot-fixture-premium"
-switch_over_us = 1
+switch_over_us = $premium_switch_over_us
 TOML
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
@@ -894,12 +898,6 @@ TOML
       "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
       "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
     )
-    cat >> "$WORK/node.toml" <<'TOML_PREMIUM_FIXTURE'
-
-[premium_activation]
-activation_id = "node-boot-fixture-premium"
-switch_over_us = 0
-TOML_PREMIUM_FIXTURE
   fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }

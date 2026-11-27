@@ -253,6 +253,36 @@ class KnobTests(unittest.TestCase):
 
 
 class WorldFixtureTests(unittest.TestCase):
+    def test_native_reference_world_emits_one_premium_activation(self):
+        with tempfile.TemporaryDirectory() as work:
+            pin = Path(work, 'pin.json')
+            pin.write_text(json.dumps(dict.fromkeys(
+                ('digest', 'project_format_version', 'world_schema_version', 'content_revision'),
+                'fixture',
+            )))
+            certs = Path(work, 'certs', 'clients')
+            certs.mkdir(parents=True)
+            (certs / 'premium.pem').touch()
+            (certs / 'premium.key').touch()
+            setup = '''
+install_owned() { cat >/dev/null; }
+game_platform_config() { :; }
+PG_PORT=15433
+WP5_PORT=18463
+DESCRIPTOR_INSTALLED_AT=1
+NODE_REQUIRED_CAPABILITIES=[]
+NODE_GAMEPLAY_ENV=()
+'''
+            result = bash(setup + function('write_node_config')
+                          + '\nwrite_node_config launch.json </dev/null\n',
+                          {'WORK': work, 'BASE': work, 'PIN': str(pin),
+                           'NODE_BOOT_WORLD': '1', 'NODE_BOOT_LIFECYCLE': 'native_reference',
+                           'NODE_BOOT_D150_LEGACY': '0', 'PORTAL_E2E_OUT': work,
+                           'PORTAL_E2E_INTERNAL_PORT': '18464', 'SERVICE_UID': '1000'})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            config = tomllib.loads(Path(work, 'node.toml').read_text())
+            self.assertEqual(config['premium_activation']['switch_over_us'], 0)
+
     def test_all_groups_disable_the_unprovisioned_world_event_exporter(self):
         with tempfile.TemporaryDirectory() as work:
             pin = Path(work, 'pin.json')
