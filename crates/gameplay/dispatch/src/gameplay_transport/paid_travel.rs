@@ -9,11 +9,62 @@ use npc_command::{
     NpcReadRefusal, npc_read_attempt, progression_read_error, read_npc_backpack,
     read_npc_quest_fence,
 };
-use oteryn_protocol_oteryn::npc_service::{NpcConversation, NpcConversationState};
+use oteryn_protocol_oteryn::{
+    chat::{ChatLine, ChatSpeaker, ChatSpeechMode},
+    npc_service::{NpcConversation, NpcConversationState},
+    world_spatial::ActorPosition,
+};
 use oteryn_simulation_determinism::SemanticTimeMicros;
+use std::num::NonZeroU64;
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
+
+#[derive(Clone)]
+pub(in crate::gameplay_transport) struct PaidDeparture {
+    pub(in crate::gameplay_transport) request: PaidTravelRequest,
+    pub(in crate::gameplay_transport) speaker: ExactActorRef,
+    speaker_ref: ChatSpeaker,
+    speaker_name: String,
+    speaker_position: ActorPosition,
+}
+
+impl PaidDeparture {
+    /// The source actor was authenticated before the voyage. The traveller may be
+    /// out of range or resuming a committed voyage when these lines are sent.
+    fn success_reply(
+        &self,
+        chat: &chat_intent::ChatRuntime,
+        session: GameSessionId,
+    ) -> npc_command::NpcTalkOutcome {
+        let farewell = "Set the sails!";
+        chat.end_engagement(session, self.speaker);
+        chat.queue_npc_reply(
+            session,
+            ChatLine::Local {
+                speaker: self.speaker_ref,
+                speaker_name: self.speaker_name.clone(),
+                mode: ChatSpeechMode::Say,
+                text: farewell.into(),
+                position: self.speaker_position,
+            },
+        );
+        // Domain 7 uses its conversation handle to attribute lines. The ordinary
+        // conversation follow publishes the close after this final attributed line.
+        let npc = EntityRef {
+            identity: self.speaker_ref.identity,
+            generation: self.speaker_ref.generation.get(),
+        };
+        npc_command::NpcTalkOutcome {
+            conversation: Some(NpcConversation {
+                lines: vec![format!("{}: {farewell}", self.speaker_name)],
+                ..open_conversation(npc)
+            }),
+            inventory_changed: self.request.fee.fee_gold_units > 0,
+            ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+        }
+    }
+}
 
 #[derive(Clone)]
 pub(super) struct Prompt {
@@ -138,15 +189,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        let (fare, npc) = {
+        let (departure, npc) = {
             let holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get(&command.game_session_id)?;
-            if held.frozen.command.command_id().get() != command.command_id
-                || !matches!(held.route, Departure::Paid(_))
-            {
+            if held.frozen.command.command_id().get() != command.command_id {
                 return None;
             }
-            (held.frozen.fare, held.npc)
+            let Departure::Paid(departure) = &held.route else {
+                return None;
+            };
+            (departure.clone(), held.npc)
         };
         let result = self
             .reconcile_newhaven_travel(actor, command.game_session_id)
@@ -156,15 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             text: String::new(),
         };
         Some(match result {
-            Some(true) => {
-                let mut outcome =
-                    npc_command::NpcConversations::bank_reply(&intent, "Set the sails!".into());
-                outcome.inventory_changed = fare > 0;
-                if let Some(conversation) = outcome.conversation.as_mut() {
-                    conversation.open = None;
-                }
-                outcome
-            }
+            Some(true) => departure.success_reply(&self.states.chat, command.game_session_id),
             Some(false) => {
                 let cause = self
                     .states
@@ -391,7 +435,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             fare: prompt.fare,
             arrival: request.arrival,
         };
-        {
+        let departure = {
             let mut runtime = self.runtime.lock().await;
             if self.states.npc_conversations.current_npc(
                 &self.states.chat,
@@ -403,6 +447,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return refusal(intent, TravelRefusal::StaleQuote);
             }
+            let chat = &self.states.chat;
+            let Some(speaker_name) = chat
+                .npc_talk()
+                .and_then(|book| book.display_name(&frozen.npc))
+            else {
+                return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
+            };
+            let Some(speaker) = runtime.visible_entities().npcs.into_iter().find(|npc| {
+                npc.actor.placement_identity() == intent.npc_actor.identity
+                    && npc.generation == intent.npc_actor.generation
+            }) else {
+                return NpcReadRefusal::Stale.reply(intent, command, "paid_travel_prepare");
+            };
+            let Some(generation) = NonZeroU64::new(speaker.generation) else {
+                return NpcReadRefusal::Stale.reply(intent, command, "paid_travel_prepare");
+            };
+            let departure = Box::new(PaidDeparture {
+                request,
+                speaker: speaker.actor,
+                speaker_ref: ChatSpeaker {
+                    identity: speaker.actor.placement_identity(),
+                    generation,
+                },
+                speaker_name: speaker_name.to_owned(),
+                speaker_position: ActorPosition {
+                    x: speaker.position.x,
+                    y: speaker.position.y,
+                    floor: speaker.position.floor,
+                },
+            });
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || states.has_pending_spell_commit(actor, session) {
                 return NpcReadRefusal::Unavailable.reply(intent, command, "paid_travel_prepare");
@@ -444,24 +518,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     npc: intent.npc_actor,
                     capture,
                     frozen,
-                    route: Departure::Paid(Box::new(request)),
+                    route: Departure::Paid(departure.clone()),
                     slot,
                     refusal: None,
                     committed: false,
                     placed: None,
                 },
             );
-        }
+            departure
+        };
         match self.reconcile_newhaven_travel(actor, session).await {
-            Some(true) => {
-                let mut result =
-                    npc_command::NpcConversations::bank_reply(intent, "Set the sails!".into());
-                result.inventory_changed = prompt.fare > 0;
-                if let Some(conversation) = result.conversation.as_mut() {
-                    conversation.open = None;
-                }
-                result
-            }
+            Some(true) => departure.success_reply(&self.states.chat, session),
             Some(false) => {
                 let cause = self
                     .states

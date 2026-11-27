@@ -152,14 +152,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Err(error) => Err(error),
                     }
                 }
-                newhaven_travel::Departure::Paid(request) => {
+                newhaven_travel::Departure::Paid(departure) => {
                     let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
                     slot.commit_npc_travel(
                         self.root,
                         self.character,
                         self.holder,
                         fence,
-                        *request,
+                        departure.request,
                         &self.premium_coordinator,
                     )
                     .await
@@ -305,6 +305,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = map.facts.emit_movement_effect(tile, 11);
             }
             placed = Some(record);
+            if let newhaven_travel::Departure::Paid(departure) = &held.route {
+                // The captain's final reply identifies the NPC that ended this
+                // conversation. Avoid queuing a separate walk-away farewell.
+                self.states.chat.end_engagement(session, departure.speaker);
+            }
             self.states.chat.close_out_of_range(&runtime, session);
         }
         let mut current = self

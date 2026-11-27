@@ -15,7 +15,7 @@ type Prompt = TravelPrompt<NewhavenRoute, (EntityRef, u64, u64)>;
 pub(super) enum Departure {
     Tutorial(NewhavenRoute),
     Quest(Box<super::npc_command::catalogue::teleport::DepartureProof>),
-    Paid(Box<crate::durability::npc_travel::PaidTravelRequest>),
+    Paid(Box<paid::PaidDeparture>),
 }
 
 pub(super) struct Invocation {

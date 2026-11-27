@@ -303,6 +303,15 @@ impl ChatRuntime {
         self.deliver_relay(line);
     }
 
+    /// Echo an addressed NPC reply in Default for its traveller alone.
+    pub(super) fn queue_npc_reply(&self, session: GameSessionId, line: ChatLine) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.egress.push(line);
+        }
+    }
+
     /// Installs the NPC talk of the Channel once; a second install is ignored.
     pub fn install_npc_talk(&self, book: Arc<NpcTalkBook>) {
         let _ = self.npc_talk.set(book);
