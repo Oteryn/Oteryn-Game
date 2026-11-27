@@ -10,8 +10,8 @@ Inwentaryzacja: **26 kroków**; AUTO 15, RĘCZNIE 11. Identyfikator kroku obejmu
 
 | Rodzaj danych | Liczba | Znaczenie |
 | --- | ---: | --- |
-| Callbacki w aktywnym źródle starego formatu | 0 | Zakres pojedynczych interakcji; kompletność questa i końcowy head kwalifikuje się osobno. |
-| Pełne callbacki held | 4 | Zachowano parametry i źródła; wykluczone z aktywnego agregatu. |
+| Callbacki w aktywnym źródle starego formatu | 4 | Zakres pojedynczych interakcji; kompletność questa i końcowy head kwalifikuje się osobno. |
+| Pełne callbacki held | 0 | Zachowano parametry i źródła; wykluczone z aktywnego agregatu. |
 | Reguły NPC source-only | 30 | Pełne teksty i reguły; bez nowego adaptera rozmów. |
 | Reguły śmierci source-only | 0 | runtime_enabled=false; parser i adapter C wycofane. |
 
@@ -31,7 +31,7 @@ Każdy poniższy krok ma opis wykonanej pracy albo konkretny Left out. Sam zapis
 
 ### 001. Podróż Blue Valley (33605, 31468, 7)
 
-Identyfikator: `82a16a0b53b2cf85975a8c5f45ab6a38fd065cedefecbad67ba7e0df3c7ac2a7`. Status: `SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT`. Rodzaj: `source_only_or_left_out`.
+Identyfikator: `82a16a0b53b2cf85975a8c5f45ab6a38fd065cedefecbad67ba7e0df3c7ac2a7`. Status: `SOURCE_CALLBACK_USE_ACTIVE`. Rodzaj: `runtime_callback`.
 
 | Pole | Wartość |
 | --- | --- |
@@ -39,8 +39,8 @@ Identyfikator: `82a16a0b53b2cf85975a8c5f45ab6a38fd065cedefecbad67ba7e0df3c7ac2a7
 | Wyzwalacz | Use pola(33605, 31468, 7) |
 | Warunek | gracz; bez level/vocation/storage guard |
 | Efekt źródłowy | teleport(32456, 32291, 7) |
-| Zrobione | Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany. |
-| Left out | Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian. |
+| Zrobione | Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 50227. Guarded Crystal Sphere prowadzi z Blue Valley do Adventurers’ Guild. |
+| Left out | — |
 | QUESTION | [QUESTION 6590420434](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434) |
 | ANSWER | [ANSWER 6590725297](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297) |
 
@@ -54,14 +54,12 @@ Identyfikator: `82a16a0b53b2cf85975a8c5f45ab6a38fd065cedefecbad67ba7e0df3c7ac2a7
 Pliki implementacji/danych:
 
 - `tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json`
-- `content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json`
-
-Brakujące pola/operacje: `existing position-only Use selector accepts only ordinal0`.
-Dowód różnicy zachowania: The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.
+- `content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json`
+- `tools/content-schema/world-authoring/guarded_crystal_sphere.py`
 
 ### 002. Podróż Blue Valley (33601, 31468, 7)
 
-Identyfikator: `59ca9e97a5e227c80b1c2abb064138e55015404885bdb9ac6c66ac864dfe502d`. Status: `SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT`. Rodzaj: `source_only_or_left_out`.
+Identyfikator: `59ca9e97a5e227c80b1c2abb064138e55015404885bdb9ac6c66ac864dfe502d`. Status: `SOURCE_CALLBACK_USE_ACTIVE`. Rodzaj: `runtime_callback`.
 
 | Pole | Wartość |
 | --- | --- |
@@ -69,8 +67,8 @@ Identyfikator: `59ca9e97a5e227c80b1c2abb064138e55015404885bdb9ac6c66ac864dfe502d
 | Wyzwalacz | Use pola(33601, 31468, 7) |
 | Warunek | gracz; bez level/vocation/storage guard |
 | Efekt źródłowy | teleport(32456, 32291, 7) |
-| Zrobione | Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany. |
-| Left out | Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian. |
+| Zrobione | Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 49948. |
+| Left out | — |
 | QUESTION | [QUESTION 6590420434](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434) |
 | ANSWER | [ANSWER 6590725297](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297) |
 
@@ -84,14 +82,11 @@ Identyfikator: `59ca9e97a5e227c80b1c2abb064138e55015404885bdb9ac6c66ac864dfe502d
 Pliki implementacji/danych:
 
 - `tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json`
-- `content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json`
-
-Brakujące pola/operacje: `existing position-only Use selector accepts only ordinal0`.
-Dowód różnicy zachowania: The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.
+- `content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json`
 
 ### 003. Podróż Blue Valley (32456, 32290, 7)
 
-Identyfikator: `1ae968d56cb049372b3560cb73641a29e4d6e502f276f2d9f3e9598b409fd9f5`. Status: `SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT`. Rodzaj: `source_only_or_left_out`.
+Identyfikator: `1ae968d56cb049372b3560cb73641a29e4d6e502f276f2d9f3e9598b409fd9f5`. Status: `SOURCE_CALLBACK_USE_ACTIVE`. Rodzaj: `runtime_callback`.
 
 | Pole | Wartość |
 | --- | --- |
@@ -99,8 +94,8 @@ Identyfikator: `1ae968d56cb049372b3560cb73641a29e4d6e502f276f2d9f3e9598b409fd9f5
 | Wyzwalacz | Use pola(32456, 32290, 7) |
 | Warunek | gracz; bez level/vocation/storage guard |
 | Efekt źródłowy | teleport(33614, 31494, 7) |
-| Zrobione | Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany. |
-| Left out | Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian. |
+| Zrobione | Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 49948. |
+| Left out | — |
 | QUESTION | [QUESTION 6590420434](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434) |
 | ANSWER | [ANSWER 6590725297](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297) |
 
@@ -114,14 +109,11 @@ Identyfikator: `1ae968d56cb049372b3560cb73641a29e4d6e502f276f2d9f3e9598b409fd9f5
 Pliki implementacji/danych:
 
 - `tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json`
-- `content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json`
-
-Brakujące pola/operacje: `existing position-only Use selector accepts only ordinal0`.
-Dowód różnicy zachowania: The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.
+- `content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json`
 
 ### 004. Podróż Blue Valley (32203, 32303, 6)
 
-Identyfikator: `572ac5532dab8ea06eaadc56cc59f3ba79ab8dd654f135cf9044c663be0b2023`. Status: `SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT`. Rodzaj: `source_only_or_left_out`.
+Identyfikator: `572ac5532dab8ea06eaadc56cc59f3ba79ab8dd654f135cf9044c663be0b2023`. Status: `SOURCE_CALLBACK_USE_ACTIVE`. Rodzaj: `runtime_callback`.
 
 | Pole | Wartość |
 | --- | --- |
@@ -129,8 +121,8 @@ Identyfikator: `572ac5532dab8ea06eaadc56cc59f3ba79ab8dd654f135cf9044c663be0b2023
 | Wyzwalacz | Use pola(32203, 32303, 6) |
 | Warunek | gracz; bez level/vocation/storage guard |
 | Efekt źródłowy | teleport(33614, 31494, 7) |
-| Zrobione | Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany. |
-| Left out | Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian. |
+| Zrobione | Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 50310. |
+| Left out | — |
 | QUESTION | [QUESTION 6590420434](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434) |
 | ANSWER | [ANSWER 6590725297](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297) |
 
@@ -144,10 +136,7 @@ Identyfikator: `572ac5532dab8ea06eaadc56cc59f3ba79ab8dd654f135cf9044c663be0b2023
 Pliki implementacji/danych:
 
 - `tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json`
-- `content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json`
-
-Brakujące pola/operacje: `existing position-only Use selector accepts only ordinal0`.
-Dowód różnicy zachowania: The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.
+- `content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json`
 
 ### 005. Podpowiedź Dawnport
 
@@ -675,8 +664,7 @@ Pliki implementacji/danych:
 | Plik | SHA256 | Rekordy |
 | --- | --- | ---: |
 | `content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json` | `96fcca86fb9e6c018ec4db0e8c65895d16649b8f024001bebc34c5831c8a0916` | 30 |
-| `content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json` | `ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c` | 0 |
-| `content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json` | `5bb3f83642b9a96e49642241330fc589abc13c15fdba35ba8c60edd898948892` | 4 |
+| `content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json` | `1b9148b9c2ba26caf439eab91f4c692719d3fa06bf1705f55cb72770e0bda9cb` | 4 |
 
 ## Decyzje zakresu
 

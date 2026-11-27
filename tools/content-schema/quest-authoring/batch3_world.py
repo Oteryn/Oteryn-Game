@@ -91,7 +91,6 @@ def outputs(root):
     # QUESTPC: exact literal USEs and genuine read-only Stag guards now have
     # production owners. Historical held records remain source evidence.
     choices = {
-        'content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json': None,
         'content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json': {'oteryn:quest-callback/pirates-tail-cheesy-exit'},
         'tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json': None,
     }

@@ -164,6 +164,7 @@ CHECKS = (
     ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/guarded_crystal_sphere.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     [
         "python3",
@@ -1185,6 +1186,15 @@ def main() -> int:
     run(
         [
             "python3",
+            "tools/content-schema/quest-authoring/batch3_a/build_world.py",
+            "--quest",
+            "the_way_of_the_monk",
+        ]
+    )
+    run(["python3", "tools/content-schema/quest-authoring/batch3_world.py"])
+    run(
+        [
+            "python3",
             "tools/content-schema/quest-authoring/quest_batch4.py",
             "--available",
         ]
@@ -1267,6 +1277,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
+    run(["python3", "tools/content-schema/world-authoring/guarded_crystal_sphere.py"])
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(

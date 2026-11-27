@@ -32,8 +32,8 @@
   },
   "content_counts": {
     "npc_rules_source_only": 30,
-    "world_callbacks_enabled": 0,
-    "world_callbacks_held": 4,
+    "world_callbacks_enabled": 4,
+    "world_callbacks_held": 0,
     "death_rules_source_only": 0
   },
   "content_inputs": [
@@ -45,15 +45,9 @@
     },
     {
       "path": "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json",
-      "sha256": "ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c",
-      "count": 0,
-      "category": "world_callbacks_enabled"
-    },
-    {
-      "path": "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json",
-      "sha256": "5bb3f83642b9a96e49642241330fc589abc13c15fdba35ba8c60edd898948892",
+      "sha256": "1b9148b9c2ba26caf439eab91f4c692719d3fa06bf1705f55cb72770e0bda9cb",
       "count": 4,
-      "category": "world_callbacks_held"
+      "category": "world_callbacks_enabled"
     }
   ],
   "final_head_validation": {
@@ -79,12 +73,12 @@
         "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
         "import_mode": "AUTO"
       },
-      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "implementation_status": "SOURCE_CALLBACK_USE_ACTIVE",
       "classification": "DERIVED",
-      "delivery": "source_only_or_left_out",
+      "delivery": "runtime_callback",
       "new_runtime_callback": false,
-      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
-      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "done": "Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 50227. Guarded Crystal Sphere prowadzi z Blue Valley do Adventurers’ Guild.",
+      "left_out": "",
       "question_urls": [
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
       ],
@@ -93,7 +87,8 @@
       ],
       "implementation_paths": [
         "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
-        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+        "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json",
+        "tools/content-schema/world-authoring/guarded_crystal_sphere.py"
       ],
       "sources": [
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2",
@@ -102,20 +97,6 @@
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
       ],
       "evidence": {
-        "holds": [
-          {
-            "missing_fields": [
-              "existing position-only Use selector accepts only ordinal0"
-            ],
-            "sources": [
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2",
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
-            ],
-            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
-            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
-            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
-          }
-        ],
         "additional_questions": [],
         "verification_evidence": [
           "quest3-work/group-a/position-bindings.json"
@@ -140,12 +121,12 @@
         "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
         "import_mode": "AUTO"
       },
-      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "implementation_status": "SOURCE_CALLBACK_USE_ACTIVE",
       "classification": "DERIVED",
-      "delivery": "source_only_or_left_out",
+      "delivery": "runtime_callback",
       "new_runtime_callback": false,
-      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
-      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "done": "Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 49948.",
+      "left_out": "",
       "question_urls": [
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
       ],
@@ -154,7 +135,7 @@
       ],
       "implementation_paths": [
         "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
-        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+        "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json"
       ],
       "sources": [
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:3",
@@ -163,20 +144,6 @@
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
       ],
       "evidence": {
-        "holds": [
-          {
-            "missing_fields": [
-              "existing position-only Use selector accepts only ordinal0"
-            ],
-            "sources": [
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:3",
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
-            ],
-            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
-            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
-            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
-          }
-        ],
         "additional_questions": [],
         "verification_evidence": [
           "quest3-work/group-a/position-bindings.json"
@@ -201,12 +168,12 @@
         "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
         "import_mode": "AUTO"
       },
-      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "implementation_status": "SOURCE_CALLBACK_USE_ACTIVE",
       "classification": "DERIVED",
-      "delivery": "source_only_or_left_out",
+      "delivery": "runtime_callback",
       "new_runtime_callback": false,
-      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
-      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "done": "Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 49948.",
+      "left_out": "",
       "question_urls": [
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
       ],
@@ -215,7 +182,7 @@
       ],
       "implementation_paths": [
         "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
-        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+        "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json"
       ],
       "sources": [
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:4",
@@ -224,20 +191,6 @@
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
       ],
       "evidence": {
-        "holds": [
-          {
-            "missing_fields": [
-              "existing position-only Use selector accepts only ordinal0"
-            ],
-            "sources": [
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:4",
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
-            ],
-            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
-            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
-            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
-          }
-        ],
         "additional_questions": [],
         "verification_evidence": [
           "quest3-work/group-a/position-bindings.json"
@@ -262,12 +215,12 @@
         "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
         "import_mode": "AUTO"
       },
-      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "implementation_status": "SOURCE_CALLBACK_USE_ACTIVE",
       "classification": "DERIVED",
-      "delivery": "source_only_or_left_out",
+      "delivery": "runtime_callback",
       "new_runtime_callback": false,
-      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
-      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "done": "Aktywny selektor USE wskazuje pozycję źródłową oraz obiekt 50310.",
+      "left_out": "",
       "question_urls": [
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
       ],
@@ -276,7 +229,7 @@
       ],
       "implementation_paths": [
         "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
-        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+        "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json"
       ],
       "sources": [
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:5",
@@ -285,20 +238,6 @@
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
       ],
       "evidence": {
-        "holds": [
-          {
-            "missing_fields": [
-              "existing position-only Use selector accepts only ordinal0"
-            ],
-            "sources": [
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:5",
-              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
-            ],
-            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
-            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
-            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
-          }
-        ],
         "additional_questions": [],
         "verification_evidence": [
           "quest3-work/group-a/position-bindings.json"

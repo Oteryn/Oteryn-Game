@@ -10,7 +10,7 @@ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestRe
         for (name, appearance, ordinal, source, destination) in [
             (
                 "blue-valley-2",
-                49948,
+                50227,
                 3,
                 (33605, 31468, -7),
                 (32210, 32300, -6),
