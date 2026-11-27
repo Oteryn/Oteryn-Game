@@ -209,11 +209,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(ReleaseRetryStage::Gourmet);
         }
         #[cfg(test)]
-        if let Ok(Some(probe)) = super::super::logout::LOGOUT_RELEASE_PROBE
-            .try_with(|probe| probe.first_retry.get().is_none().then(|| probe.clone()))
-        {
-            probe.before_conditions.notify_one();
-            probe.resume_conditions.notified().await;
+        if let Ok(probe) = super::super::logout::LOGOUT_RELEASE_PROBE.try_with(Clone::clone) {
+            probe.conditions_entries.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            if probe.first_retry.get().is_none() {
+                probe.before_conditions.notify_one();
+                probe.resume_conditions.notified().await;
+            }
         }
         // Retry this checkpoint under the existing logout fence. The holder can now
         // serve the deferred read/write directly, without re-running earlier saves.
