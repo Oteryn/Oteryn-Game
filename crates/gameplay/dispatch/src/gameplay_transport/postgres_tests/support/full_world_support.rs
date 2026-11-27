@@ -624,7 +624,14 @@ macro_rules! world_scenario {
                             level: $level,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
-                        (3, 7_000_000),
+                        if matches!(
+                            $vocation,
+                            crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
+                        ) {
+                            (3, 7_000_000)
+                        } else {
+                            (0, 0)
+                        },
                         $owner.owner_now(),
                     )
                     .is_some()

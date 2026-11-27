@@ -200,9 +200,14 @@ fn fixture_approach(
     Ok(BRAINDEATH_APPROACH)
 }
 
+const HUNTER_SWORD_ID: u32 = 3288;
+const HUNTER_SWORD_SKILL: u16 = 110;
+
 async fn stage_hunter(clients: &SeamClients<'_>, approach: TilePos) -> TestResult {
     wait_character_released(clients, 0).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    use sqlx::Connection as _;
+    let mut tx = db.begin().await?;
     let changed = sqlx::query(
         "UPDATE game_character_last_positions AS p
          SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
@@ -218,12 +223,25 @@ async fn stage_hunter(clients: &SeamClients<'_>, approach: TilePos) -> TestResul
     .bind(i32::from(approach.x))
     .bind(i32::from(approach.y))
     .bind(i32::from(-approach.floor))
-    .execute(&mut db)
+    .execute(&mut *tx)
     .await?;
-    db.close().await?;
     if changed.rows_affected() != 1 {
         return Err("W13 fixture requires one different saved offline world position".into());
     }
+    let skill = sqlx::query(
+        "UPDATE game_character_build_state AS b SET sword_level=$2, sword_tries=0
+         WHERE b.character_id=encode($1,'hex')::uuid AND b.vocation='knight'
+           AND (b.sword_level,b.sword_tries) IS DISTINCT FROM ($2,0)",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(i32::from(HUNTER_SWORD_SKILL))
+    .execute(&mut *tx)
+    .await?;
+    if skill.rows_affected() != 1 {
+        return Err("W13 fixture requires one distinct offline sword skill".into());
+    }
+    tx.commit().await?;
+    db.close().await?;
     Ok(())
 }
 
@@ -439,6 +457,7 @@ async fn prepare_hunter(
     let mut initial = connect_character(clients, 0xd3, 0).await?;
     let session = initial.join_snapshot().game_session_id;
     request_fixture_control(uuid_text(session.as_bytes()), "--profile", "q_w13".into()).await?;
+    character_prep::grant_item(&initial, HUNTER_SWORD_ID, 1).await?;
     let logout = initial.session_mut().logout().await?;
     if logout.result != Some(LogoutResult::Accepted) {
         return Err(format!("W13 preparation logout refused: {:?}", logout.result).into());
@@ -478,9 +497,60 @@ async fn prepare_hunter(
         )
         .into());
     }
+    // The GeneralStats wire layout lists Fist, Club, then Sword after Magic Level.
+    let sword_skill = u16::from_le_bytes(data[19..21].try_into()?);
+    if sword_skill != HUNTER_SWORD_SKILL {
+        return Err(format!(
+            "W13 fixture sword skill was {sword_skill}, expected {HUNTER_SWORD_SKILL}"
+        )
+        .into());
+    }
+    equip_hunter_sword(&mut client).await?;
+    evidence(&format!(
+        "FIXTURE row=W13.full level={level} sword_skill={sword_skill} weapon={HUNTER_SWORD_ID}"
+    ));
     verdict::Harness::global().progress("seeded-hunter");
     evidence(&format!("W13_CHECK seeded-knight level={level} xp={xp}"));
     Ok(client)
+}
+
+async fn equip_hunter_sword(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent};
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
+
+    let index = provisioning::item_index()?;
+    let definition = provisioning::item_reference(&index, HUNTER_SWORD_ID)?;
+    let equipped = |client: &DevClientSession| {
+        client.inventory().is_some_and(|inventory| {
+            inventory.equipment.iter().any(|entry| {
+                entry.slot == EquipmentSlot::RightHand
+                    && entry.item.item_definition_ref == definition
+            })
+        })
+    };
+    if equipped(client) {
+        return Err("W13 fixture sword was already equipped before the equip command".into());
+    }
+    let source = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == definition)
+        })
+        .ok_or("W13 fixture sword missing from backpack after readmission")?
+        .handle;
+    let moved = client
+        .move_item(&ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Equipment(EquipmentSlot::RightHand),
+        })
+        .await?;
+    if moved.status != CommandStatus::Accepted || moved.outcome != ItemMoveOutcome::Moved {
+        return Err(format!("W13 fixture sword equip observed {moved:?}").into());
+    }
+    full_row_p05::wait_for_inventory(client, "w13-fixture-sword-equip", equipped).await
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
