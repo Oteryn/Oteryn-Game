@@ -392,21 +392,22 @@ impl<'a> Staging<'a> {
         observer: &mut DevClientSession,
         capture: &oteryn_dev_client::native_session::test_support::WireCapture,
     ) -> TestResult {
-        // The road south of the temple is outside the protection zone and away
-        // from wild spawns. The row places its own Rat after both players arrive.
+        // At the north exit, the adjacent observer can see the caster from
+        // the protection zone without becoming a second target for the Rat.
         let caster_site = TilePos {
             x: 32369,
-            y: 32251,
+            y: 32230,
             floor: -7,
         };
         let observer_site = TilePos {
-            x: 32368,
+            y: 32231,
             ..caster_site
         };
-        for site in [caster_site, observer_site] {
+        for (site, protected) in [(caster_site, false), (observer_site, true)] {
             let ground = self.world.base().tile(site.x, site.y, site.floor);
             if !self.world.enterable(site)
-                || !ground.is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+                || !ground
+                    .is_some_and(|tile| tile.walkable() && tile.protection_zone() == protected)
                 || self.spawn_cells.contains(&site)
             {
                 return Err(format!("C17b.client staging tile ineligible: {site:?}").into());
