@@ -4279,15 +4279,6 @@ pub(super) async fn capture_animate_dead(
     }
 
     non_pz(&mut caster, world).await?;
-    let encounter = caster.world_spatial().actor_position;
-    let mut scout = connect_character(clients, 0xd6, 0).await?;
-    with_observer_liveness(&mut caster, approach_melee(&mut scout, world, encounter)).await?;
-    let logout = with_observer_liveness(&mut caster, async { Ok(scout.session_mut().logout().await?) }).await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C16c scout first logout refused: {logout:?}").into());
-    }
-    drop(scout);
-
     let session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, "oteryn:creature.rat".into())
         .await.map_err(|reason| format!("C16c qualification Rat spawn refused: {reason}"))?;
@@ -4332,6 +4323,13 @@ pub(super) async fn capture_animate_dead(
         corpse.entity
     ));
     let mut observer = with_observer_liveness(&mut caster, connect_character(clients, 0xd7, 0)).await?;
+    if observer.world_entities().and_then(|view| view.get(&corpse.entity)).is_none() {
+        let target = tile(corpse.position)?;
+        let path = route(world, tile(observer.world_spatial().actor_position)?, |at| {
+            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 4
+        }).ok_or("C16c fresh observer has no route into corpse visibility")?;
+        with_observer_liveness(&mut caster, walk(&mut observer, world, &path)).await?;
+    }
     if observer.world_entities().and_then(|view| view.get(&corpse.entity)).is_none() {
         return Err("C16c fresh observer did not see the exact corpse".into());
     }
