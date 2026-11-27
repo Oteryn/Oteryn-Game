@@ -253,10 +253,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("P01 Rat selection requires wire entity names".into());
     }
-    let target =
-        full_row_p01::authored_target(&mut client, world, &metadata.spawns, RAT, "Rat", None)
+    let (first_spawn, target) =
+        full_row_p01::authored_target(&mut client, world, &metadata.spawns, RAT, "Rat", None, true)
             .await?;
-    let first_spawn = tile(target.position)?;
     verify_rat_kill(&mut client, clients, target, race, corpse_stage).await?;
     let before = send(
         &mut client,
@@ -306,13 +305,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("locked ASSIGN reply {refused:?}").into());
     }
     evidence("P01_CHECK client-locked-assign PASS completed-race zero-fee unchanged");
-    let target = full_row_p01::authored_target(
+    let (_, target) = full_row_p01::authored_target(
         &mut client,
         world,
         &metadata.spawns,
         RAT,
         "Rat",
         Some(first_spawn),
+        true,
     )
     .await?;
     verify_rat_kill(&mut client, clients, target, race, corpse_stage).await?;

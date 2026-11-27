@@ -177,7 +177,8 @@ pub(super) async fn authored_target(
     key: &str,
     name: &str,
     excluded_spawn: Option<TilePos>,
-) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    allow_roaming: bool,
+) -> TestResult<(TilePos, oteryn_dev_client::WorldSpatialEntity)> {
     use oteryn_dev_client::EntityKind;
     let from = tile(client.world_spatial().actor_position)?;
     let mut occupied = client_row_p01::occupied_rat_route_tiles(client);
@@ -201,9 +202,7 @@ pub(super) async fn authored_target(
                 .get(point.creature as usize)
                 .is_some_and(|creature| creature.key == key)
             {
-                if Some(at) != excluded_spawn {
-                    points.insert(at);
-                }
+                points.insert(at);
             }
         }
     }
@@ -214,7 +213,9 @@ pub(super) async fn authored_target(
         world,
         from,
         |at| {
-            points.iter().any(|&point| adjacent(at, point))
+            points
+                .iter()
+                .any(|&point| Some(point) != excluded_spawn && adjacent(at, point))
                 && world
                     .base()
                     .tile(at.x, at.y, at.floor)
@@ -229,33 +230,59 @@ pub(super) async fn authored_target(
         .ok_or("authored spawn route has no landing")?;
     let point = points
         .iter()
-        .find(|&&point| adjacent(goal, point))
+        .find(|&&point| Some(point) != excluded_spawn && adjacent(goal, point))
         .copied()
         .ok_or("route does not end adjacent to its authored spawn")?;
     client_row_p01::walk_rat_route(client, world, &path).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     verdict::Harness::global().bounded_wait(deadline, "authored-creature-visibility");
     loop {
-        if let Some(target) = client
-            .world_entities()
-            .and_then(|view| {
-                view.iter().find(|entity| {
+        let target = {
+            let mut targets = client
+                .world_entities()
+                .into_iter()
+                .flat_map(|view| view.iter())
+                .filter(|entity| {
                     entity.kind == EntityKind::Creature
                         && entity
                             .display_name
                             .as_ref()
                             .and_then(|text| text.as_str().ok())
                             == Some(name)
-                        && tile(entity.position).is_ok_and(|at| at == point)
                 })
-            })
-            .copied()
-        {
+                .filter(|entity| {
+                    tile(entity.position).is_ok_and(|at| {
+                        if at.floor != point.floor {
+                            return false;
+                        }
+                        let distance =
+                            |home: TilePos| at.x.abs_diff(home.x).max(at.y.abs_diff(home.y));
+                        let selected_distance = distance(point);
+                        if !allow_roaming {
+                            return selected_distance == 0;
+                        }
+                        // Match a single visible Rat in this spawn's vicinity. Other
+                        // authored Rat cells must be farther away from that candidate.
+                        selected_distance <= 5
+                            && points.iter().all(|&home| {
+                                home == point
+                                    || home.floor != at.floor
+                                    || distance(home) > selected_distance
+                            })
+                    })
+                });
+            let target = targets.next().copied();
+            if targets.next().is_some() {
+                return Err(format!("ambiguous wire {name} at authored spawn {point:?}").into());
+            }
+            target
+        };
+        if let Some(target) = target {
             evidence(&format!(
-                "P01_CHECK authored-spawn PASS key={key} point={point:?} target={:?}",
-                target.entity
+                "P01_CHECK authored-spawn PASS key={key} point={point:?} target={:?} wire_position={:?}",
+                target.entity, target.position
             ));
-            return Ok(target);
+            return Ok((point, target));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(
@@ -683,8 +710,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     prepare_unarmed(&mut client).await?;
-    let target =
-        authored_target(&mut client, world, &metadata.spawns, rat.key(), "Rat", None).await?;
+    let (_, target) = authored_target(
+        &mut client,
+        world,
+        &metadata.spawns,
+        rat.key(),
+        "Rat",
+        None,
+        false,
+    )
+    .await?;
     let first_kill = hunt_exact_creature(
         &mut client,
         target,
@@ -861,13 +896,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }) {
         return Err("step=charm-proc need=unarmed-physical-baseline-to-isolate-Enflame".into());
     }
-    let troll = authored_target(
+    let (troll_spawn, troll) = authored_target(
         &mut client,
         world,
         &metadata.spawns,
         troll_key,
         "Troll",
         None,
+        false,
     )
     .await?;
     let kill = hunt_exact_creature(
@@ -900,7 +936,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     ));
 
     row.at("leave-troll-spawn");
-    retreat_from_spawn(&mut client, world, tile(troll.position)?).await?;
+    retreat_from_spawn(&mut client, world, troll_spawn).await?;
 
     row.at("wait-for-logout-block-and-relog");
     let old_session = client.join_snapshot().game_session_id;
