@@ -316,6 +316,7 @@ impl<'a> Staging<'a> {
             let from = tile(client.world_spatial().actor_position)?;
             let expected =
                 destination(self.world, from, direction).ok_or("C17b planned landing absent")?;
+            Self::wait_for_free_landing(client, expected).await?;
             let (outcome, replies) =
                 oteryn_dev_client::native_session::test_support::capture_command_results(
                     client.step(direction),
@@ -384,6 +385,39 @@ impl<'a> Staging<'a> {
                 .await?;
         }
         Ok(())
+    }
+
+    async fn wait_for_free_landing(client: &mut DevClientSession, landing: TilePos) -> TestResult {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        let mut reported = false;
+        loop {
+            let view = client
+                .world_entities()
+                .ok_or("C17b fixture step requires an entity view")?;
+            let occupant = view.iter().find(|entity| {
+                &entity.entity.identity != view.own_identity()
+                    && tile(entity.position).ok() == Some(landing)
+            });
+            let Some(occupant) = occupant else {
+                return Ok(());
+            };
+            if !reported {
+                evidence(&format!(
+                    "FIXTURE_PLACEMENT C17b waiting for landing={landing:?} occupant={:?}",
+                    occupant.entity
+                ));
+                reported = true;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "FIXTURE_PLACEMENT C17b landing={landing:?} remains occupied by {:?} at sequence={}",
+                    occupant.entity,
+                    client.last_server_sequence()
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
     }
 
     pub(super) async fn encounter(
