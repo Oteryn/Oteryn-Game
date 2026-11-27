@@ -199,6 +199,9 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             let submitted =
                 Request::decode(&submitted_bytes).ok_or("captured Forge request invalid")?;
             let selection = if index == 3 {
+                if !panel.choose_operation(Operation::Fusion) {
+                    return Err("Forge UI did not select Fusion during replay".into());
+                }
                 panel.first_item = submitted.first_item.ok_or("Fusion receiver absent")?.get();
                 panel.second_item = submitted.second_item.ok_or("Fusion donor absent")?.get();
                 if panel.paid_request(submitted.occurrence).is_some() {

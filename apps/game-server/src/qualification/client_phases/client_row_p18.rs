@@ -464,6 +464,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         protect: false,
     };
     let panel = &mut confirmation_panel;
+    if !panel.choose_operation(Operation::Fusion) {
+        return Err("Forge UI did not select Fusion".into());
+    }
     panel.first_item = pair.0.get();
     panel.second_item = pair.1.get();
     let fusion_id = occurrence(session, 1);
