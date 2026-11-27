@@ -1,4 +1,4 @@
-//! Terminalize and send the result before ordered domain updates and relocation.
+//! Retain command outcomes and publish their results and ordered domain updates.
 
 use super::*;
 
@@ -65,8 +65,8 @@ pub(super) async fn finish<S, A>(
     session: &mut ServeState,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: Dispatch,
-    result: Vec<u8>,
-    outcome: CommandOutcome,
+    mut result: Vec<u8>,
+    mut outcome: CommandOutcome,
 ) -> Result<(), ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -89,6 +89,48 @@ where
         // Carry reserved display ordinals across resume, even if writing the reply fails.
         session.admitted.continuity.item_view = view.continuity();
     }
+    let mut result_sequence = result::next_sequence(session)?;
+    let mut relocation_seq = None;
+    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+        && outcome.npc_relocation.is_some()
+        && authority
+            .current_activity_connection(session.admitted)
+            .game_session_id
+            == session.admitted.game_session_id
+    {
+        // Retain the committed semantic result before awaiting the spatial and map
+        // writes. Replay encodes that result at the resumed stream's next sequence
+        // after its snapshot. The original reply gets its live sequence below.
+        let published = Box::pin(emit_command_relocation(
+            stream,
+            authority,
+            session,
+            outcome.npc_relocation.take(),
+        ))
+        .await;
+        if let Err(end) = published {
+            // Preserve the retained result's reservation even if the first
+            // relocation frame failed. Resume still owns the committed command.
+            session.sequence = session.sequence.max(result_sequence);
+            session.admitted.continuity.server_sequence = session.sequence;
+            return Err(end);
+        }
+        relocation_seq = Some(session.sequence);
+        result_sequence = result::next_sequence(session)?;
+        let payload = decode_wire_envelope(&result)
+            .and_then(|envelope| oteryn_protocol_oteryn::decode_command_result(envelope.payload()))
+            .map_err(|_| ServeEnd::Disconnected)?;
+        result = encode_command_result(
+            session.generation,
+            result_sequence,
+            command.command_id,
+            payload.status,
+            payload.payload,
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+    }
+    session.sequence = result_sequence;
+    session.admitted.continuity.server_sequence = session.sequence;
     if matches!(
         dispatch,
         Dispatch::Logout(LogoutResult::Accepted)
@@ -118,8 +160,14 @@ where
         }
         return Err(ServeEnd::LoggedOut);
     }
-    if write_frame(stream, &result).await.is_err() {
-        return Err(ServeEnd::Disconnected);
+    write_frame(stream, &result)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    if let Some(relocation_seq) = relocation_seq {
+        operator_event(&format!(
+            "event=use_relocation_published command_id={} relocation_seq={relocation_seq} use_result_seq={result_sequence}",
+            command.command_id,
+        ));
     }
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing
@@ -553,6 +601,27 @@ where
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }
+    if npc_relocation.is_some() {
+        Box::pin(emit_command_relocation(
+            stream,
+            authority,
+            session,
+            npc_relocation,
+        ))
+        .await?;
+    }
+    if observe_achievements {
+        achievement_notices::refresh(stream, authority, session).await?;
+    }
+    Ok(())
+}
+
+async fn emit_command_relocation<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    npc_relocation: Option<WorldSpatialObservation>,
+) -> Result<(), ServeEnd> {
     if newhaven_travel_transport::emit_relocation(
         stream,
         authority,
@@ -572,9 +641,6 @@ where
     .is_none()
     {
         return Err(ServeEnd::Disconnected);
-    }
-    if observe_achievements {
-        achievement_notices::refresh(stream, authority, session).await?;
     }
     Ok(())
 }

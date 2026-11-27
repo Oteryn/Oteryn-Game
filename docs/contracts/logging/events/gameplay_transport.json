@@ -552,6 +552,14 @@
       "note": "A bounded structured replacement for legacy transport operator diagnostics."
     },
     {
+      "event": "use_relocation_published",
+      "level": "info",
+      "span": false,
+      "fields": ["command_id", "relocation_seq", "use_result_seq"],
+      "codes": [],
+      "note": "Successful relocating USE writes. relocation_seq is the last sequence in the relocation publication, including negotiated map updates. use_result_seq is the following command result."
+    },
+    {
       "event": "visibility_refresh_refused",
       "level": "warn",
       "span": false,
