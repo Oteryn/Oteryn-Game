@@ -985,7 +985,7 @@ fn fixture_occurrence(character: &[u8; 16], vocation: &str, phase: &[u8]) -> [u8
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
-#[cfg(feature = "qualification-spawn")]
+#[cfg(any(test, feature = "qualification-spawn"))]
 fn p04_fixture_retry(
     attempts: &std::sync::atomic::AtomicU8,
     deadline: tokio::time::Instant,
@@ -1002,7 +1002,45 @@ fn p04_fixture_retry(
     true
 }
 
-#[cfg(feature = "qualification-spawn")]
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn reserve_p04_delivery_bag(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    request: &crate::durability::reward_claim_mint::RewardClaimMintRequest,
+    weights: &dyn crate::durability::item_transfer::ItemWeightLookup,
+    deadline: tokio::time::Instant,
+    attempts: &std::sync::atomic::AtomicU8,
+) -> Result<
+    crate::durability::reward_claim_mint::RewardClaimMintCandidate,
+    crate::durability::reward_claim_mint::RewardClaimMintError,
+> {
+    use crate::durability::reward_claim_mint::RewardClaimMintError;
+    DurabilityRoot::with_holder_owner(qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        |error| {
+            matches!(
+                error,
+                RewardClaimMintError::Unavailable(DurabilityError::RootUnavailable)
+            ) && p04_fixture_retry(attempts, deadline, "reserve-delivery-bag")
+        },
+        async || {
+            root.freeze_reward_claim_mint_weighted(
+                authority,
+                proof,
+                fence,
+                request.clone(),
+                weights,
+            )
+            .await
+        },
+    ))
+    .await
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 fn p04_delivery_weight_revision(digest: [u8; 32]) -> String {
     let hex = digest
         .iter()
@@ -1175,10 +1213,11 @@ async fn prepare_p04_delivery(
         key_number: None,
     };
     let weights = FixtureItemContent(native);
-    let mut candidate = root
-        .freeze_reward_claim_mint_weighted(authority, proof, fence, request, &weights)
-        .await
-        .map_err(|error| format!("P04 delivery bag reserve: {error:?}"))?;
+    let mut candidate = reserve_p04_delivery_bag(
+        root, authority, proof, fence, &request, &weights, deadline, &attempts,
+    )
+    .await
+    .map_err(|error| format!("P04 delivery bag reserve: {error:?}"))?;
     let (outcome, _) = root
         .commit_reward_claim_mint_weighted_noticed(
             authority,
@@ -1581,6 +1620,181 @@ mod tests {
         })
         .await;
         assert!(rejected.is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn p04_delivery_bag_reservation_waits_for_busy_holder_postgres()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, debug, runtime};
+
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                runtime()
+                    .map_err(debug)?
+                    .block_on(async {
+                        let harness =
+                            Harness::create(admin, "p04_bag_reserve_holder", true).await?;
+                        let result = exercise_busy_p04_delivery(&harness).await;
+                        harness.cleanup().await?;
+                        result
+                    })
+                    .map_err(debug)
+            })?
+            .join()
+            .map_err(|_| "P04 reservation test thread failed")?
+            .map_err(Into::into)
+    }
+
+    async fn exercise_busy_p04_delivery(
+        harness: &crate::bestiary_postgres_harness::Harness,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{CHARACTER, SESSION, debug, id, scope};
+        use crate::durability::item_loop_move::ItemLoopContent;
+        use crate::durability::item_mint::TypedDefinitionRef;
+        use crate::durability::item_transfer::{
+            CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass, ItemWeightLookup,
+            ItemWeightRefused,
+        };
+        use crate::durability::reward_claim_mint::{
+            RewardClaimMintContent, RewardClaimMintRequest,
+        };
+        use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
+        use crate::foundation::{
+            CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration,
+        };
+        use std::future::Future;
+        use std::task::Poll;
+
+        struct DeliveryWeight;
+        impl ItemWeightLookup for DeliveryWeight {
+            fn generation_digest(&self) -> [u8; 32] {
+                [42; 32]
+            }
+            fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+                Ok(1)
+            }
+        }
+        impl ItemLoopContent for DeliveryWeight {
+            fn loop_content_digest(&self) -> [u8; 32] {
+                self.generation_digest()
+            }
+            fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+                Some(ItemDefinitionFacts {
+                    weight: Some(1),
+                    definition: definition.clone(),
+                    stack: ItemStackClass::NonStackable,
+                    container_capacity: Some(20),
+                    container_slot_equip_pattern: true,
+                })
+            }
+        }
+
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let root = &harness.root;
+        let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+        let session = GameSessionId::decode(&id(SESSION))?;
+        let scope = scope()?;
+        let channel = scope.channel_id().ok_or("fixture Channel")?;
+        let fence = CurrentCharacterItemFence {
+            game_session_id: session,
+            character_id: crate::domain::CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
+            connection_generation: ConnectionGeneration::new(1)?,
+            character_lease_generation: 1,
+            runtime_scope: scope,
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1)?,
+        };
+        let weights = DeliveryWeight;
+        let digest = weights.generation_digest();
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+            .bind(scope.world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+            .execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+            .bind(scope.world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+            .bind(digest.as_slice()).bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
+            .execute(&harness.pool).await?;
+
+        let template = StarterTemplate::main();
+        assert!(matches!(
+            root.grant_starter_items(&authority, &harness.node, &fence, &weights, &template)
+                .await?,
+            StarterGrantOutcome::Minted(_)
+        ));
+        let backpack = weights
+            .loop_facts(&template.definition)
+            .ok_or("fixture backpack facts")?;
+        let input = oteryn_gameplay_quests::quest::task_board::full::DELIVERY_ITEMS
+            .first()
+            .ok_or("fixture delivery catalogue")?
+            .item_id;
+        let request = RewardClaimMintRequest {
+            command: CommandRef::new(session, CommandId::new(1)?),
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: fixture_gear_claim(session, "p04-busy-delivery"),
+                revision_ref: "qualification-v1".into(),
+            },
+            source_placement: "oteryn:qualification.node-boot".into(),
+            item: backpack.clone(),
+            quantity: 1,
+            contents: vec![RewardClaimMintContent {
+                item: ItemDefinitionFacts {
+                    container_capacity: None,
+                    container_slot_equip_pattern: false,
+                    definition: TypedDefinitionRef {
+                        production_key: format!("oteryn:item.tibia.i{input}"),
+                        ..backpack.definition.clone()
+                    },
+                    ..backpack.clone()
+                },
+                quantity: 1,
+                key_number: None,
+                text: None,
+                fluid_subtype: None,
+                charges_remaining: None,
+            }],
+            backpack_outputs: false,
+            additional_items: Vec::new(),
+            root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
+            backpack,
+            content_revision: p04_delivery_weight_revision(digest),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "qualification-v1".into(),
+            achievement: None,
+            quest_transition: None,
+            key_number: None,
+        };
+        let held = root.try_issue_semantic_pass()?;
+        let attempts = std::sync::atomic::AtomicU8::new(1);
+        let mut reserve = std::pin::pin!(reserve_p04_delivery_bag(
+            root,
+            &authority,
+            &harness.node,
+            fence,
+            &request,
+            &weights,
+            tokio::time::Instant::now() + Duration::from_secs(2),
+            &attempts,
+        ));
+        let first = std::future::poll_fn(|cx| Poll::Ready(reserve.as_mut().poll(cx))).await;
+        assert!(
+            first.is_pending(),
+            "the weighted reservation must wait for the busy holder"
+        );
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        reserve.await.map_err(debug)?;
+        let reservations: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(session.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(
+            reservations, 1,
+            "the original delivery bag has one reservation"
+        );
         Ok(())
     }
 
