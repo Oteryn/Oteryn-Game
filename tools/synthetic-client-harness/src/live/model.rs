@@ -410,6 +410,7 @@ impl RenderModel {
             | UseDisposition::BedChooseSkill
             | UseDisposition::BedOccupied
             | UseDisposition::BedWoken
+            | UseDisposition::ForgeOpened
             | UseDisposition::OfflineTraining => Notice::DoorRejected,
         };
         next

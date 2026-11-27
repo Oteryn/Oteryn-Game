@@ -1,14 +1,14 @@
 use oteryn_client_ui::{
     achievement_notices, boss_encounter, boss_rewards, browse_field, container_tree, depot, guild,
-    highscores, hotkey_equip, item_forge, market, npc_dialogue, party, prey, reference_preferences,
-    stash, store, tutorial_notices, weapon_proficiency, world_event,
+    highscores, hotkey_equip, market, npc_dialogue, party, prey, reference_preferences, stash,
+    store, tutorial_notices, weapon_proficiency, world_event,
 };
 use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
 
 #[test]
 fn registered_shortcuts_reach_one_panel_each() -> Result<(), oteryn_input_actions::InputError> {
     type OpenKey = fn(&[NormalizedInputEvent]) -> bool;
-    let panels: [(u16, bool, OpenKey); 21] = [
+    let panels: [(u16, bool, OpenKey); 20] = [
         (15, false, oteryn_client_ui::logout::logout_key),
         (10, false, guild::open_key),
         (10, true, party::open_key),
@@ -21,7 +21,6 @@ fn registered_shortcuts_reach_one_panel_each() -> Result<(), oteryn_input_action
         (16, true, achievement_notices::open_key),
         (5, true, browse_field::open_key),
         (8, true, hotkey_equip::open_key),
-        (9, true, item_forge::open_key),
         (22, true, store::open_key),
         (22, false, stash::open_key),
         (15, true, depot::open_key),
@@ -50,6 +49,17 @@ fn registered_shortcuts_reach_one_panel_each() -> Result<(), oteryn_input_action
             );
         }
     }
+    let old_forge_shortcut = NormalizedInputEvent::Key {
+        code: KeyCode::new(9)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        repeat: false,
+    };
+    assert!(
+        panels
+            .iter()
+            .all(|(_, _, open)| !open(std::slice::from_ref(&old_forge_shortcut)))
+    );
     Ok(())
 }
 
