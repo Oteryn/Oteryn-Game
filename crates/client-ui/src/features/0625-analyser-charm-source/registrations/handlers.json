@@ -1,0 +1,23 @@
+{
+  "mechanic": "0625-analyser-charm-source",
+  "kind": "handlers",
+  "id": "0625-analyser-charm-source-observe",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "capability": 625,
+  "entry": "protocol.rs::damage_line",
+  "push_messages": [
+    "AnalyserAttributedFacts",
+    "ChatLine"
+  ],
+  "reducer": "protocol.rs::damage_line",
+  "test": "tests.rs::charm_damage_line_routes_only_system_damage",
+  "not_applicable": {
+    "state": "The existing analyser and Server Log retain the observations.",
+    "protocol": "The session decodes negotiated analyser impact fields 4 and 5.",
+    "view": "The existing Server Log displays committed charm damage.",
+    "input": "The server pushes damage facts and lines.",
+    "settings": "The existing Server Log settings apply."
+  }
+}

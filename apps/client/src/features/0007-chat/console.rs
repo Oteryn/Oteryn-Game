@@ -388,6 +388,10 @@ impl Mailbox {
         for event in events {
             match event {
                 oteryn_session::SessionEvent::ChatLine(delta) => {
+                    if let Some(text) = oteryn_client_ui::analyser_charm_source::damage_line(&delta.value) {
+                        self.chat.console.notices.push(oteryn_client_ui::chat::NoticeClass::Status, text, received);
+                        continue;
+                    }
                     #[cfg(bevy_shell)]
                     match &delta.value {
                         oteryn_session::ChatLine::System { text } => self.window_notice(

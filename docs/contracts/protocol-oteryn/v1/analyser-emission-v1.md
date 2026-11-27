@@ -25,3 +25,17 @@ existing 1,024-fact cap and batches by 64 facts/4,096 bytes. Recovery discards p
 facts and increments the retained revision once when it does so. Reconnect and
 scope transfer never reset the revision. Exact actor/session and connection
 bindings prevent a stale socket from draining or clearing a successor's queue.
+
+
+## Outgoing charm damage
+
+Negotiated capability 625 `ANALYSER_CHARM_SOURCE_V1` requires capabilities 6 and 10
+and extends domain 15, delta type 1. In `AnalyserImpactV1`, field 4 is the canonical
+`charm_key` and field 5 is the target `EntityRefV1` with a nonzero generation.
+Both fields appear together only on a committed outgoing charm damage impact.
+Without 625, impacts use the existing encoding. Capability 486 independently
+governs the attacker on incoming damage. Batch and fact bounds are unchanged.
+
+The player receives the damage line through existing Game chat feedback for the
+Server Log, with the lowercased charm display name as the suffix. The damage
+line is produced from applied health loss, including lethal hits.

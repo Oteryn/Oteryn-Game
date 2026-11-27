@@ -2,12 +2,12 @@
 //! Rules never read these facts. Only selected, exact actor/session bindings have queues.
 use std::collections::{HashMap, HashSet};
 use std::num::{NonZeroU16, NonZeroU32};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::analyser::{
-    AnalyserFact, AnalyserImpact, AnalyserItemCount, AnalyserPendingQueue,
+    AnalyserCharmSource, AnalyserFact, AnalyserImpact, AnalyserItemCount, AnalyserPendingQueue,
 };
 use oteryn_protocol_oteryn::damage_element::DamageElement;
 
@@ -49,6 +49,7 @@ struct Stream {
     generation: u64,
     /// Capability 486 selected: damage input may carry the attacker.
     attributed: bool,
+    charm_source: bool,
     pending: AnalyserPendingQueue,
     totals: super::analyser_party::Totals,
     hunt: Option<(
@@ -62,9 +63,40 @@ struct Stream {
 /// Activity runtimes share this leaf hub with their originating Channel. Terminal retirement
 /// removes entries. No leaf guard is held while acquiring another owner or awaiting IO.
 #[derive(Debug, Default)]
-pub struct AnalyserStreams(Mutex<HashMap<GameSessionId, Stream>>);
+pub struct AnalyserStreams {
+    streams: Mutex<HashMap<GameSessionId, Stream>>,
+    chat: OnceLock<CombatChat>,
+}
+
+pub(super) struct CharmImpact<'a> {
+    pub target: ExactActorRef,
+    pub result: oteryn_gameplay_entities::OwnerDamageResult,
+    pub element: oteryn_gameplay_progression::charm_effects::CharmElement,
+    pub key: &'a str,
+}
+
+#[derive(Debug)]
+struct CombatChat {
+    chat: super::chat_intent::ChatFeedback,
+    creature_names: HashMap<String, (String, String)>,
+}
 
 impl AnalyserStreams {
+    pub(super) fn bind_chat(
+        &self,
+        chat: &super::chat_intent::ChatRuntime,
+        content: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    ) {
+        self.chat.get_or_init(|| CombatChat {
+            chat: chat.feedback(),
+            creature_names: content
+                .into_iter()
+                .flat_map(|content| &content.creature_profiles().records)
+                .filter_map(creature_name_description)
+                .collect(),
+        });
+    }
+
     #[cfg(test)]
     pub(super) fn snapshot(
         &self,
@@ -73,7 +105,7 @@ impl AnalyserStreams {
         generation: u64,
         items: Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
     ) -> Option<bool> {
-        self.snapshot_attributed(actor, session, generation, items, false)
+        self.snapshot_attributed(actor, session, generation, items, false, false)
     }
 
     pub(super) fn snapshot_attributed(
@@ -83,8 +115,9 @@ impl AnalyserStreams {
         generation: u64,
         items: Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
         attributed: bool,
+        charm_source: bool,
     ) -> Option<bool> {
-        let mut streams = self.0.lock().ok()?;
+        let mut streams = self.streams.lock().ok()?;
         if streams
             .get(&session)
             .is_some_and(|held| held.generation > generation)
@@ -100,6 +133,7 @@ impl AnalyserStreams {
                 actor,
                 generation,
                 attributed,
+                charm_source,
                 pending: AnalyserPendingQueue::default(),
                 totals: Default::default(),
                 hunt: None,
@@ -111,7 +145,7 @@ impl AnalyserStreams {
     }
 
     pub(super) fn forget(&self, session: GameSessionId) {
-        if let Ok(mut streams) = self.0.lock() {
+        if let Ok(mut streams) = self.streams.lock() {
             streams.remove(&session);
         }
     }
@@ -129,13 +163,10 @@ impl AnalyserStreams {
         fact: AnalyserFact,
         attacker: Option<ExactActorRef>,
     ) {
-        if let Ok(mut streams) = self.0.lock()
+        if let Ok(mut streams) = self.streams.lock()
             && let Some(held) = streams.get_mut(&session).filter(|held| held.actor == actor)
         {
-            held.totals.observe(&fact);
-            if let Some((_, totals)) = &mut held.hunt {
-                totals.observe(&fact);
-            }
+            held.observe(&fact);
             let attacker = attacker
                 .filter(|attacker| held.attributed && *attacker != actor)
                 .filter(|_| {
@@ -160,7 +191,7 @@ impl AnalyserStreams {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<super::analyser_party::AccountingSnapshot> {
-        let streams = self.0.lock().ok()?;
+        let streams = self.streams.lock().ok()?;
         let held = streams.get(&session).filter(|held| held.actor == actor)?;
         Some((
             held.started.elapsed().as_secs(),
@@ -174,7 +205,7 @@ impl AnalyserStreams {
         member: super::analyser_party::shared::LocalMember,
         interval: u64,
     ) -> Option<super::analyser_party::shared::Measurement> {
-        let streams = self.0.lock().ok()?;
+        let streams = self.streams.lock().ok()?;
         let held = streams
             .get(&member.session)
             .filter(|held| held.actor == member.actor)?;
@@ -195,7 +226,7 @@ impl AnalyserStreams {
         members: &[super::analyser_party::shared::LocalMember],
         reset: bool,
     ) -> Option<()> {
-        let mut streams = self.0.lock().ok()?;
+        let mut streams = self.streams.lock().ok()?;
         for member in members {
             if let Some(held) = streams
                 .get_mut(&member.session)
@@ -222,7 +253,7 @@ impl AnalyserStreams {
         session: GameSessionId,
         generation: u64,
     ) -> Option<Vec<u8>> {
-        self.0
+        self.streams
             .lock()
             .ok()?
             .get_mut(&session)
@@ -264,6 +295,67 @@ impl AnalyserStreams {
         }
     }
 
+    pub(super) fn charm_impact(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        impact: CharmImpact<'_>,
+    ) {
+        let Some(loss) = impact.result.committed_health_loss() else {
+            return;
+        };
+        if let Ok(mut streams) = self.streams.lock()
+            && let Some(held) = streams.get_mut(&session).filter(|held| held.actor == actor)
+        {
+            let mut remaining = loss.get();
+            let charm = held.charm_source.then(|| AnalyserCharmSource {
+                charm_key: impact.key.to_owned(),
+                target: entity_ref(impact.target),
+            });
+            while let Some(value) = NonZeroU32::new(remaining.min(u64::from(u32::MAX)) as u32) {
+                let fact = AnalyserFact::Impact(AnalyserImpact::Damage {
+                    value,
+                    element: charm_element(impact.element),
+                });
+                held.observe(&fact);
+                if charm
+                    .as_ref()
+                    .is_none_or(|source| held.pending.push_charm_impact(&fact, source).is_err())
+                {
+                    let _ = held.pending.push(&fact);
+                }
+                remaining -= u64::from(value.get());
+            }
+        }
+        let Some(binding) = self.chat.get() else {
+            return;
+        };
+        let Ok(creature) = runtime.companion_snapshot_including_dead(impact.target) else {
+            return;
+        };
+        let policy = &creature.state.policy;
+        let name = binding
+            .creature_names
+            .get(&policy.definition_key)
+            .filter(|(revision, _)| *revision == policy.definition_revision)
+            .map_or(policy.display_name.as_str(), |(_, name)| name);
+        let charm = impact
+            .key
+            .strip_prefix("oteryn:charm.")
+            .unwrap_or(impact.key)
+            .replace('_', " ");
+        let points = if loss.get() == 1 {
+            "hitpoint"
+        } else {
+            "hitpoints"
+        };
+        binding.chat.push(
+            session,
+            &format!("{name} loses {loss} {points} due to your attack. ({charm} charm)"),
+        );
+    }
+
     pub(super) fn input_amount(
         &self,
         actor: ExactActorRef,
@@ -297,7 +389,7 @@ impl AnalyserStreams {
         let Some(count) = u16::try_from(quantity).ok().and_then(NonZeroU16::new) else {
             return;
         };
-        let item_type = self.0.lock().ok().and_then(|streams| {
+        let item_type = self.streams.lock().ok().and_then(|streams| {
             streams.get(&session).and_then(|held| {
                 held.items.as_ref()?.definition_ref(
                     &definition.family,
@@ -335,6 +427,36 @@ impl AnalyserStreams {
             }
         }
     }
+}
+
+impl Stream {
+    fn observe(&mut self, fact: &AnalyserFact) {
+        self.totals.observe(fact);
+        if let Some((_, totals)) = &mut self.hunt {
+            totals.observe(fact);
+        }
+    }
+}
+
+fn creature_name_description(
+    record: &crate::content::native_gameplay::CreatureProfileRecord,
+) -> Option<(String, (String, String))> {
+    use crate::content::ProjectV2AuthoringProfileData;
+    let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+        return None;
+    };
+    let details = profile.details.as_ref()?;
+    let article = details.article.as_deref().unwrap_or_default();
+    let mut chars = article.chars();
+    let first = chars.next()?;
+    let name = format!(
+        "{}{} {}",
+        first.to_uppercase(),
+        chars.as_str(),
+        details.display_name.to_lowercase()
+    );
+    let target = &record.profile.target;
+    Some((target.key.clone(), (target.revision.clone(), name)))
 }
 
 /// Retained only as long as the exact bounded native corpse projection. Both queue retries

@@ -32,6 +32,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .continuity
                 .selected_capabilities
                 .contains(oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1),
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_CHARM_SOURCE_V1),
         )
     }
 
@@ -139,6 +143,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn analyser_spell_charms(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        batch: &crate::spell::combat_batch::OwnerCombatBatch,
+        receipt: &crate::spell::combat_batch::CombatBatchReceipt,
+        damage: &[crate::spell::delayed_execution::SpellCharmDamage],
+    ) {
+        for child in damage {
+            if let Some(result) = receipt
+                .effects
+                .iter()
+                .find(|effect| {
+                    effect.target == child.target && effect.sub_ordinal == child.sub_ordinal
+                })
+                .and_then(|effect| effect.health)
+            {
+                self.analyser.charm_impact(
+                    runtime,
+                    batch.caster,
+                    batch.command.game_session_id(),
+                    super::CharmImpact {
+                        target: child.target,
+                        result,
+                        element: child.element,
+                        key: &child.key,
+                    },
+                );
+            }
+        }
+    }
+
     pub(in crate::gameplay_transport) fn analyser_batch(
         &self,
         runtime: &ChannelRuntimeV1,

@@ -1138,6 +1138,7 @@ pub(in crate::gameplay_transport) fn commit_due_batch(
     if receipt.applied
         && let Some(children) = children
     {
+        states.analyser_spell_charms(runtime, batch, &receipt, &children.damage);
         for (actor, until) in &children.fatal_holds {
             states
                 .monster_melee

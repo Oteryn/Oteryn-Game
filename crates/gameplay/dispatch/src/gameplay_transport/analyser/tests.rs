@@ -121,7 +121,7 @@ fn hit_attribution_reaches_only_selected_sessions_with_the_attacker_entity() {
     // carry none, and the totals still observe every hit.
     let attributed = AnalyserStreams::default();
     attributed
-        .snapshot_attributed(actor, session, 1, None, true)
+        .snapshot_attributed(actor, session, 1, None, true, false)
         .expect("stream");
     attributed.input_amount(actor, session, 5, DamageElement::Earth, player_hit);
     attributed.input_amount(

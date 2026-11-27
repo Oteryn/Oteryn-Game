@@ -1,0 +1,14 @@
+{
+  "id": 625,
+  "name": "ANALYSER_CHARM_SOURCE_V1",
+  "owner_decision": "2026-11-27 coordinator allocation for P01 Enflame",
+  "owner": "Game ChannelRuntime committed charm damage owners",
+  "requires": [
+    6,
+    10
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Extends existing domain 15, delta type 1: outgoing charm damage impacts carry fields 4 charm_key and 5 target together only with selection."
+}

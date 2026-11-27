@@ -110,11 +110,13 @@ fn c0486_selected_session_reports_the_attacker_of_a_damage_input_fact() -> Resul
                     vec![
                         AttributedFact {
                             fact: hit,
-                            attacker: Some(attacker)
+                            attacker: Some(attacker),
+                            charm: None,
                         },
                         AttributedFact {
                             fact: AnalyserFact::Kill { race: None },
-                            attacker: None
+                            attacker: None,
+                            charm: None,
                         },
                     ]
                 );

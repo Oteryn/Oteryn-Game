@@ -230,6 +230,8 @@ pub mod logout {
 }
 #[path = "features/0010-analyser/mod.rs"]
 pub mod analyser;
+#[path = "features/0625-analyser-charm-source/protocol.rs"]
+pub mod analyser_charm_source;
 /// Capability 486: the attacker of a received hit and the own-character hit flash (N006).
 #[path = "features/0486-analyser-hit-attribution/protocol.rs"]
 pub mod analyser_hit_attribution;

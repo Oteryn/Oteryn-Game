@@ -156,6 +156,16 @@ pub struct DueSpellChildren {
     pub proof:
         Option<oteryn_gameplay_entities::carrier::runtime_actor_spell::QualifiedSpellChildren>,
     pub fatal_holds: Vec<(ExactActorRef, u64)>,
+    pub damage: Vec<SpellCharmDamage>,
+}
+
+/// Advisory provenance of a qualified physical child. Only its committed receipt can emit it.
+#[derive(Debug, Clone)]
+pub struct SpellCharmDamage {
+    pub target: ExactActorRef,
+    pub sub_ordinal: u16,
+    pub element: oteryn_gameplay_progression::charm_effects::CharmElement,
+    pub key: String,
 }
 
 #[derive(Debug, Clone)]

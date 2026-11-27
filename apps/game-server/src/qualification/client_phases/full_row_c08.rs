@@ -393,6 +393,7 @@ mod tests {
                     source: AnalyserDamageSource::Creature(None),
                 },
                 attacker: None,
+                charm: None,
             }],
         });
         assert_eq!(poison_tick_sequence(vec![tick(9), tick(11)], 10), Some(11));
@@ -403,7 +404,7 @@ mod tests {
     fn independent_review_c08_rejects_unproven_evidence() {
         use oteryn_protocol_oteryn::{analyser::{AnalyserFact, AnalyserDamageSource, AttributedFact}, damage_element::DamageElement};
         let value = std::num::NonZeroU32::MIN;
-        let hit = |element, source| AttributedFact { fact: AnalyserFact::DamageInput { value, element, source }, attacker: None };
+        let hit = |element, source| AttributedFact { fact: AnalyserFact::DamageInput { value, element, source }, attacker: None, charm: None };
         assert!(!poison_tick_fact(&hit(DamageElement::Physical, AnalyserDamageSource::Creature(None))));
         assert!(!poison_tick_fact(&hit(DamageElement::Earth, AnalyserDamageSource::None)));
         assert!(poison_tick_fact(&hit(DamageElement::Earth, AnalyserDamageSource::Creature(None))));
