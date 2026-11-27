@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "ce7d3e2d4b716bf69b9e6c964b9cfde98e58f837ec59b62a0b4db67b4fd5e84a",
+  "input_sha256": "b36e64a26268b736c7de7d26f70fa0edfcfaa7b813987e8b65f08c40a5ca18d0",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2965,7 +2965,6 @@
     "oteryn:creature.pixie",
     "oteryn:creature.plaguesmith",
     "oteryn:creature.poacher",
-    "oteryn:creature.poison_spider",
     "oteryn:creature.poisonous_carnisylvan",
     "oteryn:creature.polar_bear",
     "oteryn:creature.pooka",
