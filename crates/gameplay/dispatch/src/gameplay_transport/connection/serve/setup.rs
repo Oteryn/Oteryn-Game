@@ -9,6 +9,7 @@ struct LiveSetup {
     items: snapshot::ItemSnapshot,
     sessions: snapshot::SessionSnapshot,
     world: snapshot::WorldSnapshot,
+    turns: Option<tokio::sync::broadcast::Receiver<CommittedTurn>>,
 }
 
 /// Why the join did not complete: before its snapshot reached the transport, while writing it,
@@ -111,6 +112,16 @@ where
             },
         );
     }
+    // Subscribe before the first spatial read so a turn during join can follow the snapshot.
+    let turns = if admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_WORLD_SPATIAL_ENTITIES)
+    {
+        authority.subscribe_turns()
+    } else {
+        None
+    };
     record_join_progress("initial", admitted.first_entry);
     let mut initial = snapshot::initial(authority, actor, admitted, &mut payloads)
         .await
@@ -275,6 +286,7 @@ where
             items,
             sessions,
             world,
+            turns,
         },
     )
     .await
@@ -306,6 +318,7 @@ async fn live<A: FreshAdmissionAuthority>(
         items,
         sessions,
         world,
+        turns,
     } = setup;
     let snapshot::InitialSnapshot {
         spell_catalog,
@@ -552,6 +565,7 @@ async fn live<A: FreshAdmissionAuthority>(
         npc_shown,
         combat_refresh,
         visibility_refresh,
+        turns,
         pacer,
         step_holder,
         step_wait_receipts,

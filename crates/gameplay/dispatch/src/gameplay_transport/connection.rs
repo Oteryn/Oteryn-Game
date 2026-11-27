@@ -152,12 +152,12 @@ use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
-    ChannelEntity, DELTA_TYPE_WORLD_SPATIAL_V1, EntityLights, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, SessionVisibility, StepDirection, StepDisposition,
-    VisibilityUpdate, VisibleKind, WorldSpatialEntity, WorldSpatialError, WorldSpatialObservation,
-    decode_step_intent_selected, encode_step_outcome, encode_visibility_delta_lit,
-    encode_visibility_snapshot_lit, encode_world_spatial, moved_step_wait_ms,
-    step_wait_receipts_enabled, too_early_step_wait_ms,
+    ChannelEntity, CommittedTurn, DELTA_TYPE_WORLD_SPATIAL_V1, EntityLights,
+    SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, SessionVisibility,
+    StepDirection, StepDisposition, VisibilityUpdate, VisibleKind, WorldSpatialEntity,
+    WorldSpatialError, WorldSpatialObservation, decode_step_intent_selected, encode_step_outcome,
+    encode_visibility_delta_lit, encode_visibility_snapshot_lit, encode_world_spatial,
+    moved_step_wait_ms, step_wait_receipts_enabled, too_early_step_wait_ms,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::chat::EGRESS_MAX_LINES;

@@ -248,6 +248,7 @@ pub(super) fn encode(
         {
             (*status, payload.clone())
         }
+        Dispatch::Turn(_) => (CommandStatus::Accepted, vec![8, 1]),
         Dispatch::Reply(status, payload) => (*status, std::mem::take(payload)),
         Dispatch::NpcShop(status, payload, _, _) => (*status, std::mem::take(payload)),
         Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),

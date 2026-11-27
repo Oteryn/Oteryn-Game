@@ -33,6 +33,7 @@ mod snapshot;
 mod spell_catalog;
 mod spell_repair;
 mod target_move;
+mod turn;
 use command::CommandOutcome;
 mod effects;
 mod native_cues;
@@ -95,6 +96,7 @@ struct ServeState {
     step_holder: std::sync::Arc<()>,
     pacer: StepPacer,
     visibility_refresh: Option<tokio::time::Interval>,
+    turns: Option<tokio::sync::broadcast::Receiver<CommittedTurn>>,
     combat_refresh: Option<tokio::time::Interval>,
     npc_shown: Option<WireEntityRef>,
     npc_refresh: Option<tokio::time::Interval>,

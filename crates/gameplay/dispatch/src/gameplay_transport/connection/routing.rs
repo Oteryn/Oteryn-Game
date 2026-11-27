@@ -12,6 +12,7 @@ use super::{
 pub(super) enum Dispatch {
     /// A complete command result with no subsequent mechanic-specific effects.
     Reply(crate::foundation::CommandStatus, Vec<u8>),
+    Turn(super::CommittedTurn),
     /// A rule callback may acknowledge a committed release or close on uncertainty.
     ServerModal(crate::gameplay_transport::server_modal::ServerModalOutcome),
     Vip(Option<Vec<u8>>),

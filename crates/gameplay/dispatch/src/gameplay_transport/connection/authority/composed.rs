@@ -4,6 +4,7 @@ use crate::gameplay_transport::connection::{
     AchievementNoticeObservation, SelectedCapabilities, SoundObservation, UseCommand,
 };
 use crate::gameplay_transport::item_view::ItemKey;
+use crate::gameplay_transport::world_spatial::CommittedTurn;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
@@ -1086,7 +1087,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         direction: StepDirection,
-    ) -> bool {
+    ) -> Option<CommittedTurn> {
         use crate::foundation::MovementFacing;
         let mut runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
@@ -1096,15 +1097,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .player_control_facts(actor, session)
                 .is_ok_and(|facts| facts.control_loss.is_none())
         {
-            return false;
+            return None;
         }
         let context = runtime.pinned_movement_context();
         let mut movement = runtime.borrow_movement_position();
-        let Ok(expected) = movement.read(actor) else {
-            return false;
-        };
+        let expected = movement.read(actor).ok()?;
         if expected.context() != context {
-            return false;
+            return None;
         }
         let facing = match direction {
             StepDirection::North => MovementFacing::North,
@@ -1112,9 +1111,49 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::South => MovementFacing::South,
             StepDirection::West => MovementFacing::West,
             // TURN keeps its existing cardinal-only contract.
-            _ => return false,
+            _ => return None,
         };
-        movement.commit_turn(expected, facing).is_ok()
+        let committed = movement.commit_turn(expected, facing).ok()?;
+        let turn = CommittedTurn {
+            actor,
+            revision: committed.revision(),
+            direction,
+        };
+        if let Some(observers) = self.states.turns.get() {
+            let _ = observers.send(turn);
+        }
+        Some(turn)
+    }
+
+    fn subscribe_turns(&self) -> Option<tokio::sync::broadcast::Receiver<CommittedTurn>> {
+        Some(
+            self.states
+                .turns
+                .get_or_init(|| tokio::sync::broadcast::Sender::new(128))
+                .subscribe(),
+        )
+    }
+
+    async fn turn_is_visible(&self, observer: ExactActorRef, turn: CommittedTurn) -> bool {
+        use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
+
+        let runtime = self.runtime.lock().await;
+        let context = runtime.pinned_movement_context();
+        let position = |actor| {
+            let snapshot = runtime.read_actor_position(actor).ok()?;
+            if snapshot.context() != context || runtime.house_observer(actor).ok()?.is_some() {
+                return None;
+            }
+            let at = snapshot.position();
+            VisibilityPosition::new(at.x, at.y, at.floor).ok()
+        };
+        let (Some(origin), Some(target)) = (position(observer), position(turn.actor)) else {
+            return false;
+        };
+        VisibilitySettings::REFERENCE.can_see(origin, target)
+            && runtime
+                .actor_staff_visibility(turn.actor)
+                .is_ok_and(|(ghost, _, _)| !ghost || self.states.staff_world.group(observer) >= 4)
     }
 
     async fn item_walk_route(

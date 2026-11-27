@@ -17,6 +17,14 @@ use oteryn_protocol_oteryn::{
     CommandStatus, MessageType, decode_command_result, decode_state_delta, decode_wire_envelope,
 };
 
+use oteryn_protocol_oteryn::target_move::{
+    COMMAND_TYPE_TARGET_MOVE_INTENT, TargetMoveIntent, encode_target_move_intent,
+};
+use oteryn_protocol_oteryn::world_spatial::{ActorPosition, StepDirection};
+use oteryn_protocol_oteryn::world_spatial_entities::{
+    EntityDetail, WorldSpatialEntity, decode_world_spatial_entities_delta_with_item_handles,
+};
+
 use std::time::Duration;
 
 use tokio::io::DuplexStream;
@@ -163,8 +171,14 @@ pub(super) async fn client_scenario(
         "paced by Movement"
     );
     // TURN changes the actual owner facing used by directional spells, without relocation.
-    send(client, 2, 81, &[26, 2, 8, 1]).await?;
-    result(client, 2, 1).await?;
+    turn(
+        client,
+        2,
+        actor,
+        at(6, 4),
+        oteryn_protocol_oteryn::world_spatial::StepDirection::North,
+    )
+    .await?;
     let current = owner
         .runtime
         .lock()
@@ -174,30 +188,6 @@ pub(super) async fn client_scenario(
         .map_err(debug)?;
     assert_eq!(current.position(), at(6, 4));
     assert_eq!(current.facing(), Some(MovementFacing::North));
-    loop {
-        let frame = read(client).await?;
-        let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() == MessageType::StateDelta {
-            let delta = decode_state_delta(envelope.payload())?;
-            if delta.domain_id == 1 {
-                let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
-                if let Some(entity) = value
-                    .update
-                    .iter()
-                    .find(|e| e.entity.identity == actor.placement_identity())
-                {
-                    assert!(matches!(
-                        entity.detail,
-                        oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::Actor {
-                            direction: oteryn_protocol_oteryn::world_spatial::StepDirection::North,
-                            ..
-                        }
-                    ));
-                    break;
-                }
-            }
-        }
-    }
 
     // Stop discards the queue before another due step.
     send(client, 3, 81, &cell(1, 4)).await?;
@@ -440,4 +430,70 @@ pub(super) async fn without_capability(client: &mut DuplexStream, corpse: [u8; 1
         }
     }
     Ok(())
+}
+
+pub(super) async fn turn(
+    client: &mut DuplexStream,
+    command: u64,
+    caster: ExactActorRef,
+    cell: MovementLocalPosition,
+    facing: StepDirection,
+) -> TestResult {
+    let intent = encode_target_move_intent(TargetMoveIntent::Turn(facing)).map_err(debug)?;
+    send(client, command, COMMAND_TYPE_TARGET_MOVE_INTENT, &intent).await?;
+    let mut saw_turn = false;
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, command);
+            assert_eq!(result.status, CommandStatus::Accepted);
+            assert_eq!(result.payload, [8, 1]);
+            assert!(
+                saw_turn,
+                "TURN {command} receipt preceded the facing update"
+            );
+            return Ok(());
+        }
+        saw_turn |= update_in(&envelope, caster, cell, facing)?;
+    }
+}
+
+pub(super) fn update_in(
+    envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    caster: ExactActorRef,
+    cell: MovementLocalPosition,
+    facing: StepDirection,
+) -> TestResult<bool> {
+    if envelope.message_type() == MessageType::StateDelta {
+        let delta = decode_state_delta(envelope.payload())?;
+        if delta.domain_id == 1 {
+            let spatial = decode_world_spatial_entities_delta_with_item_handles(delta.payload)
+                .map_err(debug)?;
+            return Ok(sees(&spatial.update, caster, cell, facing));
+        }
+    }
+    Ok(false)
+}
+
+pub(super) fn sees(
+    entities: &[WorldSpatialEntity],
+    caster: ExactActorRef,
+    cell: MovementLocalPosition,
+    facing: StepDirection,
+) -> bool {
+    let position = ActorPosition {
+        x: cell.x,
+        y: cell.y,
+        floor: cell.floor,
+    };
+    entities.iter().any(|entry| {
+        entry.entity.identity == caster.placement_identity()
+            && entry.entity.generation == caster.actor_local_generation()
+            && entry.position == position
+            && matches!(entry.detail,
+                EntityDetail::Actor { direction, .. }
+                | EntityDetail::ActorWithIcons { direction, .. } if direction == facing)
+    })
 }

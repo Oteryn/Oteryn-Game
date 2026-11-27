@@ -466,6 +466,19 @@ pub trait FreshAdmissionAuthority {
         _actor: ExactActorRef,
         _session: GameSessionId,
         _direction: StepDirection,
+    ) -> impl Future<Output = Option<CommittedTurn>> {
+        async { None }
+    }
+
+    /// Watch turns committed to this connection's current spatial owner.
+    fn subscribe_turns(&self) -> Option<tokio::sync::broadcast::Receiver<CommittedTurn>> {
+        None
+    }
+
+    fn turn_is_visible(
+        &self,
+        _observer: ExactActorRef,
+        _turn: CommittedTurn,
     ) -> impl Future<Output = bool> {
         async { false }
     }

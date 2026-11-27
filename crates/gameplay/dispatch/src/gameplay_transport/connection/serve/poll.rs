@@ -2,7 +2,7 @@
 
 use super::*;
 
-const PERIODIC_REFRESHES: u8 = 6;
+const REFRESH_SLOTS: u8 = 7;
 
 pub(super) enum Next {
     Frame(std::io::Result<Vec<u8>>),
@@ -15,6 +15,7 @@ pub(super) enum Next {
     QuestLog,
     Chat,
     Visibility,
+    Turn(CommittedTurn),
     Combat,
     Chase,
     TargetMove,
@@ -35,6 +36,7 @@ impl Next {
             Self::QuestLog => "quest_log",
             Self::Chat => "chat",
             Self::Visibility => "visibility",
+            Self::Turn(_) => "turn",
             Self::Combat => "combat",
             Self::Chase => "chase",
             Self::TargetMove => "target_move",
@@ -96,6 +98,19 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
                 Some(refresh) => refresh.tick().await,
                 None => std::future::pending().await,
             }
+        });
+        let mut turns = std::pin::pin!(async {
+            if let Some(turns) = session.turns.as_mut() {
+                loop {
+                    match turns.recv().await {
+                        Ok(turn) => return turn,
+                        // Periodic visibility reconciles the current view on overflow.
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                    }
+                }
+            }
+            std::future::pending().await
         });
         let mut npc_tick = std::pin::pin!(async {
             match session.npc_refresh.as_mut() {
@@ -161,11 +176,18 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             }
             // A refresh (or its following input turn) may outlast the timer's period.
             // Rotate only after selecting a refresh: every continuously ready timer gets
-            // a turn within six refresh selections, even when Serene is always overdue.
+            // a turn even when Serene is always overdue or turn publications keep arriving.
             // Probe/server-message priority and the one input turn remain above this ring.
-            for offset in 0..PERIODIC_REFRESHES {
-                let refresh = (session.next_periodic_refresh + offset) % PERIODIC_REFRESHES;
+            for offset in 0..REFRESH_SLOTS {
+                let refresh = (session.next_periodic_refresh + offset) % REFRESH_SLOTS;
                 let (next, ready) = match refresh {
+                    6 => {
+                        if let std::task::Poll::Ready(turn) = turns.as_mut().poll(context) {
+                            session.next_periodic_refresh = 0;
+                            return std::task::Poll::Ready(Next::Turn(turn));
+                        }
+                        continue;
+                    }
                     0 => (Next::Serene, serene_tick.as_mut().poll(context)),
                     1 => (Next::QuestLog, quest_log_tick.as_mut().poll(context)),
                     2 => (Next::Chat, chat_tick.as_mut().poll(context)),
@@ -174,7 +196,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
                     _ => (Next::Npc, npc_tick.as_mut().poll(context)),
                 };
                 if ready.is_ready() {
-                    session.next_periodic_refresh = (refresh + 1) % PERIODIC_REFRESHES;
+                    session.next_periodic_refresh = (refresh + 1) % REFRESH_SLOTS;
                     return std::task::Poll::Ready(next);
                 }
             }
@@ -192,6 +214,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
                 | Next::QuestLog
                 | Next::Chat
                 | Next::Visibility
+                | Next::Turn(_)
                 | Next::Combat
                 | Next::Npc
         );
