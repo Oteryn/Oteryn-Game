@@ -340,6 +340,7 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
         let deadline = tokio::time::Instant::now() + TARGET_DEADLINE;
         let mut damaged = false;
         let mut last_health = 100;
+        let mut lowest_health = last_health;
         let attack_started = std::time::Instant::now();
         let mut last = target.position;
         loop {
@@ -357,6 +358,10 @@ async fn clear_corridor(client: &mut DevClientSession) -> TestResult {
                             && health_percent != last_health
                         {
                             damaged |= health_percent < 100;
+                            if health_percent < lowest_health {
+                                lowest_health = health_percent;
+                                verdict::Harness::global().progress("p11-corridor-damage");
+                            }
                             last_health = health_percent;
                             evidence(&format!(
                                 "P11_COMBAT health target={:?} percent={health_percent} elapsed_ms={}",
