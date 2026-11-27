@@ -68,6 +68,25 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if outcome.disposition != SpellCastDisposition::Cast {
+        return Ok(());
+    }
+    // All spell routes reach here after a terminal cast. Re-read the committed custody
+    // through the item-use owner, which only emits deltas for views that changed.
+    if let Some(view) = session.item_view.as_mut() {
+        item_use_view_refresh::refresh(
+            stream,
+            authority,
+            session.actor,
+            &mut session.admitted,
+            view,
+            session.container_views.as_mut(),
+            &mut session.sequence,
+        )
+        .await
+        .ok_or(ServeEnd::Disconnected)?;
+    }
+
     // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
     // revision: a committed cast advances it by exactly one. Revisions start at 1, so
     // 0 means the join carried no ACTOR_VITALS snapshot: there is no base to delta
