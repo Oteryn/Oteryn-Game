@@ -340,6 +340,7 @@ async fn exercise_invariants(database: &Database) -> TestResult {
     drop(recovery);
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
+    eprintln!("RETAINED_CREATE_PUBLICATION POSTGRES_ASSERTIONS_COMPLETED");
     Ok(())
 }
 
@@ -388,7 +389,6 @@ async fn closure_while_create_holder_is_busy(
             closure.operation,
             Operation::PublishAccountClosureWatermarkV1
         );
-        barrier.commit().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
     tokio::select! {
@@ -396,6 +396,9 @@ async fn closure_while_create_holder_is_busy(
         _ = &mut scan => return Err("retained scan did not wait for the test barrier".into()),
         _ = tokio::time::sleep(Duration::from_secs(10)) => return Err("retained scan never acquired its holder".into()),
     }
+    // PostgreSQL releases the lock before the COMMIT response reaches this client.
+    // Keep the barrier held until the race with the scan has finished.
+    barrier.commit().await?;
     assert!(
         scan.await
             .map_err(|_| "scan after barrier")?
