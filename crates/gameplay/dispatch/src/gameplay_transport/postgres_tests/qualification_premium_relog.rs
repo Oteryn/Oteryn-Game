@@ -72,6 +72,17 @@ fn scenario() -> TestResult {
          owner,
          fence,
          admitted| {
+            // The full-world fixture starts with a synthetic Monk actor but
+            // an unassigned durable vocation. Persist the matching test input
+            // so the successor can restore the build through normal admission.
+            let assigned = sqlx::query(
+                "UPDATE game_character_build_state SET vocation='monk' \
+                 WHERE character_id=encode($1,'hex')::uuid AND vocation='none'",
+            )
+            .bind(id(41).as_slice())
+            .execute(&h.pool)
+            .await?;
+            assert_eq!(assigned.rows_affected(), 1);
             const ISSUED: i64 = 1_790_769_600_000_000;
             let now = TrustedNow::new(ISSUED + 60_000_000, 0).ok_or("snapshot clock")?;
             let reads = SpellPremiumCoordinator::new(
@@ -133,10 +144,13 @@ fn scenario() -> TestResult {
                 next_actor,
             ))
             .await;
-            assert!(matches!(
-                first_entry,
-                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-            ));
+            assert!(
+                matches!(
+                    first_entry,
+                    FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+                ),
+                "successor entry: {first_entry:?}"
+            );
             let readmitted = AdmittedSession {
                 game_session_id: next_session,
                 runtime_actor: Some(next_actor),
