@@ -83,6 +83,9 @@ fn scenario() -> TestResult {
                 }),
                 Some(h.root.clone()),
             );
+            // Activate delivery before starting the account pull. The fixture
+            // must still prove Premium through a fresh snapshot on each login.
+            assert!(!reads.premium_gate(account).await.premium_current());
             owner.premium_coordinator = Some(&reads);
             owner.premium = PremiumRefresher::new(reads.consumer(), h.root.clone(), Some(client));
 
