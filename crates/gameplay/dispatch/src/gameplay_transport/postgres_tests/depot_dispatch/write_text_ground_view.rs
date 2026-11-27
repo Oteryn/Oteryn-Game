@@ -4,6 +4,45 @@ use crate::gameplay_transport::container_view::ContainerObservation;
 use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
 use oteryn_protocol_oteryn::container_tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT;
 
+pub(super) async fn open_backpack_with_busy_holder(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    items: &mut SessionItemView,
+    backpack: [u8; 16],
+) -> TestResult {
+    use crate::gameplay_transport::container_view::{ContainerPlan, ContainerViewState};
+    use oteryn_protocol_oteryn::container_tree::{ContainerViewIntent, ContainerViewOutcome};
+    use std::{future::Future, task::Poll};
+
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let key = ItemKey::Instance(backpack);
+    let handle = items.table().handle(&key).ok_or("backpack handle")?;
+    let mut views = ContainerViewState::default();
+    let ContainerPlan::Observe(pending) = views.plan(
+        items,
+        ContainerViewIntent::Open {
+            handle,
+            replace_view: None,
+        },
+    ).map_err(debug)? else {
+        return Err("backpack handle did not resolve".into());
+    };
+    let held = owner.root.try_issue_background_semantic_pass()?;
+    let mut opening = std::pin::pin!(crate::durability::DurabilityRoot::with_holder_owner(
+        owner.observe_container_with_house_capacity(actor, admitted.item_fence, pending.key(), false)
+    ));
+    let first = std::future::poll_fn(|cx| Poll::Ready(opening.as_mut().poll(cx))).await;
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    let observed = match first {
+        Poll::Pending => opening.await,
+        Poll::Ready(value) => value,
+    };
+    let (outcome, delta) = views.apply(items, pending, observed).map_err(debug)?;
+    assert_eq!(outcome, ContainerViewOutcome::Opened);
+    assert!(delta.is_some());
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,

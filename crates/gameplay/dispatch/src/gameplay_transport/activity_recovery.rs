@@ -24,6 +24,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Result<(), crate::durability::DurabilityError> {
+        // Fresh admission inserts this session without an activity origin. Handoffs
+        // and returns insert a different session, and still use the durable guard.
+        if admitted.continuity.ordinary_activity_session == Some(admitted.game_session_id) {
+            return Ok(());
+        }
         if !admitted
             .continuity
             .selected_capabilities
@@ -39,9 +44,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
         budget
             .retry_command_guard(async || {
-                ActivityHandoffOwner::new(self.root.clone())
+                let result = ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
-                    .await
+                    .await;
+                if let Err(
+                    error @ (crate::durability::DurabilityError::RootUnavailable
+                    | crate::durability::DurabilityError::RootPassDeadlineExceeded),
+                ) = &result
+                {
+                    super::operator_event(&format!(
+                        "event=activity_input_attempt_deferred error={error:?}"
+                    ));
+                }
+                result
             })
             .await
     }

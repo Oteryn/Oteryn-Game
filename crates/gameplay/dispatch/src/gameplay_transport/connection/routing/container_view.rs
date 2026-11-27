@@ -57,6 +57,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 let Ok((outcome, delta)) = decided else {
                     return None;
                 };
+                if matches!(intent, wire::ContainerViewIntent::Open { .. })
+                    && outcome != wire::ContainerViewOutcome::Opened
+                {
+                    super::super::super::operator_event(&format!(
+                        "event=container_open_refused command_id={} outcome={outcome:?} code={} source={}:{}",
+                        command.command_id, outcome as u8, file!(), line!(),
+                    ));
+                }
                 Dispatch::ContainerView(outcome, delta)
             }
             _ => Dispatch::Unregistered,

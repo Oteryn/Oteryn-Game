@@ -968,6 +968,13 @@ fn scenario_with_premium(
         }
         if ground_container {
             if !nested_ground {
+                write_text_ground_view::open_backpack_with_busy_holder(
+                    &owner,
+                    admitted,
+                    &mut view,
+                    main_bag.ok_or("main backpack")?,
+                )
+                .await?;
                 write_text_ground_view::exercise(
                     &owner,
                     admitted,

@@ -369,6 +369,8 @@ pub struct SessionContinuity {
     /// a House handoff. A replacement cannot clear the old transport's flag.
     /// None preserves the admission authority's guard for other owners.
     pub house_input_pending: Option<bool>,
+    /// Identity of a fresh session created without an activity handoff or return.
+    pub ordinary_activity_session: Option<GameSessionId>,
     /// ITEM-VIEW-1b: the item handle counter, the domain 9 and 11 high-water revisions and the
     /// open corpse. Used only with capability 4; a resume or channel transfer carries it.
     pub item_view: ItemViewContinuity,
@@ -427,6 +429,7 @@ impl SessionContinuity {
         achievement_notice_revision: None,
         selected_capabilities: SelectedCapabilities::NONE,
         house_input_pending: None,
+        ordinary_activity_session: None,
         item_view: ItemViewContinuity {
             handle_counter: 0,
             inventory_revision: 0,

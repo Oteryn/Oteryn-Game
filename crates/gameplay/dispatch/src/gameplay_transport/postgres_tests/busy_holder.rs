@@ -217,6 +217,10 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
                 owner.activity_transfer_input(admitted).await,
                 Err(crate::durability::DurabilityError::RootUnavailable)
             ));
+            // Fresh admission recorded this exact session as having no activity
+            // origin. The ordinary input path needs no transfer receipt.
+            admitted.continuity.ordinary_activity_session = Some(admitted.game_session_id);
+            owner.activity_transfer_input(admitted).await?;
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
             drop(owner);
             drop(seal);

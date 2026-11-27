@@ -1354,6 +1354,11 @@ impl DurabilityRoot {
         }
     }
 
+    /// Whether this observation runs as scheduled work instead of player input.
+    pub fn is_background_holder() -> bool {
+        holder_queue::is_background()
+    }
+
     /// Keeps one background fairness grant across all passes of a bounded operation.
     /// The holder is still checked out non-blockingly for each pass; completion or
     /// cancellation drops the grant, including when the caller is a long-lived scheduler.

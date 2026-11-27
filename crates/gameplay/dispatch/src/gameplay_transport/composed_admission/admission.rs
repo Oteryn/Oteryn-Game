@@ -421,6 +421,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }),
             continuity: SessionContinuity {
                 house_input_pending: Some(false),
+                ordinary_activity_session: Some(attempt.game_session_id),
                 ..SessionContinuity::FRESH
             },
             item_fence,

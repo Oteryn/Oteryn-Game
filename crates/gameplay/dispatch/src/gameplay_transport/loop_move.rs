@@ -1714,11 +1714,29 @@ async fn observe_container_with_house_capacity_inner(
         admission.active_generation,
     )?;
     let native = admission.active_generation?.native_gameplay()?;
-    let carried = admission
-        .root
-        .read_item_loop_container(admission.character, fence.character_id, container)
-        .await
-        .ok()?;
+    let read_carried = || {
+        admission
+            .root
+            .read_item_loop_container(admission.character, fence.character_id, container)
+    };
+    let carried = if crate::durability::DurabilityRoot::is_background_holder() {
+        read_carried().await
+    } else {
+        super::AdmissionRetryBudget::for_command(admission.root)
+            .retry_command_guard(async || {
+                let result = read_carried().await;
+                if let Err(error) = &result {
+                    super::operator_event(&format!(
+                        "event=container_carried_read_refused source={}:{} error={error:?}",
+                        file!(),
+                        line!(),
+                    ));
+                }
+                result
+            })
+            .await
+    }
+    .ok()?;
     let is_carried = carried.is_some();
     let mut browse_parent = None;
     let (read, reachable) = if let Some(read) = carried {
