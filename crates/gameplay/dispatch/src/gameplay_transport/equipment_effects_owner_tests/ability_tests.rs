@@ -193,7 +193,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):
     // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
     ("LOOP-TRAIN-1", 23),
-    ("M01C-KEY-DOORS", 4),
+    ("M01C-KEY-DOORS", 8),
     ("CLASSIC-QUEST-DOORS", 4),
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
@@ -441,7 +441,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 290 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 291 source-qualified Items (qengine_reward_item_profiles.IDS).
     // Exact nonzero and unknown source speeds are checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
@@ -509,7 +509,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 290);
+    assert_eq!(added_keys.len(), 291);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
@@ -770,7 +770,6 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i6102",
             "oteryn:item.tibia.i6107",
             "oteryn:item.tibia.i6126",
-            "oteryn:item.tibia.i6390",
             "oteryn:item.tibia.i6300",
             "oteryn:item.tibia.i6390",
             "oteryn:item.tibia.i6432",
@@ -979,9 +978,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2599);
+    assert_eq!(later_main_profiles, 2603);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 237);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 238);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -1044,7 +1043,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 52),
-        ("qengine-reward-item-profiles.json", 290),
+        ("qengine-reward-item-profiles.json", 291),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
