@@ -1,13 +1,26 @@
 use super::*;
 
 fn creatures() -> Vec<TaskBoardCreature> {
+    let mut master = include_str!(
+        "../../../../../apps/game-server/src/qualification/client_phases/p04_master_creature_oracle.txt"
+    )
+    .lines()
+    .filter(|line| !line.starts_with('#'));
     (0..48)
-        .map(|i| TaskBoardCreature {
-            race: format!("oteryn:creature.taskboard_test_{i}"),
-            bestiary_stars: (i % 6) as u8,
-            experience: 100,
-            preyable: true,
-            prey_exclusive: false,
+        .map_while(|i| {
+            let stars = (i % 6) as u8;
+            let race = if stars >= 4 {
+                master.next()?.to_owned()
+            } else {
+                format!("oteryn:creature.taskboard_test_{i}")
+            };
+            Some(TaskBoardCreature {
+                race,
+                bestiary_stars: stars,
+                experience: 100,
+                preyable: true,
+                prey_exclusive: false,
+            })
         })
         .collect()
 }
