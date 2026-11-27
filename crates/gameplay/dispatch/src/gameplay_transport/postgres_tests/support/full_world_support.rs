@@ -69,6 +69,13 @@ pub(super) use std::sync::Arc;
 
 pub(super) use std::time::Duration;
 
+#[allow(
+    dead_code,
+    reason = "shared mTLS fixture serves other Premium test cases"
+)]
+#[path = "../../../../../social/src/premium/test_producer.rs"]
+pub(super) mod premium_test_producer;
+
 pub(super) const GOLD: &str = "oteryn:item.tibia.i3031";
 
 pub(super) const BACKPACK: &str = "oteryn:item.tibia.i2854";

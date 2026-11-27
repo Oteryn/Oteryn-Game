@@ -564,16 +564,12 @@ fn familiar_waiting_return_finishes_without_premium_after_tile_frees_postgres() 
     creation_vocation_entry(Some(FamiliarRegression::BlockedReturn))
 }
 
-#[allow(
-    dead_code,
-    reason = "shared mTLS fixture serves other Premium test cases"
-)]
-#[path = "../../../../social/src/premium/test_producer.rs"]
-mod premium_test_producer;
-
 async fn revoked_premium(
     root: &crate::durability::DurabilityRoot,
 ) -> TestResult<crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator> {
+    use super::full_world_support::premium_test_producer::{
+        Reply, TestPki, TestProducer, snapshot,
+    };
     use crate::gameplay_transport::spell_premium_coordinator::{
         PremiumActivation, RegisteredPremiumClock, SpellPremiumCoordinator, clock_registration,
     };
@@ -581,7 +577,6 @@ async fn revoked_premium(
         IngestOutcome, PremiumClass, TrustedNow,
         client::{PremiumClientConfig, PremiumSnapshotClient, fresh_nonce},
     };
-    use premium_test_producer::{Reply, TestPki, TestProducer, snapshot};
 
     // Use the producer's current, full-lease fixture window in the registered clock.
     struct FixtureClock(TrustedNow);
