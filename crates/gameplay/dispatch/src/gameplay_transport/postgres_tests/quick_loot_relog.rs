@@ -151,6 +151,8 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         let request = wire::QuickLootRequest {
             action: wire::QuickLootAction::AssignLoot,
             corpse: None,
+            selected_item: None,
+            review_filters: false,
             category: None,
             recipient: Some(wire::QuickLootRecipient::GoldPouch),
             recipient_id: Some(pouch),
