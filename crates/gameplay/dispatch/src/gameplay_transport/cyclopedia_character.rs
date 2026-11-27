@@ -360,20 +360,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| ())??;
                 }
-                let (view, mut extension) = read.retry("tab", async || {
-                    self.root
-                        .read_cyclopedia_character_tab_extended(
-                            self.character,
-                            self.holder,
-                            fence,
-                            target,
-                            request.tab,
-                            request.page,
-                            now,
-                        )
-                        .await
-                        .map_err(authority_read_refusal)
-                }).await?;
+                let read_tab = || {
+                    self.root.read_cyclopedia_character_tab_extended(
+                        self.character, self.holder, fence, target, request.tab, request.page, now,
+                    )
+                };
+                let (view, mut extension) = if request.tab == wire::CharacterTab::GeneralStats {
+                    read.budget.retry_durability("cyclopedia_general_stats", || async {
+                        tokio::time::timeout_at(read.budget.deadline, read_tab())
+                            .await
+                            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
+                            .map_err(|error| match error {
+                            CharacterAuthorityError::Unavailable(error) => error,
+                            CharacterAuthorityError::Rejected
+                            | CharacterAuthorityError::Conflict
+                            | CharacterAuthorityError::NameUnavailable => DurabilityError::CommitRejected,
+                        })
+                    }).await.map_err(|error| {
+                        super::operator_event(&format!(
+                            "event=cyclopedia_tab_refused tab=GeneralStats reason={error:?}",
+                        ));
+                    })?
+                } else {
+                    read.retry("tab", async || read_tab().await.map_err(authority_read_refusal)).await?
+                };
                 // Each extension field reaches only a session that selected its capability.
                 if !admitted
                     .continuity
