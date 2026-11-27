@@ -820,7 +820,7 @@ mod tests {
     }
 
     #[test]
-    fn requests_round_trip_and_reject_ambiguous_shapes() -> WireResult<()> {
+    fn corpse_only_click_round_trips_with_legacy_bytes() -> WireResult<()> {
         let r = QuickLootRequest {
             action: QuickLootAction::Click,
             corpse: Some([7; 16]),
@@ -833,8 +833,9 @@ mod tests {
             filter_mode: None,
             filter_definition_ref: None,
         };
-        let b = encode_quick_loot_request(&r)?;
-        assert_eq!(decode_quick_loot_request(&b), Ok(r));
+        let legacy = [&[0x08, 1, 0x12, 16][..], &[7; 16]].concat();
+        assert_eq!(encode_quick_loot_request(&r)?, legacy);
+        assert_eq!(decode_quick_loot_request(&legacy), Ok(r));
         let mut bad = r;
         bad.fallback_to_main = true;
         assert!(encode_quick_loot_request(&bad).is_err());

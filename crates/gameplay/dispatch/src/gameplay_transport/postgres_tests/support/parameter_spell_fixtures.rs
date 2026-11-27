@@ -722,8 +722,7 @@ async fn cast_and_logout(
             &cast,
         )
         .await?;
-        let (status, payload) =
-            super::autowalk_fixtures::command_reply(&mut client, command_id).await?;
+        let (status, payload) = super::autowalk_fixtures::command_reply(&mut client, command_id).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
             actor_spell::decode_spell_cast_result(&payload).map_err(debug)?,

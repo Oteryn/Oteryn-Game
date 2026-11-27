@@ -59,7 +59,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         admitted.game_session_id,
                         view,
                     )
-                    .await?;
+                    .await;
+                    let Some(inventory) = inventory else {
+                        // The trade receipt is final. Re-observe the current inventory on
+                        // the existing visibility cadence while retaining its handles.
+                        view.inventory_refresh_pending = true;
+                        return Some(Dispatch::NpcTrade(
+                            NpcIntentDisposition::Ok,
+                            NpcUpdate::default(),
+                            deltas,
+                        ));
+                    };
                     let Ok(delta) = view.inventory_committed(inventory) else {
                         return None;
                     };

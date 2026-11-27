@@ -77,6 +77,14 @@
       "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
+      "event": "command_disconnected",
+      "level": "info",
+      "span": false,
+      "fields": ["command_type", "command_id", "stage", "kind"],
+      "codes": [],
+      "note": "Command execution diagnostics include the failing stage and error kind without recording command payloads."
+    },
+    {
       "event": "command_guard_deferred",
       "level": "info",
       "span": false,
@@ -294,7 +302,8 @@
       "level": "info",
       "span": false,
       "fields": [
-        "stage"
+        "stage",
+        "ms"
       ],
       "codes": [],
       "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
@@ -304,7 +313,8 @@
       "level": "info",
       "span": false,
       "fields": [
-        "stage"
+        "stage",
+        "ms"
       ],
       "codes": [],
       "note": "Closed name of the release prerequisite that deferred logout before the terminal transaction."

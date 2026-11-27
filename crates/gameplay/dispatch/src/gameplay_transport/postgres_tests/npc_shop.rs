@@ -74,3 +74,14 @@ fn npc_shop_postgres_sell_all_can_include_equipped_items() -> TestResult {
         scenario_for(ShopScenario::EquippedSale)
     })
 }
+
+#[test]
+fn npc_watch_purchase_then_use_and_logout_under_holder_contention_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("npc-watch-use", || {
+        scenario_for(ShopScenario::BuyWatch)
+    })
+}

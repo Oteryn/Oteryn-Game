@@ -99,7 +99,7 @@ async fn purchase_then_use(
     use crate::foundation::GameSessionState;
     use crate::gameplay_transport::composed_admission::HolderCheckoutProbe;
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use crate::gameplay_transport::item_use::drome_cube::CUBE_INVENTORY_CHECKOUT_PROBE;
+    use crate::gameplay_transport::item_ref_admission::USE_INVENTORY_CHECKOUT_PROBE;
     use oteryn_protocol_oteryn::item_view::{
         STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
     };
@@ -175,7 +175,7 @@ async fn purchase_then_use(
     let (end, result) = tokio::time::timeout(
         Duration::from_secs(30),
         super::fixture::join_two(
-            CUBE_INVENTORY_CHECKOUT_PROBE.scope(
+            USE_INVENTORY_CHECKOUT_PROBE.scope(
                 Cell::new(Some(Arc::clone(&probe))),
                 serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
             ),

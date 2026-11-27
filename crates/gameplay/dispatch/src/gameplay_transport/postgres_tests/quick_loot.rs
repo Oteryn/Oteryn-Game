@@ -1,6 +1,6 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
-use super::autowalk_fixtures::{command_reply, read, send};
 use super::fixture::{Harness, debug, id, join_two};
+use super::autowalk_fixtures::{command_reply, read, send};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
@@ -107,10 +107,7 @@ enum Case {
 
 fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
     async move |admin| {
-        let pouch = matches!(
-            case,
-            Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout
-        );
+        let pouch = matches!(case, Case::GoldPouch | Case::PouchFulfilment | Case::PouchLogout);
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -430,9 +427,7 @@ fn scenario(case: Case) -> impl AsyncFnOnce(String) -> TestResult {
                 Case::PouchFulfilment => {
                     pouch_fulfilment_cases(&owner, &mut admitted, &harness.pool).await?
                 }
-                Case::Bulk | Case::GoldPouch | Case::PouchLogout => {
-                    return Err("unexpected dedicated case".into());
-                }
+                Case::Bulk | Case::GoldPouch | Case::PouchLogout => return Err("unexpected dedicated case".into()),
             }
             drop(owner);
             drop(authority);
@@ -732,7 +727,6 @@ async fn pouch_relog_logout(
     use crate::gameplay_transport::composed_admission::{
         CONDITION_RELEASE_PROBE, HolderCheckoutProbe,
     };
-    use crate::gameplay_transport::connection::{ControllerBinding, SessionContinuity};
     use crate::gameplay_transport::logout::LogoutReply;
     use oteryn_protocol_oteryn::logout::{
         COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
@@ -743,42 +737,10 @@ async fn pouch_relog_logout(
         owner.logout_session(previous).await,
         LogoutReply::Result(LogoutResult::Accepted)
     );
-    let (session, request) = super::full_world_support::relogin_request(harness).await?;
+    let admitted = super::full_world_support::readmit_after_logout(harness, owner, previous).await?;
+    let session = admitted.game_session_id;
+    let actor = admitted.runtime_actor.ok_or("readmitted actor")?;
     let store = FreshAdmissionStore::from_root(harness.root.clone());
-    let transport = store
-        .current_session(session)
-        .await?
-        .current_transport()
-        .ok_or("relog transport")?;
-    let actor = {
-        let mut runtime = owner.runtime.lock().await;
-        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
-        runtime.commit_fresh_session(reserved).map_err(debug)?
-    };
-    let (first_entry, item_fence, _) =
-        Box::pin(owner.initialize_first_entry(&request, session, transport, actor)).await;
-    assert!(
-        matches!(
-            first_entry,
-            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-        ),
-        "{first_entry:?}"
-    );
-    let admitted = AdmittedSession {
-        game_session_id: session,
-        runtime_actor: Some(actor),
-        controller: Some(ControllerBinding {
-            transport,
-            account_id: id(40),
-        }),
-        continuity: SessionContinuity {
-            selected_capabilities: previous.continuity.selected_capabilities,
-            ..SessionContinuity::FRESH
-        },
-        first_entry,
-        item_fence,
-        ..previous
-    };
 
     let probe = Arc::new(HolderCheckoutProbe::default());
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -1260,11 +1222,7 @@ async fn quick_loot_destination_management(
         super::parameter_spell_fixtures::exchange(owner, admitted, &commands, false, false).await?;
     assert_eq!(replies.len(), commands.len());
     for ((kind, _), (status, _)) in commands.iter().zip(&replies) {
-        assert_eq!(
-            *status,
-            CommandStatus::Accepted,
-            "quick-loot command {kind}"
-        );
+        assert_eq!(*status, CommandStatus::Accepted, "quick-loot command {kind}");
     }
     let first = decode_quick_loot_destinations(&replies[1].1).map_err(debug)?;
     assert_eq!(first.loot.len(), QuickLootCategory::ALL.len() + 1);
@@ -1297,10 +1255,7 @@ async fn quick_loot_destination_management(
         distribution_id,
     )
     .await?;
-    assert_eq!(
-        retry,
-        [(CommandStatus::DuplicateReplay, replies[5].1.clone())]
-    );
+    assert_eq!(retry, [(CommandStatus::DuplicateReplay, replies[5].1.clone())]);
 
     // A cold ingress must recover the same durable result even if the new item view cannot
     // resolve the original handle. An unresolved handle on its own cannot authorize a move.
