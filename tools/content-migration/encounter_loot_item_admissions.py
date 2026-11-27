@@ -45,13 +45,16 @@ def facts(root=ROOT, ids=None, *, allow_containers=False, xml_override=None):
             raise ValueError('ENCOUNTER_LOOT_SOURCE_PIN')
     independent_source = None
     if xml_override is not None:
-        # Exact retained Crystal summer source for the portable trophy and outfit items.
+        # Retained Crystal summer XML for the trophy, outfit, and delivery cohorts.
         # The ordinary Canary pin and all other source guards above stay mandatory.
         from outfit_reward_item_profiles import SOURCE_ROWS
-        if set(ids) not in ({44158}, set(SOURCE_ROWS)) or hashlib.sha256(xml_override).hexdigest() != '13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece':
+        from task_board_item_profiles import NEW_NATIVE_DELIVERIES
+        independent_cohorts = (set(SOURCE_ROWS), NEW_NATIVE_DELIVERIES)
+        if (set(ids) not in ({44158}, *independent_cohorts)
+                or hashlib.sha256(xml_override).hexdigest() != '13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece'):
             raise ValueError('ENCOUNTER_LOOT_ALTERNATE_XML_SCOPE_OR_PIN')
         raw[XML] = xml_override
-        if set(ids) == set(SOURCE_ROWS):
+        if set(ids) in independent_cohorts:
             independent_source = ('00ce02a57ca5a12e48f32a3476e37471167e4c3f', xml_override)
     xml = source.xml_index(raw[XML])
     objects = source.engine_items.load_appearance_objects(raw[CLIENT])

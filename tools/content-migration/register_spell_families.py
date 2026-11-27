@@ -1734,6 +1734,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    native_goal_loot_items.admit_native(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+        item_ids=task_board_item_profiles.NEW_NATIVE_DELIVERIES,
+        qualified_profiles=task_board_item_profiles.portable_delivery_profiles(root),
+    )
     # T174: qualify boot slots only after every shop/loot Item cohort is present.
     imbuement_item_profiles.complete_boots(
         root,
@@ -1813,7 +1823,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     late_item_keys = protected_loot_yields.ARBAZILOTH_HARD_ITEMS | {
         f"oteryn:item.tibia.i{item_id}"
-        for item_id in robbery_item_ids | outfit_reward_item_profiles.SOURCE_ROWS.keys()
+        for item_id in (
+            robbery_item_ids
+            | outfit_reward_item_profiles.SOURCE_ROWS.keys()
+            | task_board_item_profiles.NEW_NATIVE_DELIVERIES
+        )
     }
     late_items = [
         row
@@ -1832,7 +1846,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import forge_item_profiles
 
     forge_item_profiles.project(items, forge_item_profiles.owners(root))
-    task_board_item_profiles.validate_global_delivery_profiles(items)
+    task_board_item_profiles.validate_global_delivery_profiles(root, items)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

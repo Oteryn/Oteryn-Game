@@ -39,13 +39,15 @@ SOURCE_HASHES = {
 }
 SCHEMA = 'OTERYN_NATIVE_TASK_BOARD_ITEM_PROFILES/v1'
 TALISMAN = 51978
+CAPTURED_DELIVERY_COUNT = 436
 # Exact overlap with the accepted 045b51c2 native provider, not a global fill policy.
 EXISTING_NATIVE_IDS = frozenset((3364, 3371, 3557, 10310, 37109))
-# Global selects these already-owned native Items. Keep 3509 in the donor
+# Global selects the stackable inkwell and basalt core. Keep 3509 in the donor
 # profile capture so existing instances of the original inkwell stay usable.
 GLOBAL_INKWELL = 28568
 GLOBAL_BASALT_CORE = 43859
 DONOR_INKWELL = 3509
+NEW_NATIVE_DELIVERIES = frozenset(range(54355, 54361))
 DELIVERY_CORRECTIONS = [{
     'source_item_id': 5800, 'item_id': 35588, 'amount': 50,
     'delivery_source': DELIVERY + ':64',
@@ -85,7 +87,7 @@ def delivery_item_ids(root=ROOT):
                 r'WeeklyDeliveryItem::new\(\s*([0-9_]+),\s*([0-9_]+),\s*([0-9_]+)\s*\)',
                 body)]
     ids = [item for item, _, _ in rows]
-    if len(ids) != 437 or len(set(ids)) != 437:
+    if len(ids) != 489 or len(set(ids)) != 489:
         raise ValueError('TASK_BOARD_DELIVERY_COHORT')
     if any(not 0 < item <= 65535 or not 0 < low <= high <= 2**32 - 1
            for item, low, high in rows):
@@ -97,16 +99,31 @@ def cohort_ids(root=ROOT):
     return set(delivery_item_ids(root)) | {TALISMAN}
 
 
-def profile_capture_delivery_ids(root=ROOT):
+def profile_capture_delivery_ids(root=ROOT, *, captured_ids=None):
     ids = delivery_item_ids(root)
     if (DONOR_INKWELL in ids or GLOBAL_INKWELL not in ids or GLOBAL_BASALT_CORE not in ids):
         raise ValueError('TASK_BOARD_GLOBAL_DELIVERY_IDENTITIES')
-    return [DONOR_INKWELL if item == GLOBAL_INKWELL else item
-            for item in ids if item != GLOBAL_BASALT_CORE]
+    if captured_ids is None:
+        capture = json.loads((root / PATH).read_bytes())
+        captured_ids = {row['item_id'] for row in capture['delivery_items']}
+    if len(captured_ids) != CAPTURED_DELIVERY_COUNT or GLOBAL_BASALT_CORE in captured_ids:
+        raise ValueError('TASK_BOARD_CAPTURED_DELIVERY_COHORT')
+    donor_ids = [DONOR_INKWELL if item == GLOBAL_INKWELL else item for item in ids]
+    return [item for item in donor_ids if item in captured_ids]
 
 
-def validate_global_delivery_profiles(document):
-    keys = {f'oteryn:item.tibia.i{item}' for item in (GLOBAL_INKWELL, GLOBAL_BASALT_CORE)}
+def portable_delivery_profiles(root):
+    from encounter_loot_item_admissions import facts
+    from outfit_reward_item_profiles import source_xml
+
+    if not NEW_NATIVE_DELIVERIES <= set(delivery_item_ids(root)):
+        raise ValueError('TASK_BOARD_NATIVE_DELIVERY_COHORT')
+    return facts(root, NEW_NATIVE_DELIVERIES, xml_override=source_xml(root))
+
+
+def validate_global_delivery_profiles(root, document):
+    ids = set(delivery_item_ids(root)) - set(profile_capture_delivery_ids(root))
+    keys = {f'oteryn:item.tibia.i{item}' for item in ids}
     records = {row['production_definition']['production_key']: row for row in document['records']
                if row['production_definition']['production_key'] in keys}
     if records.keys() != keys:
@@ -249,7 +266,8 @@ def capture_sources(sources, root=ROOT):
         r'\{\s*itemId\s*=\s*(\d+),\s*count\s*=\s*(\d+)\s*\}',
         sources[DELIVERY].decode())]
     delivery = qualify_delivery_rows(original_delivery)
-    if [item for item, _ in delivery] != profile_capture_delivery_ids(root):
+    if [item for item, _ in delivery] != profile_capture_delivery_ids(
+            root, captured_ids={item for item, _ in delivery}):
         raise ValueError('TASK_BOARD_DELIVERY_SOURCE_DRIFT')
     ids = {item for item, _ in delivery} | {TALISMAN}
     xml = source.xml_index(sources[XML])
