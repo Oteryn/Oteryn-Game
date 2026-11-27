@@ -28,15 +28,10 @@ replay_suite() {
     "$CARGO" test --offline --locked "$@" --lib -- --list --ignored > "$ignored" || return 1
 
     # Preserve the suite's normal selection, including its default exclusion of ignored tests.
-    local c16d_ran=0
-    if grep -q '^SEAM_EVIDENCE e2e_all scenario=C16d[.]client status=\(PASS\|FAIL\) ' "$RUN/node.log"; then
-        c16d_ran=1
-    fi
-    mapfile -t tests < <(awk -v c16d_ran="$c16d_ran" '
-        FILENAME == ARGV[1] { excluded[$0] = 1; next }
-        !c16d_ran && /^tests::e2e_c16d::e2e_c16d_item_appearance_snapshot_replay: test$/ { next }
-        /: test$/ && !($0 in excluded) { sub(/: test$/, ""); print }
-    ' "$ignored" "$test_list")
+    local selection
+    selection="$(python3 "$ROOT/tools/qualification/e2e_all/select_replays.py" \
+        "$RUN/node.log" "$CLIENT_CAPTURES" "$ignored" "$test_list")" || return 1
+    mapfile -t tests < <(printf '%s' "$selection")
     if (( ${#tests[@]} == 0 )); then
         printf 'Replay suite %s selected zero tests\n' "$2" >&2
         return 1

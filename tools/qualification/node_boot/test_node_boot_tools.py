@@ -427,9 +427,11 @@ class ReuseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             self.assertEqual(self.save_state(temp).returncode, 0)
             without_activation = 'sudo() { [[ "$1" != grep ]]; }'
-            rows = self.run_guard(temp, 1, without_activation)
+            rows = self.run_guard(temp, 1, f"{without_activation}; OTERYN_E2E_ROW_BATCH=118:1")
             self.assertEqual(rows.returncode, 2, rows.stdout + rows.stderr)
             self.assertIn('reason=kept_stack_missing_premium_activation', rows.stdout)
+            w10 = self.run_guard(temp, 1, f'{without_activation}; OTERYN_E2E_ROW_BATCH=193:1')
+            self.assertEqual(w10.returncode, 0, w10.stdout + w10.stderr)
             for mode, groups in ((1, 'f6'), ('teardown', 'rows')):
                 result = self.run_guard(
                     temp, mode, f'{without_activation}; NODE_BOOT_E2E_ONLY={groups}'

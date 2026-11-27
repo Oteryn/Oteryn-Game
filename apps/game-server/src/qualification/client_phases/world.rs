@@ -3443,20 +3443,10 @@ async fn connect_world(
 }
 
 fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static NEXT_CONNECTION: AtomicU64 = AtomicU64::new(1);
-    let sequence = NEXT_CONNECTION
-        .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-            value.checked_add(1)
-        })
-        .map_err(|_| "qualification connection counter exhausted")?;
-    let mut nonce = [tag; 32];
-    nonce[24..].copy_from_slice(&sequence.to_be_bytes());
-    let mut attempt = v7(tag, 0x05);
-    attempt[8..].copy_from_slice(&sequence.to_be_bytes());
-    // Preserve all 64 counter bits around the UUIDv7 version and RFC variant.
-    attempt[6] |= (sequence >> 62) as u8;
-    attempt[8] = (attempt[8] & 0x3f) | 0x80;
+    let mut nonce = crate::node::operator_files::random_bytes::<32>()?;
+    nonce[0] = tag;
+    let mut attempt = crate::node::operator_files::uuid_v7()?;
+    attempt[7] = tag;
     Ok((nonce, attempt))
 }
 
@@ -3726,6 +3716,37 @@ fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResu
         .find("full_e2ef6::run(clients")
         .ok_or("missing remaining F6 rows")?;
     assert!(starter < packet && packet < remaining);
+    Ok(())
+}
+
+#[test]
+fn qualification_fresh_grants_do_not_repeat_in_new_processes() -> TestResult {
+    const CHILD: &str = "OTERYN_TEST_FRESH_GRANT_CHILD";
+    if std::env::var_os(CHILD).is_some() {
+        println!("GRANT_MATERIAL={:?}", fresh_grant_material(0xe0)?);
+        return Ok(());
+    }
+    let material = || -> TestResult<String> {
+        let output = std::process::Command::new(std::env::current_exe()?)
+            .args([
+                "qualification_fresh_grants_do_not_repeat_in_new_processes",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .output()?;
+        assert!(output.status.success());
+        String::from_utf8(output.stdout)?
+            .lines()
+            .find_map(|line| line.strip_prefix("GRANT_MATERIAL="))
+            .map(str::to_owned)
+            .ok_or_else(|| "child did not issue a grant".into())
+    };
+    let first = material()?;
+    let second = material()?;
+    let first = first.split_once("], [").ok_or("malformed first grant")?;
+    let second = second.split_once("], [").ok_or("malformed second grant")?;
+    assert_ne!(first.0, second.0, "grant nonce reused across processes");
+    assert_ne!(first.1, second.1, "attempt ID reused across processes");
     Ok(())
 }
 

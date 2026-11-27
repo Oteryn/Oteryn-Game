@@ -77,42 +77,48 @@ class IndexedVerdictTests(unittest.TestCase):
         self.assertIn('export E2E_ALL_CAPTURE_DIR=', source)
         self.assertIn('client_status=$?', source)
 
-    def test_c16d_capture_replay_requires_the_writer_in_this_run(self):
+    def test_capture_replays_require_their_own_writer_in_this_run(self):
         source = (ROOT / 'tools/qualification/e2e_all/run.sh').read_text()
         suite = source.split('replay_suite() {', 1)[1].split('\n}\n', 1)[0]
-        capture_replay = 'tests::e2e_c16d::e2e_c16d_item_appearance_snapshot_replay'
-        other_test = 'tests::e2e_c16d::e2e_c16d_capture_round_trip_with_negotiated_entity_fields'
-        for writer_ran in (False, True):
-            with self.subTest(writer_ran=writer_ran), tempfile.TemporaryDirectory() as tmp:
+        c16d = 'tests::e2e_c16d::e2e_c16d_item_appearance_snapshot_replay'
+        unit = 'tests::e2e_c16d::e2e_c16d_capture_round_trip_with_negotiated_entity_fields'
+        c16c = 'tests::e2e_c16c_replay_tests::e2e_c16c_summon_delta_replay'
+        c01 = 'tests::e2e_c01::e2e_c01_replays_server_combat_state_and_rejects_invalid_delta'
+        for writer, encoding, selected in [
+            ('C01.client', 'e2e_capture', c01),
+            ('C16c.client', 'e2e_all', c16c),
+            ('C16d.client', 'e2e_all', c16d),
+        ]:
+            with self.subTest(writer=writer), tempfile.TemporaryDirectory() as tmp:
                 log = Path(tmp) / 'node.log'
-                log.write_text(
-                    'SEAM_EVIDENCE e2e_all scenario=C16d.client status=PASS seconds=1.0\n'
-                    if writer_ran else
-                    'SEAM_EVIDENCE e2e_all scenario=C16c.client status=PASS seconds=1.0\n'
-                )
+                status = 'CAPTURED' if encoding == 'e2e_capture' else 'PASS'
+                log.write_text(f'SEAM_EVIDENCE {encoding} scenario={writer} status={status} seconds=1.0\n')
                 result = subprocess.run(
                     ['bash', '-c', """
                         set -uo pipefail
                         RUN="$1"
+                        CLIENT_CAPTURES="$1"
+                        ROOT="$2"
                         CARGO=mock_cargo
                         mock_cargo() {
                             case "$*" in
                                 *--list*--ignored*) ;;
-                                *--list*) printf '%s: test\n' "$capture_test" "$other_test" ;;
+                                *--list*) printf '%s: test\n' "$c16d" "$unit" "$c16c" "$c01" ;;
                                 *) for test in "${@:8}"; do
                                        [[ "$test" == --exact ]] || printf 'test %s ... ok\n' "$test"
                                    done ;;
                             esac
                         }
                         """ + f"replay_suite() {{{suite}\n}}\n" +
-                     f'capture_test={capture_replay}; other_test={other_test}\n' +
-                     'replay_suite -p oteryn-session', 'test', tmp],
+                     f'c16d={c16d}; unit={unit}; c16c={c16c}; c01={c01}\n' +
+                     'replay_suite -p oteryn-session', 'test', tmp, str(ROOT)],
                     capture_output=True, text=True, check=False, timeout=10,
                     cwd=tmp,
                 )
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertIn(other_test, result.stdout)
-                self.assertEqual(capture_replay in result.stdout, writer_ran)
+                self.assertIn(unit, result.stdout)
+                for replay in (c01, c16c, c16d):
+                    self.assertEqual(replay in result.stdout, replay == selected)
 
     def test_real_c16_captures_do_not_write_fabricated_ids_or_repeat_full_packets(self):
         source = (PHASES / 'client_row_c16c.rs').read_text()

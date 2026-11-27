@@ -339,10 +339,25 @@ PY_REUSED_GROUPS
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
     if [[ "$NODE_BOOT_WORLD" == 1 ]] &&
-      python3 - "${NODE_BOOT_E2E_ONLY:-}" <<'PY_REUSED_ROWS'
+      python3 - "${NODE_BOOT_E2E_ONLY:-}" "${OTERYN_E2E_ROW_BATCH-0:15}" <<'PY_REUSED_ROWS'
+import re
 import sys
 
-sys.exit(0 if "rows" in (group.strip() for group in sys.argv[1].split(",")) else 1)
+if "rows" not in (group.strip() for group in sys.argv[1].split(",")):
+    sys.exit(1)
+batch = sys.argv[2]
+if batch == "all":
+    sys.exit(0)
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if not match:
+    sys.exit(1)
+# I07.client is the only indexed row that provisions the Premium fixture.
+i07 = 118
+try:
+    start, length = map(int, match.groups())
+except ValueError:
+    sys.exit(1)
+sys.exit(0 if start <= i07 < start + length and length < 2**64 else 1)
 PY_REUSED_ROWS
     then
       if ! sudo grep -Fxq 'activation_id = "node-boot-fixture-premium"' "$BASE/node/node.toml"; then
