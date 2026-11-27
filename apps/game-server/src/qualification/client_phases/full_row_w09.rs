@@ -10,6 +10,47 @@ use std::collections::BTreeMap;
 use std::num::NonZeroU32;
 
 const RESET_NOTICE: &str = "Your spells are no longer on cooldown.";
+const GIFT_INPUT_MICROS: i64 = 3_600_000_000;
+
+async fn seed_gift_input(scope: &SeamClients<'_>) -> TestResult {
+    use sha2::{Digest, Sha256};
+    use sqlx::Connection;
+
+    let character = &scope.characters[0];
+    let binding = Sha256::new()
+        .chain_update(b"w09-gift-of-life-fixture-input-v1")
+        .chain_update(character)
+        .finalize();
+    let mut occurrence: [u8; 16] = binding[..16].try_into()?;
+    occurrence[6] = (occurrence[6] & 0x0f) | 0x70;
+    occurrence[8] = (occurrence[8] & 0x3f) | 0x80;
+    let mut connection = sqlx::PgConnection::connect(scope.url).await?;
+    let mut transaction = connection.begin().await?;
+    // This dedicated input must be installed before admission loads the live timer.
+    sqlx::query(
+        "INSERT INTO game_character_wheel_gift_receipts
+         (character_id, occurrence, request_binding, before_revision, after_revision, remaining_micros)
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, 0, 1, $4)",
+    )
+    .bind(character.as_slice())
+    .bind(occurrence.as_slice())
+    .bind(binding.as_slice())
+    .bind(GIFT_INPUT_MICROS)
+    .execute(&mut *transaction)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_character_wheel_gift_state (character_id, revision, remaining_micros, occurrence)
+         VALUES (encode($1,'hex')::uuid, 1, $2, encode($3,'hex')::uuid)",
+    )
+    .bind(character.as_slice())
+    .bind(GIFT_INPUT_MICROS)
+    .bind(occurrence.as_slice())
+    .execute(&mut *transaction)
+    .await?;
+    transaction.commit().await?;
+    evidence("FIXTURE row=W09.full input=gift-of-life-timer");
+    Ok(())
+}
 
 async fn gift_remaining_ms(client: &mut DevClientSession) -> TestResult<u64> {
     use oteryn_protocol_oteryn::wheel_presentation as wheel;
@@ -380,6 +421,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .collect::<TestResult<Vec<_>>>()?;
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W09_ACCOUNT").await?;
     let scope = dedicated.clients(clients);
+    seed_gift_input(&scope).await?;
     let mut client = connect_character(&scope, 0xd2, 0).await?;
     let mut expected = quantities(&client)?;
     if expected.contains_key(&cube) || expected.contains_key(&aid) {
@@ -545,6 +587,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("W09 Aid changed the Gift of Life deadline: before={gift_before} ms after={gift_after} ms elapsed={min_elapsed}..={max_elapsed} ms").into());
     }
+    evidence(&format!(
+        "W09_CHECK aid-debit=one gift-before-ms={gift_before} gift-after-ms={gift_after}"
+    ));
 
     let stance_recast = tokio::time::Instant::now();
     cast_paid(&mut client, stance, 400).await?;
