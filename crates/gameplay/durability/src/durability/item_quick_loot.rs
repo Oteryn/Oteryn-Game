@@ -125,7 +125,7 @@ pub enum QuickLootInput<'a> {
 impl QuickLootInput<'_> {
     pub fn needs_premium_decision(&self) -> bool {
         let request = match self {
-            Self::Legacy(request) => Some(*request),
+            Self::Legacy(request) | Self::Selected { request, .. } => Some(*request),
             Self::Managed { request, .. } => *request,
         };
         request.is_some_and(|request| {
