@@ -587,6 +587,17 @@ mod tests {
         );
         // The retry commits the retained receipt and merges the later tries.
         let retained = state.pending_training_checkpoint().unwrap().clone();
+        // A refused checkout has no receipt. The next occurrence must still
+        // include the tries on both sides of the abandoned checkpoint.
+        let mut released = state.clone();
+        released.release_unissued_training_checkpoint(&retained);
+        assert!(released.pending_training_checkpoint().is_none());
+        let next = released
+            .prepare_training_checkpoint(5, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(next.request.after.skills()[2], (11, 0));
+
         let receipt = receipt_for(&retained.prepared, 1);
         state
             .commit_training_checkpoint(retained.prepared, &receipt)
