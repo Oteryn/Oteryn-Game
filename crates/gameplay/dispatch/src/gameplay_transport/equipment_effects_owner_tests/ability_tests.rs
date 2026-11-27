@@ -1116,7 +1116,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             .ok_or_else(|| format!("missing source-qualified Newhaven profile {key}"))?;
         assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
     }
-    for id in [2859, 3217, 18931, 19084, 19089, 19129] {
+    for id in [2859, 3217, 6533, 18931, 19084, 19089, 19129] {
         let key = format!("oteryn:item.tibia.i{id}");
         let record = profiles
             .records
@@ -1272,7 +1272,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 .chain(5331..=5388)
                 .chain(17725..=17800)
                 .chain(17862..=17867)
-                .chain([54133, 173, 175, 176, 177, 178, 179, 6533, 8747, 8748])
+                .chain([54133, 173, 175, 176, 177, 178, 179, 8747, 8748])
                 .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
