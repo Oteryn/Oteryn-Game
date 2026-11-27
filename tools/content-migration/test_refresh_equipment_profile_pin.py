@@ -197,12 +197,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         qengine_keys = [row['production_definition']['production_key'] for row in qengine['records']]
         args = (document(*qengine_keys, 1, 2, 3), document(4), qengine, document(1))
         fixed, count = regenerate(source, *args)
-        self.assertEqual(count, 8)
-        self.assertIn("assert_eq!(added_keys.len(), 4);", fixed)
-        self.assertIn('("qengine-reward-item-profiles.json", 4)', fixed)
+        self.assertEqual(count, 10)
+        self.assertIn("assert_eq!(added_keys.len(), 6);", fixed)
+        self.assertIn('("qengine-reward-item-profiles.json", 6)', fixed)
         self.assertIn("assert_eq!(venison.attributes.speed_bonus, Some(0))", fixed)
         self.assertIn("assert_eq!(actual.attributes.speed_bonus, expected", fixed)
-        self.assertEqual(regenerate(fixed, *args), (fixed, 8))
+        self.assertEqual(regenerate(fixed, *args), (fixed, 10))
 
 
     def srx3_source(self):
