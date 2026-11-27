@@ -85,6 +85,11 @@ pub enum ItemAbility {
         percent: ReferenceRationalPercent,
         field_only: bool,
     },
+    /// A lossless derived view of four equal positive direct elemental protections.
+    /// The canonical Item still stores four individual resistances (no wire/schema change).
+    ElementalProtection {
+        percent: ReferenceRationalPercent,
+    },
     Suppress(AbilitySuppression),
     /// Typed, without rows in v1 (no v1 source states it).
     Light {
@@ -166,12 +171,50 @@ pub fn item_ability_profile(
             abilities.push(resistance_ability(resistance)?);
         }
     }
+    collapse_elemental_protections(&mut abilities);
     abilities.sort();
     Ok(ItemAbilityProfile {
         timed,
         extra_slot,
         abilities,
     })
+}
+
+/// Collapse only exact four-way direct protection parity. Unlike a discounted
+/// balance proposal, this view does not change any effective damage reduction.
+fn collapse_elemental_protections(abilities: &mut Vec<ItemAbility>) {
+    use ReferenceResistanceKind as Kind;
+    const ELEMENTS: [ReferenceResistanceKind; 4] =
+        [Kind::Fire, Kind::Ice, Kind::Earth, Kind::Energy];
+    let mut shared: Option<ReferenceRationalPercent> = None;
+    for element in ELEMENTS {
+        let mut direct = abilities.iter().filter_map(|ability| match *ability {
+            ItemAbility::Protection {
+                element: kind,
+                percent,
+                field_only: false,
+            } if kind == element => Some(percent),
+            _ => None,
+        });
+        let Some(percent) = direct.next() else {
+            return;
+        };
+        if percent.numerator <= 0
+            || direct.next().is_some()
+            || shared.is_some_and(|previous| previous != percent)
+        {
+            return;
+        }
+        shared = Some(percent);
+    }
+    if let Some(percent) = shared {
+        abilities.retain(|ability| {
+            !matches!(ability, ItemAbility::Protection {
+                element, field_only: false, ..
+            } if ELEMENTS.contains(element))
+        });
+        abilities.push(ItemAbility::ElementalProtection { percent });
+    }
 }
 
 /// PARITY-EQUIP-MODIFIERS-1 / EQMOD2: the combat modifiers one Item grants, with percent
@@ -771,6 +814,86 @@ mod tests {
         assert_eq!(
             item_offence_modifiers(&ReferenceItemSemantics::default()),
             ItemOffenceModifiers::default()
+        );
+    }
+}
+
+#[cfg(test)]
+mod elemental_protection_tests {
+    use super::*;
+
+    #[test]
+    fn only_four_identical_positive_direct_resistances_collapse() {
+        use ReferenceResistanceKind as Kind;
+        let ratio = ReferenceRationalPercent {
+            numerator: 4,
+            denominator: 1,
+        };
+        let mut abilities = [Kind::Fire, Kind::Ice, Kind::Earth, Kind::Energy]
+            .into_iter()
+            .map(|element| ItemAbility::Protection {
+                element,
+                percent: ratio,
+                field_only: false,
+            })
+            .collect::<Vec<_>>();
+        abilities.push(ItemAbility::Protection {
+            element: Kind::Fire,
+            percent: ratio,
+            field_only: true,
+        });
+        collapse_elemental_protections(&mut abilities);
+        assert_eq!(abilities.len(), 2);
+        assert!(abilities.contains(&ItemAbility::ElementalProtection { percent: ratio }));
+        assert!(abilities.contains(&ItemAbility::Protection {
+            element: Kind::Fire,
+            percent: ratio,
+            field_only: true,
+        }));
+
+        let mut unequal = vec![
+            ItemAbility::Protection {
+                element: Kind::Fire,
+                percent: ratio,
+                field_only: false,
+            },
+            ItemAbility::Protection {
+                element: Kind::Ice,
+                percent: ratio,
+                field_only: false,
+            },
+        ];
+        let original = unequal.clone();
+        collapse_elemental_protections(&mut unequal);
+        assert_eq!(unequal, original);
+    }
+
+    #[test]
+    fn actual_item_profile_derives_one_elemental_ability_from_four_direct_entries() {
+        use ReferenceResistanceKind as Kind;
+        let percent = ReferenceRationalPercent {
+            numerator: 4,
+            denominator: 1,
+        };
+        let item = ReferenceItemSemantics {
+            protection: ReferenceItemField::Known(ReferenceItemProtection {
+                armor: ReferenceItemField::Unknown,
+                resistances: ReferenceItemField::Known(
+                    [Kind::Fire, Kind::Ice, Kind::Earth, Kind::Energy]
+                        .into_iter()
+                        .map(|kind| ReferenceResistance {
+                            kind,
+                            percent: ReferenceItemField::Known(percent),
+                        })
+                        .collect(),
+                ),
+            }),
+            ..ReferenceItemSemantics::default()
+        };
+        let profile = item_ability_profile(&item).ok();
+        assert_eq!(
+            profile.map(|profile| profile.abilities),
+            Some(vec![ItemAbility::ElementalProtection { percent }])
         );
     }
 }
