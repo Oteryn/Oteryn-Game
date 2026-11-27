@@ -3,6 +3,20 @@
   "owner": "crates",
   "events": [
     {
+      "event": "actor_frame_sent",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "frame_kind",
+        "frame_bytes",
+        "frame_hash",
+        "connection_generation",
+        "server_sequence"
+      ],
+      "codes": [],
+      "note": "Successful spell results and actor vitals writes. Length and first eight SHA-256 digits cover envelope bytes without the length prefix. Snapshot chunks carry the envelope sequence (zero). No payload."
+    },
+    {
       "event": "admission_entry_decision",
       "level": "info",
       "span": false,

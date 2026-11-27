@@ -14,6 +14,9 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent,
 use oteryn_protocol_oteryn::presentation as cooldown_wire;
 use std::num::NonZeroU32;
 
+#[path = "magic2_conjure/relog.rs"]
+mod relog;
+
 const BLANK: &str = "oteryn:item.tibia.i3147";
 const MISSILE: &str = "oteryn:item.tibia.i3198";
 const WAND: &str = "oteryn:item.tibia.i25760";
@@ -26,6 +29,7 @@ enum Case {
     MissingReagent,
     WandInventory,
     WandCooldowns,
+    WandRelog { expired: bool },
 }
 
 #[test]
@@ -54,6 +58,15 @@ fn conjure_publishes_spell_and_group_cooldown_cue() -> TestResult {
     };
     drop(admin);
     large_stack(|| scenarios(&[Case::WandCooldowns]))
+}
+
+#[test]
+fn w09_conjure_relog_round_trips_first_spell_and_vitals_frames() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    large_stack(|| scenarios(&[Case::WandRelog { expired: false }, Case::WandRelog { expired: true }]))
 }
 
 fn scenarios(cases: &[Case]) -> TestResult {
@@ -86,10 +99,17 @@ async fn scenario(
 ) -> TestResult {
     let full = matches!(case, Case::FullBag);
     let missing_reagent = matches!(case, Case::MissingReagent);
-    let wand = matches!(case, Case::WandInventory | Case::WandCooldowns);
+    let wand = matches!(case, Case::WandInventory | Case::WandCooldowns | Case::WandRelog { .. });
     let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
     eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
-    prepare_current_session(&h).await?;
+    let recovery = if matches!(case, Case::WandRelog { .. }) {
+        let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+        Some(source)
+    } else {
+        prepare_current_session(&h).await?;
+        None
+    };
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -99,7 +119,7 @@ async fn scenario(
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let room = pin.qualified_room();
-    let channel_pin = ChannelContentPin::from_activation(
+    let channel_pin = || ChannelContentPin::from_activation(
         world,
         pin.activation_sequence(),
         pin.identity().server_artifact_digest(),
@@ -108,7 +128,7 @@ async fn scenario(
         room.map_revision_digest(),
         (2, 11, -7),
     );
-    let deps = Dependencies::with_content(channel_pin, room.clone(), native.spell_book().clone())?;
+    let deps = Dependencies::with_content(channel_pin(), room.clone(), native.spell_book().clone())?;
     let actor = deps.actor;
     let session = deps.admitted.game_session_id;
     {
@@ -131,7 +151,7 @@ async fn scenario(
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(room), Some(room));
-    if matches!(case, Case::WandCooldowns) {
+    if matches!(case, Case::WandCooldowns | Case::WandRelog { .. }) {
         owner.states.test_owner_time.store(
             CAST_TIME_MS * 1_000 + 1,
             std::sync::atomic::Ordering::Relaxed,
@@ -141,7 +161,7 @@ async fn scenario(
     let (vocation_key, vocation) = match case {
         Case::FullBag | Case::MissingReagent => ("druid", crate::spell::Vocation::Druid),
         Case::MissingBag => ("paladin", crate::spell::Vocation::Paladin),
-        Case::WandInventory | Case::WandCooldowns => ("sorcerer", crate::spell::Vocation::Sorcerer),
+        Case::WandInventory | Case::WandCooldowns | Case::WandRelog { .. } => ("sorcerer", crate::spell::Vocation::Sorcerer),
     };
     let build =
         convert_vocation(formula, &DurableBuildState::default(), vocation_key).map_err(debug)?;
@@ -220,7 +240,7 @@ async fn scenario(
     let intent = find(match case {
         Case::FullBag | Case::MissingReagent => 3198,
         Case::MissingBag => 3447,
-        Case::WandInventory | Case::WandCooldowns => 25760,
+        Case::WandInventory | Case::WandCooldowns | Case::WandRelog { .. } => 25760,
     })?;
     assert!(
         AdmissionRetryBudget::for_root(&session, &h.root)
@@ -260,7 +280,7 @@ async fn scenario(
             admitted,
             intent,
             wand_ref,
-            matches!(case, Case::WandCooldowns),
+            matches!(case, Case::WandCooldowns | Case::WandRelog { .. }),
         )
         .await?;
         assert_eq!(quantity(&h, WAND).await?, 1, "one wand in the backpack");
@@ -269,6 +289,29 @@ async fn scenario(
             1,
             "replay creates no second receipt"
         );
+        if let Case::WandRelog { expired } = case {
+            assert_eq!(
+                owner.logout_session(admitted).await,
+                crate::gameplay_transport::connection::LogoutReply::Result(
+                    oteryn_protocol_oteryn::logout::LogoutResult::Accepted
+                )
+            );
+            if expired {
+                relog::expire_saved_cooldowns(&h).await?;
+            }
+            let deps = Dependencies::with_content(
+                channel_pin(), room.clone(), native.spell_book().clone(),
+            )?;
+            let mut fresh = deps.owner(&h, &authority);
+            fresh.active_generation = Some(active);
+            fresh.rooms = owner.rooms.clone();
+            fresh.evidence = &recovery.as_ref().ok_or("relog source")?.evidence;
+            fresh.premium_coordinator = Some(&premium);
+            relog::admit_and_round_trip(&fresh, admitted, intent, expired).await?;
+            let expected = if expired { 2 } else { 1 };
+            assert_eq!(quantity(&h, WAND).await?, expected);
+            assert_eq!(receipt_count(&h).await?, expected);
+        }
         eprintln!("POSTGRES_CASE_COMPLETED W09 wand inventory");
         drop(owner);
         drop(authority);

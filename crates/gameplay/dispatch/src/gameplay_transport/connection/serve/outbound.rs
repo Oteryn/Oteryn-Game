@@ -20,6 +20,90 @@ pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     })?
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum ActorFrame {
+    SpellResult,
+    ParameterSpellResult,
+    VitalsDelta,
+    VitalsSnapshotChunk,
+}
+
+impl ActorFrame {
+    fn kind(self) -> &'static str {
+        match self {
+            Self::SpellResult => "actor_spell_result",
+            Self::ParameterSpellResult => "actor_spell_parameters_result",
+            Self::VitalsDelta => "actor_vitals_delta",
+            Self::VitalsSnapshotChunk => "actor_vitals_snapshot_chunk",
+        }
+    }
+}
+
+pub(super) async fn write_actor_frame<W: AsyncWrite + Unpin>(
+    stream: &mut W,
+    frame: &[u8],
+    kind: ActorFrame,
+    generation: u64,
+    sequence: u64,
+) -> std::io::Result<()> {
+    use sha2::{Digest, Sha256};
+
+    write_frame(stream, frame).await?;
+    let [a, b, c, d, ..] = <[u8; 32]>::from(Sha256::digest(frame));
+    operator_event(&format!(
+        "event=actor_frame_sent frame_kind={} frame_bytes={} frame_hash={a:02x}{b:02x}{c:02x}{d:02x} connection_generation={generation} server_sequence={sequence}",
+        kind.kind(),
+        frame.len(),
+    ));
+    Ok(())
+}
+
+pub(super) async fn write_command_result<W: AsyncWrite + Unpin>(
+    stream: &mut W,
+    frame: &[u8],
+    command_type: u32,
+    generation: u64,
+    sequence: u64,
+) -> std::io::Result<()> {
+    let kind = match command_type {
+        oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT =>
+            ActorFrame::SpellResult,
+        oteryn_protocol_oteryn::actor_spell_v2::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2 =>
+            ActorFrame::ParameterSpellResult,
+        _ => return write_frame(stream, frame).await,
+    };
+    write_actor_frame(stream, frame, kind, generation, sequence).await
+}
+
+/// Snapshot chunks can split a domain across frames. Log the chunk frames of
+/// any snapshot that carries vitals.
+pub(super) async fn write_snapshot_frames<W: AsyncWrite + Unpin>(
+    stream: &mut W,
+    frames: &[Vec<u8>],
+    domains: &[DomainSnapshot<'_>],
+    generation: u64,
+) -> std::io::Result<()> {
+    let has_vitals = domains
+        .iter()
+        .any(|domain| domain.domain_id == STATE_DOMAIN_ACTOR_VITALS);
+    let chunk_count = frames.len().saturating_sub(2);
+    for (index, frame) in frames.iter().enumerate() {
+        if has_vitals && (1..=chunk_count).contains(&index) {
+            write_actor_frame(
+                stream,
+                frame,
+                ActorFrame::VitalsSnapshotChunk,
+                generation,
+                0,
+            )
+            .await?;
+        } else {
+            write_frame(stream, frame).await?;
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn movement_magic_effect_event(
     ordinal: u32,
     position: crate::map::overlay::TilePos,
@@ -118,7 +202,16 @@ where
         }
         return Err(ServeEnd::LoggedOut);
     }
-    if write_frame(stream, &result).await.is_err() {
+    if write_command_result(
+        stream,
+        &result,
+        command.command_type,
+        session.generation,
+        session.sequence,
+    )
+    .await
+    .is_err()
+    {
         return Err(ServeEnd::Disconnected);
     }
     // Native movement can commit an activity return and retire this actor.

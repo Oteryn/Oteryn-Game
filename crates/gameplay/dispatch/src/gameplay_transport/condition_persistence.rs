@@ -252,6 +252,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cooldown_relog_rejects_negative_and_overflowing_deadlines() {
+        use oteryn_protocol_oteryn::presentation::{
+            ActorCooldown, ActorCooldownKind, ActorCooldowns, MAX_CLOCK_MS, PresentationWireError,
+            decode_actor_cooldowns, encode_actor_cooldowns,
+        };
+
+        // The durable JSON reader uses unsigned wall-clock microseconds.
+        assert!(
+            serde_json::from_value::<Vec<(String, u64)>>(serde_json::json!([[
+                "spell:conjure",
+                -1
+            ]]))
+            .is_err()
+        );
+        assert!(prepare_cooldowns(&[("spell:conjure".into(), u64::MAX)], u64::MAX).is_none());
+
+        let entry = ActorCooldown {
+            kind: ActorCooldownKind::Spell,
+            id: 1,
+            expires_at_ms: MAX_CLOCK_MS + 1,
+        };
+        assert_eq!(
+            encode_actor_cooldowns(&ActorCooldowns {
+                server_now_ms: 0,
+                rtt_ms: None,
+                entries: vec![entry],
+            }),
+            Err(PresentationWireError::LimitExceeded),
+        );
+        // u64 field 1 carrying a ten-byte varint for -1 on a wrongly signed producer.
+        assert_eq!(
+            decode_actor_cooldowns(&[
+                0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01
+            ]),
+            Err(PresentationWireError::LimitExceeded),
+        );
+    }
+
     #[test]
     fn condition_persistence_refuses_future_lease_corrupt_data_and_foreign_appearance()
     -> Result<(), &'static str> {

@@ -578,9 +578,15 @@ impl State {
             .ok_or(ServeEnd::Disconnected)?;
             admitted.continuity.server_sequence = sequence;
             admitted.continuity.vitals_revision = to;
-            write_frame(stream, &frame)
-                .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+            outbound::write_actor_frame(
+                stream,
+                &frame,
+                outbound::ActorFrame::VitalsDelta,
+                admitted.continuity.connection_generation,
+                sequence,
+            )
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
         }
         Ok(())
     }

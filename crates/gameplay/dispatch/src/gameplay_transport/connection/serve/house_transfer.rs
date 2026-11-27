@@ -129,11 +129,14 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             &domains,
         )
         .map_err(|_| ServeEnd::Disconnected)?;
-        for frame in snapshot {
-            write_frame(stream, &frame)
-                .await
-                .map_err(|_| ServeEnd::Disconnected)?;
-        }
+        outbound::write_snapshot_frames(
+            stream,
+            &snapshot,
+            &domains,
+            admitted.continuity.connection_generation,
+        )
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
         admitted.continuity.server_sequence = sequence;
         zones_nologout_transport::delivered(&mut admitted);
         // A retained idle owner survives a House handoff or transport retry.
@@ -324,9 +327,15 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 crate::gameplay_transport::session_ingress::CommandAction::Pending => continue,
                 crate::gameplay_transport::session_ingress::CommandAction::Replay(frame) => {
                     admitted.continuity.server_sequence += 1;
-                    write_frame(stream, &frame)
-                        .await
-                        .map_err(|_| ServeEnd::Disconnected)?;
+                    outbound::write_command_result(
+                        stream,
+                        &frame,
+                        command.command_type,
+                        generation,
+                        admitted.continuity.server_sequence,
+                    )
+                    .await
+                    .map_err(|_| ServeEnd::Disconnected)?;
                     continue;
                 }
                 crate::gameplay_transport::session_ingress::CommandAction::Execute => {}
@@ -481,6 +490,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             } else {
                 (None, Vec::new(), CommandStatus::Rejected)
             };
+            // The House has no v1 cast route, but a v1 cast still has a registered result.
+            let payload = if command.command_type
+                == oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT
+                && status == CommandStatus::Rejected
+                && payload.is_empty()
+            {
+                encode_spell_cast_result(SpellCastDisposition::Rejected)
+            } else {
+                payload
+            };
             drop(permit);
             let sequence = admitted
                 .continuity
@@ -533,9 +552,15 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 }
                 return Err(ServeEnd::LoggedOut);
             }
-            write_frame(stream, &result)
-                .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+            outbound::write_command_result(
+                stream,
+                &result,
+                command.command_type,
+                generation,
+                sequence,
+            )
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
             if second_logout {
                 return Err(close(
                     stream,

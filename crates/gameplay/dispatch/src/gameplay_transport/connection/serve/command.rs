@@ -95,7 +95,16 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Replay(frame)) => {
             session.sequence += 1; // begin checked the successor before encoding the replay.
             session.admitted.continuity.server_sequence = session.sequence;
-            if write_frame(stream, &frame).await.is_err() {
+            if outbound::write_command_result(
+                stream,
+                &frame,
+                command.command_type,
+                session.generation,
+                session.sequence,
+            )
+            .await
+            .is_err()
+            {
                 return Err(ServeEnd::Disconnected);
             }
             return Ok(());
