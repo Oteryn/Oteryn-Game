@@ -296,6 +296,12 @@ impl SessionVisibility {
         })
     }
 
+    fn shows_creature(&self, entity: EntityRef) -> bool {
+        self.entities
+            .get(&entity.identity)
+            .is_some_and(|shown| shown.entity == entity && shown.kind == EntityKind::Creature)
+    }
+
     /// The content generation and own position the session last sent; `None` before any view.
     pub(crate) fn published(&self) -> Option<([u8; 32], ActorPosition)> {
         self.published

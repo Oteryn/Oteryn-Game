@@ -1577,8 +1577,8 @@ fn scenario_with_creature_observed(
         // are children of that very corpse.
         assert_eq!(corpse_receipts(&harness).await?, 1);
         if let Some(observer) = &mut corpse_observer {
-            let expected_body = native.reward_table().row(&creature_key).map_err(debug)?
-                .corpse_item.as_ref().ok_or("native Goblin corpse definition")?;
+            let row = native.reward_table().row(&creature_key).map_err(debug)?;
+            let expected_body = row.corpse_item.as_ref().ok_or("native Goblin corpse definition")?;
             observer.assert_committed(&owner, &harness, expected_body).await?;
             drop(owner);
             drop(authority);
