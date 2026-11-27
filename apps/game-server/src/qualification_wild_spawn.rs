@@ -96,6 +96,19 @@ pub(crate) fn adjacent_cells(center: MovementLocalPosition) -> Vec<MovementLocal
     .collect()
 }
 
+fn spawn_cells_for_fixture(
+    key: &str,
+    position: MovementLocalPosition,
+) -> Result<Vec<MovementLocalPosition>, SpawnRefusal> {
+    if key == "oteryn:creature.magma_crystal" {
+        let y = position.y.checked_sub(1).ok_or_else(|| {
+            SpawnRefusal::NoFreeTile("C12 north fixture tile outside world".into())
+        })?;
+        return Ok(vec![MovementLocalPosition { y, ..position }]);
+    }
+    Ok(adjacent_cells(position))
+}
+
 /// The first of `candidates` the runtime's spawn owner accepts; occupied, reserved and
 /// capacity conflicts stay with that owner, which restores its state on every refusal.
 pub(crate) fn place_first(
@@ -215,7 +228,10 @@ fn snapshot_spawn(
                 .map_err(|error| fence(format!("qualification spawn session actor: {error:?}")))?
                 .ok_or(SpawnRefusal::SessionUnknown)?;
             let position = snapshot.position();
-            (adjacent_cells(position), Some((session, actor, position)))
+            (
+                spawn_cells_for_fixture(key, position)?,
+                Some((session, actor, position)),
+            )
         }
     };
     let mut targets = Vec::with_capacity(candidates.len());
@@ -365,6 +381,21 @@ fn static_cell_refusal(
 // Test-only fixture setup; a failed setup is the test failure.
 #[allow(clippy::expect_used)]
 mod tests {
+    #[test]
+    fn c12_magma_crystal_has_no_alternate_fixture_cell() {
+        let center = MovementLocalPosition {
+            x: 50,
+            y: 50,
+            floor: 7,
+        };
+        let cells =
+            spawn_cells_for_fixture("oteryn:creature.magma_crystal", center).expect("north cell");
+        assert_eq!(cells, [MovementLocalPosition { y: 49, ..center }]);
+        assert_eq!(
+            spawn_cells_for_fixture(SPIDER, center).expect("ordinary fixture"),
+            adjacent_cells(center)
+        );
+    }
     use super::*;
     use crate::foundation::{ChannelId, NodeId, WorldId};
     use oteryn_gameplay_content::content::creature_policy::{

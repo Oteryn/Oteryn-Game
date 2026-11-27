@@ -313,12 +313,8 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         if entities.get(&witness.target).is_some_and(|entry| {
             let at = witness.cast_tile;
             entry.position.floor == at.floor
-                && entry
-                    .position
-                    .x
-                    .abs_diff(at.x)
-                    .max(entry.position.y.abs_diff(at.y))
-                    == 1
+                && entry.position.x == at.x
+                && entry.position.y.checked_add(1) == Some(at.y)
         }) {
             break entities
                 .iter()
@@ -365,7 +361,7 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     loop {
         let damage: u64 = events
             .iter()
-            .map(|event| damage_for_cast(event, own, witness.target))
+            .map(|event| damage_for_cast(event, own, witness.target, witness.spell.get()))
             .sum();
         if damage != 0 {
             assert_eq!(damage, witness.damage);
@@ -379,15 +375,15 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
     Ok(())
 }
 
-fn damage_for_cast(event: &SessionEvent, caster: EntityRef, target: EntityRef) -> u64 {
+fn damage_for_cast(event: &SessionEvent, caster: EntityRef, target: EntityRef, spell: u32) -> u64 {
     let SessionEvent::Presentation(delta) = event else {
         return 0;
     };
     delta.value.iter().filter_map(|entry| match entry.kind {
-        PresentationEventKind::ValueText { kind: PresentationValueKind::DamageDealt, target: victim, primary, .. }
-            if victim == target && delta.value.iter().any(|part| {
+        PresentationEventKind::ValueText { kind: PresentationValueKind::DamageDealt, target: victim, attacker: Some(attacker), primary, secondary: None, .. }
+            if victim == target && attacker == caster && primary.color == oteryn_protocol_oteryn::presentation::PresentationColor::Red && delta.value.iter().any(|part| {
                 part.decision_ordinal == entry.decision_ordinal
-                    && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, .. } if source == caster)
+                    && matches!(part.kind, PresentationEventKind::SpellWords { caster: source, spell: cue, .. } if source == caster && cue == spell)
             }) => Some(primary.value),
         _ => None,
     }).sum()

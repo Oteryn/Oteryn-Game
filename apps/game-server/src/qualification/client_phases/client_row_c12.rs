@@ -273,7 +273,7 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         let dealt: u64 = session
             .take_events()
             .iter()
-            .map(|event| full_row_c12::cast_damage_in(event, own, target))
+            .map(|event| full_row_c12::cast_damage_in(event, own, target, spell.get()))
             .sum();
         if dealt != 0 {
             break dealt;

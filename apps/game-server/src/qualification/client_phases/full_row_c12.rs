@@ -167,21 +167,27 @@ fn read_json(relative: &str) -> TestResult<serde_json::Value> {
 }
 
 fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
+    spell_by_words(client, SPELL_WORDS)
+}
+
+fn spell_by_words(client: &mut DevClientSession, words: &str) -> TestResult<NonZeroU32> {
     let catalog = client
         .session_mut()
         .spell_catalog()?
         .ok_or("served spell catalogue absent")?;
-    let entry = catalog.entries.iter()
-        .find(|entry| entry.words == SPELL_WORDS && entry.rune_item.is_none())
-        .ok_or("need=platform-created-premium-monk-or-exalted-monk;spell=exori-nia;cast-min-level=18;item-50271-min-level=20;observed=absent-from-served-spell-catalogue")?;
+    let entry = catalog
+        .entries
+        .iter()
+        .find(|entry| entry.words == words && entry.rune_item.is_none())
+        .ok_or_else(|| format!("C12 spell {words} absent from served catalogue"))?;
     if !entry.available {
         return Err(format!(
-            "need=premium-monk-or-exalted-monk;spell={SPELL_WORDS};cast-min-level={};item-50271-min-level=20;learned={}",
+            "need=premium-monk-or-exalted-monk;spell={words};cast-min-level={};item-50271-min-level=20;learned={}",
             entry.level, entry.learned
         ).into());
     }
     NonZeroU32::new(entry.cast_index)
-        .ok_or_else(|| "Greater Tiger Clash has zero served index".into())
+        .ok_or_else(|| format!("C12 spell {words} has zero served index").into())
 }
 
 /// The base-damage augment (hundredths of a percent) that content binds to this spell on the item.
@@ -383,12 +389,19 @@ impl Hunt {
                 vitals.mana, delta.server_sequence
             ).into());
         }
+        if !harmony_spent(before.harmony, vitals.harmony) {
+            return Err(format!(
+                "C12 Greater Tiger Clash must spend Harmony 1 -> 0, observed {} -> {}",
+                before.harmony, vitals.harmony
+            )
+            .into());
+        }
         if client.actor_vitals() != Some(&vitals) {
             return Err("C12 cast vitals were not applied to the client view".into());
         }
         let mut damage = in_flight
             .iter()
-            .map(|event| cast_damage_in(event, own, victim))
+            .map(|event| cast_damage_in(event, own, victim, spell.get()))
             .sum::<u64>();
         let window = tokio::time::Instant::now() + Duration::from_secs(3);
         while damage == 0 && tokio::time::Instant::now() < window {
@@ -396,7 +409,7 @@ impl Hunt {
             damage = client
                 .take_events()
                 .iter()
-                .map(|event| cast_damage_in(event, own, victim))
+                .map(|event| cast_damage_in(event, own, victim, spell.get()))
                 .sum();
         }
         let after = *client.actor_vitals().ok_or("post-cast vitals absent")?;
@@ -430,8 +443,8 @@ impl Hunt {
             .into());
         }
         evidence(&format!(
-            "C12 committed_cast command={} damage={damage} owner={paired:?} expected_bps={bps}",
-            outcome.command_id
+            "C12 committed_cast command={} damage={damage} owner={paired:?} expected_bps={bps} harmony={}->{} mana={mana_before_cast}->{}",
+            outcome.command_id, before.harmony, vitals.harmony, vitals.mana
         ));
         Ok((damage, vitals))
     }
@@ -445,6 +458,7 @@ pub(super) fn hex_bytes(bytes: &[u8]) -> String {
 pub(super) struct CommittedDamage {
     before: u64,
     augmented: u64,
+    critical: bool,
     pub(super) committed: u64,
 }
 
@@ -475,13 +489,17 @@ fn read_base_damage(
             .strip_prefix("before=")
             .and_then(|s| s.split_once(" after="))
             .ok_or("malformed committed C12 damage pair")?;
-        let (after, committed) = after
-            .split_once(" committed=")
-            .ok_or("C12 committed HP loss missing")?;
+        let (after, modifiers) = after
+            .split_once(" critical=")
+            .ok_or("C12 critical observation missing")?;
+        let (critical, committed) = modifiers
+            .split_once(" element=physical committed=")
+            .ok_or("C12 physical committed HP loss missing")?;
         if observed
             .replace(CommittedDamage {
                 before: before.parse()?,
                 augmented: after.parse()?,
+                critical: critical.parse()?,
                 committed: committed.parse()?,
             })
             .is_some()
@@ -494,6 +512,7 @@ fn read_base_damage(
     let CommittedDamage {
         before,
         augmented: after,
+        critical,
         committed,
     } = damage;
     let increase = before
@@ -510,6 +529,17 @@ fn read_base_damage(
         )
         .into());
     }
+    // The solo, neutral fixture has no damage modifiers after base except innate Monk critical.
+    let expected = if critical {
+        after
+            .checked_add(after / 10)
+            .ok_or("C12 critical arithmetic overflow")?
+    } else {
+        after
+    };
+    if committed != expected {
+        return Err(format!("C12 committed HP loss {committed} differs from downstream damage {expected} for {damage:?}").into());
+    }
     Ok(damage)
 }
 
@@ -518,29 +548,45 @@ pub(super) fn cast_damage_in(
     event: &SessionEvent,
     own: oteryn_dev_client::EntityRef,
     victim: oteryn_dev_client::EntityRef,
+    spell: u32,
 ) -> u64 {
     let SessionEvent::Presentation(delta) = event else {
         return 0;
     };
-    let decisions: Vec<u32> = delta
-        .value
+    cast_damage_from_presentation(&delta.value, own, victim, spell)
+}
+
+fn cast_damage_from_presentation(
+    events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
+    own: oteryn_dev_client::EntityRef,
+    victim: oteryn_dev_client::EntityRef,
+    spell: u32,
+) -> u64 {
+    let decisions: Vec<u32> = events
         .iter()
         .filter(
-            |e| matches!(e.kind, PresentationEventKind::SpellWords { caster, .. } if caster == own),
+            |e| matches!(e.kind, PresentationEventKind::SpellWords { caster, spell: cue, .. } if caster == own && cue == spell),
         )
         .map(|e| e.decision_ordinal)
         .collect();
-    delta
-        .value
+    events
         .iter()
         .filter(|e| decisions.contains(&e.decision_ordinal))
         .filter_map(|e| match e.kind {
             PresentationEventKind::ValueText {
                 kind: PresentationValueKind::DamageDealt,
                 target,
+                attacker: Some(attacker),
                 primary,
+                secondary: None,
                 ..
-            } if target == victim => Some(primary.value),
+            } if target == victim
+                && attacker == own
+                && primary.color
+                    == oteryn_protocol_oteryn::presentation::PresentationColor::Red =>
+            {
+                Some(primary.value)
+            }
             _ => None,
         })
         .sum()
@@ -552,9 +598,11 @@ async fn samples(
     spell: NonZeroU32,
     bps: u64,
 ) -> TestResult<Vec<u64>> {
+    let builder = spell_by_words(client, "exori infir pug")?;
     let mut out = Vec::new();
     for _ in 0..SAMPLES {
         restore_cast_mana(client).await?;
+        build_harmony(hunt, client, builder).await?;
         let before = client
             .actor_vitals()
             .ok_or("pre-sample vitals absent")?
@@ -579,12 +627,55 @@ async fn samples(
     Ok(out)
 }
 
+async fn build_harmony(
+    hunt: &Hunt,
+    client: &mut DevClientSession,
+    spell: NonZeroU32,
+) -> TestResult {
+    let target = hunt.target(client).await?;
+    let own = own_entity(client)?;
+    let before = *client.actor_vitals().ok_or("C12 builder vitals absent")?;
+    if before.harmony != 0 {
+        return Err(format!(
+            "C12 Swift Jab requires zero Harmony before cast, observed {}",
+            before.harmony
+        )
+        .into());
+    }
+    client.take_events();
+    let outcome = client
+        .cast_spell(spell, SpellTarget::AttackTarget, true)
+        .await?;
+    require_mechanic_acceptance(outcome.status, "C12 Swift Jab CAST")?;
+    let effect = outcome
+        .actor_vitals_delta
+        .ok_or("C12 Swift Jab omitted actor-vitals")?;
+    if outcome.disposition != SpellCastDisposition::Cast || effect.value.harmony != 1 {
+        return Err(format!(
+            "C12 Swift Jab did not build one Harmony: {:?}",
+            effect.value
+        )
+        .into());
+    }
+    let mut evidence = client.take_events();
+    // Swift Jab's authored attack group lasts two seconds.
+    client.service_liveness(Duration::from_secs(2)).await?;
+    evidence.extend(client.take_events());
+    if evidence
+        .iter()
+        .all(|event| cast_damage_in(event, own, target, spell.get()) == 0)
+    {
+        return Err("C12 Swift Jab served no attributed physical damage".into());
+    }
+    Ok(())
+}
+
 async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
 
     if client
         .actor_vitals()
-        .is_some_and(|vitals| vitals.mana >= CAST_MANA)
+        .is_some_and(|vitals| vitals.mana >= CAST_MANA + 3)
     {
         return Ok(());
     }
@@ -608,7 +699,7 @@ async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
     while !client
         .actor_vitals()
-        .is_some_and(|vitals| vitals.mana >= CAST_MANA)
+        .is_some_and(|vitals| vitals.mana >= CAST_MANA + 3)
     {
         if tokio::time::Instant::now() >= deadline {
             return Err("Mana Potion did not publish enough mana for Greater Tiger Clash".into());
@@ -682,7 +773,7 @@ async fn wait_combat_target(
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut DevClientSession, prove_mana: bool) -> TestResult<u32> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     let state = client
         .session_mut()
@@ -714,11 +805,38 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         client.service_liveness(Duration::from_millis(250)).await?;
     }
     verdict::Harness::global().progress("c12-logout");
+    let mut mana = client
+        .actor_vitals()
+        .ok_or("C12 pre-logout vitals absent")?
+        .mana;
+    if prove_mana {
+        // Observe the next wire regeneration tick just before the one logout request.
+        // This makes the tested value distinct from an older below-max save as well as max mana.
+        let prior = mana;
+        let until = tokio::time::Instant::now() + Duration::from_secs(12);
+        while mana == prior {
+            if tokio::time::Instant::now() >= until {
+                return Err("C12 mana regeneration did not publish before logout".into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            mana = client
+                .actor_vitals()
+                .ok_or("C12 observed mana tick missing")?
+                .mana;
+        }
+        // The seeded Monk receives 1.5 mana units per tick, with fractional carry.
+        if !matches!(mana.checked_sub(prior), Some(1 | 2)) {
+            return Err(format!(
+                "C12 expected one regeneration tick before logout, observed {prior}->{mana}"
+            )
+            .into());
+        }
+    }
     let (result, detail, _, _) = logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C12 logout refused on first attempt: {detail}").into());
     }
-    Ok(())
+    Ok(mana)
 }
 
 fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
@@ -1087,19 +1205,10 @@ fn fixture_combat_route(
     route(world, from, |at| {
         (!move_before_cast || at != from)
             && combat_tile(at)
-            && [(0, -1), (1, 0), (0, 1), (-1, 0)]
-                .into_iter()
-                .any(|(dx, dy)| {
-                    at.x.checked_add_signed(dx)
-                        .zip(at.y.checked_add_signed(dy))
-                        .is_some_and(|(x, y)| {
-                            combat_tile(TilePos {
-                                x,
-                                y,
-                                floor: at.floor,
-                            })
-                        })
-                })
+            && at
+                .y
+                .checked_sub(1)
+                .is_some_and(|y| combat_tile(TilePos { y, ..at }))
     })
     .ok_or_else(|| "C12 fixture has no reachable combat tile".into())
 }
@@ -1140,6 +1249,15 @@ async fn spawn_and_wait_fixture_target<S: oteryn_dev_client::native_session::Ses
     Ok(entity)
 }
 
+fn is_fixture_north(
+    caster: oteryn_dev_client::native_session::ActorPosition,
+    target: oteryn_dev_client::native_session::ActorPosition,
+) -> bool {
+    target.floor == caster.floor
+        && target.x == caster.x
+        && target.y.checked_add(1) == Some(caster.y)
+}
+
 async fn wait_fixture_target<S: oteryn_dev_client::native_session::SessionStream>(
     session: &mut oteryn_dev_client::native_session::Session<S>,
     entity: oteryn_dev_client::EntityRef,
@@ -1156,13 +1274,7 @@ async fn wait_fixture_target<S: oteryn_dev_client::native_session::SessionStream
                 || entry
                     .display_name
                     .is_none_or(|name| name.as_str().ok() != Some(profile.display_name.as_str()))
-                || entry.position.floor != at.floor
-                || entry
-                    .position
-                    .x
-                    .abs_diff(at.x)
-                    .max(entry.position.y.abs_diff(at.y))
-                    != 1
+                || !is_fixture_north(at, entry.position)
             {
                 return Err(format!(
                     "C12 fixture target differs or is out of range: {entry:?} at={at:?}"
@@ -1215,6 +1327,14 @@ pub(super) fn item_dictionary_pin(
 }
 
 /// Read the terminal logout's persisted mana before any successor session can regenerate.
+fn harmony_spent(before: u32, after: u32) -> bool {
+    before == 1 && after == 0
+}
+
+fn mana_survived(observed: u32, saved: u32, reloaded: u32, max: u32) -> bool {
+    observed < max && observed == saved && observed == reloaded
+}
+
 pub(super) async fn saved_mana(clients: &SeamClients<'_>) -> TestResult<u32> {
     use sqlx::Connection;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
@@ -1263,7 +1383,7 @@ async fn fresh_c12_admission(
     clients: &SeamClients<'_>,
 ) -> TestResult<DevClientSession> {
     let previous = client.join_snapshot().game_session_id;
-    logout(&mut client).await?;
+    logout(&mut client, false).await?;
     drop(client);
     let fresh = connect_c12_character(clients).await?;
     if fresh.join_snapshot().game_session_id == previous {
@@ -1401,7 +1521,7 @@ pub(super) async fn prepare_client_capture(
         route.last().map(|(_, at)| at),
         route.len()
     ));
-    logout(&mut client).await?;
+    logout(&mut client, false).await?;
     Ok(ClientCaptureSetup {
         accounts,
         characters,
@@ -1515,20 +1635,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     equip_right(&mut client, definition).await?;
     let old_session = client.join_snapshot().game_session_id;
-    logout(&mut client).await?;
+    let pre_logout_mana = logout(&mut client, true).await?;
     drop(client);
     let durable_mana = saved_mana(clients).await?;
     let mut fresh = connect_c12_character(clients).await?;
     let fresh_vitals = fresh.actor_vitals().ok_or("C12 post-relog vitals absent")?;
-    if durable_mana >= fresh_vitals.max_mana || fresh_vitals.mana != durable_mana {
+    if !mana_survived(
+        pre_logout_mana,
+        durable_mana,
+        fresh_vitals.mana,
+        fresh_vitals.max_mana,
+    ) {
         return Err(format!(
-            "C12 relog did not retain changed mana: saved={durable_mana} observed={}",
+            "C12 relog did not retain observed mana: before_logout={pre_logout_mana} saved={durable_mana} observed={}",
             fresh_vitals.mana
         )
         .into());
     }
     evidence(&format!(
-        "C12_FULL_RELOG durable_mana={durable_mana} fresh_session=true"
+        "C12_FULL_RELOG before_logout={pre_logout_mana} durable_mana={durable_mana} fresh_session=true"
     ));
     if fresh.join_snapshot().game_session_id == old_session
         || !equipped_right(&fresh, definition)
@@ -1547,7 +1672,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let fresh_spell_index = spell(&mut fresh)?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index, augment).await?;
     row.record_cast("fresh-admission", &replay, weapon(&fresh)?);
-    logout(&mut fresh).await?;
+    logout(&mut fresh, false).await?;
     row.pass("augment-attribution", (ITEM_ID, augment));
     Ok(())
 }
@@ -1565,32 +1690,187 @@ mod tests {
             read_base_damage(log.as_bytes(), MARKER, bps)
         };
         assert_eq!(
-            read("before=37 after=40 committed=44", 1_000)?,
+            read(
+                "before=37 after=40 critical=true element=physical committed=44",
+                1_000
+            )?,
             CommittedDamage {
                 before: 37,
                 augmented: 40,
+                critical: true,
                 committed: 44
             },
         );
         assert_eq!(
-            read("before=37 after=37 committed=37", 0)?,
+            read(
+                "before=37 after=37 critical=false element=physical committed=37",
+                0
+            )?,
             CommittedDamage {
                 before: 37,
                 augmented: 37,
+                critical: false,
                 committed: 37
             },
         );
         assert!(read("before=37 after=40", 1_000).is_err());
-        assert!(read("before=37 after=40 committed=0", 1_000).is_err());
-        assert!(read("before=37 after=41 committed=41", 1_000).is_err());
-        assert!(read("before=37 after=37 committed=37", 1_000).is_err());
-        assert!(read("before=37 after=40 committed=40", 0).is_err());
+        assert!(
+            read(
+                "before=37 after=40 critical=false element=physical committed=0",
+                1_000
+            )
+            .is_err()
+        );
+        assert!(
+            read(
+                "before=37 after=41 critical=false element=physical committed=41",
+                1_000
+            )
+            .is_err()
+        );
+        assert!(
+            read(
+                "before=37 after=37 critical=false element=physical committed=37",
+                1_000
+            )
+            .is_err()
+        );
+        assert!(
+            read(
+                "before=37 after=40 critical=false element=physical committed=40",
+                0
+            )
+            .is_err()
+        );
+        assert!(
+            read(
+                "before=37 after=40 critical=false element=physical committed=37",
+                1_000
+            )
+            .is_err()
+        );
+        assert!(
+            read(
+                "before=37 after=40 critical=true element=physical committed=40",
+                1_000
+            )
+            .is_err()
+        );
+        assert!(
+            read(
+                "before=37 after=40 critical=false element=fire committed=40",
+                1_000
+            )
+            .is_err()
+        );
         let duplicate = format!(
-            "{MARKER}before=37 after=40 committed=40
-{MARKER}before=37 after=40 committed=40"
+            "{MARKER}before=37 after=40 critical=false element=physical committed=40
+{MARKER}before=37 after=40 critical=false element=physical committed=40"
         );
         assert!(read_base_damage(duplicate.as_bytes(), MARKER, 1_000).is_err());
         Ok(())
+    }
+
+    #[test]
+    fn alternate_fixture_tiles_are_rejected() {
+        use oteryn_dev_client::native_session::ActorPosition;
+        let caster = ActorPosition {
+            x: 50,
+            y: 50,
+            floor: 7,
+        };
+        assert!(is_fixture_north(caster, ActorPosition { y: 49, ..caster }));
+        assert!(!is_fixture_north(caster, ActorPosition { x: 51, ..caster }));
+        assert!(!is_fixture_north(
+            caster,
+            ActorPosition {
+                x: 51,
+                y: 49,
+                ..caster
+            }
+        ));
+        assert!(!is_fixture_north(
+            caster,
+            ActorPosition {
+                y: 49,
+                floor: 6,
+                ..caster
+            }
+        ));
+        assert!(!is_fixture_north(caster, caster));
+    }
+
+    #[test]
+    fn presentation_must_name_the_exact_spell_and_attacker() {
+        use oteryn_protocol_oteryn::presentation::{
+            PresentationColor, PresentationEvent, PresentationValue,
+        };
+        let own = oteryn_dev_client::EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        let victim = oteryn_dev_client::EntityRef {
+            identity: [2; 16],
+            generation: 1,
+        };
+        let position = oteryn_dev_client::native_session::ActorPosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        };
+        let words = |spell| PresentationEvent {
+            decision_ordinal: 4,
+            emission_ordinal: 1,
+            kind: PresentationEventKind::SpellWords {
+                caster: own,
+                position,
+                spell,
+            },
+        };
+        let damage = |attacker, color, decision_ordinal| PresentationEvent {
+            decision_ordinal,
+            emission_ordinal: 2,
+            kind: PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageDealt,
+                position,
+                target: victim,
+                attacker,
+                primary: PresentationValue { value: 40, color },
+                secondary: None,
+            },
+        };
+        let red = PresentationColor::Red;
+        let spell = 292;
+        let check = |events: [PresentationEvent; 2]| {
+            cast_damage_from_presentation(&events, own, victim, spell)
+        };
+        assert_eq!(check([words(spell), damage(Some(own), red, 4)]), 40);
+        assert_eq!(check([words(1), damage(Some(own), red, 4)]), 0);
+        assert_eq!(check([words(spell), damage(Some(victim), red, 4)]), 0);
+        assert_eq!(check([words(spell), damage(None, red, 4)]), 0);
+        assert_eq!(
+            check([
+                words(spell),
+                damage(Some(own), PresentationColor::Orange, 4)
+            ]),
+            0
+        );
+        assert_eq!(check([words(spell), damage(Some(own), red, 5)]), 0);
+    }
+
+    #[test]
+    fn harmony_noop_cannot_pass_a_spender() {
+        assert!(harmony_spent(1, 0));
+        assert!(!harmony_spent(0, 0));
+        assert!(!harmony_spent(1, 1));
+    }
+
+    #[test]
+    fn stale_below_max_mana_cannot_pass_relog() {
+        assert!(mana_survived(381, 381, 381, 810));
+        assert!(!mana_survived(381, 382, 382, 810));
+        assert!(!mana_survived(381, 381, 382, 810));
+        assert!(!mana_survived(810, 810, 810, 810));
     }
 
     #[test]

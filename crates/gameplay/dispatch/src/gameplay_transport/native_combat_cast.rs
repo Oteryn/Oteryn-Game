@@ -964,7 +964,7 @@ impl PreparedNativeCombatCast {
             && let Some(magnitude) = self.magnitude.as_deref()
         {
             let command = self.batch.command;
-            for &(target, before, after) in magnitude.base_damage_evidence() {
+            for &(target, before, after, critical, element) in magnitude.base_damage_evidence() {
                 if let Some(committed) = result
                     .effects
                     .iter()
@@ -987,7 +987,7 @@ impl PreparedNativeCombatCast {
                         .map(|byte| format!("{byte:02x}"))
                         .collect::<String>();
                     eprintln!(
-                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after} committed={}",
+                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after} critical={critical} element={element} committed={}",
                         command.command_id().get(),
                         target.actor_local_generation(),
                         committed.get()
