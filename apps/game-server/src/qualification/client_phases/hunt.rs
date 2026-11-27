@@ -45,6 +45,17 @@ pub(super) async fn hunt_target(
             .map(|entry| entry.entity)
             .collect::<std::collections::BTreeSet<_>>()
     });
+    let started = tokio::time::Instant::now();
+    let mut last_health = None;
+    if bounded_corpse_wait.is_some()
+        && let EntityDetail::Actor { health_percent, .. } = target.detail
+    {
+        last_health = Some(health_percent);
+        evidence(&format!(
+            "W13_HUNT_HP target={:?} elapsed_ms=0 hp_percent={health_percent}",
+            target.entity
+        ));
+    }
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -67,6 +78,17 @@ pub(super) async fn hunt_target(
                     .find(|entry| entry.entity == target.entity)
                 {
                     last_position = updated.position;
+                    if bounded_corpse_wait.is_some()
+                        && let EntityDetail::Actor { health_percent, .. } = updated.detail
+                        && last_health != Some(health_percent)
+                    {
+                        last_health = Some(health_percent);
+                        evidence(&format!(
+                            "W13_HUNT_HP target={:?} elapsed_ms={} hp_percent={health_percent}",
+                            target.entity,
+                            started.elapsed().as_millis()
+                        ));
+                    }
                 }
                 damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100));
             }
