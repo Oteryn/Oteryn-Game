@@ -528,7 +528,7 @@
       "event": "serve_end",
       "level": "info",
       "span": false,
-      "fields": ["reason", "path", "phase", "cause", "source", "next_command_id", "server_sequence"],
+      "fields": ["reason", "path", "phase", "cause", "owner", "source", "next_command_id", "server_sequence"],
       "codes": [],
       "note": "Seeded from current server code."
     },

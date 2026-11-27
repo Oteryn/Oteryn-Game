@@ -117,7 +117,7 @@ fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<
             let deadline = TokioInstant::now() + DB_PASS_DEADLINE;
             let owner = PassOwner::checked_out(&slot, waiter, Instant::now(), deadline);
             assert!(slot.lock().is_ok_and(|held| {
-                held.is_some_and(|(_, _, bound, trace)| bound == deadline && trace == Some(TRACE))
+                held.is_some_and(|(_, _, bound, trace)| bound == Some(deadline) && trace == Some(TRACE))
             }));
             drop(owner);
         }));

@@ -555,6 +555,7 @@ impl JoinCause {
 struct JoinRefusal {
     phase: &'static str,
     cause: JoinCause,
+    holder_owner: Option<&'static std::panic::Location<'static>>,
 }
 
 impl JoinRefusal {
@@ -562,19 +563,23 @@ impl JoinRefusal {
         Self {
             phase,
             cause: JoinCause::Unprepared,
+            holder_owner: None,
         }
     }
 
     #[track_caller]
     fn report(self, admitted: AdmittedSession) {
-        report_serve_end(
-            admitted,
-            &format!(
-                "join_refused phase={} cause={}",
-                self.phase,
-                self.cause.name()
-            ),
+        use std::fmt::Write as _;
+
+        let mut reason = format!(
+            "join_refused phase={} cause={}",
+            self.phase,
+            self.cause.name()
         );
+        if let Some(owner) = self.holder_owner {
+            let _ = write!(reason, " owner={owner}");
+        }
+        report_serve_end(admitted, &reason);
     }
 }
 
@@ -589,9 +594,26 @@ fn report_serve_end(admitted: AdmittedSession, reason: &str) {
 }
 
 #[cfg(test)]
+type JoinPhaseGate = (
+    &'static str,
+    std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>,
+);
+
+#[cfg(test)]
 tokio::task_local! {
-    pub(in crate::gameplay_transport) static BEFORE_JOIN_SNAPSHOT:
-        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+    pub(in crate::gameplay_transport) static BEFORE_JOIN_PHASE: JoinPhaseGate;
+}
+
+#[cfg(test)]
+async fn before_join_phase(phase: &'static str) {
+    let barrier = BEFORE_JOIN_PHASE
+        .try_with(|(target, barrier)| (*target == phase).then(|| barrier.clone()))
+        .ok()
+        .flatten();
+    if let Some(barrier) = barrier {
+        barrier.0.notify_one();
+        barrier.1.notified().await;
+    }
 }
 
 struct AdmissionWait {
@@ -615,7 +637,11 @@ pub(super) fn record_admission_retry(phase: &'static str, holder_busy: bool) {
         JoinCause::Unavailable
     };
     let _ = ADMISSION_WAIT.try_with(|wait| {
-        wait.retry.set(Some(JoinRefusal { phase, cause }));
+        wait.retry.set(Some(JoinRefusal {
+            phase,
+            cause,
+            holder_owner: None,
+        }));
         super::operator_event(&format!(
             "event=admission_retry phase={phase} cause={} remaining_ms={}",
             cause.name(),
@@ -665,6 +691,7 @@ async fn admission_stage<T>(
                         wait.retry.get().unwrap_or(JoinRefusal {
                             phase: wait.phase.get(),
                             cause: JoinCause::Deadline,
+                            holder_owner: None,
                         })
                     })
                 })

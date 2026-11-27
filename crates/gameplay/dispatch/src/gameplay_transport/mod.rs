@@ -1631,6 +1631,7 @@ impl<'r> AdmissionRetryBudget<'r> {
         if let Some(deadline) = connection::admission_wait_deadline() {
             self.deadline = deadline;
             self.admission_phase = Some(phase);
+            connection::note_admission_phase(phase);
         }
         self
     }
@@ -1688,20 +1689,39 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
         match self.root {
             Some(root) => {
-                let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
                 let latest = (now + self.backoff).min(self.deadline);
-                if !root.wait_holder_turn(earliest, latest).await {
-                    // A retired holder cannot emit a return notification. Service
-                    // real readiness within this same retry window, then retry on
-                    // its observed return; neither deadline nor refusal changes.
-                    let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
-                    let retry_at = if matches!(ready, Ok(Ok(()))) {
-                        earliest.min(latest)
-                    } else {
-                        latest
-                    };
-                    tokio::time::sleep_until(retry_at).await;
+                if let Some(phase) = self.admission_phase.filter(|_| holder_busy) {
+                    let waiter = self.waiter.get_or_init(|| root.holder_waiter()).as_ref();
+                    if let Some(waiter) = waiter {
+                        waiter.set_join_wait_deadline(Some(self.deadline));
+                    }
+                    root.report_join_holder_wait(phase);
+                    // Recovery owns its own service bound. Keep the original join
+                    // deadline across readiness and retry the checkout on return.
+                    if !root.wait_join_holder_turn(self.deadline).await
+                        && tokio::time::Instant::now() < self.deadline
+                        && !matches!(
+                            tokio::time::timeout_at(self.deadline, root.await_ready()).await,
+                            Ok(Ok(()))
+                        )
+                    {
+                        tokio::time::sleep_until(latest).await;
+                    }
+                    if let Some(waiter) = waiter {
+                        waiter.set_join_wait_deadline(None);
+                    }
+                } else {
+                    let _ = self.waiter.get_or_init(|| root.holder_waiter());
+                    if !root.wait_holder_turn(earliest, latest).await {
+                        let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
+                        let retry_at = if matches!(ready, Ok(Ok(()))) {
+                            earliest.min(latest)
+                        } else {
+                            latest
+                        };
+                        tokio::time::sleep_until(retry_at).await;
+                    }
                 }
             }
             None => tokio::time::sleep(self.backoff).await,

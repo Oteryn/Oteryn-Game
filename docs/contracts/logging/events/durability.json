@@ -118,6 +118,14 @@
       "note": "A call site got the single holder after at least 500 ms of refused checkouts (LOGDBG-C): attempts and the owner site that refused it most; trace when the waiter had a connection trace."
     },
     {
+      "event": "holder_wait_begin",
+      "level": "warn",
+      "span": false,
+      "fields": ["phase", "cause", "state", "owner", "held_ms", "owner_trace"],
+      "codes": [],
+      "note": "Join checkout miss with the current checkout site, hold time and optional owner trace. The event trace belongs to the waiter."
+    },
+    {
       "event": "holder_wait_timeout",
       "level": "warn",
       "span": false,

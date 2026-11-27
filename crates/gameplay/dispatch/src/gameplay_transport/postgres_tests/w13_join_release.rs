@@ -5,12 +5,15 @@ use super::{Dependencies, TestResult};
 use crate::durability::DurabilityRoot;
 use crate::foundation::{AuthenticatedTransportRefV1, CharacterId, GameSessionId};
 use crate::gameplay_transport::connection::{
-    BEFORE_JOIN_SNAPSHOT, ConnectionEnd, ConnectionIdentifiers, FreshAdmissionAuthority,
+    BEFORE_JOIN_PHASE, ConnectionEnd, ConnectionIdentifiers, FreshAdmissionAuthority,
     IDLE_LIVENESS, LogoutReply, admit_frame_for_join, serve_admitted_for_join,
 };
 use crate::gameplay_transport::tcp_tls::read_frame;
 use oteryn_protocol_oteryn::actor_spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1;
+use oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1;
 use oteryn_protocol_oteryn::logout::LogoutResult;
+use oteryn_protocol_oteryn::pvp_expert::CAPABILITY_PVP_EXPERT_V1;
+use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 use oteryn_protocol_oteryn::{
     ClientBootstrapValue, FoundationProtocolError, MessageType, decode_protocol_error,
     decode_wire_envelope, encode_client_bootstrap,
@@ -27,6 +30,8 @@ enum Case {
     Exhausted,
     Catalogue,
     PeerField,
+    Soulpit,
+    InitialRaw,
 }
 
 #[test]
@@ -69,6 +74,22 @@ fn w13_peer_field_turn_waiting_on_runtime_leaves_holder_for_join_postgres() -> T
     run(admin, Case::PeerField)
 }
 
+#[test]
+fn w13_expert_join_waits_for_soulpit_handoff_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::Soulpit)
+}
+
+#[test]
+fn w13_initial_join_wakes_on_raw_holder_drop_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::InitialRaw)
+}
+
 fn run(admin: String, case: Case) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("w13-join-release", move || {
         let runtime = tokio::runtime::Builder::new_current_thread()
@@ -79,13 +100,40 @@ fn run(admin: String, case: Case) -> TestResult {
             result = runtime.block_on(scenario(admin, case));
         });
         result?;
+        let phase = match case {
+            Case::Soulpit => "expert_fight_modes",
+            Case::InitialRaw => "pvp_refresh",
+            _ => "spell_catalog",
+        };
         if case != Case::PeerField {
             assert!(
                 lines
                     .iter()
                     .any(|line| line.contains("event=admission_retry")
-                        && line.contains("phase=spell_catalog")
+                        && line.contains(&format!("phase={phase}"))
                         && line.contains("cause=holder_busy"))
+            );
+        }
+        if matches!(case, Case::Soulpit | Case::InitialRaw) {
+            let expected_owner = if case == Case::Soulpit {
+                "activity_handoff/soulpit.rs"
+            } else {
+                "w13_join_release.rs"
+            };
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=holder_wait_begin")
+                        && line.contains(&format!("phase={phase}"))
+                        && line.contains("state=checked_out")
+                        && line.contains("owner=")
+                        && line.contains(expected_owner)),
+                "{lines:?}"
+            );
+            assert!(
+                !lines.iter().any(|line| line.contains("state=untracked")
+                    || line.contains("event=holder_wait_timeout")),
+                "{lines:?}"
             );
         }
         if case == Case::Relog {
@@ -101,7 +149,9 @@ fn run(admin: String, case: Case) -> TestResult {
             assert!(lines.iter().any(|line| line.contains("event=serve_end")
                 && line.contains("reason=join_refused")
                 && line.contains("phase=spell_catalog")
-                && line.contains("cause=holder_busy")));
+                && line.contains("cause=holder_busy")
+                && line.contains("owner=")
+                && line.contains("w13_join_release.rs")));
             assert!(
                 lines
                     .iter()
@@ -204,7 +254,16 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         assert!(terminal);
     }
 
-    let supported = [CAPABILITY_ACTOR_SPELL_CATALOG_V1];
+    let supported = if case == Case::Soulpit {
+        vec![
+            CAPABILITY_ACTOR_SPELL_CATALOG_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_ATTACK_V1,
+            CAPABILITY_PVP_EXPERT_V1,
+        ]
+    } else {
+        vec![CAPABILITY_ACTOR_SPELL_CATALOG_V1]
+    };
     let frame = bootstrap(92, &supported)?;
     let ids = Identifiers(92);
     let (admitted, mut pending) = {
@@ -222,26 +281,37 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         }
         admission.await.map_err(debug)?
     };
-    assert!(
+    assert!(supported.iter().all(|&capability| {
         admitted
             .continuity
             .selected_capabilities
-            .contains(supported[0])
-    );
+            .contains(capability)
+    }));
     assert!(
         pending.is_some(),
         "normal fresh Channel admission defers acceptance"
     );
 
+    if case == Case::InitialRaw {
+        // Exercise the uncached PvP read during the initial ACTOR_VITALS observation.
+        owner.states.spell_states.lock().await.pvp_locks.clear();
+    }
     let barrier = Arc::new((Notify::new(), Notify::new()));
+    let phase = match case {
+        Case::Soulpit => "expert_fight_modes",
+        Case::InitialRaw => "actor_vitals",
+        Case::PeerField => "join_snapshot",
+        _ => "spell_catalog",
+    };
     let returned = Notify::new();
     let finished = Notify::new();
     let snapshot_committed = Notify::new();
     let serving = async {
-        let end = DurabilityRoot::with_holder_owner(BEFORE_JOIN_SNAPSHOT.scope(
-            barrier.clone(),
-            serve_admitted_for_join(&mut server, admitted, &owner, IDLE_LIVENESS, &mut pending),
-        ))
+        let serve =
+            serve_admitted_for_join(&mut server, admitted, &owner, IDLE_LIVENESS, &mut pending);
+        let end = DurabilityRoot::with_holder_owner(
+            BEFORE_JOIN_PHASE.scope((phase, barrier.clone()), serve),
+        )
         .await;
         finished.notify_one();
         end
@@ -256,6 +326,66 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         use std::task::Poll;
 
         barrier.0.notified().await;
+        if case == Case::Soulpit {
+            let mut block = h.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_soulpit_encounters IN ACCESS EXCLUSIVE MODE")
+                .execute(&mut *block)
+                .await?;
+            let handoff =
+                crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone());
+            let discover =
+                DurabilityRoot::with_background_holder(h.root.with_background_operation(async {
+                    let result = handoff
+                        .active_soulpits(&authority, &h.node, admitted.world_id, None)
+                        .await;
+                    assert!(result?.is_empty());
+                    // The same scheduler's granted follow-up can take the holder only
+                    // after the already-waiting join has had its checkout.
+                    assert!(matches!(
+                        h.root.try_acquire_ready(),
+                        Err(crate::durability::DurabilityError::RootUnavailable)
+                    ));
+                    Ok::<_, Box<dyn std::error::Error>>(())
+                }));
+            let mut discover = std::pin::pin!(discover);
+            assert!(
+                poll_fn(|cx| Poll::Ready(discover.as_mut().poll(cx)))
+                    .await
+                    .is_pending()
+            );
+            assert!(
+                h.root
+                    .checked_out_pass_site()
+                    .is_some_and(|site| site.file().ends_with("activity_handoff/soulpit.rs"))
+            );
+            barrier.1.notify_one();
+            let held = async {
+                assert!(
+                    tokio::time::timeout(Duration::from_millis(350), finished.notified())
+                        .await
+                        .is_err()
+                );
+                block.rollback().await?;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            tokio::try_join!(discover, held)?;
+            returned.notify_one();
+            return Ok(());
+        }
+        if case == Case::InitialRaw {
+            let holder = h.root.try_acquire_ready()?;
+            barrier.1.notify_one();
+            assert!(
+                tokio::time::timeout(Duration::from_millis(350), finished.notified())
+                    .await
+                    .is_err()
+            );
+            let wake = h.root.holder_return_notification();
+            drop(holder);
+            tokio::time::timeout(Duration::from_secs(2), wake).await?;
+            returned.notify_one();
+            return Ok(());
+        }
         if case == Case::PeerField {
             let peer_dependencies = Dependencies::new()?;
             let peer = peer_dependencies.owner(h, &authority);

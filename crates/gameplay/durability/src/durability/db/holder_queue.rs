@@ -59,6 +59,10 @@ const WAITING_LIVENESS: Duration = Duration::from_secs(1);
 struct Waiter {
     owner: OwnerKey,
     ticket: u64,
+    join: bool,
+    /// A join actively parked on the holder can retain its place past the
+    /// ordinary ticket liveness. Once it resumes the normal liveness applies.
+    wait_until: Option<Instant>,
     /// Set by a refused checkout while the owner waits for the holder; cleared by a served one.
     refused_at: Option<Instant>,
     /// The owner's last refusal, kept across its served passes: its place in the queue.
@@ -73,7 +77,11 @@ impl Waiter {
     /// Whether the owner holds later owners back: refused within the liveness, also when a
     /// pass has served it since.
     fn waiting(&self, now: Instant) -> bool {
-        live(self.last_refused, now)
+        self.last_refused.is_some()
+            && self.wait_until.map_or_else(
+                || live(self.last_refused, now),
+                |deadline| now < deadline,
+            )
     }
 }
 
@@ -134,6 +142,12 @@ impl HolderQueue {
         }
     }
 
+    /// A join that has missed a checkout gets the next foreground turn before
+    /// a scheduled operation can use a retained background grant.
+    pub(super) fn join_waiting(&self, now: Instant) -> bool {
+        self.waiters.iter().any(|waiter| waiter.join && waiter.waiting(now))
+    }
+
     /// A refused checkout keeps the owner's ticket waiting.
     pub(super) fn refused(&mut self, owner: OwnerKey, now: Instant) {
         if let Some(waiter) = self.waiter_mut(owner) {
@@ -174,6 +188,8 @@ impl HolderQueue {
         self.waiters.push(Waiter {
             owner,
             ticket,
+            join: false,
+            wait_until: None,
             refused_at: Some(now),
             last_refused: Some(now),
         });
@@ -205,6 +221,22 @@ impl HolderWaiter {
             returned: Arc::clone(returned),
             owner,
         })
+    }
+
+    /// Retain this join's ticket while it is parked on the holder. Once the
+    /// wait ends, the usual ticket liveness prevents a stalled retry from
+    /// keeping the holder idle while it waits on an unrelated owner.
+    pub fn set_join_wait_deadline(&self, deadline: Option<tokio::time::Instant>) {
+        if let Ok(mut queue) = self.queue.lock() {
+            let now = Instant::now();
+            queue.refused(self.owner, now);
+            if let Some(waiter) = queue.waiter_mut(self.owner) {
+                waiter.join = true;
+                waiter.wait_until = deadline.map(|deadline| {
+                    now + deadline.saturating_duration_since(tokio::time::Instant::now())
+                });
+            }
+        }
     }
 
     /// The owner gave up its retries: its place stops holding later owners.

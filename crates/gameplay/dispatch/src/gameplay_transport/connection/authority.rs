@@ -76,7 +76,13 @@ pub trait FreshAdmissionAuthority {
         async { false }
     }
 
-    fn report_join_holder_timeout(&self, _phase: &'static str, _cause: &'static str) {}
+    fn report_join_holder_timeout(
+        &self,
+        _phase: &'static str,
+        _cause: &'static str,
+    ) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
 
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {

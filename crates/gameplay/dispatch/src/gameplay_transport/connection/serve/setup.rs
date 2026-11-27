@@ -82,9 +82,10 @@ where
     let generation = admitted.continuity.connection_generation;
     match join(stream, admitted, authority, policy, projection, integrity).await {
         Ok(state) => Ok(state),
-        Err(JoinFailure::Unprepared(refusal)) => {
+        Err(JoinFailure::Unprepared(mut refusal)) => {
             if matches!(refusal.cause, JoinCause::HolderBusy | JoinCause::Deadline) {
-                authority.report_join_holder_timeout(refusal.phase, refusal.cause.name());
+                refusal.holder_owner =
+                    authority.report_join_holder_timeout(refusal.phase, refusal.cause.name());
             }
             send_join_unavailable(stream, if pending { 0 } else { generation }).await;
             Err(ServeEnd::JoinRefused {
@@ -121,10 +122,7 @@ where
         |pending| pending.deadline,
     );
     #[cfg(test)]
-    if let Ok(barrier) = BEFORE_JOIN_SNAPSHOT.try_with(std::sync::Arc::clone) {
-        barrier.0.notify_one();
-        barrier.1.notified().await;
-    }
+    before_join_phase("join_snapshot").await;
     let (snapshot, trade_revision, setup) = admission_stage(
         Some(deadline),
         "join_snapshot",
@@ -137,6 +135,7 @@ where
         return Err(JoinFailure::Unprepared(JoinRefusal {
             phase: "join_snapshot",
             cause: JoinCause::Deadline,
+            holder_owner: None,
         }));
     }
     record_join_progress("snapshot_write", admitted.first_entry);
