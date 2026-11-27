@@ -1214,8 +1214,9 @@ pub(super) async fn journeys(
         )
         .into());
     }
+    let selected_row = e2e_row_selected;
     let (result, logout, attempts, busy_timed_out) =
-        if groups.runs("rows") && (e2e_row_selected(47) || e2e_row_selected(174)) {
+        if groups.runs("rows") && (selected_row(47) || selected_row(174)) {
             let outcome = client.session_mut().logout().await?;
             (outcome.result, format!("{outcome:?}"), 1, false)
         } else {

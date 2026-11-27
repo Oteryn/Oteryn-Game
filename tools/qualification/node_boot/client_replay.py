@@ -12,7 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[3]
 PHASES = ROOT / "apps/game-server/src/qualification/client_phases"
 SCENARIO = r"[A-Za-z0-9_.-]+\.(?:full|client)"
-ROW_SELECTOR = re.compile(r"^[ 	]*if[ 	]+e2e_row_selected\s*\(\s*(\d+)\s*\)", re.MULTILINE)
+ROW_SELECTOR = re.compile(r"\be2e_row_selected\s*\(\s*(\d+)\s*\)")
 ROW_REPORTER = re.compile(
     rf'\s*\{{\s*(?:verdict::indexed\s*\(\s*"({SCENARIO})"\s*,'
     r'|(\w+::\w+)\s*\(\s*clients\s*[,\)])'
