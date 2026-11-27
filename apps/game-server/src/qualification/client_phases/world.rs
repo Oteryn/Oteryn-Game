@@ -1100,6 +1100,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(2) {
+                // Requires current Premium.
                 verdict::indexed("C12.full", async {
                     full_row_c12::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1289,6 +1290,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(29) {
+                // Requires current Premium.
                 verdict::indexed("S07.full", async {
                     full_row_s07::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1303,6 +1305,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(31) {
+                // Requires current Premium.
                 verdict::indexed("S05.full", async {
                     full_row_s05::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1338,6 +1341,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(36) {
+                // Requires current Premium.
                 verdict::indexed("W12.full", async {
                     full_row_w12::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1373,6 +1377,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(41) {
+                // Requires current Premium.
                 verdict::indexed("S13c.full", async {
                     full_row_s13c::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1408,6 +1413,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(46) {
+                // Requires current Premium.
                 verdict::indexed("P20.full", async {
                     full_row_p20::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1436,6 +1442,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(50) {
+                // Requires current Premium.
                 verdict::indexed("P14.full", async {
                     full_row_p14::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1485,6 +1492,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(57) {
+                // Requires current Premium.
                 verdict::indexed("P06.full", async {
                     full_row_p06::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1548,6 +1556,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(66) {
+                // Requires current Premium.
                 verdict::indexed("E06.full", async {
                     full_row_e06::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -1921,6 +1930,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(118) {
+                // Requires current Premium.
                 verdict::indexed("I07.client", async {
                     client_row_i07::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -2488,6 +2498,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(199) {
+                // Requires current Premium.
                 verdict::indexed("S13c.client", async {
                     client_row_s13c::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -2495,6 +2506,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(200) {
+                // Requires current Premium.
                 verdict::indexed("S13b.client", async {
                     client_row_s13b::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -2502,6 +2514,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(201) {
+                // Requires current Premium.
                 verdict::indexed("S13a.client", async {
                     client_row_s13a::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -3154,6 +3167,7 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(298) {
+                // Requires current Premium.
                 verdict::indexed("W15c.full", async {
                     full_row_w15c::run_packet(clients).await;
                     release_row_characters(clients).await
@@ -3737,7 +3751,10 @@ fn qualification_fresh_grants_do_not_repeat_in_new_processes() -> TestResult {
         assert!(output.status.success());
         String::from_utf8(output.stdout)?
             .lines()
-            .find_map(|line| line.strip_prefix("GRANT_MATERIAL="))
+            .find_map(|line| {
+                line.split_once("GRANT_MATERIAL=")
+                    .map(|(_, material)| material)
+            })
             .map(str::to_owned)
             .ok_or_else(|| "child did not issue a grant".into())
     };

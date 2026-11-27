@@ -1,5 +1,6 @@
 """Composition guards for indexed rows and their real-capture consumers."""
 from pathlib import Path
+import os
 import re
 import subprocess
 import tempfile
@@ -99,6 +100,7 @@ class IndexedVerdictTests(unittest.TestCase):
                         RUN="$1"
                         CLIENT_CAPTURES="$1"
                         ROOT="$2"
+                        export NODE_BOOT_E2E_ONLY=f6
                         CARGO=mock_cargo
                         mock_cargo() {
                             case "$*" in
@@ -119,6 +121,52 @@ class IndexedVerdictTests(unittest.TestCase):
                 self.assertIn(unit, result.stdout)
                 for replay in (c01, c16c, c16d):
                     self.assertEqual(replay in result.stdout, replay == selected)
+
+    def test_selected_capture_writers_must_report_success(self):
+        selector = ROOT / 'tools/qualification/e2e_all/select_replays.py'
+        world = (PHASES / 'world.rs').read_text()
+        with tempfile.TemporaryDirectory() as tmp:
+            log, listing, ignored = (Path(tmp) / name for name in ('node.log', 'listed', 'ignored'))
+            ignored.touch()
+            registry = (selector.with_name('capture_replays.txt')).read_text()
+            for row, capture in {
+                'C14.client': 'c14-skill-display.bin',
+                'C18a.client': 'c18a-combat.bin',
+                'M01.client': 'm01-autowalk.bin',
+                'M07.client': 'm07-spatial.bin',
+                'M11a.client': 'm11a-up-spatial.bin',
+            }.items():
+                with self.subTest(row=row):
+                    index = re.search(r'e2e_row_selected\((\d+)\) \{\s*verdict::indexed\("' +
+                                      re.escape(row) + '"', world)[1]
+                    name = re.search(r'^' + re.escape(row) + r' (\S+)$', registry, re.M)[1]
+                    listing.write_text(f'{name}: test\nunit_test: test\n')
+                    (Path(tmp) / capture).touch()
+                    log.write_text('')
+                    env = {**os.environ, 'NODE_BOOT_E2E_ONLY': 'rows', 'OTERYN_E2E_ROW_BATCH': f'{index}:1'}
+
+                    def invoke(*args):
+                        return subprocess.run(
+                            ['python3', str(selector), *args], capture_output=True,
+                            text=True, check=False, env=env,
+                        )
+
+                    args = (str(log), tmp, str(ignored), str(listing))
+                    result = invoke(*args)
+                    self.assertNotEqual(result.returncode, 0, result.stdout)
+                    self.assertIn(f'{row}: missing success verdict', result.stderr)
+                    log.write_text(f'SEAM_EVIDENCE e2e_capture scenario={row} status=CAPTURED seconds=1.0\n')
+                    result = invoke(*args)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout.splitlines(), [name, 'unit_test'])
+                    suite_log = Path(tmp) / 'suite.log'
+                    suite_log.write_text('test unit_test ... ok\n')
+                    result = invoke('--verify-passes', str(suite_log))
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(f'{row}: no passing capture replay', result.stderr)
+                    suite_log.write_text(f'test {name} ... ok\n')
+                    result = invoke('--verify-passes', str(suite_log))
+                    self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_real_c16_captures_do_not_write_fabricated_ids_or_repeat_full_packets(self):
         source = (PHASES / 'client_row_c16c.rs').read_text()

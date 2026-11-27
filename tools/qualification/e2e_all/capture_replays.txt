@@ -50,7 +50,6 @@ I09.client furniture_rotation_real_payload_replays_and_malformed_delta_is_atomic
 I10.client e2e_i10_replays_wrap_unwrap_and_stale_refusals
 I11.client e2e_i11_inventory_replay
 I12.client pick_refining_replays_real_inventory_payload
-I13.client random_reward_inventory_payload_replays
 I14.client i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic
 I15.client e2e_i15_energy_ring_vitals_replay
 I16.client e2e_i16_inspection_replay
@@ -143,3 +142,4 @@ W23.client e2e_w23_citizenship_message_replay
 W24.client e2e_w24_ambient_zone_sound_replay
 file:c16c-convince.bin e2e_c16c_replays_real_companion_visibility_payloads
 file:quest-snapshot.bin e2e_all_quest_journal_replay
+file:i13-before.bin random_reward_inventory_payload_replays

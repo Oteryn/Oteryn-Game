@@ -352,6 +352,7 @@ class ReuseTests(unittest.TestCase):
             set -Eeuo pipefail
             WORK={temp}/fresh; mkdir -p "$WORK"
             BASE={temp}/base
+            GAME_SOURCE={HERE.parents[2]}
             NODE_BOOT_REUSE_STACK={mode}
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
             NODE_BOOT_E2E_ONLY=rows
@@ -438,6 +439,23 @@ class ReuseTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual(self.run_guard(temp, 1).returncode, 0)
+
+    def test_every_premium_row_blocks_reuse_without_activation(self):
+        world = (HERE.parents[2] / "apps/game-server/src/qualification/client_phases/world.rs").read_text()
+        rows = dict((name, index) for index, name in re.findall(
+            r'e2e_row_selected\((\d+)\) \{\s*(?://[^\n]+\s*)?verdict::indexed\("([^"]+)"', world,
+        ))
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(self.save_state(temp).returncode, 0)
+            for row in ("E06.full", "C12.full", "S07.full", "W12.full", "S13c.full",
+                        "P14.full", "S13a.client", "S13b.client", "S13c.client",
+                        "W15c.full", "I07.client", "P06.full", "P20.full", "S05.full"):
+                with self.subTest(row=row):
+                    result = self.run_guard(
+                        temp, 1, f'OTERYN_E2E_ROW_BATCH={rows[row]:0>6}:0001; sudo() {{ [[ "$1" != grep ]]; }}'
+                    )
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertIn("reason=kept_stack_missing_premium_activation", result.stdout)
 
     def test_kept_or_reused_stack_never_reports_a_pass(self):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)

@@ -59,6 +59,8 @@ replay_suite() {
     replay_suite -p oteryn-client || status=1
     replay_suite -p oteryn-session || status=1
     replay_suite -p oteryn-dev-client || status=1
+    python3 "$ROOT/tools/qualification/e2e_all/select_replays.py" --verify-passes \
+        "$RUN"/oteryn-*.log || status=1
     exit "$status"
 ) 2>&1 | tee "$RUN/client.log" || client_status=$?
 
