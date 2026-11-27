@@ -20,6 +20,9 @@ use std::sync::{Arc, Mutex};
 // Existing GameplayListenerConfig / ListenerLimits registration. A recipient
 // is a currently serving connection, never an unbounded historical session.
 const MAX_RECIPIENTS: usize = 256;
+// Ordinary kill traffic has its own bounded queue so it does not consume the
+// reserved raid notification capacity. Each entry is one complete report.
+const MAX_LOOT_REPORTS: usize = 64;
 const MAX_RECEIPTS: usize = MAX_CANDIDATES * MAX_ANNOUNCEMENTS;
 type NoticeKey = ([u8; 16], u64, u32);
 type ConnectionRoot = (GameSessionId, u64);
@@ -31,6 +34,7 @@ struct Recipient {
     categorized: bool,
     soulpit_completion: Option<[u8; 16]>,
     queue: VecDeque<Arc<ServerNotification>>,
+    loot_reports: VecDeque<VecDeque<String>>,
 }
 
 #[derive(Default)]
@@ -103,6 +107,7 @@ impl ServerMessageHub {
                 categorized,
                 soulpit_completion: None,
                 queue: VecDeque::new(),
+                loot_reports: VecDeque::new(),
             },
         );
         true
@@ -143,6 +148,26 @@ impl ServerMessageHub {
         self.changed.notify_waiters();
         true
     }
+    /// An ordinary loot report can span existing status-text frames. Enqueue
+    /// the whole report together so a busy recipient never sees half of it.
+    pub(super) fn send_loot_report(&self, session: GameSessionId, lines: &[String]) -> bool {
+        let Ok(mut state) = self.state.lock() else {
+            return false;
+        };
+        let Some(recipient) = state.recipients.get_mut(&session) else {
+            return false;
+        };
+        if lines.is_empty() || recipient.loot_reports.len() >= MAX_LOOT_REPORTS {
+            return false;
+        }
+        recipient
+            .loot_reports
+            .push_back(lines.iter().cloned().collect());
+        drop(state);
+        self.changed.notify_waiters();
+        true
+    }
+
     /// A selected peer uses the categorized surface even if its bounded queue is full.
     pub(super) fn send_team_finder(
         &self,
@@ -387,10 +412,15 @@ impl ServerMessageHub {
         if recipient.connection_generation != connection_generation {
             return None;
         }
-        recipient
-            .queue
-            .pop_front()
-            .map(|notice| notice.as_ref().clone())
+        if let Some(notice) = recipient.queue.pop_front() {
+            return Some(notice.as_ref().clone());
+        }
+        let front = recipient.loot_reports.front_mut()?;
+        let text = front.pop_front()?;
+        if front.is_empty() {
+            recipient.loot_reports.pop_front();
+        }
+        Some(ServerMessage::StatusText(text).into())
     }
 
     pub(super) async fn wait(&self, session: GameSessionId, connection_generation: u64) {
@@ -403,7 +433,7 @@ impl ServerMessageHub {
             if self.state.lock().is_ok_and(|state| {
                 state.recipients.get(&session).is_some_and(|recipient| {
                     recipient.connection_generation == connection_generation
-                        && !recipient.queue.is_empty()
+                        && (!recipient.queue.is_empty() || !recipient.loot_reports.is_empty())
                 })
             }) {
                 return;

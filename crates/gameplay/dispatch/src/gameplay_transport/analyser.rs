@@ -342,6 +342,7 @@ impl AnalyserStreams {
 #[derive(Debug, Default)]
 pub(super) struct DeathReceipts {
     pub(super) boss_defeated: bool,
+    pub(super) loot_notice: Option<super::kill_reward::LootNoticeRecipients>,
     pub(super) kill: bool,
     pub(super) loot: HashSet<[u8; 16]>,
     pub(super) xp: HashSet<crate::domain::CharacterId>,
