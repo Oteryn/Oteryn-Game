@@ -199,17 +199,25 @@ pub(crate) fn usage(proof: &OneItemForgeV1) -> TransactionResourceUsage {
     let inputs = value.as_ref().map_or(FORGE_INPUTS_MAX + 1, |p| p.inputs);
     let outputs = value.as_ref().map_or(2, |p| p.outputs);
     let retired = value.as_ref().map_or(0, |p| p.retired);
+    // A chest moves each surviving operand from carried custody into the chest.
+    let moves = value.as_ref().map_or(0, |p| {
+        if p.operation <= 4 && p.outputs == 1 {
+            1 + u64::from(!p.reply["result"]["second_tier"].is_null())
+        } else {
+            0
+        }
+    });
     let values = value.as_ref().map_or(0, |p| {
         u64::from(p.dust_spent > 0) + u64::from(p.stash_spent)
     });
     TransactionResourceUsage {
         touched_item_instances: inputs + outputs,
-        location_custody_lines: retired + outputs,
+        location_custody_lines: retired + outputs + 2 * moves,
         value_lines: values,
         transform_lines: value.as_ref().map_or(0, |p| p.tier_changes),
         container_expansion: 0,
         participants: inputs + outputs + values,
-        effect_work_units: 3 * inputs + 2 * outputs + 2 * values,
+        effect_work_units: 3 * inputs + 2 * outputs + 2 * values + 2 * moves,
         events: 0,
     }
 }
@@ -219,12 +227,12 @@ pub(crate) fn check_combined_usage(
 ) -> std::result::Result<(), AuditError> {
     // Existing fee BURN maximum, plus the bounded Forge operation above.
     if usage.touched_item_instances > FORGE_INPUTS_MAX + 22
-        || usage.location_custody_lines > FORGE_INPUTS_MAX + 22
+        || usage.location_custody_lines > FORGE_INPUTS_MAX + 22 + 4
         || usage.value_lines > 3
         || usage.transform_lines > 2
         || usage.container_expansion != 0
         || usage.participants > FORGE_INPUTS_MAX + 22 + 3
-        || usage.effect_work_units > 3 * FORGE_INPUTS_MAX + 64 + 6
+        || usage.effect_work_units > 3 * FORGE_INPUTS_MAX + 64 + 6 + 4
         || usage.events > 1
     {
         Err(AuditError::CapacityExceeded)

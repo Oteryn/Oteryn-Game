@@ -374,8 +374,13 @@ impl DurabilityRoot {
                                         )
                                         .await?;
                                         match actions::apply(
-                                            &mut tx, fence, command, request, &reserved, native,
-                                            &inventory, &effects,
+                                            &mut tx,
+                                            fence,
+                                            command,
+                                            request,
+                                            &reserved,
+                                            (native, &inventory, content),
+                                            &effects,
                                         )
                                         .await?
                                         {

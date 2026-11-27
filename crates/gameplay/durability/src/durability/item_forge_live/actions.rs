@@ -23,7 +23,7 @@ pub(super) fn refusal(request: Request, reason: &str) -> Value {
 
 #[allow(clippy::too_many_lines)]
 pub(super) async fn plan(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: Request,
     reserved: &storage::Reservation,
@@ -98,8 +98,6 @@ pub(super) async fn plan(
                 Ok(quote) => quote,
                 Err(_) => return Ok(Err("WRONG_ITEMS")),
             };
-            // PR2785 Q3: native tier changes preserve identity and create no chest,
-            // so the donor chest-only free-slot check does not apply to this pair.
             // The established fee owner performs the authoritative carried-coin/bank quote.
             // This rule projection validates dust, cores and the outcome before that debit.
             let plan = match ForgePlan::try_from(ForgeAttempt {
@@ -136,6 +134,24 @@ pub(super) async fn plan(
                     &mut inputs,
                 )
                 .await?;
+            }
+            // A successful pair retains its surviving ItemInstances and
+            // delivers them inside one Exaltation Chest.
+            if plan.success {
+                match inventory::chest_output(
+                    tx,
+                    fence,
+                    native,
+                    inventory,
+                    content,
+                    &inputs,
+                    plan.cost.gold,
+                )
+                .await?
+                {
+                    Ok(chest) => outputs.push(chest),
+                    Err(reason) => return Ok(Err(reason)),
+                }
             }
             (
                 plan.success,
@@ -314,21 +330,29 @@ pub(super) fn proof(
 
 // Keep the independently resolved fence/content and the immutable plan explicit
 // at this single physical-transaction composition boundary.
-#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+#[allow(clippy::too_many_lines)]
 pub(super) async fn apply(
     tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     command: CommandRef,
     request: Request,
     reserved: &storage::Reservation,
-    native: &NativeGameplayState,
-    inventory: &inventory::Inventory,
+    contents: (
+        &NativeGameplayState,
+        &inventory::Inventory,
+        &dyn crate::durability::item_loop_move::ItemLoopContent,
+    ),
     effects: &Effects,
 ) -> NativeResult<std::result::Result<(), &'static str>> {
-    for line in &effects.inputs {
+    let (native, inventory, content) = contents;
+    let chest = effects
+        .outputs
+        .first()
+        .filter(|_| request.operation.requires_pair());
+    for (index, line) in effects.inputs.iter().enumerate() {
         sqlx::query("UPDATE game_item_instances SET quantity=($1->>'quantity_after')::bigint,lifecycle=CASE WHEN ($1->>'quantity_after')::bigint=0 THEN 2 ELSE 1 END,last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=($1->>'item')::uuid")
             .bind(line).bind(reserved.transaction.as_slice()).execute(&mut ***tx).await?;
-        if line["quantity_after"] == 0 {
+        if line["quantity_after"] == 0 || (chest.is_some() && index < 2) {
             let query = if line["location"]["kind"] == 1 {
                 "DELETE FROM game_item_container_entries WHERE item_instance_id=($1->>'item')::uuid"
             } else {
@@ -351,15 +375,9 @@ pub(super) async fn apply(
             }
         }
     }
-    for output in &effects.outputs {
-        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,encode($3,'hex')::uuid)")
-            .bind(output).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(reserved.transaction.as_slice()).execute(&mut ***tx).await?;
-        if output["location"]["kind"] == 1 {
-            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,($1->'location'->>'parent')::uuid,($1->'location'->>'ordinal')::numeric,encode($4,'hex')::uuid)")
-                .bind(output).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(reserved.transaction.as_slice()).execute(&mut ***tx).await?;
-        } else {
-            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,($1->'location'->>'parent')::uuid,($1->'location'->>'ordinal')::numeric,encode($3,'hex')::uuid)")
-                .bind(output).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(reserved.transaction.as_slice()).execute(&mut ***tx).await?;
+    if chest.is_none() {
+        for output in &effects.outputs {
+            place_output(tx, fence, reserved.transaction, output).await?;
         }
     }
     let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
@@ -461,6 +479,21 @@ pub(super) async fn apply(
             .bind(reserved.event.as_slice()).bind(reserved.transaction.as_slice()).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(audit_item)
             .bind(reserved.occurred_at).bind(mint_audit::AUDIT_RETENTION_P90D_MS).bind(envelope).execute(&mut ***tx).await?;
     }
+    if let Some(chest) = chest {
+        place_output(tx, fence, reserved.transaction, chest).await?;
+        for (index, line) in effects.inputs.iter().take(2).enumerate() {
+            if line["quantity_after"] == 0 {
+                continue;
+            }
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,($3->>'item')::uuid,$4,encode($5,'hex')::uuid)")
+                .bind(line).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                .bind(chest).bind(if index == 0 { 1_i64 } else { 2_i64 }).bind(reserved.transaction.as_slice())
+                .execute(&mut ***tx).await?;
+        }
+        if let Err(reason) = inventory::carried_capacity_check(tx, fence, content).await? {
+            return Ok(Err(reason));
+        }
+    }
     let envelope_hash:Vec<u8>=sqlx::query_scalar("SELECT envelope_sha256 FROM game_item_audit_outbox WHERE event_id=encode($1,'hex')::uuid AND transaction_id=encode($2,'hex')::uuid").bind(reserved.event.as_slice()).bind(reserved.transaction.as_slice()).fetch_one(&mut ***tx).await?;
     if let Some(stash) = &effects.stash {
         apply_stash(tx, fence, command, reserved, stash, &envelope_hash).await?;
@@ -469,6 +502,24 @@ pub(super) async fn apply(
         .bind(fence.character_id.as_bytes().as_slice()).bind(request.occurrence.as_slice()).bind(envelope_hash).execute(&mut ***tx).await?;
     storage::append_history(tx, reserved, &effects.reply).await?;
     Ok(Ok(()))
+}
+
+async fn place_output(
+    tx: &mut Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    transaction: [u8; 16],
+    output: &Value,
+) -> NativeResult<()> {
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,encode($3,'hex')::uuid)")
+            .bind(output).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(transaction.as_slice()).execute(&mut ***tx).await?;
+    if output["location"]["kind"] == 1 {
+        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,($1->'location'->>'parent')::uuid,($1->'location'->>'ordinal')::numeric,encode($4,'hex')::uuid)")
+                .bind(output).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(transaction.as_slice()).execute(&mut ***tx).await?;
+    } else {
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,($1->'location'->>'parent')::uuid,($1->'location'->>'ordinal')::numeric,encode($3,'hex')::uuid)")
+                .bind(output).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(transaction.as_slice()).execute(&mut ***tx).await?;
+    }
+    Ok(())
 }
 
 async fn apply_stash(

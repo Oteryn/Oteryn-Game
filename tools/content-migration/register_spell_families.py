@@ -376,6 +376,43 @@ def admit_agony_field(root: Path, generated: dict[str, bytes]) -> None:
     generated[path] = spell_import.canonical_bytes(document)
 
 
+def admit_exaltation_chest(root: Path, items: dict) -> None:
+    """Admit the delivered chest using its retained Global container facts."""
+    key = "oteryn:item.tibia.i37561"
+    shard = root / "content/items/definitions/items-22500-22999.json"
+    definition = next(
+        row["definition"]
+        for row in json.loads(shard.read_bytes())["records"]
+        if row["definition"]["identity"]["key"] == key
+    )
+    binding = next(
+        row
+        for row in json.loads((root / "imports/crystalserver/bindings/items.json").read_bytes())[
+            "bindings"
+        ]
+        if row["target"] == definition["identity"] and row["disposition"] == "EXACT"
+    )
+    items["records"].append(
+        {
+            "authoring": {"item": definition["identity"]},
+            "semantics": definition["semantics"],
+            "attributes": {},
+            "admission": {
+                "materializable": True,
+                "stack_class": "NonStackable",
+                "legal_destinations": ["CharacterInventory", "Ground"],
+            },
+            "production_definition": {
+                "family": "Item",
+                "production_key": key,
+                "revision_ref": definition["identity"]["revision"],
+            },
+            "production_binding": binding,
+            "production_binding_qualification": None,
+        }
+    )
+
+
 def admit_dream_courts_supplies(root: Path, items: dict) -> None:
     """Admit the two portable rewards bound by the Dream Courts pickup callbacks."""
     import build_source_item_profiles as source
@@ -1802,6 +1839,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
 
     healing_global_overrides.apply_native_profiles(items)
     admit_dream_courts_supplies(root, items)
+    admit_exaltation_chest(root, items)
     import protected_loot_yields
 
     protected_loot_yields.admit(root, items, provider_order)
