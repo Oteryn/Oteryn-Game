@@ -46,6 +46,9 @@ use {
 use super::attack::ChannelAttackStates;
 use super::{ComposedFreshAdmission, operator_event};
 
+mod loot_notice;
+pub(super) use loot_notice::LootNoticeRecipients;
+
 #[path = "boss_reward_contribution.rs"]
 mod boss_reward_contribution;
 #[path = "boss_reward_settlement.rs"]
@@ -2160,6 +2163,9 @@ pub fn record_creature_kill(
             );
             receipts.kill = true;
         }
+    }
+    if wild && !personal_rewards && !top.is_gone() {
+        sink.queue.capture_loot_notice(runtime, target, facts);
     }
     let world_change = if wild {
         runtime.world_change_cycles().and_then(|(epoch, cycles)| {
@@ -4452,6 +4458,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 "kill_reward_corpse_unbound creature={} reason={error:?}",
                 entry.creature
             ));
+        }
+        if !source_plain_body && let Ok(outcome) = &outcome {
+            admission
+                .publish_loot_notice(&runtime, &entry, &outcome.rewards)
+                .await;
         }
         if source_plain_body && outcome.is_ok() {
             admission.states.loop_ground.invalidate();

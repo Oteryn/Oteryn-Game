@@ -343,3 +343,33 @@ fn raid_notice_wakes_outbound_without_a_timer_and_survives_cancelled_poll() -> T
 }
 
 include!("raid_notices_connection_tests.rs");
+
+#[test]
+fn loot_reports_keep_their_fragments_and_reserved_raid_capacity() -> TestResult {
+    let hub = ServerMessageHub::default();
+    let (owner, outsider) = (session(1)?, session(2)?);
+    assert!(hub.join(owner, 1));
+    assert!(hub.join(outsider, 1));
+    let report = [
+        "Loot of a demon: 11 gold coins,".into(),
+        "an ice rapier.".into(),
+    ];
+    for _ in 0..MAX_LOOT_REPORTS {
+        assert!(hub.send_loot_report(owner, &report));
+    }
+    assert!(!hub.send_loot_report(owner, &report));
+    publish(&hub, 0)?;
+    assert_eq!(hub.take(owner, 1), Some(warning()));
+    assert_eq!(hub.take(outsider, 1), Some(warning()));
+    assert_eq!(hub.take(outsider, 1), None);
+    for _ in 0..MAX_LOOT_REPORTS {
+        for line in &report {
+            assert_eq!(
+                hub.take(owner, 1),
+                Some(ServerMessage::StatusText(line.clone()))
+            );
+        }
+    }
+    assert_eq!(hub.take(owner, 1), None);
+    Ok(())
+}
