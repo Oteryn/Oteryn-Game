@@ -20,6 +20,9 @@ mod integrity;
 #[path = "tests/inventory_capacity_reread.rs"]
 mod inventory_capacity_reread;
 
+#[path = "tests/rune_and_loot_results.rs"]
+mod rune_and_loot_results;
+
 #[path = "tests/sidecar_header.rs"]
 mod sidecar_header;
 

@@ -62,6 +62,8 @@ enum Case {
     AnimateBusy,
     AnimateBeforeCommit,
     AnimateAfterCommit,
+    AnimateReplayBusy,
+    AnimateReplayDeadline,
     AnimateBlackSkull,
     NonCorpse,
 }
@@ -110,6 +112,28 @@ fn utility_runes_animate_reports_committed_after_lost_commit_response() -> TestR
 }
 
 #[test]
+fn utility_runes_animate_retries_a_busy_original_replay_read() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        run_case(admin, Case::AnimateReplayBusy).await
+    })
+}
+
+#[test]
+fn utility_runes_animate_refuses_a_rolled_back_cast_at_its_replay_deadline() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        run_case(admin, Case::AnimateReplayDeadline).await
+    })
+}
+
+#[test]
 fn utility_runes_animate_real_dispatch_refuses_non_corpse() -> TestResult {
     scenario(Case::NonCorpse)
 }
@@ -136,11 +160,24 @@ fn scenario(case: Case) -> TestResult {
 async fn run_case(admin: String, case: Case) -> TestResult {
     let animate = matches!(
         case,
-        Case::Animate | Case::AnimateBusy | Case::AnimateBeforeCommit | Case::AnimateAfterCommit
-            | Case::AnimateBlackSkull | Case::NonCorpse
+        Case::Animate
+            | Case::AnimateBusy
+            | Case::AnimateBeforeCommit
+            | Case::AnimateAfterCommit
+            | Case::AnimateReplayBusy
+            | Case::AnimateReplayDeadline
+            | Case::AnimateBlackSkull
+            | Case::NonCorpse
     );
-    let committed = matches!(case, Case::Convince | Case::Animate | Case::AnimateBusy
-        | Case::AnimateBeforeCommit | Case::AnimateAfterCommit);
+    let committed = matches!(
+        case,
+        Case::Convince
+            | Case::Animate
+            | Case::AnimateBusy
+            | Case::AnimateBeforeCommit
+            | Case::AnimateAfterCommit
+            | Case::AnimateReplayBusy
+    );
     let harness = Harness::create_with_admission_seed(admin, "utility_runes", true, false).await?;
     prepare_current_session(&harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -231,7 +268,11 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .filter(|p| p.display_name.eq_ignore_ascii_case("Skeleton"));
         let mut policies = vec![policy];
         policies.extend(skeletons.map(|p| p.as_ref().clone()));
-        assert_eq!(policies.len(), 3, "both Skeleton variants must be installed");
+        assert_eq!(
+            policies.len(),
+            3,
+            "both Skeleton variants must be installed"
+        );
         let policies =
             crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
                 native.source_digest(),
@@ -306,7 +347,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     owner.movement_cells = (&cells).into();
     let wire_victim = {
         let runtime = owner.runtime.lock().await;
-        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(VICTIM))
+        owner
+            .wire_position_frame(&runtime)
+            .and_then(|frame| frame.project(VICTIM))
             .ok_or("project utility-rune victim")?
     };
 
@@ -527,6 +570,8 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         match case {
             Case::AnimateBeforeCommit => test_faults::arm(Point::BeforeCommit),
             Case::AnimateAfterCommit => test_faults::arm(Point::AfterCommit),
+            Case::AnimateReplayBusy => test_faults::arm(Point::ReplayReadBusy),
+            Case::AnimateReplayDeadline => test_faults::arm(Point::BeforeCommitThenBusyReplay),
             _ => (),
         }
         client.write_u32(u32::try_from(frame.len())?).await?;
@@ -550,6 +595,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 continue;
             }
             let result = decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, admitted.continuity.next_command_id);
             let disposition = decode_use_result(result.payload).map_err(debug)?;
             let expected = if committed {
                 UseDisposition::Committed
@@ -571,8 +617,12 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             );
             break;
         }
-        if case == Case::AnimateBusy {
-            let next = admitted.continuity.next_command_id.checked_add(1).ok_or("second command id")?;
+        if matches!(case, Case::AnimateBusy | Case::AnimateReplayDeadline) {
+            let next = admitted
+                .continuity
+                .next_command_id
+                .checked_add(1)
+                .ok_or("second command id")?;
             let frame = test_command(next, COMMAND_TYPE_USE_INTENT, &payload);
             client.write_u32(u32::try_from(frame.len())?).await?;
             client.write_all(&frame).await?;
@@ -584,9 +634,18 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 }
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, next);
-                assert_ne!(decode_use_result(result.payload).map_err(debug)?, UseDisposition::Committed);
+                assert_ne!(
+                    decode_use_result(result.payload).map_err(debug)?,
+                    UseDisposition::Committed
+                );
                 break;
             }
+        }
+        if case == Case::AnimateReplayDeadline {
+            assert!(
+                test_faults::take(Point::ReplayHeld),
+                "the writer must reach the injected rollback"
+            );
         }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
@@ -600,10 +659,13 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     let runtime = owner.runtime.lock().await;
     let after = {
         let states = owner.states.spell_states.lock().await;
-        if case == Case::AnimateBusy {
+        if matches!(case, Case::AnimateBusy | Case::AnimateReplayDeadline) {
             assert!(!states.has_pending_native(actor, session));
         }
-        states.get(&runtime, actor, session).ok_or("caster")?.vitals()
+        states
+            .get(&runtime, actor, session)
+            .ok_or("caster")?
+            .vitals()
     };
     assert_eq!(
         after.mana,
@@ -920,9 +982,16 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
     owner.movement_cells = (&cells).into();
     let wire_target = {
         let runtime = owner.runtime.lock().await;
-        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(MovementLocalPosition {
-            x: target.x, y: target.y, floor: target.floor,
-        })).ok_or("project utility-rune item target")?
+        owner
+            .wire_position_frame(&runtime)
+            .and_then(|frame| {
+                frame.project(MovementLocalPosition {
+                    x: target.x,
+                    y: target.y,
+                    floor: target.floor,
+                })
+            })
+            .ok_or("project utility-rune item target")?
     };
 
     if case == WorldItemCase::House {
@@ -1099,7 +1168,11 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
             use_with_position: if creature_target.is_some() {
                 None
             } else {
-                Some(SpellTargetPosition { x: wire_target.x, y: wire_target.y, floor: wire_target.floor })
+                Some(SpellTargetPosition {
+                    x: wire_target.x,
+                    y: wire_target.y,
+                    floor: wire_target.floor,
+                })
             },
         })
         .map_err(debug)?;

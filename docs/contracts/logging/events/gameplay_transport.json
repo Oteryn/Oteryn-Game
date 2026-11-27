@@ -384,6 +384,22 @@
       "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
+      "event": "rune_use_owner_busy",
+      "level": "warn",
+      "span": false,
+      "fields": ["stage", "command_id", "attempt"],
+      "codes": [],
+      "note": "Each busy Rune owner read or retained cast attempt, with the original connection command ID."
+    },
+    {
+      "event": "rune_use_read_refused",
+      "level": "warn",
+      "span": false,
+      "fields": ["stage", "command_id"],
+      "codes": [],
+      "note": "A Rune command read that could not be completed. No raw database errors or player data."
+    },
+    {
       "event": "serve_command_end",
       "level": "info",
       "span": false,

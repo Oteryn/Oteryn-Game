@@ -1,19 +1,21 @@
 //! Current Item revision resolution under the same spell lane as native preparation.
 use super::super::actor_spell::{NativeCastDispatch, current_rune_revision};
-use super::{ComposedFreshAdmission, LegacyRuneUse};
+use super::{
+    ComposedFreshAdmission, LegacyRuneUse, read_rune_owner, retry_rune_owner, rune_read_refusal,
+};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::foundation::{CommandRef, GameSessionId};
+use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn current_legacy_rune_revision(
         &self,
         permit: &SpellLanePermit,
-        session: GameSessionId,
-        command_id: u64,
+        command: super::UseCommand,
         rune: &ItemSpellCastIntent,
         legacy: &LegacyRuneUse,
+        budget: &super::super::AdmissionRetryBudget<'_>,
     ) -> Result<u64, NativeCastDispatch> {
         let Some(content) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return Err(NativeCastDispatch::Outcome(
@@ -30,27 +32,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::super::actor_spell::SpellCastOutcome::rejected(),
             ));
         };
-        use super::super::actor_spell::native_combat_cast::{
-            corpse_companion_spell, retry_native_checkout,
-        };
-        let retry = corpse_companion_spell(spell)
-            .then(|| super::super::AdmissionRetryBudget::for_command(self.root));
-        let unavailable = || {
-            if retry.is_some() {
-                NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome::rejected())
-            } else {
-                NativeCastDispatch::Pending
-            }
-        };
+        let super::UseCommand {
+            game_session_id: session,
+            command_id,
+            ..
+        } = command;
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let current = loop {
-            let result = store.current_session_at(session).await;
-            if !retry_native_checkout(retry.as_ref(), result.as_ref().err()).await {
-                break result;
-            }
-        };
-        let Ok((current, _)) = current else {
-            return Err(unavailable());
+        let Ok((current, _)) =
+            read_rune_owner(budget, command_id, "revision_session", async || {
+                store.current_session_at(session).await
+            })
+            .await
+        else {
+            return Err(rune_read_refusal(command_id, "revision_session"));
         };
         let Some(fence) = super::super::item_fence_of(current) else {
             return Err(NativeCastDispatch::Outcome(
@@ -69,16 +63,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::super::actor_spell::SpellCastOutcome::rejected(),
             ));
         };
+        let mut attempts = 0;
         let (runtime, pass) = loop {
-            let runtime = self.runtime.lock().await;
-            match self.root.try_issue_semantic_pass() {
+            let Ok(runtime) = tokio::time::timeout_at(budget.deadline, self.runtime.lock()).await
+            else {
+                return Err(rune_read_refusal(command_id, "revision_runtime"));
+            };
+            match self.root.try_issue_semantic_pass_by(budget.deadline) {
                 Ok(pass) => break (runtime, pass),
-                Err(error) => {
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
                     drop(runtime);
-                    if !retry_native_checkout(retry.as_ref(), Some(&error)).await {
-                        return Err(unavailable());
+                    if !retry_rune_owner(budget, command_id, "revision_holder", &mut attempts).await
+                    {
+                        return Err(rune_read_refusal(command_id, "revision_holder"));
                     }
                 }
+                Err(_) => return Err(rune_read_refusal(command_id, "revision_holder")),
             }
         };
         let mut context = (self, permit, &runtime, content, room, spell);
@@ -93,9 +93,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })).await;
         match revision {
             Ok(revision) => Ok(revision),
-            Err(_) => Err(NativeCastDispatch::Outcome(
-                super::super::actor_spell::SpellCastOutcome::rejected(),
-            )),
+            Err(_) => Err(rune_read_refusal(command_id, "revision_item")),
         }
     }
 }

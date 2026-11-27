@@ -99,8 +99,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::ItemByDefinition(_) => Some(None),
             _ => None,
         };
-        if let Some(source) = source
-            && !authority
+        if let Some(source) = source {
+            let available = authority
                 .player_trade_item_available(
                     actor,
                     UseCommand {
@@ -110,9 +110,16 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     },
                     source,
                 )
-                .await?
-        {
-            return Some(Dispatch::Use(UseOutcome::rejected()));
+                .await;
+            match available {
+                Some(true) => {}
+                Some(false) => return Some(Dispatch::Use(UseOutcome::rejected())),
+                None if intent.use_with_position.is_some() && transport::rune_use_bridge::routes(intent, &admitted.continuity.selected_capabilities) => {
+                    let _ = transport::rune_use_bridge::rune_read_refusal(command.command_id, "trade_guard");
+                    return Some(Dispatch::Use(UseOutcome::rejected()));
+                }
+                None => return None,
+            }
         }
     }
     if let Ok(intent) = &decoded

@@ -50,8 +50,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     let (status, result) = authority
         .quick_loot(*admitted, use_command, request)
         .await?;
-    Some(Dispatch::Reply(
+    let moved = status == CommandStatus::Accepted && result.items.iter().any(|item| item.accepted);
+    Some(Dispatch::QuickLoot(
         status,
         encode_quick_loot_result(&result).ok()?,
+        moved,
     ))
 }

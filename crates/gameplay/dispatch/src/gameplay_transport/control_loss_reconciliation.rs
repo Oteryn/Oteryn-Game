@@ -31,14 +31,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         let access = self.refresh_spell_access(actor, session).await;
-        if matches!(
-            self.reconcile_pending_native_for_control_loss(actor, session, &access)
-                .await,
-            Some(actor_spell::NativeCastDispatch::Pending)
-        ) {
+        let rune_command = self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .pending_native
+            .iter()
+            .find(|marker| marker.is_for(actor, session) && marker.intent.3.is_some())
+            .map(|marker| marker.command.command_id().get());
+        let rune_recovery =
+            rune_command.map(|id| (id, AdmissionRetryBudget::for_command(self.root)));
+        let mut attempts = 0;
+        loop {
+            let settle = self.reconcile_pending_native_for_control_loss(actor, session, &access);
+            let result = if let Some((_, budget)) = &rune_recovery {
+                tokio::time::timeout_at(budget.deadline, settle)
+                    .await
+                    .unwrap_or(Some(actor_spell::NativeCastDispatch::Pending))
+            } else {
+                settle.await
+            };
+            if !matches!(result, Some(actor_spell::NativeCastDispatch::Pending)) {
+                break;
+            }
+            if let Some((command_id, budget)) = &rune_recovery
+                && rune_use_bridge::retry_rune_owner(
+                    budget,
+                    *command_id,
+                    "control_loss",
+                    &mut attempts,
+                )
+                .await
+            {
+                continue;
+            }
             operator_event("event=control_loss_reconcile_pending stage=native_cast");
             return false;
         }
+        drop(rune_recovery);
         if matches!(
             self.reconcile_pending_familiar_for_control_loss(actor, session, &access)
                 .await,
