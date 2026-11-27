@@ -150,6 +150,30 @@ fn capture_root(root: Option<PathBuf>) -> Result<PathBuf, BoxError> {
     Ok(root.ok_or("C12 capture directory absent")?.canonicalize()?)
 }
 
+/// Replay idle traffic only up to the byte boundary before the next real command result.
+fn command_result_start(bytes: &[u8], command: u64) -> Result<usize, BoxError> {
+    use oteryn_protocol_oteryn::{
+        FrameLength, MessageType, decode_command_result, decode_framed_envelope,
+    };
+
+    let mut offset = 0;
+    let mut matching = None;
+    while offset < bytes.len() {
+        let remaining = &bytes[offset..];
+        let prefix = remaining.get(..4).ok_or("C12 truncated frame prefix")?;
+        let size = FrameLength::from_prefix(prefix)?.get() as usize + 4;
+        let envelope = decode_framed_envelope(remaining.get(..size).ok_or("C12 truncated frame")?)?;
+        if envelope.message_type() == MessageType::CommandResult
+            && decode_command_result(envelope.payload())?.command_id == command
+            && matching.replace(offset).is_some()
+        {
+            return Err("duplicate C12 attack command result".into());
+        }
+        offset += size;
+    }
+    matching.ok_or_else(|| "C12 attack command result absent".into())
+}
+
 async fn replay(root: &Path) -> Result<(), BoxError> {
     let expected_path = root.join("c12-expected.txt");
     if !(1..=4096).contains(&expected_path.metadata()?.len()) {
@@ -176,7 +200,11 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         return Err("C12 cast boundary outside the original transcript".into());
     }
     let length = bytes.len();
-    let visible = Rc::new(Cell::new(witness.before_bytes));
+    let before_attack = command_result_start(&bytes, witness.attack_command)?;
+    if before_attack >= witness.before_bytes {
+        return Err("C12 attack result does not precede the cast boundary".into());
+    }
+    let visible = Rc::new(Cell::new(before_attack));
     let wire = ReplayWire {
         bytes,
         offset: 0,
@@ -300,6 +328,7 @@ async fn replay(root: &Path) -> Result<(), BoxError> {
         }
         session.wait_for_events(Duration::from_secs(2)).await?;
     };
+    visible.set(witness.before_bytes);
     let attack = session.attack_target(Some(&witness.target)).await?;
     assert_eq!(attack.command_id, witness.attack_command);
     assert_eq!(attack.status, CommandStatus::Accepted);
