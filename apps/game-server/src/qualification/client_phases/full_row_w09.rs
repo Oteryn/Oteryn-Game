@@ -95,17 +95,46 @@ async fn seed_gift_input(scope: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
-async fn gift_remaining_ms(client: &mut DevClientSession) -> TestResult<u64> {
+// Only the dedicated, logged-out fixture character is placed. The saved
+// coordinate frame, world, vitals and lease generation remain intact.
+async fn place_fixture(scope: &SeamClients<'_>, from: TilePos, to: TilePos) -> TestResult {
+    use sqlx::Connection as _;
+    wait_character_released(scope, 0).await?;
+    let mut db = sqlx::PgConnection::connect(scope.url).await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$1, tile_y=$2, tile_floor=$3, write_sequence=write_sequence+1
+         WHERE character_id=encode($4,'hex')::uuid AND world_id=encode($5,'hex')::uuid
+           AND tile_x=$6 AND tile_y=$7 AND tile_floor=$8",
+    )
+    .bind(i32::from(to.x)).bind(i32::from(to.y)).bind(-i16::from(to.floor))
+    .bind(scope.characters[0].as_slice()).bind(scope.world.as_slice())
+    .bind(i32::from(from.x)).bind(i32::from(from.y)).bind(-i16::from(from.floor))
+    .execute(&mut db).await?;
+    if updated.rows_affected() != 1 {
+        return Err(format!("W09 fixture placement missing saved tile {from:?}").into());
+    }
+    evidence(&format!("FIXTURE row=W09.full input=placement from={from:?} to={to:?}"));
+    Ok(())
+}
+
+async fn carried_gold(client: &mut DevClientSession) -> TestResult<u64> {
+    Ok(oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
+        .await?.ok_or("W09 promotion balance absent")?.carried_gold)
+}
+
+async fn gift_remaining_ms(client: &mut DevClientSession, capture_label: Option<&str>) -> TestResult<u64> {
     use oteryn_protocol_oteryn::wheel_presentation as wheel;
 
-    let reply = client
+    let (reply, capture) = oteryn_dev_client::capture_qualification_exchange(client
         .session_mut()
         .gated_command(
             wheel::CAPABILITY_WHEEL_PRESENTATION_V1,
             wheel::COMMAND_TYPE_WHEEL_GIFT_OF_LIFE_STATUS,
             &[],
         )
-        .await?;
+    ).await;
+    let reply = reply?;
     if reply.status != CommandStatus::Accepted
         || reply.payload.len() != wheel::GIFT_OF_LIFE_STATUS_BYTES
     {
@@ -113,6 +142,12 @@ async fn gift_remaining_ms(client: &mut DevClientSession) -> TestResult<u64> {
     }
     if reply.payload[0] != 1 {
         return Err(format!("W09 expected active Gift of Life stage 1, got {}", reply.payload[0]).into());
+    }
+    if let (Some(label), Some(dir)) = (capture_label, std::env::var_os("E2E_ALL_CAPTURE_DIR")) {
+        let dir = std::path::PathBuf::from(dir);
+        std::fs::write(dir.join(format!("w09-gift-{label}-server.bin")), capture.inbound)?;
+        std::fs::write(dir.join(format!("w09-gift-{label}-client.bin")), capture.outbound)?;
+        std::fs::write(dir.join(format!("w09-gift-{label}-session.bin")), client.join_snapshot().game_session_id.as_bytes())?;
     }
     Ok(u64::from_le_bytes(reply.payload[1..].try_into()?))
 }
@@ -518,16 +553,56 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&scope.world)?, ChannelId::decode(&scope.channel)?)?;
     let cast_tile = tile(client.world_spatial().actor_position)?;
+    let placement = metadata.npcs.npcs.iter()
+        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
+        .and_then(|npc| npc.placements.first())
+        .ok_or("W09 compiled King Tibianus placement absent")?;
+    let king_tile = TilePos { x: placement.x, y: placement.y, floor: placement.floor };
+    let mut nearest = cast_tile;
+    let goal_distance = |at: TilePos| (
+        at.floor.abs_diff(king_tile.floor),
+        at.x.abs_diff(king_tile.x).max(at.y.abs_diff(king_tile.y)),
+    );
+    let original_route = find_route(cast_tile, |at| goal_distance(at) <= (0, 3), |at, direction| {
+        if goal_distance(at) < goal_distance(nearest) {
+            nearest = at;
+        }
+        destination(world, at, direction).filter(|next| map_journey::in_town(*next, cast_tile))
+    });
+    let frontier = [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+        .map(|direction| (direction, destination(world, nearest, direction)));
+    evidence(&format!("W09_ROUTE start={cast_tile:?} king={king_tile:?} nearest={nearest:?} frontier={frontier:?} search={:?}", original_route.as_ref().map(Vec::len)));
+    let castle_tile = TilePos { y: king_tile.y + 1, ..king_tile };
+    if !world.base().tile(castle_tile.x, castle_tile.y, castle_tile.floor)
+        .is_some_and(|cell| cell.walkable()) || !world.enterable(castle_tile)
+    {
+        return Err(format!("W09 designated castle placement is blocked: {castle_tile:?}").into());
+    }
+    logout(&mut client).await?;
+    place_fixture(&scope, cast_tile, castle_tile).await?;
+    let mut client = connect_character(&scope, 0xd2, 0).await?;
+    if tile(client.world_spatial().actor_position)? != castle_tile {
+        return Err("W09 admission did not honor castle placement".into());
+    }
     let king = full_row_p20::approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
+    let before = carried_gold(&mut client).await?;
     if full_row_p20::talk(&mut client, king, "hi").await?.is_empty()
         || full_row_p20::talk(&mut client, king, "promotion").await? != ["Do you want to be promoted for 20000 gold coins?"]
         || full_row_p20::talk(&mut client, king, "yes").await? != ["You are now promoted."]
     {
         return Err("W09 Master Sorcerer promotion was refused".into());
     }
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == cast_tile)
-        .ok_or("W09 no route back to the original cast tile")?;
-    walk(&mut client, world, &path).await?;
+    let after = carried_gold(&mut client).await?;
+    if before.checked_sub(after) != Some(20_000) {
+        return Err(format!("W09 promotion fee mismatch: {before} -> {after}").into());
+    }
+    let departure = tile(client.world_spatial().actor_position)?;
+    logout(&mut client).await?;
+    place_fixture(&scope, departure, cast_tile).await?;
+    let mut client = connect_character(&scope, 0xd2, 0).await?;
+    if tile(client.world_spatial().actor_position)? != cast_tile {
+        return Err("W09 admission did not restore the original cast tile".into());
+    }
     expected.extend([(cube, 4), (aid, 2)]);
     if quantities(&client)? != expected {
         return Err("W09 fresh admission did not serve exactly the seeded items".into());
@@ -561,7 +636,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("W09 Gift of Life allocation failed: {saved:?}").into());
     }
     let gift_input = u64::try_from(GIFT_INPUT_MICROS)? / 1_000;
-    if gift_remaining_ms(&mut client).await? != gift_input {
+    if gift_remaining_ms(&mut client, None).await? != gift_input {
         return Err("W09 active Gift timer changed outside battle".into());
     }
     evidence("FIXTURE row=W09.full input=gift-of-life-allocation-stage-1");
@@ -605,7 +680,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     assert_cooling_down(&mut client, spell, &expected).await?;
-    let gift_before = gift_remaining_ms(&mut client).await?;
+    let gift_before = gift_remaining_ms(&mut client, Some("before")).await?;
     if gift_before != gift_input {
         return Err("W09 Gift timer ticked without a battle sign before Aid".into());
     }
@@ -625,6 +700,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut reset_prestate = [cooldowns[0], stance_spell, support, stance_group];
     reset_prestate.sort_by_key(|entry| (entry.kind, entry.id));
     client.take_events();
+    let (reset, capture) = oteryn_dev_client::capture_qualification_exchange(async {
     let used_at = tokio::time::Instant::now();
     let aid_sequence = use_item(&mut client, aid, committed).await?;
     let committed_at = tokio::time::Instant::now();
@@ -672,9 +748,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
+        Ok::<_, Box<dyn std::error::Error>>((used_at, committed_at))
+    }).await;
+    let (used_at, committed_at) = reset?;
+    if let Some(dir) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        let dir = std::path::PathBuf::from(dir);
+        std::fs::write(dir.join("w09-aid-server.bin"), capture.inbound)?;
+        std::fs::write(dir.join("w09-aid-client.bin"), capture.outbound)?;
+        std::fs::write(dir.join("w09-aid-session.bin"), client.join_snapshot().game_session_id.as_bytes())?;
+    }
     expected.insert(aid, 1);
     wait_inventory(&mut client, &expected).await?;
-    let gift_after = gift_remaining_ms(&mut client).await?;
+    let gift_after = gift_remaining_ms(&mut client, Some("after")).await?;
     if gift_after != gift_before {
         return Err(format!("W09 Aid changed the paused Gift timer: {gift_before} -> {gift_after} ms").into());
     }
@@ -750,7 +835,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&fresh)? != settled {
         return Err("W09 fresh admission did not serve the settled inventory".into());
     }
-    if gift_remaining_ms(&mut fresh).await? != gift_after {
+    if gift_remaining_ms(&mut fresh, Some("relog")).await? != gift_after {
         return Err("W09 fresh admission changed the persisted Gift of Life remainder".into());
     }
     evidence(&format!("W09_CHECK gift-stage=1 paused-and-persisted-ms={gift_after}"));

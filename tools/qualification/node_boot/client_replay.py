@@ -177,14 +177,14 @@ def main(log, batch, validate=False):
     if validate:
         return validate_rows(selected, registered, server_rows)
 
-    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    rows = sorted(scenario for scenario in selected if scenario.endswith(".client") or scenario == "W09.full")
     if not rows:
         return 0
     captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
     targets = replay_targets()
     failed = False
     for scenario in rows:
-        row = scenario.removesuffix(".client")
+        row = scenario.rsplit(".", 1)[0]
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())

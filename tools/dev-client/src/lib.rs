@@ -36,7 +36,9 @@ pub use oteryn_session::{
     SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
     WorldSpatialEntity,
 };
-use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
+use oteryn_session_tcp::{TcpAdapterError, TcpConnect};
+mod qualification_transport;
+pub use qualification_transport::{QualificationTransport, capture_qualification_exchange};
 use rustls::pki_types::CertificateDer;
 use std::error::Error as StdError;
 use std::fmt;
@@ -245,7 +247,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     .await
     .map_err(|error| contextualize_transport(error, started))?;
     let session = Session::admit(
-        stream,
+        QualificationTransport(stream),
         Admission {
             appearance_items: None,
             schema_revision: request.schema_revision,
@@ -274,7 +276,7 @@ pub async fn resume_session(
     let stream = oteryn_session_tcp::connect(transport)
         .await
         .map_err(|error| contextualize_transport(error, started))?;
-    let session = Session::resume(stream, previous, recovery)
+    let session = Session::resume(QualificationTransport(stream), previous, recovery)
         .await
         .map_err(|error| contextualize_session(error, "resume", started, "unknown"))?;
     Ok(DevClientSession { session, started })
@@ -287,7 +289,7 @@ pub use oteryn_session_tcp::TcpConnect as RecoveryTransport;
 /// dev client's error type. Dropping it closes the connection.
 #[derive(Debug)]
 pub struct DevClientSession {
-    session: Session<TcpTlsStream>,
+    session: Session<QualificationTransport>,
     started: Instant,
 }
 
@@ -319,7 +321,7 @@ impl DevClientSession {
 
     /// The session used by the native feature adapters. Qualification code deliberately uses
     /// this instead of manufacturing command frames or decoding replies itself.
-    pub fn session_mut(&mut self) -> &mut Session<TcpTlsStream> {
+    pub fn session_mut(&mut self) -> &mut Session<QualificationTransport> {
         &mut self.session
     }
 
@@ -522,3 +524,7 @@ mod e2e_c18a;
 #[cfg(test)]
 #[path = "tests/e2e_s05.rs"]
 mod e2e_s05;
+
+#[cfg(test)]
+#[path = "tests/e2e_w09.rs"]
+mod e2e_w09;
