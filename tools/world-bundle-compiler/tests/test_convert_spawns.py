@@ -27,12 +27,12 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 55075)
+        self.assertEqual(len(self.records), 55083)
         self.assertEqual(
-            sum(len(r["declaration"]["points"]) for r in self.records), 88477
+            sum(len(r["declaration"]["points"]) for r in self.records), 88485
         )
-        self.assertEqual(self.index["record_count"], 55075)
-        self.assertEqual(self.index["point_count"], 88477)
+        self.assertEqual(self.index["record_count"], 55083)
+        self.assertEqual(self.index["point_count"], 88485)
 
     def test_crystal_revision_delta_accounts_for_every_exact_source_point(self):
         capture = cs.crystal_capture()
