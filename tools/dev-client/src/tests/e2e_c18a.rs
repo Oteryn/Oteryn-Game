@@ -526,7 +526,8 @@ fn verify_aimed_intent(payload: &[u8], spell: u32) -> Result<(), Error> {
 }
 
 fn exact_rat_loss(before: u8, after: u8, damage: u64) -> bool {
-    damage > 0
+    before == 100
+        && damage > 0
         && after > 0
         && u64::from(before).checked_sub(u64::from(after)) == damage.checked_mul(5)
 }
@@ -553,6 +554,7 @@ fn rejects_false_c18a_damage_cost_and_aim() {
         assert_eq!(verify_aimed_intent(&payload, spell.get()).is_ok(), expected);
     }
     assert!(exact_rat_loss(100, 60, 8));
+    assert!(!exact_rat_loss(75, 50, 5));
     assert!(!exact_rat_loss(100, 60, 7));
     assert!(!exact_rat_loss(100, 100, 0));
     assert!(exact_vitals([30, 22, 29, 29], [0, 0, 0, 0]));

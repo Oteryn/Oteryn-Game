@@ -8,7 +8,7 @@ use oteryn_dev_client::client_runtime::spell::SpellFeedback;
 use oteryn_dev_client::{EntityDetail, SessionEvent};
 use oteryn_protocol_oteryn::{
     actor_spell::{self, SpellCastDisposition},
-    presentation, target_move,
+    item_view as items, presentation, target_move,
 };
 
 const SCORCH_MANA: u32 = 8;
@@ -120,6 +120,50 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
     character_prep::grant_item(&client, 3147, 1).await?;
     let item_index = provisioning::item_index()?;
+    // A held attack target would otherwise let the starter wand fire at the Rat
+    // from two tiles away. Stow it before selecting any target.
+    let wand = provisioning::item_reference(&item_index, 21348)?;
+    let inventory = client.inventory().ok_or("C18a starter inventory absent")?;
+    let wand_handle = inventory
+        .equipment
+        .iter()
+        .find(|row| {
+            row.slot == items::EquipmentSlot::RightHand && row.item.item_definition_ref == wand
+        })
+        .ok_or("C18a starter wand missing from the right hand")?
+        .item
+        .handle;
+    let wand_count = item_count(&client, wand)?;
+    let moved = client
+        .move_item(&items::ItemMoveIntent {
+            source: wand_handle,
+            destination: items::ItemMoveDestination::MainBackpack,
+        })
+        .await?;
+    if moved.outcome != items::ItemMoveOutcome::Moved {
+        return Err(format!("C18a first starter wand stow refused: {moved:?}").into());
+    }
+    let stow_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    loop {
+        let inventory = client
+            .inventory()
+            .ok_or("C18a inventory absent after stow")?;
+        if inventory
+            .equipment
+            .iter()
+            .all(|row| row.slot != items::EquipmentSlot::RightHand)
+            && item_count(&client, wand)? == wand_count + 1
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= stow_deadline {
+            return Err(
+                "C18a starter wand did not move from the right hand into the backpack".into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
+
     let blank = provisioning::item_reference(&item_index, 3147)?;
     let missile = provisioning::item_reference(&item_index, 3174)?;
 
@@ -212,8 +256,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             let EntityDetail::Actor { health_percent, .. } = selected.detail else {
                 return Err("C18a selected Rat has no creature health".into());
             };
-            if health_percent == 0 {
-                return Err("C18a selected Rat has zero health before the cast".into());
+            if health_percent != 100 {
+                return Err(format!(
+                    "C18a selected Rat was damaged before Scorch: health={health_percent}"
+                )
+                .into());
             }
             break (own.entity, health_percent);
         }
@@ -319,7 +366,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             let loss = u64::from(health_before).checked_sub(u64::from(remaining));
             if remaining == 0 || loss != value.checked_mul(100).map(|percent| percent / RAT_MAX_HP)
             {
-                return Err(format!("C18a red damage {value} disagrees with Rat health {health_before} -> {remaining}").into());
+                return Err(format!("C18a fire damage {value} disagrees with Rat health {health_before} -> {remaining}").into());
             }
             break (sequence, remaining, damage_sequence, value);
         }
