@@ -10,6 +10,7 @@ use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::item_view::{
     EquipmentSlot, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
 };
+use oteryn_protocol_oteryn::weapon_proficiency as proficiency;
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use std::io::{self, Write};
 use std::num::NonZeroU32;
@@ -188,6 +189,8 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         return Err("C12 successor lost equipped Fists or has an occupied off hand".into());
     }
     full_row_c12::require_fists_damage_perks(clients).await?;
+    require_fists_browse(fresh.session_mut(), definition, SELECTED_DAMAGE_PERKS).await?;
+    evidence("C12_CLIENT_PROFICIENCY_BROWSE fresh_session=true xp=100000 perks=1,3");
     let fresh_spell = spell_index(fresh.session_mut(), "exori nia")?;
     let fresh_builder = spell_index(fresh.session_mut(), "exori infir pug")?;
     let fresh_own = select_target(fresh.session_mut(), target, position).await?;
@@ -285,6 +288,91 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     evidence(&format!(
         "C12_CLIENT_UNEQUIPPED command={} damage={} augment_bps=0 harmony=1->0",
         baseline.command, baseline.damage
+    ));
+
+    let world = load_world(
+        std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
+        &serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let combat_tile = tile(position)?;
+    let target_tile = TilePos {
+        y: combat_tile
+            .y
+            .checked_sub(1)
+            .ok_or("C12 target tile overflow")?,
+        ..combat_tile
+    };
+    let is_protection_zone = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
+    };
+    let to_protection_zone = route_avoiding(&world, combat_tile, is_protection_zone, |at| {
+        at != target_tile
+    })
+    .ok_or("C12 no authored route to a protection zone")?;
+    let clear = fresh.session_mut().attack_target(None).await?;
+    require_mechanic_acceptance(clear.status, "C12.client clear target before perk changes")?;
+    if clear.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("C12.client clear target refused: {clear:?}").into());
+    }
+    full_row_c12::walk_exact_route(&mut fresh, &world, &to_protection_zone).await?;
+    let protection_tile = tile(fresh.world_spatial().actor_position)?;
+    if !is_protection_zone(protection_tile) {
+        return Err("C12 perk control did not reach a protection zone".into());
+    }
+    clear_fists_damage_perks(fresh.session_mut(), definition).await?;
+    require_fists_browse(fresh.session_mut(), definition, [None; 4]).await?;
+    full_row_c12::equip_right(&mut fresh, definition).await?;
+    let back_to_target = route_avoiding(
+        &world,
+        protection_tile,
+        |at| at == combat_tile,
+        |at| at != target_tile,
+    )
+    .ok_or("C12 no authored route back to the same combat tile")?;
+    full_row_c12::walk_exact_route(&mut fresh, &world, &back_to_target).await?;
+    let fresh_own = select_target(fresh.session_mut(), target, position).await?;
+    if !frame_capture::equipped(
+        fresh
+            .inventory()
+            .ok_or("C12 equipped control inventory absent")?,
+        definition,
+    ) {
+        return Err("C12 no-perk control requires the Fists equipped and off hand vacant".into());
+    }
+    build_harmony(
+        fresh.session_mut(),
+        fresh_own,
+        target,
+        position,
+        fresh_builder,
+    )
+    .await?;
+    let mut without_perks = cast_checked(
+        fresh.session_mut(),
+        fresh_own,
+        target,
+        position,
+        fresh_spell,
+        0,
+    )
+    .await?;
+    fresh.service_liveness(Duration::from_secs(8)).await?;
+    collect_hits(
+        &fresh.take_events(),
+        fresh_own,
+        target,
+        fresh_spell,
+        &mut without_perks.hits,
+    );
+    without_perks.verify_hits()?;
+    evidence(&format!(
+        "C12_CLIENT_EQUIPPED_NO_PERKS command={} damage={} augment_bps=0 xp=100000",
+        without_perks.command, without_perks.damage
     ));
 
     let CheckedCast {
@@ -590,6 +678,123 @@ fn committed_damage<S: SessionStream>(
         command, target.generation
     );
     full_row_c12::committed_base_damage(path, offset, &marker, bps)
+}
+
+const SELECTED_DAMAGE_PERKS: [Option<u8>; 4] = [Some(0), None, Some(0), None];
+
+async fn require_fists_browse<S: SessionStream>(
+    session: &mut Session<S>,
+    definition: NonZeroU32,
+    selections: [Option<u8>; 4],
+) -> TestResult {
+    let mut offset = 0_u32;
+    let mut total = None;
+    let mut found = None;
+    loop {
+        let reply = session
+            .gated_command(
+                proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
+                proficiency::COMMAND_TYPE_PROFICIENCY_BROWSE,
+                &offset.to_be_bytes(),
+            )
+            .await?;
+        require_mechanic_acceptance(reply.status, "C12.client proficiency browse")?;
+        let page = proficiency::ProficiencyPage::decode(&reply.payload)
+            .ok_or("C12 malformed proficiency browse reply")?;
+        if page.offset != offset || total.is_some_and(|total| total != page.total) {
+            return Err(
+                format!("C12 inconsistent proficiency page at offset {offset}: {page:?}").into(),
+            );
+        }
+        total = Some(page.total);
+        let count = u32::try_from(page.rows.len())?;
+        for row in page
+            .rows
+            .into_iter()
+            .filter(|row| row.definition == definition)
+        {
+            if found.replace(row).is_some() {
+                return Err("C12 duplicate Fists row in proficiency browse".into());
+            }
+        }
+        offset = offset
+            .checked_add(count)
+            .ok_or("C12 proficiency browse offset overflow")?;
+        if offset == page.total {
+            break;
+        }
+        if count == 0 {
+            return Err("C12 proficiency browse stopped before its advertised total".into());
+        }
+    }
+    let row = found.ok_or("C12 Fists missing from proficiency browse")?;
+    require_fists_browse_row(&row, selections)
+}
+
+fn require_fists_browse_row(
+    row: &proficiency::ProficiencyRow,
+    selections: [Option<u8>; 4],
+) -> TestResult {
+    if row.experience != 100_000 || row.selections != selections {
+        return Err(format!(
+            "C12 proficiency browse expected 100000 XP and {selections:?}: {row:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn clear_fists_damage_perks<S: SessionStream>(
+    session: &mut Session<S>,
+    definition: NonZeroU32,
+) -> TestResult {
+    let mut selections = SELECTED_DAMAGE_PERKS;
+    for level in [0_u8, 2] {
+        let request = proficiency::SelectPerkRequest {
+            definition,
+            level,
+            perk: None,
+        };
+        let reply = session
+            .gated_command(
+                proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
+                proficiency::COMMAND_TYPE_PROFICIENCY_SELECT_PERK,
+                &request.encode(),
+            )
+            .await?;
+        require_mechanic_acceptance(reply.status, "C12.client clear damage perk")?;
+        let reply = proficiency::SelectPerkReply::decode(&reply.payload)
+            .ok_or("C12 malformed clear-perk reply")?;
+        selections[usize::from(level)] = None;
+        if reply.result != proficiency::SelectPerkResult::Accepted || reply.selections != selections
+        {
+            return Err(format!(
+                "C12 clearing perk at level {} did not commit: {reply:?}",
+                level + 1
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_wire_proficiency_rejects_stale_xp_or_missing_perks() -> TestResult {
+    let mut row = proficiency::ProficiencyRow {
+        definition: NonZeroU32::new(50271).ok_or("Fists definition is zero")?,
+        name: "Fists of Enlightenment".into(),
+        experience: 100_000,
+        level: 3,
+        selections: SELECTED_DAMAGE_PERKS.to_vec(),
+    };
+    require_fists_browse_row(&row, SELECTED_DAMAGE_PERKS)?;
+    row.experience -= 1;
+    assert!(require_fists_browse_row(&row, SELECTED_DAMAGE_PERKS).is_err());
+    row.experience += 1;
+    row.selections[2] = None;
+    assert!(require_fists_browse_row(&row, SELECTED_DAMAGE_PERKS).is_err());
+    row.selections.fill(None);
+    require_fists_browse_row(&row, [None; 4])
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -784,7 +784,10 @@ async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
     .await
 }
 
-async fn equip_right(client: &mut DevClientSession, definition: NonZeroU32) -> TestResult {
+pub(super) async fn equip_right(
+    client: &mut DevClientSession,
+    definition: NonZeroU32,
+) -> TestResult {
     let carried = carried_count(client, definition);
     if equipped_right(client, definition) || carried == 0 {
         return Err("right-hand equip requires a carried item and a different pre-state".into());
@@ -939,7 +942,7 @@ fn pema_planned_price() -> TestResult<u64> {
     Ok(authored)
 }
 
-async fn walk_exact_route(
+pub(super) async fn walk_exact_route(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
