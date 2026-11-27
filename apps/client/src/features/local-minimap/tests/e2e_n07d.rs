@@ -807,6 +807,43 @@ fn minimap_render_target_readback_matches_scene() -> Result<(), Error> {
 
 #[cfg(bevy_shell)]
 #[test]
+fn sidebar_minimap_pixel_exact_on_both_lighting_paths() -> Result<(), Error> {
+    use oteryn_renderer::lighting::PointLight;
+
+    let root = tempfile::tempdir()?;
+    let mut host = crate::bevy_shell::N07dHost::new(true)?;
+    host.admit(
+        replay_fixture_view(root.path().to_owned())?,
+        crate::play::play_channel().0,
+    );
+    host.drag_minimap([13, 6])?;
+    let at = [28., 24.];
+    for smooth in [false, true] {
+        for ambient in [[32, 64, 96], [255; 3]] {
+            {
+                let mut view = host.view_mut()?;
+                view.scene.set_ambient(ambient)?;
+                view.scene.set_lights(if smooth {
+                    vec![PointLight {
+                        position: at,
+                        radius: 128.,
+                        color: [96, 32, 32],
+                    }]
+                } else {
+                    Vec::new()
+                });
+            }
+            assert_sidebar_tile(&host.minimap_pixels()?, at, palette_rgba(55));
+        }
+    }
+    // Weather tints the world atlas before either rendering path samples it.
+    host.view_mut()?.scene.set_weather([0, 0, 255], 128);
+    assert_sidebar_tile(&host.minimap_pixels()?, at, palette_rgba(55));
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
 fn ui_mark_edit_delete_pan_persist_on_disk() -> Result<(), Error> {
     let root = tempfile::tempdir()?;
     let mut host = crate::bevy_shell::N07dHost::new(false)?;

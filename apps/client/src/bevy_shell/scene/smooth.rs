@@ -10,12 +10,11 @@ pub(in crate::bevy_shell) struct MeshAssets<'w> {
 }
 #[derive(Default)]
 pub(super) struct Cache {
-    batches: Vec<(Entity, Handle<Mesh>)>,
-    material: Option<Handle<ColorMaterial>>,
+    batches: Vec<(Entity, Handle<Mesh>, Handle<ColorMaterial>)>,
 }
 impl Cache {
     pub fn hide(&self, commands: &mut Commands) {
-        for (entity, _) in &self.batches {
+        for (entity, _, _) in &self.batches {
             commands.entity(*entity).insert(Visibility::Hidden);
         }
     }
@@ -24,25 +23,28 @@ impl Cache {
         &mut self,
         commands: &mut Commands,
         assets: &mut MeshAssets,
-        image: &Handle<Image>,
+        images: [&Handle<Image>; 2],
         batches: [Vertices; 2],
     ) {
         let (meshes, materials) = (&mut assets.meshes, &mut assets.materials);
-        let material = self.material.get_or_insert_with(|| {
-            materials.add(ColorMaterial {
-                texture: Some(image.clone()),
-                alpha_mode: bevy::sprite_render::AlphaMode2d::Blend,
-                ..default()
-            })
-        });
-        for (index, vertices) in batches.into_iter().enumerate() {
+        for (index, (vertices, image)) in batches.into_iter().zip(images).enumerate() {
             let mesh = vertices.mesh();
-            if let Some((entity, handle)) = self.batches.get(index) {
+            if let Some((entity, handle, material)) = self.batches.get(index) {
                 if let Some(mut existing) = meshes.get_mut(handle) {
                     *existing = mesh;
                 }
+                if materials.get(material).and_then(|m| m.texture.as_ref()) != Some(image)
+                    && let Some(mut material) = materials.get_mut(material)
+                {
+                    material.texture = Some(image.clone());
+                }
                 commands.entity(*entity).insert(Visibility::Visible);
             } else {
+                let material = materials.add(ColorMaterial {
+                    texture: Some(image.clone()),
+                    alpha_mode: bevy::sprite_render::AlphaMode2d::Blend,
+                    ..default()
+                });
                 let handle = meshes.add(mesh);
                 let entity = commands
                     .spawn((
@@ -54,7 +56,7 @@ impl Cache {
                         bevy::camera::visibility::NoFrustumCulling,
                     ))
                     .id();
-                self.batches.push((entity, handle));
+                self.batches.push((entity, handle, material));
             }
         }
     }
@@ -70,7 +72,7 @@ pub(super) struct Vertices {
 impl Vertices {
     pub fn push(
         &mut self,
-        lighting: &SceneLighting,
+        lighting: Option<&SceneLighting>,
         quad: &QuadInstance,
         index: usize,
         layer: QuadLayer,
@@ -102,8 +104,11 @@ impl Vertices {
                         + uv_size * (screen - Vec2::from(quad.position)) / Vec2::from(quad.size))
                     .to_array(),
                 );
-                let mut tint = lighting.quad_tint_at(quad, index, layer, screen.to_array());
-                tint[3] = sprite.color.alpha();
+                let tint = lighting.map_or([1.; 4], |lighting| {
+                    let mut tint = lighting.quad_tint_at(quad, index, layer, screen.to_array());
+                    tint[3] = sprite.color.alpha();
+                    tint
+                });
                 self.colors.push(tint);
             }
         }
@@ -170,7 +175,7 @@ mod tests {
                 .ok_or("visible quad")?;
         let mut vertices = Vertices::default();
         vertices.push(
-            &lighting,
+            Some(&lighting),
             &quad,
             0,
             QuadLayer::Overlay,
@@ -233,7 +238,7 @@ mod tests {
         .ok_or("visible quad")?;
         let mut vertices = Vertices::default();
         vertices.push(
-            &lighting,
+            Some(&lighting),
             &quad,
             0,
             QuadLayer::Overlay,
