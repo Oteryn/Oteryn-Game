@@ -38,8 +38,11 @@ pub(super) mod test_faults {
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub(in crate::gameplay_transport) enum Point {
         BeforeCommit,
+        BeforeCommitThenBusyReplay,
         SessionReadBusy,
         AfterCommit,
+        ReplayReadBusy,
+        ReplayHeld,
     }
     thread_local! {
         static STOP: Cell<Option<Point>> = const { Cell::new(None) };
@@ -64,6 +67,19 @@ pub(super) mod test_faults {
             true
         } else {
             false
+        }
+    }
+
+    pub(super) fn replay_busy() -> bool {
+        STOP.get() == Some(Point::ReplayHeld) || take(Point::ReplayReadBusy)
+    }
+
+    pub(in crate::gameplay_transport) fn roll_back_before_commit() -> bool {
+        if take(Point::BeforeCommitThenBusyReplay) {
+            arm(Point::ReplayHeld);
+            true
+        } else {
+            take(Point::BeforeCommit)
         }
     }
 }
@@ -130,6 +146,50 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
         gate_message_id: None,
         potion_utterance: None,
         refusal_detail: None,
+    }
+}
+
+pub(super) fn rune_read_refusal(command_id: u64, stage: &str) -> NativeCastDispatch {
+    super::operator_event(&format!(
+        "event=rune_use_read_refused stage={stage} command_id={command_id}"
+    ));
+    NativeCastDispatch::RuneRefused(UseDisposition::Rejected)
+}
+
+pub(super) async fn retry_rune_owner(
+    budget: &super::AdmissionRetryBudget<'_>,
+    command_id: u64,
+    stage: &str,
+    attempt: &mut u32,
+) -> bool {
+    *attempt += 1;
+    super::operator_event(&format!(
+        "event=rune_use_owner_busy stage={stage} command_id={command_id} attempt={attempt}"
+    ));
+    budget
+        .retries_unavailable(super::connection::AdmissionRefusal::Unavailable)
+        .await
+}
+
+async fn read_rune_owner<T>(
+    budget: &super::AdmissionRetryBudget<'_>,
+    command_id: u64,
+    stage: &str,
+    mut read: impl AsyncFnMut() -> Result<T, crate::durability::DurabilityError>,
+) -> Result<T, crate::durability::DurabilityError> {
+    use crate::durability::DurabilityError;
+    let mut attempt = 0;
+    loop {
+        let result = tokio::time::timeout_at(budget.deadline, read())
+            .await
+            .unwrap_or(Err(DurabilityError::RootPassDeadlineExceeded));
+        if !matches!(
+            result,
+            Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded)
+        ) || !retry_rune_owner(budget, command_id, stage, &mut attempt).await
+        {
+            return result;
+        }
     }
 }
 
@@ -303,30 +363,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let store =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
-        let read_session = async || {
+        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let Ok((current, _)) = read_rune_owner(&retry, command.command_id, "session", async || {
             #[cfg(test)]
             if test_faults::take(test_faults::Point::SessionReadBusy) {
                 return Err(crate::durability::DurabilityError::RootUnavailable);
             }
             store.current_session_at(command.game_session_id).await
-        };
-        let retry = super::AdmissionRetryBudget::for_command(self.root);
-        let (current, _) = match retry.retry_command_guard(read_session).await {
-            Ok(current) => current,
-            Err(error) => {
-                super::operator_event(&format!("event=rune_session_read_failed error={error:?}"));
-                return if self
-                    .states
-                    .spell_states
-                    .lock()
-                    .await
-                    .has_pending_native(actor, command.game_session_id)
-                {
-                    None
-                } else {
-                    Some(UseOutcome::rejected())
-                };
-            }
+        })
+        .await
+        else {
+            return self
+                .finish_rune_retry(actor, command, &intent, &retry, "session")
+                .await;
         };
         if current.session_state() != crate::foundation::GameSessionState::Active
             || super::item_fence_of(current) != command.item_fence
@@ -334,19 +383,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(UseOutcome::rejected());
         }
-        match self.replay_legacy_rune(actor, command, &intent).await {
+        let mut recovery_attempts = 0;
+        let replay = loop {
+            match tokio::time::timeout_at(
+                retry.deadline,
+                self.replay_legacy_rune(actor, command, &intent),
+            )
+            .await
+            {
+                Ok(Ok(result)) => break result,
+                Ok(Err(
+                    crate::durability::DurabilityError::RootUnavailable
+                    | crate::durability::DurabilityError::RootPassDeadlineExceeded
+                    | crate::durability::DurabilityError::Unavailable,
+                )) if retry_rune_owner(
+                    &retry,
+                    command.command_id,
+                    "replay",
+                    &mut recovery_attempts,
+                )
+                .await => {}
+                _ => break NativeCastDispatch::Pending,
+            }
+        };
+        match replay {
             NativeCastDispatch::Outcome(cast) => {
                 return Some(outcome(spell_disposition(cast.disposition)));
             }
             NativeCastDispatch::RuneRefused(reason) => return Some(outcome(reason)),
             NativeCastDispatch::Pending => {
-                return (!self
-                    .states
-                    .spell_states
-                    .lock()
-                    .await
-                    .has_pending_native(actor, command.game_session_id))
-                .then(UseOutcome::rejected);
+                return self
+                    .finish_rune_retry(actor, command, &intent, &retry, "replay")
+                    .await;
             }
             NativeCastDispatch::NotApplicable => (),
         }
@@ -359,7 +427,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .find(|p| p.is_for(actor, command.game_session_id))
                 .map(|p| (p.command.command_id().get(), p.intent.clone()))
         };
-        let fresh = retained.is_none();
         let (rune, legacy) = if let Some((id, (_, rune, _, legacy))) = retained {
             let (Some(rune), Some(legacy)) = (rune, legacy) else {
                 return None;
@@ -378,21 +445,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
                 return Some(UseOutcome::rejected());
             };
-            let backpack = retry
-                .retry_command_guard(async || {
-                    self.root
-                        .read_character_backpack(self.character, fence.character_id)
-                        .await
-                        .map_err(|error| match error {
-                            crate::durability::item_transfer::ItemTransferError::Unavailable(
-                                error,
-                            ) => error,
-                            _ => crate::durability::DurabilityError::Unavailable,
-                        })
-                })
-                .await;
-            let Ok(Some(backpack)) = backpack else {
-                return Some(UseOutcome::rejected());
+            let backpack = read_rune_owner(&retry, command.command_id, "backpack", async || {
+                self.root
+                    .read_character_backpack(self.character, fence.character_id)
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::item_transfer::ItemTransferError::Unavailable(error) => {
+                            error
+                        }
+                        _ => crate::durability::DurabilityError::Unavailable,
+                    })
+            })
+            .await;
+            let backpack = match backpack {
+                Ok(Some(backpack)) => backpack,
+                Ok(None) => return Some(outcome(UseDisposition::StaleState)),
+                Err(_) => {
+                    let _ = rune_read_refusal(command.command_id, "backpack");
+                    return Some(UseOutcome::rejected());
+                }
             };
             let Some(entry) = backpack
                 .entries
@@ -447,13 +518,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Some(UseOutcome::rejected());
             }
-            let index = self
+            let Some(index) = self
                 .spells
                 .spells
                 .iter()
                 .position(|s| s.key == spell.key)
                 .and_then(|i| u32::try_from(i).ok()?.checked_add(1))
-                .and_then(NonZeroU32::new)?;
+                .and_then(NonZeroU32::new)
+            else {
+                let _ = rune_read_refusal(command.command_id, "spell_index");
+                return Some(UseOutcome::rejected());
+            };
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             let Some(state) = states.get(&runtime, actor, command.game_session_id) else {
@@ -506,44 +581,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .indexed(rune.intent.spell)
             .is_some_and(super::actor_spell::native_combat_cast::corpse_companion_spell);
         if !self.ensure_source_map_initialized().await {
-            return (corpse_cast && fresh).then(UseOutcome::rejected);
+            return if corpse_cast {
+                self.finish_rune_retry(actor, command, &legacy.original, &retry, "source_map")
+                    .await
+            } else {
+                None
+            };
         }
         let access = self
             .refresh_and_apply_spell_access(actor, command.game_session_id)
             .await;
         let mut result = self
-            .cast_rune_item(
-                actor,
-                command.game_session_id,
-                command.command_id,
-                &rune,
-                legacy.clone(),
-                &access,
-            )
+            .cast_rune_item(actor, command, &rune, legacy.clone(), &access, &retry)
             .await;
         // Complete the original command while the client is still connected.
         // Replaying first reclaims a parked writer using its exact retained
         // source and commit receipt before a current handle can be considered.
         while corpse_cast && matches!(result, NativeCastDispatch::Pending) {
-            if !retry
-                .retries_unavailable(super::connection::AdmissionRefusal::Unavailable)
-                .await
+            if !retry_rune_owner(
+                &retry,
+                command.command_id,
+                "native_cast",
+                &mut recovery_attempts,
+            )
+            .await
             {
-                return if self
-                    .states
-                    .spell_states
-                    .lock()
-                    .await
-                    .has_pending_native(actor, command.game_session_id)
-                {
-                    None
-                } else {
-                    Some(UseOutcome::rejected())
-                };
+                return self
+                    .finish_rune_retry(actor, command, &legacy.original, &retry, "native_cast")
+                    .await;
             }
-            result = self
-                .replay_legacy_rune(actor, command, &legacy.original)
-                .await;
+            result = match tokio::time::timeout_at(
+                retry.deadline,
+                self.replay_legacy_rune(actor, command, &legacy.original),
+            )
+            .await
+            {
+                Ok(Ok(result)) => result,
+                _ => NativeCastDispatch::Pending,
+            };
             if matches!(result, NativeCastDispatch::NotApplicable) {
                 let retained = self
                     .states
@@ -561,14 +636,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // the same ingress with its original handle and fence.
                 let retry_rune = retained.unwrap_or(rune);
                 result = self
-                    .cast_rune_item(
-                        actor,
-                        command.game_session_id,
-                        command.command_id,
-                        &retry_rune,
-                        legacy.clone(),
-                        &access,
-                    )
+                    .cast_rune_item(actor, command, &retry_rune, legacy.clone(), &access, &retry)
                     .await;
             }
         }
@@ -584,5 +652,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(outcome(disposition))
             }
         }
+    }
+
+    async fn finish_rune_retry(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        original: &UseIntent,
+        budget: &super::AdmissionRetryBudget<'_>,
+        stage: &str,
+    ) -> Option<UseOutcome> {
+        let disposition = self
+            .finish_legacy_rune_at_deadline(actor, command, original, budget.deadline)
+            .await?;
+        if disposition == UseDisposition::Rejected {
+            let _ = rune_read_refusal(command.command_id, stage);
+        }
+        Some(outcome(disposition))
     }
 }

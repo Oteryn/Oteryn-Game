@@ -379,6 +379,12 @@ where
                 return Err(ServeEnd::Disconnected);
             }
         }
+        Dispatch::QuickLoot(_, _, true) => {
+            session.inventory_capacity_refresh_at = None;
+            if session.item_view.is_some() {
+                forge::refresh(stream, authority, session).await?;
+            }
+        }
         Dispatch::Reply(CommandStatus::Accepted, _)
             if forge::changes_inventory(command)
                 || command.command_type
@@ -515,6 +521,7 @@ where
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
         | Dispatch::Reply(..)
+        | Dispatch::QuickLoot(_, _, false)
         | Dispatch::ServerModal(_)
         | Dispatch::Vip(_)
         | Dispatch::Appearance(_)

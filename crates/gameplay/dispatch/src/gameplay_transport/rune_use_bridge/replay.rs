@@ -13,36 +13,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: super::super::connection::UseCommand,
         original: &oteryn_protocol_oteryn::world_object::UseIntent,
-    ) -> NativeCastDispatch {
+    ) -> Result<NativeCastDispatch, crate::durability::DurabilityError> {
         use oteryn_protocol_oteryn::actor_spell_item_v2::decode_item_spell_cast_intent;
-        let Some(_lane) = self.spell_lane_permit().await else {
-            return NativeCastDispatch::Pending;
-        };
+        #[cfg(test)]
+        if super::test_faults::replay_busy() {
+            return Err(crate::durability::DurabilityError::RootUnavailable);
+        }
+        let _lane = self.try_spell_lane_permit().await?;
+        let rejected =
+            || NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome::rejected());
         let Some(fence) = command.item_fence else {
-            return NativeCastDispatch::Outcome(
-                super::super::actor_spell::SpellCastOutcome::rejected(),
-            );
+            return Ok(rejected());
         };
         let Ok(character) = CharacterId::decode(fence.character_id.as_bytes()) else {
-            return NativeCastDispatch::Outcome(
-                super::super::actor_spell::SpellCastOutcome::rejected(),
-            );
+            return Ok(rejected());
         };
         let Ok(id) = crate::foundation::CommandId::new(command.command_id) else {
-            return NativeCastDispatch::Outcome(
-                super::super::actor_spell::SpellCastOutcome::rejected(),
-            );
+            return Ok(rejected());
         };
         let command_ref = CommandRef::new(command.game_session_id, id);
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        let rejected =
-            || NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome::rejected());
         if runtime
             .player_control_facts(actor, command.game_session_id)
             .is_err()
         {
-            return rejected();
+            return Ok(rejected());
         }
         let batch = match runtime.retained_spell_batch(
             actor,
@@ -51,51 +47,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command_ref,
         ) {
             Ok(Some(batch)) => batch,
-            Ok(None) => return NativeCastDispatch::NotApplicable,
-            Err(_) => return rejected(),
+            Ok(None) => return Ok(NativeCastDispatch::NotApplicable),
+            Err(_) => {
+                return Ok(super::rune_read_refusal(
+                    command.command_id,
+                    "retained_batch",
+                ));
+            }
         };
         let Ok(saved) = serde_json::from_slice::<Value>(&batch.binding) else {
-            return rejected();
+            return Ok(rejected());
         };
         let Ok(bytes) = serde_json::from_value::<Vec<u8>>(saved["legacy_rune_cast"].clone()) else {
-            return rejected();
+            return Ok(rejected());
         };
         let Ok(rune) = decode_item_spell_cast_intent(&bytes) else {
-            return rejected();
+            return Ok(rejected());
         };
         let legacy = LegacyRuneUse {
             original: original.clone(),
             creature: None,
             fence,
         };
-        match replay_with_rune(
-            &mut runtime,
-            &mut states,
-            actor,
-            character,
-            fence.character_lease_generation,
-            command_ref,
-            &rune.intent,
-            Some(&rune),
-            Some(&legacy),
-            None,
-            &mut None,
-        ) {
-            Ok(Some(receipt)) => {
-                self.record_spell_combat(&mut runtime, &mut states, std::iter::once(&receipt))
-                    .await;
-                NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome {
-                    disposition: SpellCastDisposition::Cast,
-                    vitals: super::super::actor_spell::observe_vitals(
-                        &runtime,
-                        &states,
-                        actor,
-                        command.game_session_id,
-                    ),
-                })
-            }
-            _ => rejected(),
-        }
+        Ok(
+            match replay_with_rune(
+                &mut runtime,
+                &mut states,
+                actor,
+                character,
+                fence.character_lease_generation,
+                command_ref,
+                &rune.intent,
+                Some(&rune),
+                Some(&legacy),
+                None,
+                &mut None,
+            ) {
+                Ok(Some(receipt)) => {
+                    self.record_spell_combat(&mut runtime, &mut states, std::iter::once(&receipt))
+                        .await;
+                    NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome {
+                        disposition: SpellCastDisposition::Cast,
+                        vitals: super::super::actor_spell::observe_vitals(
+                            &runtime,
+                            &states,
+                            actor,
+                            command.game_session_id,
+                        ),
+                    })
+                }
+                _ => rejected(),
+            },
+        )
     }
 }
 
