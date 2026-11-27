@@ -285,7 +285,10 @@ async fn pull(
                 PullFailure::Oversize => "oversize".to_owned(),
             };
             SnapshotTrace::new(account_id).result(&reason, None);
-            return Next::Retry(failure.retry_after(), SnapshotWaitFailure::AuthorityUnavailable);
+            return Next::Retry(
+                failure.retry_after(),
+                SnapshotWaitFailure::AuthorityUnavailable,
+            );
         }
     };
     match consumer
