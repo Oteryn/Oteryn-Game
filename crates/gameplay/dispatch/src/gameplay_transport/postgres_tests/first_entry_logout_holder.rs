@@ -76,7 +76,7 @@ async fn scenario(admin: String, exhaust: bool) -> TestResult {
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let store = FreshAdmissionStore::from_root(h.root.clone());
     let (current, _) = store.current_session_at(admitted.game_session_id).await?;
-    let lease = current.character_lease();
+    let lease = current.current_character_lease();
     owner.runtime.lock().await
         .bind_attacker_lease(deps.actor, admitted.game_session_id, lease)
         .map_err(debug)?;
