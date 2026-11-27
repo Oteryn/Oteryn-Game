@@ -44,7 +44,7 @@ pub(super) async fn exercise(
     )
     .await?;
     let before = snapshot(h).await?;
-    let attack = ForgedOperation::prepare(h).await?;
+    let attack = ForgedOperation::prepare(h, Operation::Fusion).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
         .execute(&mut *tx)
@@ -72,18 +72,28 @@ pub(super) async fn exercise(
     capacity::exercise(h, admitted).await
 }
 
-pub(super) async fn chest_guards(h: &Harness, admitted: &AdmittedSession) -> TestResult {
+pub(super) async fn chest_guards(
+    h: &Harness,
+    admitted: &AdmittedSession,
+    operation: Operation,
+) -> TestResult {
+    let (receiver, donor, tier) = if operation == Operation::Transfer {
+        ("oteryn:item.tibia.i34082", "oteryn:item.tibia.i34084", 2)
+    } else {
+        ("oteryn:item.tibia.i3264", "oteryn:item.tibia.i3264", 0)
+    };
     seed_items(
         h,
         &[
-            (80, "oteryn:item.tibia.i3264", 1, 0),
-            (81, "oteryn:item.tibia.i3264", 1, 0),
-            (82, "oteryn:item.tibia.i3264", 1, 0),
+            (80, receiver, 1, 0),
+            (81, donor, 1, tier),
+            (82, receiver, 1, 0),
         ],
-    ).await?;
+    )
+    .await?;
     let before = snapshot(h).await?;
     for mutation in ["second chest", "non-chest", "identity", "tier"] {
-        let mut operation = ForgedOperation::prepare(h).await?;
+        let mut operation = ForgedOperation::prepare(h, operation).await?;
         match mutation {
             "second chest" => {
                 let mut extra = operation.outputs[0].clone();
@@ -94,7 +104,9 @@ pub(super) async fn chest_guards(h: &Harness, admitted: &AdmittedSession) -> Tes
             _ => {}
         }
         let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
         let error = match operation.write(&mut tx, admitted).await {
             Err(error) => {
                 tx.rollback().await?;
@@ -114,16 +126,34 @@ pub(super) async fn chest_guards(h: &Harness, admitted: &AdmittedSession) -> Tes
                 }
             }
         };
-        let database = error.downcast_ref::<sqlx::Error>().and_then(sqlx::Error::as_database_error)
+        let database = error
+            .downcast_ref::<sqlx::Error>()
+            .and_then(sqlx::Error::as_database_error)
             .ok_or("native SQL guard error")?;
-        assert_eq!(database.code().as_deref(), Some("23514"), "{mutation}: {database}");
+        assert_eq!(
+            database.code().as_deref(),
+            Some("23514"),
+            "{mutation}: {database}"
+        );
         if mutation == "identity" {
-            assert!(database.message().contains("same surviving ItemInstance"), "{database}");
+            assert!(
+                database.message().contains("same surviving ItemInstance"),
+                "{database}"
+            );
         }
         if mutation == "tier" {
-            assert!(database.message().contains("Forge transition or nominal resources"), "{database}");
+            assert!(
+                database
+                    .message()
+                    .contains("Forge transition or nominal resources"),
+                "{database}"
+            );
         }
-        assert_eq!(snapshot(h).await?, before, "{mutation} must roll back all effects");
+        assert_eq!(
+            snapshot(h).await?,
+            before,
+            "{mutation} must roll back all effects"
+        );
     }
     Ok(())
 }
@@ -147,8 +177,9 @@ struct ForgedOperation {
 }
 
 impl ForgedOperation {
-    async fn prepare(h: &Harness) -> TestResult<Self> {
-        let mut action = request(Operation::Fusion, 201);
+    async fn prepare(h: &Harness, operation: Operation) -> TestResult<Self> {
+        let transfer = operation == Operation::Transfer;
+        let mut action = request(operation, 201);
         action.first_item = NonZeroU64::new(1);
         action.second_item = NonZeroU64::new(2);
         let secret: Vec<u8> =
@@ -187,10 +218,10 @@ impl ForgedOperation {
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
                 .fetch_one(&h.pool)
                 .await?;
-        let inputs: Value = sqlx::query_scalar("SELECT jsonb_agg(jsonb_build_object('item',i.item_instance_id,'before',to_jsonb(i),'location',jsonb_build_object('kind',1,'parent',e.parent_item_instance_id,'ordinal',e.placement_ordinal::text,'depth',1),'quantity_after',1,'tier_before',0,'tier_after',CASE WHEN i.item_instance_id=encode($1,'hex')::uuid THEN 10 ELSE 0 END) ORDER BY i.item_instance_id) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
-            .bind(id(80).as_slice()).bind(id(81).as_slice()).fetch_one(&h.pool).await?;
-        let reply = json!({"operation":"fusion","succeeded":true,"applied":true,"reason":null,"bonus":0,
-            "result":{"first_item":1,"first_tier":10,"second_item":2,"second_tier":0,
+        let inputs: Value = sqlx::query_scalar("SELECT jsonb_agg(jsonb_build_object('item',i.item_instance_id,'before',to_jsonb(i),'location',jsonb_build_object('kind',1,'parent',e.parent_item_instance_id,'ordinal',e.placement_ordinal::text,'depth',1),'quantity_after',CASE WHEN $3 AND i.item_instance_id=encode($2,'hex')::uuid THEN 0 ELSE 1 END,'tier_before',coalesce(t.tier,0),'tier_after',CASE WHEN i.item_instance_id=encode($1,'hex')::uuid THEN 10 ELSE 0 END) ORDER BY i.item_instance_id) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) LEFT JOIN game_item_tiers t USING(item_instance_id) WHERE i.item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+            .bind(id(80).as_slice()).bind(id(81).as_slice()).bind(transfer).fetch_one(&h.pool).await?;
+        let reply = json!({"operation":if transfer { "transfer" } else { "fusion" },"succeeded":true,"applied":true,"reason":null,"bonus":0,
+            "result":{"first_item":1,"first_tier":10,"second_item":2,"second_tier":(!transfer).then_some(0),
                 "dust":1000,"dust_limit":1000,"gold_spent":0,"cores_spent":0,
                 "slivers_spent":0,"slivers_created":0,"cores_created":0}});
         let hash = |value: &Value| -> TestResult<Vec<u8>> {
@@ -202,10 +233,10 @@ impl ForgedOperation {
             "location": {"kind":1, "parent":sqlx::types::Uuid::from_bytes(id(70)).to_string(), "ordinal":"1000"}
         }]);
         let proof = serde_json::to_vec(&json!({
-            "occurrence":action.occurrence,"character":id(41),"world":id(42),"operation":1,
+            "occurrence":action.occurrence,"character":id(41),"world":id(42),"operation":operation as u8,
             "content":content,"ruleset":"crystal-201189f-forge-v1","simulation_revision":1,
             "rolls":rolls,"reply":reply,"inputs_hash":hash(&inputs)?,"outputs_hash":hash(&outputs)?,
-            "stash_hash":hash(&Value::Null)?,"inputs":2,"outputs":1,"retired":0,"tier_changes":1,
+            "stash_hash":hash(&Value::Null)?,"inputs":2,"outputs":1,"retired":u8::from(transfer),"tier_changes":1+u8::from(transfer),
             "dust_spent":0,"gold_spent":0,"stash_spent":false
         }))?;
         // Verify cross-language snapshot hashing against actual database JSON,
@@ -252,8 +283,17 @@ impl ForgedOperation {
             .bind(self.request.operation as i16).bind(&self.outputs).bind(self.dust_spent)
             .execute(&mut **tx).await?;
         if self.request.operation.requires_pair() {
-            sqlx::query("UPDATE game_item_instances SET last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id IN(encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
-                .bind(id(202).as_slice()).bind(id(80).as_slice()).bind(id(81).as_slice()).execute(&mut **tx).await?;
+            let transfer = self.request.operation == Operation::Transfer;
+            sqlx::query("UPDATE game_item_instances SET last_transaction_id=encode($1,'hex')::uuid,quantity=CASE WHEN $4 AND item_instance_id=encode($3,'hex')::uuid THEN 0 ELSE quantity END,lifecycle=CASE WHEN $4 AND item_instance_id=encode($3,'hex')::uuid THEN 2 ELSE lifecycle END WHERE item_instance_id IN(encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+                .bind(id(202).as_slice()).bind(id(80).as_slice()).bind(id(81).as_slice()).bind(transfer).execute(&mut **tx).await?;
+            if transfer {
+                sqlx::query(
+                    "DELETE FROM game_item_tiers WHERE item_instance_id=encode($1,'hex')::uuid",
+                )
+                .bind(id(81).as_slice())
+                .execute(&mut **tx)
+                .await?;
+            }
             sqlx::query(
                 "INSERT INTO game_item_tiers(item_instance_id,tier) VALUES(encode($1,'hex')::uuid,10)",
             )
@@ -267,6 +307,9 @@ impl ForgedOperation {
             for (slot, item) in [80, 81].into_iter().enumerate() {
                 sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
                     .bind(id(item).as_slice()).execute(&mut **tx).await?;
+                if transfer && slot == 1 {
+                    continue;
+                }
                 sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid)")
                     .bind(id(item).as_slice()).bind(id(42).as_slice()).bind(id(205).as_slice())
                     .bind(i64::try_from(slot + 1)?).bind(id(202).as_slice()).execute(&mut **tx).await?;

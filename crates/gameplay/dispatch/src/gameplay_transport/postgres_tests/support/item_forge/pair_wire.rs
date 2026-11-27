@@ -1,8 +1,8 @@
 //! Choose Forge operands exactly as a client can: shown inventory/container handles.
 
+use super::super::fixture::debug;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
-use super::super::fixture::debug;
 
 use super::super::item_look_fixtures as item_look;
 
@@ -40,7 +40,11 @@ pub(in super::super) async fn exchange_pair(
         let inventory = inventory(&mut client).await?;
         let mut command = current.continuity.next_command_id;
         let mut nested: Option<Vec<_>> = None;
-        for index in selection.container.into_iter().chain(selection.nested_path.iter().copied()) {
+        for index in selection
+            .container
+            .into_iter()
+            .chain(selection.nested_path.iter().copied())
+        {
             let entries = nested.as_deref().unwrap_or(inventory.entries.as_slice());
             let container = entries.get(index).ok_or("shown nested bag")?;
             let payload = container_tree::encode_container_view_intent(
