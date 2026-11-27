@@ -14,7 +14,6 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant};
-use tokio::time::Instant as TokioInstant;
 use tokio::sync::{Mutex, Notify};
 use tokio::time::Instant as TokioInstant;
 
