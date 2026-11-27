@@ -255,25 +255,30 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         fresh.service_liveness(Duration::from_millis(25)).await?;
         fresh.take_events();
     }
-    let baseline_spell = spell_index(fresh.session_mut(), "exori nia")?;
-    let baseline_builder = spell_index(fresh.session_mut(), "exori infir pug")?;
-    let own = select_target(fresh.session_mut(), target, position).await?;
-    build_harmony(fresh.session_mut(), own, target, position, baseline_builder).await?;
-    let mut baseline = cast_checked(
+    // The unequipped control uses the same selected creature in the same session.
+    build_harmony(
         fresh.session_mut(),
-        own,
+        fresh_own,
         target,
         position,
-        baseline_spell,
+        fresh_builder,
+    )
+    .await?;
+    let mut baseline = cast_checked(
+        fresh.session_mut(),
+        fresh_own,
+        target,
+        position,
+        fresh_spell,
         0,
     )
     .await?;
     fresh.service_liveness(Duration::from_secs(8)).await?;
     collect_hits(
         &fresh.take_events(),
-        own,
+        fresh_own,
         target,
-        baseline_spell,
+        fresh_spell,
         &mut baseline.hits,
     );
     baseline.verify_hits()?;
