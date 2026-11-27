@@ -47,19 +47,23 @@ fn app_with_view(view: PlayView) -> Result<Fixture> {
     host.play = Some(super::super::owner::ActivePlay { view, link });
     host.phase = Phase::Playing;
     let mut app = App::new();
-    app.insert_non_send(host)
-        .insert_resource(Skin {
-            buttons: source::ButtonImages {
-                up: Handle::default(),
-                down: Handle::default(),
-            },
-            frame: Handle::default(),
-            font: Handle::default(),
-            checked: Handle::default(),
-            unchecked: Handle::default(),
-        })
-        .init_resource::<InputFocus>()
-        .add_systems(Update, project);
+    app.insert_non_send(host);
+    install_test_dialogs(&mut app);
+    Ok((app, commands, events))
+}
+fn install_test_dialogs(app: &mut App) {
+    app.insert_resource(Skin {
+        buttons: source::ButtonImages {
+            up: Handle::default(),
+            down: Handle::default(),
+        },
+        frame: Handle::default(),
+        font: Handle::default(),
+        checked: Handle::default(),
+        unchecked: Handle::default(),
+    })
+    .init_resource::<InputFocus>()
+    .add_systems(Update, project);
     app.world_mut().spawn((
         Overlay,
         super::super::game_ui::GameModal,
@@ -69,7 +73,6 @@ fn app_with_view(view: PlayView) -> Result<Fixture> {
             ..default()
         },
     ));
-    Ok((app, commands, events))
 }
 fn app() -> Result<Fixture> {
     app_with_view(

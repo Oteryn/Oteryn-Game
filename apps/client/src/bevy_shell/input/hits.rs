@@ -134,3 +134,6 @@ impl WorldPointerHits<'_, '_> {
 }
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(in crate::bevy_shell) use tests::qualification_right_click;

@@ -22,6 +22,7 @@ use winit::{
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 struct Fixture {
     app: App,
+    outbox: crate::play::Outbox,
     commands: tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
     world: Entity,
     editor: Entity,
@@ -38,11 +39,21 @@ fn fixture_with(
     loot: bool,
     prepare: Prepare,
 ) -> Result<Fixture, Box<dyn std::error::Error>> {
+    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    fixture_for_view(view, dpi, cover, loot, prepare)
+}
+
+fn fixture_for_view(
+    mut view: PlayView,
+    dpi: f32,
+    cover: bool,
+    loot: bool,
+    prepare: Prepare,
+) -> Result<Fixture, Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(None)?;
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
     outbox.bevy_quick_loot_selected(true);
-    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
     let mut preferences = crate::play::ReferencePreferences::default();
     preferences.gameplay.secondary_click_loots_nearby = loot;
@@ -123,6 +134,7 @@ fn fixture_with(
     });
     Ok(Fixture {
         app,
+        outbox,
         commands,
         world,
         editor,
@@ -147,6 +159,47 @@ fn mouse(app: &mut App, point: Vec2) {
         },
     });
 }
+pub(in crate::bevy_shell) fn qualification_right_click(
+    view: PlayView,
+    tile: oteryn_renderer::TileCoord,
+) -> Result<
+    (
+        App,
+        tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
+        crate::play::Outbox,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let f = fixture_for_view(view, 1., false, false, |_, _, _| Ok(()))?;
+    let Fixture {
+        mut app,
+        commands,
+        outbox,
+        pointer,
+        ..
+    } = f;
+    let view = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("active play")?
+        .view;
+    let [x, y] = view.scene().view().tile_to_screen(tile);
+    let (w, h) = view.scene().view().viewport_px();
+    app.world_mut().resource_mut::<WorldViewport>().size = UVec2::new(w, h);
+    app.world_mut().resource_mut::<InputFocus>().clear();
+    let click = Vec2::new(x + 1., y + 1.);
+    app.world_mut()
+        .get_mut::<PointerLocation>(pointer)
+        .and_then(|pointer| pointer.into_inner().location.as_mut())
+        .ok_or("I09 world pointer location")?
+        .position = click;
+    mouse(&mut app, click);
+    app.update();
+    Ok((app, commands, outbox))
+}
+
 #[test]
 fn nonmodal_textbox_click_keeps_focus_and_cannot_loot_or_walk_behind_ui() -> TestResult {
     let mut f = fixture(1., true)?;

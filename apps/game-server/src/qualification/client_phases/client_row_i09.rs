@@ -339,6 +339,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if *item != (world_map::MapItem {
         definition: MapDefinition::Item(expected),
         appearance_id: 2359,
+        count: 1,
         origin: MapOrigin::BaseOrdinal { ordinal, object_revision: 1 },
         ..*before_item
     }) {
@@ -500,9 +501,13 @@ fn require_unique_chair(
     let MapOrigin::BaseOrdinal { ordinal, .. } = expected.origin else {
         return Err("I09 expected chair has no placement ordinal".into());
     };
-    let mut chairs = tiles.iter().filter(|tile| tile.position == target)
-        .flat_map(|tile| &tile.items)
-        .filter(|item| matches!(item.appearance_id, 2358 | 2359)
+    let mut matching_tiles = tiles.iter().filter(|tile| tile.position == target);
+    let tile = matching_tiles.next().ok_or("I09 chair tile absent")?;
+    if tile.more || matching_tiles.next().is_some() || expected.count != 1 {
+        return Err("I09 requires a complete tile stack and a single chair item".into());
+    }
+    let mut chairs = tile.items.iter()
+        .filter(|item| matches!(item.appearance_id, 2358..=2361)
             || matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: actual, .. } if actual == ordinal));
     if chairs.next() != Some(expected) || chairs.next().is_some() {
         return Err("I09 map must show exactly one chair at the expected placement and revision".into());

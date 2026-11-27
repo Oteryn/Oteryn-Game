@@ -19,24 +19,37 @@ fn qualification_i09_rotate_menu() -> Result {
         &[],
     )?;
     view.set_live_map(&map)?;
-    let (mut app, mut commands, _) = app_with_view(view)?;
-    app.world_mut()
-        .non_send_mut::<HostOwner>()
-        .request_world_context(TileCoord::new(*click_x, *click_y));
+    let (mut app, commands, outbox) = crate::bevy_shell::input::hits::qualification_right_click(
+        view,
+        TileCoord::new(*click_x, *click_y),
+    )?;
+    install_test_dialogs(&mut app);
     app.update();
     choose(&mut app, "Rotate")?;
-    let PlayCommand::WorldContext(Command {
+    let dispatched = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let peer = I09NativeTransport(std::sync::Arc::clone(&dispatched));
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                crate::play::run_session(peer, commands, outbox),
+            )
+            .await
+        })?;
+    let Command {
         target: Target::Object(object),
         action: Action::Use,
         selection,
-    }) = commands.try_recv()?
+    } = dispatched
+        .lock()
+        .map_err(|_| "I09 native transport lock")?
+        .take()
+        .ok_or("I09 native session loop did not dispatch Rotate")?
     else {
         return Err("I09 Rotate did not emit a world-object USE".into());
     };
-    assert!(
-        commands.try_recv().is_err(),
-        "Rotate emitted extra commands"
-    );
     let selection = selection.map(|value| {
         let pos = value.position;
         ((pos.x, pos.y, pos.floor), value.binding)
@@ -44,4 +57,56 @@ fn qualification_i09_rotate_menu() -> Result {
     let command = (object.placement, object.expected_revision, selection);
     println!("I09_MENU_USE={}", serde_json::to_string(&command)?);
     Ok(())
+}
+
+// The production session loop owns the Bevy channel. This transport hands
+// off only the command it dispatches and returns no simulated server result.
+struct I09NativeTransport(std::sync::Arc<std::sync::Mutex<Option<Command>>>);
+
+impl crate::play::Stepper for I09NativeTransport {
+    async fn world_context(
+        &mut self,
+        command: &Command,
+        _raw_wire: bool,
+    ) -> std::result::Result<String, oteryn_session::SessionError> {
+        let mut dispatched = self
+            .0
+            .lock()
+            .map_err(|_| oteryn_session::SessionError::SessionUnusable)?;
+        assert!(dispatched.replace(command.clone()).is_none());
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn step(
+        &mut self,
+        _: oteryn_session::StepDirection,
+    ) -> std::result::Result<oteryn_session::StepOutcome, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn serve(
+        &mut self,
+        duration: std::time::Duration,
+    ) -> std::result::Result<(), oteryn_session::SessionError> {
+        tokio::time::sleep(duration).await;
+        Ok(())
+    }
+
+    fn drain(&mut self) -> Vec<oteryn_session::SessionEvent> {
+        Vec::new()
+    }
+
+    async fn combat(
+        &mut self,
+        _: crate::combat_input::CombatCommand,
+    ) -> std::result::Result<crate::combat_input::CombatReport, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn logout(
+        &mut self,
+    ) -> std::result::Result<Option<oteryn_session::LogoutResult>, oteryn_session::SessionError>
+    {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
 }

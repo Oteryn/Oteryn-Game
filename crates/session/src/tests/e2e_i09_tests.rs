@@ -375,6 +375,7 @@ async fn replay_original(root: &Path) -> Result<(), BoxError> {
     let rotated_item = world_map::MapItem {
         definition: MapDefinition::Item(definition),
         appearance_id: 2359,
+        count: 1,
         origin: MapOrigin::BaseOrdinal {
             ordinal,
             object_revision: 1,
@@ -535,9 +536,15 @@ fn has_unique_chair(
     ordinal: u8,
     expected: &world_map::MapItem,
 ) -> bool {
-    let mut chairs = tiles.iter().filter(|tile| tile.position == target)
-        .flat_map(|tile| &tile.items)
-        .filter(|item| matches!(item.appearance_id, 2358 | 2359)
+    let mut matching_tiles = tiles.iter().filter(|tile| tile.position == target);
+    let Some(tile) = matching_tiles.next() else {
+        return false;
+    };
+    if tile.more || matching_tiles.next().is_some() || expected.count != 1 {
+        return false;
+    }
+    let mut chairs = tile.items.iter()
+        .filter(|item| matches!(item.appearance_id, 2358..=2361)
             || matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: actual, .. } if actual == ordinal));
     chairs.next() == Some(expected) && chairs.next().is_none()
 }
@@ -579,6 +586,43 @@ fn furniture_rotation_rejects_duplicate_and_character_local_views() {
         1,
         &rotated
     ));
+    for appearance_id in [2360, 2361] {
+        tile.items.push(MapItem {
+            appearance_id,
+            origin: MapOrigin::BaseOrdinal {
+                ordinal: 2,
+                object_revision: 0,
+            },
+            ..original
+        });
+        assert!(!has_unique_chair(
+            std::slice::from_ref(&tile),
+            target,
+            1,
+            &rotated
+        ));
+        tile.items.pop();
+    }
+    tile.more = true;
+    assert!(!has_unique_chair(
+        std::slice::from_ref(&tile),
+        target,
+        1,
+        &rotated
+    ));
+    tile.more = false;
+    let wrong_count = MapItem {
+        count: 2,
+        ..rotated
+    };
+    tile.items[0] = wrong_count;
+    assert!(!has_unique_chair(
+        std::slice::from_ref(&tile),
+        target,
+        1,
+        &wrong_count
+    ));
+    tile.items[0] = rotated;
     tile.items.push(original);
     assert!(!has_unique_chair(
         std::slice::from_ref(&tile),
