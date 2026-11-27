@@ -52,8 +52,8 @@ pub enum BootRefusal {
     MapRevision,
     /// The configured start tile cannot be entered.
     StartNotEnterable,
-    /// A palette Item key the §1.6 item index lacks or places at another `id`.
-    ItemReference,
+    /// A palette entry that cannot be resolved at the compact id it declares.
+    ItemReference { palette_key: String, item_id: u32 },
     /// The bundle places no door a player can use (MAP-DOOR-1), which a preprod node refuses.
     NoDoors,
     /// MAP-FLOOR-1: a floor-change tile whose successive destinations never end.
@@ -69,9 +69,13 @@ impl fmt::Display for BootRefusal {
             Self::Load(error) => write!(f, "{error}"),
             Self::MapRevision => f.write_str("map_revision is not the world bundle's revision"),
             Self::StartNotEnterable => f.write_str("the world bundle start tile is not enterable"),
-            Self::ItemReference => {
-                f.write_str("a world bundle palette item does not match the item index")
-            }
+            Self::ItemReference {
+                palette_key,
+                item_id,
+            } => write!(
+                f,
+                "world bundle palette entry {palette_key:?} cannot be resolved at compact id {item_id}"
+            ),
             Self::NoDoors => f.write_str("the world bundle places no usable door"),
             Self::NoFloorChanges => {
                 f.write_str("a world bundle places no tile that changes floors")
@@ -97,7 +101,13 @@ impl From<FactsRefusal> for BootRefusal {
     fn from(refusal: FactsRefusal) -> Self {
         match refusal {
             FactsRefusal::Load(error) => Self::Load(error),
-            FactsRefusal::ItemReference => Self::ItemReference,
+            FactsRefusal::ItemReference {
+                palette_key,
+                item_id,
+            } => Self::ItemReference {
+                palette_key,
+                item_id,
+            },
         }
     }
 }
@@ -2316,23 +2326,37 @@ pub mod tests {
             })
         };
         let missing = |key: &str| items(key).filter(|_| key != "item:coin");
-        for refused in [
-            boot(
-                &bytes,
-                &pins(load.clone(), 1),
-                world_id,
-                channel_id,
-                shifted,
+        for (refused, palette_key, item_id) in [
+            (
+                boot(
+                    &bytes,
+                    &pins(load.clone(), 1),
+                    world_id,
+                    channel_id,
+                    shifted,
+                ),
+                "item:box",
+                0,
             ),
-            boot(
-                &bytes,
-                &pins(load.clone(), 1),
-                world_id,
-                channel_id,
-                missing,
+            (
+                boot(
+                    &bytes,
+                    &pins(load.clone(), 1),
+                    world_id,
+                    channel_id,
+                    missing,
+                ),
+                "item:coin",
+                1,
             ),
         ] {
-            assert_eq!(refused, Err(BootRefusal::ItemReference));
+            assert_eq!(
+                refused,
+                Err(BootRefusal::ItemReference {
+                    palette_key: palette_key.into(),
+                    item_id,
+                })
+            );
         }
         Ok(())
     }
