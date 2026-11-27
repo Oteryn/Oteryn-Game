@@ -71,6 +71,7 @@ const Q_P04_399_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000021";
 #[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
+        "p04-delivery-build" => Some(("sorcerer", 1500)),
         "p04-master-399" => Some(("sorcerer", 399)),
         "p04-master-400" => Some(("sorcerer", 400)),
         "p04-task-board" => Some(("sorcerer", 399)),
@@ -803,6 +804,7 @@ async fn prepare_build(
             | "c06-sorcerer"
             | "s13-party"
             | "w20b-light"
+            | "p04-delivery-build"
             | "p04-master-399"
             | "p04-master-400"
             | "p04-task-board"
@@ -846,7 +848,7 @@ async fn prepare_build(
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("p04-master-399", Q_P04_399_ACCOUNT)
             | ("p04-master-400", Q_P04_400_ACCOUNT)
-            | ("p04-task-board", Q_P04_ACCOUNT)
+            | ("p04-task-board" | "p04-delivery-build", Q_P04_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
             | ("s08-sorcerer", PVP_SORCERER_ACCOUNT) => {}
             _ => return Err("preparation profile does not match dedicated account".into()),
@@ -2566,6 +2568,7 @@ mod tests {
             "c11-knight",
             "c12-monk",
             "c06-sorcerer",
+            "p04-delivery-build",
             "p04-item-7386-20",
             "p04-max-item-4294967295",
             "p04-master-400",
