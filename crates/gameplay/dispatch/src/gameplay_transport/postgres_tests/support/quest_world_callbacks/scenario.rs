@@ -2283,7 +2283,9 @@ fn scenario_case(
         }
         owner.admit_quest_session(&admitted).await;
         if koshei {
-            Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
+            Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(
+                &mut owner, &mut admitted, &h, &world,
+            )).await?;
         } else if explorer {
             Box::pin(super::super::explorer_society_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if m03_use {

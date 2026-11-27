@@ -55,8 +55,12 @@ pub(super) fn world(
     };
     use oteryn_world_bundle_compiler::{bundle, compile, project, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let project =
+    let mut project =
         source::project_regions(&root, &[(127, 123), (129, 126), (129, 127), (130, 126)])?;
+    project
+        .families
+        .spawns
+        .retain(|source| source.points.iter().any(|point| point.creature == CREATURE));
     let (registry, palette) = source::registry(&root, &project)?;
     let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),
@@ -421,6 +425,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    world: &crate::map::boot::BundleWorld,
 ) -> TestResult {
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
     use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
@@ -554,6 +559,29 @@ pub(super) async fn exercise(
     assert_eq!(State::read(h).await?, expected);
 
     super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner, admitted).await?;
+    let native_boss = {
+        let mut runtime = owner.runtime.lock().await;
+        let sources = world
+            .activation_spawns(|key| {
+                let policy = runtime.companion_policy(key).ok()?;
+                Some((
+                    u64::try_from(policy.maximum_health).ok()?,
+                    policy.blocked_by_nearby_players,
+                ))
+            })
+            .ok_or("source Koshei spawn policy")?;
+        assert_eq!(
+            runtime.begin_activation_spawn_sources(sources).map_err(debug)?,
+            1
+        );
+        let progress = runtime.realize_activation_spawn_window(0).map_err(debug)?;
+        assert_eq!((progress.realized, progress.remaining), (1, 0));
+        let points = runtime.spawn_point_creatures();
+        let [(_, _, Some(boss))] = points.as_slice() else {
+            return Err("one live Koshei from the shipped spawn table".into());
+        };
+        *boss
+    };
     let potion_fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -585,20 +613,33 @@ pub(super) async fn exercise(
     assert_eq!(State::read(h).await?, expected);
     let boss = {
         let runtime = owner.runtime.lock().await;
-        runtime
-            .visible_entities()
-            .creatures
-            .into_iter()
-            .find(|creature| {
-                runtime
-                    .matches_live_creature_identity(creature.actor, CREATURE.as_bytes())
-                    && runtime.read_actor_position(creature.actor).is_ok_and(|snapshot| {
-                        let p = snapshot.position();
-                        (p.x, p.y, p.floor) == (33271, 32406, 12)
-                    })
-            })
-            .ok_or(CREATURE)?
+        let visible = runtime.visible_entities();
+        let mut matching = visible.creatures.into_iter().filter(|creature| {
+            runtime.matches_live_creature_identity(creature.actor, CREATURE.as_bytes())
+        });
+        let boss = matching.next().ok_or(CREATURE)?;
+        assert_eq!(boss.actor, native_boss, "entry must use the live native boss");
+        assert!(matching.next().is_none(), "entry must keep one live boss");
+        boss
     };
+    let encounter = callback()?.effects.encounter.ok_or("Koshei encounter")?;
+    let [member] = encounter.players.as_slice() else {
+        return Err("one Koshei staging position".into());
+    };
+    move_to(owner, admitted, member.from).await?;
+    let switch = target(owner, SWITCH, 1)?;
+    assert_eq!(
+        use_next(owner, admitted, &switch).await?,
+        UseDisposition::Occupied
+    );
+    let entry_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(ENTRY)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(entry_receipts, 1, "a live defender cannot be claimed again");
+    move_to(owner, admitted, member.to).await?;
     super::elvenbane_combat_fixtures::fight(
         owner,
         admitted,
