@@ -50,9 +50,9 @@ fn spell_aim_mode_postgres_capability_480_aim_mode_cursor_needs_the_capability()
 }
 
 fn run_case(tag: &'static str, negotiated: bool) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
@@ -98,7 +98,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         cp,
         room.clone(),
         native.spell_book().clone(),
-        3,
+        4,
     )?;
     deps.combat_room = Some(room);
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
@@ -170,7 +170,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         return Err("durable caster facts".into());
     };
     assert!(i64::from(facts.max_mana) >= MANA, "max mana");
-    let target;
+    let targets;
     let caster;
     {
         let mut runtime = deps.runtime.lock().await;
@@ -201,24 +201,30 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             .map_err(debug)?
             .maximum_health;
         // The rat stands on the tile east of the caster, the aimed wave's origin.
+        let health = u64::try_from(health)?;
         runtime
-            .realize_activation_spawns(vec![(
-                vec![(caster.x + 1, caster.y, caster.floor)],
-                60_000,
-                5_000,
-                "oteryn:creature.rat".into(),
-                u64::try_from(health)?,
-            )])
-            .map_err(|error| format!("realize aim target spawn: {error:?}"))?;
-        target = runtime
+            .realize_activation_spawns(
+                [(1, 0), (2, 0)]
+                    .map(|(dx, dy)| (
+                        vec![(caster.x + dx, caster.y + dy, caster.floor)],
+                        60_000,
+                        5_000,
+                        "oteryn:creature.rat".into(),
+                        health as u64,
+                    ))
+                    .to_vec(),
+            )
+            .map_err(|error| format!("realize aim target spawns: {error:?}"))?;
+        targets = runtime
             .visible_entities()
             .creatures
-            .first()
-            .ok_or("rat")?
-            .actor;
-        runtime
-            .set_test_creature_health(target, RAT_HEALTH)
-            .map_err(debug)?;
+            .into_iter()
+            .map(|creature| creature.actor)
+            .collect::<Vec<_>>();
+        assert_eq!(targets.len(), 2);
+        for target in &targets {
+            runtime.set_test_creature_health(*target, RAT_HEALTH).map_err(debug)?;
+        }
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -321,7 +327,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             actor_spell::SpellCastDisposition::Rejected
         );
         assert_eq!(
-            deps.runtime.lock().await.live_creature_health(target),
+            deps.runtime.lock().await.live_creature_health(targets[0]),
             Some(u64::try_from(RAT_HEALTH)?),
             "the refused cast must not damage the creature"
         );
@@ -345,6 +351,16 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
             "capability 480 selected"
         );
     }
+    let viewer_session = crate::foundation::GameSessionId::decode(&id(120)).map_err(debug)?;
+    let viewer = {
+        let mut runtime = deps.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(viewer_session).map_err(debug)?;
+        let spectator = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime.initialize_first_entry_position(spectator).map_err(debug)?;
+        spectator
+    };
+    let (cursor, _) = owner.observe_sounds(viewer, viewer_session, u64::MAX)
+        .await.ok_or("spectator presentation cursor")?;
     let results = exchange(
         &owner,
         &mut admitted,
@@ -358,16 +374,42 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
         actor_spell::decode_spell_cast_result(&results[0].1).map_err(debug)?,
         actor_spell::SpellCastDisposition::Cast
     );
-    let hit = deps
-        .runtime
-        .lock()
-        .await
-        .live_creature_health(target)
-        .ok_or("rat survives")?;
-    assert!(
-        hit < u64::try_from(RAT_HEALTH)?,
-        "the aimed wave must damage the creature next to the caster: {hit}"
-    );
+    let (_, events) = owner.observe_sounds(viewer, viewer_session, cursor)
+        .await.ok_or("spectator presentation")?;
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationColor, PresentationEventKind as Kind, PresentationSource, PresentationValueKind,
+    };
+    let decision = events.iter().find_map(|event| match event.kind {
+        Kind::SpellWords { caster: source, spell: index, .. }
+            if source.identity == actor.placement_identity() && index == spell.get() => Some(event.decision_ordinal),
+        _ => None,
+    }).ok_or("spectator sees Scorch words")?;
+    let cells = events.iter().filter_map(|event| match event.kind {
+        Kind::MagicEffect { position, source: PresentationSource::Others, .. }
+            if event.decision_ordinal == decision => Some((position.x, position.y, position.floor)),
+        _ => None,
+    }).collect::<std::collections::BTreeSet<_>>();
+    // The east-facing matrix is clipped by Thalom's wall immediately northeast
+    // of the caster and the two solid tiles at its far southeast edge.
+    let expected = [(1, 0), (1, 1), (2, 0), (2, 1), (3, 0)]
+        .map(|(dx, dy)| (caster.x + dx, caster.y + dy, caster.floor.abs()));
+    assert_eq!(cells, expected.into_iter().collect(), "resolved Scorch cone");
+    let runtime = deps.runtime.lock().await;
+    for target in targets {
+        let hit = runtime.live_creature_health(target).ok_or("rat survives")?;
+        let damage = u64::try_from(RAT_HEALTH)? - hit;
+        assert!(damage > 0);
+        assert!(events.iter().any(|event| event.decision_ordinal == decision && matches!(
+            event.kind,
+            Kind::ValueText { kind: PresentationValueKind::DamageOthers, target: shown,
+                attacker: Some(attacker), primary, .. }
+                if shown.identity == target.placement_identity()
+                    && shown.generation == target.actor_local_generation()
+                    && attacker.identity == actor.placement_identity()
+                    && primary.value == damage && primary.color == PresentationColor::Orange
+        )), "spectator sees the rat's fire damage in Scorch's decision: {events:?}");
+    }
+    drop(runtime);
     let after = owner
         .observe_vitals(actor, session)
         .await
