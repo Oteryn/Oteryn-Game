@@ -24,7 +24,15 @@ def capture_sources(source_root):
 
     requested = {
         "lever.lua": {
-            "LeverUnique": {30004, 30005, 30008, *range(30018, 30024), 30025, 30030, 30034},
+            "LeverUnique": {
+                30004,
+                30005,
+                30008,
+                *range(30018, 30024),
+                30025,
+                30030,
+                30034,
+            },
             "LeverAction": {30006, 8013, 55021},
         },
         "tile.lua": {

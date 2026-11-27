@@ -246,6 +246,7 @@ class QuestChestBindings(unittest.TestCase):
                     and index["palette"][item]["source_item_id"] == appearance
                 ]
                 self.assertEqual(matches, [value])
+
     def test_children_grease_shelf_uid_in_published_region(self):
         position = (33327, 31410, 8)
         root = chests.ROOT
