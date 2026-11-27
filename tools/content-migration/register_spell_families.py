@@ -1805,6 +1805,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import protected_loot_yields
 
     protected_loot_yields.admit(root, items, provider_order)
+    import inventory_grant_sources
+
+    inventory_grant_sources.admit(root, items, provider_order)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
     robbery_creatures = native_goal_corpse_items.bank_robbery_creatures(root)
@@ -1816,7 +1819,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     late_item_keys = protected_loot_yields.ARBAZILOTH_HARD_ITEMS | {
         f"oteryn:item.tibia.i{item_id}"
-        for item_id in late_item_ids | outfit_reward_item_profiles.SOURCE_ROWS.keys()
+        for item_id in (late_item_ids | outfit_reward_item_profiles.SOURCE_ROWS.keys()
+                        | inventory_grant_sources.IDS)
     }
     late_items = [
         row
