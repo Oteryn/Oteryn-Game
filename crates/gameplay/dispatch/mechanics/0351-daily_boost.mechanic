@@ -7,5 +7,5 @@ offer=60,daily_boost::offered,daily_boost_available
 [route]
 match routing::daily_boost::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("daily_boost_outcome_unavailable")),
 }

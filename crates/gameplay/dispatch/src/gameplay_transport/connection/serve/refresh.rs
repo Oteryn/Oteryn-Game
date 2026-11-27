@@ -51,12 +51,12 @@ where
         to,
         &value,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     };
     session.sequence = delta_sequence;
     session.admitted.continuity.server_sequence = session.sequence;
     if write_frame(stream, &delta).await.is_err() {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("frame_write_refused"));
     }
     session.admitted.continuity.vitals_revision = to;
     inventory_capacity::reread_after_vitals(session, &value);
@@ -85,7 +85,7 @@ where
         )
         .await;
     let Ok(changed) = state.refresh(&mut session.admitted.continuity.quest_log, observation) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     };
     let Some(domain) = changed else {
         return Ok(());
@@ -93,12 +93,12 @@ where
     let Some((delta_sequence, frame)) =
         quest_log_delta(session.generation, session.sequence, &domain)
     else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     };
     session.sequence = delta_sequence;
     session.admitted.continuity.server_sequence = session.sequence;
     if write_frame(stream, &frame).await.is_err() {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("frame_write_refused"));
     }
     Ok(())
 }
@@ -117,11 +117,11 @@ where
             let revision = session
                 .cast_chat_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let sequence = session
                 .sequence
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let frame = encode_state_delta(
                 session.generation,
                 sequence,
@@ -131,10 +131,10 @@ where
                 delta_type,
                 &payload,
             )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             session.cast_chat_revision = revision;
@@ -161,7 +161,8 @@ where
             .selected_capabilities
             .contains(line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1)
         {
-            let payload = encode_chat_line(&line).map_err(|_| ServeEnd::Disconnected)?;
+            let payload =
+                encode_chat_line(&line).map_err(|_| ServeEnd::server("frame_encode_failed"))?;
             write_line(stream, session, payload).await?;
         } else {
             let Some((delta_sequence, frame, chat_revision)) = chat_line_delta(
@@ -170,13 +171,13 @@ where
                 session.admitted.continuity.chat_revision,
                 &line,
             ) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("state_projection_unavailable"));
             };
             session.sequence = delta_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
             session.admitted.continuity.chat_revision = chat_revision;
             if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_write_refused"));
             }
         }
         if session.selected_capabilities.contains(290) {
@@ -211,9 +212,9 @@ where
             .continuity
             .chat_revision
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         line_extended::append_line_sequence(&mut payload, line_sequence)
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
     }
     let Some((delta_sequence, frame, chat_revision)) = chat_delta(
         session.generation,
@@ -222,13 +223,13 @@ where
         DELTA_TYPE_CHAT_LINE_V1,
         &payload,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     };
     session.sequence = delta_sequence;
     session.admitted.continuity.server_sequence = session.sequence;
     session.admitted.continuity.chat_revision = chat_revision;
     if write_frame(stream, &frame).await.is_err() {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("frame_write_refused"));
     }
     Ok(())
 }
@@ -254,8 +255,8 @@ where
         let Some(echo) = authority.chat_private_echo_next(session.admitted).await else {
             break;
         };
-        let payload =
-            line_extended::encode_private_echo(&echo).map_err(|_| ServeEnd::Disconnected)?;
+        let payload = line_extended::encode_private_echo(&echo)
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
         write_line(stream, session, payload).await?;
     }
     Ok(())
@@ -290,13 +291,13 @@ where
             player_typing::DELTA_TYPE_PLAYER_TYPING_V1,
             &payload,
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         session.sequence = sequence;
         session.admitted.continuity.server_sequence = sequence;
         session.admitted.continuity.chat_revision = revision;
         if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
     }
     Ok(())
@@ -332,8 +333,8 @@ where
     let Some(list) = authority.chat_channel_list_bound(session.admitted).await else {
         return Ok(());
     };
-    let payload =
-        private_channel::encode_channel_list(&list).map_err(|_| ServeEnd::Disconnected)?;
+    let payload = private_channel::encode_channel_list(&list)
+        .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
     let Some((delta_sequence, frame, chat_revision)) = chat_delta(
         session.generation,
         session.sequence,
@@ -341,13 +342,13 @@ where
         private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1,
         &payload,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     };
     session.sequence = delta_sequence;
     session.admitted.continuity.server_sequence = session.sequence;
     session.admitted.continuity.chat_revision = chat_revision;
     if write_frame(stream, &frame).await.is_err() {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("frame_write_refused"));
     }
     Ok(())
 }
@@ -369,7 +370,7 @@ where
         .await;
     if let Some((list, extension)) = list {
         let payload = private_channel_extended::encode_channel_list_extended(&list, &extension)
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
         let Some((delta_sequence, frame, chat_revision)) = chat_delta(
             session.generation,
             session.sequence,
@@ -377,18 +378,18 @@ where
             private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1,
             &payload,
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         session.sequence = delta_sequence;
         session.admitted.continuity.server_sequence = session.sequence;
         session.admitted.continuity.chat_revision = chat_revision;
         if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
     }
     for notice in notices {
-        let payload =
-            line_extended::encode_channel_notice(&notice).map_err(|_| ServeEnd::Disconnected)?;
+        let payload = line_extended::encode_channel_notice(&notice)
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
         write_line(stream, session, payload).await?;
     }
     Ok(())
@@ -425,12 +426,12 @@ where
         &update,
         &mut session.npc_shown,
     ) else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     };
     session.admitted.continuity.server_sequence = session.sequence;
     for frame in update_frames {
         if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_write_refused"));
         }
     }
     Ok(())
@@ -468,7 +469,7 @@ where
             .combat
             .delta(session.generation, session.sequence, state)
     else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     };
     let Some((delta_sequence, frame)) = change else {
         return Ok(());
@@ -476,7 +477,7 @@ where
     session.sequence = delta_sequence;
     session.admitted.continuity.server_sequence = session.sequence;
     if write_frame(stream, &frame).await.is_err() {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("frame_write_refused"));
     }
     Ok(())
 }
@@ -538,7 +539,7 @@ where
     if authority
         .pending_activity_switch(session.admitted)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?
+        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?
         .is_some()
     {
         return Ok(());
@@ -564,7 +565,7 @@ where
     .await
     .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("state_projection_unavailable"));
     }
     let now = tokio::time::Instant::now();
     session.chase_due = Some(session.pacer.wait_until(now).unwrap_or(now));
@@ -589,7 +590,7 @@ where
     // A return can retire the source during its map read. Release the
     // background grant before settling that handoff and let the serve loop
     // write the barrier for the exact pending successor.
-    if matches!(&result, Err(ServeEnd::Disconnected)) && step == "world_map" {
+    if matches!(&result, Err(ServeEnd::Server { .. })) && step == "world_map" {
         let source = session.admitted;
         if Box::pin(authority.settle_activity_connection(source))
             .await
@@ -638,7 +639,7 @@ where
             &mut session.sequence,
         )
         .await
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
     }
     *step = "newhaven_inventory";
     refresh_newhaven_inventory(
@@ -651,7 +652,7 @@ where
         &mut session.sequence,
     )
     .await
-    .ok_or(ServeEnd::Disconnected)?;
+    .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
     *step = "player_trade";
     player_trade::refresh(stream, authority, session).await?;
     *step = "cyclopedia_tracker";
@@ -675,16 +676,17 @@ where
             view,
         )
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
         session.admitted.continuity.item_view = view.continuity();
         if let Some(delta) = refreshed {
-            let (sequence, frame) = item_view_delta(session.generation, session.sequence, &delta)
-                .ok_or(ServeEnd::Disconnected)?;
+            let (sequence, frame) =
+                item_view_delta(session.generation, session.sequence, &delta)
+                    .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         }
     }
     // VIS-3: entities that moved, entered or left without this actor's step.
@@ -715,7 +717,7 @@ where
             .await
         }
         Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
-        Err(_) => return Err(ServeEnd::Disconnected),
+        Err(_) => return Err(ServeEnd::server("state_projection_unavailable")),
     };
     match projection {
         Ok((to_sequence, to_revision)) => {
@@ -742,7 +744,7 @@ where
                 .await;
                 session.admitted.continuity.item_view = items.continuity();
                 let Some(update) = update else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("state_projection_unavailable"));
                 };
                 if let Some((next_sequence, frames)) = update {
                     *step = "world_map_write";
@@ -751,7 +753,7 @@ where
                     session.admitted.continuity.world_map_revision = view.revision();
                     for frame in frames {
                         if write_frame(stream, &frame).await.is_err() {
-                            return Err(ServeEnd::Disconnected);
+                            return Err(ServeEnd::server("frame_write_refused"));
                         }
                     }
                 }
@@ -762,7 +764,9 @@ where
         // A pending respawn fences the dead Character's appearance only until its
         // placement; the next refresh observes it again.
         Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
-        Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
+        Err(ObservationError::Unavailable) => {
+            return Err(ServeEnd::server("state_projection_unavailable"));
+        }
     }
     *step = "world_clock";
     // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
@@ -771,7 +775,7 @@ where
         .contains(CAPABILITY_WORLD_LIGHT_V1)
     {
         let Some(now) = authority.world_clock_utc_ms() else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         if let Some(reading) = session.world_clock_pacer.due(&session.world_clock, now) {
             let Some((delta_sequence, frame, to)) = world_clock_delta(
@@ -780,13 +784,13 @@ where
                 session.admitted.continuity.world_clock_revision,
                 reading,
             ) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("state_projection_unavailable"));
             };
             session.sequence = delta_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
             session.admitted.continuity.world_clock_revision = to;
             if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_write_refused"));
             }
         }
     }
@@ -804,13 +808,13 @@ where
                 session.admitted.continuity.world_weather_revision,
                 observed,
             ) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("state_projection_unavailable"));
             };
             session.sequence = delta_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
             session.admitted.continuity.world_weather_revision = to;
             if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_write_refused"));
             }
             session.weather_sent = Some(observed);
         }
@@ -875,18 +879,18 @@ where
                 && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
     });
     if !events.is_empty() {
-        let payload =
-            wire::encode_presentation_batch(&events).map_err(|_| ServeEnd::Disconnected)?;
+        let payload = wire::encode_presentation_batch(&events)
+            .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
         let revision = session
             .admitted
             .continuity
             .presentation_revision
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         let sequence = session
             .sequence
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         let frame = encode_state_delta(
             session.generation,
             sequence,
@@ -896,10 +900,10 @@ where
             wire::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
             &payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         session.sequence = sequence;
         session.admitted.continuity.server_sequence = sequence;
         session.admitted.continuity.presentation_revision = revision;
@@ -923,15 +927,16 @@ pub(super) async fn ambient_sound<S: AsyncRead + AsyncWrite + Unpin>(
         emission_ordinal: 1,
         kind: wire::PresentationEventKind::AmbientSound { cue_id },
     };
-    let payload = wire::encode_presentation_batch(&[event]).map_err(|_| ServeEnd::Disconnected)?;
+    let payload = wire::encode_presentation_batch(&[event])
+        .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
     let revision = session
         .ambient_revision
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let frame = encode_state_delta(
         session.generation,
         sequence,
@@ -941,10 +946,10 @@ pub(super) async fn ambient_sound<S: AsyncRead + AsyncWrite + Unpin>(
         1,
         &payload,
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
     write_frame(stream, &frame)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
     session.ambient_revision = revision;
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
@@ -957,15 +962,16 @@ async fn item_effects<S: AsyncRead + AsyncWrite + Unpin>(
     events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
 ) -> Result<(), ServeEnd> {
     use oteryn_protocol_oteryn::presentation as wire;
-    let payload = wire::encode_item_effect_batch(events).map_err(|_| ServeEnd::Disconnected)?;
+    let payload = wire::encode_item_effect_batch(events)
+        .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
     let revision = session
         .item_effects_revision
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let frame = encode_state_delta(
         session.generation,
         sequence,
@@ -975,10 +981,10 @@ async fn item_effects<S: AsyncRead + AsyncWrite + Unpin>(
         1,
         &payload,
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
     write_frame(stream, &frame)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("frame_write_refused"))?;
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
     session.item_effects_revision = revision;

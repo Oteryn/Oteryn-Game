@@ -965,8 +965,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             _=>{invalid_draw=true;minimum},
                         }
                     };
+                    let now = owner.owner_now();
+                    let cooldowns = &states.get(runtime, actor, session).ok_or(DurabilityError::Unavailable)?.cooldowns;
+                    super::native_combat_cast::cast_cooldown_refused(cooldowns, spell, now, command_id);
                     let prepared=match prepare_item_grant(&mut tx,&authority,runtime,states,room,objects,content,owned.clone(),
-                        spell,intent,fence,command,owner.owner_now(),&mut draw).await{
+                        spell,intent,fence,command,now,&mut draw).await{
                         Ok(p)=>p,Err(disposition)=>return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition,vitals:None})),
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
@@ -1082,6 +1085,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let mut attempt=window.install();
             attempt.training.install_into(&mut attempt.paid);
             attempt.player.install_rebind_training(attempt.paid);
+            attempt.player.start_cast_cooldowns(owner.owner_now());
             let receipt=install_owner_batch(&mut runtime,&mut states,attempt.physical,Some(attempt.player),checked);
             if receipt.applied { states.analyser.supplies(attempt.actor, attempt.session, &attempt.request.operations); }
             if receipt.applied && let Some(presentations)=states.presentations.as_mut(){

@@ -4,4 +4,4 @@ transport=quick_loot
 composed=quick_loot
 authority=quick_loot
 [route]
-match routing::quick_loot::route(authority, &session.admitted, command, session.item_view.as_ref()).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }
+match routing::quick_loot::route(authority, &session.admitted, command, session.item_view.as_ref()).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::server("quick_loot_outcome_unavailable")) }

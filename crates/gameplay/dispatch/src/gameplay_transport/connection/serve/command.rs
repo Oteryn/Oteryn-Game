@@ -6,7 +6,7 @@ use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
 
 pub(super) struct CommandOutcome {
     pub(super) second_logout: bool,
-    pub(super) lost_while_logging_out: bool,
+    pub(super) lost_while_logging_out: Option<std::io::ErrorKind>,
     pub(super) npc_relocation: Option<WorldSpatialObservation>,
     pub(super) training_logged_out: bool,
 }
@@ -126,7 +126,7 @@ where
             result,
             CommandOutcome {
                 second_logout: false,
-                lost_while_logging_out: false,
+                lost_while_logging_out: None,
                 npc_relocation: None,
                 training_logged_out: false,
             },
@@ -171,7 +171,7 @@ where
     // LOGOUT-RL-01: a second logout read before the first one's result.
     let second_logout = false;
     // A read that failed while a logout ran: the peer is gone once the result is written.
-    let lost_while_logging_out = false;
+    let lost_while_logging_out = None;
     // CAP-NEG-1: a command type owned by a capability the session did not select is refused
     // like an unregistered one, before any decode or authority call.
     // OPS-SAVE-2: the permit is held while the command runs, not while its result is
@@ -190,7 +190,7 @@ where
     if input_permit.is_none() && session.reconcile_original_bank {
         // No current input grant: do not run money work, and do not falsely terminate an
         // accepted original command whose retained Bank status has not been classified.
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("command_outcome_unavailable"));
     }
     let retained_bank = if input_permit.is_some() && session.reconcile_original_bank {
         let outcome = authority
@@ -204,7 +204,7 @@ where
             )
             .await;
         if outcome.as_ref().is_some_and(|outcome| outcome.unknown) {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("command_outcome_unavailable"));
         }
         session.reconcile_original_bank = false;
         outcome
@@ -233,7 +233,7 @@ where
             .training_activity(session.admitted, command.command_type)
             .await
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("command_outcome_unavailable"));
     }
     let mut outcome = CommandOutcome {
         second_logout,
@@ -304,7 +304,7 @@ where
                 session
                     .commands
                     .buffer_step(command)
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("command_continuity_invalid"))?;
                 // Pacing throttled this input; the buffered original is charged only once.
                 session
                     .integrity
@@ -393,15 +393,15 @@ where
             .quest_callback_unresolved(session.admitted.game_session_id)
             .await
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("command_outcome_unavailable"));
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
     if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("command_outcome_unavailable"));
     }
     if matches!(dispatch, Dispatch::Vip(None)) {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("command_outcome_unavailable"));
     }
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
@@ -450,7 +450,7 @@ where
             &TutorialNotice::StatusText("There is no way.".into()),
         )
         .await
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("command_outcome_unavailable"))?;
     }
     Ok(())
 }
@@ -478,10 +478,10 @@ where
                     )
                     .await
                     else {
-                        return Err(ServeEnd::Disconnected);
+                        return Err(ServeEnd::server("command_outcome_unavailable"));
                     };
                     let Ok(delta) = view.inventory_committed(inventory) else {
-                        return Err(ServeEnd::Disconnected);
+                        return Err(ServeEnd::server("command_outcome_unavailable"));
                     };
                     session.admitted.continuity.item_view = view.continuity();
                     deltas.extend(delta);
@@ -528,7 +528,7 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
                 "event=command_guard_failed guard={guard} command_type={} command_id={}",
                 command.command_type, command.command_id,
             ));
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("command_outcome_unavailable"));
         }
     };
     operator_event(&format!(

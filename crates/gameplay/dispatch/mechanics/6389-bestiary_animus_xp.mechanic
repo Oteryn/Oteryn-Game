@@ -3,5 +3,5 @@ commands=6389
 [route]
 match routing::charm_progression::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("bestiary_animus_xp_outcome_unavailable")),
 }

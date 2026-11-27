@@ -13,6 +13,7 @@ pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     )
     .await
     .map_err(|_| {
+        super::super::super::tcp_tls::FrameFailure::Write(std::io::ErrorKind::TimedOut).record();
         std::io::Error::new(
             std::io::ErrorKind::TimedOut,
             "gameplay frame write timed out",
@@ -80,7 +81,7 @@ where
         })
         .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
     if matches!(dispatch, Dispatch::Depot(_))
@@ -119,7 +120,7 @@ where
         result_sequence = result::next_sequence(session)?;
         let payload = decode_wire_envelope(&result)
             .and_then(|envelope| oteryn_protocol_oteryn::decode_command_result(envelope.payload()))
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
         result = encode_command_result(
             session.generation,
             result_sequence,
@@ -127,7 +128,7 @@ where
             payload.status,
             payload.payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
     }
     session.sequence = result_sequence;
     session.admitted.continuity.server_sequence = session.sequence;
@@ -188,8 +189,8 @@ where
             )
             .await);
         }
-        if outcome.lost_while_logging_out {
-            return Err(ServeEnd::Disconnected);
+        if let Some(kind) = outcome.lost_while_logging_out {
+            return Err(ServeEnd::Transport(TransportEnd::Read(kind)));
         }
     }
     emit(
@@ -253,7 +254,7 @@ where
                 text,
             )
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
         }
         Dispatch::Step(outcome, _) => {
             effects::step(stream, authority, session, outcome).await?;
@@ -269,12 +270,12 @@ where
                 let Some((delta_sequence, frame)) =
                     item_view_delta(session.generation, session.sequence, &delta)
                 else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 };
                 session.sequence = delta_sequence;
                 session.admitted.continuity.server_sequence = session.sequence;
                 if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("frame_write_refused"));
                 }
             }
         }
@@ -284,12 +285,12 @@ where
             let Some((delta_sequence, frame)) =
                 item_view_delta(session.generation, session.sequence, &delta)
             else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             };
             session.sequence = delta_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
             if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_write_refused"));
             }
         }
         Dispatch::Stash(reply) => {
@@ -297,18 +298,18 @@ where
                 .selected_capabilities
                 .contains(oteryn_protocol_oteryn::stash::CAPABILITY_STASH_V1)
             {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             }
             let revision = session
                 .stash_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let sequence = session
                 .sequence
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let payload = oteryn_protocol_oteryn::stash::encode_stash_reply(&reply)
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
             let frame = oteryn_protocol_oteryn::encode_state_delta(
                 session.generation,
                 sequence,
@@ -318,16 +319,16 @@ where
                 1,
                 &payload,
             )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
             session.stash_revision = revision;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             if reply.outcome == oteryn_protocol_oteryn::stash::StashOutcome::Committed {
                 let Some(view) = session.item_view.as_mut() else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 };
                 if item_use_view_refresh::refresh(
                     stream,
@@ -341,7 +342,7 @@ where
                 .await
                 .is_none()
                 {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 }
             }
         }
@@ -351,7 +352,7 @@ where
                 oteryn_protocol_oteryn::container_batch::Reply::Committed(_)
             ) {
                 let Some(view) = session.item_view.as_mut() else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 };
                 if item_use_view_refresh::refresh(
                     stream,
@@ -365,14 +366,14 @@ where
                 .await
                 .is_none()
                 {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 }
             }
         }
         Dispatch::Depot(reply) => {
             if reply.outcome == oteryn_protocol_oteryn::depot::DepotOutcome::Moved {
                 let Some(view) = session.item_view.as_mut() else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 };
                 if item_use_view_refresh::refresh(
                     stream,
@@ -386,7 +387,7 @@ where
                 .await
                 .is_none()
                 {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 }
             }
         }
@@ -410,7 +411,7 @@ where
                 session.inventory_capacity_refresh_at = None;
             }
             let Some(view) = session.item_view.as_mut() else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             };
             if item_use_view_refresh::refresh(
                 stream,
@@ -424,7 +425,7 @@ where
             .await
             .is_none()
             {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             }
         }
         Dispatch::Reply(CommandStatus::Accepted, payload)
@@ -443,7 +444,7 @@ where
                 )
                 .await
                 else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("serve_state_unavailable"));
                 };
                 session.admitted.continuity.item_view = view.continuity();
                 effects::item_move(stream, authority, session, ItemMoveOutcome::Moved, deltas)
@@ -470,11 +471,11 @@ where
             let next = session
                 .market_revision
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let sequence = session
                 .sequence
                 .checked_add(1)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
             let frame = encode_state_delta(
                 session.generation,
                 sequence,
@@ -484,24 +485,24 @@ where
                 1,
                 &payload,
             )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
             session.market_revision = next;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         }
         Dispatch::QuestLog(domain) => {
             let Some((delta_sequence, frame)) =
                 quest_log_delta(session.generation, session.sequence, &domain)
             else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             };
             session.sequence = delta_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
             if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("frame_write_refused"));
             }
         }
         // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks. CHAT-2B: an
@@ -518,13 +519,13 @@ where
                     DELTA_TYPE_CHAT_ROOMS_V1,
                     &encode_chat_rooms(rooms),
                 ) else {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("frame_encode_failed"));
                 };
                 session.sequence = delta_sequence;
                 session.admitted.continuity.server_sequence = session.sequence;
                 session.admitted.continuity.chat_revision = chat_revision;
                 if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("frame_write_refused"));
                 }
             }
             refresh::channel_list(stream, authority, session).await?;
@@ -551,13 +552,13 @@ where
                 session.sequence,
                 state,
             ) else {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             };
             if let Some((delta_sequence, frame)) = change {
                 session.sequence = delta_sequence;
                 session.admitted.continuity.server_sequence = session.sequence;
                 if write_frame(stream, &frame).await.is_err() {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("frame_write_refused"));
                 }
             }
         }
@@ -575,7 +576,7 @@ where
                 .await
                 .is_none()
             {
-                return Err(ServeEnd::Disconnected);
+                return Err(ServeEnd::server("serve_state_unavailable"));
             }
         }
         Dispatch::UseItem(_, None)
@@ -640,7 +641,7 @@ async fn emit_command_relocation<S: AsyncWrite + Unpin, A: FreshAdmissionAuthori
     .await
     .is_none()
     {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     Ok(())
 }

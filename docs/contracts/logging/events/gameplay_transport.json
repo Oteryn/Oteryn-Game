@@ -412,7 +412,7 @@
       "event": "serve_end",
       "level": "info",
       "span": false,
-      "fields": ["reason", "path", "phase", "reason_code", "source", "next_command_id", "server_sequence"],
+      "fields": ["reason", "path", "phase", "reason_code", "source", "next_command_id", "server_sequence", "initiator", "cause", "io_kind"],
       "codes": [],
       "note": "Actor, transport I/O, entry or listener interruption ending a physical gameplay serve. Path and actor sequence fields are included when available."
     },
@@ -445,6 +445,14 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "spell_cooldown_decision",
+      "level": "warn",
+      "span": false,
+      "fields": ["command", "spell", "group", "decision", "spell_remaining_ms", "group_remaining_ms"],
+      "codes": [],
+      "note": "Cooldown verdict for an evaluated cast, with server-owned spell and group keys and the remaining times at the gate."
     },
     {
       "event": "step_rejected_dawnport",

@@ -79,7 +79,7 @@ where
             .await
             {
                 Ok(Some(())) => Ok(None),
-                Ok(None) => Err(ServeEnd::Disconnected),
+                Ok(None) => Err(ServeEnd::server("serve_state_unavailable")),
                 Err(_) => Err(ServeEnd::ControlLost("server_message_timeout")),
             };
         }
@@ -156,14 +156,14 @@ where
             // pass deadline. Timeout follows ordinary control-loss reconciliation.
             match tokio::time::timeout(crate::durability::DB_PASS_DEADLINE, async {
                 if authority.account_closure_check(session.admitted).await {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("account_closed"));
                 }
                 idle::tick(stream, authority, session).await
             })
             .await
             {
                 Ok(result) => result?,
-                Err(_) => return Err(ServeEnd::Transport(TransportEnd::IdleWorkDeadline)),
+                Err(_) => return Err(ServeEnd::server("idle_work_deadline")),
             }
             write_liveness_probe(stream, session).await?;
             // Existing periodic display work shares the liveness cadence. No independent
@@ -177,10 +177,10 @@ where
                     &mut session.sequence,
                 )
                 .await
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
                 super::party_membership::refresh(stream, authority, session)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
                 super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };
@@ -207,14 +207,16 @@ pub(super) async fn write_liveness_probe<S: AsyncWrite + Unpin>(
     let probe_id = match session.liveness.tick() {
         Ok(probe_id) => probe_id,
         Err(LivenessEnd::ControlLost) => return Err(ServeEnd::ControlLost("liveness_missed")),
-        Err(LivenessEnd::ProbesExhausted) => return Err(ServeEnd::Disconnected),
+        Err(LivenessEnd::ProbesExhausted) => {
+            return Err(ServeEnd::server("probe_sequence_exhausted"));
+        }
     };
-    let probe =
-        encode_liveness_probe(session.generation, probe_id).map_err(|_| ServeEnd::Disconnected)?;
+    let probe = encode_liveness_probe(session.generation, probe_id)
+        .map_err(|_| ServeEnd::server("frame_encode_failed"))?;
     // A peer that does not consume a probe within one cadence is no longer in control.
     match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
         Ok(Ok(())) => Ok(()),
-        Ok(Err(_)) => Err(ServeEnd::Disconnected),
+        Ok(Err(error)) => Err(ServeEnd::Transport(TransportEnd::Write(error.kind()))),
         Err(_) => Err(ServeEnd::ControlLost("probe_write_timeout")),
     }
 }

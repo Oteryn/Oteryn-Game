@@ -20,7 +20,7 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     };
     let base = session.admitted.continuity.player_trade_revision;
     if revision < base {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::server("serve_state_unavailable"));
     }
     if revision > base {
         let payload = wire::encode_state_negotiated(
@@ -32,11 +32,11 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
                 .selected_capabilities
                 .contains(wire::CAPABILITY_PLAYER_TRADE_ARTWORK_V1),
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
         let sequence = session
             .sequence
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         let frame = oteryn_protocol_oteryn::encode_state_delta(
             session.generation,
             sequence,
@@ -46,17 +46,20 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
             1,
             &payload,
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::server("frame_write_refused"))?;
         session.sequence = sequence;
         session.admitted.continuity.server_sequence = sequence;
         session.admitted.continuity.player_trade_revision = revision;
     }
     if inventory {
         session.inventory_capacity_refresh_at = None;
-        let view = session.item_view.as_mut().ok_or(ServeEnd::Disconnected)?;
+        let view = session
+            .item_view
+            .as_mut()
+            .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
         let Some(deltas) = authority
             .player_trade_inventory(session.admitted, view, session.container_views.as_mut())
             .await
@@ -67,10 +70,10 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         session.admitted.continuity.item_view = view.continuity();
         for delta in deltas {
             let (sequence, frame) = item_view_delta(session.generation, session.sequence, &delta)
-                .ok_or(ServeEnd::Disconnected)?;
+                .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
             write_frame(stream, &frame)
                 .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
         }

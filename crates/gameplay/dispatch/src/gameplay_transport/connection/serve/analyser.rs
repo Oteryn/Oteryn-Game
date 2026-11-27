@@ -17,7 +17,7 @@ pub(super) async fn snapshot<A: FreshAdmissionAuthority>(
     let discarded = authority
         .analyser_snapshot(*admitted)
         .await
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     // Revision zero is an uninitialized stream, not a valid client snapshot.
     // Recovery retains the cursor and advances only when queued facts were discarded.
     if discarded || admitted.continuity.analyser_revision == 0 {
@@ -25,7 +25,7 @@ pub(super) async fn snapshot<A: FreshAdmissionAuthority>(
             .continuity
             .analyser_revision
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     }
     domains.push(
         crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
@@ -57,11 +57,13 @@ where
         return Ok(());
     };
     let from = session.admitted.continuity.analyser_revision;
-    let to = from.checked_add(1).ok_or(ServeEnd::Disconnected)?;
+    let to = from
+        .checked_add(1)
+        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
     let frame = crate::foundation::encode_state_delta(
         session.generation,
         sequence,
@@ -71,14 +73,14 @@ where
         wire::DELTA_TYPE_ANALYSER_FACTS_V1,
         &payload,
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
     // A failed write may have reached the peer. Never reuse that revision or sequence.
     session.admitted.continuity.analyser_revision = to;
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
     write_frame(stream, &frame)
         .await
-        .map_err(|_| ServeEnd::Disconnected)
+        .map_err(|_| ServeEnd::server("frame_write_refused"))
 }
 
 #[cfg(test)]

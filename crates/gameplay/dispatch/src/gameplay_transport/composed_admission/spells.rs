@@ -102,6 +102,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &mut Option<oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult>,
         >,
     ) -> Option<actor_spell::SpellCastOutcome> {
+        // Keep the time of submission even if admission reads or an earlier
+        // cast's Spell Owner Lane hold delay the new command.
+        let requested_at = self.owner_now();
         // Convert once before all ordinary, native combat and world-item consumers.
         let mut intent = intent;
         if let actor_spell::SpellTarget::Position(position) = &mut intent.target {
@@ -246,7 +249,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor_spell::NativeCastDispatch::NotApplicable => (),
         }
         match self
-            .cast_native_combat(actor, game_session_id, command_id, &intent, &access)
+            .cast_native_combat(
+                actor,
+                game_session_id,
+                command_id,
+                &intent,
+                &access,
+                requested_at,
+            )
             .await
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => {

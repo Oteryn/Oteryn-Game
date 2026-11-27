@@ -127,7 +127,7 @@ where
             let mut probe_failure = None;
             let mut input_after_probe = false;
             let reply = loop {
-                let connected = !outcome.lost_while_logging_out && probe_failure.is_none();
+                let connected = outcome.lost_while_logging_out.is_none() && probe_failure.is_none();
                 let reading =
                     connected && session.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
                 let next = {
@@ -177,7 +177,9 @@ where
                                 .push_back((frame, false, tokio::time::Instant::now()));
                         }
                     }
-                    LogoutEvent::Frame(Err(_)) => outcome.lost_while_logging_out = true,
+                    LogoutEvent::Frame(Err(error)) => {
+                        outcome.lost_while_logging_out = Some(error.kind())
+                    }
                 }
             };
             if !matches!(reply, LogoutReply::Result(LogoutResult::Accepted))
@@ -190,7 +192,7 @@ where
                 LogoutReply::Result(result) => Dispatch::Logout(result),
                 // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
                 LogoutReply::Unknown => {
-                    return Err(ServeEnd::Disconnected);
+                    return Err(ServeEnd::server("command_outcome_unavailable"));
                 }
             }
         },

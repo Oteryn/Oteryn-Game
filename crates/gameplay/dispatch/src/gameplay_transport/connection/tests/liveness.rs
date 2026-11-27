@@ -41,7 +41,8 @@ fn command_result_backpressure_does_not_hold_the_connection_forever() -> Result<
                         tutorial_notices: Default::default(),
                     };
                     let (mut server, mut client) = tokio::io::duplex(1);
-                    let serving = serve_admitted(&mut server, positioned()?, &authority, IDLE_LIVENESS);
+                    let serving =
+                        serve_admitted(&mut server, positioned()?, &authority, IDLE_LIVENESS);
                     let reading = async {
                         loop {
                             let frame =
@@ -73,17 +74,51 @@ fn command_result_backpressure_does_not_hold_the_connection_forever() -> Result<
                     );
                     Ok(())
                 })
-                    .map_err(|e| e.to_string());
+                .map_err(|e| e.to_string());
             });
             checked?;
             assert!(
-                lines.iter().any(|line| line.contains("event=serve_end reason=io_deadline path=write")),
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=serve_end reason=io_deadline path=write")),
                 "{lines:?}"
             );
             Ok::<_, String>(())
         })?
         .join()
         .map_err(|_| "backpressure test thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn admitted_peer_eof_is_logged_at_the_read_boundary() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                result = run(async {
+                    let authority = StepAuthority {
+                        steps: RefCell::new(Vec::new()),
+                        tutorial_notices: Default::default(),
+                    };
+                    let (end, _) = drive_session(&authority, positioned()?, &[]).await?;
+                    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                    Ok(())
+                })
+                .map_err(|error| error.to_string());
+            });
+            result?;
+            assert!(
+                lines.iter().any(|line| line.contains(
+                    "event=serve_end reason=peer_eof path=read initiator=peer io_kind=UnexpectedEof"
+                )),
+                "{lines:?}"
+            );
+            Ok::<_, String>(())
+        })?
+        .join()
+        .map_err(|_| "peer close test thread panicked")?
         .map_err(Into::into)
 }
 
@@ -118,8 +153,7 @@ fn refused() -> Result<AdmittedSession, Box<dyn Error>> {
 }
 
 #[test]
-fn a_silent_refused_session_with_an_actor_closes_after_the_bound() -> Result<(), Box<dyn Error>>
-{
+fn a_silent_refused_session_with_an_actor_closes_after_the_bound() -> Result<(), Box<dyn Error>> {
     run(async {
         let authority = StepAuthority {
             steps: RefCell::new(Vec::new()),
@@ -149,8 +183,7 @@ fn a_silent_refused_session_with_an_actor_closes_after_the_bound() -> Result<(),
 }
 
 #[test]
-fn a_frame_before_the_bound_closes_a_refused_session_with_an_error()
--> Result<(), Box<dyn Error>> {
+fn a_frame_before_the_bound_closes_a_refused_session_with_an_error() -> Result<(), Box<dyn Error>> {
     run(async {
         let authority = StepAuthority {
             steps: RefCell::new(Vec::new()),
@@ -267,9 +300,10 @@ fn flooding_stale_acks_cannot_starve_the_cadence() -> Result<(), Box<dyn Error>>
         let flooder = std::thread::spawn(move || -> std::io::Result<()> {
             let mut socket = std::net::TcpStream::connect(address)?;
             let mut seen = Vec::new();
-            let probe = framed(&encode_liveness_probe(ADMITTED_GENERATION, 1).map_err(
-                |error| std::io::Error::new(std::io::ErrorKind::InvalidData, error),
-            )?);
+            let probe = framed(
+                &encode_liveness_probe(ADMITTED_GENERATION, 1)
+                    .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?,
+            );
             let mut chunk = [0_u8; 4096];
             while !seen
                 .windows(probe.len())
@@ -317,10 +351,7 @@ fn ack_of_an_unsent_probe_closes_the_admitted_session() -> Result<(), Box<dyn Er
         assert_eq!(frames, expected);
         assert!(matches!(
             end,
-            ConnectionEnd::AdmittedThenClosed(
-                _,
-                FoundationProtocolError::InvalidWireIdentifier
-            )
+            ConnectionEnd::AdmittedThenClosed(_, FoundationProtocolError::InvalidWireIdentifier)
         ));
         Ok(())
     })

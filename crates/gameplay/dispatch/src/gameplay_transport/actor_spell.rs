@@ -1781,6 +1781,9 @@ pub fn cast_in_channel(
     let Some(state) = states.get(runtime, actor, game_session_id) else {
         return SpellCastOutcome::rejected();
     };
+    if let Some((spell, _)) = book.source_indexed(intent.spell) {
+        native_combat_cast::cast_cooldown_refused(&state.cooldowns, spell, now, command_id);
+    }
     let placement = actor.placement_identity();
     let occurrence_bytes: [u8; 16] = {
         let digest = Sha256::new()

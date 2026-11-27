@@ -6,5 +6,5 @@ authority=house_move_out
 [route]
 match routing::house_move_out::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
+    None => return Err(ServeEnd::server("house_move_out_outcome_unavailable")),
 }

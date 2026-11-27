@@ -163,6 +163,46 @@ impl PlayerBatchPreflight {
             .install_rebind_staged_training(qualified_paid);
     }
 
+    /// Start the newly armed timers when the paid owner successor becomes visible.
+    /// The prepared anchor still identifies the immutable durable attempt. Unrelated
+    /// deadlines, removals and reductions retain their original semantic times.
+    pub(super) fn start_cast_cooldowns(
+        &mut self,
+        published: oteryn_simulation_determinism::SemanticTimeMicros,
+    ) {
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        let Some(prepared) = self.batch.now_us else {
+            return;
+        };
+        let delay = published.get().saturating_sub(prepared.get());
+        if delay == 0 {
+            return;
+        }
+        let caster = self.batch.caster;
+        let session = self.batch.command.game_session_id();
+        if let Some(replacement) = self
+            .replacements
+            .iter_mut()
+            .find(|value| value.actor == caster && value.session == session)
+        {
+            let before = &replacement.before.cooldowns;
+            let after = &mut replacement.next.cooldowns;
+            for (old, new) in [
+                (&before.spells, &mut after.spells),
+                (&before.groups, &mut after.groups),
+            ] {
+                for (key, deadline) in new {
+                    if *deadline > prepared
+                        && old.get(key).is_none_or(|previous| *deadline > *previous)
+                    {
+                        *deadline =
+                            SemanticTimeMicros::from_micros(deadline.get().saturating_add(delay));
+                    }
+                }
+            }
+        }
+    }
+
     fn caster_replacement(&self) -> Option<&Replacement> {
         self.replacements.iter().find(|value| {
             value.actor == self.batch.caster

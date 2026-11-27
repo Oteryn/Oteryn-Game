@@ -30,7 +30,9 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
             domain_id: oteryn_protocol_oteryn::channel_list::STATE_DOMAIN_CHANNEL_LIST,
             revision: 1,
             snapshot_type: 1,
-            payload: authority.channel_list().ok_or(ServeEnd::Disconnected)?,
+            payload: authority
+                .channel_list()
+                .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?,
         });
     }
     // USE-WIRE-V1 (#162 5868482467): for a session served domain 2 (a fixture World session,
@@ -48,12 +50,12 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         // Overlay state for a session with 18 has no domain 17 form: fail closed rather than
         // send domain 2 or drop the state.
         (Some(_), _) if !overlay_served => {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         }
         // Absence qualifies the initial empty domain, not a reset of an overlay revision already
         // delivered on this session: refuse an unavailable owner. A session with 18 never holds
         // a revision above 0.
-        (None, 1..) => return Err(ServeEnd::Disconnected),
+        (None, 1..) => return Err(ServeEnd::server("state_projection_unavailable")),
         _ => {}
     }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
@@ -82,7 +84,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
                 authority
                     .observe_achievement_notice_facts(*admitted)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?,
+                    .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?,
             )
         } else {
             None
@@ -108,7 +110,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         // door; publish no invented placement, while allowing the client to distinguish empty
         // from missing.
         let Ok(bytes) = encode_world_object_overlay_snapshot(overlay.as_slice()) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_encode_failed"));
         };
         overlay_payload = bytes;
         domains.push(OwnedDomain {
@@ -120,7 +122,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     }
     if let Some((vitals_revision, value)) = &vitals {
         let Ok(bytes) = encode_actor_vitals(value) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_encode_failed"));
         };
         vitals_payload = bytes;
         domains.push(OwnedDomain {
@@ -143,7 +145,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
                 rows: Vec::new(),
             },
         )
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
         domains.push(OwnedDomain {
             domain_id: oteryn_protocol_oteryn::market::STATE_DOMAIN_MARKET,
             revision: 1,
@@ -159,7 +161,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         let payload = authority
             .cyclopedia_tracker_snapshot(*admitted)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
         domains.push(OwnedDomain {
             domain_id: oteryn_protocol_oteryn::cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
             revision: 1,
@@ -262,7 +264,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         else {
             return Err(super::setup::failed(
                 "event=join_prepare_failed phase=inventory",
-                ServeEnd::Disconnected,
+                ServeEnd::server("state_projection_unavailable"),
             ));
         };
         let reopen = match view.carried_open_corpse() {
@@ -272,7 +274,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         let snapshot = view.snapshot(inventory, reopen);
         admitted.continuity.item_view = view.continuity();
         let Ok(snapshot) = snapshot else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         item_snapshot = snapshot;
         for domain in item_snapshot {
@@ -300,7 +302,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         else {
             return Err(super::setup::failed(
                 "event=join_prepare_failed phase=visibility",
-                ServeEnd::Disconnected,
+                ServeEnd::server("state_projection_unavailable"),
             ));
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
@@ -322,7 +324,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         else {
             return Err(super::setup::failed(
                 "event=join_prepare_failed phase=appearances",
-                ServeEnd::Disconnected,
+                ServeEnd::server("state_projection_unavailable"),
             ));
         };
         if let Some(item_view) = &item_view {
@@ -382,7 +384,7 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
         let snapshot = view.views_snapshot();
         admitted.continuity.item_view = view.continuity();
         let Ok(snapshot) = snapshot else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         views_snapshot = snapshot;
         domains.push(OwnedDomain {
@@ -435,7 +437,7 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
                 .selected_capabilities
                 .contains(oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1),
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         quest_log_snapshot = domain;
         domains.push(OwnedDomain {
@@ -456,14 +458,14 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
     if chat_active {
         let rooms = authority.chat_admit(actor, admitted.game_session_id).await;
         let Some(revision) = admitted.continuity.chat_revision.checked_add(1) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("sequence_exhausted"));
         };
         admitted.continuity.chat_revision = revision;
         let Some((snapshot_type, payload)) =
             crate::gameplay_transport::guild_chat::wire::snapshot(authority, *admitted, rooms)
                 .await
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         chat_snapshot = payload;
         domains.push(OwnedDomain {
@@ -487,13 +489,13 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             admitted.continuity.npc.conversation_revision.checked_add(1),
             admitted.continuity.npc.window_revision.checked_add(1),
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         let (Ok(conversation), Ok(window)) = (
             encode_npc_conversation(&NpcConversation::default()),
             encode_npc_trade_window(&NpcTradeWindow::default()),
         ) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_encode_failed"));
         };
         admitted.continuity.npc = NpcContinuity {
             conversation_revision,
@@ -528,12 +530,12 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
         let state = authority
             .observe_expert_modes(actor, admitted.game_session_id)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
         let combat = &mut admitted.continuity.combat;
         combat.expert_revision = combat
             .expert_revision
             .checked_add(1)
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| ServeEnd::server("sequence_exhausted"))?;
         combat.expert_sent = Some(state);
         domains.push(OwnedDomain {
             domain_id: oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES,
@@ -553,10 +555,10 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             .observe_combat_state(actor, admitted.game_session_id)
             .await
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         let Some((revision, payload)) = admitted.continuity.combat.snapshot(&state) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         Some((revision, payload, state))
     } else {
@@ -612,7 +614,7 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
         let observed = authority.observe_world_map(actor, &mut view, items).await;
         admitted.continuity.item_view = items.continuity();
         let Some(Ok(Some(MapUpdate::Snapshot(snapshot)))) = observed else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         admitted.continuity.world_map_revision = view.revision();
         map_snapshot = snapshot;
@@ -654,10 +656,10 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
             .world_clock_utc_ms()
             .and_then(|now| Some((now, world_clock.reading(now)?)))
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("state_projection_unavailable"));
         };
         let Ok(payload) = encode_world_clock(reading) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_encode_failed"));
         };
         world_clock_pacer.reset(reading, now);
         clock_snapshot = payload;
@@ -676,7 +678,7 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
     if selected_capabilities.contains(CAPABILITY_WORLD_WEATHER_V1) {
         let observed = observe_weather(authority, baseline.actor_position);
         let Ok(payload) = encode_world_weather(observed) else {
-            return Err(ServeEnd::Disconnected);
+            return Err(ServeEnd::server("frame_encode_failed"));
         };
         weather_sent = Some(observed);
         weather_snapshot = payload;

@@ -132,7 +132,7 @@ pub(super) async fn route<A: FreshAdmissionAuthority>(
         }
     })
     .await
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
     Ok(reply)
 }
 
@@ -242,7 +242,7 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
         Some(outcome)
     })
     .await
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|_| ServeEnd::server("serve_state_unavailable"))?;
     drop(input);
     if let Some(outcome) = result {
         effects::step(stream, authority, session, outcome).await?;
@@ -266,7 +266,7 @@ async fn no_way<S: AsyncWrite + Unpin>(
         ),
     )
     .await
-    .ok_or(ServeEnd::Disconnected)
+    .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))
 }
 
 #[cfg(test)]
