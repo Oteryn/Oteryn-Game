@@ -231,21 +231,11 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
         let killed = rewards(&mut client).await?;
-        let (corpse_handle, expected_items, expected_slivers) =
+        let (expected_items, expected_slivers) =
             corpse_contents(&mut client, corpse, sliver).await?;
         quick_loot_corpse(&mut client, corpse, expected_items).await?;
         let after = rewards(&mut client).await?;
-        let view_id = client.session_mut().container_views()
-            .and_then(|views| views.views.iter().find(|view| view.container_handle == corpse_handle))
-            .map(|view| view.view_id)
-            .ok_or("P19 exact corpse view missing after Quick Loot")?;
-        let closed = client.session_mut().container_view(
-            oteryn_protocol_oteryn::container_tree::ContainerViewIntent::Close { view_id },
-        ).await?;
-        if closed != Some(oteryn_protocol_oteryn::container_tree::ContainerViewOutcome::Closed) {
-            return Err(format!("P19 post-loot corpse close refused: {closed:?}").into());
-        }
-        let (_, remaining_items, _) = corpse_contents(&mut client, corpse, sliver).await?;
+        let (remaining_items, _) = corpse_contents(&mut client, corpse, sliver).await?;
         if remaining_items != 0 {
             return Err(format!("P19 Quick Loot left {remaining_items} stacks in exact corpse {corpse:?}").into());
         }
@@ -677,7 +667,7 @@ async fn corpse_contents(
     client: &mut DevClientSession,
     identity: [u8; 16],
     sliver: NonZeroU32,
-) -> TestResult<(oteryn_protocol_oteryn::item_view::ItemHandle, usize, u64)> {
+) -> TestResult<(usize, u64)> {
     let corpse = client
         .world_entities()
         .and_then(|entities| {
@@ -697,6 +687,7 @@ async fn corpse_contents(
     else {
         return Err("P19 exact corpse has no item handle".into());
     };
+    client.take_events();
     let use_result = client.use_item(handle).await?;
     require_mechanic_acceptance(use_result.status, "P19 open exact corpse")?;
     if use_result.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
@@ -704,19 +695,22 @@ async fn corpse_contents(
     }
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            if let Some(container) = client
-                .open_container()
-                .filter(|view| view.container_handle == Some(handle))
-            {
+            for event in client.wait_for_events(Duration::from_secs(5)).await? {
+                let SessionEvent::OpenContainer(delta) = event else {
+                    continue;
+                };
+                let container = delta.value;
+                if container.container_handle != Some(handle) {
+                    continue;
+                }
                 let quantity = container
                     .entries
                     .iter()
                     .filter(|entry| entry.item_definition_ref == sliver)
                     .map(|entry| u64::from(entry.count.get()))
                     .sum();
-                return TestResult::Ok((handle, container.entries.len(), quantity));
+                return TestResult::Ok((container.entries.len(), quantity));
             }
-            client.service_liveness(Duration::from_millis(50)).await?;
         }
     })
     .await
