@@ -20,16 +20,16 @@ pub(super) fn encode(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: &mut Dispatch,
 ) -> Result<Vec<u8>, ServeEnd> {
+    let sequence = next_sequence(session)?;
     if matches!(dispatch, Dispatch::Unavailable) {
         return encode_command_error_result(
             session.generation,
-            session.sequence,
+            sequence,
             command.command_id,
             FoundationProtocolError::CommandRefused,
         )
         .map_err(|_| ServeEnd::server("frame_encode_failed"));
     }
-    let sequence = next_sequence(session)?;
     session.integrity.observe(dispatch);
     inventory_capacity::reread_after_command(session, command.command_type, dispatch);
     let (status, result_payload) = match dispatch {

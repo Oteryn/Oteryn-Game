@@ -96,7 +96,8 @@ where
     }
     let mut result_sequence = result::next_sequence(session)?;
     let mut relocation_seq = None;
-    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+    if !matches!(dispatch, Dispatch::Unavailable)
+        && command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
         && outcome.npc_relocation.is_some()
         && authority
             .current_activity_connection(session.admitted)
