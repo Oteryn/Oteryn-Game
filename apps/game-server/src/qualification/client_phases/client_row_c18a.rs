@@ -24,7 +24,7 @@ const CAST_TILE: TilePos = TilePos {
 const RAT_TILE: TilePos = TilePos {
     x: C18A_RAT_POSITION.x as u16,
     y: C18A_RAT_POSITION.y as u16,
-    floor: C18A_RAT_POSITION.floor as i8,
+    floor: -(C18A_RAT_POSITION.floor as i8),
 };
 const WORDS: &str = "exevo infir flam hur";
 

@@ -27,7 +27,7 @@ pub(crate) const C18A_RAT_FIXTURE: &str = "qualification:c18a/fixed-rat";
 pub(crate) const C18A_RAT_POSITION: MovementLocalPosition = MovementLocalPosition {
     x: 32491,
     y: 32169,
-    floor: -7,
+    floor: 7,
 };
 const C18A_RAT_KEY: &str = "oteryn:creature.rat";
 
