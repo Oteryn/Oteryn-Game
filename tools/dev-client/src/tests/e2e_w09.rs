@@ -21,6 +21,15 @@ fn e2e_w09_replays_aid_clearance() -> Result<(), Box<dyn Error>> {
     let root = std::path::PathBuf::from(
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing live capture directory")?,
     );
+    let receipt = std::fs::read_to_string(root.join("w09-aid-receipt.txt"))?;
+    let times = receipt
+        .split_whitespace()
+        .map(str::parse::<u64>)
+        .collect::<Result<Vec<_>, _>>()?;
+    let [commit_us, support_deadline_us, publication_ms] = times.as_slice() else {
+        return Err("malformed Aid receipt times".into());
+    };
+    let support_active = support_deadline_us > commit_us;
     let inbound = std::fs::read(root.join("w09-aid-server.bin"))?;
     let outbound = std::fs::read(root.join("w09-aid-client.bin"))?;
     let session = std::fs::read(root.join("w09-aid-session.bin"))?;
@@ -65,14 +74,17 @@ fn e2e_w09_replays_aid_clearance() -> Result<(), Box<dyn Error>> {
                     assert!(result_sequence.is_some_and(|seq| frame.server_sequence() > seq));
                     let update = presentation::decode_actor_cooldowns(delta.payload)
                         .map_err(|error| format!("{error:?}"))?;
-                    assert_eq!(update.entries.len(), 4);
+                    assert_eq!(update.server_now_ms, *publication_ms);
+                    assert!(*publication_ms >= commit_us / 1_000);
+                    assert_eq!(update.entries.len(), 3 + usize::from(support_active));
                     assert!(update.entries.iter().all(|entry| entry.expires_at_ms == 0));
-                    assert!(
+                    assert_eq!(
                         update
                             .entries
                             .iter()
                             .any(|entry| entry.kind == presentation::ActorCooldownKind::Group
-                                && entry.id == 3)
+                                && entry.id == 3),
+                        support_active
                     );
                     assert!(!clear);
                     clear = true;

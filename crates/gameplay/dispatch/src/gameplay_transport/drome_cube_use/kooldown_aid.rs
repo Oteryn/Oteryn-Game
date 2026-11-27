@@ -372,6 +372,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let (_, _, state) = states.actors.get_mut(actor_index).ok_or(())?;
         let committed_at = self.owner_now();
+        operator_event(&format!(
+            "event=kooldown_aid_receipt session={} command={} commit_us={} support_deadline_us={}",
+            format_connection_trace(*command.game_session_id.as_bytes()),
+            command.command_id,
+            committed_at.get(),
+            state
+                .cooldowns
+                .group_ready_at("support")
+                .map_or(0, |deadline| deadline.get()),
+        ));
         let mut clearance = crate::gameplay_transport::spell_catalog::active_cooldowns(
             self.spells,
             &state.cooldowns,

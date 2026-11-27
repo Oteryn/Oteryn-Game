@@ -703,30 +703,50 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let (reset, capture) = oteryn_dev_client::capture_qualification_exchange(async {
     let used_at = tokio::time::Instant::now();
+    let aid_command = client.next_command_id();
+    let aid_session = client.join_snapshot().game_session_id;
     let aid_sequence = use_item(&mut client, aid, committed).await?;
+    let trace = std::fs::read_to_string(required("NODE_BOOT_CAST_EVIDENCE_LOG")?)?;
+    let receipt = format!("session={} command={aid_command} ", uuid_text(aid_session.as_bytes()));
+    let mut receipts = trace.lines().filter(|line| line.contains("event=kooldown_aid_receipt ")).filter_map(|line| line.split_once(&receipt).map(|(_, fields)| fields));
+    let fields = receipts.next().ok_or("W09 committed Aid receipt trace missing")?;
+    if receipts.next().is_some() {
+        return Err("W09 duplicate Aid receipt trace".into());
+    }
+    let (commit, deadline) = fields.split_once(" support_deadline_us=")
+        .ok_or("W09 malformed Aid receipt trace")?;
+    let commit_us: u64 = commit.strip_prefix("commit_us=").ok_or("W09 missing commit time")?.parse()?;
+    let support_deadline_us: u64 = deadline.parse()?;
+    if support_deadline_us.div_ceil(1_000) != support.expires_at_ms {
+        return Err("W09 Aid receipt Support deadline differs from cast frame".into());
+    }
+    let support_active = support_deadline_us > commit_us;
     let committed_at = tokio::time::Instant::now();
     let reset_until = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut saw_reset = false;
-    let mut saw_clear = false;
-    while !saw_reset || !saw_clear {
+    let mut publication_ms = None;
+    while !saw_reset || publication_ms.is_none() {
         for event in client.take_events() {
             match event {
                 SessionEvent::ActorCooldowns(frame) if frame.server_sequence > aid_sequence => {
                     let expected_clear = reset_prestate
                         .iter()
+                        .filter(|entry| **entry != support || support_active)
                         .map(|entry| ActorCooldown {
                             expires_at_ms: 0,
                             ..*entry
                         })
                         .collect::<Vec<_>>();
-                    if reset_prestate
-                        .iter()
-                        .any(|entry| entry.expires_at_ms <= frame.value.server_now_ms)
+                    if frame.value.server_now_ms < commit_us / 1_000
+                        || reset_prestate.iter().any(|entry| *entry != support && entry.expires_at_ms <= commit_us.div_ceil(1_000))
                         || frame.value.entries != expected_clear
                     {
                         return Err(format!("W09 Aid clearance mismatch sequence={} expected={expected_clear:?} frame={:?}", frame.server_sequence, frame.value).into());
                     }
-                    saw_clear = true;
+                    if publication_ms.replace(frame.value.server_now_ms).is_some() {
+                        return Err("W09 duplicate Aid clearance frame".into());
+                    }
+                    evidence(&format!("W09_AID_RECEIPT command={aid_command} result_sequence={aid_sequence} clearance_sequence={} commit_us={commit_us} support_deadline_us={support_deadline_us} publication_ms={}", frame.server_sequence, frame.value.server_now_ms));
                 }
                 SessionEvent::TutorialNotice(delta)
                     if delta.server_sequence > aid_sequence && matches!(&delta.value,
@@ -737,7 +757,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 _ => {}
             }
         }
-        if saw_reset && saw_clear {
+        if saw_reset && publication_ms.is_some() {
             break;
         }
         if tokio::time::Instant::now() >= reset_until {
@@ -749,11 +769,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-        Ok::<_, Box<dyn std::error::Error>>((used_at, committed_at))
+        Ok::<_, Box<dyn std::error::Error>>((used_at, committed_at, commit_us, support_deadline_us, publication_ms.ok_or("W09 missing publication time")?))
     }).await;
-    let (used_at, committed_at) = reset?;
+    let (used_at, committed_at, commit_us, support_deadline_us, publication_ms) = reset?;
     if let Some(dir) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let dir = std::path::PathBuf::from(dir);
+        std::fs::write(dir.join("w09-aid-receipt.txt"), format!("{commit_us} {support_deadline_us} {publication_ms}"))?;
         std::fs::write(dir.join("w09-aid-server.bin"), capture.inbound)?;
         std::fs::write(dir.join("w09-aid-client.bin"), capture.outbound)?;
         std::fs::write(dir.join("w09-aid-session.bin"), client.join_snapshot().game_session_id.as_bytes())?;

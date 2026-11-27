@@ -3,6 +3,14 @@
   "owner": "crates",
   "events": [
     {
+      "event": "kooldown_aid_receipt",
+      "level": "warn",
+      "span": false,
+      "fields": ["session", "command", "commit_us", "support_deadline_us"],
+      "codes": [],
+      "note": "Aid reset decision in the owner clock. A zero Support deadline means no stored group cooldown."
+    },
+    {
       "event": "actor_frame_sent",
       "level": "warn",
       "span": false,
