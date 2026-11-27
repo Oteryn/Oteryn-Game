@@ -23,6 +23,8 @@ enum Case {
     Navigation,
     Paging,
     Autowalk,
+    BusyMove,
+    TimedOutMove,
 }
 
 #[test]
@@ -50,17 +52,37 @@ fn browse_field_postgres_distant_open_walks_and_retries_with_floor_and_path_refu
     run_case(Case::Autowalk)
 }
 
+#[test]
+fn item_move_postgres_busy_holder_retries_and_commits_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case_with_admin(Case::BusyMove, admin)
+}
+
+#[test]
+fn item_move_postgres_holder_timeout_replays_refusal_and_next_move_succeeds() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case_with_admin(Case::TimedOutMove, admin)
+}
+
 fn run_case(case: Case) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         eprintln!("BROWSE_FIELD POSTGRES_CASE_SKIPPED: admin URL is absent");
         return Ok(());
-    }
+    };
+    run_case_with_admin(case, admin)
+}
+
+fn run_case_with_admin(case: Case, admin: String) -> TestResult {
     // The real connection/composed owner has the same stack requirement as
     // the neighbouring item-loop and container-view dispatch cases.
     std::thread::Builder::new()
         .name(format!("browse-field-{case:?}"))
         .stack_size(256 << 20)
-        .spawn(move || fixture::scenario(case).map_err(|error| error.to_string()))?
+        .spawn(move || fixture::scenario(case, admin).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "browse-field PostgreSQL case panicked")??;
     eprintln!("BROWSE_FIELD POSTGRES_CASE_COMPLETED {case:?}");

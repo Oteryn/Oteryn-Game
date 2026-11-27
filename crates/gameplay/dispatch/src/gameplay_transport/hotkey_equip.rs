@@ -545,6 +545,7 @@ fn finish(
             Some(ItemMoveOutcome::Moved)
         }
         EquipmentMoveResult::Refused(refusal) => Some(super::item_move::equipment_outcome(refusal)),
+        EquipmentMoveResult::HolderUnavailable => Some(ItemMoveOutcome::Rejected),
         EquipmentMoveResult::Unknown => None,
     }
 }

@@ -21,8 +21,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
 ) -> Option<Dispatch> {
     Some({
         // ITEM-MOVE-1 (WIRE-0 §5): replay first, then an entry of the open corpse into the
-        // main backpack. An unknown outcome ends the connection before the CommandId is
-        // sequenced, so the resent command is answered by replay.
+        // main backpack. In-flight uncertainty remains pending for receipt reconciliation.
+        // A refused checkout has no effect and gives the CommandId a terminal refusal.
         match item_view.as_mut() {
             Some(view) => {
                 let selection = ItemMoveSelection {
@@ -99,6 +99,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     ItemMoveStep::Refused(outcome, detail) => {
                         Dispatch::ItemMove(outcome, Vec::new(), Some(detail))
                     }
+                    ItemMoveStep::HolderUnavailable => Dispatch::CommandRefused,
                     ItemMoveStep::Disconnect => {
                         return None;
                     }

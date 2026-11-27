@@ -27,8 +27,16 @@ pub(super) async fn query(
     {
         return Some(Err(()));
     }
-    match owner.root.query_raid_schedule(owner.channel_id).await {
+    match super::AdmissionRetryBudget::for_command(owner.root)
+        .retry_logged_holder(
+            "raid_schedule",
+            async || owner.root.query_raid_schedule(owner.channel_id).await,
+            super::root_holder_busy,
+        )
+        .await
+    {
         Ok(state) => encode_raid_schedule_state(&state).ok().map(Ok),
+        Err(crate::durability::DurabilityError::RootUnavailable) => Some(Err(())),
         Err(_) => None,
     }
 }

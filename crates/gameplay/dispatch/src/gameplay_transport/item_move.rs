@@ -85,6 +85,8 @@ pub enum LoopMoveResult {
     TooFar,
     /// Whether it committed is unknown: the replay decides on the resend.
     Unknown,
+    /// Checkout failed before a durable pass began.
+    HolderUnavailable,
 }
 
 /// The §4 result of one refused loop move. The wire has no weight result: an overweight or
@@ -119,6 +121,8 @@ pub enum EquipmentMoveResult {
     Refused(EquipmentMoveRefusal),
     /// Whether it committed is unknown: the replay decides on the resend.
     Unknown,
+    /// Checkout failed before a durable pass began.
+    HolderUnavailable,
 }
 
 /// The §4 result of one refused equipment move.
@@ -181,6 +185,19 @@ pub(super) async fn observe_inventory<A: FreshAdmissionAuthority>(
     None
 }
 
+pub(super) fn transfer_holder_busy(error: &ItemTransferError) -> bool {
+    matches!(error, ItemTransferError::Unavailable(error) if super::root_holder_busy(error))
+}
+
+/// Equipment/loop receipt reconciliation after the transfer receipt was absent.
+pub enum MoveReceipt {
+    Absent,
+    Moved,
+    Conflicting,
+    HolderUnavailable,
+    Unknown,
+}
+
 /// What the connection does with one command 9.
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum ItemMoveStep {
@@ -192,6 +209,8 @@ pub(super) enum ItemMoveStep {
     /// The outcome is unknown or a committed view cannot be shown: end the connection without
     /// sequencing the CommandId.
     Disconnect,
+    /// The owner could not check out a holder before starting this move.
+    HolderUnavailable,
 }
 
 /// The WIRE-0 §5 result of one corpse-entry TRANSFER.
@@ -351,24 +370,20 @@ async fn item_move_inner<A: FreshAdmissionAuthority>(
     match authority.committed_item_move(actor, command).await {
         Ok(Some(_)) => return moved(authority, actor, command, view).await,
         Ok(None) => {}
-        Err(ItemTransferError::Unavailable(_)) => return ItemMoveStep::Disconnect,
+        Err(error) if transfer_holder_busy(&error) => return ItemMoveStep::HolderUnavailable,
+        Err(ItemTransferError::Unavailable(_)) => {
+            return ItemMoveStep::Disconnect;
+        }
         Err(_) => return ItemMoveStep::Result(ItemMoveOutcome::Rejected, Vec::new()),
     }
-    match authority.committed_equipment_move(actor, command).await {
-        Some(EquipmentMoveReplay::Moved) => return moved(authority, actor, command, view).await,
-        Some(EquipmentMoveReplay::Absent) => {}
-        Some(EquipmentMoveReplay::Conflicting) => {
+    match authority.move_receipt(actor, command).await {
+        MoveReceipt::Moved => return moved(authority, actor, command, view).await,
+        MoveReceipt::Absent => {}
+        MoveReceipt::Conflicting => {
             return ItemMoveStep::Result(ItemMoveOutcome::Rejected, Vec::new());
         }
-        None => return ItemMoveStep::Disconnect,
-    }
-    match authority.committed_loop_move(actor, command).await {
-        Some(LoopMoveReplay::Moved) => return moved(authority, actor, command, view).await,
-        Some(LoopMoveReplay::Absent) => {}
-        Some(LoopMoveReplay::Conflicting) => {
-            return ItemMoveStep::Result(ItemMoveOutcome::Rejected, Vec::new());
-        }
-        None => return ItemMoveStep::Disconnect,
+        MoveReceipt::HolderUnavailable => return ItemMoveStep::HolderUnavailable,
+        MoveReceipt::Unknown => return ItemMoveStep::Disconnect,
     }
     let Some(source) = view.resolve(intent.source) else {
         return ItemMoveStep::Result(ItemMoveOutcome::Stale, Vec::new());
@@ -458,6 +473,7 @@ async fn item_move_inner<A: FreshAdmissionAuthority>(
     };
     match authority.move_equipment(actor, command, request).await {
         EquipmentMoveResult::Committed => moved(authority, actor, command, view).await,
+        EquipmentMoveResult::HolderUnavailable => ItemMoveStep::HolderUnavailable,
         EquipmentMoveResult::Unknown => ItemMoveStep::Disconnect,
         EquipmentMoveResult::Refused(refusal) => {
             ItemMoveStep::Result(admitted(equipment_outcome(refusal), selection), Vec::new())
@@ -528,6 +544,7 @@ async fn loop_move<A: FreshAdmissionAuthority>(
     {
         LoopMoveResult::Committed => moved(authority, actor, command, view).await,
         LoopMoveResult::TooFar => ItemMoveStep::Result(ItemMoveOutcome::TooFar, Vec::new()),
+        LoopMoveResult::HolderUnavailable => ItemMoveStep::HolderUnavailable,
         LoopMoveResult::Unknown => ItemMoveStep::Disconnect,
         LoopMoveResult::Refused(refusal) => refused(
             admitted(loop_outcome(refusal), selection),

@@ -1,7 +1,11 @@
 use super::super::fixture::{Harness, debug, id, join_two};
 use super::super::item_look_fixtures::read_frame;
 use super::{Case, FIELD, TestResult};
-use crate::gameplay_transport::ComposedFreshAdmission;
+use crate::gameplay_transport::{
+    COMMAND_HOLDER_PROBE, ComposedFreshAdmission, composed_admission::HolderCheckoutProbe,
+};
+use std::{cell::Cell, sync::Arc};
+use tokio::sync::oneshot;
 use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, LivenessPolicy, serve_admitted,
 };
@@ -41,6 +45,28 @@ pub(super) async fn exercise(
 ) -> TestResult<Option<Vec<u8>>> {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = serve_admitted(&mut server, admitted, owner, LIVENESS);
+    let probe = Arc::new(HolderCheckoutProbe::default());
+    let holder_test = matches!(case, Case::BusyMove | Case::TimedOutMove);
+    let (refused, refusal_seen) = oneshot::channel();
+    let (returned, return_seen) = oneshot::channel();
+    let contention = async {
+        if !holder_test {
+            return Ok(());
+        }
+        probe.contend_with(&harness.root, async move {
+            if case == Case::TimedOutMove {
+                refusal_seen.await.map_err(debug)?;
+            }
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+        .await.map_err(debug)??;
+        returned.send(()).map_err(|()| "client ended before holder returned")?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let serving = COMMAND_HOLDER_PROBE.scope(
+        ("item_move_transfer_receipt", Cell::new(holder_test.then(|| Arc::clone(&probe)))),
+        crate::durability::DurabilityRoot::with_holder_owner(serving),
+    );
     let client_task = async move {
         let inventory = snapshot(&mut client).await?;
         let replay = match case {
@@ -55,6 +81,12 @@ pub(super) async fn exercise(
                 paging(&mut client, harness).await?;
                 None
             }
+            Case::BusyMove | Case::TimedOutMove => {
+                move_under_holder_pressure(
+                    &mut client, &inventory, harness, case, refused, return_seen,
+                ).await?;
+                None
+            }
             Case::Autowalk => {
                 autowalk(&mut client, harness).await?;
                 None
@@ -63,11 +95,74 @@ pub(super) async fn exercise(
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(replay)
     };
-    let (end, result) = tokio::time::timeout(
-        std::time::Duration::from_secs(60), join_two(serving, client_task),
+    let ((end, result), holder) = tokio::time::timeout(
+        std::time::Duration::from_secs(60), join_two(join_two(serving, client_task), contention),
     ).await?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)), "{end:?}");
+    holder?;
     result
+}
+
+async fn move_under_holder_pressure(
+    client: &mut DuplexStream,
+    inventory: &CharacterInventory,
+    harness: &Harness,
+    case: Case,
+    refused: oneshot::Sender<()>,
+    returned: oneshot::Receiver<()>,
+) -> TestResult {
+    let coin = inventory.entries.iter().find(|entry| entry.count.get() == 7)
+        .ok_or("carried coin")?.handle;
+    let payload = move_payload(coin, ItemMoveDestination::Ground(FIELD))?;
+    if case == Case::TimedOutMove {
+        let move_type = protocol::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT;
+        send(client, 1, move_type, &payload).await?;
+        let original = holder_refusal(client, 1, None).await?;
+        refused.send(()).map_err(|()| "holder ended before the refusal arrived")?;
+        returned.await?;
+        assert_eq!(receipts(harness).await?, 0);
+        assert_eq!(custody(harness).await?, (0, 1, 0, 7));
+        send(client, 1, move_type, &payload).await?;
+        holder_refusal(client, 1, Some(&original)).await?;
+        move_command(client, 2, &payload, ItemMoveOutcome::Moved).await?;
+    } else {
+        move_command(client, 1, &payload, ItemMoveOutcome::Moved).await?;
+        returned.await?;
+    }
+    assert_eq!(receipts(harness).await?, 1);
+    assert_eq!(custody(harness).await?, (1, 0, 0, 7));
+    Ok(())
+}
+
+async fn holder_refusal(
+    client: &mut DuplexStream,
+    command_id: u64,
+    original: Option<&[u8]>,
+) -> TestResult<Vec<u8>> {
+    loop {
+        let bytes = read_frame(client).await?;
+        let envelope = protocol::decode_wire_envelope(&bytes).map_err(debug)?;
+        if envelope.message_type() != MessageType::CommandResult {
+            continue;
+        }
+        let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
+        assert_eq!(result.command_id, command_id);
+        let refused = protocol::FoundationProtocolError::CommandRefused;
+        assert_eq!(result.error_code, refused.code());
+        let expected = if let Some(original) = original {
+            assert_eq!(result.status, CommandStatus::DuplicateReplay);
+            protocol::command_replay::encode_duplicate_replay(
+                envelope.connection_generation(), envelope.server_sequence(), original,
+            )
+        } else {
+            assert_eq!(result.status, CommandStatus::Rejected);
+            protocol::encode_command_error_result(
+                envelope.connection_generation(), envelope.server_sequence(), command_id, refused,
+            )
+        }.map_err(debug)?;
+        assert_eq!(bytes, expected, "field 5 must be absent in both results");
+        return Ok(bytes);
+    }
 }
 
 async fn transfers(

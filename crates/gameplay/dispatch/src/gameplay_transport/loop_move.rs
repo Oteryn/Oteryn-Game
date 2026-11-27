@@ -33,6 +33,7 @@ use super::item_ref_admission::{
 };
 use super::item_view::{ItemKey, ViewItem};
 use crate::content::item_ref::ItemDefinitionIndex;
+use crate::durability::DurabilityError;
 use crate::durability::item_loop_move::{
     ItemLoopContent, LoopDestination, LoopGround, LoopMoveRequest,
 };
@@ -961,27 +962,40 @@ pub(super) async fn committed_loop_move(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
 ) -> Option<LoopMoveReplay> {
+    let budget = super::AdmissionRetryBudget::for_command(admission.root);
+    read_move_receipt(admission, command, &budget).await.ok()
+}
+
+pub(super) async fn read_move_receipt(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+    budget: &super::AdmissionRetryBudget<'_>,
+) -> Result<LoopMoveReplay, DurabilityError> {
     let Some(fence) = command.item_fence else {
-        return Some(LoopMoveReplay::Absent);
+        return Ok(LoopMoveReplay::Absent);
     };
-    let command_id = CommandId::new(command.command_id).ok()?;
-    let command = CommandRef::new(command.game_session_id, command_id);
-    let replay = super::AdmissionRetryBudget::for_command(admission.root)
-        .retry_command_guard(async || {
-            admission
-                .root
-                .read_item_loop_move_receipt(admission.character, fence.character_id, command)
-                .await
-        })
-        .await
-        .ok()?;
-    // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.
+    let command_id =
+        CommandId::new(command.command_id).map_err(|_| DurabilityError::Unavailable)?;
+    let reference = CommandRef::new(command.game_session_id, command_id);
+    let replay = budget
+        .retry_logged_holder(
+            "item_move_loop_receipt",
+            async || {
+                admission
+                    .root
+                    .read_item_loop_move_receipt(admission.character, fence.character_id, reference)
+                    .await
+            },
+            super::root_holder_busy,
+        )
+        .await?;
     if replay == LoopMoveReplay::Moved
-        && !dreamer_ring::reconcile(admission, fence.character_id, command).await
+        && !dreamer_ring::reconcile(admission, fence.character_id, reference).await
     {
-        return None;
+        // A committed offering still owes its publication. Never terminalize it as a refusal.
+        return Err(DurabilityError::CommitOutcomeUnknown);
     }
-    Some(replay)
+    Ok(replay)
 }
 
 /// The 10-byte Ground cell codec of the item owner (x i32 BE, y i32 BE, floor i16 BE).
@@ -1282,6 +1296,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             },
         },
     };
+    let budget = super::AdmissionRetryBudget::for_command(admission.root);
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
         Ok(None) if assembly_target.is_some() => {
@@ -1304,37 +1319,47 @@ pub(super) async fn move_loop_item_with_house_capacity(
                 .await
         }
         // Capability 510: the placed entry takes the requested slot in the same transaction.
-        Ok(None) => match request.slot {
-            Some(slot) => {
-                admission
-                    .root
-                    .commit_item_loop_move_to_slot(
-                        &permit,
-                        admission.character,
-                        admission.holder,
-                        &fence,
-                        CommandRef::new(command.game_session_id, command_id),
-                        &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                        loop_request,
-                        slot,
-                    )
-                    .await
-            }
-            None => {
-                admission
-                    .root
-                    .commit_item_loop_move(
-                        &permit,
-                        admission.character,
-                        admission.holder,
-                        &fence,
-                        CommandRef::new(command.game_session_id, command_id),
-                        &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                        loop_request,
-                    )
-                    .await
-            }
-        },
+        Ok(None) => {
+            budget
+                .retry_logged_holder(
+                    "item_move_loop_write",
+                    async || match request.slot {
+                        Some(slot) => {
+                            admission
+                                .root
+                                .commit_item_loop_move_to_slot(
+                                    &permit,
+                                    admission.character,
+                                    admission.holder,
+                                    &fence,
+                                    CommandRef::new(command.game_session_id, command_id),
+                                    &NativeItemWeights(native)
+                                        .with_wheel(admission.premium_coordinator),
+                                    loop_request.clone(),
+                                    slot,
+                                )
+                                .await
+                        }
+                        None => {
+                            admission
+                                .root
+                                .commit_item_loop_move(
+                                    &permit,
+                                    admission.character,
+                                    admission.holder,
+                                    &fence,
+                                    CommandRef::new(command.game_session_id, command_id),
+                                    &NativeItemWeights(native)
+                                        .with_wheel(admission.premium_coordinator),
+                                    loop_request.clone(),
+                                )
+                                .await
+                        }
+                    },
+                    super::root_holder_busy,
+                )
+                .await
+        }
         Err(error) => Err(error),
     };
     #[cfg(test)]
@@ -1397,6 +1422,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     match committed {
         Ok(Ok(_receipt)) => LoopMoveResult::Committed,
         Ok(Err(refusal)) => LoopMoveResult::Refused(refusal),
+        Err(DurabilityError::RootUnavailable) => LoopMoveResult::HolderUnavailable,
         Err(_) => LoopMoveResult::Unknown,
     }
 }

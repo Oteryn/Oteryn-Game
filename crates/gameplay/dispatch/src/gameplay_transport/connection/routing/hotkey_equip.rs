@@ -70,6 +70,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     if outcome == ItemMoveOutcome::Moved {
         match item_move::moved(authority, actor, command, view).await {
             ItemMoveStep::Result(_, updated) => deltas.extend(updated),
+            ItemMoveStep::HolderUnavailable => return Some(Dispatch::CommandRefused),
             ItemMoveStep::Refused(_, _) | ItemMoveStep::Disconnect => return None,
         }
         deltas.extend(

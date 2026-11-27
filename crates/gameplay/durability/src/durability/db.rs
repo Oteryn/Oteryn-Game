@@ -1806,6 +1806,12 @@ impl DurabilityRoot {
         }
     }
 
+    /// The pass currently holding the connection, if known, for checkout diagnostics.
+    pub fn holder_observation(&self) -> Option<(&'static std::panic::Location<'static>, Duration)> {
+        let (owner, issued, _) = (*self.holder_owner.lock().ok()?)?;
+        Some((owner, issued.elapsed()))
+    }
+
     /// Names the pass that kept the holder through a whole recovery window (NBDIAG-4).
     fn report_stuck_holder(&self) {
         let owner = self.holder_owner.lock().ok().and_then(|owner| *owner);

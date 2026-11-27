@@ -10,6 +10,8 @@ use super::{
 };
 
 pub(super) enum Dispatch {
+    /// A terminal Foundation refusal without a mechanic payload or follow-up effects.
+    CommandRefused,
     /// A complete command result with no subsequent mechanic-specific effects.
     Reply(crate::foundation::CommandStatus, Vec<u8>),
     /// A rule callback may acknowledge a committed release or close on uncertainty.

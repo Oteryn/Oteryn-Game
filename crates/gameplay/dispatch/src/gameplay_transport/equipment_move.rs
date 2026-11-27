@@ -22,6 +22,7 @@ use super::{FreshAdmissionStore, GameSessionId, GameSessionState};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceItemField, ReferenceItemTarget};
 use crate::domain::timed_item_host::resolve_timed_definition;
+use crate::durability::DurabilityError;
 use crate::durability::character_equipment::{self, EquipmentMoveContent};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef};
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, durable_slot, wire_slot};
@@ -464,23 +465,34 @@ pub(super) async fn committed_equipment_move(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
 ) -> Option<EquipmentMoveReplay> {
+    let budget = super::AdmissionRetryBudget::for_command(admission.root);
+    read_move_receipt(admission, command, &budget).await.ok()
+}
+
+pub(super) async fn read_move_receipt(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+    budget: &super::AdmissionRetryBudget<'_>,
+) -> Result<EquipmentMoveReplay, DurabilityError> {
     let Some(fence) = command.item_fence else {
-        return Some(EquipmentMoveReplay::Absent);
+        return Ok(EquipmentMoveReplay::Absent);
     };
-    let command_id = CommandId::new(command.command_id).ok()?;
-    super::AdmissionRetryBudget::for_command(admission.root)
-        .retry_command_guard(async || {
-            admission
-                .root
-                .read_equipment_move_receipt(
-                    admission.character,
-                    fence.character_id,
-                    CommandRef::new(command.game_session_id, command_id),
-                )
-                .await
-        })
-        .await
-        .ok()
+    let command_id =
+        CommandId::new(command.command_id).map_err(|_| DurabilityError::Unavailable)?;
+    let reference = CommandRef::new(command.game_session_id, command_id);
+    let replay = budget
+        .retry_logged_holder(
+            "item_move_equipment_receipt",
+            async || {
+                admission
+                    .root
+                    .read_equipment_move_receipt(admission.character, fence.character_id, reference)
+                    .await
+            },
+            super::root_holder_busy,
+        )
+        .await?;
+    Ok(replay)
 }
 
 /// One equip or unequip of command 9 through the equipment owner. A dead actor, a pending spell
@@ -683,44 +695,52 @@ async fn move_equipment_inner(
             let Some(durable) = durable_move(request) else {
                 return refused(RejectionStage::EquipmentRequest);
             };
-            if house {
-                admission
-                    .root
-                    .commit_house_equipment_move(
-                        admission.character,
-                        admission.holder,
-                        &fence,
-                        CommandRef::new(session, command_id),
-                        &NativeItemWeights(native),
-                        durable,
-                        *admission.channel_id.as_bytes(),
-                    )
-                    .await
-            } else if hotkey {
-                admission
-                    .root
-                    .commit_hotkey_equipment_move(
-                        admission.character,
-                        admission.holder,
-                        &fence,
-                        CommandRef::new(command.game_session_id, command_id),
-                        &NativeItemWeights(native),
-                        durable,
-                    )
-                    .await
-            } else {
-                admission
-                    .root
-                    .commit_equipment_move(
-                        admission.character,
-                        admission.holder,
-                        &fence,
-                        CommandRef::new(command.game_session_id, command_id),
-                        &NativeItemWeights(native),
-                        durable,
-                    )
-                    .await
-            }
+            retry
+                .retry_logged_holder(
+                    "item_move_equipment_write",
+                    async || {
+                        if house {
+                            admission
+                                .root
+                                .commit_house_equipment_move(
+                                    admission.character,
+                                    admission.holder,
+                                    &fence,
+                                    CommandRef::new(session, command_id),
+                                    &NativeItemWeights(native),
+                                    durable,
+                                    *admission.channel_id.as_bytes(),
+                                )
+                                .await
+                        } else if hotkey {
+                            admission
+                                .root
+                                .commit_hotkey_equipment_move(
+                                    admission.character,
+                                    admission.holder,
+                                    &fence,
+                                    CommandRef::new(command.game_session_id, command_id),
+                                    &NativeItemWeights(native),
+                                    durable,
+                                )
+                                .await
+                        } else {
+                            admission
+                                .root
+                                .commit_equipment_move(
+                                    admission.character,
+                                    admission.holder,
+                                    &fence,
+                                    CommandRef::new(command.game_session_id, command_id),
+                                    &NativeItemWeights(native),
+                                    durable,
+                                )
+                                .await
+                        }
+                    },
+                    super::root_holder_busy,
+                )
+                .await
         }
     };
     // ATTACK-2: the swing weapon read before this move is no longer the equipment's, whatever
@@ -756,6 +776,7 @@ async fn move_equipment_inner(
         }
         Ok(Err(EquipmentMoveRefusal::Rejected)) => refused(RejectionStage::EquipmentCommit),
         Ok(Err(refusal)) => EquipmentMoveResult::Refused(refusal),
+        Err(DurabilityError::RootUnavailable) => EquipmentMoveResult::HolderUnavailable,
         Err(_) => EquipmentMoveResult::Unknown,
     }
 }

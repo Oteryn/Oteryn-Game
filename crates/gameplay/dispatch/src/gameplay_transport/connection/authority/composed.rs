@@ -816,6 +816,32 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         equipment_move::committed_equipment_move(self, command).await
     }
 
+    async fn move_receipt(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> item_move::MoveReceipt {
+        use item_move::{EquipmentMoveReplay, LoopMoveReplay, MoveReceipt};
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let receipt = match equipment_move::read_move_receipt(self, command, &budget).await {
+            Ok(EquipmentMoveReplay::Moved) => return MoveReceipt::Moved,
+            Ok(EquipmentMoveReplay::Conflicting) => return MoveReceipt::Conflicting,
+            Ok(EquipmentMoveReplay::Absent) => {
+                loop_move::read_move_receipt(self, command, &budget).await
+            }
+            Err(error) => Err(error),
+        };
+        match receipt {
+            Ok(LoopMoveReplay::Moved) => MoveReceipt::Moved,
+            Ok(LoopMoveReplay::Conflicting) => MoveReceipt::Conflicting,
+            Ok(LoopMoveReplay::Absent) => MoveReceipt::Absent,
+            Err(crate::durability::DurabilityError::RootUnavailable) => {
+                MoveReceipt::HolderUnavailable
+            }
+            Err(_) => MoveReceipt::Unknown,
+        }
+    }
+
     async fn move_equipment(
         &self,
         actor: ExactActorRef,
