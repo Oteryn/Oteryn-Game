@@ -423,11 +423,14 @@ impl Hunt {
             victim.generation,
         );
         let paired = committed_base_damage(&self.cast_evidence_log, evidence_start, &marker, bps)?;
-        if paired.1 != damage {
-            return Err(format!("C12 owner pair does not reconcile with served damage: base_pair={paired:?} served={damage}").into());
+        if paired.committed != damage {
+            return Err(format!(
+                "C12 owner HP loss does not match served damage: owner={paired:?} served={damage}"
+            )
+            .into());
         }
         evidence(&format!(
-            "C12 committed_cast command={} damage={damage} base_pair={paired:?} expected_bps={bps}",
+            "C12 committed_cast command={} damage={damage} owner={paired:?} expected_bps={bps}",
             outcome.command_id
         ));
         Ok((damage, vitals))
@@ -438,12 +441,19 @@ pub(super) fn hex_bytes(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct CommittedDamage {
+    before: u64,
+    augmented: u64,
+    pub(super) committed: u64,
+}
+
 pub(super) fn committed_base_damage(
     path: &Path,
     start: u64,
     marker: &str,
     bps: u64,
-) -> TestResult<(u64, u64)> {
+) -> TestResult<CommittedDamage> {
     use std::io::{Read, Seek, SeekFrom};
     let mut file = std::fs::File::open(path)?;
     file.seek(SeekFrom::Start(start))?;
@@ -454,7 +464,7 @@ fn read_base_damage(
     reader: impl std::io::BufRead,
     marker: &str,
     bps: u64,
-) -> TestResult<(u64, u64)> {
+) -> TestResult<CommittedDamage> {
     let mut observed = None;
     for line in reader.lines() {
         let line = line?;
@@ -465,26 +475,42 @@ fn read_base_damage(
             .strip_prefix("before=")
             .and_then(|s| s.split_once(" after="))
             .ok_or("malformed committed C12 damage pair")?;
+        let (after, committed) = after
+            .split_once(" committed=")
+            .ok_or("C12 committed HP loss missing")?;
         if observed
-            .replace((before.parse::<u64>()?, after.parse::<u64>()?))
+            .replace(CommittedDamage {
+                before: before.parse()?,
+                augmented: after.parse()?,
+                committed: committed.parse()?,
+            })
             .is_some()
         {
             return Err("multiple committed C12 damage pairs for one cast and target".into());
         }
     }
-    let (before, after) =
+    let damage =
         observed.ok_or_else(|| format!("committed C12 damage pair absent for {marker}"))?;
+    let CommittedDamage {
+        before,
+        augmented: after,
+        committed,
+    } = damage;
     let increase = before
         .checked_mul(bps)
         .ok_or("C12 augment arithmetic overflow")?
         / 10_000;
-    if before == 0 || (bps != 0 && increase == 0) || before.checked_add(increase) != Some(after) {
+    if before == 0
+        || committed == 0
+        || (bps != 0 && increase == 0)
+        || before.checked_add(increase) != Some(after)
+    {
         return Err(format!(
             "C12 exact base damage comparison failed: before={before} after={after} bps={bps}"
         )
         .into());
     }
-    Ok((before, after))
+    Ok(damage)
 }
 
 /// Damage to `victim` in presentation batches that also carry `own`'s SpellWords in the same decision.
@@ -670,6 +696,13 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         }
         wait_combat_target(client, None).await?;
     }
+    if client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| state.in_fight)
+    {
+        verdict::Harness::global().bounded_wait(deadline, "c12-combat-lock");
+    }
     while client
         .session_mut()
         .combat_state()
@@ -680,6 +713,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(250)).await?;
     }
+    verdict::Harness::global().progress("c12-logout");
     let (result, detail, _, _) = logout_once(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C12 logout refused on first attempt: {detail}").into());
@@ -1530,14 +1564,30 @@ mod tests {
             let log = format!("{MARKER}{tail}");
             read_base_damage(log.as_bytes(), MARKER, bps)
         };
-        assert_eq!(read("before=37 after=40", 1_000)?, (37, 40));
-        assert_eq!(read("before=37 after=37", 0)?, (37, 37));
-        assert!(read("before=37 after=41", 1_000).is_err());
-        assert!(read("before=37 after=37", 1_000).is_err());
-        assert!(read("before=37 after=40", 0).is_err());
+        assert_eq!(
+            read("before=37 after=40 committed=44", 1_000)?,
+            CommittedDamage {
+                before: 37,
+                augmented: 40,
+                committed: 44
+            },
+        );
+        assert_eq!(
+            read("before=37 after=37 committed=37", 0)?,
+            CommittedDamage {
+                before: 37,
+                augmented: 37,
+                committed: 37
+            },
+        );
+        assert!(read("before=37 after=40", 1_000).is_err());
+        assert!(read("before=37 after=40 committed=0", 1_000).is_err());
+        assert!(read("before=37 after=41 committed=41", 1_000).is_err());
+        assert!(read("before=37 after=37 committed=37", 1_000).is_err());
+        assert!(read("before=37 after=40 committed=40", 0).is_err());
         let duplicate = format!(
-            "{MARKER}before=37 after=40
-{MARKER}before=37 after=40"
+            "{MARKER}before=37 after=40 committed=40
+{MARKER}before=37 after=40 committed=40"
         );
         assert!(read_base_damage(duplicate.as_bytes(), MARKER, 1_000).is_err());
         Ok(())

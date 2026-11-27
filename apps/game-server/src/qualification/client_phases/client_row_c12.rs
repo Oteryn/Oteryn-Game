@@ -297,15 +297,15 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         }
         session.service_liveness(Duration::from_millis(25)).await?;
     };
-    let (_, augmented) = full_row_c12::committed_base_damage(
+    let owner_damage = full_row_c12::committed_base_damage(
         &path,
         offset,
         &marker,
         full_row_c12::content_augment()?,
     )?;
-    if damage != augmented {
+    if damage != owner_damage.committed {
         return Err(format!(
-            "C12.client served damage {damage} differs from committed augmented damage {augmented}"
+            "C12.client served damage {damage} differs from committed HP loss {owner_damage:?}"
         )
         .into());
     }

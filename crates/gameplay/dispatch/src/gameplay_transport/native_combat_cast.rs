@@ -965,12 +965,16 @@ impl PreparedNativeCombatCast {
         {
             let command = self.batch.command;
             for &(target, before, after) in magnitude.base_damage_evidence() {
-                if result.effects.iter().any(|effect| {
-                    effect.target == target
-                        && effect
+                if let Some(committed) = result
+                    .effects
+                    .iter()
+                    .filter(|effect| effect.target == target)
+                    .find_map(|effect| {
+                        effect
                             .health
-                            .is_some_and(|health| health.committed_health_loss().is_some())
-                }) {
+                            .and_then(|health| health.committed_health_loss())
+                    })
+                {
                     let target_id = target
                         .placement_identity()
                         .iter()
@@ -983,9 +987,10 @@ impl PreparedNativeCombatCast {
                         .map(|byte| format!("{byte:02x}"))
                         .collect::<String>();
                     eprintln!(
-                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after}",
+                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after} committed={}",
                         command.command_id().get(),
-                        target.actor_local_generation()
+                        target.actor_local_generation(),
+                        committed.get()
                     );
                 }
             }
