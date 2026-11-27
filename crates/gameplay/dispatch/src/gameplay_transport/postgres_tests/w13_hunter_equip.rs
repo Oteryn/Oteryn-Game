@@ -14,7 +14,17 @@ fn w13_knight_equips_one_handed_fixture_sword_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("w13-hunter-equip", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("w13-hunter-equip", || {
+        let mut result = Ok(());
+        let lines = oteryn_error_codes::capture(|| result = scenario());
+        result?;
+        assert!(lines.iter().any(|line| {
+            line.contains("event=equipment_move_slot_refused")
+                && line.contains("phase=apply")
+                && line.contains("predicate=equipment_occupancy_conflict")
+        }), "Demonrage Sword reserves the already occupied shield hand");
+        Ok(())
+    })
 }
 
 fn scenario() -> TestResult {

@@ -302,6 +302,17 @@
       "note": "PR3388: hotkey equip (command 348) rejection with the closed rejection stage that produced the existing Rejected reply; wire reply unchanged. Command_id is the client command id. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "item_move_slot_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "command_id",
+        "predicate"
+      ],
+      "codes": [],
+      "note": "Equipment SlotMismatch raised before durable dispatch because the source is the equipped main backpack."
+    },
+    {
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,

@@ -384,6 +384,10 @@ async fn item_move_inner<A: FreshAdmissionAuthority>(
     let request = match intent.destination {
         ItemMoveDestination::Equipment(to) => {
             if view.is_main_backpack(&source) {
+                super::operator_event(&format!(
+                    "event=item_move_slot_refused command_id={} predicate=source_main_backpack",
+                    command.command_id
+                ));
                 return ItemMoveStep::Result(ItemMoveOutcome::SlotMismatch, Vec::new());
             }
             // An occupied slot reaches the owner, which swaps atomically or refuses
