@@ -209,6 +209,10 @@ fn storkus_rank_hand_ins() -> Result<(), String> {
         assert_eq!(callback.storage[0].minimum, previous);
         assert_eq!(callback.storage[0].maximum, previous);
         assert_eq!(callback.storage[0].set, next);
+        assert_eq!(
+            callback.achievement.as_deref(),
+            (next == 6).then_some("oteryn:achievement/razing")
+        );
         if next == 6 {
             let reward = callback.give.as_ref().ok_or("missing final reward")?;
             assert_eq!(reward.item, "oteryn:item.tibia.i8191");
