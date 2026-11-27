@@ -73,7 +73,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "p04-master-399" => Some(("sorcerer", 399)),
         "p04-master-400" => Some(("sorcerer", 400)),
-        "p04-task-board" => Some(("sorcerer", 1500)),
+        "p04-task-board" => Some(("knight", 650)),
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
