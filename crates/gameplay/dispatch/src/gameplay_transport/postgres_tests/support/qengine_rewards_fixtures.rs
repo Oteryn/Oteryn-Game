@@ -1045,6 +1045,19 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-storkus-dust" {
         return Box::pin(super::vampire_hunter_journey::dust(owner, admitted, h)).await;
     }
+    if let Some(mission_stage) = match name {
+        "qengine-rewards-storkus-direct-dust" => Some(1),
+        "qengine-rewards-storkus-dust-without-referral" => Some(0),
+        _ => None,
+    } {
+        return Box::pin(super::vampire_hunter_journey::direct_dust(
+            owner, admitted, h, mission_stage,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-storkus-empty-dust" {
+        return Box::pin(super::vampire_hunter_journey::empty_dust(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-vampire-hunter" {
         return Box::pin(super::vampire_hunter_journey::exercise(owner, admitted, h)).await;
     }

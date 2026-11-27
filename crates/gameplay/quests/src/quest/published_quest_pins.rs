@@ -658,11 +658,13 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
-    // Keep the Eclipse and Vampire Hunt saves, including the pre-hand-in dust counter.
+    // Keep the Eclipse and Vampire Hunt saves, including saves from before the dust shortcut was removed.
     (
         "oteryn:quest.the_inquisition_quest",
-        hash(b"8f43a82febdcd9b7fd7c9cd453b53a9b0a6b6de05273abd1d46c2414d562f48d"),
+        hash(b"072963573a04f538f1746de44e9e5f812079490e7dfbaab32ada96ab9a5717d8"),
         &[
+            hash(b"6da59313e0183b50f65cb662b8b4b4eabb0b2a87cae044242c7c9587c1115ea8"),
+            hash(b"8f43a82febdcd9b7fd7c9cd453b53a9b0a6b6de05273abd1d46c2414d562f48d"),
             hash(b"07b54f2106bcabfc742abf29a2cc09c4b271108a143d46685efae0ee52b151bd"),
             hash(b"50e57d828ac8398e9ba0f966bc1be0777a5640e49efc495b39af1ab16c4db8d4"),
             hash(b"655d26dbf3afa93c5dfc0e195d05b0150e0af298cf74935fa8494b0be895e3d5"),

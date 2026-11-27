@@ -1361,11 +1361,21 @@ async fn naginata_journey(
         journey_use(owner, admitted, &gate).await?,
         UseDisposition::Committed
     );
-    let (x, y, floor) = NAGINATA_GATE.position;
+    let (gate_x, gate_y, gate_floor) = NAGINATA_GATE.position;
     assert_eq!(
-        owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
-        MovementLocalPosition { x: i32::from(x), y: i32::from(y), floor: -i16::from(floor) },
-        "source expertise door USE enters the doorway"
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        MovementLocalPosition {
+            x: i32::from(gate_x),
+            y: i32::from(gate_y),
+            floor: -i16::from(gate_floor),
+        },
+        "opening the level gate moves the player onto its tile"
     );
     for direction in [West, West, West, South] {
         journey_step(owner, admitted, direction).await?;

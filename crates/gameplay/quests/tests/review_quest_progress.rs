@@ -1,7 +1,11 @@
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, loader, reward_callbacks, source_deaths, world_callbacks,
+    QuestRefusal, QuestStateCatalogue, loader, reward_callbacks, source_deaths, world_callbacks,
 };
 use std::collections::BTreeMap;
+
+const STORKUS_DUST: &str =
+    "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
+const STORKUS_DUST_REPORT: &str = "oteryn:quest-reward/inquisition-vampire-hunt-dust/already-paid";
 
 fn advance(
     catalogue: &QuestStateCatalogue,
@@ -77,7 +81,9 @@ fn storkus_qualification_can_be_earned_through_registered_writers() -> Result<()
         ("eclipse-brew-32657-31927", 5, true),
         ("eclipse-report", 6, false),
         ("vampire-hunt-referral", 6, false),
-        ("vampire-hunt-dust", 7, false),
+        ("vampire-hunt-dust/accept", 6, false),
+        ("vampire-hunt-dust/collect", 6, false),
+        ("vampire-hunt-dust/already-paid", 7, false),
         ("vampire-hunt-count", 8, false),
         ("vampire-hunt-coffin", 9, true),
         ("vampire-hunt-ring", 10, false),
@@ -218,6 +224,64 @@ fn all_donor_nomads_are_admitted_by_the_source_death_loader() -> Result<(), Stri
 }
 
 #[test]
+fn storkus_deposit_reply_agrees_with_the_mission_report_gate() -> Result<(), String> {
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let callbacks = reward_callbacks::offered_for(loaded.catalogue())?;
+    let report = callbacks
+        .iter()
+        .find(|callback| callback.key == STORKUS_DUST_REPORT)
+        .ok_or("Storkus dust report")?;
+    let threshold = report
+        .storage
+        .iter()
+        .find(|guard| guard.track == STORKUS_DUST)
+        .ok_or("Storkus report counter gate")?
+        .minimum;
+    let nearly_paid = callbacks
+        .iter()
+        .find(|callback| {
+            callback.key == "oteryn:quest-reward/inquisition-vampire-hunt-dust/deposit-1-19"
+        })
+        .ok_or("Storkus 19-dust deposit")?;
+    assert_eq!(
+        nearly_paid.reply,
+        ["Ye've brought me 19 vampire dusts. Ye' need to bring 1 more."]
+    );
+
+    for callback in callbacks
+        .iter()
+        .filter(|callback| callback.npc == "oteryn:npc.storkus" && callback.topic == 1)
+    {
+        let [payment] = callback.take.as_slice() else {
+            return Err(format!("{} needs exactly one dust payment", callback.key));
+        };
+        let saved = callback
+            .storage
+            .iter()
+            .find(|guard| guard.track == STORKUS_DUST)
+            .ok_or_else(|| format!("{} does not write the dust counter", callback.key))?
+            .set;
+        let remainder = threshold - saved;
+        let instruction = if remainder == 0 {
+            "Ask me for a mission to continue your quest.".into()
+        } else {
+            format!("Ye' need to bring {remainder} more.")
+        };
+        assert_eq!(
+            callback.reply,
+            [format!(
+                "Ye've brought me {} vampire dusts. {instruction}",
+                payment.count
+            )],
+            "{}",
+            callback.key
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn storkus_accepts_partial_dust_and_finishes_existing_partial_saves() -> Result<(), String> {
     let loaded =
         loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
@@ -225,9 +289,12 @@ fn storkus_accepts_partial_dust_and_finishes_existing_partial_saves() -> Result<
     let callbacks = reward_callbacks::offered_for(catalogue)?;
     let questline = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
     let mission = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03";
-    let dust = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
     let item = "oteryn:item.tibia.i5905";
-    for (saved, carried, consumed, after, stage) in [
+    let accept = "oteryn:quest-reward/inquisition-vampire-hunt-dust/accept";
+    let report = catalogue
+        .transition(STORKUS_DUST_REPORT)
+        .ok_or("Storkus dust report transition")?;
+    for (saved, carried, consumed, after, reported_stage) in [
         (0, 7, 7, 8, 6),
         (8, 3, 3, 11, 6),
         (8, 17, 13, 21, 7),
@@ -237,12 +304,23 @@ fn storkus_accepts_partial_dust_and_finishes_existing_partial_saves() -> Result<
         let mut tracks = BTreeMap::from([
             (questline.into(), 6),
             (mission.into(), 1),
-            (dust.into(), saved),
+            (STORKUS_DUST.into(), saved),
         ]);
+        if saved == 0 {
+            advance(catalogue, &mut tracks, accept)?;
+            assert_eq!(
+                (tracks[STORKUS_DUST], tracks[questline], tracks[mission]),
+                (1, 6, 1)
+            );
+        }
+        assert_eq!(
+            catalogue.evaluate(report, &tracks, 100),
+            Err(QuestRefusal::StageMismatch)
+        );
         let inventory = BTreeMap::from([(item.into(), carried)]);
         let mut candidates = callbacks.iter().filter(|callback| {
             callback.npc == "oteryn:npc.storkus"
-                && callback.topic == 9
+                && callback.topic == 1
                 && callback.keywords.iter().any(|word| word == "yes")
                 && callback.storage.iter().all(|guard| {
                     tracks
@@ -265,9 +343,27 @@ fn storkus_accepts_partial_dust_and_finishes_existing_partial_saves() -> Result<
             candidates.next().is_none(),
             "ambiguous deposit for {saved}+{carried}"
         );
-        assert_eq!(selected.take[0].count, consumed);
+        let [payment] = selected.take.as_slice() else {
+            return Err(format!("{} needs exactly one dust payment", selected.key));
+        };
+        assert_eq!((payment.item.as_str(), payment.count), (item, consumed));
         advance(catalogue, &mut tracks, &selected.key)?;
-        assert_eq!((tracks[dust], tracks[questline]), (after, stage));
+        assert_eq!(
+            (tracks[STORKUS_DUST], tracks[questline], tracks[mission]),
+            (after, 6, 1)
+        );
+        if reported_stage == 7 {
+            advance(catalogue, &mut tracks, STORKUS_DUST_REPORT)?;
+            assert_eq!(
+                (tracks[STORKUS_DUST], tracks[questline], tracks[mission]),
+                (after, reported_stage, 2)
+            );
+        } else {
+            assert_eq!(
+                catalogue.evaluate(report, &tracks, 100),
+                Err(QuestRefusal::StageMismatch)
+            );
+        }
     }
     Ok(())
 }

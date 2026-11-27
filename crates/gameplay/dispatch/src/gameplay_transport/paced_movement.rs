@@ -1,4 +1,5 @@
 //! Tutorial step interception around the existing owner movement path.
+use super::actor_spell::ChannelSpellStates;
 use super::*;
 
 mod autowalk;
@@ -7,6 +8,32 @@ pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
+
+pub(super) struct PlayerBundleDoors<'a> {
+    facts: &'a crate::map::facts::BundleFacts,
+    level: u32,
+}
+
+impl crate::map::floor::CellBlocker for PlayerBundleDoors<'_> {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        self.facts.doors_block_player(cell, self.level)
+    }
+}
+
+pub(super) fn player_bundle_doors<'a>(
+    facts: &'a crate::map::facts::BundleFacts,
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> PlayerBundleDoors<'a> {
+    PlayerBundleDoors {
+        facts,
+        level: states
+            .get(runtime, actor, session)
+            .map_or(0, |state| state.character_facts().level),
+    }
+}
 
 fn snowbunny_progress_operation(
     snow_origin: bool,
@@ -209,8 +236,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::SouthWest => CardinalStep::SouthWest,
             StepDirection::NorthWest => CardinalStep::NorthWest,
         };
-        // The closed bundle doors are read live per candidate cell, not collected per step: a
-        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
+        // Check live doors and the entrant's level per candidate cell, including
+        // floor changes and teleport landings.
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
             .rooms()
@@ -220,7 +247,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
+            bundle_doors = player_bundle_doors(&map.facts, &states, &runtime, actor, session);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
