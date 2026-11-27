@@ -902,12 +902,6 @@ TOML
       "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium.pem"
       "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
     )
-    cat >> "$WORK/node.toml" <<'TOML_PREMIUM_FIXTURE'
-
-[premium_activation]
-activation_id = "node-boot-fixture-premium"
-switch_over_us = 0
-TOML_PREMIUM_FIXTURE
   fi
   install_owned root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
