@@ -213,7 +213,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let after = rewards(&mut client).await?;
         let looted = after
             .slivers
-            .checked_sub(before.slivers)
+            .checked_sub(killed.slivers)
             .ok_or("P19 backpack slivers decreased after loot")?;
         if !valid_reward_transition(&before, &killed, &after, stacks)
             || looted != expected_slivers
@@ -346,21 +346,24 @@ fn valid_reward_transition(
     after: &Rewards,
     stacks: u8,
 ) -> bool {
-    // Global awards dust on kill and slivers through corpse loot.
+    // TibiaWiki, Dust and Slivers: Premium kills grant 1–3 dust per stack
+    // (15–45 for Fiendish); only Fiendish corpses yield slivers when looted.
     // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#Dust_and_Slivers
-    let minimum = (before.dust + u64::from(stacks)).min(before.limit);
-    let maximum = (before.dust + 3 * u64::from(stacks)).min(before.limit);
-    let slivers = if stacks == 15 { 3..=7 } else { 0..=0 };
-    before.dust < before.limit
-        && killed.limit == before.limit
+    let stacks = u64::from(stacks);
+    let dust_gain = killed.dust.checked_sub(before.dust);
+    let remaining_dust = before.limit.checked_sub(before.dust);
+    killed.limit == before.limit
         && after.limit == killed.limit
-        && (minimum..=maximum).contains(&killed.dust)
+        && dust_gain.zip(remaining_dust).is_some_and(|(gain, remaining)| {
+            (stacks..=3 * stacks).contains(&gain) && gain <= remaining
+        })
         && after.dust == killed.dust
         && killed.slivers == before.slivers
-        && after
-            .slivers
-            .checked_sub(killed.slivers)
-            .is_some_and(|gain| slivers.contains(&gain))
+        && if stacks == 15 {
+            after.slivers > killed.slivers
+        } else {
+            after.slivers == killed.slivers
+        }
 }
 
 #[test]
@@ -378,7 +381,7 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
         };
         assert_eq!(
             valid_reward_transition(&before, &killed, &after, 15),
-            (3..=7).contains(&gain)
+            gain > 0
         );
     }
     let good = Rewards {
@@ -391,6 +394,22 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
         &before,
         &killed,
         &Rewards { limit: 101, ..good },
+        15
+    ));
+    for dust in [14, 15, 45, 46, 101] {
+        let killed = Rewards { dust, ..before };
+        let after = Rewards { slivers: 1, ..killed };
+        assert_eq!(
+            valid_reward_transition(&before, &killed, &after, 15),
+            (15..=45).contains(&dust)
+        );
+    }
+    let near_cap = Rewards { dust: 90, ..before };
+    let clipped = Rewards { dust: 100, ..near_cap };
+    assert!(!valid_reward_transition(
+        &near_cap,
+        &clipped,
+        &Rewards { slivers: 1, ..clipped },
         15
     ));
     let influenced = Rewards { dust: 3, ..before };
