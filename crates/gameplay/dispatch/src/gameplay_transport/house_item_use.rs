@@ -138,7 +138,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let reserved = states
                 .item_uses
                 .reserved_sources(actor, command.game_session_id);
-            request.source = match inventory.first_unreserved(&lantern, reserved) {
+            request.source = match inventory.first_novelty_source(&lantern, reserved) {
                 Ok(id) => id,
                 Err(oteryn_gameplay_items::hotkey_search::HotkeyRefusal::BoundExceeded) => {
                     return Ok(refuse(UseDisposition::Rejected));
@@ -254,7 +254,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 floor: i16::try_from(floor).map_err(|_| ())?,
             };
             let clue = self.lantern_feedback(fence, position, true).await;
-            let runtime = self.runtime.lock().await;
+            let (runtime, mut states) =
+                super::lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states)
+                    .await;
             if HouseActionContext::from_native_owner(
                 &runtime,
                 actor,
@@ -263,11 +265,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .is_ok_and(|current| current.house() == &publication_house)
             {
-                self.states
-                    .spell_states
-                    .lock()
-                    .await
-                    .publish_novelty_visuals(&runtime, actor, position, &effects);
+                states.publish_novelty_visuals(&runtime, actor, position, &effects);
                 if let Some(clue) = clue {
                     self.states
                         .chat

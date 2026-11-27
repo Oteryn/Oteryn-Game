@@ -1391,19 +1391,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Pending retains the exact source and receipt so the Character
             // commit can run without the Channel guards.
             let release_guards = callback.trigger == Trigger::Use
-                && callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest";
+                && (callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+                    || callback.key == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY);
+            let mut tomb_turn = if callback.key
+                == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY
+            {
+                let QuestCause::Use(command) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(turn) = self.reserve_tomb_entry(runtime, actor, command, fence, callback)
+                else {
+                    return UseDisposition::Rejected;
+                };
+                Some(turn)
+            } else {
+                None
+            };
             if release_guards {
                 drop(guards.take());
             }
             #[cfg(test)]
-            if callback.key == "oteryn:quest-callback/qc-twenty-miles-pile-1"
-                && let Some(pause) = self
-                    .states
-                    .quest_callbacks
-                    .before_commit
-                    .lock()
-                    .ok()
-                    .and_then(|mut pause| pause.take())
+            if matches!(
+                callback.key.as_str(),
+                "oteryn:quest-callback/qc-twenty-miles-pile-1"
+                    | oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY
+            ) && let Some(pause) = self
+                .states
+                .quest_callbacks
+                .before_commit
+                .lock()
+                .ok()
+                .and_then(|mut pause| pause.take())
             {
                 pause.0.notify_one();
                 pause.1.notified().await;
@@ -1446,6 +1464,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             (runtime, states) = (&mut **current_runtime, &mut **current_states);
+            if let Some(turn) = &mut tomb_turn {
+                turn.release(runtime);
+            }
             if release_guards {
                 let current_actor = runtime.owner_fence().is_ok()
                     && runtime.read_actor_position(actor) == Ok(expected)
@@ -1557,7 +1578,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if callback.effects.encounter.is_none() {
                         self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
                     }
-                    self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
+                    // The scheduled refresh publishes objective eligibility for the tomb.
+                    if tomb_turn.is_none() {
+                        self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
+                    }
                     self.states.loop_ground.invalidate();
                     self.schedule_quest_refresh(session);
                 }

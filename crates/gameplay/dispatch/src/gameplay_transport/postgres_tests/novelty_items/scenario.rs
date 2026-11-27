@@ -3,7 +3,10 @@ use super::*;
 pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
-        let by_definition = matches!(case, Case::DefinitionLanternOff | Case::DefinitionLanternOn);
+        let by_definition = matches!(
+            case,
+            Case::DefinitionLanternOff | Case::DefinitionLanternOn | Case::EquippedLantern
+        );
         let origin = case.origin();
         let ground_origin = MovementLocalPosition { x: origin.x - i32::from(case.feroxa()), ..origin };
         let harness =
@@ -324,7 +327,11 @@ pub(super) fn scenario(case: Case) -> TestResult {
         } else {
             seeded
         };
-        if source != seeded || case == Case::Hat || case.ground() || case.nested() {
+        if source != seeded
+            || matches!(case, Case::Hat | Case::EquippedLantern)
+            || case.ground()
+            || case.nested()
+        {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
@@ -333,9 +340,9 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 sqlx::query("UPDATE game_item_instances SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid").bind(source.as_slice()).bind(seeded.as_slice()).execute(&mut *tx).await?;
                 sqlx::query("UPDATE game_item_container_entries SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid").bind(source.as_slice()).bind(seeded.as_slice()).execute(&mut *tx).await?;
             }
-            if case == Case::Hat {
+            if matches!(case, Case::Hat | Case::EquippedLantern) {
                 sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(fence.character_id.as_bytes().as_slice()).bind(source.as_slice()).bind(id(42).as_slice()).bind(id(79).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$5,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(fence.character_id.as_bytes().as_slice()).bind(source.as_slice()).bind(id(42).as_slice()).bind(id(79).as_slice()).bind(if case == Case::Hat { 1i16 } else { 10 }).execute(&mut *tx).await?;
             }
             if case.nested() {
                 sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).execute(&mut *tx).await?;
@@ -528,7 +535,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             assert_eq!(result, UseDisposition::Committed);
             assert_eq!(
                 current,
-                if expected.consume_source {
+                if expected.consume_source && case != Case::EquippedLantern {
                     (0, 2)
                 } else {
                     (1, 1)
@@ -597,6 +604,11 @@ pub(super) fn scenario(case: Case) -> TestResult {
                         rows.len()
                     );
                 }
+            } else if case == Case::EquippedLantern {
+                let key: String = sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_instances i JOIN game_character_equipment_slots e USING(item_instance_id,world_id) WHERE e.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND e.slot=10")
+                    .bind(source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(key, expected.outputs[0].0.production_key);
+                assert!(durable.entries.is_empty());
             } else if expected.consume_source {
                 assert_eq!(durable.entries.len(), expected.outputs.len());
                 for (entry, (definition, count)) in durable.entries.iter().zip(&expected.outputs) {

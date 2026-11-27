@@ -97,3 +97,17 @@ DO $koshei_search_path$
 BEGIN
     EXECUTE format('ALTER FUNCTION game_quest_fresh_corpse(uuid,text) SET search_path=%I,pg_temp', current_schema());
 END $koshei_search_path$;
+
+-- Preserve the race, kill, adjacency and receipt proofs in the installed sampler.
+DO $koshei_sample$
+DECLARE
+    body TEXT := pg_get_functiondef('game_quest_corpse_sample_complete()'::regprocedure);
+    age CONSTANT TEXT := 'floor(extract(epoch FROM transaction_timestamp())*1000)::BIGINT-r.occurred_at BETWEEN 0 AND sample_row.maximum_age_ms-1';
+    predicate CONSTANT TEXT := '(CASE WHEN sample_row.appearance=7535 THEN game_quest_fresh_corpse(i.item_instance_id,i.definition_production_key) ELSE ' || age || ' END)';
+BEGIN
+    IF strpos(body,predicate)>0 THEN RETURN; END IF;
+    IF (length(body)-length(replace(body,age,'')))/length(age) <> 1 THEN
+        RAISE EXCEPTION 'Quest corpse sample age predicate changed';
+    END IF;
+    EXECUTE replace(body,age,predicate);
+END $koshei_sample$;

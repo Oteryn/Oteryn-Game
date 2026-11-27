@@ -118,18 +118,18 @@ impl crate::durability::DurabilityRoot {
 impl crate::durability::DurabilityRoot {
     /// Direct encounter USE borrows the same fresh-mint predicate while the
     /// caller holds the Channel item lane against decay and custody writers.
-    pub async fn koshei_corpse_is_fresh(
+    pub async fn koshei_corpse_remaining(
         &self,
         permit: &SpellLanePermit,
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
         item: [u8; 16],
-    ) -> Result<bool, DurabilityError> {
+    ) -> Result<Option<std::time::Duration>, DurabilityError> {
         let crate::foundation::RuntimeScopeRefV1::Channel {
             world_id,
             channel_id,
         } = fence.runtime_scope
         else {
-            return Ok(false);
+            return Ok(None);
         };
         permit.check_channel(world_id, channel_id)?;
         self.try_issue_semantic_pass()?
@@ -137,21 +137,21 @@ impl crate::durability::DurabilityRoot {
                 Box::pin(async move {
                     let mut tx =
                         super::super::db::begin_semantic_transaction(holder, deadline).await?;
-                    let fresh = sqlx::query_scalar(
-                        "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
-                 WHERE item_instance_id=encode($1,'hex')::uuid
-                   AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid
-                   AND scope_kind=1 AND runtime_scope_ownership_generation=$4::text::numeric
-                   AND game_quest_fresh_corpse(item_instance_id,'oteryn:item.tibia.i7535'))",
+                    let millis: Option<i64> = sqlx::query_scalar(
+                        "SELECT s.expires_at_unix_ms - ceil(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id,world_id) JOIN game_spell_field_temporal_schedules s ON s.item_instance_id=i.item_instance_id AND s.source_transaction_id=i.minted_transaction_id AND s.source_stage=1 AND s.source_ordinal=0
+                 WHERE g.item_instance_id=encode($1,'hex')::uuid
+                   AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid
+                   AND g.scope_kind=1 AND g.runtime_scope_ownership_generation=$4::text::numeric
+                   AND game_quest_fresh_corpse(g.item_instance_id,'oteryn:item.tibia.i7535')",
                     )
                     .bind(item.as_slice())
                     .bind(world_id.as_bytes().as_slice())
                     .bind(channel_id.as_bytes().as_slice())
                     .bind(fence.scope_ownership_generation.get().to_string())
-                    .fetch_one(&mut *tx)
+                    .fetch_optional(&mut *tx)
                     .await?;
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                    Ok(fresh)
+                    Ok(millis.and_then(|ms| u64::try_from(ms).ok()).map(std::time::Duration::from_millis))
                 })
             })
             .await

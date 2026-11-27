@@ -12,6 +12,7 @@ struct GroundUseProof {
     fence: CurrentCharacterGameplayFence,
     at: MovementPositionSnapshot,
     binding: [u8; 32],
+    affected: Vec<ExactActorRef>,
 }
 
 impl source_reservation_seal::Sealed for GroundUseProof {}
@@ -31,7 +32,7 @@ impl SourceActorReservationProof for GroundUseProof {
     }
 
     fn affected_actors(&self) -> &[ExactActorRef] {
-        &[]
+        &self.affected
     }
 
     fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -69,11 +70,19 @@ pub(super) struct PendingGroundUse {
     intent: Vec<u8>,
 }
 
-struct GroundUseGuard<'a, 'r> {
+pub(super) struct GroundUseGuard<'a, 'r> {
     owner:
         &'a super::super::activity_runtime::SharedOwner<'r, tokio::sync::Mutex<ChannelRuntimeV1>>,
     cancelled: &'a std::sync::Mutex<Vec<GroundUseTurn>>,
     turn: Option<GroundUseTurn>,
+}
+
+impl GroundUseGuard<'_, '_> {
+    pub(super) fn release(&mut self, runtime: &mut ChannelRuntimeV1) {
+        if let Some(turn) = self.turn.take() {
+            turn.release(runtime);
+        }
+    }
 }
 
 impl Drop for GroundUseGuard<'_, '_> {
@@ -89,6 +98,46 @@ impl Drop for GroundUseGuard<'_, '_> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn reserve_tomb_entry(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        command: CommandRef,
+        fence: CurrentCharacterGameplayFence,
+        callback: &Callback,
+    ) -> Option<GroundUseGuard<'_, '_>> {
+        use sha2::{Digest, Sha256};
+        let encounter = callback.effects.encounter.as_ref()?;
+        let census = runtime.positioned_melee_census().ok()?;
+        let mut affected = vec![encounter::koshei_defender(runtime, encounter, &census)?];
+        for member in &encounter.players {
+            let who = census
+                .iter()
+                .find(|(_, at, session)| session.is_some() && at.position() == local(member.from))?
+                .0;
+            if who != actor {
+                affected.push(who);
+            }
+        }
+        let proof = GroundUseProof {
+            actor,
+            command,
+            fence,
+            at: runtime.read_actor_position(actor).ok()?,
+            binding: Sha256::digest(callback.key.as_bytes()).into(),
+            affected,
+        };
+        let mut reservation = runtime.prepare_source_actor_reservation(&proof).ok()?;
+        runtime
+            .reserve_source_actors(&mut reservation, &proof)
+            .ok()?;
+        Some(GroundUseGuard {
+            owner: &self.runtime,
+            cancelled: &self.states.quest_callbacks.ground_use_cleanup,
+            turn: Some(GroundUseTurn(proof, reservation)),
+        })
+    }
+
     pub(super) async fn reconcile_ground_use_receipt(&self, session: GameSessionId) -> bool {
         let pending = match self.states.quest_callbacks.ground_uses.lock() {
             Ok(uses) => uses.get(&session).cloned(),
@@ -295,7 +344,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut revision = self.revision_sequencer.acquire(current.character_id).await;
         let (callback, context, turn) = {
-            let mut runtime = self.runtime.lock().await;
+            let (mut runtime, states) = self.lock_callback_guards().await;
             self.states
                 .quest_callbacks
                 .finish_cancelled_ground_uses(&mut runtime);
@@ -306,9 +355,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(UseOutcome::rejected()));
             }
-            let Ok(states) = self.states.spell_states.try_lock() else {
-                return Ok(Some(UseOutcome::rejected()));
-            };
             let at = runtime.read_actor_position(actor).map_err(|_| ())?;
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
             {
@@ -347,6 +393,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence: current,
                 at,
                 binding: Sha256::digest(encoded).into(),
+                affected: Vec::new(),
             };
             let context = QuestWorldContext {
                 map_revision,
@@ -514,37 +561,68 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             })
         };
-        let permit = self.spell_lane_permit().await?;
-        let fence = command.item_fence?;
-        let current = self
+        let Some(fence) = command.item_fence else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
+            return outcome(UseDisposition::Rejected);
+        };
+        if !self
             .current_quest_fence(command.game_session_id)
             .await
-            .ok()
-            .flatten()?;
-        if current.item_fence() != fence
-            || !self
-                .root
-                .koshei_corpse_is_fresh(&permit, fence, corpse.item.item_instance_id)
-                .await
-                .ok()?
+            .is_ok_and(|current| current.is_some_and(|current| current.item_fence() == fence))
         {
             return outcome(UseDisposition::Rejected);
         }
-        let mut runtime = self.runtime.lock().await;
+        let observed = tokio::time::Instant::now();
+        let Ok(Some(remaining)) = self
+            .root
+            .koshei_corpse_remaining(&permit, fence, corpse.item.item_instance_id)
+            .await
+        else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let Some(expires) = observed.checked_add(remaining) else {
+            return outcome(UseDisposition::Rejected);
+        };
+        #[cfg(test)]
+        if let Some(sender) = self
+            .states
+            .quest_callbacks
+            .observed_corpse_expiry
+            .lock()
+            .ok()
+            .and_then(|mut slot| slot.take())
+        {
+            let _ = sender.send(expires);
+        }
+        let Ok((mut runtime, states)) =
+            tokio::time::timeout_at(expires, self.lock_callback_guards()).await
+        else {
+            return outcome(UseDisposition::Rejected);
+        };
         let now = self.clock_origin.elapsed();
         if !runtime
             .player_control_facts(actor, command.game_session_id)
             .is_ok_and(|facts| facts.control_loss.is_none())
             || runtime.binding().scope_generation() != fence.scope_ownership_generation
             || find(&runtime).as_ref() != Some(&corpse)
-            || !self.states.spell_states.try_lock().is_ok_and(|states| {
-                !states.is_dead(actor)
-                    && states.spell_idle(&runtime, actor, command.game_session_id)
-            })
+            || states.is_dead(actor)
+            || !states.spell_idle(&runtime, actor, command.game_session_id)
+            || !runtime
+                .bound_attacker_lease(actor, command.game_session_id)
+                .is_ok_and(|lease| {
+                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                        && lease.generation() == fence.character_lease_generation
+                })
+            || runtime.binding().runtime_scope() != fence.runtime_scope
         {
             return outcome(UseDisposition::Rejected);
         }
-        let at = runtime.read_actor_position(actor).ok()?.position();
+        let Ok(snapshot) = runtime.read_actor_position(actor) else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let at = snapshot.position();
         if at.floor != corpse.position.floor
             || at.x.abs_diff(corpse.position.x) > 1
             || at.y.abs_diff(corpse.position.y) > 1
@@ -560,9 +638,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return outcome(UseDisposition::Exhausted);
         }
         outcome(
-            if runtime
-                .wake_koshei_from_corpse(corpse.item.item_instance_id)
-                .unwrap_or(false)
+            if tokio::time::Instant::now() < expires
+                && runtime
+                    .wake_koshei_from_corpse(corpse.item.item_instance_id)
+                    .unwrap_or(false)
             {
                 UseDisposition::Committed
             } else {

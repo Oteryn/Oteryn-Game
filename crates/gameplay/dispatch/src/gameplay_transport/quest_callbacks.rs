@@ -150,6 +150,9 @@ pub(super) struct PendingCallbacks {
     pub(super) before_commit:
         std::sync::Mutex<Option<std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>>>,
     #[cfg(test)]
+    pub(super) observed_corpse_expiry:
+        std::sync::Mutex<Option<tokio::sync::oneshot::Sender<tokio::time::Instant>>>,
+    #[cfg(test)]
     pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
 }
 
@@ -1345,9 +1348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn lock_callback_guards(&self) -> CallbackGuards<'_> {
-        let runtime = self.runtime.lock().await;
-        let states = self.states.spell_states.lock().await;
-        (runtime, states)
+        super::lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states).await
     }
 
     pub(super) async fn use_quest_callback(
@@ -2234,9 +2235,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         entered: MovementPositionSnapshot,
         origin: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
-        let mut runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
-        if runtime.read_actor_position(actor) == Ok(entered) {
+        let (mut runtime, mut states) = self.lock_callback_guards().await;
+        if runtime.player_control_facts(actor, session).is_ok()
+            && runtime.read_actor_position(actor) == Ok(entered)
+        {
             self.refuse_quest_step(
                 None,
                 &mut runtime,
