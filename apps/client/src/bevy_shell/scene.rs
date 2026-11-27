@@ -3,6 +3,7 @@ use super::{game_ui::viewport::WorldViewport, owner::HostOwner};
 use bevy::camera::visibility::RenderLayers;
 use bevy::{
     asset::RenderAssetUsages,
+    image::ImageSampler,
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
     window::PrimaryWindow,
@@ -23,6 +24,8 @@ pub(super) struct SceneCache {
     smooth: smooth::Cache,
     atlas: Option<AtlasImage>,
     image: Option<Handle<Image>>,
+    minimap_atlas: Option<AtlasImage>,
+    minimap_image: Option<Handle<Image>>,
     entities: Vec<Entity>,
     floor_alpha: std::collections::BTreeMap<i16, f32>,
 }
@@ -33,6 +36,42 @@ impl SceneCache {
 }
 #[derive(Component)]
 pub(super) struct WorldQuad;
+
+fn upload_atlas(
+    atlas: &AtlasImage,
+    cached: &mut Option<AtlasImage>,
+    handle: &mut Option<Handle<Image>>,
+    images: &mut Assets<Image>,
+) -> Handle<Image> {
+    if cached.as_ref() == Some(atlas)
+        && let Some(handle) = handle
+    {
+        return handle.clone();
+    }
+    let mut image = Image::new(
+        Extent3d {
+            width: atlas.width(),
+            height: atlas.height(),
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        atlas.rgba().to_vec(),
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    );
+    image.sampler = ImageSampler::nearest();
+    let updated = if let Some(handle) = handle
+        && let Some(mut existing) = images.get_mut(&*handle)
+    {
+        *existing = image;
+        handle.clone()
+    } else {
+        images.add(image)
+    };
+    *cached = Some(atlas.clone());
+    *handle = Some(updated.clone());
+    updated
+}
 
 pub(super) fn project(
     mut commands: Commands,
@@ -55,30 +94,23 @@ pub(super) fn project(
         return;
     };
     let scene = play.view.scene();
-    if cache.atlas.as_ref() != Some(scene.atlas()) {
-        let atlas = scene.atlas();
-        let image = Image::new(
-            Extent3d {
-                width: atlas.width(),
-                height: atlas.height(),
-                depth_or_array_layers: 1,
-            },
-            TextureDimension::D2,
-            atlas.rgba().to_vec(),
-            TextureFormat::Rgba8UnormSrgb,
-            RenderAssetUsages::default(),
-        );
-        if let Some(handle) = &cache.image {
-            if let Some(mut existing) = images.get_mut(handle) {
-                *existing = image;
-            }
-        } else {
-            cache.image = Some(images.add(image));
-        }
-        cache.atlas = Some(atlas.clone());
-    }
-    let Some(image) = cache.image.clone() else {
-        return;
+    let cache = &mut *cache;
+    let atlas = scene.atlas();
+    let image = upload_atlas(atlas, &mut cache.atlas, &mut cache.image, &mut images);
+    let minimap_range = scene.minimap_quad_range();
+    let minimap_atlas = scene.unlit_atlas();
+    // Weather changes atlas pixels but preserves the layout used by the quads.
+    let minimap_image = if !minimap_range.is_empty() && !std::ptr::eq(atlas, minimap_atlas) {
+        upload_atlas(
+            minimap_atlas,
+            &mut cache.minimap_atlas,
+            &mut cache.minimap_image,
+            &mut images,
+        )
+    } else {
+        cache.minimap_atlas = None;
+        cache.minimap_image = None;
+        image.clone()
     };
     let scene_size = scene.view().viewport_px();
     let size = if viewport.size.x > 0 {
@@ -90,7 +122,6 @@ pub(super) fn project(
         )
     };
     let offset = ((size - Vec2::new(scene_size.0 as f32, scene_size.1 as f32)) * 0.5).floor();
-    let minimap_range = scene.minimap_quad_range();
     let tile_count = scene.tiles().instances().len();
     let camera = play
         .view
@@ -119,7 +150,7 @@ pub(super) fn project(
         entities,
         smooth,
         ..
-    } = &mut *cache;
+    } = cache;
     let ordered = scene
         .tiles()
         .instances()
@@ -143,22 +174,21 @@ pub(super) fn project(
                 .enumerate()
                 .filter(|(i, _)| !shared_frontend || !hud_quads.contains(i))
                 .map(|(i, q)| {
-                    let mut tint = lighting.quad_tint(q, i, QuadLayer::Overlay);
-                    if let Some((_, floor)) = scene
-                        .floor_quad_ranges()
-                        .iter()
-                        .find(|(range, _)| range.contains(&i))
-                    {
-                        tint[3] *= floor_alpha.get(floor).copied().unwrap_or(1.0);
-                    }
-                    (
-                        tile_count + i,
-                        q,
-                        tint,
-                        minimap_range.contains(&i),
-                        i,
-                        QuadLayer::Overlay,
-                    )
+                    let minimap = minimap_range.contains(&i);
+                    let tint = if minimap {
+                        [1.; 4]
+                    } else {
+                        let mut tint = lighting.quad_tint(q, i, QuadLayer::Overlay);
+                        if let Some((_, floor)) = scene
+                            .floor_quad_ranges()
+                            .iter()
+                            .find(|(range, _)| range.contains(&i))
+                        {
+                            tint[3] *= floor_alpha.get(floor).copied().unwrap_or(1.0);
+                        }
+                        tint
+                    };
+                    (tile_count + i, q, tint, minimap, i, QuadLayer::Overlay)
                 }),
         );
     let smooth_enabled = !lighting.sources.is_empty();
@@ -193,14 +223,18 @@ pub(super) fn project(
                 camera
             },
         };
-        let Some((sprite, transform)) =
-            project_quad(quad, tint, index, &image, scene.atlas(), viewport)
+        let (image, atlas) = if minimap {
+            (&minimap_image, minimap_atlas)
+        } else {
+            (&image, atlas)
+        };
+        let Some((sprite, transform)) = project_quad(quad, tint, index, image, atlas, viewport)
         else {
             continue;
         };
         if smooth_enabled {
             batches[usize::from(minimap)].push(
-                lighting,
+                (!minimap).then_some(lighting),
                 quad,
                 source_index,
                 source_layer,
@@ -226,7 +260,12 @@ pub(super) fn project(
         count += 1;
     }
     if smooth_enabled {
-        smooth.draw(&mut commands, &mut mesh_assets, &image, batches);
+        smooth.draw(
+            &mut commands,
+            &mut mesh_assets,
+            [&image, &minimap_image],
+            batches,
+        );
     }
     for entity in entities.drain(count..) {
         commands.entity(entity).despawn();
@@ -328,10 +367,10 @@ pub(crate) fn n07d_sidebar_colors(
         );
         let (sprite, _) = project_quad(
             quad,
-            tint,
+            [1.; 4],
             scene.tiles().instances().len() + index,
             &Handle::default(),
-            scene.atlas(),
+            scene.unlit_atlas(),
             QuadViewport {
                 scale: 1.,
                 size,

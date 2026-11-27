@@ -12,6 +12,7 @@ use super::{
 };
 use bevy::{
     camera::{RenderTarget, visibility::RenderLayers},
+    image::ImageSampler,
     prelude::*,
     render::{
         render_resource::{TextureFormat, TextureUsages},
@@ -54,6 +55,7 @@ pub(super) fn install(app: &mut App) {
 }
 fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let mut target = Image::new_target_texture(SIZE.x, SIZE.y, TextureFormat::Rgba8UnormSrgb, None);
+    target.sampler = ImageSampler::nearest();
     target.texture_descriptor.usage |= TextureUsages::COPY_SRC;
     let image = images.add(target);
     commands.spawn((
