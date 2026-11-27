@@ -202,21 +202,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "fd6f0d451bac28ba61a5dc079bf233d82fde28703987f375e2e6050cf4a4252a",
+        "a3a48f0fc1741b7937a2c12f34b3faf963825239d6fd90e6e9408758d5baf9a8",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
+        "4dbbea48a0c8faac3452a7e2f569493f11c3e08cc8e703166045aed0247977fb",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
+        "4dbbea48a0c8faac3452a7e2f569493f11c3e08cc8e703166045aed0247977fb",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
