@@ -928,7 +928,7 @@ impl ChannelSpellStates {
     }
 
     /// CHAR-VITALS-1: [`Self::initialize`] in the first-entry owner step, which also restores the
-    /// `saved` (health, mana) of the Character's last-position row when this call creates the
+    /// Character's saved health, mana and rest (including soul) when this call creates the
     /// actor's state. A state that already existed (a retry, a same-GameSession reconnect) keeps
     /// its vitals exactly, as [`Self::initialize`] keeps them.
     #[allow(
