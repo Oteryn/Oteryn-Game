@@ -415,8 +415,218 @@ async fn scenario(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[test]
+fn activity_ground_loop_projects_a_carried_corpse_in_its_new_scope_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("activity-corpse-ground", || {
+        super::fixture::run(async move |admin| {
+            let h =
+                Harness::create_with_admission_seed(admin, "activity_corpse_ground", true, false)
+                    .await?;
+            let result = corpse_cross_scope(&h).await;
+            h.cleanup().await?;
+            result
+        })
+    })
+}
+
+async fn corpse_cross_scope(h: &Harness) -> TestResult {
+    use crate::durability::activity_handoff::ActivityEnterOutcome;
+    use crate::durability::item_mint::{
+        CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintOutcome,
+        ItemMintRequest,
+    };
+
+    let (_evidence, mut handoff) =
+        super::activity_runtime_fixtures::prepare_activity_fixture(h).await?;
+    handoff.command_id = 12;
+    let participant = &handoff.participants[0];
+    let source = participant.source;
+    let pin = handoff.destination_content;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
+    sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+        .bind(source.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
+
+    let revision =
+        |digest: [u8; 32]| crate::durability::map_item_mint_audit::map_revision_of(&digest);
+    let content_revision = revision(pin.server_artifact_digest);
+    let cell = |position: crate::durability::character_last_position::LastPositionCell| {
+        [
+            position.x.to_be_bytes().as_slice(),
+            position.y.to_be_bytes().as_slice(),
+            position.floor.to_be_bytes().as_slice(),
+        ]
+        .concat()
+    };
+    let old_cell = cell(participant.source_position.cell);
+    let new_cell = cell(participant.destination_cell);
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = source.runtime_scope
+    else {
+        return Err("expected a Channel corpse MINT".into());
+    };
+    let corpse_ref = [
+        world_id.as_bytes().as_slice(),
+        channel_id.as_bytes().as_slice(),
+        source
+            .scope_ownership_generation
+            .get()
+            .to_be_bytes()
+            .as_slice(),
+        99_u32.to_be_bytes().as_slice(),
+        1_u64.to_be_bytes().as_slice(),
+    ]
+    .concat();
+    let definition = TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: "oteryn:item.tibia.i3994".into(),
+        revision_ref: "definition-r1".into(),
+    };
+    let mut mint = h
+        .root
+        .freeze_item_mint(
+            &authority,
+            &h.node,
+            ItemMintRequest {
+                cause: ItemMintCause::for_test_scope(
+                    source.runtime_scope,
+                    source.scope_ownership_generation,
+                    99,
+                    1,
+                    definition.clone(),
+                    CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+                    0,
+                ),
+                item: definition,
+                quantity: 1,
+                ground: GroundPlacement {
+                    spatial_position: old_cell.clone(),
+                    corpse_ref,
+                    map_revision: revision(pin.map_revision_digest),
+                    content_revision: content_revision.clone(),
+                    native_room_placement_context: pin.coordinate_frame_digest.to_vec(),
+                },
+                content_revision: content_revision.clone(),
+                ruleset_revision: "ruleset-1".into(),
+                sim_revision: "sim-1".into(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    let permit = SpellLane::for_scope(source.runtime_scope)
+        .acquire()
+        .await
+        .map_err(|_| "Channel spell lane unavailable")?;
+    let ItemMintOutcome::Committed(body) = h
+        .root
+        .commit_item_mint(&permit, &authority, &h.node, &mut mint)
+        .await
+        .map_err(debug)?
+    else {
+        return Err("ordinary corpse MINT did not commit".into());
+    };
+    let scheduled: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules s WHERE s.item_instance_id=encode($1,'hex')::uuid AND s.source_ordinal=0 AND s.source_stage=1)")
+        .bind(body.item_instance_id.as_slice()).fetch_one(&h.pool).await?;
+    assert!(scheduled);
+    let content = Content(pin.server_artifact_digest);
+    h.root
+        .commit_item_loop_move(
+            &permit,
+            &authority,
+            &h.node,
+            &source,
+            CommandRef::new(source.game_session_id, CommandId::new(11).map_err(debug)?),
+            &content,
+            LoopMoveRequest {
+                item: body.item_instance_id,
+                count: None,
+                pickup_cell: Some(old_cell),
+                destination: LoopDestination::MainBackpack,
+            },
+        )
+        .await?
+        .map_err(debug)?;
+    drop(permit);
+
+    let session = participant.destination_game_session_id;
+    let ActivityEnterOutcome::Entered(_) = ActivityHandoffOwner::new(h.root.clone())
+        .enter(&authority, &h.node, handoff)
+        .await?
+    else {
+        return Err("activity should admit the character carrying the corpse".into());
+    };
+    let current = item_fence_of(
+        FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(session)
+            .await?
+            .0,
+    )
+    .ok_or("current Instance fence")?;
+    let permit = SpellLane::for_scope(current.runtime_scope)
+        .acquire()
+        .await
+        .map_err(|_| "Instance spell lane unavailable")?;
+    let dropped = h
+        .root
+        .commit_item_loop_move(
+            &permit,
+            &authority,
+            &h.node,
+            &current,
+            CommandRef::new(session, CommandId::new(12).map_err(debug)?),
+            &content,
+            LoopMoveRequest {
+                item: body.item_instance_id,
+                count: None,
+                pickup_cell: None,
+                destination: LoopDestination::Ground(LoopGround {
+                    spatial_position: new_cell.clone(),
+                    map_revision: pin
+                        .map_revision_digest
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect(),
+                    content_revision,
+                    placement_context: pin.coordinate_frame_digest.to_vec(),
+                }),
+            },
+        )
+        .await?
+        .map_err(debug)?;
+    assert_eq!(dropped.operation, 4);
+    let projected = h
+        .root
+        .read_item_loop_ground_for_scope(current.runtime_scope)
+        .await?;
+    let [body_view] = projected.as_slice() else {
+        return Err("expected the single carried corpse in the Instance".into());
+    };
+    assert_eq!(body_view.item.item_instance_id, body.item_instance_id);
+    assert_eq!(body_view.item.runtime_scope, current.runtime_scope);
+    assert_eq!(body_view.item.ground.spatial_position, new_cell);
+    assert!(body_view.native_corpse);
+    assert!(body_view.field_collision.is_none());
+    assert!(
+        h.root
+            .read_item_loop_ground_for_scope(source.runtime_scope)
+            .await?
+            .is_empty()
+    );
+    Ok(())
+}
+
 /// Explicitly authored fixture Item definitions, pinned to the admitted content
-/// digest. They are the existing test backpack and a five-coin stack only.
+/// digest.
 struct Content([u8; 32]);
 
 impl ItemWeightLookup for Content {
@@ -441,6 +651,7 @@ impl ItemLoopContent for Content {
         let (stack, container_capacity, container_slot_equip_pattern) =
             match definition.production_key.as_str() {
                 "oteryn:item.tibia.i2854" => (ItemStackClass::NonStackable, Some(20), true),
+                "oteryn:item.tibia.i3994" => (ItemStackClass::NonStackable, None, false),
                 "oteryn:item.tibia.i3031" => (
                     ItemStackClass::Stackable {
                         proven_maximum: Some(100),

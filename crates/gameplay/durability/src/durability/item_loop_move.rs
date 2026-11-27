@@ -2482,9 +2482,8 @@ impl DurabilityRoot {
                     } else {
                         super::db::begin_observation_transaction(holder, deadline).await?
                     };
-                    // MINT provenance remains historical after a fresh owner's
-                    // fenced Ground drag updates the location's generation.
-                    // Current mutation authority is checked by the move owner.
+                    // A committed corpse retains its MINT provenance when
+                    // an exact subsequent drop supplies its Ground custody.
                     // The combined cap covers ordinary drops, fields, and all live corpses.
                     let bound = ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX;
                     let rows = sqlx::query(
@@ -2501,9 +2500,15 @@ impl DurabilityRoot {
                                JOIN game_item_instances i USING (item_instance_id, world_id) \
                                LEFT JOIN game_item_mint_receipts cr ON cr.item_instance_id=i.item_instance_id AND cr.transaction_id=i.minted_transaction_id \
                                  AND cr.loot_purpose_key='CORPSE_MATERIALIZATION' AND cr.draw_ordinal=0 AND cr.materialized_at IS NOT NULL \
-                                 AND cr.death_world_id=g.world_id AND cr.death_channel_id IS NOT DISTINCT FROM g.channel_id AND cr.death_instance_id IS NOT DISTINCT FROM g.instance_id \
-                                 AND EXISTS(SELECT 1 FROM game_item_audit_outbox ca WHERE ca.event_id=cr.event_id AND ca.transaction_id=cr.transaction_id AND ca.item_instance_id=cr.item_instance_id AND ca.envelope_sha256=cr.envelope_sha256 AND ca.occurred_at=cr.occurred_at) \
-                                 AND EXISTS(SELECT 1 FROM game_item_mint_reservations cv WHERE cv.transaction_id=cr.transaction_id AND cv.item_instance_id=cr.item_instance_id AND cv.event_id=cr.event_id AND cv.intent_binding=cr.intent_binding AND sha256(cv.envelope)=cr.envelope_sha256) \
+                                 AND cr.loot_table_family='Item' AND i.quantity=1 AND cr.death_world_id=g.world_id \
+                                 AND (((cr.death_scope_kind,cr.death_channel_id,cr.death_instance_id) \
+                                       IS NOT DISTINCT FROM (g.scope_kind,g.channel_id,g.instance_id) \
+                                       AND cr.death_scope_ownership_generation<=g.runtime_scope_ownership_generation) \
+                                      OR game_ordinary_corpse_drag_source(i.item_instance_id)) \
+                                 AND EXISTS(SELECT 1 FROM game_item_mint_reservations cv \
+                                     JOIN game_item_audit_outbox ca ON ca.event_id=cv.event_id AND ca.transaction_id=cv.transaction_id AND ca.item_instance_id=cv.item_instance_id AND ca.envelope=cv.envelope \
+                                     WHERE cv.transaction_id=cr.transaction_id AND cv.item_instance_id=cr.item_instance_id AND cv.event_id=cr.event_id AND cv.intent_binding=cr.intent_binding \
+                                       AND sha256(cv.envelope)=cr.envelope_sha256 AND ca.envelope_sha256=cr.envelope_sha256 AND ca.occurred_at=cr.occurred_at) \
                                LEFT JOIN game_elemental_energy_field_receipts ef ON ef.item_instance_id=i.item_instance_id AND game_elemental_energy_field_source(i.item_instance_id) \
                                LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
                                LEFT JOIN game_spell_item_receipts sr ON sr.transaction_id=fl.transaction_id AND sr.cause_kind IN(1,2,3,4) \
@@ -2514,7 +2519,8 @@ impl DurabilityRoot {
                                 AND fl.created_xact_id=sr.created_xact_id AND sr.binding=sha256(sr.intent) \
                                LEFT JOIN game_spell_item_audit_outbox sa ON sa.transaction_id=sr.transaction_id \
                                 AND sa.event_id=sr.event_id AND sa.envelope=sr.intent AND sa.envelope_sha256=sr.binding AND sa.created_xact_id=sr.created_xact_id \
-                               LEFT JOIN game_spell_field_temporal_schedules fc ON cr.item_instance_id IS NULL AND fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
+                               LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=fl.transaction_id AND fc.source_ordinal=fl.ordinal \
+                                 AND fc.content_digest=fl.content_generation_digest AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                               WHERE g.world_id = encode($1,'hex')::uuid \
                                 AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
                                 AND (ef.transaction_id IS NOT NULL OR cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \

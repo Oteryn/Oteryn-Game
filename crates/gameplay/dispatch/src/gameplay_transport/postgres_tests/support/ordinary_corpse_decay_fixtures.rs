@@ -231,6 +231,50 @@ pub(super) async fn exercise_drag(
             .map_err(debug)?;
         assert_eq!(tile.items[0].item_instance_id, corpse.item_instance_id);
         tx.rollback().await?;
+        drop(permit);
+
+        super::quest_world_callbacks_fixtures::offering(
+            owner,
+            fence,
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: oteryn_gameplay_quests::quest::world_callbacks::Position {
+                    x: u16::try_from(at.x)?,
+                    y: u16::try_from(at.y)?,
+                    floor: i8::try_from(at.floor.checked_neg().ok_or("map floor")?)?,
+                },
+                item: "oteryn:item.tibia.i266".into(),
+                count: 1,
+            },
+            6000,
+        )
+        .await?;
+        let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+        let mut tx = h.pool.begin().await?;
+        let authority = item_tx::assert_spell_item_scope_in_transaction(
+            &mut tx,
+            &permit,
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence.runtime_scope,
+            fence.scope_ownership_generation.get(),
+        )
+        .await
+        .map_err(debug)?;
+        let tile =
+            item_tx::read_qualification_scope_tile_in_transaction(&mut tx, &authority, &target)
+                .await
+                .map_err(debug)?;
+        let [potion, body] = tile.items.as_slice() else {
+            return Err("expected a potion above the moved corpse".into());
+        };
+        assert_eq!(potion.definition.production_key, "oteryn:item.tibia.i266");
+        assert_eq!(body.item_instance_id, corpse.item_instance_id);
+        assert!(
+            !potion.blocks_movement && !potion.blocks_projectile && !potion.immovable_block_solid
+        );
+        assert!(potion.field_origin.is_none() && potion.creature_field_origin.is_none());
+        tx.rollback().await?;
     }
     use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, QuickLootRequest};
 

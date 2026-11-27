@@ -116,35 +116,53 @@ fn pinned_item_source(
 pub(super) fn project_loop_drop_flags(
     row: &sqlx::postgres::PgRow,
     target: &SpellGroundTarget,
+    loop_receipt: bool,
     flags: &mut [Option<bool>],
 ) -> Result<()> {
+    use crate::content::ReferenceItemField as F;
+    use crate::content::native_gameplay::NativeItemDestination;
+
     let definition = decoded_definition(row)?;
     let source = pinned_item_source(target)?;
     let policy = source
         .item_policy(&definition.production_key, &definition.revision_ref)
         .ok_or(SpellItemError::Rejected("loop drop Item profile missing"))?;
     let record = policy.record();
-    let item = QualifiedItemDefinition::from_native_policy(policy)
-        .map_err(SpellItemError::Rejected)?;
-    if definition != item.definition
-        || item.content_generation_digest != source.source_digest()
-        || !item.materializable
-        || !item.ground_destination
+    let production = &record.production_definition;
+    let destinations = &record.admission.legal_destinations;
+    if definition.family != "Item"
+        || production.family != definition.family
+        || production.production_key != definition.production_key
+        || production.revision_ref != definition.revision_ref
+        || !record.admission.materializable
+        || !destinations.contains(&NativeItemDestination::Ground)
         || record.production_binding.disposition
             != crate::content::ProjectV2SourceIdentityDisposition::Exact
         || record.production_binding.target.key != definition.production_key
         || record.production_binding.target.revision != definition.revision_ref
     {
-        return Err(SpellItemError::Rejected("loop drop Item qualification mismatch"));
+        return Err(SpellItemError::Rejected(
+            "loop drop Item qualification mismatch",
+        ));
     }
+    // The ordinary overlay already treats a loose, portable drop as nonblocking.
+    // Preserve explicit source flags and require real loop custody before using
+    // that policy for fields the portable Item profile leaves unspecified.
+    let portable_drop = loop_receipt
+        && destinations.contains(&NativeItemDestination::CharacterInventory)
+        && matches!(&record.semantics.physical, F::Known(physical)
+            if physical.movable == F::Known(true) && physical.pickupable == F::Known(true));
     let qualified = [
         record.attributes.blocks_movement,
         record.attributes.blocks_projectile,
         record.attributes.immovable_block_solid,
     ];
     for (current, qualified) in flags.iter_mut().zip(qualified) {
+        let qualified = qualified.or(portable_drop.then_some(false));
         if current.is_some() && *current != qualified {
-            return Err(SpellItemError::Rejected("loop drop collision proof conflicts with current source"));
+            return Err(SpellItemError::Rejected(
+                "loop drop collision proof conflicts with current source",
+            ));
         }
         *current = qualified;
     }
@@ -155,6 +173,7 @@ pub(super) fn project_current_corpse_flags(
     row: &sqlx::postgres::PgRow,
     ownership_generation: u64,
     target: &SpellGroundTarget,
+    loop_receipt: bool,
     flags: &mut [Option<bool>],
 ) -> Result<()> {
     let Some(wire) = row.try_get::<Option<Vec<u8>>, _>("corpse_mint_envelope")? else {
@@ -229,18 +248,19 @@ pub(super) fn project_current_corpse_flags(
         || after.item_instance_id.as_slice() != id.as_slice()
         || after.world_id != ground.world_id
         || after.world_id.as_slice() != current_world.as_slice()
-        || !scope_matches
         || after.quantity != 1
         || after.lifecycle != 1
         || !mint.before_semantically_absent
         || mint.corpse_container_entry.is_some()
-        || provenance.content_revision != target.content_revision
-        || ground.content_revision != target.content_revision
-        || ground.map_revision != target.map_revision
-        || ground.native_room_placement_context != target.placement_context
+        || provenance.content_revision != ground.content_revision
         || ground.runtime_scope_ownership_generation == 0
-        || ground.runtime_scope_ownership_generation > ownership_generation
         || death.scope_ownership_generation != ground.runtime_scope_ownership_generation
+        || (!loop_receipt
+            && (!scope_matches
+                || ground.content_revision != target.content_revision
+                || ground.map_revision != target.map_revision
+                || ground.native_room_placement_context != target.placement_context
+                || ground.runtime_scope_ownership_generation > ownership_generation))
     {
         return Err(SpellItemError::Rejected(
             "corpse MINT does not bind current scoped Content",
