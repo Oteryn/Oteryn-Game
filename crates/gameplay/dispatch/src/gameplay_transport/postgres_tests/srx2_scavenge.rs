@@ -903,8 +903,10 @@ async fn entity_target(
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
         let pin = runtime.content_pin().clone();
+        // Both native corpses are produced in one runtime with distinct sources.
+        let source = if pickup { u16::MAX - 1 } else { u16::MAX };
         let creature = runtime
-            .realize_native_qualification_spawn(pin, &creature_key, position)
+            .realize_native_qualification_spawn_for_source(source, pin, &creature_key, position)
             .map_err(debug)?;
         let health = runtime
             .companion_snapshot(creature.actor)
