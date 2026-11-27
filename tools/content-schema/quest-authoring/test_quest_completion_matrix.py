@@ -18,31 +18,63 @@ class QuestCompletionMatrixTest(unittest.TestCase):
 
     def test_qready2_every_owned_claim_has_runtime_proof(self):
         import json
-        packet = json.loads((self.root / "tools/content-schema/quest-authoring/samples/completion-matrix/qready2-cases.json").read_text())
+
+        packet = json.loads(
+            (
+                self.root
+                / "tools/content-schema/quest-authoring/samples/completion-matrix/qready2-cases.json"
+            ).read_text()
+        )
         titles = {case["wiki_title"] for case in packet["cases"]}
         self.assertEqual(17, len(titles))
         self.assertEqual(21, len(packet["cases"]))
         from quest_reward_use_proofs import load
+
         qualified = load(self.root, matrix.load_reward_claims(self.root))
-        self.assertEqual(17, sum(row["wiki_title"] in titles and row["implementation_state"] == "REWARD_CLAIM_USE_VERIFIED"
-                                for row in self.result["records"]))
+        self.assertEqual(
+            17,
+            sum(
+                row["wiki_title"] in titles
+                and row["implementation_state"] == "REWARD_CLAIM_USE_VERIFIED"
+                for row in self.result["records"]
+            ),
+        )
         for row in self.result["records"]:
-            if row["wiki_title"] in titles and set(row["reward_claim_owner"]["claim_keys"]) <= qualified:
-                self.assertEqual("REWARD_CLAIM_USE_VERIFIED", row["implementation_state"])
+            if (
+                row["wiki_title"] in titles
+                and set(row["reward_claim_owner"]["claim_keys"]) <= qualified
+            ):
+                self.assertEqual(
+                    "REWARD_CLAIM_USE_VERIFIED", row["implementation_state"]
+                )
                 self.assertTrue(all(d["runtime_enabled"] for d in row["canonical"]))
-                self.assertEqual(set(row["reward_claim_owner"]["claim_keys"]),
-                                 {c["claim_key"] for c in packet["cases"] if c["wiki_title"] == row["wiki_title"]})
+                self.assertEqual(
+                    set(row["reward_claim_owner"]["claim_keys"]),
+                    {
+                        c["claim_key"]
+                        for c in packet["cases"]
+                        if c["wiki_title"] == row["wiki_title"]
+                    },
+                )
 
     def test_purple_tome_all_three_claims_have_runtime_proof(self):
-        row = next(row for row in self.result["records"] if row["wiki_title"] == "Purple Tome Quest")
+        row = next(
+            row
+            for row in self.result["records"]
+            if row["wiki_title"] == "Purple Tome Quest"
+        )
         self.assertEqual("REWARD_CLAIM_USE_VERIFIED", row["implementation_state"])
         self.assertEqual(3, len(row["reward_claim_owner"]["claim_keys"]))
         self.assertTrue(all(d["runtime_enabled"] for d in row["canonical"]))
 
     def test_matrix_never_claims_playability(self):
         self.assertEqual(0, self.result["summary"]["playable_verified"])
-        self.assertTrue(all(row["playable_verification"] == "NOT_ASSESSED"
-                            for row in self.result["records"]))
+        self.assertTrue(
+            all(
+                row["playable_verification"] == "NOT_ASSESSED"
+                for row in self.result["records"]
+            )
+        )
 
     def test_donor_coverage_matches_pinned_inventory(self):
         self.assertEqual(
@@ -81,15 +113,23 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             by_title["To Outfox a Fox Quest"]["work_state"],
         )
         reward_only = [
-            row for row in self.result["records"]
+            row
+            for row in self.result["records"]
             if row["work_state"] == "REWARD_CLAIM_USE_PENDING"
         ]
-        enabled = sum(row["work_state"] == "REWARD_CLAIM_USE_ENABLED" for row in self.result["records"])
-        verified = sum(row["work_state"] == "REWARD_CLAIM_USE_VERIFIED" for row in self.result["records"])
+        enabled = sum(
+            row["work_state"] == "REWARD_CLAIM_USE_ENABLED"
+            for row in self.result["records"]
+        )
+        verified = sum(
+            row["work_state"] == "REWARD_CLAIM_USE_VERIFIED"
+            for row in self.result["records"]
+        )
         self.assertEqual(42, len(reward_only) + enabled + verified)
         self.assertTrue(
             all(
-                {definition["kind"] for definition in row["canonical"]} == {"reward_only"}
+                {definition["kind"] for definition in row["canonical"]}
+                == {"reward_only"}
                 for row in reward_only
             )
         )
@@ -105,27 +145,41 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         # Crystal201189f's complete bag captures close SOURCE gaps for these
         # three quests. They remain implementation-pending, never promoted to USE.
         import sys
-        sys.path.insert(0, str(self.root / 'tools/content-schema/reward-claim-authoring'))
+
+        sys.path.insert(
+            0, str(self.root / "tools/content-schema/reward-claim-authoring")
+        )
         import container_native
+
         container_native.source()  # Verify the immutable donor packet bytes/cohort.
         claims = matrix.load_reward_claims(self.root)
-        for title in ('Draconia Quest', 'Fire Axe Quest', 'Goblin Temple Quest'):
-            owner = by_title[title]['reward_claim_owner']
-            self.assertEqual(owner['state'], 'REWARD_CLAIM_IMPLEMENTATION_PENDING')
-            selected = [claims[key] for key in owner['claim_keys']]
-            self.assertTrue(all(not claim.get('data_holds') for claim in selected))
-            containers = [claim['native_contents'] for claim in selected if 'native_contents' in claim]
+        for title in ("Draconia Quest", "Fire Axe Quest", "Goblin Temple Quest"):
+            owner = by_title[title]["reward_claim_owner"]
+            self.assertEqual(owner["state"], "REWARD_CLAIM_IMPLEMENTATION_PENDING")
+            selected = [claims[key] for key in owner["claim_keys"]]
+            self.assertTrue(all(not claim.get("data_holds") for claim in selected))
+            containers = [
+                claim["native_contents"]
+                for claim in selected
+                if "native_contents" in claim
+            ]
             self.assertTrue(containers, title)
             for capture in containers:
-                self.assertEqual(capture['revision'], container_native.REVISION)
-                self.assertEqual(capture['source_sha256'], container_native.SOURCE_SHA256)
+                self.assertEqual(capture["revision"], container_native.REVISION)
+                self.assertEqual(
+                    capture["source_sha256"], container_native.SOURCE_SHA256
+                )
         # Native Item qualification can resolve a live claim without rewriting
         # its historical SOURCE witness or declaring the whole quest playable.
         draconia = by_title["Draconia Quest"]
-        self.assertEqual(draconia["reward_claim_owner"]["state"],
-                         "REWARD_CLAIM_IMPLEMENTATION_PENDING")
-        self.assertIn("claim_item_semantics_missing",
-                      draconia["canonical"][0]["missing_data_codes"])
+        self.assertEqual(
+            draconia["reward_claim_owner"]["state"],
+            "REWARD_CLAIM_IMPLEMENTATION_PENDING",
+        )
+        self.assertIn(
+            "claim_item_semantics_missing",
+            draconia["canonical"][0]["missing_data_codes"],
+        )
         self.assertEqual(draconia["playable_verification"], "NOT_ASSESSED")
         # QUEST-FINISH admits eight additional exact full-default charge claims.
         # Resolving the remaining fluid Items moves two reward-only owners from
@@ -134,9 +188,13 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(136, self.result["summary"]["reward_claim_placements"])
         silver_amulet = by_title["Silver Amulet Quest"]
         self.assertEqual("NATIVE_BINDINGS_PENDING", silver_amulet["work_state"])
-        self.assertEqual("REWARD_CLAIM_USE_ENABLED", silver_amulet["reward_claim_owner"]["state"])
-        self.assertEqual(["oteryn:reward-claim.kv.silveramulet"],
-                         silver_amulet["reward_claim_owner"]["claim_keys"])
+        self.assertEqual(
+            "REWARD_CLAIM_USE_ENABLED", silver_amulet["reward_claim_owner"]["state"]
+        )
+        self.assertEqual(
+            ["oteryn:reward-claim.kv.silveramulet"],
+            silver_amulet["reward_claim_owner"]["claim_keys"],
+        )
         self.assertEqual(1, silver_amulet["reward_claim_owner"]["ready_claims"])
         # The pinned Legion Helmet chest enables its claim without qualifying
         # the quest's implementation state or playability.
@@ -144,7 +202,9 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(
             "REWARD_CLAIM_USE_ENABLED", legion_helmet["reward_claim_owner"]["state"]
         )
-        self.assertEqual("NATIVE_BINDINGS_PENDING", legion_helmet["implementation_state"])
+        self.assertEqual(
+            "NATIVE_BINDINGS_PENDING", legion_helmet["implementation_state"]
+        )
         self.assertEqual("NOT_ASSESSED", legion_helmet["playable_verification"])
         # These additional applied chest bindings also belong to quests whose
         # broader native implementation is still pending.
@@ -154,13 +214,19 @@ class QuestCompletionMatrixTest(unittest.TestCase):
                 by_title[title]["reward_claim_owner"]["state"],
             )
             self.assertEqual("NATIVE_BINDINGS_PENDING", by_title[title]["work_state"])
+        self.assertEqual(
+            ["oteryn:reward-claim.kv.simon_the_beggars_favorite_staff"],
+            by_title["Beggar Outfits Quest"]["reward_claim_owner"]["claim_keys"],
+        )
         enabled_owners = {
             row["wiki_title"]
             for row in self.result["records"]
-            if (row["reward_claim_owner"] or {}).get("state") == "REWARD_CLAIM_USE_ENABLED"
+            if (row["reward_claim_owner"] or {}).get("state")
+            == "REWARD_CLAIM_USE_ENABLED"
         }
         self.assertEqual(
             {
+                "Beggar Outfits Quest",
                 "Knight Outfits Quest",
                 "Mad Mage Room Quest",
                 "Newhaven Legion Helmet Quest",
@@ -226,7 +292,9 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         ready = {
             "oteryn:reward-claim.test": {
                 "readiness": "ready",
-                "placements": [{"source_binding": {"project_position": {"x": 1, "y": 1, "z": 1}}}],
+                "placements": [
+                    {"source_binding": {"project_position": {"x": 1, "y": 1, "z": 1}}}
+                ],
             }
         }
         self.assertEqual(
@@ -245,7 +313,12 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         )
         for broken in [
             {},
-            {"oteryn:reward-claim.test": {"readiness": "waiting_data", "placements": [{}]}},
+            {
+                "oteryn:reward-claim.test": {
+                    "readiness": "waiting_data",
+                    "placements": [{}],
+                }
+            },
             {"oteryn:reward-claim.test": {"readiness": "ready", "placements": []}},
         ]:
             self.assertEqual(
@@ -257,7 +330,9 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(352, self.result["summary"]["canonical_definitions"])
         self.assertEqual(
             350,
-            self.result["summary"]["unique_canonical_definitions_representing_wiki_titles"],
+            self.result["summary"][
+                "unique_canonical_definitions_representing_wiki_titles"
+            ],
         )
         self.assertEqual(
             2,
