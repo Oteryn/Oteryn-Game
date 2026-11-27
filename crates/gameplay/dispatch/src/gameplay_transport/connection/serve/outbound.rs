@@ -118,8 +118,8 @@ where
         }
         return Err(ServeEnd::LoggedOut);
     }
-    if write_frame(stream, &result).await.is_err() {
-        return Err(ServeEnd::Disconnected);
+    if let Err(error) = write_frame(stream, &result).await {
+        return Err(ServeEnd::Transport(TransportEnd::Write(error.kind())));
     }
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing

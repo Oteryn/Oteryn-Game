@@ -11,6 +11,14 @@
       "note": "Power-of-two sample of counted AI evaluation budget refusals."
     },
     {
+      "event": "creature_lifecycle",
+      "level": "debug",
+      "span": false,
+      "fields": ["monster", "outcome", "reason", "from", "to"],
+      "codes": [],
+      "note": "Exact creature generation at a carrier move or retirement, or a lethal player swing. The qualification log profile emits this at info. Movement carries source and destination cells."
+    },
+    {
       "event": "melee_drain",
       "level": "debug",
       "span": false,

@@ -651,23 +651,46 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: crate::foundation::GameSessionId,
     ) -> Result<Option<AdmissionEffects>, ()> {
+        self.read_admission_effects_within(session, None).await
+    }
+
+    pub(in crate::gameplay_transport) async fn read_admission_effects_within(
+        &self,
+        session: crate::foundation::GameSessionId,
+        read: Option<&crate::gameplay_transport::cyclopedia_character::CyclopediaRead<'_>>,
+    ) -> Result<Option<AdmissionEffects>, ()> {
         let Some(native) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
         else {
             return Ok(None);
         };
-        let equipment = super::read_current_equipment(self, session)
-            .await
-            .ok_or(())?;
-        let fence = self
-            .current_quest_fence(session)
-            .await
-            .map_err(|_| ())?
-            .ok_or(())?;
-        self.equipment_effects_from_snapshot(session, equipment, fence, native, None)
-            .await
-            .map(Some)
+        let (equipment, fence) = if let Some(read) = read {
+            (
+                super::read_current_equipment_within(self, session, &read.budget).await,
+                read.retry("combat_fence", async || {
+                    self.current_quest_fence_durable(session)
+                        .await
+                        .map_err(crate::gameplay_transport::cyclopedia_character::holder_refusal)
+                })
+                .await?,
+            )
+        } else {
+            let equipment = super::read_current_equipment(self, session)
+                .await
+                .ok_or(())?;
+            (Some(equipment), self.current_quest_fence(session).await?)
+        };
+        self.equipment_effects_from_snapshot(
+            session,
+            equipment.ok_or(())?,
+            fence.ok_or(())?,
+            native,
+            None,
+            read,
+        )
+        .await
+        .map(Some)
     }
 
     pub(in crate::gameplay_transport) async fn read_house_admission_effects(
@@ -711,6 +734,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             current,
             native,
             Some(*self.channel_id.as_bytes()),
+            None,
         )
         .await
         .map(Some)
@@ -774,6 +798,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             fence,
             native,
             None,
+            None,
         )
         .await
         .map(Some)
@@ -786,9 +811,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
         native: &NativeGameplayState,
         house_origin: Option<[u8; 16]>,
+        read: Option<&crate::gameplay_transport::cyclopedia_character::CyclopediaRead<'_>>,
     ) -> Result<AdmissionEffects, ()> {
-        self.load_proficiency_equipment(session, &equipment).await?;
-        let mut imbuements = match house_origin {
+        self.load_proficiency_equipment_within(session, &equipment, read)
+            .await?;
+        let worn = async || match house_origin {
             Some(origin) => {
                 self.root
                     .read_house_worn_imbuements(self.character, self.holder, fence, origin)
@@ -799,8 +826,17 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     .read_worn_imbuements(self.character, self.holder, fence)
                     .await
             }
-        }
-        .map_err(|_| ())?;
+        };
+        let mut imbuements = if let Some(read) = read {
+            read.retry("combat_imbuements", async || {
+                worn()
+                    .await
+                    .map_err(crate::gameplay_transport::cyclopedia_character::holder_refusal)
+            })
+            .await?
+        } else {
+            worn().await.map_err(|_| ())?
+        };
         if self
             .states
             .timed_items

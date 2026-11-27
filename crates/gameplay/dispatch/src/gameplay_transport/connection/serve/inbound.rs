@@ -148,8 +148,8 @@ where
             }
         }
         Next::Frame(Ok(frame)) => (frame, false, tokio::time::Instant::now()),
-        Next::Frame(Err(_)) => {
-            return Err(ServeEnd::Disconnected);
+        Next::Frame(Err(error)) => {
+            return Err(ServeEnd::Transport(TransportEnd::Read(error.kind())));
         }
         Next::Probe => {
             // Idle work (including the durable logout) stays within the existing database
@@ -163,7 +163,7 @@ where
             .await
             {
                 Ok(result) => result?,
-                Err(_) => return Err(ServeEnd::Disconnected),
+                Err(_) => return Err(ServeEnd::Transport(TransportEnd::IdleWorkDeadline)),
             }
             write_liveness_probe(stream, session).await?;
             // Existing periodic display work shares the liveness cadence. No independent
@@ -214,7 +214,7 @@ pub(super) async fn write_liveness_probe<S: AsyncWrite + Unpin>(
     // A peer that does not consume a probe within one cadence is no longer in control.
     match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
         Ok(Ok(())) => Ok(()),
-        Ok(Err(_)) => Err(ServeEnd::Disconnected),
+        Ok(Err(error)) => Err(ServeEnd::Transport(TransportEnd::Write(error.kind()))),
         Err(_) => Err(ServeEnd::ControlLost("probe_write_timeout")),
     }
 }

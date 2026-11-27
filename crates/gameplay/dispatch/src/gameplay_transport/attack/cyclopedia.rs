@@ -5,6 +5,9 @@
 mod augments;
 use super::*;
 use crate::durability::cyclopedia_character::combat::{CombatSnapshot, CombatSnapshotReceipt};
+use crate::gameplay_transport::cyclopedia_character::{
+    CyclopediaRead, authority_read_refusal, holder_refusal,
+};
 use crate::gameplay_transport::equipment_move::equipment_effects_owner as equipment_owner;
 use crate::spell::cast::PlayerSpellState;
 use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
@@ -22,23 +25,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         expected_fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
     ) -> Result<CombatSnapshotReceipt, ()> {
+        let read = CyclopediaRead {
+            budget: crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root),
+            command_id: None,
+        };
+        self.refresh_cyclopedia_combat_within(actor, session, expected_fence, &read)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn refresh_cyclopedia_combat_within(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        expected_fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        read: &CyclopediaRead<'_>,
+    ) -> Result<CombatSnapshotReceipt, ()> {
         let _permit = self.spell_lane_permit().await.ok_or(())?;
         let content = self
             .active_generation
             .and_then(|g| g.native_gameplay())
             .ok_or(())?;
-        let current =
-            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(session)
-                .await
-                .map_err(|_| ())?
-                .0;
+        let store =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
+        let (current, _) = read
+            .retry("combat_session", async || {
+                store
+                    .current_session_at(session)
+                    .await
+                    .map_err(holder_refusal)
+            })
+            .await?;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or(())?;
         if expected_fence.is_some_and(|expected| expected != fence) {
             return Err(());
         }
-        let Some((effects, armor, defence, _, offence, equipment)) =
-            self.read_admission_effects(session).await?
+        let Some((effects, armor, defence, _, offence, equipment)) = self
+            .read_admission_effects_within(session, Some(read))
+            .await?
         else {
             return Err(());
         };
@@ -50,16 +73,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &item.definition,
                 )
         }) {
-            self.root
-                .read_quiver_ammunition(
-                    self.character,
-                    self.holder,
-                    &fence,
-                    equipment.clone(),
-                    &weights,
-                )
-                .await
-                .map_err(|_| ())?
+            read.retry("quiver", async || {
+                self.root
+                    .read_quiver_ammunition(
+                        self.character,
+                        self.holder,
+                        &fence,
+                        equipment.clone(),
+                        &weights,
+                    )
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::character_equipment::EquipmentError::Durability(
+                            error,
+                        ) => holder_refusal(error),
+                        _ => crate::gameplay_transport::AdmissionRefusal::Rejected,
+                    })
+            })
+            .await?
         } else {
             Vec::new()
         };
@@ -216,16 +247,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 snapshot.defence.set(key, ppm).map_err(|_| ())?;
             }
         }
-        self.root
-            .record_cyclopedia_combat_with_augments(
-                self.character,
-                self.holder,
-                fence,
-                snapshot,
-                augments,
-            )
-            .await
-            .map_err(|_| ())
+        read.retry("combat_snapshot", async || {
+            self.root
+                .record_cyclopedia_combat_with_augments(
+                    self.character,
+                    self.holder,
+                    fence,
+                    snapshot.clone(),
+                    augments.clone(),
+                )
+                .await
+                .map_err(authority_read_refusal)
+        })
+        .await
     }
 }
 

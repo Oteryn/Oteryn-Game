@@ -31,26 +31,42 @@ pub use shaping::ProductionProficiencyShaping;
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     /// Equipment-owner reads initialise committed tracks even if the player never attacks.
-    pub(super) async fn load_proficiency_equipment(
+    pub(super) async fn load_proficiency_equipment_within(
         &self,
         session: crate::foundation::GameSessionId,
         equipment: &crate::durability::character_equipment::EquipmentSnapshot,
+        budget: Option<&super::cyclopedia_character::CyclopediaRead<'_>>,
     ) -> Result<(), ()> {
         let Some(catalogue) = &self.proficiency_catalogue else {
             return Ok(());
         };
         let character =
             crate::domain::CharacterId::from_bytes(equipment.character).map_err(|_| ())?;
-        let (tracks, _) = self
-            .root
-            .read_character_proficiency_with_definitions(
-                self.character,
-                character,
-                None,
-                Arc::clone(catalogue) as Arc<dyn ProficiencyDefinitions>,
-            )
-            .await
-            .map_err(|_| ())?;
+        let read = async || {
+            self.root
+                .read_character_proficiency_with_definitions(
+                    self.character,
+                    character,
+                    None,
+                    Arc::clone(catalogue) as Arc<dyn ProficiencyDefinitions>,
+                )
+                .await
+        };
+        let (tracks, _) = if let Some(budget) = budget {
+            budget
+                .retry("combat_proficiency", async || {
+                    use crate::durability::character_progression::CharacterProgressionError;
+                    read().await.map_err(|error| match error {
+                        CharacterProgressionError::Unavailable(error) => {
+                            super::cyclopedia_character::holder_refusal(error)
+                        }
+                        _ => super::AdmissionRefusal::Rejected,
+                    })
+                })
+                .await?
+        } else {
+            read().await.map_err(|_| ())?
+        };
         let mut states = self.states.proficiencies.lock().map_err(|_| ())?;
         let owner = states.entry(session).or_default();
         for stored in tracks {
