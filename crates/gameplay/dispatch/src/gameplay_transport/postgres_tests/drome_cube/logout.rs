@@ -50,6 +50,12 @@ pub(super) async fn run(
         ..fixture
     };
     let payload = encode_item_use_intent(&cases::intent(index)?).map_err(debug)?;
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_LOGOUT_V1)
+    );
     let prove_liveness = matches!(case, Case::LogoutLiveness);
     let policy = if prove_liveness {
         LivenessPolicy {

@@ -91,6 +91,12 @@ pub(super) async fn step<A: FreshAdmissionAuthority>(
     )
 }
 
+enum LogoutEvent {
+    Reply(LogoutReply),
+    Probe,
+    Frame(std::io::Result<Vec<u8>>),
+}
+
 async fn logout<S, A>(
     stream: &mut S,
     authority: &A,
@@ -118,31 +124,67 @@ where
                 .any(|(frame, _, _)| is_logout_command(frame, session.generation));
             let mut logout =
                 std::pin::pin!(authority.logout_command(session.admitted, command.command_id));
+            let mut probe_failure = None;
+            let mut input_after_probe = false;
             let reply = loop {
-                let reading = !outcome.lost_while_logging_out
-                    && session.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
-                let mut read = std::pin::pin!(session.frames.next(stream));
-                let next = std::future::poll_fn(|context| {
-                    if let std::task::Poll::Ready(reply) = logout.as_mut().poll(context) {
-                        return std::task::Poll::Ready(Ok(reply));
-                    }
-                    if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
-                        return std::task::Poll::Ready(Err(read));
-                    }
-                    std::task::Poll::Pending
-                })
-                .await;
+                let connected = !outcome.lost_while_logging_out && probe_failure.is_none();
+                let reading =
+                    connected && session.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
+                let next = {
+                    use std::task::Poll;
+                    let mut read = std::pin::pin!(session.frames.next(stream));
+                    let mut tick = std::pin::pin!(session.cadence.tick());
+                    std::future::poll_fn(|cx| {
+                        if let Poll::Ready(reply) = logout.as_mut().poll(cx) {
+                            return Poll::Ready(LogoutEvent::Reply(reply));
+                        }
+                        // Give the preceding probe's ACK one input turn. Then restore
+                        // timer priority so a stream of frames cannot starve the cadence.
+                        if reading
+                            && input_after_probe
+                            && let Poll::Ready(frame) = read.as_mut().poll(cx)
+                        {
+                            return Poll::Ready(LogoutEvent::Frame(frame));
+                        }
+                        if reading && tick.as_mut().poll(cx).is_ready() {
+                            return Poll::Ready(LogoutEvent::Probe);
+                        }
+                        if reading {
+                            return read.as_mut().poll(cx).map(LogoutEvent::Frame);
+                        }
+                        Poll::Pending
+                    })
+                    .await
+                };
                 match next {
-                    Ok(reply) => break reply,
-                    Err(Ok(frame)) => {
-                        outcome.second_logout |= is_logout_command(&frame, session.generation);
-                        session
-                            .held
-                            .push_back((frame, false, tokio::time::Instant::now()));
+                    LogoutEvent::Reply(reply) => break reply,
+                    LogoutEvent::Probe => {
+                        input_after_probe = true;
+                        // Keep polling the durable release even if the connection is lost.
+                        // Dropping it could leave the Character's release fence unresolved.
+                        probe_failure = inbound::write_liveness_probe(stream, session).await.err();
                     }
-                    Err(Err(_)) => outcome.lost_while_logging_out = true,
+                    LogoutEvent::Frame(Ok(frame)) => {
+                        input_after_probe = false;
+                        let acked = decode_wire_envelope(&frame)
+                            .and_then(|envelope| envelope.liveness_ack(session.generation))
+                            .and_then(|ack| session.liveness.ack(ack.probe_id))
+                            .is_ok();
+                        if !acked {
+                            outcome.second_logout |= is_logout_command(&frame, session.generation);
+                            session
+                                .held
+                                .push_back((frame, false, tokio::time::Instant::now()));
+                        }
+                    }
+                    LogoutEvent::Frame(Err(_)) => outcome.lost_while_logging_out = true,
                 }
             };
+            if !matches!(reply, LogoutReply::Result(LogoutResult::Accepted))
+                && let Some(end) = probe_failure
+            {
+                return Err(end);
+            }
             match reply {
                 LogoutReply::NoLogout => Dispatch::NoLogout,
                 LogoutReply::Result(result) => Dispatch::Logout(result),

@@ -377,6 +377,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
             &[6, 7, CAPABILITY_LOGOUT_V1],
         )
         .ok_or("spell logout capabilities")?;
+        assert!(admitted.continuity.selected_capabilities.contains(CAPABILITY_LOGOUT_V1));
         cast_and_logout(&owner, &h, admitted).await?;
         drop(owner);
         drop(authority);
@@ -808,12 +809,15 @@ async fn cast_and_logout(
         }
         let command_id = command_id + 1;
         send(&mut client, command_id, COMMAND_TYPE_LOGOUT_INTENT, &[]).await?;
-        let (_, (_, payload)) = tokio::try_join!(
-            async { Ok::<_, Box<dyn std::error::Error>>(probe.contend(&harness.root).await?) },
+        let (_, payload) = tokio::try_join!(
+            async {
+                probe.contend(&harness.root).await?;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            },
             async {
                 let (status, payload) = command_reply(&mut client, command_id).await?;
                 assert_eq!(status, CommandStatus::Accepted);
-                Ok((status, payload))
+                Ok(payload)
             },
         )?;
         client.shutdown().await?;
