@@ -283,6 +283,33 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
     })
 }
 
+#[test]
+fn committed_first_entry_does_not_wait_for_unrelated_admission_writer_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("committed-entry-read", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "committed_entry_read", true, false).await?;
+            let request = prepare_current_session(&h).await?;
+            let store = FreshAdmissionStore::from_root(h.root.clone());
+            let mut other = h.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_durability_admission_account_guards IN ROW EXCLUSIVE MODE")
+                .execute(&mut *other).await?;
+            assert!(matches!(
+                tokio::time::timeout(
+                    Duration::from_secs(1),
+                    store.observe_committed_admission(request.operation()),
+                ).await??,
+                crate::durability::fresh_admission::FreshReconciliation::Committed(_)
+            ));
+            other.rollback().await?;
+            h.cleanup().await
+        })
+    })
+}
+
 // Poll between advances so the retry reaches the final partial interval while
 // PostgreSQL's only holder is still checked out. Resume time before doing SQL.
 async fn holder_return_in_final_retry_interval(

@@ -35,6 +35,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Copy)]
 pub(in super::super) enum Case {
     Preview,
+    PreviewBusyHolder,
     Conversions,
     CurrentDust,
     DustLimit,
@@ -107,7 +108,8 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 .current_session_at(deps.admitted.game_session_id)
                 .await?
                 .0;
-        if matches!(case, Case::Preview) {
+        let preview = matches!(case, Case::Preview | Case::PreviewBusyHolder);
+        if preview {
             deps.runtime
                 .lock()
                 .await
@@ -126,7 +128,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             .bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
         item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         let (dust, limit) = match case {
-            Case::Preview
+            Case::Preview | Case::PreviewBusyHolder
             | Case::Items(_)
             | Case::Integrity
             | Case::CoreRefusal
@@ -148,7 +150,11 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         admitted.item_fence = Some(fence);
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[4, 6, 12, 14, 152],
+            if matches!(case, Case::PreviewBusyHolder) {
+                &[4, 6, 12, 14, oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1, 152]
+            } else {
+                &[4, 6, 12, 14, 152]
+            },
         )
         .ok_or("forge capabilities")?;
         if matches!(case, Case::Preview) {
@@ -191,6 +197,9 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         match case {
             Case::Preview => {
                 super::super::forge_preview_fixtures::exercise(&h, &owner, &mut admitted).await?
+            }
+            Case::PreviewBusyHolder => {
+                super::super::forge_preview_fixtures::browse_busy_holder(&h, &owner, admitted).await?;
             }
             Case::CurrentDust => {
                 super::super::nx8_forge_projection_fixtures::exercise(&h, &owner, &mut admitted).await?

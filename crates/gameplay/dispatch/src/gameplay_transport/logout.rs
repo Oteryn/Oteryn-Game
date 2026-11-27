@@ -37,6 +37,7 @@ pub(super) enum ReleaseRetryStage {
     SpellTraining,
     Gourmet,
     Conditions,
+    ConditionsHolder,
     KillRewards,
     Familiar,
     OfflineTraining,
@@ -54,7 +55,7 @@ impl ReleaseRetryStage {
             Self::Monk => "monk_save",
             Self::SpellTraining => "training_save",
             Self::Gourmet => "gourmet_checkpoint",
-            Self::Conditions => "condition_save",
+            Self::Conditions | Self::ConditionsHolder => "condition_save",
             Self::KillRewards => "kill_rewards",
             Self::Familiar => "familiar_save",
             Self::OfflineTraining => "offline_training",
@@ -485,7 +486,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break step;
             };
             // Conditions already used the remaining window at their save point.
-            if stage == ReleaseRetryStage::Conditions || !progress.retry(stage).await {
+            if matches!(stage, ReleaseRetryStage::Conditions | ReleaseRetryStage::ConditionsHolder) || !progress.retry(stage).await {
                 break step;
             }
         };
@@ -527,7 +528,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
-            ReleaseAttempt::Retry(stage) => match self
+            ReleaseAttempt::Retry(ReleaseRetryStage::ConditionsHolder) if !channel_switch => {
+                // Every attempt that returned a retry stage stopped before the terminal
+                // release. Its exact local token can be lifted without another checkout.
+                let lifted = self.states.fence_holders.lift(
+                    &mut *self.runtime.lock().await,
+                    actor,
+                    &mut hold,
+                );
+                if lifted.is_ok() {
+                    LogoutReply::Result(LogoutResult::Busy)
+                } else {
+                    self.states.fence_holders.keep(hold);
+                    LogoutReply::Unknown
+                }
+            }
+                        ReleaseAttempt::Retry(stage) => match self
                 .settle_unended(&store, actor, &mut hold)
                 .await
             {

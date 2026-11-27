@@ -270,13 +270,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             probe.before_conditions.notify_one();
             probe.resume_conditions.notified().await;
         }
-        while !self.save_conditions_at_actor_end(actor, session).await {
+        // Retry this checkpoint under the existing logout fence. The holder can now
+        // serve the deferred read/write directly, without re-running earlier saves.
+        loop {
+            let stage = match self.save_conditions_at_actor_end(actor, session).await {
+                Ok(true) => break,
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    ReleaseRetryStage::ConditionsHolder
+                }
+                _ => ReleaseRetryStage::Conditions,
+            };
             #[cfg(test)]
-            if let Some(probe) = &probe {
-                probe.blocked();
-            }
-            if !progress.retry(ReleaseRetryStage::Conditions).await {
-                return ReleaseAttempt::Retry(ReleaseRetryStage::Conditions);
+            if let Some(probe) = &probe { probe.blocked(); }
+            if !progress.retry(stage).await {
+                return ReleaseAttempt::Retry(stage);
             }
         }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.

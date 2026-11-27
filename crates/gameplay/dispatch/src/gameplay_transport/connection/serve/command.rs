@@ -613,6 +613,16 @@ pub(super) fn guard_refusal(
                 appearance_change::result(ChangeResult::Rejected).ok_or(ServeEnd::Disconnected)?;
             Dispatch::Reply(status, payload)
         }
+        oteryn_protocol_oteryn::forge_preview::COMMAND_TYPE_FORGE_PREVIEW => {
+            let Some(request) =
+                oteryn_protocol_oteryn::forge_preview::Request::decode(command.payload)
+            else {
+                return Ok(Dispatch::Unregistered);
+            };
+            let payload = crate::gameplay_transport::forge_preview::refused_reply(request.nonce)
+                .ok_or(ServeEnd::Disconnected)?;
+            Dispatch::Reply(rejected, payload)
+        }
         _ => Dispatch::Unregistered,
     })
 }
