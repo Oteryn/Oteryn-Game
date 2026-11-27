@@ -3,7 +3,10 @@
 //! Reference: Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
 //! `src/io/ioweeklytasks.cpp` and `src/io/iobountytasks.cpp`.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::OnceLock,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -723,12 +726,26 @@ fn fill_weekly(
 ) -> Result<(), TaskBoardRefusal> {
     let kill_slots = if expansion { 8 } else { 5 };
     let delivery_slots = if expansion { 9 } else { 6 };
+    static MASTER_CREATURES: OnceLock<BTreeSet<&str>> = OnceLock::new();
+    let master = (board.difficulty == 3).then(|| {
+        MASTER_CREATURES.get_or_init(|| {
+            include_str!("../../../../../content/quests/weekly-master-creatures.txt")
+                .lines()
+                .filter(|line| !line.starts_with('#'))
+                .collect()
+        })
+    });
     let mut candidates: Vec<_> = creatures
         .iter()
         .filter(|creature| {
-            eligible(creature)
-                && stars_match(board.difficulty, creature.bestiary_stars, expansion_fill)
-                && !board.kills.iter().any(|task| task.race == creature.race)
+            let eligible = master.map_or_else(
+                || {
+                    eligible(creature)
+                        && stars_match(board.difficulty, creature.bestiary_stars, expansion_fill)
+                },
+                |pool| pool.contains(creature.race.as_str()),
+            );
+            eligible && !board.kills.iter().any(|task| task.race == creature.race)
         })
         .collect();
     if candidates.len() < kill_slots - board.kills.len() {

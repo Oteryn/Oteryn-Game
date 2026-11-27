@@ -193,3 +193,67 @@ fn finished_weekly_results_require_negotiation_and_do_not_change_balances() {
     );
     assert!(!current.weekly.started);
 }
+
+#[test]
+fn weekly_master_candidates_match_the_global_source_set() -> Result<(), Box<dyn std::error::Error>> {
+    use std::collections::BTreeSet;
+
+    let world = oteryn_protocol_oteryn::WorldId::decode(&[42; 16])
+        .map_err(|error| format!("{error:?}"))?;
+    let (controller, _) =
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+    let generation = controller.active().ok_or("activated generation")?;
+    let native = generation.native_gameplay().ok_or("native gameplay")?;
+    let catalogue = crate::durability::task_board::TaskBoardCatalogue::try_from(native)?;
+    let expected: BTreeSet<_> = include_str!(
+        "../../../../../apps/game-server/src/qualification/client_phases/p04_master_creature_oracle.txt"
+    )
+    .lines()
+    .filter(|line| !line.starts_with('#'))
+    .map(|line| match line {
+        "oteryn:creature.sabretooth_creature" => "oteryn:creature.sabretooth",
+        key => key,
+    })
+    .collect();
+    let context = rules::TaskBoardContext {
+        level: 400,
+        has_vocation: true,
+        now_unix_seconds: 1_800_000_000,
+        period: 42,
+        reset_day: Some(42),
+        creatures: &catalogue.creatures,
+        available_gold: 0,
+        reroll_tokens: 0,
+    };
+    let mut observed = BTreeSet::new();
+    let mut index = 0;
+    loop {
+        let mut data = rules::TaskBoardData::default();
+        let mut first_draw_width = None;
+        rules::apply_action(
+            &mut data,
+            &mut rules::TaskBoardBalances::default(),
+            &rules::TaskBoardAction::StartWeekly { difficulty: 3 },
+            &context,
+            &mut |width| {
+                if first_draw_width.is_some() {
+                    return 0;
+                }
+                first_draw_width = Some(width);
+                index
+            },
+        )
+        .map_err(|error| format!("Master draw {index}: {error:?}"))?;
+        let board = data.weekly.ok_or("started Master board")?;
+        observed.insert(board.kills.into_iter().next().ok_or("first kill task")?.race);
+        index += 1;
+        if Some(index) == first_draw_width {
+            break;
+        }
+    }
+    let actual: BTreeSet<_> = observed.iter().map(String::as_str).collect();
+    assert!(actual.contains("oteryn:creature.cliff_strider"), "Cliff Strider");
+    assert!(!actual.contains("oteryn:creature.moonspawn_juggernaut"), "Moonspawn Juggernaut");
+    assert_eq!(actual, expected);
+    Ok(())
+}
