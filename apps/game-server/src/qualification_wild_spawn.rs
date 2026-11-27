@@ -10,7 +10,6 @@ use crate::foundation::{
 };
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use std::sync::atomic::{AtomicU16, Ordering};
 
 #[cfg(test)]
 pub(crate) const POSITION: MovementLocalPosition = MovementLocalPosition {
@@ -23,15 +22,14 @@ pub(crate) const DECLARATION: &str = "oteryn:qualification.spawn/thalom-rat-r1";
 #[cfg(test)]
 const RAT_KEY: &str = "canary:creature/rat";
 
-/// Spawn source ids of the `spawn` control command; the harness Rat keeps `u16::MAX`.
-const FIRST_COMMAND_SOURCE: u16 = 40_000;
-static NEXT_COMMAND_SOURCE: AtomicU16 = AtomicU16::new(FIRST_COMMAND_SOURCE);
-
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum SpawnRefusal {
     UnknownCreature,
     SessionUnknown,
     NoFreeTile(String),
+    HolderBusy(String),
+    SetupDelayed(String),
+    Unavailable(String),
     Fence(String),
 }
 
@@ -42,6 +40,9 @@ impl SpawnRefusal {
             Self::UnknownCreature => "unknown_creature",
             Self::SessionUnknown => "session_unknown",
             Self::NoFreeTile(_) => "no_free_tile",
+            Self::HolderBusy(_) => "holder_busy",
+            Self::SetupDelayed(_) => "setup_delayed",
+            Self::Unavailable(_) => "unavailable",
             Self::Fence(_) => "fence",
         }
     }
@@ -49,7 +50,11 @@ impl SpawnRefusal {
     /// The refused rule, for the node's diagnostic line.
     pub(crate) fn detail(&self) -> Option<&str> {
         match self {
-            Self::NoFreeTile(message) | Self::Fence(message) => Some(message),
+            Self::NoFreeTile(message)
+            | Self::HolderBusy(message)
+            | Self::SetupDelayed(message)
+            | Self::Unavailable(message)
+            | Self::Fence(message) => Some(message),
             Self::UnknownCreature | Self::SessionUnknown => None,
         }
     }
@@ -59,18 +64,13 @@ impl SpawnRefusal {
         match self {
             Self::UnknownCreature => "qualification spawn active Creature policies: unknown".into(),
             Self::SessionUnknown => "qualification spawn session has no positioned actor".into(),
-            Self::NoFreeTile(message) | Self::Fence(message) => message,
+            Self::NoFreeTile(message)
+            | Self::HolderBusy(message)
+            | Self::SetupDelayed(message)
+            | Self::Unavailable(message)
+            | Self::Fence(message) => message,
         }
     }
-}
-
-/// A fresh spawn source id for one `spawn` command.
-pub(crate) fn next_command_source() -> Result<u16, SpawnRefusal> {
-    NEXT_COMMAND_SOURCE
-        .try_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
-            (next < u16::MAX - 1).then_some(next + 1)
-        })
-        .map_err(|_| SpawnRefusal::Fence("qualification spawn sources exhausted".into()))
 }
 
 /// The eight neighbours of `center` on its floor, orthogonal first, in a fixed order.
@@ -101,14 +101,22 @@ pub(crate) fn adjacent_cells(center: MovementLocalPosition) -> Vec<MovementLocal
 pub(crate) fn place_first(
     runtime: &mut ChannelRuntimeV1,
     pin: &ChannelContentPin,
-    source: u16,
+    source: Option<u16>,
     key: &str,
     candidates: &[MovementLocalPosition],
 ) -> Result<CompanionSnapshot, SpawnRefusal> {
     let mut last = "qualification spawn has no eligible cell".to_owned();
     for cell in candidates {
-        match runtime.realize_native_qualification_spawn_for_source(source, pin.clone(), key, *cell)
-        {
+        let placed = match source {
+            Some(source) => runtime.realize_native_qualification_spawn_for_source(
+                source,
+                pin.clone(),
+                key,
+                *cell,
+            ),
+            None => runtime.realize_native_qualification_one_shot(pin.clone(), key, *cell),
+        };
+        match placed {
             Ok(snapshot) => return Ok(snapshot),
             Err(error) => last = format!("qualification spawn physical realization: {error:?}"),
         }
@@ -148,7 +156,7 @@ pub(crate) async fn realize_rat_in_transaction(
     let eligible = read_spawn_tiles(tx, root, recovery, node, &plan)
         .await
         .map_err(SpawnRefusal::into_message)?;
-    place_first(runtime, &plan.pin, u16::MAX, RAT_KEY, &eligible)
+    place_first(runtime, &plan.pin, Some(u16::MAX), RAT_KEY, &eligible)
         .map_err(SpawnRefusal::into_message)
 }
 
@@ -249,13 +257,15 @@ pub(crate) async fn read_spawn_tiles(
     node: &NodeIncarnationProof,
     plan: &SpawnPlan,
 ) -> Result<Vec<MovementLocalPosition>, SpawnRefusal> {
-    let fence = SpawnRefusal::Fence;
+    use crate::durability::spell_item_transaction::SpellItemError;
     let scope = plan.scope;
     // Qualification-only spawn: the topology's seam owns the real lane and is out of reach
     // here, so this test path proves the same Channel fixture's exact tagged scope.
     let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(scope)
         .await
-        .map_err(|error| fence(format!("qualification spawn scope lane: {error:?}")))?;
+        .map_err(|error| {
+            SpawnRefusal::Unavailable(format!("qualification spawn scope lane: {error:?}"))
+        })?;
     let owned = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
         tx,
         &permit,
@@ -266,12 +276,17 @@ pub(crate) async fn read_spawn_tiles(
         plan.scope_generation,
     )
     .await
-    .map_err(|error| fence(format!("qualification spawn scope fence: {error:?}")))?;
+    .map_err(|error| match error {
+        SpellItemError::Rejected(_) => {
+            SpawnRefusal::Fence(format!("qualification spawn scope fence: {error:?}"))
+        }
+        _ => SpawnRefusal::Unavailable(format!("qualification spawn Ground scope read: {error:?}")),
+    })?;
     let mut eligible = Vec::with_capacity(plan.targets.len());
     for (position, target) in &plan.targets {
         let items = crate::durability::spell_item_transaction::read_qualification_scope_tile_in_transaction(
             tx, &owned, target,
-        ).await.map_err(|error| fence(format!("qualification spawn current Item tile: {error:?}")))?;
+        ).await.map_err(|error| SpawnRefusal::Unavailable(format!("qualification spawn current Item tile: {error:?}")))?;
         if !items
             .items
             .iter()
@@ -291,7 +306,6 @@ pub(crate) async fn read_spawn_tiles(
 pub(crate) fn publish_spawn(
     runtime: &mut ChannelRuntimeV1,
     plan: SpawnPlan,
-    source: u16,
     key: &str,
     eligible: &[MovementLocalPosition],
 ) -> Result<CompanionSnapshot, SpawnRefusal> {
@@ -315,7 +329,7 @@ pub(crate) fn publish_spawn(
             return Err(SpawnRefusal::SessionUnknown);
         }
     }
-    place_first(runtime, &plan.pin, source, key, eligible)
+    place_first(runtime, &plan.pin, None, key, eligible)
 }
 
 /// The qualified tile and source-metadata rules of one spawn cell.
@@ -475,13 +489,13 @@ mod tests {
         assert_eq!(actor.position(), PLAYER_AT);
         let cells = adjacent_cells(actor.position());
         assert_eq!(cells.len(), 8);
-        let first = place_first(&mut runtime, &pin, 40_000, SPIDER, &cells).expect("first spawn");
+        let first = place_first(&mut runtime, &pin, None, SPIDER, &cells).expect("first spawn");
         assert_eq!(first.state.policy.definition_key, SPIDER);
         assert!(first.state.master.is_none());
         assert_eq!(first.position, cells[0]);
         assert!(adjacent(PLAYER_AT, first.position));
         // The first cell is now occupied, so the next creature takes the next free neighbour.
-        let second = place_first(&mut runtime, &pin, 40_001, SPIDER, &cells).expect("second spawn");
+        let second = place_first(&mut runtime, &pin, None, SPIDER, &cells).expect("second spawn");
         assert_eq!(second.position, cells[1]);
         assert!(adjacent(PLAYER_AT, second.position));
         assert_ne!(

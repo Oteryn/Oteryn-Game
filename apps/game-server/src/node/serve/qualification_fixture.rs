@@ -324,10 +324,18 @@ async fn spawn_placed(
 ) -> String {
     let budget = SpawnBudget::new(tokio::time::Instant::now());
     let placed = spawn_with_watchdog(budget.reply_deadline, async |published| {
-        Box::pin(place(
-            root, authority, proof, native, owners, session, key, budget, published,
-        ))
-        .await
+        loop {
+            let result = Box::pin(place(
+                root, authority, proof, native, owners, session, key, budget, published,
+            ))
+            .await;
+            if published.is_some()
+                || !matches!(result, Err(wild_spawn::SpawnRefusal::SetupDelayed(_)))
+                || tokio::time::Instant::now() >= budget.work_deadline
+            {
+                return result;
+            }
+        }
     })
     .await;
     match placed {
@@ -399,7 +407,7 @@ async fn spawn_with_watchdog<T>(
         return Ok(Ok(published));
     }
     result.map(|result| {
-        result.and(Err(wild_spawn::SpawnRefusal::Fence(
+        result.and(Err(wild_spawn::SpawnRefusal::Unavailable(
             "qualification spawn produced no receipt".into(),
         )))
     })
@@ -418,10 +426,9 @@ async fn place(
     budget: SpawnBudget,
     published: &mut Option<crate::foundation::CompanionSnapshot>,
 ) -> Result<(), wild_spawn::SpawnRefusal> {
-    let fence = wild_spawn::SpawnRefusal::Fence;
+    let unavailable = wild_spawn::SpawnRefusal::Unavailable;
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
-    let source = wild_spawn::next_command_source()?;
     let mut runtime = owners.runtime.lock().await;
     let mut plan = Some(wild_spawn::snapshot_adjacent_spawn(
         owners.room,
@@ -431,32 +438,21 @@ async fn place(
         session,
     )?);
     drop(runtime);
-    let acquire_holder = async || {
-        acquire_spawn_holder(root, budget.work_deadline)
-            .await
-            .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))
-    };
+    let acquire_holder = || acquire_spawn_holder(root, budget.work_deadline);
     let mut holder = acquire_holder().await?;
     let eligible = spawn_transaction(&mut holder, budget, true, async |tx| {
         let plan = plan
             .as_ref()
-            .ok_or_else(|| fence("missing qualification spawn plan".into()))?;
+            .ok_or_else(|| unavailable("missing qualification spawn plan".into()))?;
         wild_spawn::read_spawn_tiles(tx, root, authority, proof, plan).await
     })
     .await;
-    let mut eligible = match eligible {
-        SpawnTransaction::Clean(Ok(eligible)) => eligible,
-        failure => {
-            let result = finish_spawn_holder(holder, budget, failure).await.map(drop);
-            if result.is_err() {
-                root.request_ready();
-            }
-            return result;
-        }
-    };
+    let mut eligible = finish_spawn_holder(holder, budget, eligible)
+        .await
+        .inspect_err(|_| root.request_ready())?;
 
     let result = retry_spawn_collisions(
-        holder,
+        acquire_holder().await?,
         budget,
         published,
         async || {
@@ -464,7 +460,7 @@ async fn place(
             drop(
                 tokio::time::timeout_at(budget.work_deadline, owners.runtime.lock())
                     .await
-                    .map_err(|_| fence("qualification spawn runtime deadline".into()))?,
+                    .map_err(|_| unavailable("qualification spawn runtime deadline".into()))?,
             );
             acquire_holder().await
         },
@@ -475,21 +471,22 @@ async fn place(
                 authority,
                 proof,
                 plan.as_ref()
-                    .ok_or_else(|| fence("missing qualification spawn plan".into()))?,
+                    .ok_or_else(|| unavailable("missing qualification spawn plan".into()))?,
             )
             .await?;
             if let Ok(mut runtime) = owners.runtime.try_lock() {
                 if tokio::time::Instant::now() >= budget.work_deadline {
-                    return Err(fence("qualification spawn publication deadline".into()));
+                    return Err(unavailable(
+                        "qualification spawn publication deadline".into(),
+                    ));
                 }
                 let plan = plan
                     .take()
-                    .ok_or_else(|| fence("missing qualification spawn plan".into()))?;
+                    .ok_or_else(|| unavailable("missing qualification spawn plan".into()))?;
                 let tiles = publication_candidates(fresh, std::mem::take(&mut eligible));
                 return Ok(Some(wild_spawn::publish_spawn(
                     &mut runtime,
                     plan,
-                    source,
                     key,
                     &tiles,
                 )?));
@@ -508,19 +505,41 @@ async fn place(
 async fn acquire_spawn_holder(
     root: &DurabilityRoot,
     deadline: tokio::time::Instant,
-) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, DurabilityError> {
+) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, wild_spawn::SpawnRefusal> {
     let mut waiting = None;
+    let mut owner = "durability_root".to_owned();
+    let busy = |owner: &str| {
+        wild_spawn::SpawnRefusal::HolderBusy(format!("qualification spawn holder: {owner}"))
+    };
     loop {
         if tokio::time::Instant::now() >= deadline {
-            return Err(DurabilityError::RootUnavailable);
+            return Err(busy(&owner));
         }
         match root.try_acquire_ready() {
             Err(DurabilityError::RootUnavailable) => {}
-            outcome => return outcome,
+            outcome => {
+                return outcome.map_err(|error| {
+                    wild_spawn::SpawnRefusal::Unavailable(format!(
+                        "qualification spawn durability_root checkout: {error:?}"
+                    ))
+                });
+            }
+        }
+        if let Some((location, _)) = root.checked_out_pass() {
+            owner = location.to_string();
         }
         // Hold priority and a FIFO turn only while retrying the checkout.
         if waiting.is_none() {
-            waiting = Some((root.foreground_demand()?, root.holder_waiter()));
+            use oteryn_error_codes::{FieldValue, Level, Line};
+            emit(
+                PROCESS,
+                &Line::new(Level::Info, "node", "qualification_spawn_holder_wait")
+                    .field("owner", FieldValue::Owned(owner.clone())),
+            );
+            waiting = Some((
+                root.foreground_demand().map_err(|_| busy(&owner))?,
+                root.holder_waiter(),
+            ));
         }
         let now = tokio::time::Instant::now();
         let latest = (now + Duration::from_millis(250)).min(deadline);
@@ -537,24 +556,21 @@ async fn begin_spawn_transaction(
     holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
     backend_deadline: tokio::time::Instant,
 ) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, wild_spawn::SpawnRefusal> {
-    let fence = wild_spawn::SpawnRefusal::Fence;
-    let setup = Duration::from_millis(500);
-    let started = tokio::time::Instant::now();
-    // Reserve one setup round trip between the server timer and the backend
-    // cutoff. A slower setup may have armed the timer late, so take no locks.
-    let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+    // Leave one setup round trip between the armed timer and the backend cutoff.
+    crate::durability::spell_item_transaction::begin_spell_owner_transaction(
         holder,
-        (backend_deadline - setup).into_std(),
+        (backend_deadline - SPAWN_SETUP_MARGIN).into_std(),
     )
     .await
-    .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-    if started.elapsed() >= setup {
-        return Err(fence(
-            "qualification spawn transaction setup deadline".into(),
-        ));
-    }
-    Ok(tx)
+    .map_err(|error| {
+        wild_spawn::SpawnRefusal::Unavailable(format!(
+            "qualification spawn durability_root transaction: {error:?}"
+        ))
+    })
 }
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+const SPAWN_SETUP_MARGIN: Duration = Duration::from_millis(500);
 
 #[cfg(any(test, feature = "qualification-spawn"))]
 enum SpawnTransaction<T> {
@@ -593,15 +609,24 @@ async fn spawn_transaction<T>(
         &mut sqlx::Transaction<'_, sqlx::Postgres>,
     ) -> Result<T, wild_spawn::SpawnRefusal>,
 ) -> SpawnTransaction<T> {
-    let fence = wild_spawn::SpawnRefusal::Fence;
+    let unavailable = wild_spawn::SpawnRefusal::Unavailable;
     let mut phase = "transaction_begin";
     let outcome = tokio::time::timeout_at(budget.work_deadline, async {
+        let started = tokio::time::Instant::now();
         let mut tx = match begin_spawn_transaction(holder, budget.backend_deadline).await {
             Ok(tx) => tx,
             Err(error) => return SpawnTransaction::Uncertain(error),
         };
-        phase = "transaction_work";
-        let result = operation(&mut tx).await;
+        let result = if started.elapsed() >= SPAWN_SETUP_MARGIN {
+            // The timer may have armed late. Take no locks, roll back, and
+            // return this healthy connection before retrying the request.
+            Err(wild_spawn::SpawnRefusal::SetupDelayed(
+                "qualification spawn durability_root transaction setup deadline".into(),
+            ))
+        } else {
+            phase = "transaction_work";
+            operation(&mut tx).await
+        };
         phase = "transaction_release";
         let released = if commit && result.is_ok() {
             tx.commit().await
@@ -610,9 +635,9 @@ async fn spawn_transaction<T>(
         };
         if let Err(error) = released {
             spawn_cleanup_warning(phase, &format!("{error:?}"));
-            return SpawnTransaction::Uncertain(result.err().unwrap_or_else(|| {
-                fence("qualification spawn transaction release failed".into())
-            }));
+            return SpawnTransaction::Uncertain(unavailable(
+                "qualification spawn durability_root transaction release failed".into(),
+            ));
         }
         SpawnTransaction::Clean(result)
     })
@@ -621,7 +646,9 @@ async fn spawn_transaction<T>(
         Ok(result) => result,
         Err(_) => {
             spawn_cleanup_warning(phase, "work_deadline");
-            SpawnTransaction::Uncertain(fence(format!("qualification spawn {phase} deadline")))
+            SpawnTransaction::Uncertain(unavailable(format!(
+                "qualification spawn durability_root {phase} deadline"
+            )))
         }
     }
 }
@@ -668,7 +695,7 @@ async fn finish_spawn_holder<T>(
         _ => {
             let cause = cause.unwrap_or("unknown");
             spawn_cleanup_warning("pool_return", cause);
-            result.and(Err(wild_spawn::SpawnRefusal::Fence(format!(
+            result.and(Err(wild_spawn::SpawnRefusal::Unavailable(format!(
                 "qualification spawn pool return: {cause}"
             ))))
         }
@@ -1576,6 +1603,13 @@ fn fixture_item_committed(
 }
 
 #[cfg(test)]
+#[path = "qualification_fixture/p04_spawn_bounty.rs"]
+mod p04_spawn_bounty;
+
+#[cfg(test)]
+pub(crate) use tests::exercise_busy_spawn;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -1660,7 +1694,7 @@ mod tests {
     fn qualification_spawn_watchdog_caller_contract() -> Result<(), &'static str> {
         let source = control_spawn_source()?;
         assert!(
-            source.contains("finish_spawn_holder(holder, budget, failure)"),
+            source.contains("finish_spawn_holder(holder, budget, eligible)"),
             "pool return must be observed"
         );
         assert!(
@@ -1888,7 +1922,7 @@ mod tests {
                     .map_err(debug)?
                     .block_on(async {
                         let harness = Harness::create(admin, "spawn_holder", false).await?;
-                        let result = exercise_busy_spawn(&harness).await;
+                        let result = exercise_busy_spawn(&harness, 1).await;
                         harness.cleanup().await?;
                         result
                     })
@@ -1899,8 +1933,9 @@ mod tests {
             .map_err(Into::into)
     }
 
-    async fn exercise_busy_spawn(
+    pub(crate) async fn exercise_busy_spawn(
         harness: &crate::bestiary_postgres_harness::Harness,
+        repetitions: u16,
     ) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{SESSION, debug, id, scope};
         use crate::foundation::GameSessionId;
@@ -1941,6 +1976,18 @@ mod tests {
         let reservation = channel.reserve_fresh_session(session)?;
         let player = channel.commit_fresh_session(reservation)?;
         channel.initialize_first_entry_position(player)?;
+        if repetitions > 1 {
+            let fence = crate::bestiary_postgres_harness::fence(1)?;
+            channel.bind_attacker_lease(
+                player,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())?,
+                    fence.character_lease_generation,
+                )?,
+            )?;
+            channel.use_classic_creature_deaths()?;
+        }
         let channel = Mutex::new(channel);
         let owners = SpawnOwners {
             runtime: &channel,
@@ -1960,67 +2007,107 @@ mod tests {
         let root = &harness.root;
         let authority = root.open_character_authority(&seal).await.map_err(debug)?;
         assert!(root.maintain_ready_once().await?);
-        let mut busy = root.try_acquire_ready()?;
-        assert!(!root.has_ready_demand());
-        let request = format!(
-            "spawn {} canary:creature/rat\n",
-            uuid_text(session.as_bytes())
-        );
-        let spawn = spawn(
-            root,
-            &authority,
-            &harness.node,
-            &config,
-            Some(&native),
-            Some(owners),
-            request.as_bytes(),
-        );
-        tokio::pin!(spawn);
-        poll_fn(|cx| match spawn.as_mut().poll(cx) {
-            Poll::Ready(reply) => Poll::Ready(Err(format!(
-                "spawn completed while the holder was busy: {reply}"
-            ))),
-            Poll::Pending if root.has_ready_demand() => Poll::Ready(Ok(())),
-            Poll::Pending => Poll::Pending,
-        })
-        .await?;
-
-        assert_eq!(
-            busy.return_to_pool_observed().await,
-            PoolConnectionReturnDisposition::ReturnedToIdle
-        );
-        // Try the later owner before polling spawn again so the race has a fixed order.
-        let competing = DurabilityRoot::with_holder_owner(async { root.try_acquire_ready() }).await;
-        if !matches!(competing, Err(DurabilityError::RootUnavailable)) {
-            return Err("the later owner took the returned holder before the waiting spawn".into());
-        }
-
-        let reply = spawn.await;
-        let channel = channel.lock().await;
-        let census = channel.positioned_actor_census()?;
-        let [
-            (_, player_position, Some(actual_session)),
-            (creature, creature_position, None),
-        ] = census.as_slice()
-        else {
-            return Err(
-                format!("expected one player and one spawned creature, reply={reply}").into(),
-            );
+        let bounty = if repetitions > 1 {
+            Some(super::p04_spawn_bounty::SpawnBounty::seed(harness, &room, repetitions).await?)
+        } else {
+            None
         };
-        assert_eq!(*actual_session, session);
-        assert!(
-            wild_spawn::adjacent_cells(player_position.position())
-                .contains(&creature_position.position())
-        );
-        let identity = creature
-            .placement_identity()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
-        assert_eq!(
-            reply,
-            format!("spawned {identity} {}", creature.actor_local_generation())
-        );
+        if bounty.is_some() {
+            let mut busy = root.try_acquire_ready()?;
+            let refused = acquire_spawn_holder(
+                root,
+                tokio::time::Instant::now() + Duration::from_millis(25),
+            )
+            .await;
+            assert!(
+                matches!(refused, Err(wild_spawn::SpawnRefusal::HolderBusy(owner)) if owner.contains("durability_root"))
+            );
+            assert_eq!(
+                busy.return_to_pool_observed().await,
+                PoolConnectionReturnDisposition::ReturnedToIdle
+            );
+        }
+        for sequence in 1..=repetitions {
+            let mut busy = root.try_acquire_ready()?;
+            let request = format!(
+                "spawn {} canary:creature/rat\n",
+                uuid_text(session.as_bytes())
+            );
+            let spawn = spawn(
+                root,
+                &authority,
+                &harness.node,
+                &config,
+                Some(&native),
+                Some(owners),
+                request.as_bytes(),
+            );
+            tokio::pin!(spawn);
+            poll_fn(|cx| match spawn.as_mut().poll(cx) {
+                Poll::Ready(reply) => Poll::Ready(Err(format!(
+                    "spawn completed while the holder was busy: {reply}"
+                ))),
+                Poll::Pending if root.has_ready_demand() => Poll::Ready(Ok(())),
+                Poll::Pending => Poll::Pending,
+            })
+            .await?;
+
+            assert_eq!(
+                busy.return_to_pool_observed().await,
+                PoolConnectionReturnDisposition::ReturnedToIdle
+            );
+            // Try the later owner before polling spawn again so the race has a fixed order.
+            let competing =
+                DurabilityRoot::with_holder_owner(async { root.try_acquire_ready() }).await;
+            if !matches!(competing, Err(DurabilityError::RootUnavailable)) {
+                return Err(
+                    "the later owner took the returned holder before the waiting spawn".into(),
+                );
+            }
+
+            let reply = spawn.await;
+            let mut runtime = channel.lock().await;
+            let census = runtime.positioned_actor_census()?;
+            let [
+                (_, player_position, Some(actual_session)),
+                (creature, creature_position, None),
+            ] = census.as_slice()
+            else {
+                return Err(
+                    format!("expected one player and one spawned creature, reply={reply}").into(),
+                );
+            };
+            assert_eq!(*actual_session, session);
+            assert!(
+                wild_spawn::adjacent_cells(player_position.position())
+                    .contains(&creature_position.position())
+            );
+            let identity = creature
+                .placement_identity()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            assert_eq!(
+                reply,
+                format!("spawned {identity} {}", creature.actor_local_generation())
+            );
+            if let Some(bounty) = &bounty {
+                let occurrence = bounty.kill(&mut runtime, *creature, player, session, sequence)?;
+                drop(runtime);
+                bounty.credit(&authority, occurrence, sequence).await?;
+            }
+        }
+        if let Some(bounty) = bounty {
+            let mut runtime = channel.lock().await;
+            let _ = runtime.drive_spawn_respawns(0, |_, _| true)?;
+            assert_eq!(
+                runtime.take_spawn_drive_visits().0,
+                0,
+                "one-shot spawns leave no respawn sources"
+            );
+            drop(runtime);
+            bounty.assert_credited(repetitions).await?;
+        }
         Ok(())
     }
 

@@ -84,7 +84,34 @@ impl ChannelRuntimeV1 {
         definition_key: &str,
         position: MovementLocalPosition,
     ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
-        let source = SpawnSourceId(source_id);
+        self.realize_qualified_creature(
+            Some(SpawnSourceId(source_id)),
+            expected_pin,
+            definition_key,
+            position,
+        )
+    }
+
+    /// The control-plane qualification command requests one creature. It owns no
+    /// authored respawn source, even after the placed creature dies or is removed.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn realize_native_qualification_one_shot(
+        &mut self,
+        expected_pin: ChannelContentPin,
+        definition_key: &str,
+        position: MovementLocalPosition,
+    ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
+        self.realize_qualified_creature(None, expected_pin, definition_key, position)
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    fn realize_qualified_creature(
+        &mut self,
+        source: Option<SpawnSourceId>,
+        expected_pin: ChannelContentPin,
+        definition_key: &str,
+        position: MovementLocalPosition,
+    ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
         self.owner_fence()?;
         if self.spawn_activation.is_some() {
             return Err(CarrierError::PlanConflict);
@@ -127,6 +154,25 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::PlanConflict);
         }
+        let Some(source) = source else {
+            let actor = self.carrier.admit_creature(
+                &self.continuity,
+                ActorState(0),
+                &policy.definition_key,
+                policy.maximum_health,
+            )?;
+            let placed = (|| {
+                self.carrier
+                    .initialize_position(&self.continuity, actor, context, cell)?;
+                let exact = ExactActorRef(actor);
+                self.install_creature_policy(exact, definition_key)?;
+                self.companion_snapshot(exact)
+            })();
+            if placed.is_err() {
+                self.carrier.remove(&self.continuity, actor)?;
+            }
+            return placed;
+        };
         let definition = SpawnDefinition::new(
             vec![(position.x, position.y, position.floor)],
             1,
