@@ -1898,6 +1898,7 @@ async fn project_container_view(
         })
         .collect::<Option<Vec<_>>>()?;
     Some(ContainerObservation::Container {
+        carried: is_carried,
         parent: read.parent.map(ItemKey::Instance).or(browse_parent),
         capacity,
         entries,

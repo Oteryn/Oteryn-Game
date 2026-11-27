@@ -9,14 +9,10 @@ use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::durability::{
-    DurabilityError, character_progression::CharacterProgressionError,
-    task_board::BountyTalismanSnapshot,
-};
+use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
 use crate::foundation::CharacterId;
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
-use crate::gameplay_transport::connection::AdmissionRefusal;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
 use crate::gameplay_transport::task_board::bounty_talisman;
 use crate::spell::cast::{CharacterCastFacts, SwingSkills};
@@ -185,33 +181,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .entries
             .iter()
-            .filter(|entry| entry.state.target().is_some())
+            .filter(|entry| entry.state.target().is_some() && entry.weapon.is_some())
             .map(|entry| entry.session)
             .collect::<std::collections::BTreeSet<_>>();
-        let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root);
-        // Talisman bonuses are optional. Keep the base swing when a holder or
-        // quest row is busy.
         let mut talismans = std::collections::BTreeMap::new();
         for session in sessions {
-            if let Ok(snapshot) = retry
-                .retry_unavailable(async || {
-                    self.root
-                        .with_periodic_lock_budget(self.bounty_talisman_for_session(session))
-                        .await
-                        .map_err(|error| match error {
-                            CharacterProgressionError::Unavailable(
-                                DurabilityError::RootUnavailable,
-                            ) => AdmissionRefusal::Unavailable,
-                            _ => AdmissionRefusal::Rejected,
-                        })
-                })
-                .await
-            {
-                talismans.insert(session, snapshot);
-            }
+            // The refresh can publish a new elite race and talisman bonuses.
+            // Combat cadence does not wait for a busy holder to refresh them.
+            talismans.insert(session, self.bounty_talisman_for_session(session).await);
         }
-        drop(retry);
-        let no_talisman = BountyTalismanSnapshot::default();
         let now = now.unwrap_or_else(|| self.owner_now());
         let needs_health_names = {
             let runtime = self.runtime.lock().await;
@@ -364,6 +342,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if unavailable_source_players.contains(&entry.actor.placement_identity()) {
                 continue;
             }
+            let talisman = match talismans.get(&entry.session) {
+                Some(Ok(snapshot)) => Some(snapshot),
+                Some(Err(CharacterProgressionError::Unavailable(
+                    DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded,
+                ))) if entry
+                    .weapon
+                    .as_ref()
+                    .is_some_and(|weapon| !weapon.talisman_equipped) =>
+                {
+                    // The weapon projection rules out talisman procs. Elite
+                    // resistance still uses the committed live bounty state.
+                    None
+                }
+                _ => continue,
+            };
             let Ok(required_health) =
                 native_health_swing_targets(entry, &runtime, &states, room, digest, now, constants)
             else {
@@ -773,15 +766,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 };
                 let race_key = snapshot.state.policy.definition_key.clone();
-                let talisman = talismans.get(&entry.session).unwrap_or(&no_talisman);
-                let [talisman_damage, talisman_life] = bounty_talisman::hit_bonuses(
-                    talisman,
-                    &race_key,
-                    &root,
-                    swing_occurrence(entry.actor, swing.lineage, ordinal, b"bounty-talisman"),
-                    0,
-                )
-                .unwrap_or_default();
+                let [talisman_damage, talisman_life] = if let Some(talisman) = talisman {
+                    let Some(bonuses) = bounty_talisman::hit_bonuses(
+                        talisman,
+                        &race_key,
+                        &root,
+                        swing_occurrence(entry.actor, swing.lineage, ordinal, b"bounty-talisman"),
+                        0,
+                    ) else {
+                        continue;
+                    };
+                    bonuses
+                } else {
+                    [0, 0]
+                };
+                let elite = talisman.map_or_else(
+                    || states.elite_bounty(&runtime, entry.actor, entry.session, &race_key),
+                    |snapshot| snapshot.elite(&race_key),
+                );
                 // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
                 // a creature without them takes no hit (fail closed).
                 let (Some(defense), Some(armor)) = (
@@ -1002,21 +1004,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     [landed, 0]
                 };
-                let leech_parts = boost_attack_components(
-                    damage_parts,
-                    0,
-                    talisman_damage,
-                    talisman.elite(&race_key),
-                );
+                let leech_parts = boost_attack_components(damage_parts, 0, talisman_damage, elite);
                 let leech_damage =
                     u32::try_from(leech_parts[0].saturating_add(leech_parts[1]).max(0))
                         .unwrap_or(u32::MAX);
-                let final_parts = boost_attack_components(
-                    damage_parts,
-                    prey,
-                    talisman_damage,
-                    talisman.elite(&race_key),
-                );
+                let final_parts =
+                    boost_attack_components(damage_parts, prey, talisman_damage, elite);
                 let landed = final_parts[0].saturating_add(final_parts[1]);
                 if landed <= 0 {
                     train_swing(
@@ -1301,11 +1294,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .filter(|n| *n > 0) else {
                             continue;
                         };
-                        let amount = if talisman.elite(&race_key) {
-                            amount / 2
-                        } else {
-                            amount
-                        };
+                        let amount = if elite { amount / 2 } else { amount };
                         if amount == 0 {
                             continue;
                         }
@@ -1404,7 +1393,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 if runtime
                                     .companion_snapshot(neighbour)
                                     .is_ok_and(|candidate| {
-                                        talisman.elite(&candidate.state.policy.definition_key)
+                                        let race = &candidate.state.policy.definition_key;
+                                        talisman.map_or_else(
+                                            || {
+                                                states.elite_bounty(
+                                                    &runtime,
+                                                    entry.actor,
+                                                    entry.session,
+                                                    race,
+                                                )
+                                            },
+                                            |snapshot| snapshot.elite(race),
+                                        )
                                     })
                                 {
                                     amount / 2

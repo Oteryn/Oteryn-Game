@@ -36,6 +36,7 @@ fn inventory(entries: u16) -> InventoryItems {
 
 fn container(parent: Option<ItemKey>, entries: &[u16]) -> ContainerObservation {
     ContainerObservation::Container {
+        carried: false,
         parent,
         capacity: MAX_CONTAINER_VIEW_ENTRIES as u8,
         entries: entries.iter().map(|n| item(instance(*n))).collect(),
@@ -295,6 +296,7 @@ fn every_refusal_leaves_the_views_unchanged() {
         (
             open(bag),
             Some(ContainerObservation::Container {
+                carried: false,
                 parent: None,
                 capacity: 1,
                 entries: vec![item(instance(10)), item(instance(11))],
@@ -962,6 +964,7 @@ mod connection {
                         }
                     }
                     let overflow = ContainerObservation::Container {
+                        carried: false,
                         parent: None,
                         capacity: 1,
                         entries: vec![item(instance(10)), item(instance(11))],

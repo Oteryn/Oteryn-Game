@@ -258,6 +258,7 @@ fn browse_toggle_closes_all_aliases_without_reopening_on_seek_or_refresh() -> Te
     let retired = [field_key(), key(1), key(31)]
         .map(|key| view.table().handle(&key).ok_or("visible alias handle"));
     let ordinary = ContainerObservation::Container {
+        carried: false,
         parent: None,
         capacity: 20,
         entries: vec![item(2001)],
@@ -374,6 +375,7 @@ fn browse_up_replaces_the_ground_container_in_the_same_slot_at_first_page() -> T
             &mut view,
             PendingOpen::new_view(key(1000)),
             Some(ContainerObservation::Container {
+                carried: false,
                 parent: Some(field_key()),
                 capacity: 20,
                 entries: vec![item(1001)],
@@ -437,6 +439,7 @@ fn browse_extension_does_not_expose_legacy_parent_or_expand_ordinary_capacity() 
             &mut view,
             PendingOpen::new_view(key(1000)),
             Some(ContainerObservation::Container {
+                carried: false,
                 parent: Some(field_key()),
                 capacity: MAX_CONTAINER_VIEW_ENTRIES as u8,
                 entries: vec![],
@@ -453,6 +456,7 @@ fn browse_extension_does_not_expose_legacy_parent_or_expand_ordinary_capacity() 
                 &mut view,
                 PendingOpen::new_view(key(1000)),
                 Some(ContainerObservation::Container {
+                    carried: false,
                     parent: None,
                     capacity: 30,
                     entries: vec![],
@@ -664,6 +668,7 @@ fn browse_up_preserves_existing_alias_with_independent_pages_and_shared_refresh(
             &mut view,
             pending,
             Some(ContainerObservation::Container {
+                carried: false,
                 parent: Some(field_key()),
                 capacity: 20,
                 entries: vec![],

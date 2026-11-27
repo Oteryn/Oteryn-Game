@@ -315,6 +315,31 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     }
     // Direct USE can open a reachable container even with rune USE selected.
     // Only probe plain handles, leaving targeted actions and their receipts alone.
+    // The carried USE owner re-proves custody. The projection only rules out opening a bag.
+    let projected_definition = match (&decoded, item_view.as_ref()) {
+        (Ok(UseIntent {
+            target: UseTarget::Item(handle),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        }), Some(view)) if admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1) => {
+            view.resolve(*handle).and_then(|key| {
+                if !matches!(key, ItemKey::Instance(_)) || view.is_main_backpack(&key)
+                    || view.equipped_slot(&key).is_some()
+                {
+                    return None;
+                }
+                view.backpack_entry_definition(key).or_else(|| {
+                    container_views.as_ref()?.carried_entry_definition(key)
+                })
+            })
+        }
+        _ => None,
+    };
+    let projected_non_container = match projected_definition {
+        Some(definition) => authority.is_projected_non_container(definition).await,
+        None => false,
+    };
     let container = match (&decoded, item_view.as_ref(), container_views.as_ref()) {
         (
             Ok(UseIntent {
@@ -326,7 +351,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Some(view),
             Some(views),
         ) => match view.resolve(*handle) {
-            Some(key) => match authority
+            Some(key) if !projected_non_container => match authority
                 .observe_container_for_use(
                     actor,
                     admitted.item_fence,
@@ -345,7 +370,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 }
                 Err(_) => return Ok(super::refuse_use(command, "bag_read_failed")),
             },
-            None => None,
+            _ => None,
         },
         _ => None,
     };
@@ -539,7 +564,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => {
                 let key = item_view.as_ref().and_then(|view| view.resolve(handle));
-                let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
+                let carried_entry = projected_non_container
+                    || matches!(container, Some(ContainerObservation::NotAContainer));
                 let container = container.filter(|_| opens_container);
                 // BAGS-USE-1: a carried entry of an open view can be used under capability
                 // 15. The owner revalidates custody before PREPARE; equipped sources fail closed.

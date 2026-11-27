@@ -140,6 +140,7 @@ pub(super) async fn observe(
         return Some(ContainerObservation::Gone);
     }
     Some(ContainerObservation::Container {
+        carried: false,
         parent,
         capacity,
         entries,

@@ -77,6 +77,7 @@ impl FreshAdmissionAuthority for MoveOwner {
             return None;
         }
         Some(ContainerObservation::Container {
+            carried: false,
             parent: Some(item(1).key),
             capacity: 20,
             entries: if self.moved.get() {

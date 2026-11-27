@@ -686,7 +686,15 @@ impl SessionItemView {
 
     /// Whether `key` is a direct entry of the main backpack shown in domain 9.
     pub fn is_backpack_entry(&self, key: &ItemKey) -> bool {
-        self.inventory.entries.iter().any(|entry| entry.key == *key)
+        self.backpack_entry_definition(*key).is_some()
+    }
+
+    pub(super) fn backpack_entry_definition(&self, key: ItemKey) -> Option<NonZeroU32> {
+        self.inventory
+            .entries
+            .iter()
+            .find(|entry| entry.key == key)
+            .map(|entry| entry.item_definition_ref)
     }
 
     /// The definition published for this live item. It selects a route only;

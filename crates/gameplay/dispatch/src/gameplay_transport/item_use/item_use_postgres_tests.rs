@@ -14,7 +14,10 @@ mod wire_dispatch;
 // The transport fixture already has an independently fenced active session; it has no
 // fresh-admission claim receipt. Supply its snapshot directly from the real item reader,
 // and forward both USE forms and container observations to the production owner.
-struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
+struct WireOwner<'a, 'b, 'f, 's>(
+    &'a ComposedFreshAdmission<'b, 'f, 's>,
+    Option<&'a wire_dispatch::PotionBagReadProbe>,
+);
 
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
     async fn admit(
@@ -47,12 +50,20 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
             super::super::item_ref_admission::definition_ref(index, definition)
         })
     }
+    async fn is_projected_non_container(&self, definition: NonZeroU32) -> bool {
+        self.0.is_projected_non_container(definition).await
+    }
     async fn observe_container(
         &self,
         actor: ExactActorRef,
         fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
         target: ItemKey,
     ) -> Option<super::super::container_view::ContainerObservation> {
+        if let Some(probe) = self.1
+            && target == ItemKey::Instance(id(110))
+        {
+            return probe.observe(self.0, actor, fence, target).await;
+        }
         self.0.observe_container(actor, fence, target).await
     }
     async fn use_item(
@@ -101,11 +112,34 @@ fn run_scenario_items(
         .spawn(move || {
             postgres_fixture::runtime()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, case, crystal, None, appearances))
+                .block_on(scenario(admin, case, crystal, None, appearances, None))
                 .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "item use e2e panicked")?
+        .map_err(Into::into)
+}
+
+pub(crate) fn run_potion_bag_read_budget_regression(admin: String) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            postgres_fixture::runtime()
+                .map_err(|error| error.to_string())?
+                .block_on(async {
+                    for partly_spent in [false, true] {
+                        let probe = wire_dispatch::PotionBagReadProbe {
+                            partly_spent,
+                            observed: std::cell::Cell::new(false),
+                        };
+                        scenario(admin.clone(), None, false, None, false, Some(&probe)).await?;
+                    }
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "potion bag read test panicked")?
         .map_err(Into::into)
 }
 
@@ -115,6 +149,7 @@ async fn scenario(
     crystal: bool,
     current_potion: Option<u32>,
     appearances: bool,
+    potion_bag_read_probe: Option<&wire_dispatch::PotionBagReadProbe>,
 ) -> TestResult {
     use item_use_view_refresh_tests::Case;
     let tag = match case {
@@ -365,7 +400,9 @@ async fn scenario(
         encode_use_item_intent(std::num::NonZeroU64::new(3).expect("inner handle")),
         encode_use_item_intent(std::num::NonZeroU64::new(4).expect("potion handle")),
     ];
-    let output = wire_dispatch::exchange(&owner, admitted, &payloads).await?;
+    let output =
+        wire_dispatch::exchange_with_probe(&owner, admitted, &payloads, potion_bag_read_probe)
+            .await?;
     let mut cursor = 0;
     let mut results = Vec::new();
     while cursor < output.len() {
@@ -374,6 +411,12 @@ async fn scenario(
             crate::foundation::decode_wire_envelope(&output[cursor + 4..cursor + 4 + length])?;
         if frame.message_type() == crate::foundation::MessageType::CommandResult {
             let result = oteryn_protocol_oteryn::decode_command_result(frame.payload())?;
+            if potion_bag_read_probe.is_some() && result.command_id == 4 {
+                assert_eq!(
+                    result.status,
+                    oteryn_protocol_oteryn::CommandStatus::Accepted
+                );
+            }
             results.push((result.command_id, result.payload.to_vec()));
         }
         cursor += 4 + length;
@@ -417,13 +460,21 @@ async fn scenario(
         .await;
     assert_eq!(outcome.disposition, UseDisposition::Committed);
     assert_eq!(harness.count("game_item_use_records").await?, 2);
-    if current_potion.is_some() {
-        let empty: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i284' AND quantity=1 AND lifecycle=1")
-            .fetch_one(&harness.pool).await?;
-        assert_eq!(
-            empty, 1,
-            "current mana variants return the donor's large empty flask exactly once"
+    if let Some(probe) = potion_bag_read_probe {
+        assert!(
+            !probe.observed.get(),
+            "potion USE consulted the container reader"
         );
+    }
+    if current_potion.is_some() || potion_bag_read_probe.is_some() {
+        if current_potion.is_some() {
+            let empty: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i284' AND quantity=1 AND lifecycle=1")
+            .fetch_one(&harness.pool).await?;
+            assert_eq!(
+                empty, 1,
+                "current mana variants return the donor's large empty flask exactly once"
+            );
+        }
         drop(owner);
         drop(authority);
         drop(seal);
@@ -639,7 +690,7 @@ fn srx1_current_mana_potion_variants_wire_replay_postgres() -> TestResult {
                 .block_on(async {
                     for item in [53162, 53163, 53164] {
                         let started = std::time::Instant::now();
-                        scenario(admin.clone(), None, true, Some(item), false).await?;
+                        scenario(admin.clone(), None, true, Some(item), false, None).await?;
                         eprintln!(
                             "SRX1_PG current_potion={item} wire/replay/flask elapsed={:?}",
                             started.elapsed()
