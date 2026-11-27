@@ -867,6 +867,19 @@ async fn prepare_build(
     )
     .await?;
     #[cfg(feature = "qualification-spawn")]
+    if profile == "q_w13" {
+        qualification_build::prepare_w13_sword_skill(
+            root,
+            authority,
+            proof,
+            &current,
+            content_revision,
+            fixture_occurrence(character.as_bytes(), profile, b"sword-skill"),
+            deadline,
+        )
+        .await?;
+    }
+    #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
     }
