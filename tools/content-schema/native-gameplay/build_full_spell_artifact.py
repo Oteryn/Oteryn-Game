@@ -26,7 +26,7 @@ VOCATIONS = ('druid', 'knight', 'monk', 'paladin', 'sorcerer')
 LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'creature_profiles': 8 * 1024**2, 'presentation_profiles': 8 * 1024**2,
           # Match production MAX_ITEM_PROFILES in native_gameplay.rs.
-          'item_profiles': 16 * 1024**2, 'spell_appearances': 8 * 1024**2,
+          'item_profiles': 20 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
           'source_world': 8 * 1024**2, 'progression': 256 * 1024,

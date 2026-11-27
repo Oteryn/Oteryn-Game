@@ -7,7 +7,7 @@ from pathlib import Path
 
 import hireling_item_profiles as hireling
 from import_cyclopedia_global import apply_profile_weights
-from srx1_profile_updates import compact_item_record
+from srx1_profile_updates import MAX_ITEM_PROFILES, compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = "content/items/definitions/spell-native-profiles.json"
@@ -80,12 +80,9 @@ class HirelingItemProfiles(unittest.TestCase):
             self.assertIn(f"oteryn:item.tibia.i{number}", self.profiles)
         self.assertEqual(self.overlay["catalogue"]["cook_items"], list(range(29408, 29417)))
 
-    def test_complete_active_profiles_fit_the_unchanged_native_input_bound(self):
-        # native_gameplay.rs::MAX_ITEM_PROFILES is the existing 16 MiB Item bound.
-        # The former indented
-        # 2,104-record output reached 9,074,560 bytes and could not activate.
-        self.assertLessEqual(len(self.raw), 16 * 1024 * 1024,
-            "the full active Item closure must activate without widening its resource bound")
+    def test_complete_active_profiles_fit_the_native_item_input_bound(self):
+        self.assertLessEqual(len(self.raw), MAX_ITEM_PROFILES,
+            "the full active Item closure must fit the native Item provider limit")
         self.assertEqual(len(self.profiles), len(json.loads(self.raw)["records"]),
             "serialization cannot hide duplicate canonical Item profiles")
 

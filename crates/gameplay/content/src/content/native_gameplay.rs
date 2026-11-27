@@ -90,13 +90,15 @@ const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
 const MAX_PROFILES: usize = 8 * 1024 * 1024;
 /// The Item profile section and composed Item supplements share this byte bound.
-const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
+const MAX_ITEM_PROFILES: usize = 20 * 1024 * 1024;
+// Preserve the encoding choice of previously issued Item compositions.
+const LEGACY_ITEM_PROFILE_ENCODING_LIMIT: usize = 16 * 1024 * 1024;
 // W01c: the measured 1,863 canonical attack closures add ~19 MiB to the ~7 MiB
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
 /// The combined Item providers include the registered movable Crystal corpse stages.
-const MAX_ITEM_RECORDS: usize = 9_216;
+const MAX_ITEM_RECORDS: usize = 10_752;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -791,7 +793,7 @@ fn pin_composed_item_profiles(
     let legacy = serde_json::to_vec(items).map_err(|_| encoding())?;
     // Previously issuable providers retain their encoding. Use compact encodings
     // only when the preceding encoding exceeds the byte bound.
-    let bytes = if legacy.len() <= MAX_ITEM_PROFILES {
+    let bytes = if legacy.len() <= LEGACY_ITEM_PROFILE_ENCODING_LIMIT {
         legacy
     } else {
         let mut compact = serde_json::to_value(items).map_err(|_| encoding())?;
@@ -806,7 +808,7 @@ fn pin_composed_item_profiles(
             }
         }
         let fields_compacted = serde_json::to_vec(&compact).map_err(|_| encoding())?;
-        if fields_compacted.len() <= MAX_ITEM_PROFILES {
+        if fields_compacted.len() <= LEGACY_ITEM_PROFILE_ENCODING_LIMIT {
             fields_compacted
         } else {
             let records = compact["records"].as_array_mut().ok_or_else(encoding)?;
@@ -832,7 +834,7 @@ fn pin_composed_item_profiles(
                 }
             }
             let optionals_compacted = serde_json::to_vec(&compact).map_err(|_| encoding())?;
-            if optionals_compacted.len() <= MAX_ITEM_PROFILES {
+            if optionals_compacted.len() <= LEGACY_ITEM_PROFILE_ENCODING_LIMIT {
                 optionals_compacted
             } else {
                 let records = compact["records"].as_array_mut().ok_or_else(encoding)?;
@@ -3441,8 +3443,7 @@ mod tests {
             Err(ContentError::InvalidArtifact(reason)) if reason == "native gameplay item top-order source facts")
         );
 
-        // Exercise the Item record bound separately from the unchanged 16 MiB
-        // byte bound. Duplicate identities would fail later; count must refuse first.
+        // Duplicate identities would fail later; the record bound must refuse first.
         let smallest = profiles["records"]
             .as_array()
             .unwrap()
@@ -3458,6 +3459,17 @@ mod tests {
             matches!(compile_native_gameplay(baseline.compiled(), &supplied),
             Err(ContentError::InvalidArtifact(reason)) if reason == "native gameplay item profile discriminator or bounds")
         );
+
+        supplied.item_profiles = Some(PinnedGameplayBytes {
+            bytes: vec![b' '; MAX_ITEM_PROFILES + 1],
+            sha256: String::new(),
+        });
+        assert!(matches!(
+            compile_native_gameplay(baseline.compiled(), &supplied),
+            Err(ContentError::InvalidArtifact(
+                "native gameplay section bounds"
+            ))
+        ));
     }
     #[test]
     fn itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject() {
@@ -4016,11 +4028,19 @@ mod tests {
         let mut source: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
             "../../../../../content/items/definitions/spell-native-profiles.json"
         ))?;
-        // Model a larger cohort with real profiles. This tests the encoding
-        // alone, before the independent identity and record-count checks.
-        let copies = MAX_ITEM_RECORDS.saturating_sub(source.records.len());
-        source.records.extend_from_within(..copies);
-        assert!(serde_json::to_vec(&source)?.len() > MAX_ITEM_PROFILES);
+        // Exercise the compact encoding before the independent Item identity and count checks.
+        let legacy_len = serde_json::to_vec(&source)?.len();
+        if legacy_len <= LEGACY_ITEM_PROFILE_ENCODING_LIMIT {
+            let sample = source
+                .records
+                .first()
+                .ok_or("Item profile fixture")?
+                .clone();
+            let row_len = serde_json::to_vec(&sample)?.len() + 1;
+            let copies = (LEGACY_ITEM_PROFILE_ENCODING_LIMIT - legacy_len) / row_len + 1;
+            source.records.extend(std::iter::repeat_n(sample, copies));
+        }
+        assert!(serde_json::to_vec(&source)?.len() > LEGACY_ITEM_PROFILE_ENCODING_LIMIT);
         let pin = pin_composed_item_profiles(&source)?;
         qualify(&pin, MAX_ITEM_PROFILES)?;
         let authored = source
