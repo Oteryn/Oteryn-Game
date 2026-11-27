@@ -59,6 +59,20 @@ pub(super) struct CommitStep {
     supersedes_topic: bool,
 }
 
+/// The paid decline consumes the same source topic as the original dialogue.
+pub(in crate::gameplay_transport) fn reset_travel_topic(
+    conversations: &NpcConversations,
+    session: GameSessionId,
+    context: &Context,
+) {
+    if let Ok(mut sessions) = conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+        && matches!(&state.catalogue, Some(Pending::Topic(topic)) if topic.context == *context)
+    {
+        state.catalogue = None;
+    }
+}
+
 pub(super) async fn inventory(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -275,6 +289,10 @@ pub(super) fn prepare(
         message: intent.text.clone(),
         topic: if greeting {
             0
+        } else if context.2 == crate::durability::quest_state::carlos_trade::NPC
+            && tracks.get(crate::durability::quest_state::carlos_trade::GREETING) == Some(&7)
+        {
+            7
         } else {
             previous.as_ref().map_or(0, |p| p.topic)
         },
@@ -350,7 +368,9 @@ pub(super) fn prepare(
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            "oteryn:quest.in_service_of_yalahar_quest"
+                | "oteryn:quest.the_ape_city_quest"
+                | "oteryn:quest.the_paradox_tower_quest"
         )
     }) {
         return Some(Step::Refused);

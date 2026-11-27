@@ -339,7 +339,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(());
         }
         let (_, _, state) = states.actors.get_mut(actor_index).ok_or(())?;
+        let before = state.cooldowns.clone();
         clear_kooldown_cooldowns(&mut state.cooldowns, self.owner_now());
+        states.record_cooldown_changes(
+            &runtime,
+            actor,
+            command.game_session_id,
+            &before,
+            &states.actors[actor_index].2.cooldowns,
+            None,
+        );
         states.owner_wake.notify_one();
         drop(states);
         drop(runtime);

@@ -81,14 +81,9 @@ pub(in crate::gameplay_transport) fn hit_bonuses(
     Some(result)
 }
 
-/// Canary on_combat_taskboard.lua:17-20 and Crystal combat.cpp:918-923:
-/// signed damage adds ceil(value * bonus); its positive magnitude adds floor.
+/// Canary on_combat_taskboard.lua:17-20 and Crystal combat.cpp:918-923.
 pub(in crate::gameplay_transport) fn damage(amount: i64, bonus: u16) -> i64 {
-    if amount <= 0 {
-        return amount;
-    }
-    let result = i128::from(amount) * (10_000 + i128::from(bonus)) / 10_000;
-    i64::try_from(result).unwrap_or(i64::MAX)
+    crate::spell::magnitude_owner::boost_creature_damage(amount, 0, bonus)
 }
 
 /// Scale retained leech damage beside its hit, excluding only the separate Prey
@@ -100,36 +95,76 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses_with_leech(
     root: &GameplayDecisionRoot,
     occurrence: DecisionOccurrenceId,
     leech_inputs: &mut [crate::gameplay_transport::item_spell_augments::leech_projection::Target],
+    (states, mut owner): (
+        &crate::gameplay_transport::actor_spell::ChannelSpellStates,
+        Option<&mut crate::spell::magnitude_owner::PreparedMagnitudeOwner>,
+    ),
 ) -> Option<Vec<SpellLeech>> {
     let mut leech = Vec::new();
+    let mut cursor = 0;
     for effect in &mut batch.effects {
-        let magnitude = match &mut effect.change {
-            OwnerCombatChange::Damage { magnitude, .. } => magnitude,
-            OwnerCombatChange::DamageWithHealing { damage, .. } => damage,
+        let (magnitude, heals) = match &mut effect.change {
+            OwnerCombatChange::Damage { magnitude, .. } => (magnitude, false),
+            OwnerCombatChange::DamageWithHealing { damage, .. } => (damage, true),
             _ => continue,
         };
         let Ok(creature) = runtime.companion_snapshot(effect.target) else {
             continue;
         };
+        let race = &creature.state.policy.definition_key;
         let [extra_damage, extra_life] = hit_bonuses(
             snapshot,
-            &creature.state.policy.definition_key,
+            race,
             root,
             occurrence,
             effect.sub_ordinal,
         )?;
-        let elite = snapshot.elite(&creature.state.policy.definition_key);
-        *magnitude = damage(*magnitude, extra_damage);
-        if elite {
-            *magnitude /= 2;
-        }
+        let elite = snapshot.elite(race);
+        let prey = states.prey_percent(
+            runtime,
+            batch.caster,
+            batch.command.game_session_id(),
+            race,
+            1,
+            batch
+                .now_us
+                .map_or_else(|| batch.now_ms.saturating_mul(1_000), |at| at.get()),
+        );
+        let parts = if let Some(owner) = owner.as_deref_mut() {
+            owner
+                .apply_creature_damage_modifiers(
+                    &mut cursor,
+                    effect.target,
+                    effect.sub_ordinal,
+                    *magnitude,
+                    (prey, extra_damage, elite),
+                )
+                .ok()?
+        } else {
+            None
+        };
+        let finish = |amount| {
+            let amount = damage(amount, extra_damage);
+            if elite { amount / 2 } else { amount }
+        };
+        *magnitude = parts.map_or_else(
+            || {
+                let base = if heals {
+                    *magnitude
+                } else {
+                    crate::gameplay_transport::prey::damage(*magnitude, prey)
+                };
+                finish(base)
+            },
+            |(amount, _)| amount,
+        );
         if let Some(input) = leech_inputs
             .iter_mut()
             .find(|input| input.target == effect.target && input.ordinal == effect.sub_ordinal)
             && let Some(basis) = input.damage.as_mut()
         {
-            let scaled = damage(i64::from(*basis), extra_damage);
-            *basis = u32::try_from(if elite { scaled / 2 } else { scaled }).unwrap_or(u32::MAX);
+            let scaled = parts.map_or_else(|| finish(i64::from(*basis)), |(_, leech)| leech);
+            *basis = u32::try_from(scaled).unwrap_or(u32::MAX);
         }
         if extra_life > 0 {
             leech.push((effect.target, effect.sub_ordinal, extra_life));
@@ -547,6 +582,7 @@ mod tests {
             &root,
             decision,
             &mut inputs,
+            (&states, None),
         )
         .expect("qualified effects");
         assert!(matches!(

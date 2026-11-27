@@ -2,9 +2,7 @@
 //! character and boss. The rule is `oteryn_gameplay_encounter_rules::boss::pity`.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::assert_runtime_scope_fence;
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::db::{begin_semantic_transaction, commit_semantic_read, lock_admission_relations};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
@@ -50,7 +48,7 @@ impl DurabilityRoot {
                         let state = read_state(&mut tx, character, &pity_key, false).await?;
                         out.push((character, state.bonus_permille()));
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(out)
                 })
             })

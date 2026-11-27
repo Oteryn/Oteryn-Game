@@ -101,6 +101,47 @@ fn the_compiler_admits_exactly_the_npcs_of_the_server_service_model() -> TestRes
     Ok(())
 }
 
+#[test]
+fn quest_contacts_load_from_the_published_placement_shards() -> TestResult {
+    use oteryn_world_bundle_compiler::{compile, source};
+
+    let root = root();
+    let contacts = [
+        ("oteryn:npc.ahmet", (33126, 32810, -6)),
+        ("oteryn:npc.gnomally", (32795, 31746, -10)),
+        ("oteryn:npc.lee_delle", (32024, 32195, -7)),
+    ];
+    let regions = contacts.map(|(_, (x, y, _))| (x / 256, y / 256));
+    let project = source::project_regions(&root, &regions)?;
+    let (registry, palette) = source::registry(&root, &project)?;
+    let input = Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: identity(),
+        world: source::world_extent(&root)?,
+        build_class: BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    let (spawns, _) = compile::realize_spawns(&input, &registry)?;
+    let (table, report) = compile::realize_npcs(&input, &registry, &spawns)?;
+    for (key, expected) in contacts {
+        let npc = table
+            .npcs
+            .iter()
+            .find(|npc| npc.key == key)
+            .ok_or_else(|| {
+                format!(
+                    "{key} missing from the bundle NPC table, held: {:?}",
+                    report.held.iter().find(|entry| entry.npc == key)
+                )
+            })?;
+        let cells: Vec<_> = npc.placements.iter().map(|p| (p.x, p.y, p.floor)).collect();
+        assert_eq!(cells, [expected], "{key} must load at the donor cell");
+    }
+    Ok(())
+}
+
 const PALETTE: [&str; 5] = [
     "terrain:grass",
     "terrain:lava",
@@ -313,6 +354,79 @@ fn a_written_placement_is_a_cell_the_booted_world_lets_a_creature_enter() -> Tes
     for x in 1..=7 {
         let enterable = world.enterable(TilePos { x, y: 0, floor: -7 });
         assert_eq!(written.contains(&(x, 0, -7)), enterable, "x = {x}");
+    }
+    Ok(())
+}
+
+#[test]
+fn crystal_npc_services_use_their_source_placement_cells() -> TestResult {
+    let root = root();
+    let mut families = repository_families()?;
+    let mut declarations = Vec::new();
+    for shard in shards(&root, "content/world/npc-placements")? {
+        families.add_npc_placements(&shard)?;
+        let shard: Value = serde_json::from_slice(&shard)?;
+        for row in shard["records"].as_array().ok_or("placement records")? {
+            declarations.push(row["declaration"].clone());
+        }
+    }
+    let admitted: BTreeSet<_> = admitted_npcs(&families).into_iter().collect();
+    for (npc, x, y, z) in [
+        ("a_strange_fellow", 32909, 32076, 9),
+        ("adrian", 31934, 31913, 7),
+        ("benjamin", 32349, 32219, 7),
+        ("captain_jack", 32190, 31957, 6),
+        ("chrystal", 33175, 31811, 7),
+        ("dove", 32918, 32075, 7),
+        ("ferryman_kamil", 32152, 32457, 7),
+        ("ferryman_kamil_meluna", 32088, 32468, 7),
+        ("flavius", 32566, 32489, 7),
+        ("harlow_vengoth", 32856, 31549, 7),
+        ("hawkhurst", 33356, 31982, 7),
+        ("hawkhurst_ingol", 33710, 32602, 6),
+        ("hugo", 32950, 32102, 5),
+        ("kendra", 33494, 31057, 7),
+        ("kevin", 32568, 32018, 6),
+        ("kroox", 32651, 31887, 9),
+        ("liane", 32333, 31786, 7),
+        ("lokur", 32647, 31904, 8),
+        ("markwin", 32416, 32145, 15),
+        ("ninos", 33904, 31498, 7),
+        ("talphion", 32564, 31895, 12),
+        ("tonar", 33181, 32883, 7),
+    ] {
+        let key = format!("oteryn:npc.{npc}");
+        assert!(admitted.contains(key.as_str()), "{key}");
+        let cell = match npc {
+            // Keep Dalbrect's Isle of the Kings arrival clear.
+            "captain_jack" => (32190, 31958, 6),
+            "ferryman_kamil_meluna" => (32088, 32469, 7),
+            "hawkhurst_ingol" => (33711, 32602, 6),
+            _ => (x, y, z),
+        };
+        let placement = families
+            .npc_placements
+            .iter()
+            .find(|placement| placement.npc == key && placement.cell == cell)
+            .ok_or_else(|| format!("missing published cell for {key}"))?;
+        assert!(
+            !families.npc_block_solid_contacts.contains(&placement.key),
+            "{key}"
+        );
+        if cell != (x, y, z) {
+            let row = declarations
+                .iter()
+                .find(|row| row["identity"]["key"] == placement.key)
+                .ok_or("adjusted dock declaration")?;
+            let provenance = row["provenance"].as_array().ok_or("placement provenance")?;
+            assert!(
+                provenance.iter().any(|proof| {
+                    proof["basis"] == "CHOSEN_OTERYN_APPROXIMATION"
+                        && proof["source_cell"] == serde_json::json!({"x": x, "y": y, "floor": z})
+                }),
+                "{key}"
+            );
+        }
     }
     Ok(())
 }

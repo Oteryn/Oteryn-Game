@@ -56,17 +56,19 @@ def check_callback_inventory(root=ROOT):
     present = main | phase
     sign_keys = {f'oteryn:quest-callback/questpc7-goblin-sign-{i}' for i in range(1, 4)}
     pond_keys = {'oteryn:quest-callback/questpc7-goblin-pond'} & present
-    trunk_keys = {f'oteryn:quest-callback/questpc7-goblin-trunk-{i}' for i in range(1, 4)} & present
-    if len(trunk_keys) not in (0, 3):
+    trunk_keys = {f'oteryn:quest-callback/questpc7-goblin-trunk-{i}{suffix}'
+                  for i in range(1, 4) for suffix in ('','-last')} & present
+    if len(trunk_keys) != 6:
         raise ValueError('QUESTPC7_CALLBACK_PARTIAL_TRUNKS')
     smith_keys = {
         'oteryn:quest-callback/authored-smith-cache',
-        'oteryn:quest-callback/authored-smith-cache-reward',
+        *(f'oteryn:quest-callback/authored-smith-cache-reward-{box}{suffix}'
+          for box in ('talon','hammer','gold') for suffix in ('','-last')),
     }
     expected = 106 + len(pond_keys) + len(trunk_keys) + len(smith_keys)
     if (not sign_keys <= present or not smith_keys <= present
-            or (len(main), len(phase), len(present)) != (110, 2, expected)
-            or expected != 112):
+            or (len(main), len(phase), len(present)) != (118, 2, expected)
+            or expected != 120):
         raise ValueError('QUESTPC7_CALLBACK_CLOSED_UNION')
     residual = present - sign_keys - pond_keys - trunk_keys - smith_keys
     if len(residual) != 103:
@@ -74,7 +76,10 @@ def check_callback_inventory(root=ROOT):
     # Accepted b7ccd5ad callback identities, independent of the generated split.
     # Sorted UTF-8 keys with a newline after every key retain the complete closed
     # union; replacing a residual key with a foreign key cannot pass by count.
-    key_bytes = ('\n'.join(sorted(present)) + '\n').encode('utf-8')
+    retired_smith = 'oteryn:quest-callback/authored-smith-cache-reward'
+    baseline = (present - {key for key in smith_keys if key.startswith(retired_smith)}
+                - {key for key in trunk_keys if key.endswith('-last')}) | {retired_smith}
+    key_bytes = ('\n'.join(sorted(baseline)) + '\n').encode('utf-8')
     if hashlib.sha256(key_bytes).hexdigest() != '11dd258251746bc239c785e36605e8a8eb0a10b5b76d0303239b1195cb38bb9a':
         raise ValueError('QUESTPC7_CALLBACK_KEYSET')
 
@@ -92,9 +97,9 @@ def check_callback_inventory(root=ROOT):
         'let callbacks = parse(source)?;',
         'let phase_callbacks = parse(include_str!(',
         '"../../../../../../content/quests/world-callbacks/feaster-phase-routes.json"',
-        'assert_eq!((callbacks.len(), phase_callbacks.len()), (110, 2));',
+        'assert_eq!((callbacks.len(), phase_callbacks.len()), (118, 2));',
         'assert!(keys.is_disjoint(&phase_keys));',
-        'assert_eq!(keys.len() + phase_keys.len(), 112);',
+        'assert_eq!(keys.len() + phase_keys.len(), 120);',
     )
     if any(lines.count(guard) != 1 for guard in guards):
         raise ValueError('QUESTPC7_CALLBACK_FIXTURE_GUARD')

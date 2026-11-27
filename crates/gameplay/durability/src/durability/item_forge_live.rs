@@ -1,5 +1,6 @@
 //! Live Forge adapter. Rules, native item/fee/dust owners and retained outcomes
 //! share one session-fenced Type-2 transaction; reservation fixes every random draw.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::domain::forge::ItemTier;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -89,7 +90,7 @@ impl DurabilityRoot {
                 }
                 let balance = read_forge_dust(&mut tx, fence.character_id).await?;
                 let value = json!({"current_dust": balance.balance(), "dust_limit": balance.limit().get()});
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(Ok(value))
             })
         }).await?
@@ -139,7 +140,7 @@ impl DurabilityRoot {
                     }
                     let result = retained_reply(&mut tx, fence, command, request, &intent).await;
                     if result.is_ok() {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                     }
                     Ok(result)
                 })

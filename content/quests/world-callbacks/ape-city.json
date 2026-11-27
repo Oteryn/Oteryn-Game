@@ -1,0 +1,1600 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/ape-city-cask-32495",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "use_range": 2,
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32495,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 40041,
+        "appearance": 4848,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32495,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 4848
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true,
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ]
+      },
+      "requires_world_admission": true,
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_6/the_ape_city/casks": 0
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "effects": {
+        "transform": 3134,
+        "reset_after_ms": 180000,
+        "magic": {
+          "position": {
+            "x": 32862,
+            "y": 32495,
+            "floor": -9
+          },
+          "effect": 5
+        }
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2673-2685",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:1-8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:946-954"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-cask-32497",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "use_range": 2,
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32497,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 40041,
+        "appearance": 4848,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32497,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 4848
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true,
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ]
+      },
+      "requires_world_admission": true,
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_6/the_ape_city/casks": 0
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "effects": {
+        "transform": 3134,
+        "reset_after_ms": 180000,
+        "magic": {
+          "position": {
+            "x": 32862,
+            "y": 32497,
+            "floor": -9
+          },
+          "effect": 5
+        }
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2673-2685",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:1-8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:946-954"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-cask-32499",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "use_range": 2,
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32499,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 40041,
+        "appearance": 4848,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32499,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 4848
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true,
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ]
+      },
+      "requires_world_admission": true,
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_6/the_ape_city/casks": 0
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "effects": {
+        "transform": 3134,
+        "reset_after_ms": 180000,
+        "magic": {
+          "position": {
+            "x": 32862,
+            "y": 32499,
+            "floor": -9
+          },
+          "effect": 5
+        }
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2673-2685",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:1-8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:946-954"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-cask-32501",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "use_range": 2,
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32501,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 40041,
+        "appearance": 4848,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32501,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 4848
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true,
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ]
+      },
+      "requires_world_admission": true,
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_6/the_ape_city/casks": 0
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "effects": {
+        "transform": 3134,
+        "reset_after_ms": 180000,
+        "magic": {
+          "position": {
+            "x": 32862,
+            "y": 32501,
+            "floor": -9
+          },
+          "effect": 5
+        }
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2673-2685",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:1-8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:946-954"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-cask-32503",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "use_range": 2,
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32503,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 40041,
+        "appearance": 4848,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32503,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 4848
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true,
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ]
+      },
+      "requires_world_admission": true,
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_6/the_ape_city/casks": 0
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "effects": {
+        "transform": 3134,
+        "reset_after_ms": 180000,
+        "magic": {
+          "position": {
+            "x": 32862,
+            "y": 32503,
+            "floor": -9
+          },
+          "effect": 5
+        }
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2673-2685",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:1-8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:946-954"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-cask-32505",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "use_range": 2,
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32505,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 40041,
+        "appearance": 4848,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32505,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 4848
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true,
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ]
+      },
+      "requires_world_admission": true,
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_6/the_ape_city/casks": 0
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "effects": {
+        "transform": 3134,
+        "reset_after_ms": 180000,
+        "magic": {
+          "position": {
+            "x": 32862,
+            "y": 32505,
+            "floor": -9
+          },
+          "effect": 5
+        }
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2673-2685",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:1-8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:946-954"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-cask-32507",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "use_range": 2,
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32507,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 40041,
+        "appearance": 4848,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32507,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 4848
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true,
+        "alternatives": [
+          "oteryn:item.tibia.i9598"
+        ]
+      },
+      "requires_world_admission": true,
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_6/the_ape_city/casks": 0
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "effects": {
+        "transform": 3134,
+        "reset_after_ms": 180000,
+        "magic": {
+          "position": {
+            "x": 32862,
+            "y": 32507,
+            "floor": -9
+          },
+          "effect": 5
+        }
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2673-2685",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:1-8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:946-954"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-catacombs-entry",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32839,
+          "y": 32533,
+          "floor": -9
+        },
+        "unique": 9257,
+        "action": null,
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32839,
+            "y": 32533,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32749,
+        "y": 32536,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not yet have access to the deeper catacombs.",
+      "effects": {
+        "teleport_effect": 11
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission9_the_deepest_catacomb_teleport.lua:13-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4552-4555"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-amphora-40092",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32792,
+          "y": 32527,
+          "floor": -10
+        },
+        "unique": 40092,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32792,
+            "y": 32527,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32792,
+            "y": 32527,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-amphora-40093",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32823,
+          "y": 32525,
+          "floor": -10
+        },
+        "unique": 40093,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32823,
+            "y": 32525,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32823,
+            "y": 32525,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-amphora-40094",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32876,
+          "y": 32584,
+          "floor": -10
+        },
+        "unique": 40094,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32876,
+            "y": 32584,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32876,
+            "y": 32584,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-amphora-40095",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32744,
+          "y": 32586,
+          "floor": -10
+        },
+        "unique": 40095,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32744,
+            "y": 32586,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32744,
+            "y": 32586,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-catacombs-amphora-gate",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32854,
+          "y": 32544,
+          "floor": -10
+        },
+        "unique": 9258,
+        "action": null,
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32854,
+            "y": 32544,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32885,
+        "y": 32632,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You need to break all 4 large amphoras to use this teleporter.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission9_the_deepest_catacomb_teleport.lua:19-28",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32792,
+            "y": 32527,
+            "floor": -10
+          },
+          "appearance": 4996
+        },
+        {
+          "position": {
+            "x": 32823,
+            "y": 32525,
+            "floor": -10
+          },
+          "appearance": 4996
+        },
+        {
+          "position": {
+            "x": 32876,
+            "y": 32584,
+            "floor": -10
+          },
+          "appearance": 4996
+        },
+        {
+          "position": {
+            "x": 32744,
+            "y": 32586,
+            "floor": -10
+          },
+          "appearance": 4996
+        }
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-decipher",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33305,
+          "y": 32861,
+          "floor": -13
+        },
+        "unique": null,
+        "action": 12124,
+        "appearance": 419,
+        "native": {
+          "position": {
+            "x": 33305,
+            "y": 32861,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 419
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/parchment_decyphering",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "player_speech": "!-! -O- I_I (/( --I Morgathla"
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission4_parchment_decyphering.lua:3-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:660-666"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-destroy-monument",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32858,
+          "y": 32526,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4850,
+        "native": {
+          "position": {
+            "x": 32858,
+            "y": 32526,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 4850
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 17,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/snake_destroyer",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "requires_world_admission": true,
+      "effects": {
+        "transform": 4851,
+        "reset_after_ms": 30000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:44-64",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-holy-hair",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32933,
+          "y": 32495,
+          "floor": -7
+        },
+        "unique": 4010,
+        "appearance": 2753,
+        "native": {
+          "position": {
+            "x": 32933,
+            "y": 32495,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 2753
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i4832",
+        "count": 1,
+        "contents": []
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4465-4469",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:85-90"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-lever-1",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32891,
+          "y": 32590,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 12129,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32891,
+            "y": 32590,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "It does not move.",
+      "effects": {
+        "reset_after_ms": 600000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:153-164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-lever-2",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32843,
+          "y": 32649,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 12129,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32843,
+            "y": 32649,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "It does not move.",
+      "effects": {
+        "reset_after_ms": 600000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:153-164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-lever-3",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32808,
+          "y": 32613,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 12129,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32808,
+            "y": 32613,
+            "floor": -11
+          },
+          "ordinal": 2,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "It does not move.",
+      "effects": {
+        "reset_after_ms": 600000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:153-164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-lever-4",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32775,
+          "y": 32583,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 12129,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32775,
+            "y": 32583,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "It does not move.",
+      "effects": {
+        "reset_after_ms": 600000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:153-164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-lever-5",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32756,
+          "y": 32494,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 12129,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32756,
+            "y": 32494,
+            "floor": -11
+          },
+          "ordinal": 2,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "It does not move.",
+      "effects": {
+        "reset_after_ms": 600000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:153-164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-lever-6",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32799,
+          "y": 32556,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 12129,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32799,
+            "y": 32556,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "It does not move.",
+      "effects": {
+        "reset_after_ms": 600000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:153-164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-wall-1040",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32557,
+          "floor": -11
+        },
+        "unique": 1040,
+        "action": null,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32557,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32864,
+            "y": 32556,
+            "floor": -11
+          },
+          "appearance": 1563
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The lever does not move.",
+      "effects": {
+        "passages_reset_after_ms": 10000,
+        "reset_after_ms": 10000
+      },
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32891,
+            "y": 32590,
+            "floor": -11
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32843,
+            "y": 32649,
+            "floor": -11
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32808,
+            "y": 32613,
+            "floor": -11
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32775,
+            "y": 32583,
+            "floor": -11
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32756,
+            "y": 32494,
+            "floor": -11
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32799,
+            "y": 32556,
+            "floor": -11
+          },
+          "appearance": 2773
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:36-69",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:559-567"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-wall-1041",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32862,
+          "y": 32555,
+          "floor": -11
+        },
+        "unique": 1041,
+        "action": null,
+        "appearance": 2772,
+        "native": {
+          "position": {
+            "x": 32862,
+            "y": 32555,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 2772
+        }
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32864,
+            "y": 32556,
+            "floor": -11
+          },
+          "appearance": 1563
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The lever does not move.",
+      "effects": {
+        "passages_reset_after_ms": 10000,
+        "reset_after_ms": 10000
+      },
+      "world_requirements": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:36-69",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:559-567"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-witches-cap",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32181,
+          "y": 32468,
+          "floor": -10
+        },
+        "unique": 9256,
+        "action": null,
+        "appearance": 3919,
+        "native": {
+          "position": {
+            "x": 32181,
+            "y": 32468,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 3919
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/fibula_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "You can only take one sample every 24 hours.",
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/witches_cap_collected_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i4829",
+          "count": 1,
+          "contents": []
+        },
+        "item_reward_cycle": "oteryn:quest-progress/quest/u7_6/the_ape_city/witches_cap_collected_at"
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4547-4551",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:112-118"
+      ]
+    }
+  ]
+}

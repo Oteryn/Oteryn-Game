@@ -161,6 +161,14 @@ pub fn counter_helper_quest(quest: &str) -> Option<&'static str> {
 
 /// Do not advertise absent donor missions through the native NPC adapter.
 pub fn personal_event_offered(callback: &RewardCallback) -> bool {
+    if callback.quest == "oteryn:quest.authored.demon_wars_world_change"
+        && matches!(
+            callback.key.as_str(),
+            "oteryn:quest-reward/demon-wars/briefing" | "oteryn:quest-reward/demon-wars/report"
+        )
+    {
+        return true;
+    }
     !matches!(
         personal_event_profile(&callback.quest),
         Some(

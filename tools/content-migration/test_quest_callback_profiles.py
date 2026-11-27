@@ -85,6 +85,27 @@ class QuestCallbackProfiles(unittest.TestCase):
                        lambda r: r['production_definition']['production_key'],
                        lambda v: json.dumps(v, sort_keys=True).encode())
 
+    def test_explorer_custody_and_outlaw_bag_are_admitted_together(self):
+        npc = self.root / 'content/quests/npc-callbacks'
+        npc.mkdir()
+        (npc / 'explorer-society.json').write_bytes(
+            (ROOT / 'content/quests/npc-callbacks/explorer-society.json').read_bytes())
+        self.admit()
+        for number in (3295, 4834, 4842, 4843, 4863, 4864, 4868, 7242, 7315, 9605):
+            with self.subTest(item=number):
+                row = self.generated_record(f'oteryn:item.tibia.i{number}')
+                self.assertTrue(row['admission']['materializable'])
+                self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
+        for number, weight in ((4864, 800), (4868, 2000)):
+            row = self.generated_record(f'oteryn:item.tibia.i{number}')
+            self.assertEqual(row['semantics']['physical']['value']['weight'],
+                             {'state': 'KNOWN', 'value': weight})
+        for key in profiles.EXPLORER_TRACING_SHEETS:
+            earlier = next(row for row in self.predecessor['records']
+                           if row['production_definition']['production_key'] == key)
+            self.assertEqual(self.generated_record(key)['semantics']['readable_writeable'],
+                             earlier['semantics']['readable_writeable'])
+
     def test_goblin_snowballs_preserve_the_established_seasonal_profile(self):
         key = 'oteryn:item.tibia.i2992'
         document = json.loads(self.generated[PROFILE])
@@ -384,9 +405,9 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertIn('CharacterInventory', rows[axe]['admission']['legal_destinations'])
         self.assertEqual(rows[axe]['production_binding']['target']['key'], axe)
         # QA-REWARD-CHESTS-1 qualifies the Fire Axe quest's exact three bag children.
-        fire_axe, = fire_axe_placements
-        self.assertEqual(fire_axe['root']['key'], 'oteryn:item.tibia.i2853')
-        self.assertEqual([child['item']['key'] for child in fire_axe['contents']],
+        fire_axe_chest, = fire_axe_placements
+        self.assertEqual(fire_axe_chest['root']['key'], 'oteryn:item.tibia.i2853')
+        self.assertEqual([child['item']['key'] for child in fire_axe_chest['contents']],
                          [f'oteryn:item.tibia.i{item}' for item in (3098, 3085, 3028)])
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
@@ -401,7 +422,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertIn('oteryn:item.tibia.i3083', expected)
         self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
                          'oteryn:item.tibia.i3077'} <= expected)
-        for key in expected:
+        for key in expected | {fire_axe}:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)
             self.assertIn('CharacterInventory', row['admission']['legal_destinations'], key)

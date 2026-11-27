@@ -70,7 +70,76 @@ fn srvwld_canonical_schedules_resolve_every_callback_at_its_source_index()
     // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
     assert_eq!(
         (creatures, schedules, attacks, defenses),
-        (1870, 7238, 15, 8)
+        (1896, 7408, 15, 8)
     );
+    Ok(())
+}
+
+#[test]
+fn dryad_loader_qualifies_source_self_defenses() -> Result<(), Box<dyn std::error::Error>> {
+    let document: CreatureProfilesDocument = serde_json::from_slice(include_bytes!(
+        "../../../../../content/creatures/definitions/spell-native-profiles.json"
+    ))?;
+    let record = document
+        .records
+        .iter()
+        .find(|record| record.profile.target.key == "oteryn:creature.dryad")
+        .ok_or("Dryad profile")?;
+    let profile = project_native_record(record).map_err(|error| format!("{error:?}"))?;
+    let defenses = &profile.behavior().defenses;
+    assert_eq!(
+        defenses
+            .iter()
+            .map(|entry| (entry.interval_ms, entry.chance_ppm))
+            .collect::<Vec<_>>(),
+        [(2000, 250_000), (2000, 400_000)]
+    );
+    for entry in defenses {
+        profile_schedule::validate_entry(entry, profile.abilities())
+            .map_err(|error| format!("{error:?}"))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn crystal_parity_schedules_project_with_exact_cadence_and_ability()
+-> Result<(), Box<dyn std::error::Error>> {
+    use serde_json::Value;
+    let packet: Value = serde_json::from_slice(include_bytes!(
+        "../../../../../imports/crystalserver/creature-parity-201189f.json"
+    ))?;
+    let document: CreatureProfilesDocument = serde_json::from_slice(include_bytes!(
+        "../../../../../content/creatures/definitions/spell-native-profiles.json"
+    ))?;
+    let mut missing = Vec::new();
+    for row in packet["schedules"].as_array().ok_or("Crystal schedules")? {
+        let creature = row["creature"]["key"].as_str().ok_or("exact Creature")?;
+        let record = document
+            .records
+            .iter()
+            .find(|r| r.profile.target.key == creature)
+            .ok_or_else(|| format!("missing {creature}"))?;
+        let profile =
+            project_native_record(record).map_err(|error| format!("{creature}: {error:?}"))?;
+        let entries = match row["group"].as_str() {
+            Some("attacks") => &profile.behavior().attacks,
+            Some("defenses") => &profile.behavior().defenses,
+            _ => return Err("invalid schedule list".into()),
+        };
+        let expected = serde_json::from_value::<crate::content::ProjectV2AbilitySchedule>(
+            row["schedule"].clone(),
+        )?;
+        let matching: Vec<_> = entries
+            .iter()
+            .filter(|entry| entry.ability == expected.ability)
+            .collect();
+        if matching != [&expected] {
+            missing.push(expected.ability.key);
+            continue;
+        }
+        profile_schedule::validate_entry(&expected, profile.abilities())
+            .map_err(|error| format!("{creature}: {error:?}"))?;
+    }
+    assert!(missing.is_empty(), "unbound Crystal slots: {missing:?}");
     Ok(())
 }

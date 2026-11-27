@@ -2,6 +2,7 @@
 //! No function here admits a session, assigns a scope or teleports a participant.
 //! Entry composes in that owner's Type2 transaction; progress uses its real Instance fence.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{CurrentCharacterGameplayFence, assert_runtime_scope_fence};
 use super::db::{
@@ -350,7 +351,7 @@ impl DurabilityRoot {
                 revision: u64::try_from(row.try_get::<i64,_>("revision")?).map_err(|_| DurabilityError::InvalidStoredState)?,
                 species: row.try_get("species_key")?, encounter: decode_checkpoint(row.try_get("checkpoint")?)?,
             })).transpose();
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(result)
         })).await?
     }

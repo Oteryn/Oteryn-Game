@@ -1,4 +1,5 @@
 //! Observe an existing native action; never repeat its terrain or Item writes.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_gameplay_quests::quest::authored_bindings::terrain_use::TerrainUse;
 
@@ -105,7 +106,7 @@ impl DurabilityRoot {
                     result:u32::try_from(row.try_get::<i64,_>("transformed_item_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,
                 }))
             }).transpose()?.flatten();
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(observation)
         })).await
     }

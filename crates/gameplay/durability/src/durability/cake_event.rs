@@ -1,6 +1,7 @@
 //! Cake's annual world phase. Existing world/reset owners call these helpers
 //! inside their already fenced physical transaction; no new identity registry.
 use super::DurabilityError;
+use crate::durability::db::commit_semantic_read;
 use crate::foundation::WorldId;
 use sqlx::{Postgres, Transaction};
 
@@ -285,7 +286,7 @@ impl DurabilityRoot {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             let present:bool=sqlx::query_scalar("SELECT coalesce((SELECT p.brutus_present FROM game_cake_world_progress w LEFT JOIN game_cake_phases p USING(world_id,event_year) WHERE w.world_id=encode($1,'hex')::uuid ORDER BY w.event_year DESC LIMIT 1),false)")
                 .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(present)
+            commit_semantic_read(tx,deadline).await?;Ok(present)
         })).await
     }
     /// Expiry uses the same database clock that opens the seven-day bonus. The
@@ -299,7 +300,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let bonus = active_world_bonus_in_transaction(&mut tx, world).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(bonus)
                 })
             })
@@ -334,16 +335,16 @@ impl DurabilityRoot {
             if !candidate {
                 let historical:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)")
                     .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_one(&mut *tx).await?;
-                if !historical{commit_semantic_transaction(tx,deadline).await?;return Ok(None)}
+                if !historical{commit_semantic_read(tx,deadline).await?;return Ok(None)}
             }
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(command),content).await.is_err(){return Ok(Some(UseDisposition::StaleState))}
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:cake-command:'||encode($1,'hex')||':'||$2,0))")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut *tx).await?;
             let row:Option<(Vec<u8>,Vec<u8>)>=sqlx::query_as("SELECT uuid_send(character_id),intent FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
-            let Some((character,stored))=row else{commit_semantic_transaction(tx,deadline).await?;return Ok(None)};
+            let Some((character,stored))=row else{commit_semantic_read(tx,deadline).await?;return Ok(None)};
             let result=if character==fence.character_id.as_bytes()&&stored==intent{UseDisposition::Committed}else{UseDisposition::StaleState};
-            commit_semantic_transaction(tx,deadline).await?;Ok(Some(result))
+            commit_semantic_read(tx,deadline).await?;Ok(Some(result))
         })).await
     }
 }
@@ -395,6 +396,19 @@ impl DurabilityRoot {
                 .bind(world.as_bytes().as_slice()).bind(year).bind(fence.character_id.as_bytes().as_slice())
                 .bind(actor.as_slice()).bind(movement_revision.to_string()).bind(epoch.to_string())
                 .bind(position).bind(i32::from(source)).fetch_one(&mut *tx).await?;
+            // Crystal movements_cake_base_isle.lua:15-23 grants on stage-three
+            // Cake Base entry, even when the Brutus errand is armed or complete.
+            if matches!(source, 12090..=12095) && matches!(outcome.as_str(), "armed" | "complete") {
+                let event = [actor.as_slice(), &movement_revision.to_be_bytes(), &epoch.to_be_bytes()].concat();
+                super::account_achievement::grant_missing(
+                    &mut tx,
+                    fence.character_id,
+                    &["oteryn:achievement/i_did_my_part"],
+                    "oteryn:cake-isle",
+                    &event,
+                )
+                .await?;
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(outcome)
         })).await
@@ -408,7 +422,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let year = latest_year(&mut tx, world).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(year)
                 })
             })

@@ -34,7 +34,7 @@ class NumericTests(unittest.TestCase):
         }
         cls.order = c.shared.native_order()
 
-    def args(self, iid=36656):
+    def args(self, iid=36657):
         e = copy.deepcopy(self.entries[iid])
         official = e["official_source"]
         obj = {
@@ -80,6 +80,21 @@ class NumericTests(unittest.TestCase):
         self.assertEqual(
             percent["parameter"]["value"]["value"], {"numerator": 8, "denominator": 1}
         )
+
+    def test_packet_headers_match_world_project_replay(self):
+        path = c.ROOT / "content/world/definitions/reference.json"
+        records = {
+            row["identity"]["key"]: row
+            for row in json.loads(path.read_bytes())["records"]
+            if row["kind"] == "Item"
+        }
+        packet = json.loads(c.OUTPUT.read_bytes())
+        for row in packet["promotions"]:
+            with self.subTest(item=row["source_item_id"]):
+                expected = records[row["target"]["key"]]
+                self.assertEqual(
+                    row["headers"], {key: expected[key] for key in c.HEADERS}
+                )
 
     def test_whole_presence_bounds_duplicates_and_no_reflection_element(self):
         for raw in [
@@ -180,6 +195,33 @@ class NumericTests(unittest.TestCase):
         }
         self.assertEqual(c.qualify(*args), expected)
         self.assertEqual(before, self.defs[args[0]["item_key"]])
+
+    def test_native_admission_requires_exact_headers_and_complete_vector(self):
+        args = self.args(36656)
+        profile = next(
+            row
+            for row in json.loads((c.ROOT / c.NATIVE_PROFILES).read_bytes())["records"]
+            if row.get("production_binding", {}).get("target")
+            == args[0]["current_target"]
+        )
+        with self.assertRaisesRegex(ValueError, "four scoped structural headers drift"):
+            c.qualify(*args)
+        self.assertTrue(args[1]["materializable"])
+        self.assertEqual(
+            c.qualify(*args, profile)["headers"],
+            args[0]["current_published_scope_receipt"]["native_headers"],
+        )
+        for mutate in (
+            lambda d: d.update(stack_class="StackCapable"),
+            lambda d: d.update(client_projection="ServerOnly"),
+            lambda d: d["semantics"].update(skill_modifiers={"state": "UNKNOWN"}),
+        ):
+            changed = copy.deepcopy(args)
+            mutate(changed[1])
+            with self.assertRaisesRegex(
+                ValueError, "four scoped structural headers drift"
+            ):
+                c.qualify(*changed, profile)
 
 
 if __name__ == "__main__":

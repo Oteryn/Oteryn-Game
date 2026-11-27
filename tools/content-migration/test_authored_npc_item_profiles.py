@@ -47,6 +47,29 @@ class AuthoredNpcCustody(unittest.TestCase):
         self.assertEqual(row['semantics']['container']['value']['capacity']['value'], 20)
         self.assertEqual(row['semantics']['physical']['value']['weight']['value'], 1800)
 
+    def test_postman_handouts_and_cael_shop_have_exact_native_custody(self):
+        generated = self.generated()
+        self.admit(generated)
+        rows = {r['production_binding'].get('external_id'): r
+                for r in json.loads(generated[PROFILE])['records']}
+        for identifier in ('3216', '3220', '10216', '10288'):
+            with self.subTest(identifier=identifier):
+                row = rows.get(identifier)
+                self.assertIsNotNone(row)
+                self.assertEqual(row['production_definition']['production_key'],
+                                 f'oteryn:item.tibia.i{identifier}')
+                self.assertTrue(row['admission']['materializable'])
+                self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
+
+    def test_final_postman_promotion_completes_the_quest(self):
+        document = json.loads(
+            (ROOT / 'content/dialogues/quest-rules-supplemental/postman.json').read_bytes())
+        promotion, = [rule for rule in document['rules']
+                      if rule['key'] == 'oteryn:quest-npc/postman/kevin/rank_5']
+        self.assertTrue(promotion.get('completes'))
+        self.assertTrue(any(effect.get('value') == 5 and effect['track'].endswith('/rank')
+                            for effect in promotion['effects'] if effect['kind'] == 'set'))
+
     def test_changed_authoring_pin_refuses_without_any_generated_mutation(self):
         generated = self.generated()
         before = copy.deepcopy(generated)

@@ -42,6 +42,11 @@ fn engworldchg_outpost_personal_native_journal_postgres() -> TestResult {
     scenario("hive_outpost", "outpost", "survey", "insectoid_worker", 20)
 }
 
+#[test]
+fn hive_born_earned_scent_and_western_checkpoint_through_dispatch() -> TestResult {
+    scenario("hive_born", "eastern-inner", "western-inner", "crawler", 10)
+}
+
 fn scenario(
     program: &'static str,
     entry_name: &'static str,
@@ -270,6 +275,8 @@ fn scenario(
                     )
                     .await?,
                 );
+            } else if program == "hive_born" {
+                journal_command_override = Some(hive_journey(&mut owner, &mut admitted, &h).await?);
             } else if program == "insectoid_invasion" {
                 exercise_incursion(&mut owner, &mut admitted, &h, &authority).await?;
             } else if program == "kingsday" {
@@ -685,4 +692,216 @@ async fn prove_journal_wire(
     }
     assert!(found, "the native journal result must reach domain 16");
     Ok(())
+}
+
+async fn hive_journey(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+    h: &Harness,
+) -> TestResult<u64> {
+    use super::{qengine_kill_stories_fixtures::move_actor, qengine_rewards_fixtures::talk};
+    use oteryn_gameplay_quests::quest::{hive_access, shared_world_progress};
+    use oteryn_gameplay_world_change::counter::CounterKind;
+    use oteryn_protocol_oteryn::npc_service::{
+        CAPABILITY_NPC_SERVICE_V1, NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result,
+        encode_npc_talk_intent,
+    };
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let world = admitted.world_id;
+    let kind = CounterKind::HiveBorn;
+    for epoch in 1..=3_i64 {
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-13T12:00:00Z','2031-06')")
+            .bind(world.as_bytes().as_slice()).bind(epoch).bind([7_u8;32].as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_world_event_epochs(world_id,reset_epoch,active,announcement,seasonal_calendar_revision,seasonal_event_keys) VALUES(encode($1,'hex')::uuid,$2,false,'',1,'{}')")
+            .bind(world.as_bytes().as_slice()).bind(epoch).execute(&h.pool).await?;
+    }
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
+        .bind(world.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    assert_eq!(
+        h.root
+            .world_changes(world, 1)
+            .await?
+            .ok_or("world changes")?
+            .counter_stages[kind.index()],
+        1
+    );
+    // The rest of the World has earned enough first-stage actions to open the east.
+    sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(state,'{counts,0}','200') WHERE change_key='hive_born'")
+        .execute(&h.pool).await?;
+    let advance = |epoch: i64| async move {
+        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$1")
+            .bind(epoch)
+            .execute(&h.pool)
+            .await?;
+        h.root
+            .world_changes(world, u64::try_from(epoch)?)
+            .await?
+            .ok_or_else(|| Box::<dyn std::error::Error>::from("world changes"))
+    };
+    assert_eq!(advance(2_i64).await?.counter_stages[kind.index()], 2);
+    owner.reset_epoch = 2;
+
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let position = |x, y, floor| crate::foundation::MovementLocalPosition { x, y, floor };
+    move_actor(owner, actor, position(33449, 31309, 7)).await?;
+    let [orockle] = super::classic_quests_fixtures::install_positions(
+        owner,
+        admitted,
+        ["oteryn:npc.orockle"],
+        [Position {
+            x: 33448,
+            y: 31309,
+            floor: -7,
+        }],
+    )
+    .await?;
+    let mut supported = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    supported.push(CAPABILITY_NPC_SERVICE_V1);
+    supported.sort_unstable();
+    supported.dedup();
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &supported,
+        )
+        .ok_or("NPC capability")?;
+    let mut serial = 10000;
+    assert_eq!(
+        talk(owner, admitted, orockle, serial, "hi").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        talk(owner, admitted, orockle, serial + 1, "permit").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(value(h, hive_access::PURCHASED).await?, 0);
+    serial += 2;
+    for complete in 1..=25 {
+        assert_eq!(
+            talk(owner, admitted, orockle, serial, "kollos").await?,
+            NpcIntentDisposition::Ok
+        );
+        serial += 1;
+        for _ in 0..9 {
+            super::qengine_kill_stories_fixtures::death(
+                owner,
+                admitted,
+                "oteryn:creature.kollos",
+                serial,
+            )
+            .await?;
+            serial += 1;
+        }
+        assert_eq!(value(h, shared_world_progress::BINDINGS[4].track).await?, 9);
+        // Run the quest-copy refresh that the connection owner schedules after a kill.
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
+        assert_eq!(
+            talk(owner, admitted, orockle, serial, "report").await?,
+            NpcIntentDisposition::Ok
+        );
+        serial += 1;
+        assert_eq!(value(h, hive_access::FAVOUR).await?, complete * 2);
+    }
+    let current_cycle: i64 = sqlx::query_scalar("SELECT count(*) FROM game_current_counter_quest_progress WHERE quest_key=$1 AND transition_key=$2")
+        .bind(shared_world_progress::HIVE_QUEST)
+        .bind(shared_world_progress::BINDINGS[4].key).fetch_one(&h.pool).await?;
+    assert_eq!(current_cycle, 25);
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("NPC clock")?;
+    let commands = ["hi", "permit"]
+        .into_iter()
+        .zip(admitted.continuity.next_command_id..)
+        .map(|(text, command)| {
+            let payload = encode_npc_talk_intent(&NpcTalkIntent {
+                npc_actor: orockle,
+                text: text.into(),
+            })
+            .map_err(debug)?;
+            Ok((command, 7, payload))
+        })
+        .collect::<TestResult<_>>()?;
+    let results = super::questl2_fixture::wire_sequence(owner, admitted, commands).await?;
+    assert_eq!(results.len(), 2);
+    for result in results {
+        assert_eq!(
+            decode_npc_intent_result(&result).map_err(debug)?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    assert_eq!(value(h, hive_access::FAVOUR).await?, 0);
+    assert!(value(h, hive_access::PURCHASED).await? > 0);
+
+    let gates = hive_access::callbacks();
+    let gate = |x, y| {
+        gates
+            .iter()
+            .find(|gate| gate.selector.position == Some(Position { x, y, floor: -1 }))
+            .ok_or("native gate")
+    };
+    let east = gate(33598, 31228)?;
+    let west = gate(33495, 31197)?;
+    let phase = "oteryn:quest-progress/world-change-journal/hive_born/phase";
+    let kills = "oteryn:quest-progress/world-change-journal/hive_born/kills";
+    move_actor(owner, actor, position(33597, 31228, 1)).await?;
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        use_marker(owner, admitted, east, command).await?,
+        UseDisposition::Committed
+    );
+    step(owner, admitted, command + 1, StepDirection::East).await?;
+    step(owner, admitted, command + 2, StepDirection::West).await?;
+    assert_eq!(value(h, phase).await?, 4);
+    move_actor(owner, actor, position(33496, 31197, 1)).await?;
+    assert_eq!(
+        use_marker(owner, admitted, west, command + 3).await?,
+        UseDisposition::Rejected
+    );
+    // Retain the earned twenty-five stage-two completions; the remaining
+    // actions are credited by other characters before the next server save.
+    assert_eq!(
+        h.root
+            .world_changes(world, 2)
+            .await?
+            .ok_or("stage two")?
+            .counter_progress[kind.index()][1],
+        25
+    );
+    sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(state,'{counts,1}','200') WHERE change_key='hive_born'")
+        .execute(&h.pool).await?;
+    assert_eq!(advance(3_i64).await?.counter_stages[kind.index()], 3);
+    owner.reset_epoch = 3;
+    assert_eq!(
+        use_marker(owner, admitted, west, command + 4).await?,
+        UseDisposition::Committed
+    );
+    step(owner, admitted, command + 5, StepDirection::West).await?;
+    step(owner, admitted, command + 6, StepDirection::East).await?;
+    assert_eq!(value(h, phase).await?, 4);
+    for n in 1..=10 {
+        super::qengine_kill_stories_fixtures::death(
+            owner,
+            admitted,
+            "oteryn:creature.crawler",
+            serial + n,
+        )
+        .await?;
+        assert_eq!(value(h, kills).await?, i64::try_from(n)?);
+    }
+    step(owner, admitted, command + 7, StepDirection::West).await?;
+    step(owner, admitted, command + 8, StepDirection::East).await?;
+    assert_eq!(value(h, phase).await?, 7);
+    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-callback/worldchg-m31/hive_born/western-inner' AND completes")
+        .fetch_one(&h.pool).await?, 1);
+    assert_eq!(h.root.active_world_event_epoch(world).await?, Some(3));
+    Ok(command + 9)
 }

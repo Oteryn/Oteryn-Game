@@ -11,9 +11,10 @@ class ExistingElderReferenceTests(unittest.TestCase):
     def test_existing_canonical_reference_is_retained_without_second_allocation(self):
         index=json.loads((ROOT/'content/items/index.json').read_bytes())
         records=[row['definition'] for name in index['shards'] for row in json.loads((ROOT/name).read_bytes())['records']]
+        self.assertEqual(len(records), index['record_count'])
         original=copy.deepcopy(records[25377])
         self.assertEqual(original['identity']['key'],'oteryn:item.tibia.i43666')
         terminal.extend_records(records,ROOT)
         self.assertEqual([i for i,r in enumerate(records) if r['identity']['key']==terminal.KEY],[25377])
         self.assertEqual(records[25377],original,'all original UNKNOWN reference fields stay unchanged')
-        self.assertEqual(len(records), 34_123)
+        self.assertEqual(len(records), index['record_count'])

@@ -542,7 +542,7 @@ async fn scenario_with_harness(
         // keep the exact full-vitals/revision assertion below unchanged.
         let access = owner.refresh_spell_access(actor, session).await;
         owner
-            .apply_refreshed_spell_access(actor, session, &access, None)
+            .apply_refreshed_spell_access(actor, session, &access, None, None)
             .await
             .map_err(debug)?;
         let before = owner

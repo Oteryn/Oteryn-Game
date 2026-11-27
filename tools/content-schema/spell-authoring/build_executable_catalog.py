@@ -326,6 +326,78 @@ def build_selection(catalog, catalog_digest, sources):
     }
 
 
+def apply_monk_attack_parity(catalog):
+    def op(name, *args):
+        return {"op": name, "args": list(args)}
+
+    def constant(value):
+        return {"const": value}
+
+    def variable(name):
+        return {"var": name}
+
+    # Crystal 201189f8 register_spells.lua:604-620 and the corresponding spell
+    # callbacks. Global spell headers and the published Sweeping falloff win.
+    level = {"fn": "level_base_damage_healing", "args": [variable("level")]}
+    weapon = op("floor", op("mul", constant("1.2"), variable("attack_value")))
+    skill = op(
+        "div", op("add", variable("attack_skill"), constant("4")), constant("28")
+    )
+    attack = op("add", level, op("mul", weapon, skill))
+    # The seven published builder centers are independently qualified against
+    # TibiaTools eeed345c. Use the donor only for the remaining coefficients.
+    factors = {
+        "devastating_knockout": "1.0",
+        "greater_tiger_clash": "0.9",
+        "swift_jab": "0.7",
+        "tiger_clash": "0.7",
+    }
+    unmitigated = {
+        "devastating_knockout",
+        "double_jab",
+        "forceful_uppercut",
+        "greater_flurry_of_blows",
+        "greater_tiger_clash",
+        "mystic_repulse",
+        "swift_jab",
+        "thousand_fist_blows",
+        "tiger_clash",
+    }
+    for entry in catalog["bundles"]:
+        spell = entry["bundle"]["spell"]
+        name = spell["identity"]["key"].removeprefix("candidate:spell/")
+        if name not in factors and name not in unmitigated:
+            continue
+        dependencies = entry["dependencies"]
+        if name in factors:
+            formulas = dependencies["formulas"]
+            total = op(
+                "mul",
+                attack,
+                op(
+                    "add",
+                    op("div", variable("base_power"), constant("100")),
+                    constant(factors[name]),
+                ),
+            )
+            for formula in formulas:
+                formula.update(
+                    minimum=op("mul", total, constant("0.9")),
+                    maximum=op("mul", total, constant("1.1")),
+                )
+        if name in unmitigated:
+            for effect in dependencies["effects"]:
+                if effect.get("operation") != "damage" or "mitigated_by" not in effect:
+                    continue
+                mitigations = [
+                    kind for kind in effect["mitigated_by"] if kind != "armor"
+                ]
+                if mitigations:
+                    effect["mitigated_by"] = mitigations
+                else:
+                    del effect["mitigated_by"]
+
+
 def apply_owner_decisions(catalog):
     # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
     # Keep donor provenance, with the accepted viewport/LOS rule in compiler input.
@@ -354,6 +426,7 @@ def apply_owner_decisions(catalog):
 
     for entry in catalog["bundles"]:
         _apply_c18b_entry(entry)
+    apply_monk_attack_parity(catalog)
     return catalog
 
 

@@ -24,7 +24,7 @@ Before stating any result:
 | the bug is fixed | the loop that was red on the bug, now green | code changed, "looks right" |
 | a regression test works | seen red without the fix and green with it | it passes once |
 | CI is green | check runs on the current head SHA | a green run on an older head |
-| mergeable | `game-gate` green and `mergeable_state` clean on the current head, plus the PostgreSQL rule (`oteryn-dev` `references/ci-merge.md`, *Merge conditions*) | the PR looked fine an hour ago |
+| mergeable | `game-gate` green and `mergeable_state` clean on the current head, plus the PostgreSQL rule and the stale-base check (`oteryn-dev` `references/ci-merge.md`, *Merge conditions* 1-5); for a main-red hotfix its conditions in *Red `main`* plus *Merge conditions* 4 and 5 | the PR looked fine an hour ago |
 | a worker finished | the diff in the tree and your own run of its checks | the worker's report |
 | fmt/Clippy OK from a worker | the SHA it ran on, and `cargo fmt --all --check` re-run on the pushed head | "fmt rc=0" with no SHA (a head failed rustfmt right after one) |
 | a qualification or E2E job passed | its result rows or test count | a green job or empty output (a job was green while its rows said FAIL) |

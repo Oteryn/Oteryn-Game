@@ -307,7 +307,8 @@
       "npc": "oteryn:npc.rata_mari",
       "keywords": [
         "spyreport",
-        "mission"
+        "mission",
+        "spy report"
       ],
       "topic": 0,
       "next_topic": 0,
@@ -410,6 +411,16 @@
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
           "minimum": 0,
           "maximum": 0
         }

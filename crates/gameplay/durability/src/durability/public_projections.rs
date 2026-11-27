@@ -12,6 +12,7 @@ mod online_sessions;
 mod v2;
 mod world_totals;
 
+use crate::durability::db::commit_semantic_read;
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
@@ -277,7 +278,7 @@ impl DurabilityRoot {
                         .bind(limit)
                         .fetch_all(&mut *tx)
                         .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     let mut snapshots = Vec::with_capacity(rows.len());
                     for row in &rows {
                         match profile_snapshot(row)? {
@@ -335,7 +336,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let row = sqlx::query(FACTS).fetch_one(&mut *tx).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     let projection_epoch = match positive(row.try_get("projection_epoch")?) {
                         Ok(v) => v,
                         Err(e) => return Ok(Err(e)),
@@ -384,14 +385,14 @@ impl DurabilityRoot {
                         Vec::new()
                     };
                     let Some(head) = rows.first() else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     #[cfg(test)]
                     tests::pause_after_highscore_read().await?;
                     let world_id: String = head.try_get("world_id")?;
                     let category: i16 = head.try_get("category")?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     highscores_batch(world_id, category, head, &rows)
                 })
             })
@@ -448,7 +449,7 @@ impl DurabilityRoot {
                         .bind(known_vocations())
                         .fetch_all(&mut *tx)
                         .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     online_cut(&rows)
                 })
             })

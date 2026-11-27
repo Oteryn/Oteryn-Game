@@ -61,6 +61,10 @@ def capture(root, profiles):
             raise ValueError('HAND_KIND_IDENTITY_BINDING')
         node = nodes.get(int(number))
         attrs = {} if node is None else {a.get('key','').lower():a.get('value') for a in node.findall('attribute')}
+        # Jorge's Mathmaster Shield is a museum souvenir. Crystal labels its
+        # primary taxonomy Shields but declares neither shield type nor defence.
+        if number == '25982' and attrs.get('description') == 'Souvenir from Thais Museum' and 'weapontype' not in attrs and 'defense' not in attrs:
+            continue
         if attrs.get('weapontype') != kind or (kind == 'spellbook' and attrs.get('primarytype') != 'spellbooks'):
             raise ValueError('HAND_KIND_TAXONOMY_XML_DISAGREEMENT:'+key)
         records.append({'key':key,'source_id':int(number),'source_line':lines[int(number)],

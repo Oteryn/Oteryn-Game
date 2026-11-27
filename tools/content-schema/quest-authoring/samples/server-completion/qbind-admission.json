@@ -453,7 +453,7 @@
     },
     {
       "quest": "oteryn:quest.authored.demon_wars_world_change",
-      "reason": "no qualified terminal release binding; native stage evidence missing for s1, s2, s3, s4, s5; reward delivery binding missing"
+      "reason": "no qualified terminal release binding; native stage evidence missing for s2, s3, s4, s5; reward delivery binding missing"
     },
     {
       "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",

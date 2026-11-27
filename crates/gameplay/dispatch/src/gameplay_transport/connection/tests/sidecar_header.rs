@@ -96,10 +96,13 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
         }])
     }
 
-    async fn observe_party_icons(&self, admitted: AdmittedSession) -> Option<Vec<PartyIcon>> {
+    async fn observe_party_icons(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Vec<PartyIcon>, crate::durability::DurabilityError> {
         self.relocate(Relocating::Party);
-        Some(vec![PartyIcon {
-            entity: Self::own(admitted)?,
+        Ok(vec![PartyIcon {
+            entity: Self::own(admitted).ok_or(crate::durability::DurabilityError::Unavailable)?,
             shield: 1,
             skull: 0,
         }])

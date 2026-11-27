@@ -99,8 +99,8 @@ def native_charge_item(item, profile):
             or item.get('stack_class') != 'NonStackable'
             or fact(item, 'charges', 'count') != charges
             or fact({'semantics': semantics}, 'charges', 'count') != charges
-            or semantics['container'] != {'state': 'NOT_APPLICABLE'}
-            or semantics['temporal'] != {'state': 'NOT_APPLICABLE'}):
+            or semantics.get('container') != {'state': 'NOT_APPLICABLE'}
+            or semantics.get('temporal') != {'state': 'NOT_APPLICABLE'}):
         return held
 
     def agrees(accepted, observed):
@@ -109,7 +109,8 @@ def native_charge_item(item, profile):
                 field in observed and agrees(value, observed[field]) for field, value in accepted.items())
         return accepted == observed
 
-    if (not all(agrees(item['semantics'][field], semantics[field]) for field in
+    # External native Item rows omit top-level UNKNOWN facts when compacted.
+    if (not all(agrees(item['semantics'][field], semantics.get(field, {'state': 'UNKNOWN'})) for field in
                 ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal', 'weapon'))
             or any(fact({'semantics': semantics}, 'physical', field) is not True
                    for field in ('movable', 'pickupable'))

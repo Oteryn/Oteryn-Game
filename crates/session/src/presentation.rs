@@ -2,10 +2,86 @@
 use super::*;
 use oteryn_protocol_oteryn::presentation::*;
 
+impl<S: SessionStream> Session<S> {
+    pub(super) async fn apply_pushed_delta(
+        &mut self,
+        sequence: u64,
+        payload: &[u8],
+    ) -> Result<SessionEvent, SessionError> {
+        let cooldown = decode_state_delta(payload)?;
+        if cooldown.domain_id != STATE_DOMAIN_ACTOR_COOLDOWNS
+            || cooldown.delta_type != DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1
+        {
+            return self.apply_state_delta(sequence, payload);
+        }
+        if !self.is_selected(CAPABILITY_PRESENTATION_V1) {
+            return Err(SessionError::UnselectedDomain {
+                domain_id: cooldown.domain_id,
+            });
+        }
+        let index = self
+            .gated_revisions
+            .iter()
+            .position(|(domain, _)| *domain == STATE_DOMAIN_ACTOR_COOLDOWNS)
+            .ok_or(SessionError::MissingDomain(STATE_DOMAIN_ACTOR_COOLDOWNS))?;
+        check_delta(
+            &cooldown,
+            DELTA_TYPE_ACTOR_COOLDOWNS_WITH_VITALS_V1,
+            self.gated_revisions[index].1,
+        )?;
+        let cooldowns = AppliedDelta {
+            server_sequence: sequence,
+            base_revision: cooldown.base_revision,
+            new_revision: cooldown.new_revision,
+            value: decode_update(
+                cooldown.payload,
+                !self.is_selected(CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1),
+            )?,
+        };
+
+        // Like the rest of a started frame, this continuation uses the frame
+        // deadline even if the caller's idle window has ended.
+        let frame = bounded(
+            self.deadline,
+            "Gift of Life vitals",
+            read_frame(&mut self.stream),
+        )
+        .await?;
+        self.last_received = tokio::time::Instant::now();
+        let envelope = decode_wire_envelope(&frame)?;
+        envelope.validate(Direction::ServerToClient, true)?;
+        self.check_generation(&envelope)?;
+        if let Some(error) = self.terminal_protocol_error(&envelope)? {
+            return Err(error);
+        }
+        if envelope.message_type() != MessageType::StateDelta {
+            return Err(SessionError::UnexpectedMessage {
+                expected: MessageType::StateDelta,
+                actual: envelope.message_type(),
+            });
+        }
+        let sequence = self.next_sequence(&envelope)?;
+        let delta = decode_state_delta(envelope.payload())?;
+        if delta.domain_id != actor_spell::STATE_DOMAIN_ACTOR_VITALS {
+            return Err(SessionError::UnexpectedDomain {
+                expected: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                actual: delta.domain_id,
+            });
+        }
+        let SessionEvent::ActorVitals(vitals) =
+            self.apply_state_delta(sequence, envelope.payload())?
+        else {
+            return Err(SessionError::SessionUnusable);
+        };
+        self.gated_revisions[index].1 = cooldowns.new_revision;
+        Ok(SessionEvent::GiftOfLife { cooldowns, vitals })
+    }
+}
+
 pub(super) fn validate_join(
     selected: &[u32],
     snapshots: &[GatedSnapshot],
-) -> Result<(), SessionError> {
+) -> Result<Option<ActorCooldownUpdate>, SessionError> {
     if selected.contains(&CAPABILITY_ITEM_EFFECTS_V1) {
         let row = snapshots
             .iter()
@@ -44,8 +120,9 @@ pub(super) fn validate_join(
         }
     }
     if !selected.contains(&CAPABILITY_PRESENTATION_V1) {
-        return Ok(());
+        return Ok(None);
     }
+    let mut cooldowns = None;
     for domain in [
         STATE_DOMAIN_WORLD_PRESENTATION,
         STATE_DOMAIN_ACTOR_COOLDOWNS,
@@ -64,10 +141,20 @@ pub(super) fn validate_join(
             decode_presentation_snapshot(&row.payload)
                 .map_err(|_| SessionError::SessionUnusable)?;
         } else {
-            decode_actor_cooldowns(&row.payload).map_err(|_| SessionError::SessionUnusable)?;
+            cooldowns = Some(decode_update(&row.payload, true)?);
         }
     }
-    Ok(())
+    Ok(cooldowns)
+}
+
+fn decode_update(payload: &[u8], snapshot: bool) -> Result<ActorCooldownUpdate, SessionError> {
+    let received_at = std::time::Instant::now();
+    let value = decode_actor_cooldowns(payload).map_err(|_| SessionError::SessionUnusable)?;
+    Ok(ActorCooldownUpdate {
+        value,
+        received_at,
+        snapshot,
+    })
 }
 
 pub(super) fn apply<S: SessionStream>(
@@ -100,12 +187,23 @@ pub(super) fn apply<S: SessionStream>(
     if native_delta && !native_basis {
         return Err(SessionError::SessionUnusable);
     }
+    let cooldowns = delta.domain_id == STATE_DOMAIN_ACTOR_COOLDOWNS;
+    let sparse_cooldowns = cooldowns && session.is_selected(CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1);
     let row = session
         .gated_revisions
         .iter_mut()
         .find(|(id, _)| *id == delta.domain_id)
         .ok_or(SessionError::MissingDomain(delta.domain_id))?;
-    check_delta(&delta, if native_delta { 2 } else { 1 }, row.1)?;
+    let expected_type = if sparse_cooldowns {
+        DELTA_TYPE_ACTOR_COOLDOWNS_SPARSE_V1
+    } else if cooldowns {
+        DELTA_TYPE_ACTOR_COOLDOWNS_V1
+    } else if native_delta {
+        2
+    } else {
+        1
+    };
+    check_delta(&delta, expected_type, row.1)?;
     let event = if item {
         SessionEvent::ItemEffects(AppliedDelta {
             server_sequence: sequence,
@@ -140,8 +238,7 @@ pub(super) fn apply<S: SessionStream>(
             server_sequence: sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
-            value: decode_actor_cooldowns(delta.payload)
-                .map_err(|_| SessionError::SessionUnusable)?,
+            value: decode_update(delta.payload, !sparse_cooldowns)?,
         })
     };
     row.1 = delta.new_revision;

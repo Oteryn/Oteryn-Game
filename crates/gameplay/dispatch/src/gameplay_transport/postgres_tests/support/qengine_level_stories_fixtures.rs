@@ -71,6 +71,7 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    let winter = name == "qengine-rewards-l11-dream-warrior-winter-story";
     let (family, prefix, npc_key, level, items, stages): (
         &str,
         &str,
@@ -79,13 +80,13 @@ pub(super) async fn exercise(
         [u16; 2],
         &[&str],
     ) = match name {
-        "qengine-rewards-l11-dream-warrior-story" => (
+        "qengine-rewards-l11-dream-warrior-story" | "qengine-rewards-l11-dream-warrior-winter-story" => (
             "dream_warrior",
             "dream-warrior",
-            "oteryn:npc.vanys",
+            if winter { "oteryn:npc.undal" } else { "oteryn:npc.vanys" },
             250,
             [30169, 30168],
-            &["base", "first", "second"],
+            if winter { &["base", "first", "second"] } else { &["base", "first", "second", "task-base"] },
         ),
         "qengine-rewards-l11-issavi-story" => (
             "citizen_of_issavi",
@@ -105,10 +106,16 @@ pub(super) async fn exercise(
         ),
         _ => return Err("unknown level story".into()),
     };
+    let achievement_key = match prefix {
+        "dream-warrior" => "oteryn:achievement/dream_warrior",
+        "issavi" => "oteryn:achievement/citizen_of_issavi",
+        _ => "oteryn:achievement/cobbled_and_patched",
+    };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = vec![];
     for stage in stages {
-        let key = format!("oteryn:quest-reward/l11-{prefix}-{stage}");
+        let desk = if winter { "-undal" } else { "" };
+        let key = format!("oteryn:quest-reward/l11-{prefix}{desk}-{stage}");
         let callback = all
             .iter()
             .find(|c| c.key == key)
@@ -121,6 +128,11 @@ pub(super) async fn exercise(
         );
         assert!(callback.requires_premium);
         callbacks.push(callback);
+    }
+    if winter {
+        let summer_first = "oteryn:quest-reward/l11-dream-warrior-first";
+        callbacks.push(all.iter().find(|callback| callback.key == summer_first)
+            .cloned().ok_or("missing cross-court exchange")?);
     }
     let find = |stage: &str| {
         callbacks
@@ -163,7 +175,8 @@ pub(super) async fn exercise(
                 3,
             ),
             (
-                "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court".into(),
+                format!("oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_{}_court",
+                    if winter { "winter" } else { "summer" }),
                 1,
             ),
         ]
@@ -226,7 +239,18 @@ pub(super) async fn exercise(
         owner.owner_now(),
     );
     owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [npc_key]).await?;
+    let (npc, other_court) = if winter {
+        let [undal, vanys] = super::classic_quests_fixtures::install(
+            owner, admitted, [npc_key, "oteryn:npc.vanys"],
+        ).await?;
+        (undal, Some(vanys))
+    } else {
+        let [npc] = super::classic_quests_fixtures::install(owner, admitted, [npc_key]).await?;
+        (npc, None)
+    };
+    let npc_for = |callback: &RewardCallback| {
+        if callback.npc == npc_key { Ok(npc) } else { other_court.ok_or("missing outfit NPC") }
+    };
     let first = if prefix == "makeshift" {
         find("start")?
     } else {
@@ -283,6 +307,7 @@ pub(super) async fn exercise(
                           admitted: &mut AdmittedSession,
                           callback: &RewardCallback|
            -> TestResult {
+        let npc = npc_for(callback)?;
         let before = receipts(h).await?;
         let (result, _, command) =
             super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, true).await?;
@@ -325,6 +350,12 @@ pub(super) async fn exercise(
             NpcIntentDisposition::Rejected,
             "already-owned base cannot create a second value-only source"
         );
+        if prefix == "dream-warrior" && !winter {
+            let result = super::qengine_rewards_fixtures::wire_reward(
+                owner, admitted, npc, find("task-base")?, false,
+            ).await?;
+            assert_eq!(result.0, NpcIntentDisposition::Rejected, "the task dialogue uses the same base entitlement guard");
+        }
         assert_eq!(receipts(h).await?, base_receipts);
     }
     let mut ordinal = 800;
@@ -343,19 +374,17 @@ pub(super) async fn exercise(
             "selected second addon requires the first and retains its token"
         );
     }
-    for (index, (stage, id, needed, mask)) in [
-        (
-            "first",
-            items[0],
-            if prefix == "dream-warrior" { 5 } else { 1 },
-            1,
-        ),
-        ("second", items[1], 1, 3),
-    ]
-    .into_iter()
-    .enumerate()
+    let first = ("first", items[0], if prefix == "dream-warrior" { 5 } else { 1 }, 1);
+    let second = ("second", items[1], 1, 2);
+    let stages = if winter { [second, first] } else { [first, second] };
+    let mut mask = 0;
+    for (index, (stage, id, needed, bit)) in stages.into_iter().enumerate()
     {
-        let callback = find(stage)?;
+        let callback = if winter && bit == 1 {
+            callbacks.last().ok_or("Vanys first addon")?
+        } else {
+            find(stage)?
+        };
         assert_eq!(
             callback.take,
             vec![ItemAmount {
@@ -371,7 +400,7 @@ pub(super) async fn exercise(
             }
             let held = super::qengine_voucher_stories_fixtures::quantity(h, id).await?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc_for(callback)?, callback, false).await?;
             assert_eq!(
                 result,
                 NpcIntentDisposition::Rejected,
@@ -397,7 +426,21 @@ pub(super) async fn exercise(
             0,
             "exact token cost {index}"
         );
+        mask |= bit;
         super::qengine_voucher_stories_fixtures::mask(owner, admitted, &key, mask).await?;
+        if prefix == "dream-warrior" {
+            let earned: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/dream_warrior'",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(earned, i64::from(mask == 3));
+        }
+        let achievements: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+        )
+        .bind(achievement_key)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(achievements, i64::from(mask == 3), "{achievement_key}");
     }
     let grants: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlock_receipts")

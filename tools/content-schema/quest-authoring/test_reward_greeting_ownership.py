@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[3]
 SHARED = "content/dialogues/quests/shared-reward-greetings.json"
 CALLBACK_DOCUMENTS = (
     "content/quests/shared-reward-callbacks.json",
+    "content/quests/npc-callbacks/outfit-completions.json",
+    "content/quests/npc-callbacks/battle-mage-completions.json",
     "content/quests/npc-callbacks/m39-stories.json",
     "content/quests/npc-callbacks/l2-ready-stories.json",
     "content/quests/npc-callbacks/l13-outfits.json",
@@ -41,6 +43,22 @@ class RewardGreetingOwnership(unittest.TestCase):
             for callback in json.loads((ROOT / name).read_bytes())["callbacks"]
         ]
         cls.inputs = qengine_rewards.donor_inputs()
+
+    def test_arito_keeps_his_greeting_while_the_referral_is_disabled(self):
+        callbacks = json.loads(
+            (ROOT / "content/quests/npc-callbacks/nomads-land.json").read_bytes()
+        )["callbacks"]
+        offers = json.loads(
+            (ROOT / "content/quests/npc-offers/nomads-land.json").read_bytes()
+        )["offers"]
+        self.assertNotIn("oteryn:npc.arito", [row["npc"] for row in callbacks + offers])
+        (greeting,) = [
+            row for row in qengine_rewards.reward_greetings(self.callbacks, self.inputs)
+            if row["npc"] == "oteryn:npc.arito"
+        ]
+        self.assertEqual(greeting["greet"], "Greetings, |PLAYERNAME|.")
+        self.assertEqual(greeting["farewell"], "Do visit us again.")
+        self.assertEqual(greeting["walkaway"], "Do visit us again.")
 
     def test_actual_native_registry_has_one_row_per_npc(self):
         seen = {}

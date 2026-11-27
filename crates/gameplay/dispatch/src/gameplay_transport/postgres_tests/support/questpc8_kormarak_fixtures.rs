@@ -1,5 +1,5 @@
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::TestResult;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use super::fixture::{Harness, debug, id};
 
@@ -7,7 +7,7 @@ use super::questpc8_authored_programmes_fixtures::{object_target, step, use_targ
 
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 
-use crate::map::overlay::TilePos;
+use crate::map::{overlay::TilePos, view::MapFacts};
 
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
@@ -52,7 +52,7 @@ pub(super) async fn exercise(
             .await
             .is_none()
     );
-    step(owner, admitted, 1, StepDirection::East).await?;
+    step(owner, admitted, 1, StepDirection::North).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -63,35 +63,109 @@ pub(super) async fn exercise(
             .await
             .is_none()
     );
-    step(owner, admitted, 2, StepDirection::East).await?;
+    let before_gas = TilePos {
+        x: 32494,
+        y: 32215,
+        floor: -12,
+    };
+    let map = owner.bundle_map().ok_or("temple map")?;
+    for x in 32494..=32497 {
+        let field = TilePos {
+            x,
+            y: 32216,
+            floor: -12,
+        };
+        let tile = map
+            .overlay
+            .base()
+            .tile(x, field.y, field.floor)
+            .ok_or("poison tile")?;
+        let id = *tile.ids().get(1).ok_or("poison field item")?;
+        assert_eq!(
+            map.facts
+                .base_entry(field, 1, id)
+                .map(|facts| facts.appearance_id),
+            Some(2121)
+        );
+    }
+    super::questpc8_mystery_geometry_fixtures::arrive(owner, admitted, before_gas).await?;
+    step(owner, admitted, 2, StepDirection::South).await?;
+    for command in 3..=5 {
+        step(owner, admitted, command, StepDirection::East).await?;
+    }
+    assert_eq!(progress(h, "gas-route").await?, 1);
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 32526,
+            y: 32156,
+            floor: -12,
+        },
+    )
+    .await?;
+    step(owner, admitted, 6, StepDirection::North).await?;
+
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let guardian = owner
-        .quest_guardian_for_test("oteryn:quest-death/authored-kormarak-guardian")
-        .await
-        .ok_or("the native objective must create its guardian")?;
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
-    assert_eq!(
+    assert!(
         owner
             .quest_guardian_for_test("oteryn:quest-death/authored-kormarak-guardian")
-            .await,
-        Some(guardian),
-        "refresh cannot duplicate the guardian"
+            .await
+            .is_none(),
+        "the source spawn owns the Demon Skeleton population"
     );
     assert_eq!(progress(h, "stage").await?, 2);
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 32552,
+            y: 32201,
+            floor: -11,
+        },
+    )
+    .await?;
     let position = TilePos {
-        x: 32342,
-        y: 32125,
-        floor: -10,
+        x: 32552,
+        y: 32200,
+        floor: -11,
     };
-    let target = object_target(owner, position, 2)?;
+    let target = object_target(owner, position, 1)?;
     assert_eq!(
-        use_target(owner, admitted, 3, &target).await?,
+        use_target(owner, admitted, 7, &target).await?,
         UseDisposition::Rejected
     );
+    let approach = TilePos {
+        x: 32552,
+        y: 32199,
+        floor: -11,
+    };
+    super::questpc8_mystery_geometry_fixtures::arrive(owner, admitted, approach).await?;
+    let guardian = {
+        let mut runtime = owner.runtime.lock().await;
+        let creature = "oteryn:creature.demon_skeleton";
+        let health = runtime
+            .companion_policy(creature)
+            .map_err(debug)?
+            .maximum_health;
+        let target = runtime
+            .admit_encounter_actor(
+                creature,
+                health,
+                crate::foundation::MovementLocalPosition {
+                    x: 32552,
+                    y: 32198,
+                    floor: 11,
+                },
+            )
+            .map_err(debug)?;
+        runtime
+            .install_creature_policy(target, creature)
+            .map_err(debug)?;
+        target
+    };
     super::grizzly_npc_fixtures::questpc8_campaign::lethal(
         owner,
         admitted,
@@ -111,13 +185,23 @@ pub(super) async fn exercise(
             .await
             .is_none()
     );
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 32552,
+            y: 32201,
+            floor: -11,
+        },
+    )
+    .await?;
     let outputs = [(3359, 1), (3354, 1), (3276, 1), (3287, 13)];
     let mut before = Vec::new();
     for (item, _) in outputs {
         before.push(quantity(h, &format!("oteryn:item.tibia.i{item}")).await?);
     }
     assert_eq!(
-        use_target(owner, admitted, 4, &target).await?,
+        use_target(owner, admitted, 8, &target).await?,
         UseDisposition::Committed
     );
     assert_eq!(progress(h, "stage").await?, 3);
@@ -128,12 +212,12 @@ pub(super) async fn exercise(
         );
     }
     assert_eq!(
-        use_target(owner, admitted, 4, &target).await?,
+        use_target(owner, admitted, 8, &target).await?,
         UseDisposition::Committed
     );
-    let target = object_target(owner, position, 2)?;
+    let target = object_target(owner, position, 1)?;
     assert_eq!(
-        use_target(owner, admitted, 5, &target).await?,
+        use_target(owner, admitted, 9, &target).await?,
         UseDisposition::Rejected
     );
     for ((item, amount), initial) in outputs.into_iter().zip(&before) {
@@ -149,9 +233,9 @@ pub(super) async fn exercise(
         .map_err(|_| "quest cache")?
         .remove(&admitted.game_session_id);
     owner.admit_quest_session(admitted).await;
-    let target = object_target(owner, position, 2)?;
+    let target = object_target(owner, position, 1)?;
     assert_eq!(
-        use_target(owner, admitted, 6, &target).await?,
+        use_target(owner, admitted, 10, &target).await?,
         UseDisposition::Rejected
     );
     for ((item, amount), initial) in outputs.into_iter().zip(&before) {

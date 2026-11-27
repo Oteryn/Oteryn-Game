@@ -39,14 +39,14 @@ fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), S
     let phase_callbacks = parse(include_str!(
         "../../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?;
-    assert_eq!((callbacks.len(), phase_callbacks.len()), (110, 2));
+    assert_eq!((callbacks.len(), phase_callbacks.len()), (118, 2));
     let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
     let phase_keys: BTreeSet<_> = phase_callbacks
         .iter()
         .map(|callback| &callback.key)
         .collect();
     assert!(keys.is_disjoint(&phase_keys));
-    assert_eq!(keys.len() + phase_keys.len(), 112);
+    assert_eq!(keys.len() + phase_keys.len(), 120);
     for case in 0..4 {
         let mut row = document["callbacks"][0].clone();
         match case {

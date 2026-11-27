@@ -3177,9 +3177,9 @@ mod native_ability_coverage {
         // Crystal201189f cake_golem.lua:77-81 adds three supported attacks.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         let expected: BTreeMap<String, usize> = [
-            ("melee:Ok(())", 1691),
-            ("spell:Err(UnsupportedShape)", 116),
-            ("spell:Ok(())", 4200),
+            ("melee:Ok(())", 1713),
+            ("spell:Err(UnsupportedShape)", 117),
+            ("spell:Ok(())", 4341),
         ]
         .into_iter()
         .map(|(k, v)| (k.to_owned(), v))

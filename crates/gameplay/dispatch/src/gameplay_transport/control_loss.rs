@@ -229,6 +229,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // this still-ACTIVE session is an ordinary loss of its transport. The fence the logout
         // kept is lifted and its kill marks are released before the loss is recorded.
         self.lift_kept_logout(game_session_id, actor).await;
+        // Close new paid callbacks under the World turn before settling old ones.
+        // A party member cannot be admitted to another charge while this loss commits.
+        let paid_close = {
+            let _runtime = self.runtime.lock().await;
+            self.states
+                .quest_callbacks
+                .begin_paid_callback_close(game_session_id)
+        };
+        let Some(_paid_close) = paid_close else {
+            return ControlLossResult::Unknown;
+        };
+        if !self.settle_paid_quest_callbacks(game_session_id).await {
+            return ControlLossResult::Unknown;
+        }
         // This controller may have resumed a lost session: its loss opens the next epoch
         // and retains the resumed one's history, read from the durable receipts. A resumed
         // session with proven missing or invalid history is released (`ResumedHistory`);
@@ -336,6 +350,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let observation = {
             let runtime = self.runtime.lock().await;
+            if self.has_pending_paid_quest_callback(game_session_id) {
+                return ControlLossResult::Unknown;
+            }
             let facts = if owned_house {
                 let Ok(house) = runtime.house_actor_state(actor, game_session_id) else {
                     return refused;

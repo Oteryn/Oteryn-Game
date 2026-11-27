@@ -262,3 +262,71 @@ fn grizzly_failed_boss_is_rearmed_before_completed_boss_is_reported()
     );
     Ok(())
 }
+
+#[test]
+fn grizzly_dialogue_qualifies_every_donor_task_and_assignment() -> Result<(), String> {
+    let catalogue = quest::catalogue().map_err(|error| format!("{error:?}"))?;
+    assert_eq!((catalogue.tasks.len(), catalogue.bosses.len()), (42, 30));
+
+    let mut state = member();
+    state.insert(quest::storage_track(quest::POINTS_STORAGE), 100);
+    state.insert(quest::storage_track(quest::BOSS_POINTS_STORAGE), 1);
+    for task in &catalogue.tasks {
+        let actor = GrizzlyActor {
+            level: task.minimum_level,
+            ..player()
+        };
+        let mut topic = Topic::None;
+        let offer = dialogue(&state, actor, &mut topic, &task.name);
+        assert!(offer.actions.is_empty(), "{}", task.name);
+        assert!(
+            offer.line.contains(&format!("Hunt {} ", task.required)),
+            "{}",
+            task.name
+        );
+        assert_eq!(topic, Topic::Start(task.id), "{}", task.name);
+        assert_eq!(
+            dialogue(&state, actor, &mut topic, "yes").actions,
+            [GrizzlyAction::StartTask(task.id)],
+            "{}",
+            task.name,
+        );
+    }
+    for boss in catalogue
+        .bosses
+        .iter()
+        .filter(|boss| boss.task_id.is_some())
+    {
+        let mut topic = Topic::None;
+        let actor = GrizzlyActor {
+            level: 130,
+            ..player()
+        };
+        assert!(
+            dialogue(&state, actor, &mut topic, "bosses")
+                .actions
+                .is_empty()
+        );
+        assert_eq!(topic, Topic::BossMenu);
+        let reply = dialogue(&state, actor, &mut topic, &boss.name);
+        assert_eq!(
+            reply.actions,
+            [GrizzlyAction::SelectBoss(boss.id)],
+            "{}",
+            boss.name
+        );
+        let plan = quest::plan_action(&state, actor, &reply.actions[0])
+            .map_err(|error| format!("{}: {error:?}", boss.name))?;
+        let debit = plan
+            .changes
+            .iter()
+            .find(|change| change.track == quest::storage_track(quest::BOSS_POINTS_STORAGE));
+        assert_eq!(
+            debit.map(|change| change.after),
+            (boss.id >= 19).then_some(0),
+            "{}",
+            boss.name
+        );
+    }
+    Ok(())
+}

@@ -1,4 +1,4 @@
-use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness};
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
@@ -23,6 +23,49 @@ pub(super) async fn accept_outfox_mission(
     Ok(())
 }
 
+pub(super) fn paradox_reward(claim: &str) -> bool {
+    claim.starts_with("oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.")
+}
+
+pub(super) async fn seed_paradox_reward_progress(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    harness: &Harness,
+) -> TestResult {
+    // The full journey earns these values through the route and Riddler.
+    // Stage only the pre-claim state here so this cohort isolates chest USE.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let seeded = sqlx::query(
+        "INSERT INTO game_character_quest_tracks(
+            character_id, track_key, quest_key, value, committed_character_revision
+        )
+        SELECT character_id, progress.track_key, 'oteryn:quest.the_paradox_tower_quest',
+               progress.value, character_revision
+        FROM game_character_roots
+        CROSS JOIN (VALUES
+            ('oteryn:quest-progress/first_paradox_access', 1),
+            ('oteryn:quest-progress/l6/paradox/climb-complete', 1),
+            ('oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics', 2),
+            ('oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour', 2)
+        ) AS progress(track_key, value)
+        WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(seeded.rows_affected(), 4);
+    tx.commit().await?;
+    Ok(())
+}
+
 /// A legacy once claim served by its exact World callback (legacy_world_claims.rs)
 /// commits through the quest writer, which needs the admitted quest session.
 pub(super) fn legacy_world_owned(claim: &str) -> TestResult<bool> {
@@ -39,7 +82,9 @@ pub(super) async fn reward_premium(
     h: &super::fixture::Harness,
     claim: &str,
 ) -> TestResult<Option<SpellPremiumCoordinator>> {
-    if !claim.starts_with("oteryn:reward-claim.quest.u7_8.the_shattered_isles.")
+    if claim != "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis"
+        && !paradox_reward(claim)
+        && !claim.starts_with("oteryn:reward-claim.quest.u7_8.the_shattered_isles.")
         && !claim.starts_with("oteryn:reward-claim.quest.u8_54.the_new_frontier.")
     {
         return Ok(None);

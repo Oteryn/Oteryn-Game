@@ -458,13 +458,20 @@ async fn observe_look_item(
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
     // Crystal svargrond_arena.lua:175-190 and item.cpp:3265-3269.
+    let arena_difficulty = match definition.production_key.as_str() {
+        "oteryn:item.tibia.i5805" => Some("warlord"),
+        "oteryn:item.tibia.i5806" => Some("scrapper"),
+        "oteryn:item.tibia.i5807" => Some("greenhorn"),
+        _ => None,
+    };
     if let ItemKey::Instance(instance) = key
-        && let Some(difficulty) = match definition.production_key.as_str() {
-            "oteryn:item.tibia.i5805" => Some("warlord"),
-            "oteryn:item.tibia.i5806" => Some("scrapper"),
-            "oteryn:item.tibia.i5807" => Some("greenhorn"),
-            _ => None,
-        }
+        && (arena_difficulty.is_some()
+            || matches!(
+                definition.production_key.as_str(),
+                "oteryn:item.tibia.i10427"
+                    | "oteryn:item.tibia.i10428"
+                    | "oteryn:item.tibia.i10429"
+            ))
     {
         let item_fence = fence
             .filter(|fence| fence.game_session_id == session)
@@ -505,9 +512,10 @@ async fn observe_look_item(
         }
         return Ok(match (ordinary, inscription) {
             (ItemLookResult::Text(text), Some(inscription)) => {
-                let description = if let Some(name) = inscription
-                    .strip_prefix("Awarded to ")
-                    .and_then(|name| name.strip_suffix('.'))
+                let description = if let Some(difficulty) = arena_difficulty
+                    && let Some(name) = inscription
+                        .strip_prefix("Awarded to ")
+                        .and_then(|name| name.strip_suffix('.'))
                 {
                     let period = if difficulty == "greenhorn" { "" } else { "." };
                     format!(

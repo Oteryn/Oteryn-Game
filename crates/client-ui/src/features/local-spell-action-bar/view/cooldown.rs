@@ -1,6 +1,7 @@
 //! A separate projection of server cooldowns, independent of action-bar assignments.
 use super::super::ActionBarPanel;
-use oteryn_client_runtime::{spell::ActorCooldownKind, spell_catalog::CatalogState};
+use oteryn_client_runtime::spell_catalog::CatalogState;
+use std::time::Instant;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CooldownIcon {
@@ -16,9 +17,15 @@ pub struct CooldownIcon {
 
 #[must_use]
 pub fn cooldown_icons(panel: &ActionBarPanel, catalog: &CatalogState) -> Vec<CooldownIcon> {
-    let elapsed = panel.cooldown_received_at.map_or(0, |received| {
-        u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX)
-    });
+    cooldown_icons_at(panel, catalog, Instant::now())
+}
+
+#[must_use]
+pub fn cooldown_icons_at(
+    panel: &ActionBarPanel,
+    catalog: &CatalogState,
+    now: Instant,
+) -> Vec<CooldownIcon> {
     let mut groups = panel.cooldown_groups.clone();
     groups.extend(
         catalog
@@ -26,22 +33,8 @@ pub fn cooldown_icons(panel: &ActionBarPanel, catalog: &CatalogState) -> Vec<Coo
             .iter()
             .flat_map(|entry| entry.cooldown_groups.iter().copied()),
     );
-    let entries = panel.bar.cooldowns.as_ref();
     let icon = |id, group| {
-        let duration = entries.map_or(0, |state| {
-            state
-                .entries
-                .iter()
-                .filter(|entry| entry.id == id && (entry.kind == ActorCooldownKind::Group) == group)
-                .map(|entry| entry.expires_at_ms.saturating_sub(state.server_now_ms))
-                .max()
-                .unwrap_or(0)
-        });
-        let remaining_ms = duration.saturating_sub(elapsed);
-        let duration = panel
-            .cooldown_durations
-            .get(&(group, id))
-            .map_or(duration, |(_, duration)| *duration);
+        let (remaining_ms, duration) = panel.bar.cooldown_at(group, id, now);
         CooldownIcon {
             id,
             group,
@@ -79,15 +72,12 @@ pub fn cooldown_icons(panel: &ActionBarPanel, catalog: &CatalogState) -> Vec<Coo
         }
     };
     let mut icons: Vec<_> = groups.into_iter().map(|id| icon(id, true)).collect();
-    if let Some(state) = entries {
-        icons.extend(
-            state
-                .entries
-                .iter()
-                .filter(|entry| entry.kind == ActorCooldownKind::Spell)
-                .map(|entry| icon(entry.id, false))
-                .filter(|entry| entry.remaining_ms > 0),
-        );
-    }
+    icons.extend(
+        panel
+            .bar
+            .spell_cooldown_keys()
+            .map(|id| icon(id, false))
+            .filter(|entry| entry.remaining_ms > 0),
+    );
     icons
 }

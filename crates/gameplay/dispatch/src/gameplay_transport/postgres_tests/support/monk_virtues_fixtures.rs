@@ -715,26 +715,20 @@ pub(super) async fn scenario(
             let flats = i64::from(flat) + ascetic_flat;
             let target_snapshot = runtime.companion_snapshot(target).map_err(debug)?;
             let target_policy = &target_snapshot.state.policy;
-            let armor = target_policy.armor.ok_or("qualified target armor")?;
-            // Canary 99902524 tiger_clash.lua:6 enables armor blocking;
-            // creature.cpp:977-987 subtracts one for positive armor <= 3, then
-            // :1006-1007 and :911-914 apply mitigation before Wheel/Mantra flats.
-            // Read the actual qualified target rather than comparing post-defense
-            // damage with raw formula endpoints. This fixture has no armor draw
-            // or physical resistance; keep those assumptions explicit.
-            assert!(armor <= 3, "the target must have deterministic low armor");
-            assert!(target_policy.resistances.iter().all(|resistance| {
-                resistance.damage_type != "physical" || resistance.percent.numerator == 0
-            }), "the target must have no physical resistance");
+            // Crystal 201189f8 items.xml:84524 binds Sanguine Claws to Earth.
+            // Tiger Clash's Earth Combat skips armor (tiger_clash.lua:11–13).
+            assert!(target_policy.damage_immunities.iter().all(|kind| kind != "earth"));
+            let earth_resistance = target_policy.resistances.iter()
+                .find(|resistance| resistance.damage_type == "earth")
+                .map_or(0.0, |resistance| resistance.percent.numerator as f64
+                    / resistance.percent.denominator as f64);
             let mitigation = target_policy.mitigation.ok_or("qualified target mitigation")?;
             let mitigation_percent =
                 (mitigation.numerator as f64 / mitigation.denominator as f64).min(30.0);
             assert!((0.0..=30.0).contains(&mitigation_percent));
             let after_defenses = |raw: i64| {
-                let after_armor = raw.saturating_sub(i64::from(armor > 0)).max(0);
-                (after_armor as f64
-                    - after_armor as f64 * mitigation_percent / 100.0)
-                    .trunc() as i64
+                let mitigated = (raw as f64 * (1.0 - mitigation_percent / 100.0)).trunc();
+                (mitigated * (100.0 - earth_resistance) / 100.0).round() as i64
             };
             let raw_ranges = [bounds, bounds.map(critical)];
             raw_ranges.map(|raw| {

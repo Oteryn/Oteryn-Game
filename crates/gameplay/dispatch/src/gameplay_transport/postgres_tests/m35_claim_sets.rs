@@ -1,7 +1,7 @@
 //! Crystal 201189f8 chest.lua:917-931: both independent Alawar claims, in either order.
 use super::fixture::{Harness, debug, id, run};
 use super::quest_callbacks_fixtures::{
-    source_world_choices, source_world_objects, source_world_spatial, wire_use_targets_retained,
+    source_world_choices, source_world_objects, wire_use_targets_retained,
 };
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -62,11 +62,14 @@ enum Case {
     Wine,
     Fanfare,
     Key3520,
+    Key3800,
     Koshei,
     BlackKnight,
+    Behemoth,
     FireAxeBag,
     FireAxeAll,
     EmperorCookies,
+    EdronGoblin,
     Draconia,
     GoblinTemple,
     CrystalWand,
@@ -267,6 +270,26 @@ fn m35_draconia_dispatch_requires_both_complete_bags_in_either_order() -> TestRe
     Ok(())
 }
 #[test]
+fn m35_edron_goblin_native_chests_grant_both_rewards_and_complete() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("edron-goblin-native-chests", || {
+        scenario(false, Case::EdronGoblin)
+    })
+}
+
+#[test]
+fn m35_emperor_cookies_native_key_3800_does_not_complete_quest() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("emperor-cookies-native-key", || {
+        scenario(false, Case::Key3800)
+    })
+}
+
+#[test]
 fn m35_emperor_cookies_and_key3802_complete_only_after_both_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -317,6 +340,19 @@ fn m35_fire_axe_bag_grants_all_children_without_finishing_on_first_chest() -> Te
     println!("M35_FIRE_AXE_BAG_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[test]
+fn m35_behemoth_dispatch_completes_after_four_native_chests() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, Case::Behemoth).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Behemoth claim-set scenario panicked")??;
+    Ok(())
+}
+
 // Crystal 201189f8 chest.lua:932-947: independent Crown Armor and Crown Shield.
 #[test]
 fn m35_black_knight_dispatch_requires_both_rewards_in_either_order() -> TestResult {
@@ -357,7 +393,7 @@ fn m35_koshei_dispatch_requires_legs_and_platinum_in_either_order() -> TestResul
 }
 fn scenario(reverse: bool, case: Case) -> TestResult {
     let wine = matches!(case, Case::Wine);
-    let access_key = matches!(case, Case::Key3520);
+    let access_key = matches!(case, Case::Key3520 | Case::Key3800);
     let (chest, appearance, quest, choices): (_, _, _, &[(u16, u16)]) = match case {
         Case::Wine => (
             (32749, 32341, -14),
@@ -431,6 +467,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.draconia_quest",
             &[(32803, 6023), (32804, 6024)],
         ),
+        Case::EdronGoblin => (
+            (33095, 31800, -10),
+            2469,
+            "oteryn:quest.edron_goblin_quest",
+            &[(33095, 6034), (33095, 6035)],
+        ),
         Case::EmperorCookies => (
             (32648, 31905, -3),
             2472,
@@ -449,6 +491,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fire_axe_quest",
             &[(33078, 6067)],
         ),
+        Case::Behemoth => (
+            (33294, 31658, -13),
+            2472,
+            "oteryn:quest.behemoth_quest",
+            &[(33294, 6075), (33295, 6052), (33297, 6053), (33298, 6054)],
+        ),
         Case::BlackKnight => (
             (32868, 31955, -11),
             3634,
@@ -461,6 +509,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.koshei_the_deathless_quest",
             &[(33261, 6240), (33261, 6241)],
         ),
+        Case::Key3800 => (
+            (32605, 31908, -3),
+            2472,
+            "oteryn:quest.emperor_s_cookies_quest",
+            &[(32605, 5003)],
+        ),
         Case::Key3520 => (
             (32376, 31802, -7),
             2473,
@@ -468,6 +522,15 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             &[(32376, 5018)],
         ),
     };
+    if matches!(case, Case::Behemoth | Case::BlackKnight) {
+        for &(x, unique) in choices {
+            let attrs = super::classic_quest_source_fixtures::committed_attrs(
+                (x, chest.1, chest.2),
+                appearance,
+            )?;
+            assert_eq!(attrs.unique, Some(unique));
+        }
+    }
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "m35_claim_sets", true, false).await?;
         prepare_current_session(&h).await?;
@@ -500,16 +563,19 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             }
         }
         let fire_axe = matches!(case, Case::FireAxeAll | Case::FireAxeBag);
-        let world = if fire_axe {
+        let native_claims: &[&str] = match case {
+            Case::EmperorCookies => &[
+                "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies",
+                "oteryn:reward-claim.quest.key.id3802",
+            ],
+            Case::EdronGoblin => &["oteryn:reward-claim.kv.edrongoblin1", "oteryn:reward-claim.kv.edrongoblin2"],
+            Case::Fanfare => &["oteryn:reward-claim.kv.fanfare"],
+            Case::Key3520 => &["oteryn:reward-claim.quest.key.id3520"],
+            Case::Key3800 => &["oteryn:reward-claim.quest.key.id3800"],
+            _ => &[],
+        };
+        let world = if fire_axe || !native_claims.is_empty() {
             super::qready1_reward_claims::retained_world(chest, native)?
-        } else if matches!(case, Case::EmperorCookies) {
-            source_world_spatial(
-                chest,
-                &[
-                    (32648, 31905, -3, 5004, 2472),
-                    (32599, 31923, -6, 5005, 2472),
-                ],
-            )?
         } else if matches!(case, Case::GriffinShield) {
             source_world_objects(
                 chest,
@@ -548,6 +614,9 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             bound.unbound.retain(|p| is_fire_axe_claim(&p.claim));
             bound.left_out.retain(|(key, _)| is_fire_axe_claim(key));
         }
+        if !native_claims.is_empty() {
+            bound.served.retain(|claim| native_claims.contains(&claim.key.as_str()));
+        }
         for claim in &bound.served {
             let mint_transition =
                 oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(
@@ -576,7 +645,9 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(case, Case::Longsword | Case::GriffinShield) {
+            if matches!(case, Case::Behemoth) {
+                4
+            } else if matches!(case, Case::Longsword | Case::GriffinShield) {
                 3
             } else if matches!(
                 case,
@@ -585,6 +656,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     | Case::BlackKnight
                     | Case::FireAxeAll
                     | Case::EmperorCookies
+                    | Case::EdronGoblin
                     | Case::Draconia
                     | Case::GoblinTemple
                     | Case::CrystalWand
@@ -610,10 +682,25 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
-        let at = MovementLocalPosition {
-            x: i32::from(chest.0) - 1,
-            y: i32::from(chest.1),
-            floor: -i16::from(chest.2),
+        let adjacent = |x, y, floor| -> TestResult<MovementLocalPosition> {
+            use crate::map::overlay::TilePos;
+            let cell = [
+                (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1),
+                (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1), (x + 1, y + 1),
+            ].into_iter().map(|(x, y)| TilePos { x, y, floor })
+                .find(|cell| world.enterable(*cell)).ok_or("native chest has no neighboring tile")?;
+            Ok(MovementLocalPosition {
+                x: i32::from(cell.x), y: i32::from(cell.y), floor: -i16::from(cell.floor),
+            })
+        };
+        let at = if native_claims.is_empty() {
+            MovementLocalPosition {
+                x: i32::from(chest.0) - 1,
+                y: i32::from(chest.1),
+                floor: -i16::from(chest.2),
+            }
+        } else {
+            adjacent(chest.0, chest.1, chest.2)?
         };
         deps.combat_room = Some(
             activated
@@ -775,6 +862,8 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             let x = choices[position_index].0;
             let y = if matches!(case, Case::EmperorCookies) {
                 if position_index == 0 { 31905 } else { 31923 }
+            } else if matches!(case, Case::EdronGoblin) {
+                chest.1 + u16::try_from(position_index)?
             } else if matches!(case, Case::FireAxeAll) {
                 if position_index == 0 { 31656 } else { 31650 }
             } else if matches!(case, Case::GriffinShield) && position_index == 2 {
@@ -791,12 +880,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             } else {
                 chest.2
             };
-            let destination = MovementLocalPosition {
-                x: i32::from(x) - 1,
-                y: i32::from(y),
-                floor: -i16::from(floor),
+            let destination = if native_claims.is_empty() {
+                MovementLocalPosition { x: i32::from(x) - 1, y: i32::from(y), floor: -i16::from(floor) }
+            } else {
+                adjacent(x, y, floor)?
             };
-            if matches!(case, Case::FireAxeAll | Case::EmperorCookies) {
+            if matches!(case, Case::FireAxeAll | Case::EmperorCookies | Case::EdronGoblin) {
                 // Fixture admission at each literal source endpoint; travel is not
                 // under test. Keep the same SQL session fence and command stream.
                 let (runtime, actor) = runtime_at(destination)?;
@@ -850,6 +939,10 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     .ok_or("shipped Fire Axe UID")?;
                 assert_eq!(unique.unique, choices[position_index].1);
                 key
+            } else if !native_claims.is_empty() {
+                bound.served.iter().flat_map(|claim| &claim.placements)
+                    .find(|p| (p.cell.x, p.cell.y, p.cell.floor) == (x, y, floor))
+                    .ok_or("native source chest")?.bundle_placement_key
             } else {
                 oteryn_world_bundle::bundle::placement_key(floor, x, y, 1).ok_or("placement")?
             };
@@ -892,14 +985,14 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             .await?;
             let claims = if wine { 1 } else { index as i64 + 1 };
             let quest_claims = if access_key { 0 } else { claims };
-            let quest_receipts = if access_key { 1 } else { quest_claims };
+            let quest_receipts = quest_claims + i64::from(matches!(case, Case::Key3520));
             assert_eq!(counts, (claims, quest_receipts, quest_claims, 0));
             let snapshot = h
                 .root
                 .read_character_quest_state(&authority, fence.character_id)
                 .await
                 .map_err(debug)?;
-            if access_key {
+            if matches!(case, Case::Key3520) {
                 let collection_key = "oteryn:quest-collection/m01c-fanfare-key";
                 let collection = catalogue
                     .as_ref()
@@ -939,11 +1032,20 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                         .tracks()
                         .contains_key("oteryn:quest-progress/kv/fanfare/claimed")
                 );
+            } else if matches!(case, Case::Key3800) {
+                let minted: (i32, String, i64) = sqlx::query_as(
+                    "SELECT k.key_number,i.definition_production_key,i.quantity
+                     FROM game_item_keys k JOIN game_item_instances i USING(item_instance_id)
+                     JOIN game_reward_claim_mint_receipts r USING(item_instance_id)",
+                ).fetch_one(&h.pool).await?;
+                assert_eq!(minted, (3800, "oteryn:item.tibia.i2970".to_owned(), 1));
+                assert!(!snapshot.states().get(quest).is_some_and(|state| state.completed));
             } else {
                 let state = snapshot.states().get(quest).ok_or("quest state")?;
                 assert_eq!(
                     state.completed,
                     matches!(case, Case::Fanfare)
+                        || matches!(case, Case::Behemoth) && index == 3
                         || matches!(case, Case::Longsword | Case::GriffinShield) && index == 2
                         || matches!(
                             case,
@@ -951,6 +1053,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::BlackKnight
                                 | Case::FireAxeAll
                                 | Case::EmperorCookies
+                                | Case::EdronGoblin
                                 | Case::Draconia
                                 | Case::GoblinTemple
                                 | Case::CrystalWand
@@ -960,6 +1063,33 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::Katana
                         ) && index == 1
                 );
+            }
+            if matches!(case, Case::Fanfare) {
+                let reward: (String, i64) = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity
+                     FROM game_reward_claim_mint_receipts r JOIN game_item_instances i USING(item_instance_id)",
+                ).fetch_one(&h.pool).await?;
+                assert_eq!(reward, ("oteryn:item.tibia.i2955".to_owned(), 1));
+            }
+            if matches!(case, Case::EdronGoblin) {
+                use crate::content::ReferenceItemField::Known;
+                let profile = native
+                    .item_policy("oteryn:item.tibia.i3054", "definition-r1")
+                    .ok_or("admitted Silver Amulet definition")?;
+                assert!(matches!(&profile.record().semantics.charges,
+                    Known(charges) if charges.count == Known(200)));
+                let rewards: Vec<(String, i64, Option<i32>)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity,t.charges
+                     FROM game_reward_claim_mint_receipts r JOIN game_item_instances i USING(item_instance_id)
+                     LEFT JOIN game_item_timed_states t USING(item_instance_id)
+                     ORDER BY i.definition_production_key",
+                ).fetch_all(&h.pool).await?;
+                // An unmodified charged instance uses its full definition default.
+                let mut expected = vec![("oteryn:item.tibia.i3054".to_owned(), 1, None)];
+                if index == 1 {
+                    expected.push(("oteryn:item.tibia.i3409".to_owned(), 1, None));
+                }
+                assert_eq!(rewards, expected);
             }
             if matches!(case, Case::GriffinShield) {
                 let roots: Vec<(String, i64)> = sqlx::query_as(

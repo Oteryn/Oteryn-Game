@@ -1,11 +1,39 @@
-"""Generate the small, pinned SRX-1 Item update set."""
+"""Generate the pinned SRX-1 Item updates and encode the qualified base."""
 
 import copy
 import hashlib
 import json
 
 PATH = "content/items/definitions/srx1-item-updates.json"
-OMIT_IF_UNKNOWN = ("field_condition", "rune_consumption", "field_replaceable")
+MAX_ITEM_PROFILES = 16 * 1024 * 1024  # native_gameplay::MAX_ITEM_PROFILES
+
+
+def compact_item_record(row):
+    """Omit only facts that the native decoder defaults to the same value."""
+    attributes = row["attributes"]
+    for field in ("field_condition", "field_replaceable", "rune_consumption"):
+        if attributes.get(field) is None:
+            attributes.pop(field, None)
+    if row.get("production_binding_qualification") is None:
+        row.pop("production_binding_qualification", None)
+    # First-party constructor receipts bind the explicit raw semantics.
+    if row["production_binding"]["source_key"] != "oteryn:source.oteryn_authored":
+        row["semantics"] = {
+            field: fact
+            for field, fact in row["semantics"].items()
+            if fact != {"state": "UNKNOWN"}
+        }
+    return row
+
+
+def compact_item_provider(document, canonical, exact_keys):
+    for row in document["records"]:
+        if row["production_definition"]["production_key"] not in exact_keys:
+            compact_item_record(row)
+    return canonical(document)
+
+
+OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption', 'field_replaceable')
 
 
 def omit_unknown_attributes(row):
@@ -45,7 +73,12 @@ def coalesce_dispenser_top_order(document, source_records, house_overlay):
     }
     for index, row in enumerate(document["records"]):
         key = row["production_definition"]["production_key"]
-        if key in enriched and row == enriched[key]:
+        if key not in enriched:
+            continue
+        candidate, projected = copy.deepcopy((row, enriched[key]))
+        compact_item_record(candidate)
+        compact_item_record(projected)
+        if candidate == projected:
             document["records"][index] = copy.deepcopy(original[key])
 
 
@@ -93,8 +126,6 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         for row in profile_document["records"]:
             if row["production_definition"]["production_key"] not in exact_keys:
                 omit_unknown_attributes(row)
-    base = canonical(original_document)
-    generated[profile_path] = base
     original = {
         row["production_definition"]["production_key"]: row
         for row in original_document["records"]
@@ -106,20 +137,72 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
     ]
     if not updates or len(updates) > 128:
         raise ValueError("SRX1_ITEM_UPDATE_BOUNDS")
-    data = (
-        '{\n  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",\n'
-        '  "base_sha256": "' + hashlib.sha256(base).hexdigest() + '",\n'
-        '  "records": [\n'
-        + ",\n".join(
-            "    "
-            + json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-            for row in sorted(updates, key=order)
-        )
-        + "\n  ]\n}\n"
-    ).encode()
+    # Ground-only decoration records can omit unknown field conditions.
+    # Keep the separate source records used by exact policy witnesses intact.
+    decoration_keys = {
+        row["production_definition"]["production_key"]
+        for row in house_overlay["records"]
+    }
+    for row in original_document["records"]:
+        if (
+            row["production_definition"]["production_key"] in decoration_keys
+            and row["admission"]["legal_destinations"] == ["Ground"]
+            and row["attributes"].get("field_condition") is None
+        ):
+            row["attributes"].pop("field_condition", None)
+    base = canonical(original_document)
+    if len(base) > MAX_ITEM_PROFILES:
+        # Preserve the exact profiles while omitting absent optional fields on
+        # the same Ground decoration cohort.
+        for row in original_document["records"]:
+            if (
+                row["production_definition"]["production_key"] in decoration_keys
+                and row["admission"]["legal_destinations"] == ["Ground"]
+            ):
+                for field in ("field_replaceable", "rune_consumption"):
+                    if row["attributes"].get(field) is None:
+                        row["attributes"].pop(field, None)
+                if row.get("production_binding_qualification") is None:
+                    row.pop("production_binding_qualification", None)
+        base = canonical(original_document)
+    if len(base) > MAX_ITEM_PROFILES:
+        base = compact_item_provider(original_document, canonical, exact_keys)
+    if len(base) > MAX_ITEM_PROFILES:
+        raise ValueError("SRX1_ITEM_PROVIDER_SIZE")
+    generated[profile_path] = base
+    document = {
+        "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
+        "base_sha256": hashlib.sha256(base).hexdigest(),
+        "records": sorted(updates, key=order),
+    }
+
+    def encode_updates():
+        return (
+            json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            + "\n"
+        ).encode()
+
+    data = encode_updates()
+    if len(data) > 200_000:
+        # The provider and its supplements use the same native Item decoder.
+        # Omit decode-equivalent defaults and keep only rows that still change
+        # the base provider after that normalization.
+        records = []
+        for row in document["records"]:
+            key = row["production_definition"]["production_key"]
+            predecessor = copy.deepcopy(original.get(key))
+            if key not in exact_keys:
+                compact_item_record(row)
+                if predecessor is not None:
+                    compact_item_record(predecessor)
+            if predecessor != row:
+                records.append(row)
+        document["records"] = records
+        data = encode_updates()
     if len(data) > 200_000:
         raise ValueError("SRX1_ITEM_UPDATE_SIZE")
     manifest = json.loads(generated[manifest_path])
+    manifest["item_profiles"]["sha256"] = hashlib.sha256(base).hexdigest()
     manifest["item_profile_updates"] = {
         "path": "items/definitions/srx1-item-updates.json",
         "sha256": hashlib.sha256(data).hexdigest(),
