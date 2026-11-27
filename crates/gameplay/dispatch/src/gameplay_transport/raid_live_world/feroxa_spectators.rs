@@ -207,7 +207,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         return Err(DurabilityError::Unavailable);
                     }
-                    let objects = owner.door.lock().await;
+                    let objects = owner
+                        .door
+                        .try_lock()
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     let moves = timers.advance(
                         runtime,
                         owner.movement_cells(),

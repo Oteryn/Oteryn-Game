@@ -28,6 +28,28 @@ fn snowbunny_progress_operation(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Acquire the Channel guards before attempting checkout. A miss drops
+    /// both guards before the holder queue waits and revalidates the turn.
+    pub(super) async fn lock_field_step_turn(
+        &self,
+    ) -> Result<
+        (
+            tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,
+            tokio::sync::MutexGuard<'_, actor_spell::ChannelSpellStates>,
+            crate::durability::IssuedSemanticPass,
+        ),
+        AdmissionRefusal,
+    > {
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_admission_checkout(async || {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                let pass = self.try_field_step_pass()?;
+                Ok((runtime, states, pass))
+            })
+            .await
+    }
+
     pub(super) async fn ordinary_paced_step(
         &self,
         actor: ExactActorRef,
@@ -79,12 +101,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.refresh_cyclopedia_speed(actor, session).await;
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
-        // Checkout may wait for background durability work. Never wait under
-        // the Channel runtime or spell-state guards; SQL work itself runs once.
-        // Source-qualified blood callbacks also need this read without optional
-        // field capability 30. This is only checkout routing; the locked owner
-        // still proves the current runtime pin and exact scoped Ground custody.
-        let field_pass = if self
+        // Source-qualified blood callbacks need the durable tile read even
+        // without field capability 30. Lock contention and checkout contention
+        // must never wait while owning each other's resource.
+        let can_read_field = self
             .active_generation
             .and_then(|active| active.native_gameplay())
             .is_some_and(|native| {
@@ -95,14 +115,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .binary_search(&30)
                         .is_ok()
                     || native.qualifies_soul_war_callbacks(native.source_digest())
-            }) {
-            self.acquire_field_step_pass().await
+            });
+        let (mut runtime, mut states, field_pass) = if can_read_field {
+            let acquired = self.lock_field_step_turn().await;
+            match acquired {
+                Ok((runtime, states, pass)) => (runtime, states, Ok(pass)),
+                Err(refusal) => {
+                    // Some landings bypass field reads. Let their ordinary movement
+                    // path decide from current state even if the holder stayed busy.
+                    (
+                        self.runtime.lock().await,
+                        self.states.spell_states.lock().await,
+                        Err(refusal),
+                    )
+                }
+            }
         } else {
-            Err(crate::gameplay_transport::connection::AdmissionRefusal::Rejected)
+            (
+                self.runtime.lock().await,
+                self.states.spell_states.lock().await,
+                Err(AdmissionRefusal::Rejected),
+            )
         };
-        // Lock order (§1.2): the lane before any Channel guard.
-        let mut runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
         // A periodic condition turn may finish while this step waits for the
         // lane or Channel locks. Sample time only after acquiring its owners;
         // field entry must not predate the condition predecessor it observes.
@@ -223,7 +257,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             bundle_doors = crate::map::floor::BundleDoors(&map.facts);
             &bundle_doors
         } else {
-            legacy = self.door.lock().await.blocking_cells().clone();
+            let Ok(doors) = self.door.try_lock() else {
+                drop((states, runtime));
+                let _ = Self::return_unused_field_step_pass(field_pass).await;
+                return (StepOutcome::rejected(), None);
+            };
+            legacy = doors.blocking_cells().clone();
             &legacy
         };
         let pvp_blocking = super::pvp_live::PvpBlocker {

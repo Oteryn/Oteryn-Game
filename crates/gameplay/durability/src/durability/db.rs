@@ -1984,6 +1984,41 @@ impl DurabilityRoot {
         self.pool.num_idle() > 0
     }
 
+    /// Report the holder at a failed wait, even when no checkout was attempted (for
+    /// example a snapshot blocked on a runtime lock). The trace belongs to the waiter.
+    pub fn report_holder_wait_timeout(&self, phase: &'static str, cause: &'static str) {
+        use oteryn_error_codes::{FieldValue, Level, Line};
+
+        let current = self.holder_owner.lock().ok().and_then(|owner| *owner);
+        let (state, owner) = if self.is_ready() {
+            ("idle", None)
+        } else if let Some(owner) = current {
+            ("checked_out", Some(owner))
+        } else if self.pool.size() == 0 {
+            ("retired", None)
+        } else {
+            ("untracked", None)
+        };
+        let owner_trace = owner.and_then(|(.., trace)| trace).map(format_trace);
+        let trace = holder_trace().map(format_trace);
+        let mut line = Line::new(Level::Warn, "durability", "holder_wait_timeout")
+            .field("phase", FieldValue::Token(phase))
+            .field("cause", FieldValue::Token(cause))
+            .field("state", FieldValue::Token(state));
+        if let Some((site, since, ..)) = owner {
+            line = line
+                .field("owner", FieldValue::Owned(site.to_string()))
+                .field("held_ms", millis(since.elapsed()));
+        }
+        if let Some(owner_trace) = owner_trace.as_deref() {
+            line = line.field("owner_trace", FieldValue::Token(owner_trace));
+        }
+        if let Some(trace) = trace.as_deref() {
+            line = line.trace(trace);
+        }
+        oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
+    }
+
     /// Call site of the in-flight semantic pass, if one has the holder. A
     /// background or raw checkout can make the holder busy without this evidence.
     pub fn checked_out_pass_site(&self) -> Option<&'static std::panic::Location<'static>> {
@@ -2269,7 +2304,7 @@ impl IssuedSemanticPass {
                 "DURABILITY_PASS_RETIRED caller={} reason=commit_outcome_unknown",
                 self.owner.caller
             );
-            self.holder.close_on_drop();
+            drop(self.holder.detach());
             self.root.request_ready();
             return result;
         }

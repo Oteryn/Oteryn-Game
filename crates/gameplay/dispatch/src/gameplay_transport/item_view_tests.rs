@@ -742,6 +742,7 @@ mod connection {
         inventory_reads: Cell<u32>,
         targets: RefCell<VecDeque<Option<ItemTargetObservation>>>,
         target_reads: RefCell<Vec<ItemKey>>,
+        corpse_refusal: RefCell<Option<CorpseOpenRefusal>>,
         step_to: Option<ActorPosition>,
         after_use: Option<InventoryItems>,
     }
@@ -753,6 +754,7 @@ mod connection {
                 inventory_reads: Cell::new(0),
                 targets: RefCell::new(VecDeque::new()),
                 target_reads: RefCell::new(Vec::new()),
+                corpse_refusal: RefCell::new(None),
                 step_to: None,
                 after_use: None,
             }
@@ -826,6 +828,23 @@ mod connection {
         ) -> Option<ItemTargetObservation> {
             self.target_reads.borrow_mut().push(target);
             self.targets.borrow_mut().pop_front().flatten()
+        }
+
+        async fn observe_corpse_for_use(
+            &self,
+            actor: ExactActorRef,
+            command: UseCommand,
+            target: ItemKey,
+        ) -> Result<ItemTargetObservation, CorpseOpenRefusal> {
+            if command.command_id != 0
+                && let Some(refusal) = self.corpse_refusal.take()
+            {
+                self.target_reads.borrow_mut().push(target);
+                return Err(refusal);
+            }
+            self.observe_item_target(actor, target)
+                .await
+                .ok_or(CorpseOpenRefusal::CorpseAbsent)
         }
     }
 
@@ -1108,6 +1127,97 @@ mod connection {
             assert_eq!(ended.item_view.container_revision, 4);
             Ok(())
         })
+    }
+
+    #[test]
+    fn corpse_use_refuses_each_typed_failure_without_a_container_delta() -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                run(async {
+                    use crate::durability::{DurabilityError, item_transfer::ItemTransferError};
+
+                    let carried = ItemViewContinuity {
+                        open_corpse: Some(corpse(7)),
+                        ..ItemViewContinuity::default()
+                    };
+                    let near = observe(HERE, at(11, 10, 7), &[5]);
+                    let mut mirror = SessionItemView::resume(carried);
+                    let domains = mirror
+                        .snapshot(inventory(&[]), Some(near.clone()))
+                        .expect("snapshot");
+                    let live = decode_open_container(&domains[1].payload)
+                        .expect("container")
+                        .container_handle
+                        .expect("reopened corpse");
+                    for (refusal, handle, status, disposition, reads) in [
+                        (
+                            None,
+                            ItemHandle::MAX,
+                            CommandStatus::Accepted,
+                            UseDisposition::StaleState,
+                            1,
+                        ),
+                        (
+                            Some(CorpseOpenRefusal::CorpseAbsent),
+                            live,
+                            CommandStatus::Accepted,
+                            UseDisposition::StaleState,
+                            2,
+                        ),
+                        (
+                            Some(CorpseOpenRefusal::HolderBusy),
+                            live,
+                            CommandStatus::Accepted,
+                            UseDisposition::StaleState,
+                            2,
+                        ),
+                        (
+                            Some(CorpseOpenRefusal::DurableRead(
+                                ItemTransferError::Unavailable(DurabilityError::InvalidStoredState),
+                            )),
+                            live,
+                            CommandStatus::Accepted,
+                            UseDisposition::StaleState,
+                            2,
+                        ),
+                        (
+                            Some(CorpseOpenRefusal::NotOwner),
+                            live,
+                            CommandStatus::Rejected,
+                            UseDisposition::Rejected,
+                            2,
+                        ),
+                    ] {
+                        let authority = ViewAuthority::new(Some(inventory(&[])))
+                            .targets(vec![Some(near.clone())]);
+                        *authority.corpse_refusal.borrow_mut() = refusal;
+                        let (_, frames) = serve(
+                            &authority,
+                            session(selected(carried))?,
+                            &[use_item(1, handle)?],
+                        )
+                        .await?;
+                        let mut expected = snapshot(Some(&domains));
+                        expected.push(encode_command_result(
+                            1,
+                            1,
+                            1,
+                            status,
+                            &encode_use_result(disposition).expect("USE disposition"),
+                        )?);
+                        assert_eq!(frames, expected, "{disposition:?}");
+                        assert_eq!(authority.target_reads.borrow().len(), reads);
+                        assert!(authority.corpse_refusal.borrow().is_none());
+                    }
+                    Ok(())
+                })
+                .map_err(|error| error.to_string())
+            })
+            .expect("start corpse USE wire cases")
+            .join()
+            .expect("corpse USE wire cases panicked")
+            .map_err(Into::into)
     }
 
     #[test]

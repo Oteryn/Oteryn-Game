@@ -1,13 +1,9 @@
 //! ITEM-MOVE-WIRE-0 §4.3: opening a corpse with `USE` and closing it again.
 //!
 //! Opening is a non-durable view action: it opens domain 11 for the corpse and writes nothing. It
-//! is not a GAME-INTERACTION transition and has no occurrence of its own. Anyone within reach may
-//! open a corpse; D133 and D134 are enforced when an item is taken (ITEM-MOVE-1), on the database
-//! clock.
-//!
-//! **D133 disclosure (`PARITY_PENDING`).** During the D133 exclusivity window a non-owner in reach
-//! can see a corpse's contents but cannot take them. Tibia refuses to open it; Oteryn does not gate
-//! opening, because a gate on the runtime clock would disagree with the writer's database clock.
+//! is not a GAME-INTERACTION transition and has no occurrence of its own. The durable corpse
+//! reader checks the exclusive owner or current party on the database clock. The projection
+//! below decides reach and whether to publish the container view.
 
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 

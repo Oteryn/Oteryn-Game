@@ -97,7 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let entry_open: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_effects WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND action_kind=2 AND state=2)")
                     .bind(firing.as_slice()).bind(owner.channel_id.as_bytes().as_slice())
                     .fetch_one(&mut *tx).await?;
-                let objects = owner.door.lock().await;
+                let objects = owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 if !map.publish_feroxa_phase(firing, phase, source, tiles)
                     || (entry_open && !project_grimvale_portal(map, true))
                 { return Err(DurabilityError::Unavailable); }

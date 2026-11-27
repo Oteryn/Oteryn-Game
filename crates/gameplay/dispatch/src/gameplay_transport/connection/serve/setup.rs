@@ -83,6 +83,9 @@ where
     match join(stream, admitted, authority, policy, projection, integrity).await {
         Ok(state) => Ok(state),
         Err(JoinFailure::Unprepared(refusal)) => {
+            if matches!(refusal.cause, JoinCause::HolderBusy | JoinCause::Deadline) {
+                authority.report_join_holder_timeout(refusal.phase, refusal.cause.name());
+            }
             send_join_unavailable(stream, if pending { 0 } else { generation }).await;
             Err(ServeEnd::JoinRefused {
                 refusal,

@@ -34,7 +34,8 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         update: PublicHouseCatalogue,
     ) -> Result<()> {
-        let _boot = self.boot_pass_deadline(super::RESYNC_DEADLINE);
+        // This publisher runs beside the listener. The offline resync budget
+        // would also extend every concurrent gameplay pass on this root.
         let recovery = authority.record_for(self)?;
         if update.generation == 0 || update.houses.as_ref().is_some_and(|rows| rows.len() > 1000) {
             return Err(CharacterAuthorityError::Rejected);

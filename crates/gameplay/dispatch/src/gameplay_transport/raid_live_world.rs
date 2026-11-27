@@ -105,7 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let _ = project_grimvale_portal(index.map(), false);
                     return Err(DurabilityError::Unavailable);
                 }
-                let objects = owner.door.lock().await;
+                let objects = owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let mut map = CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 let random = RaidRandom::new(seed, step.identity.firing_id);
                 let stamp = runtime.issue_owner_work().map_err(|_| DurabilityError::Unavailable)?;

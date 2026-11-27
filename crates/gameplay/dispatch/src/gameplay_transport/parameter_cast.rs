@@ -1140,7 +1140,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         let result=history.result().map_err(|_|DurabilityError::InvalidStoredState)?;
                         return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{refresh_inventory:false,disposition:result.disposition,vitals:None}),result:Some(result)})
                     }
-                    let objects=owner.door.lock().await;
+                    let objects=owner.door.try_lock().map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     let prepared=match prepare_parameter(&mut tx,&authority,&FreshAdmissionStore::from_root(owner.root.clone()),runtime,states,room,&objects,content,owned.clone(),
                         spell,intent.clone(),fence,command,owner.owner_now()).await{
                         Ok(p)=>p,Err(disposition)=>{

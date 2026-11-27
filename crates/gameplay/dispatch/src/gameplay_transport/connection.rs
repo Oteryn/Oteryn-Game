@@ -597,6 +597,7 @@ tokio::task_local! {
 struct AdmissionWait {
     deadline: tokio::time::Instant,
     retry: std::cell::Cell<Option<JoinRefusal>>,
+    phase: std::cell::Cell<&'static str>,
 }
 
 tokio::task_local! {
@@ -623,6 +624,10 @@ pub(super) fn record_admission_retry(phase: &'static str, holder_busy: bool) {
                 .as_millis(),
         ));
     });
+}
+
+pub(super) fn note_admission_phase(phase: &'static str) {
+    let _ = ADMISSION_WAIT.try_with(|wait| wait.phase.set(phase));
 }
 
 pub(super) fn clear_admission_retry() {
@@ -652,15 +657,16 @@ async fn admission_stage<T>(
             AdmissionWait {
                 deadline,
                 retry: std::cell::Cell::new(None),
+                phase: std::cell::Cell::new(phase),
             },
             async {
                 tokio::time::timeout_at(deadline, work).await.map_err(|_| {
-                    ADMISSION_WAIT
-                        .with(|wait| wait.retry.get())
-                        .unwrap_or(JoinRefusal {
-                            phase,
+                    ADMISSION_WAIT.with(|wait| {
+                        wait.retry.get().unwrap_or(JoinRefusal {
+                            phase: wait.phase.get(),
                             cause: JoinCause::Deadline,
                         })
+                    })
                 })
             },
         )
@@ -1605,7 +1611,10 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    serve_admitted_for_join(stream, admitted, authority, policy, &mut None).await
+    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
+    let end = serve_admitted_for_join(stream, admitted, authority, policy, &mut None).await;
+    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
+    end
 }
 
 pub(super) async fn serve_admitted_for_join<S, A>(
@@ -1619,8 +1628,6 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    #[cfg(test)]
-    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
     let end = Box::pin(serve_admitted_actor_for_join(
         stream, admitted, authority, policy, acceptance,
     ))
@@ -1644,8 +1651,6 @@ where
             .yield_chase_to_client(actor, session)
             .await;
     }
-    #[cfg(test)]
-    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
     end
 }
 
