@@ -7,7 +7,7 @@ use oteryn_gameplay_items::quick_loot::{
 };
 use oteryn_protocol_oteryn::quick_loot::{
     self as wire, QuickLootAction, QuickLootCategory, QuickLootItemResult, QuickLootRecipient,
-    QuickLootDestination, QuickLootDestinations, QuickLootFilters, QuickLootRequest, QuickLootResult,
+    QuickLootDestination, QuickLootDestinations, QuickLootFilters, QuickLootRefusal, QuickLootRequest, QuickLootResult,
 };
 
 #[derive(Clone, Copy)]
@@ -122,6 +122,18 @@ pub enum QuickLootInput<'a> {
     Managed { command_type: u32, payload: &'a [u8], request: Option<QuickLootRequest> },
 }
 
+impl QuickLootInput<'_> {
+    pub fn needs_premium_decision(&self) -> bool {
+        let request = match self {
+            Self::Legacy(request) => Some(*request),
+            Self::Managed { request, .. } => *request,
+        };
+        request.is_some_and(|request| {
+            requires_premium(request) || matches!(request.action, QuickLootAction::Click | QuickLootAction::LootAll)
+        })
+    }
+}
+
 /// One manual command, retaining the input bytes' identity separately from Channel resolution.
 pub struct QuickLootCommand<'a> {
     pub command: CommandRef,
@@ -129,6 +141,53 @@ pub struct QuickLootCommand<'a> {
     pub premium: bool,
     pub input: QuickLootInput<'a>,
     pub selected_corpse: Option<[u8; 16]>,
+}
+
+/// Quick Loot's command-level refusals keep the cause through the fenced transaction.
+#[derive(Debug)]
+pub enum QuickLootCommitRefusal {
+    Move(LoopMoveRefusal),
+    PremiumRequired,
+    UnresolvedRequest,
+    ConflictingReceipt,
+    EquipmentFence(&'static str),
+}
+
+impl QuickLootCommitRefusal {
+    pub fn wire_reason(&self) -> QuickLootRefusal {
+        use LoopMoveRefusal as Move;
+        use QuickLootRefusal as Wire;
+        match self {
+            Self::Move(Move::Stale) | Self::EquipmentFence(_) => Wire::Stale,
+            Self::Move(Move::NoBackpack) => Wire::NoBackpack,
+            Self::Move(Move::NoRoom) => Wire::NoRoom,
+            Self::Move(Move::Blocked) => Wire::Blocked,
+            Self::Move(Move::NotSupported) => Wire::NotSupported,
+            Self::Move(Move::Overweight) => Wire::Overweight,
+            Self::Move(Move::WeightUnknown) => Wire::WeightUnknown,
+            Self::Move(Move::Rejected) | Self::ConflictingReceipt => Wire::Rejected,
+            Self::PremiumRequired => Wire::PremiumRequired,
+            Self::UnresolvedRequest => Wire::Stale,
+        }
+    }
+}
+
+fn quick_loot_fence_error(error: EquipmentError) -> Result<QuickLootCommitRefusal, DurabilityError> {
+    match error {
+        EquipmentError::Rejected(reason) => Ok(QuickLootCommitRefusal::EquipmentFence(reason)),
+        error => loop_error(error.into()).map(QuickLootCommitRefusal::Move),
+    }
+}
+
+fn requires_premium(request: QuickLootRequest) -> bool {
+    match request.action {
+        QuickLootAction::Assign | QuickLootAction::AssignLoot | QuickLootAction::UnassignLoot =>
+            request.category.is_some(),
+        QuickLootAction::AssignAllLoot | QuickLootAction::AssignObtain
+            | QuickLootAction::AssignAllObtain | QuickLootAction::UnassignObtain
+            | QuickLootAction::Distribute => true,
+        _ => false,
+    }
 }
 
 impl DurabilityRoot {
@@ -141,7 +200,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         content: &C,
         input: QuickLootCommand<'_>,
-    ) -> std::result::Result<std::result::Result<Vec<u8>, LoopMoveRefusal>, DurabilityError>
+    ) -> std::result::Result<std::result::Result<Vec<u8>, QuickLootCommitRefusal>, DurabilityError>
     {
         let QuickLootCommand { command, cell, premium, input, selected_corpse } = input;
         permit.check_scope(fence.runtime_scope)?;
@@ -175,7 +234,7 @@ impl DurabilityRoot {
             return Err(DurabilityError::InvalidStoredState);
         }
         let mut context = (permit, content);
-        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
+        self.issue_ready_semantic_pass().await?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let (permit, content) = *context;
             let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
@@ -184,25 +243,32 @@ impl DurabilityRoot {
                 &mut tx, &record, &node, &fence, Some(command), content.loop_content_digest(),
             ).await {
                 tx.rollback().await?;
-                return loop_error(error.into()).map(Err);
+                return quick_loot_fence_error(error).map(Err);
             }
             if let Some(row) = sqlx::query("SELECT character_id::text,request,result FROM game_quick_loot_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await? {
-                if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")? != encoded { tx.rollback().await?; return Ok(Err(LoopMoveRefusal::Rejected)); }
+                if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")? != encoded { tx.rollback().await?; return Ok(Err(QuickLootCommitRefusal::ConflictingReceipt)); }
                 let result = row.try_get::<Vec<u8>,_>("result")?;
                 super::super::db::commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(result));
             }
             let Some(request) = request else {
                 tx.rollback().await?;
-                return Ok(Err(LoopMoveRefusal::Stale));
+                return Ok(Err(QuickLootCommitRefusal::UnresolvedRequest));
             };
+            if legacy && !selected && let Err(error) = assert_current_equipment_in_transaction(
+                &mut tx, &record, &node, &fence, Some(command), content.loop_content_digest(),
+            ).await {
+                tx.rollback().await?;
+                return quick_loot_fence_error(error).map(Err);
+            }
+            if requires_premium(request) && !premium {
+                tx.rollback().await?;
+                return Ok(Err(QuickLootCommitRefusal::PremiumRequired));
+            }
             let attempt: LoopResult<Vec<u8>> = async {
                 if selected && (selected_entry.is_none() || selected_corpse.is_none()) {
                     return refuse(LoopMoveRefusal::Stale);
-                }
-                if legacy && !selected {
-                    assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
                 }
                 let (world, channel) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
                 let world = *world.as_bytes();
@@ -252,9 +318,6 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState.into());
                         }
                         QuickLootAction::Assign | QuickLootAction::AssignLoot | QuickLootAction::AssignAllLoot | QuickLootAction::UnassignLoot => {
-                            if (request.category.is_some() || request.action == QuickLootAction::AssignAllLoot) && !premium {
-                                return refuse(LoopMoveRefusal::Rejected);
-                            }
                             let target = if request.action == QuickLootAction::UnassignLoot {
                                 None
                             } else {
@@ -290,9 +353,6 @@ impl DurabilityRoot {
                             return Ok(Vec::new());
                         }
                         QuickLootAction::AssignObtain | QuickLootAction::AssignAllObtain | QuickLootAction::UnassignObtain => {
-                            if !premium {
-                                return refuse(LoopMoveRefusal::Rejected);
-                            }
                             let target = if request.action == QuickLootAction::UnassignObtain {
                                 None
                             } else {
@@ -311,9 +371,6 @@ impl DurabilityRoot {
                             return Ok(Vec::new());
                         }
                         QuickLootAction::Distribute => {
-                            if !premium {
-                                return refuse(LoopMoveRefusal::Rejected);
-                            }
                             let source = request.corpse.ok_or(LoopError::Refused(LoopMoveRefusal::Stale))?;
                             let mut context = (&mut tx, permit, &record, &node, &fence, command, content);
                             let result = distribute(&mut context, source).await?;
@@ -380,7 +437,7 @@ impl DurabilityRoot {
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(result))
                 }
-                Err(error) => { tx.rollback().await?; loop_error(error).map(Err) },
+                Err(error) => { tx.rollback().await?; loop_error(error).map(QuickLootCommitRefusal::Move).map(Err) },
             }
         })).await
     }

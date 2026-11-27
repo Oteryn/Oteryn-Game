@@ -475,14 +475,7 @@ impl SpellPremiumCoordinator {
                 delivered: true,
             });
         }
-        let empty = match (&self.delivery.activation, now) {
-            (None, _) => EmptyLatch::NotActivated,
-            (Some(_), None) => EmptyLatch::NotCurrent,
-            (Some(activation), Some(now)) if now.upper_us() < activation.switch_over_us => {
-                EmptyLatch::NotActivated
-            }
-            (Some(_), Some(now)) => EmptyLatch::Latch { now },
-        };
+        let empty = self.empty_latch(now);
         let Some(root) = &self.latch else {
             return Ok(Settled::Decided {
                 bypass,
@@ -491,7 +484,7 @@ impl SpellPremiumCoordinator {
         };
         if !matches!(empty, EmptyLatch::NotActivated) {
             let read = root.read_premium_activation::<B::Output>().await;
-            let delivered = self.after_read(&empty, read).await;
+            let delivered = self.after_read(&empty, read, None).await.unwrap_or(false);
             return Ok(Settled::Decided { bypass, delivered });
         }
         // The read takes the bypass only if the table is empty.
@@ -515,38 +508,77 @@ impl SpellPremiumCoordinator {
             (Ok(_), None) => Err(DurabilityError::InvalidStoredState),
         }
     }
+    fn empty_latch(&self, now: Option<TrustedNow>) -> EmptyLatch {
+        match (&self.delivery.activation, now) {
+            (None, _) => EmptyLatch::NotActivated,
+            (Some(_), None) => EmptyLatch::NotCurrent,
+            (Some(activation), Some(now)) if now.upper_us() < activation.switch_over_us => {
+                EmptyLatch::NotActivated
+            }
+            (Some(_), Some(now)) => EmptyLatch::Latch { now },
+        }
+    }
+
+    /// Quick Loot uses the read-only gate and waits for a transiently busy holder
+    /// before treating a cold Premium activation as unavailable.
+    pub(super) async fn quick_loot_premium(
+        &self,
+        account: [u8; 16],
+    ) -> Result<PremiumGate, DurabilityError> {
+        let now = self.read_now();
+        if self.delivery.held.get().is_none() {
+            let (Some(root), Some(_)) = (&self.latch, &self.delivery.activation) else {
+                return Ok(PremiumGate::CLOSED);
+            };
+            let budget = AdmissionRetryBudget::for_command(root);
+            let read =
+                premium_binding_checkout(Some(&budget), || root.read_premium_activation::<()>())
+                    .await?;
+            if !self
+                .after_read(&self.empty_latch(now), Ok(read), Some(&budget))
+                .await?
+            {
+                return Ok(PremiumGate::CLOSED);
+            }
+        }
+        Ok(self.delivered_status(account, self.read_now()).gate())
+    }
+
     /// The gate after a read that ran no bypass: a found row is held (step 1); an empty table is
     /// latched or stays undelivered (steps 4 and 6); a failure is undelivered.
     async fn after_read<T>(
         &self,
         empty: &EmptyLatch,
         read: Result<PremiumActivationRead<T>, DurabilityError>,
-    ) -> bool {
+        budget: Option<&AdmissionRetryBudget<'_>>,
+    ) -> Result<bool, DurabilityError> {
         match (read, empty, &self.delivery.activation, &self.latch) {
             (Ok(PremiumActivationRead::Latched(latch)), _, _, _) => {
                 self.delivery.hold(latch);
-                true
+                Ok(true)
             }
             (
                 Ok(PremiumActivationRead::Empty),
                 EmptyLatch::Latch { now: at },
                 Some(activation),
                 Some(root),
-            ) => match root
-                .latch_premium_activation(
+            ) => match premium_binding_checkout(budget, || {
+                root.latch_premium_activation(
                     &activation.activation_id,
                     activation.switch_over_us,
                     at.upper_us(),
                 )
-                .await
+            })
+            .await
             {
                 Ok(latch) => {
                     self.delivery.hold(latch);
-                    true
+                    Ok(true)
                 }
-                Err(_) => false,
+                Err(error) => Err(error),
             },
-            _ => false,
+            (Err(error), _, _, _) => Err(error),
+            _ => Ok(false),
         }
     }
     fn delivered_status(

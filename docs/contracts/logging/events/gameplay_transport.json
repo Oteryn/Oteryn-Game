@@ -383,6 +383,19 @@
       "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
     },
     {
+      "event": "quick_loot_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stage",
+        "reason",
+        "command_id",
+        "server_sequence"
+      ],
+      "codes": [],
+      "note": "Quick Loot command refusal or unresolved durability outcome. Stage identifies the rejecting check. Reason is the typed failure. Server sequence is the next result sequence at the time of refusal."
+    },
+    {
       "event": "release_deferred",
       "level": "warn",
       "span": false,

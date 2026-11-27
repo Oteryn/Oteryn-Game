@@ -4,10 +4,10 @@ use super::{
     connection::{AdmittedSession, UseCommand},
 };
 use crate::durability::item_loop_move::QuickLootInput;
-use crate::durability::item_loop_move::{LoopMoveRefusal, QuickLootCommand};
-use crate::foundation::CommandStatus;
+use crate::durability::item_loop_move::QuickLootCommand;
+use crate::{durability::DurabilityError, foundation::CommandStatus};
+use oteryn_protocol_oteryn::quick_loot::{self as wire, QuickLootRefusal};
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_protocol_oteryn::quick_loot::QuickLootClickOutcome;
 
 pub struct OpenLootSelection {
     pub corpse_identity: [u8; 16],
@@ -36,18 +36,38 @@ macro_rules! authority_methods {
         {
             async { None }
         }
-        fn quick_loot(
+        fn quick_loot_wire(
             &self,
             _admitted: AdmittedSession,
             _command: UseCommand,
             _request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
+        ) -> impl std::future::Future<Output = Option<(crate::foundation::CommandStatus, Vec<u8>)>> {
+            async { None }
+        }
+
+        #[cfg(test)]
+        fn quick_loot(
+            &self,
+            admitted: AdmittedSession,
+            command: UseCommand,
+            request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
         ) -> impl std::future::Future<
             Output = Option<(
                 crate::foundation::CommandStatus,
                 oteryn_protocol_oteryn::quick_loot::QuickLootResult,
             )>,
         > {
-            async { None }
+            async move {
+                use oteryn_protocol_oteryn::quick_loot as wire;
+                let (status, payload) = self.quick_loot_wire(admitted, command, request).await?;
+                let items = if status == crate::foundation::CommandStatus::Rejected {
+                    wire::decode_quick_loot_refusal(&payload).ok()?;
+                    Vec::new()
+                } else {
+                    wire::decode_quick_loot_result(&payload).ok()?.items
+                };
+                Some((status, wire::QuickLootResult { items }))
+            }
         }
     };
 }
@@ -91,31 +111,49 @@ macro_rules! composed_methods {
             )
             .await
         }
-        async fn quick_loot(
+        async fn quick_loot_wire(
             &self,
             admitted: connection::AdmittedSession,
             command: connection::UseCommand,
             request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
-        ) -> Option<(
-            crate::foundation::CommandStatus,
-            oteryn_protocol_oteryn::quick_loot::QuickLootResult,
-        )> {
-            let (status, result) = self
-                .execute_quick_loot(
-                    admitted,
-                    command,
-                    crate::durability::item_loop_move::QuickLootInput::Legacy(request),
-                    None,
-                )
-                .await?;
-            Some((
-                status,
-                oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&result).ok()?,
-            ))
+        ) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
+            self.execute_quick_loot(
+                admitted,
+                command,
+                crate::durability::item_loop_move::QuickLootInput::Legacy(request),
+                None,
+            )
+            .await
         }
     };
 }
 pub(super) use composed_methods;
+
+pub(super) fn log_refusal(
+    admitted: &AdmittedSession,
+    command_id: u64,
+    stage: &str,
+    reason: &impl std::fmt::Debug,
+) {
+    let server_sequence = admitted.continuity.server_sequence.saturating_add(1);
+    let reason = format!("{reason:?}").replace(' ', "_");
+    super::operator_event(&format!(
+        "event=quick_loot_refused stage={stage} reason={reason} command_id={command_id} server_sequence={server_sequence}"
+    ));
+}
+
+fn rejected(reason: QuickLootRefusal) -> Option<(CommandStatus, Vec<u8>)> {
+    Some((CommandStatus::Rejected, wire::encode_quick_loot_refusal(reason)))
+}
+
+fn durability_refusal(error: &DurabilityError) -> QuickLootRefusal {
+    match error {
+        DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded => {
+            QuickLootRefusal::Busy
+        }
+        _ => QuickLootRefusal::Unavailable,
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn execute_quick_loot(
@@ -125,23 +163,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         input: QuickLootInput<'_>,
         open_corpse: Option<[u8; 16]>,
     ) -> Option<(CommandStatus, Vec<u8>)> {
-        let fence = command.item_fence?;
-        let actor = admitted.runtime_actor?;
-        let permit = self.spell_lane_permit().await?;
+        let refuse = |stage, reason| {
+            log_refusal(&admitted, command.command_id, stage, &reason);
+            rejected(reason)
+        };
+        let Some(fence) = command.item_fence else {
+            return refuse("missing_item_fence", QuickLootRefusal::Stale);
+        };
+        let Some(actor) = admitted.runtime_actor else {
+            return refuse("missing_actor", QuickLootRefusal::Stale);
+        };
+        let Ok(command_id) = CommandId::new(command.command_id) else {
+            return refuse("command_id", QuickLootRefusal::InvalidRequest);
+        };
+        let permit = match self.try_spell_lane_permit().await {
+            Ok(permit) => permit,
+            Err(error) => {
+                log_refusal(&admitted, command.command_id, "spell_lane", &error);
+                return rejected(durability_refusal(&error));
+            }
+        };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
         let pending = states.has_pending_spell_commit(actor, command.game_session_id);
         drop(states);
-        let content = super::equipment_move::native_for_move(
+        if dead {
+            return refuse("actor_dead", QuickLootRefusal::Rejected);
+        }
+        if pending {
+            return refuse("pending_spell_commit", QuickLootRefusal::Busy);
+        }
+        let Some(content) = super::equipment_move::native_for_move(
             &runtime,
             self.active_generation,
             dead,
             pending,
-        )?;
+        ) else {
+            return refuse("content_pin", QuickLootRefusal::Unavailable);
+        };
+        if !matches!(input, QuickLootInput::Legacy(_))
+            && !super::battle_instinct_status::actor_is_current(&runtime, admitted)
+        {
+            return refuse("actor_fence", QuickLootRefusal::Stale);
+        }
         // D85 corpse identity and the durable instance have different lifetimes.
         // Keep the incoming bytes for replay, and move only from the bound item.
-        let selected = matches!(input, QuickLootInput::Selected { .. });
         let legacy_corpse = |identity| {
             runtime.bound_corpse(identity).map_or(identity, |corpse| corpse.item.item_instance_id)
         };
@@ -160,30 +227,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .then_some(instance)
             }),
         };
-        let position = runtime.read_actor_position(actor).ok()?.position();
-        let floor = position.floor;
-        let cell = [
-            position.x.to_be_bytes().as_slice(),
-            position.y.to_be_bytes().as_slice(),
-            floor.to_be_bytes().as_slice(),
-        ]
-        .concat()
-        .try_into()
-        .ok()?;
-        if !matches!(input, QuickLootInput::Legacy(_))
-            && !super::battle_instinct_status::actor_is_current(&runtime, admitted)
+        let position = match runtime.read_actor_position(actor) {
+            Ok(position) => position.position(),
+            Err(error) => {
+                log_refusal(&admitted, command.command_id, "actor_position", &error);
+                return rejected(QuickLootRefusal::Stale);
+            }
+        };
+        let mut cell = [0; 10];
+        cell[..4].copy_from_slice(&position.x.to_be_bytes());
+        cell[4..8].copy_from_slice(&position.y.to_be_bytes());
+        cell[8..].copy_from_slice(&position.floor.to_be_bytes());
+        drop(runtime);
+        let premium = if input.needs_premium_decision()
+            && let Some(coordinator) = self.premium_coordinator
+            && let Some(account) = self.session_account(admitted.game_session_id)
         {
-            let reply = if selected { QuickLootClickOutcome::Stale.encode().to_vec() } else { Vec::new() };
-            return Some((CommandStatus::Rejected, reply));
-        }
-        if !matches!(input, QuickLootInput::Legacy(_)) {
-            drop(runtime);
-        }
-        let premium = self
-            .session_premium_gate(admitted.game_session_id)
-            .await
-            .require()
-            .is_ok();
+            match coordinator.quick_loot_premium(account).await {
+                Ok(gate) => gate.premium_current(),
+                Err(error) => {
+                    log_refusal(&admitted, command.command_id, "premium", &error);
+                    return rejected(durability_refusal(&error));
+                }
+            }
+        } else {
+            false
+        };
         let result = self
             .root
             .commit_quick_loot(
@@ -195,7 +264,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 QuickLootCommand {
                     command: CommandRef::new(
                         command.game_session_id,
-                        CommandId::new(command.command_id).ok()?,
+                        command_id,
                     ),
                     cell,
                     premium,
@@ -203,20 +272,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     selected_corpse: corpse,
                 },
             )
-            .await
-            .ok()?;
+            .await;
         match result {
-            Ok(result) => Some((CommandStatus::Accepted, result)),
-            Err(refusal) => {
-                let result = if selected {
-                    match refusal {
-                        LoopMoveRefusal::Stale => QuickLootClickOutcome::Stale,
-                        _ => QuickLootClickOutcome::Rejected,
-                    }.encode().to_vec()
-                } else {
-                    Vec::new()
-                };
-                Some((CommandStatus::Rejected, result))
+            Ok(Ok(result)) => Some((CommandStatus::Accepted, result)),
+            Ok(Err(reason)) => {
+                log_refusal(&admitted, command.command_id, "transaction_refused", &reason);
+                rejected(reason.wire_reason())
+            }
+            Err(error) => {
+                log_refusal(&admitted, command.command_id, "durability", &error);
+                match error {
+                    // Keep the in-flight CommandId for receipt reconciliation when the
+                    // transaction may have committed before the acknowledgement failed.
+                    DurabilityError::CommitOutcomeUnknown
+                    | DurabilityError::RootPassDeadlineExceeded
+                    | DurabilityError::RootTaskFailed => None,
+                    _ => rejected(durability_refusal(&error)),
+                }
             }
         }
     }

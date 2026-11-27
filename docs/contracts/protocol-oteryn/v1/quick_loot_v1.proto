@@ -8,9 +8,8 @@ package oteryn.protocol.v1;
 // Click field 9 optionally carries the eight-byte little-endian nonzero item-view handle
 // of one entry in the current open corpse. Field 2 can be omitted for a selected click.
 // If supplied, field 2 must match the open corpse. Other actions reject field 9.
-// A selected Click replies with selected_outcome alone. MOVED is Accepted and is followed
-// by the updated open corpse view. STALE is Rejected and covers an unknown handle or an entry
-// no longer in the current lootable corpse. Other transfer refusals use REJECTED.
+// An Accepted selected Click replies with selected_outcome MOVED and is followed by
+// the updated open corpse view. A Rejected selected Click uses QuickLootRefusalV1.
 // Corpse-only Click retains the original result encoding.
 // ReviewDestinations field 10 opts in to the filter suffix on the reply.
 // Assign with a Gold Pouch recipient may name its Store Inbox fulfilment UUID in field 5.
@@ -27,3 +26,9 @@ message QuickLootResultV1 {
   repeated QuickLootItemResultV1 items = 1;
   optional QuickLootClickOutcomeV1 selected_outcome = 2;
 }
+
+// On Rejected for a selected Quick Loot command (114, 6376 or 6377).
+// Reason: 1 Stale, 2 NoBackpack, 3 NoRoom, 4 Blocked, 5 NotSupported,
+// 6 Overweight, 7 WeightUnknown, 8 Rejected, 9 Busy, 10 Unavailable,
+// 11 InvalidRequest, 12 PremiumRequired.
+message QuickLootRefusalV1 { uint32 reason = 1; }

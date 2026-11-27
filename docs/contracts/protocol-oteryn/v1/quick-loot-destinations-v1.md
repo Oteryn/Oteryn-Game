@@ -1,7 +1,7 @@
 # Quick loot destinations
 
 Capability 607 requires capabilities 4 and 98 and gates commands 6376 and 6377.
-Command 114 retains actions 1–7 and the existing results for requests without a selected item. Each new action is
+Command 114 retains actions 1–7 and the existing accepted results for requests without a selected item. Each new action is
 valid only on its registered command. Requests use the tagged field layout in
 [quick_loot_v1.proto](quick_loot_v1.proto).
 
@@ -37,7 +37,8 @@ either reference. Command 114 uses the session-local handle in field 9 for a sel
 Other fields are forbidden. Premium is required for category-specific
 Loot management, bulk assignment and Obtain changes. The existing carried
 container and gold-pouch checks apply. Writes use the current Character item
-fence. An accepted mutation has an empty result. Refusals are empty.
+fence. An accepted mutation has an empty result. A Quick Loot refusal carries
+`QuickLootRefusalV1` with command status Rejected.
 
 An accepted action 9 result starts with a one-byte Loot fallback flag (0 or 1).
 It then has the Loot and Obtain sections in that order. Each section starts
@@ -70,7 +71,7 @@ Obtain destination if no category assignment exists. Entries with no valid desti
 remain in place. Nested containers participate as single items. Normal custody,
 cycle, capacity and gold-pouch restrictions apply. Moves and their replay
 receipt commit together. An accepted result uses `QuickLootResultV1` with a row
-for each considered item. A refused command has an empty result.
+for each considered item. A refusal uses the same `QuickLootRefusalV1` as destination management.
 
 [Crystal category numbering and classification](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/enums/object_category.hpp).
 [Crystal managed-container operations](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L2104-L2142).

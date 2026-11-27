@@ -4,7 +4,7 @@ use super::Dispatch;
 use crate::foundation::CommandStatus;
 use oteryn_protocol_oteryn::{
     ClientCommandView,
-    quick_loot::{self as wire, encode_quick_loot_result},
+    quick_loot::{self as wire, QuickLootRefusal},
 };
 
 pub(in super::super) fn selected_moved(command_type: u32, payload: &[u8]) -> bool {
@@ -18,6 +18,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     command: ClientCommandView<'_>,
     items: Option<&SessionItemView>,
 ) -> Option<Dispatch> {
+    let invalid = |stage| {
+        let reason = QuickLootRefusal::InvalidRequest;
+        transport::quick_loot::log_refusal(admitted, command.command_id, stage, &reason);
+        Some(Dispatch::Reply(
+            CommandStatus::Rejected,
+            wire::encode_quick_loot_refusal(reason),
+        ))
+    };
     let use_command = transport::connection::UseCommand {
         game_session_id: admitted.game_session_id,
         command_id: command.command_id,
@@ -26,7 +34,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     if command.command_type != wire::COMMAND_TYPE_QUICK_LOOT {
         if command.payload.is_empty() || command.payload.len() > wire::MAX_QUICK_LOOT_REQUEST_BYTES
         {
-            return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
+            return invalid("request_size");
         }
         let request = wire::decode_quick_loot_view_request(command.payload, |handle| match items?
             .resolve(handle)?
@@ -47,10 +55,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         return Some(Dispatch::Reply(status, payload));
     }
     let Ok(request) = wire::decode_quick_loot_request(command.payload) else {
-        return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
+        return invalid("request_decode");
     };
     if request.action.command_type() != command.command_type {
-        return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
+        return invalid("action_command_type");
     }
     if let Some(handle) = request.selected_item {
         use transport::item_view::ItemKey;
@@ -68,11 +76,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .await?;
         return Some(Dispatch::Reply(status, payload));
     }
-    let (status, result) = authority
-        .quick_loot(*admitted, use_command, request)
+    let (status, payload) = authority
+        .quick_loot_wire(*admitted, use_command, request)
         .await?;
-    Some(Dispatch::Reply(
-        status,
-        encode_quick_loot_result(&result).ok()?,
-    ))
+    Some(Dispatch::Reply(status, payload))
 }

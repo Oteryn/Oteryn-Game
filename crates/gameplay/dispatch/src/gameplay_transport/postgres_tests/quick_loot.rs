@@ -1356,10 +1356,13 @@ async fn wire_requests(
         if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
             let reply =
                 oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
-            replies.push((
-                reply.status,
-                decode_quick_loot_result(reply.payload).map_err(debug)?,
-            ));
+            let result = if reply.status == CommandStatus::Rejected && !reply.payload.is_empty() {
+                decode_quick_loot_refusal(reply.payload).map_err(debug)?;
+                QuickLootResult { items: Vec::new() }
+            } else {
+                decode_quick_loot_result(reply.payload).map_err(debug)?
+            };
+            replies.push((reply.status, result));
         }
     }
     Ok(replies)
