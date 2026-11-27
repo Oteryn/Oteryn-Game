@@ -1805,9 +1805,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import protected_loot_yields
 
     protected_loot_yields.admit(root, items, provider_order)
-    import inventory_grant_sources
-
-    inventory_grant_sources.admit(root, items, provider_order)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
     robbery_creatures = native_goal_corpse_items.bank_robbery_creatures(root)
@@ -1819,8 +1816,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     late_item_keys = protected_loot_yields.ARBAZILOTH_HARD_ITEMS | {
         f"oteryn:item.tibia.i{item_id}"
-        for item_id in (late_item_ids | outfit_reward_item_profiles.SOURCE_ROWS.keys()
-                        | inventory_grant_sources.IDS)
+        for item_id in late_item_ids | outfit_reward_item_profiles.SOURCE_ROWS.keys()
     }
     late_items = [
         row
@@ -1837,8 +1833,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     cloot3_item_profiles.complete_records(root, items["records"], provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import forge_item_profiles
+    import inventory_grant_sources
 
     forge_item_profiles.project(items, forge_item_profiles.owners(root))
+    # A carried grant adds inventory admission. Forge has a separately migrated
+    # SQL policy, so compose the grant cohort after the Forge projection.
+    granted_items = inventory_grant_sources.admit(root, items, provider_order)
+    house_decoration_actions.apply_top_order(granted_items, house_top_order)
+    item_detail_source_facts.apply_capture_stats(
+        {"records": granted_items}, item_detail_source_facts.load_capture(root)
+    )
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
