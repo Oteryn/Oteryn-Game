@@ -263,6 +263,28 @@ async fn verify(
         x: origin.x + 1,
         ..origin
     };
+    let cache_path = super::lock(&host.view().minimap)
+        .path()
+        .ok_or("N07d missing live cache binding")?;
+    assert!(!cache_path.exists(), "N07d expected fresh cache before periodic save");
+    let expected_first_disk: BTreeSet<_> = first_colors
+        .iter()
+        .map(|(&(floor, x, y), &color)| [i32::from(floor), x, y, i32::from(color)])
+        .collect();
+    // Let the ordinary host schedule write exploration before any marker or logout action.
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            host.poll();
+            if super::lock(&host.view().minimap).save_task.is_none()
+                && let Some(saved) = Saved::read_from(&cache_path)?
+            {
+                assert_eq!(saved.cells.into_iter().collect::<BTreeSet<_>>(), expected_first_disk);
+                assert!(saved.markers.is_empty());
+                return Ok::<_, Error>(());
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    }).await.map_err(|_| "N07d periodic exploration save did not complete")??;
     let key = oteryn_input_actions::NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(16)?,
         state: oteryn_input_actions::ButtonState::Pressed,
@@ -281,9 +303,6 @@ async fn verify(
     host.route(key);
     let view = host.view();
     assert_eq!(super::lock(&view.minimap).markers, [marker.clone()]);
-    let cache_path = super::lock(&view.minimap)
-        .path()
-        .ok_or("N07d missing live cache binding")?;
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             host.poll();
@@ -293,8 +312,6 @@ async fn verify(
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     }).await??;
-    // Pin the periodic-save deadline so only logout can write the next terrain update.
-    super::lock(&host.view().minimap).retry_delay = Duration::from_secs(3600);
     let view = host.view();
     let worker = tokio::spawn(crate::play::run_session(session, commands, outbox));
     let (_, _, _, zoom, tracking) = view.minimap_camera();

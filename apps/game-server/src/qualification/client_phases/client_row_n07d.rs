@@ -56,12 +56,15 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for Recorded<T> {
 async fn admit(
     clients: &SeamClients<'_>,
     tag: u8,
+    initial_admission: bool,
 ) -> TestResult<(
     Session<Recorded<impl AsyncRead + AsyncWrite + Unpin>>,
     Recording,
 )> {
     const INDEX: usize = 1;
-    wait_character_released(clients, INDEX).await?;
+    if initial_admission {
+        wait_character_released(clients, INDEX).await?;
+    }
     let token = if requires_platform_grant(&clients.accounts[INDEX]) {
         platform_row_grant(clients, INDEX).await?
     } else {
@@ -236,6 +239,49 @@ fn n07d_rejects_a_wrong_positive_ground_speed() -> TestResult<()> {
     Ok(())
 }
 
+fn require_logout_commit(session: &str, terminal: bool, loss_seen: bool) -> TestResult {
+    if !terminal || loss_seen {
+        return Err(format!(
+            "N07d accepted logout did not commit release before disconnect: session={session} terminal={terminal} loss_seen={loss_seen}"
+        ).into());
+    }
+    Ok(())
+}
+
+#[test]
+fn n07d_logout_proof_rejects_early_acknowledgement_and_loss_recovery() -> TestResult {
+    require_logout_commit("fixture", true, false)?;
+    assert!(require_logout_commit("fixture", false, false).is_err());
+    assert!(require_logout_commit("fixture", true, true).is_err());
+    Ok(())
+}
+
+async fn assert_logout_committed(clients: &SeamClients<'_>, session: &str) -> TestResult {
+    let (terminal, loss_seen) = tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_as::<_, (bool, bool)>(
+            "SELECT (s.session_state = 3 AND s.current_transport_ref IS NULL \
+                AND NOT EXISTS (SELECT 1 FROM game_durability_admission_character_guards c \
+                    WHERE c.character_id = s.character_id AND c.holder_game_session_id = s.game_session_id) \
+                AND NOT EXISTS (SELECT 1 FROM game_durability_admission_account_guards a \
+                    WHERE a.account_id = s.account_id AND a.presence_character_id = s.character_id)), \
+                (s.control_loss_epoch IS NOT NULL OR s.original_grace_deadline IS NOT NULL) \
+             FROM game_durability_reconnect_sessions s \
+             WHERE s.game_session_id = $1::text::uuid AND s.world_id = encode($2,'hex')::uuid \
+               AND s.character_id = encode($3,'hex')::uuid",
+        )
+        .bind(session)
+        .bind(clients.world.as_slice())
+        .bind(clients.characters[1].as_slice())
+        .fetch_one(&mut connection)
+        .await
+    })
+    .await??;
+    require_logout_commit(session, terminal, loss_seen)?;
+    evidence(&format!("N07d logout_commit session={session} terminal=true loss_seen=false socket=held"));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let capture_dir = required("E2E_ALL_CAPTURE_DIR")?;
     let root = Path::new(&capture_dir);
@@ -256,7 +302,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         x: origin.x + 1,
         ..origin
     };
-    let (mut client, incoming) = admit(clients, 0x3d).await?;
+    let (mut client, incoming) = admit(clients, 0x3d, true).await?;
     let first_id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let first_capture = envelope(
         &first_id,
@@ -336,8 +382,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         logout.result_server_sequence,
         captured_bytes(&incoming)?,
     )?;
+    assert_logout_committed(clients, &first_id).await?;
     drop(client);
-    let (relogged, incoming) = admit(clients, 0x3e).await?;
+    let (relogged, incoming) = admit(clients, 0x3e, false).await?;
     let second_id = uuid_text(relogged.join_snapshot().game_session_id.as_bytes());
     if first_id == second_id {
         return Err("N07d relog retained the old session".into());
