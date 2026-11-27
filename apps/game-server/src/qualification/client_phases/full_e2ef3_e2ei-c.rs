@@ -754,14 +754,17 @@ async fn backpack(client: &mut DevClientSession) -> TestResult<BTreeMap<u32, u64
     Ok(totals(&container(client, handle).await?))
 }
 
-async fn native_corpse_id(clients: &SeamClients<'_>, corpse: &Corpse) -> TestResult<[u8; 16]> {
+pub(in crate::qualification) async fn native_corpse_id(
+    clients: &SeamClients<'_>,
+    corpse: &WorldSpatialEntity,
+) -> TestResult<[u8; 16]> {
     use crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT;
     use crate::foundation::{
         ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
     };
     use sqlx::Connection as _;
 
-    let position = corpse.entity.position;
+    let position = corpse.position;
     let cell = [
         position.x.to_be_bytes().as_slice(),
         position.y.to_be_bytes().as_slice(),
@@ -821,7 +824,7 @@ async fn native_corpse_id(clients: &SeamClients<'_>, corpse: &Corpse) -> TestRes
             ActorLocalId(u32::try_from(local_id)?),
             ActorLocalGeneration(local_generation.parse()?),
         ));
-        if actor.corpse_identity() == corpse.entity.entity.identity
+        if actor.corpse_identity() == corpse.entity.identity
             && bound
                 .replace(<[u8; 16]>::try_from(uuid.as_slice())?)
                 .is_some()
@@ -829,13 +832,7 @@ async fn native_corpse_id(clients: &SeamClients<'_>, corpse: &Corpse) -> TestRes
             return Err("manual-click spatial corpse matches multiple item UUIDs".into());
         }
     }
-    bound.ok_or_else(|| {
-        format!(
-            "manual-click missing native UUID for {:?}",
-            corpse.entity.entity
-        )
-        .into()
-    })
+    bound.ok_or_else(|| format!("manual-click missing native UUID for {:?}", corpse.entity).into())
 }
 
 async fn manual_click(
@@ -854,7 +851,7 @@ async fn manual_click(
         )
         .await?;
     *step = "manual-click";
-    let uuid = native_corpse_id(clients, &corpse).await?;
+    let uuid = native_corpse_id(clients, &corpse.entity).await?;
     let mut expected = backpack(live).await?;
     for (definition, count) in totals(&corpse.entries) {
         *expected.entry(definition).or_default() += count;

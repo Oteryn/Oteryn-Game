@@ -10,7 +10,7 @@ use std::{collections::BTreeMap, future::Future};
 mod e2ei_a;
 
 #[path = "full_e2ef3_e2ei-c.rs"]
-mod e2ei_c;
+pub(super) mod e2ei_c;
 
 #[path = "full_e2ef3_e2ei-b.rs"]
 mod full_e2ef3_e2ei_b;

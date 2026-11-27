@@ -252,15 +252,16 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         if stopped.disposition != AttackIntentDisposition::Ok {
             return Err(format!("P19 first attack stop refused: {stopped:?}").into());
         }
-        let source = corpse_contents(&mut client, corpse).await?;
+        let (corpse_entity, source) = corpse_contents(&mut client, corpse).await?;
         let expected_slivers: u64 = source.iter().filter(|item| item.item_definition_ref == sliver)
             .map(|item| u64::from(item.count.get())).sum();
         let mut destination = backpack_quantities(&client)?;
         add_quantities(&mut destination, &source);
-        let expected_items = corpse_item_ids(clients, corpse, source.len()).await?;
+        let durable_corpse = full_e2ef3::e2ei_c::native_corpse_id(clients, &corpse_entity).await?;
+        let expected_items = corpse_item_ids(clients, durable_corpse, source.len()).await?;
         quick_loot_corpse(&mut client, corpse, &expected_items).await?;
         let after = rewards(&mut client).await?;
-        let remaining_items = corpse_contents(&mut client, corpse).await?.len();
+        let remaining_items = corpse_contents(&mut client, corpse).await?.1.len();
         if remaining_items != 0 {
             return Err(format!("P19 Quick Loot left {remaining_items} stacks in exact corpse {corpse:?}").into());
         }
@@ -696,12 +697,10 @@ async fn corpse_item_ids(
         let mut db = sqlx::PgConnection::connect(clients.url).await?;
         sqlx::query_scalar::<_, Vec<u8>>(
             "SELECT uuid_send(e.item_instance_id) FROM game_item_corpse_container_entries e
-             JOIN game_item_instances i USING(item_instance_id)
-             WHERE e.world_id=encode($1,'hex')::uuid
-               AND e.parent_item_instance_id=encode($2,'hex')::uuid
-             AND i.lifecycle=1 ORDER BY e.item_instance_id LIMIT $3",
+             JOIN game_item_instances i USING(item_instance_id, world_id)
+             WHERE e.parent_item_instance_id=encode($1,'hex')::uuid
+               AND i.lifecycle=1 ORDER BY e.item_instance_id LIMIT $2",
         )
-        .bind(clients.world.as_slice())
         .bind(corpse.as_slice())
         .bind(i64::try_from(expected_count).unwrap_or(i64::MAX - 1).saturating_add(1))
         .fetch_all(&mut db)
@@ -774,7 +773,7 @@ async fn quick_loot_corpse(
 async fn corpse_contents(
     client: &mut DevClientSession,
     identity: [u8; 16],
-) -> TestResult<Vec<oteryn_protocol_oteryn::item_view::ItemEntry>> {
+) -> TestResult<(oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity, Vec<oteryn_protocol_oteryn::item_view::ItemEntry>)> {
     let corpse = client
         .world_entities()
         .and_then(|entities| {
@@ -782,6 +781,7 @@ async fn corpse_contents(
                 entity.entity.identity == identity && entity.kind == EntityKind::Corpse
             })
         })
+        .copied()
         .ok_or("P19 exact corpse absent before open")?;
     let (EntityDetail::Object {
         item_handle: Some(handle),
@@ -812,7 +812,7 @@ async fn corpse_contents(
                 {
                     continue;
                 }
-                return TestResult::Ok(container.entries);
+                return TestResult::Ok((corpse, container.entries));
             }
         }
     })
