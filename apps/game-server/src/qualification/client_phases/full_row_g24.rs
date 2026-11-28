@@ -86,6 +86,23 @@ async fn finish(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+// Fixture preparation has no market outcome to verify. Keep its retry policy
+// separate from the single-attempt logouts in the trade and durability checks.
+async fn finish_fixture_setup(client: &mut DevClientSession, role: &str) -> TestResult {
+    let mut observe = |attempt, frame: &str| {
+        evidence(&format!("G24 fixture-logout role={role} attempt={attempt} {frame}"));
+    };
+    let (result, detail, attempts, timed_out) =
+        logout_retrying_busy_observed(client, Some(&mut observe)).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "step=fixture-logout role={role} attempts={attempts} timed-out={timed_out} observed={detail}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 fn search_term(name: &str) -> String {
     name.chars().take(4).collect::<String>().to_lowercase()
 }
@@ -334,7 +351,7 @@ async fn settle(
 
     let mut seller = connect_character(seller_scope, 0x8b, 0).await?;
     character_prep::grant_item(&seller, id, 1).await?;
-    finish(&mut seller).await?;
+    finish_fixture_setup(&mut seller, "seller").await?;
     drop(seller);
     let mut seller = connect_character(seller_scope, 0x8b, 0).await?;
     at_depot(&mut seller, world).await?;
@@ -586,7 +603,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "g24-bank".into(),
     )
     .await?;
-    finish(&mut client).await?;
+    finish_fixture_setup(&mut client, "buyer").await?;
     drop(client);
     let mut client = connect_character(&buyer_scope, 0x8a, 0).await?;
     at_depot(&mut client, world).await?;
