@@ -1,6 +1,22 @@
 use super::*;
 
 #[test]
+fn gameplay_owner_failure_retains_its_serve_error() -> Result<(), Box<dyn std::error::Error>> {
+    let error = classify_exit(
+        &ResetWatch::default(),
+        Some(crate::gameplay_transport::GameplayServeError::OwnerUnavailable),
+    )
+    .err()
+    .ok_or("a failed gameplay owner must restart")?;
+    assert!(matches!(
+        error,
+        BootError::GameplayServe(crate::gameplay_transport::GameplayServeError::OwnerUnavailable)
+    ));
+    assert!(error.to_string().contains("gameplay owner unavailable"));
+    Ok(())
+}
+
+#[test]
 fn reset_drain_exit_is_retryable_and_retains_the_observed_reset()
 -> Result<(), Box<dyn std::error::Error>> {
     let state = ResetWatch::default();
@@ -10,7 +26,9 @@ fn reset_drain_exit_is_retryable_and_retains_the_observed_reset()
             &state,
             Some(crate::gameplay_transport::GameplayServeError::InvalidLimits)
         ),
-        Err(BootError::Serve)
+        Err(BootError::GameplayServe(
+            crate::gameplay_transport::GameplayServeError::InvalidLimits
+        ))
     ));
     state.requested.store(true, Ordering::Release);
     let error = classify_exit(&state, None)

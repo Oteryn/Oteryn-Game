@@ -16,7 +16,7 @@
     ["G13", "spellbook details query + spell augments (cap 0449, cmd 0733, mig 1710)"],
     ["G14", "server modal dialog query/answer (cap 0450, cmd 0736/0737)"],
     ["G15", "analyser item + party hunt queries, loot tracker (cmd 0734/0735)"],
-    ["G16", "daily reward details and durable one-click shrine claim (cmd 0738/0354)"],
+    ["G16", "daily reward details, picker, pick claim (cmd 0738/6122/6123, mig 1711)"],
     ["G17", "returner reward query/claim (cmd 6124/6125, mig 1712)"],
     ["G18", "house podium preview (cmd 0739)"],
     ["G19", "battle list metadata query (cmd 0740)"],

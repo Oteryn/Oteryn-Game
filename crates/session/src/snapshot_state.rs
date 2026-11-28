@@ -5,6 +5,7 @@ use super::*;
 pub(super) struct SnapshotState {
     pub(super) world_spatial_observation: Option<WorldSpatialObservation>,
     pub(super) entities: Option<WorldEntities>,
+    pub(super) replay: replay_capture::ReplayRetention,
     pub(super) world_object_overlay: Option<Vec<WorldObjectOverlayEntry>>,
     pub(super) actor_vitals: Option<ActorVitals>,
     pub(super) combat_state: Option<ActorCombatState>,
@@ -64,6 +65,14 @@ impl SnapshotState {
                         actor_position: snapshot.actor_position,
                     });
                     state.entities = Some(WorldEntities::from_snapshot(&snapshot, lights));
+                    state.replay.world_snapshot = Some(std::sync::Arc::new(GatedSnapshot {
+                        domain_id: domain.domain_id,
+                        snapshot_type: domain.snapshot_type,
+                        revision: domain.revision,
+                        payload: domain.payload.to_vec(),
+                    }));
+                    state.replay.world_sequence = sequence;
+                    state.replay.world_deltas.clear();
                     state.spatial_revision = domain.revision;
                 }
                 (
@@ -272,7 +281,11 @@ impl SnapshotState {
             }
         }
 
-        if previous.is_none() || domains.iter().any(|domain| domain.domain_id == 21) {
+        if previous.is_none()
+            || domains.iter().any(|domain| {
+                domain.domain_id == oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE
+            })
+        {
             let references = previous
                 .and_then(|state| state.appearance.as_ref())
                 .and_then(appearance_state::item_references);
@@ -296,6 +309,8 @@ impl SnapshotState {
                     .content_generation,
                 appearance_items,
             )?;
+            state.replay.appearance_sequence = state.appearance.as_ref().map(|_| sequence);
+            state.replay.appearance_deltas.clear();
         }
         crate::activity_handoff::validate_projection(
             selected_capabilities,

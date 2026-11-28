@@ -963,6 +963,37 @@ impl PreparedNativeCombatCast {
                     .install_preflighted(proof);
             }
         }
+        #[cfg(feature = "qualification-cast-evidence")]
+        if result.applied
+            && let Some(magnitude) = self.magnitude.as_deref()
+        {
+            let command = self.batch.command;
+            for &(target, before, after) in magnitude.base_damage_evidence() {
+                if result.effects.iter().any(|effect| {
+                    effect.target == target
+                        && effect
+                            .health
+                            .is_some_and(|health| health.committed_health_loss().is_some())
+                }) {
+                    let target_id = target
+                        .placement_identity()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    let session_id = command
+                        .game_session_id()
+                        .as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    eprintln!(
+                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after}",
+                        command.command_id().get(),
+                        target.actor_local_generation()
+                    );
+                }
+            }
+        }
         result
     }
 }
@@ -973,7 +1004,17 @@ pub struct CheckedNativeCommit {
     owner: super::CheckedOwnerBatch,
 }
 
+#[cfg_attr(feature = "qualification-cast-evidence", track_caller)]
 fn reject<T>() -> Result<T, SpellCastDisposition> {
+    #[cfg(feature = "qualification-cast-evidence")]
+    {
+        let source = std::panic::Location::caller();
+        eprintln!(
+            "SEAM_EVIDENCE native_owner_refused file={} line={}",
+            source.file(),
+            source.line()
+        );
+    }
     Err(SpellCastDisposition::Rejected)
 }
 
@@ -1269,7 +1310,7 @@ async fn prepare_source_self_from_owners(
             && p.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            append("appearance:effect/magic_green");
+            append(crate::spell::spell_presentations::SOURCE_MAGIC_GREEN_CUE);
         }
         if let Some(effect) = p.spell()["execution"]["native_behavior"]["parameters"]
             ["presentation"]["effect_asset_binding"]
@@ -1480,7 +1521,7 @@ async fn prepare_source_self_from_owners(
             && p.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            selected_cues.insert("appearance:effect/magic_green");
+            selected_cues.insert(crate::spell::spell_presentations::SOURCE_MAGIC_GREEN_CUE);
         }
         if let Some(effect) = p.spell()["execution"]["native_behavior"]["parameters"]
             ["presentation"]["effect_asset_binding"]
@@ -2676,6 +2717,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter_output,
             native_health_observations,
         );
+        let rune_cast = rune.is_some();
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
             let (owner,access,writer,guards,parameter_output,native_health_observations)=ctx;
             let (permit,pending)=writer.parts();
@@ -2787,10 +2829,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
                         Box::pin(refusal_on_live_transaction(&mut tx)).await?;
-                        #[cfg(test)]
-                        eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
+                        #[cfg(any(test, feature = "qualification-cast-evidence"))]
+                        eprintln!("SEAM_EVIDENCE native_combat_prepare spell={} command={command_id} result={disposition:?} ordinary={} direct_companion={}",spell.key,ordinary_combat::applicable(spell),native_companion_item_cast::direct_applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
                             let refused=rune_item_cast::use_refusal(&mut tx,&authority,runtime,states,room,objects,spell,actor,rune,legacy,disposition,now).await;
+                            let feedback = match disposition {
+                                SpellCastDisposition::LevelTooLow => Some("You do not have enough level."),
+                                SpellCastDisposition::MagicLevelTooLow => Some("You do not have enough magic level."),
+                                _ => None,
+                            };
+                            if let Some(text) = feedback {
+                                owner.states.chat.push_party_spell_feedback(session, text);
+                            }
                             return Ok(NativeCastDispatch::RuneRefused(refused));
                         }
                         return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,vitals:super::observe_vitals(runtime,states,actor,session)}))
@@ -3126,7 +3176,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,
-            Err(_) => NativeCastDispatch::Pending,
+            Err(error) => {
+                if rune_cast {
+                    super::super::operator_event(&format!(
+                        "event=native_rune_cast_pending command_id={command_id} error={error:?}"
+                    ));
+                }
+                NativeCastDispatch::Pending
+            }
         }
     }
 }

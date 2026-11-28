@@ -485,7 +485,7 @@ pub(super) fn closed_collision(id: u32) -> (bool, bool) {
     // Crystal 201189f8 appearances.dat and items.xml: unblocked counter, sight-open gates.
     match id {
         18025 => (false, false),
-        2177 | 2179 | 39934..=39937 | 49684..=49686 => (true, false),
+        2177 | 2179 | 5733 | 5735 | 39934..=39937 | 49684..=49686 => (true, false),
         _ => (true, true),
     }
 }

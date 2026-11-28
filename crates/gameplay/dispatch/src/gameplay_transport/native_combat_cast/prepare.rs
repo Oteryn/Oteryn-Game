@@ -207,8 +207,8 @@ pub async fn prepare_from_owners(
     };
     let elemental = if parameters.get("elemental_stance").is_some() {
         owned
-            .elemental_stance(now.get())
-            .ok_or(SpellCastDisposition::Rejected)?
+            .elemental_stance_for_cast(now.get())
+            .map_err(|_| SpellCastDisposition::Rejected)?
     } else {
         ElementalStance::None
     }; // unconsumed for these recipes
