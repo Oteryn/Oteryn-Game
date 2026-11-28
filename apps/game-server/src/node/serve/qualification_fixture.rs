@@ -46,6 +46,9 @@ const CHALLENGE_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000013";
 
 #[cfg(feature = "qualification-spawn")]
 const Q_S04B_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+#[cfg(feature = "qualification-spawn")]
+const Q_S04B_PEER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000021";
+#[cfg(feature = "qualification-spawn")]
 const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 
 #[cfg(feature = "qualification-spawn")]
@@ -59,6 +62,7 @@ const S02_SORCERER_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b2";
 #[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
+        "s04b-level" => Some((crate::durability::character_build::NO_VOCATION, 3)),
         "s02-knight" => Some(("knight", 8)),
         "s02-sorcerer" => Some(("sorcerer", 8)),
         "s08-knight" => Some(("knight", 8)),
@@ -777,6 +781,7 @@ async fn prepare_build(
             | "c11-knight"
             | "c12-monk"
             | "c06-sorcerer"
+            | "s04b-level"
             | "s13-party"
             | "w20b-light"
             | "s02-knight"
@@ -817,6 +822,7 @@ async fn prepare_build(
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
+            | ("s04b-level", Q_S04B_ACCOUNT | Q_S04B_PEER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s02-knight", S02_KNIGHT_ACCOUNT)
