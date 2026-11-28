@@ -209,7 +209,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "Private messaging requires level 3; leveling and entitlement acquisition are outside this journey",
     );
     let mut a = prepare_sender(&owner_clients, 0xe1, "q_s04b").await?;
-    let mut b = prepare_sender(&peer_clients, 0xe2, "q_s04b_peer").await?;
+    let mut b =
+        full_e2ef4::keep_alive(&mut a, prepare_sender(&peer_clients, 0xe2, "q_s04b_peer")).await?;
     let result: TestResult = async {
         let a_name = own_name(&a)?;
         let b_name = own_name(&b)?;
