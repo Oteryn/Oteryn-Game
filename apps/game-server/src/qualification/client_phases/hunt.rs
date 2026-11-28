@@ -141,11 +141,36 @@ pub(super) async fn hunt_target(
         corpse.entity
     ));
     let handle = handle.ok_or("hunt corpse has no server-issued item handle")?;
-    let used = client.use_item(handle).await?;
-    if used.status != CommandStatus::Accepted
-        || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let previous_container = client.open_container().cloned();
+    if bounded_corpse_wait.is_some()
+        && previous_container
+            .as_ref()
+            .is_some_and(|view| view.container_handle == Some(handle))
     {
-        return Err("hunt corpse USE refused".into());
+        return Err("hunt corpse container was already open before USE".into());
+    }
+    let mut used = client.use_item(handle).await?;
+    if bounded_corpse_wait.is_some()
+        && (used.status, used.disposition) == (CommandStatus::Rejected, UseDisposition::Rejected)
+    {
+        if client.open_container() != previous_container.as_ref() {
+            return Err("rejected corpse USE changed the open container".into());
+        }
+        evidence(&format!(
+            "W13_CORPSE_USE_RETRY entity={:?} previous_command_id={} status={:?} disposition={:?}",
+            corpse.entity, used.command_id, used.status, used.disposition
+        ));
+        let next = tokio::time::timeout(Duration::from_secs(20), client.use_item(handle)).await??;
+        if used.command_id.checked_add(1) != Some(next.command_id) {
+            return Err(
+                format!("corpse USE retry did not issue the next command: {next:?}").into(),
+            );
+        }
+        used = next;
+    }
+    if (used.status, used.disposition) != (CommandStatus::Accepted, UseDisposition::Committed) {
+        return Err(format!("hunt corpse USE refused: {used:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while client

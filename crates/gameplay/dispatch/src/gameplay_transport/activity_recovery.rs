@@ -34,7 +34,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
             return Err(crate::durability::DurabilityError::Unavailable);
         };
-        if admitted.continuity.non_activity_session == Some(fence.game_session_id)
+        #[cfg(test)]
+        let force_probe = ACTIVITY_INPUT_HOLDER_BUSY.try_with(|_| ()).is_ok();
+        #[cfg(not(test))]
+        let force_probe = false;
+        if !force_probe
+            && admitted.continuity.non_activity_session == Some(fence.game_session_id)
             && fence.game_session_id == admitted.game_session_id
         {
             return Ok(());
@@ -44,9 +49,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
         budget
             .retry_command_guard(async || {
-                ActivityHandoffOwner::new(self.root.clone())
+                let decision = ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
-                    .await
+                    .await;
+                #[cfg(test)]
+                if matches!(
+                    &decision,
+                    Err(crate::durability::DurabilityError::RootUnavailable)
+                ) {
+                    let _ = ACTIVITY_INPUT_HOLDER_BUSY.try_with(|busy| busy.notify_one());
+                }
+                decision
             })
             .await
     }
@@ -188,4 +201,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .map(Some)
         .map_err(|_| ())
     }
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static ACTIVITY_INPUT_HOLDER_BUSY: std::sync::Arc<tokio::sync::Notify>;
 }
