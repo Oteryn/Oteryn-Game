@@ -14,6 +14,17 @@
 mod historical_source;
 pub use historical_source::ConditionHistoricalSource;
 
+struct TickClock {
+    now: u64,
+    pass_at: u64,
+}
+
+impl From<u64> for TickClock {
+    fn from(now: u64) -> Self {
+        Self { now, pass_at: now }
+    }
+}
+
 enum TickSelection<'a, S> {
     All,
     SourceApplication(&'a dyn Fn(&ConditionProvenance<S>) -> bool),
@@ -1550,7 +1561,7 @@ impl<S: Clone> ConditionStore<S> {
     /// Instances whose time is over and whose ticks are all dealt end here.
     pub fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
         self.take_due_matching(
-            now,
+            now.into(),
             facts,
             true,
             TickSelection::All,
@@ -1562,7 +1573,7 @@ impl<S: Clone> ConditionStore<S> {
     /// The caller can settle its effects before selecting the next occurrence.
     pub fn take_next_due(&mut self, now: u64, facts: TickFacts) -> Option<ConditionTick<S>> {
         self.take_due_matching(
-            now,
+            now.into(),
             facts,
             true,
             TickSelection::All,
@@ -1584,7 +1595,7 @@ impl<S: Clone> ConditionStore<S> {
         let matches =
             |provenance: &ConditionProvenance<S>| provenance.source.as_ref() == Some(source);
         self.take_due_matching(
-            now,
+            now.into(),
             facts,
             true,
             TickSelection::SourceApplication(&matches),
@@ -1595,7 +1606,7 @@ impl<S: Clone> ConditionStore<S> {
     /// Independent qualified regeneration must not drain unknown combat ticks.
     pub fn take_due_non_damage(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
         self.take_due_matching(
-            now,
+            now.into(),
             facts,
             false,
             TickSelection::All,
@@ -1609,7 +1620,14 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, TickSelection::All, rewards, usize::MAX)
+        self.take_due_matching(
+            now.into(),
+            facts,
+            true,
+            TickSelection::All,
+            rewards,
+            usize::MAX,
+        )
     }
     pub fn take_due_non_damage_with_regeneration(
         &mut self,
@@ -1617,12 +1635,19 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false, TickSelection::All, rewards, usize::MAX)
+        self.take_due_matching(
+            now.into(),
+            facts,
+            false,
+            TickSelection::All,
+            rewards,
+            usize::MAX,
+        )
     }
     /// Tick just the named regeneration condition for an owner without combat cadence.
     pub fn take_due_spell_regeneration(&mut self, now: u64, key: &str) -> Vec<ConditionTick<S>> {
         self.take_due_matching(
-            now,
+            now.into(),
             TickFacts::default(),
             false,
             TickSelection::SpellRegeneration(key),
@@ -1631,21 +1656,41 @@ impl<S: Clone> ConditionStore<S> {
         )
     }
 
-    fn take_due_matching(
+    /// Player periodic turns compare actual deadlines while sharing the existing
+    /// millisecond pass with legacy player condition writes.
+    pub fn take_due_in_player_pass(
         &mut self,
         now: u64,
+        facts: TickFacts,
+        damage: bool,
+    ) -> Vec<ConditionTick<S>> {
+        let pass_at = self.pass_at.max(now - now % MICROS_PER_MS);
+        self.take_due_matching(
+            TickClock { now, pass_at },
+            facts,
+            damage,
+            TickSelection::All,
+            RegenerationPzRewards::default(),
+            usize::MAX,
+        )
+    }
+
+    fn take_due_matching(
+        &mut self,
+        clock: TickClock,
         facts: TickFacts,
         damage: bool,
         selection: TickSelection<'_, S>,
         regeneration_rewards: RegenerationPzRewards,
         limit: usize,
     ) -> Vec<ConditionTick<S>> {
+        let TickClock { now, pass_at } = clock;
         if !matches!(selection, TickSelection::SpellRegeneration(_)) {
             self.cleanse_immunities
                 .retain(|immunity| immunity.until > now);
         }
-        if self.pass_at != now {
-            self.pass_at = now;
+        if self.pass_at != pass_at {
+            self.pass_at = pass_at;
             self.pass_ticks = 0;
         }
         let mut ticks = Vec::new();
