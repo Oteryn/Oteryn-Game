@@ -49,10 +49,11 @@ the unchanged current Atelier projection. Malformed or stale admission input is
 rejected; an unavailable or indeterminate write ends the connection so the same
 occurrence can be replayed. The committed Wheel and Atelier projections are
 reloaded before the stat consumer runs, and admission restores both after relog.
-When a fresh durable read proves that admission has not initialized an Atelier
-row, the query returns `refused=true`, revision zero and empty collections. This
-lets an ineligible Character open the panel without ending play. It does not
-create initial gems; initialization remains owned by the existing admission path.
+Atelier initialization runs on admission OR the first refresh after Premium
+becomes current. Both paths use the same idempotent initializer, which checks
+the current session fence and eligibility in the transaction that grants initial
+gems. If the Character remains ineligible and has no Atelier row, the query
+returns `refused=true`, revision zero and empty collections without ending play.
 Storage-read failure still returns unavailable. An existing empty Atelier row is
 a valid normal projection and is distinct from an absent row.
 

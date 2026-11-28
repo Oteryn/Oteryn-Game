@@ -43,6 +43,7 @@ enum Case {
     WholeNestedReveal,
     NestedRevealOrder,
     NestedGrade,
+    PremiumRefresh,
     NestedGold,
     WholeNestedGold,
     ManyNestedCoins,
@@ -70,6 +71,7 @@ impl Case {
                 | Self::Dismantle
                 | Self::SwitchDomain
                 | Self::GradeUp
+                | Self::PremiumRefresh
                 | Self::ExAction
                 | Self::Resources
                 | Self::ResourcesUnselected
@@ -272,6 +274,14 @@ fn wheel_atelier_wire_share_fresh_exhaustion_but_keep_replay_and_queries_open() 
     check(Case::ExAction)
 }
 
+#[test]
+fn atelier_wire_first_premium_refresh_initializes_once() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    check(Case::PremiumRefresh)
+}
+
 fn check(case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -291,6 +301,19 @@ async fn query(
 ) -> TestResult<wire::AtelierReply> {
     wire::decode_reply(&send_atelier(owner, admitted, wire::COMMAND_TYPE_ATELIER_QUERY, &[]).await?)
         .map_err(debug)
+}
+
+async fn premium_refresh(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult<wire::v2::AtelierReply> {
+    let reply = send_atelier(
+        owner,
+        admitted,
+        wire::v2::COMMAND_TYPE_ATELIER_V2_QUERY,
+        &wire::v2::encode_query(),
+    ).await?;
+    wire::v2::decode_reply(&reply).map_err(debug)
 }
 
 async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
@@ -550,7 +573,7 @@ fn scenario(case: Case) -> TestResult {
         let room = pin.qualified_room().clone();
         let (channel_pin, resource_bundle) = if matches!(
             case,
-            Case::Resources | Case::ResourcesUnselected | Case::Reshape
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape | Case::PremiumRefresh
         ) {
             let (channel_pin, bundle) = resources::bundle_fixture(&h, &pin, world).await?;
             (channel_pin, Some(bundle))
@@ -563,7 +586,7 @@ fn scenario(case: Case) -> TestResult {
             room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
-        let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+        let (consumer, clock, activation, entitlement) = purchase_fixture::current(id(40));
         h.root
             .latch_premium_activation(
                 &activation.activation_id,
@@ -572,8 +595,9 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(debug)?;
+        let free_consumer = Arc::new(crate::premium::PremiumConsumer::default());
         let free = SpellPremiumCoordinator::new(
-            Default::default(),
+            Arc::clone(&free_consumer),
             Some(clock.clone()),
             Some(activation.clone()),
             Some(h.root.clone()),
@@ -641,12 +665,15 @@ fn scenario(case: Case) -> TestResult {
         )
         .await?;
         super::super::tutorial_vitals_fixture::admit(&owner, &deps, &admission_request).await?;
+        if matches!(case, Case::PremiumRefresh) {
+            owner.premium_coordinator = Some(&free);
+        }
         owner.admit_wheel_session(session).await;
         let (current, _) =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
                 .await?;
-        if matches!(case, Case::Resources | Case::Reshape) {
+        if matches!(case, Case::Resources | Case::Reshape | Case::PremiumRefresh) {
             deps.runtime
                 .lock()
                 .await
@@ -667,7 +694,7 @@ fn scenario(case: Case) -> TestResult {
                 wire::CAPABILITY_WHEEL_ALLOCATION_V1,
                 wire::resources::CAPABILITY_ATELIER_RESOURCES_V1,
             ]
-        } else if matches!(case, Case::Reshape) {
+        } else if matches!(case, Case::Reshape | Case::PremiumRefresh) {
             &[
                 wire::CAPABILITY_WHEEL_ALLOCATION_V1,
                 wire::v2::CAPABILITY_GEM_ATELIER_V2,
@@ -676,7 +703,7 @@ fn scenario(case: Case) -> TestResult {
             &[wire::CAPABILITY_WHEEL_ALLOCATION_V1]
         };
         admitted.continuity.selected_capabilities =
-            if matches!(case, Case::Resources | Case::Reshape) {
+            if matches!(case, Case::Resources | Case::Reshape | Case::PremiumRefresh) {
                 crate::gameplay_transport::connection::fresh_capability_selection(
                     &owner,
                     capabilities,
@@ -698,6 +725,32 @@ fn scenario(case: Case) -> TestResult {
         if matches!(case, Case::Resources) {
             assert!(admitted.continuity.selected_capabilities.contains(148));
             assert!(admitted.continuity.selected_capabilities.contains(272));
+        }
+        if matches!(case, Case::PremiumRefresh) {
+            let before = scope_footprint(&h).await?;
+            assert!(before["atelier"].is_null());
+            let initial = premium_refresh(&owner, &mut admitted).await?;
+            assert!(!initial.premium);
+            assert!(initial.refused && initial.revision == 0 && initial.gems.is_empty());
+            assert_eq!(scope_footprint(&h).await?, before);
+
+            free_consumer.prove_for_test(entitlement);
+            let refreshed = premium_refresh(&owner, &mut admitted).await?;
+            assert!(refreshed.premium);
+            assert!(!refreshed.refused, "the first current Premium refresh initializes Atelier");
+            let stored = super::stored(&h).await?;
+            assert!(stored.revision > 0 && !stored.gems.is_empty());
+            assert_eq!(refreshed.revision, stored.revision);
+            assert_eq!(refreshed.gems.len(), stored.gems.len());
+            let after = scope_footprint(&h).await?;
+            assert_eq!(after["receipts"], 1);
+            assert_eq!(premium_refresh(&owner, &mut admitted).await?, refreshed);
+            assert_eq!(scope_footprint(&h).await?, after);
+
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
         }
         let mut before = query(&owner, &mut admitted).await?;
         assert_eq!(before.gems.len(), 8);
@@ -760,7 +813,7 @@ fn scenario(case: Case) -> TestResult {
             1
         };
         let mutation = match case {
-            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape | Case::PremiumRefresh => {
                 return Err("resource query reached a mutation planner".into());
             }
             Case::Reveal
@@ -874,7 +927,7 @@ fn scenario(case: Case) -> TestResult {
             "paid resources stay with the existing item and stash owners"
         );
         let expected_fee = match case {
-            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape | Case::PremiumRefresh => {
                 return Err("resource query reached mutation verification".into());
             }
             Case::Reveal
@@ -972,7 +1025,7 @@ fn scenario(case: Case) -> TestResult {
             .bind(request.occurrence.as_slice()).fetch_optional(&h.pool).await?;
         assert_eq!(fee, expected_fee);
         let advertised_fee = match case {
-            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape | Case::PremiumRefresh => {
                 return Err("resource query reached a paid quote".into());
             }
             Case::Reveal

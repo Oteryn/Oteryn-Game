@@ -121,16 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &self.wheel_ruleset,
             self.premium_coordinator,
         ) {
-            let _ = self
-                .execute_gem_atelier(
-                    session,
-                    super::super::atelier::GemBuildCommand::Atelier(
-                        crate::durability::character_atelier::AtelierRequest::initialize(
-                            fence.character_id,
-                        ),
-                    ),
-                )
-                .await;
+            let _ = self.initialize_atelier_session(fence.item_fence()).await;
         }
         let atelier = self
             .root
