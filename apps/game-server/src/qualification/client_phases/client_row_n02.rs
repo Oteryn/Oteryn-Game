@@ -13,11 +13,7 @@ const CORE_SLOT: usize = 20;
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write;
-    let Some(root) =
-        std::env::var_os("N02_CAPTURE_DIR").or_else(|| std::env::var_os("E2E_ALL_CAPTURE_DIR"))
-    else {
-        return Ok(());
-    };
+    let root = std::env::var_os("N02_CAPTURE_DIR").ok_or("missing fresh N02_CAPTURE_DIR")?;
     std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
