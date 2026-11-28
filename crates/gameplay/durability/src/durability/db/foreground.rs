@@ -1,6 +1,6 @@
 //! Bounded foreground preference for the single ready durability holder.
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use std::time::{Duration, Instant};
 
 #[derive(Default)]
@@ -24,7 +24,7 @@ pub(super) struct HolderPriority {
 
 tokio::task_local! {
     static BACKGROUND_PROGRESS: Vec<(Arc<HolderPriority>, Arc<AtomicBool>)>;
-    static BACKGROUND_OPERATION: Option<(Arc<HolderPriority>, Arc<AtomicBool>)>;
+    static BACKGROUND_OPERATION: Option<(Arc<HolderPriority>, Weak<AtomicBool>)>;
 }
 
 pub(super) async fn operation<F: Future>(priority: &Arc<HolderPriority>, future: F) -> F::Output {
@@ -34,15 +34,16 @@ pub(super) async fn operation<F: Future>(priority: &Arc<HolderPriority>, future:
         .try_with(|operation| {
             operation
                 .as_ref()
-                .is_some_and(|(current, _)| Arc::ptr_eq(current, priority))
+                .is_some_and(|(current, grant)| Arc::ptr_eq(current, priority) && grant.strong_count() > 0)
         })
         .unwrap_or(false)
     {
         return future.await;
     }
+    let grant = Arc::new(AtomicBool::new(false));
     BACKGROUND_OPERATION
         .scope(
-            Some((Arc::clone(priority), Arc::new(AtomicBool::new(false)))),
+            Some((Arc::clone(priority), Arc::downgrade(&grant))),
             future,
         )
         .await
@@ -67,14 +68,14 @@ pub(super) async fn operation_progress<F: Future>(
 ) -> (F::Output, bool) {
     if let Some(granted) = BACKGROUND_OPERATION.try_with(|operation| {
         operation.as_ref().and_then(|(current, granted)|
-            Arc::ptr_eq(current, priority).then(|| Arc::clone(granted)))
+            (Arc::ptr_eq(current, priority) && granted.strong_count() > 0).then(|| granted.clone()))
     }).ok().flatten() {
         let output = future.await;
-        return (output, granted.load(Ordering::Relaxed));
+        return (output, granted.upgrade().is_some_and(|grant| grant.load(Ordering::Relaxed)));
     }
     let granted = Arc::new(AtomicBool::new(false));
     let output = BACKGROUND_OPERATION
-        .scope(Some((Arc::clone(priority), Arc::clone(&granted))), future)
+        .scope(Some((Arc::clone(priority), Arc::downgrade(&granted))), future)
         .await;
     (output, granted.load(Ordering::Relaxed))
 }
@@ -124,9 +125,18 @@ impl HolderPriority {
     }
 
     pub(super) fn background_can_attempt(&self, now: Instant) -> bool {
-        self.state
-            .lock()
-            .is_ok_and(|state| !state.prefers_foreground(now))
+        self.current_grant().is_some_and(|grant| grant.load(Ordering::Relaxed))
+            || self.state.lock().is_ok_and(|state| !state.prefers_foreground(now))
+    }
+
+    fn current_grant(&self) -> Option<Arc<AtomicBool>> {
+        BACKGROUND_OPERATION
+            .try_with(|operation| {
+                let (priority, grant) = operation.as_ref()?;
+                std::ptr::eq(self, Arc::as_ptr(priority)).then(|| grant.upgrade()).flatten()
+            })
+            .ok()
+            .flatten()
     }
 
     /// Check priority and take an already-idle holder in one short critical section.
@@ -138,14 +148,7 @@ impl HolderPriority {
         acquire: impl FnOnce() -> Option<T>,
     ) -> Option<T> {
         let mut state = self.state.lock().ok()?;
-        let grant = BACKGROUND_OPERATION
-            .try_with(|operation| {
-                operation.as_ref().and_then(|(priority, granted)| {
-                    std::ptr::eq(self, Arc::as_ptr(priority)).then(|| Arc::clone(granted))
-                })
-            })
-            .ok()
-            .flatten();
+        let grant = self.current_grant();
         let granted = grant
             .as_ref()
             .is_some_and(|grant| grant.load(Ordering::Relaxed));

@@ -59,6 +59,7 @@ const WAITING_LIVENESS: Duration = Duration::from_secs(1);
 struct Waiter {
     owner: OwnerKey,
     ticket: u64,
+    ready: Arc<Notify>,
     /// Set by a refused checkout while the owner waits for the holder; cleared by a served one.
     refused_at: Option<Instant>,
     /// The owner's last refusal, kept across its served passes: its place in the queue.
@@ -96,8 +97,8 @@ pub(super) enum Turn {
 /// Maximum retry tickets retained by one root; excess owners keep using plain backoff.
 const MAX_HOLDER_WAITERS: usize = 1024;
 
-pub(super) const HOLDER_QUEUE_ALLOCATION_BYTES: usize =
-    MAX_HOLDER_WAITERS * std::mem::size_of::<Waiter>();
+pub(super) const HOLDER_QUEUE_ALLOCATION_BYTES: usize = MAX_HOLDER_WAITERS
+    * (std::mem::size_of::<Waiter>() + std::mem::size_of::<Notify>() + 2 * std::mem::size_of::<usize>());
 
 pub(super) struct HolderQueue {
     next_ticket: u64,
@@ -116,6 +117,16 @@ impl Default for HolderQueue {
 impl HolderQueue {
     fn find(&self, owner: OwnerKey) -> Option<&Waiter> {
         self.waiters.iter().find(|waiter| waiter.owner == owner)
+    }
+
+    pub(super) fn wake_oldest(&self, now: Instant) {
+        if let Some(waiter) = self.waiters.iter().find(|waiter| waiter.waiting(now)).filter(|waiter| waiter.refused(now)) {
+            waiter.ready.notify_one();
+        }
+    }
+
+    pub(super) fn notification(&self, owner: OwnerKey) -> Option<Arc<Notify>> {
+        self.find(owner).map(|waiter| Arc::clone(&waiter.ready))
     }
 
     /// The turn of `owner` for an idle holder. An owner without a ticket comes after every
@@ -174,6 +185,7 @@ impl HolderQueue {
         self.waiters.push(Waiter {
             owner,
             ticket,
+            ready: Arc::new(Notify::new()),
             refused_at: Some(now),
             last_refused: Some(now),
         });
@@ -211,6 +223,7 @@ impl HolderWaiter {
     pub fn stop_waiting(&self) {
         if let Ok(mut queue) = self.queue.lock() {
             queue.stop_waiting(self.owner);
+            queue.wake_oldest(Instant::now());
         }
         self.returned.notify_waiters();
     }
@@ -220,6 +233,7 @@ impl Drop for HolderWaiter {
     fn drop(&mut self) {
         if let Ok(mut queue) = self.queue.lock() {
             queue.remove(self.owner);
+            queue.wake_oldest(Instant::now());
         }
         self.returned.notify_waiters();
     }

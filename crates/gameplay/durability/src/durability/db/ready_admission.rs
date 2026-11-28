@@ -10,7 +10,8 @@ impl DurabilityRoot {
     /// only connector, and the issued pass keeps its ordinary independent budget.
     pub async fn issue_ready_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let _foreground = self.foreground_demand()?;
-        let deadline = tokio::time::Instant::now() + ROOT_RECOVERY_WINDOW;
+        let ordinary = tokio::time::Instant::now() + ROOT_RECOVERY_WINDOW;
+        let deadline = super::holder_deadline().map_or(ordinary, |deadline| ordinary.min(deadline));
         // From the first refusal on, a returned holder goes to this owner before owners
         // refused later (see `HolderWaiter`).
         let mut waiter = None;
