@@ -920,7 +920,14 @@ def build():
         ["yes"],
         [storage(prefix + "u7_5/sams_old_backpack/sams_old_backpack_npc", -1, 1, 0)],
         take=[(3244, 1)],
-        topic=1,
+        topic=2,
+    )
+    callbacks[-1]["reply"] = [
+        "Thank you very much! This brings back good old memories! Please, as a reward, travel to Kazordoon and ask my old friend Kroox to provide you a special dwarven armor. ...",
+        "I will mail him about you immediately. Just tell him, his old buddy Sam is sending you.",
+    ]
+    callbacks[-1]["sources"].append(
+        "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest/Spoiler#Transcripts"
     )
     # Offers bind confirmation to this NPC and the common conversation topic.
     offers = [
@@ -945,7 +952,17 @@ def build():
             "keywords": ["old backpack", "backpack"],
             "topic": 0,
             "next_topic": 1,
-            "reply": ["Did you find my old backpack?"],
+            "reply": ["What? Are you telling me you found my old adventurer's backpack that I lost years ago??"],
+            "storage": callbacks[-1]["storage"],
+        },
+        {
+            "npc": "oteryn:npc.sam",
+            "keywords": ["yes"],
+            "topic": 1,
+            "next_topic": 2,
+            "reply": [
+                "Is it in pristine condition? I'll throw away any items I find inside. Did you check if there's anything left in there you want to keep?"
+            ],
             "storage": callbacks[-1]["storage"],
         },
     ]
