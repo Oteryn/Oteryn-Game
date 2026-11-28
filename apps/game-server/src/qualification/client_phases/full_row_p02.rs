@@ -335,6 +335,25 @@ async fn fight(c: &mut DevClientSession, key: &str) -> TestResult<oteryn_dev_cli
 const BOOSTED_BOSS: &str = "oteryn:creature.ekatrix";
 const ARCHFOE_PROWESS: u64 = 5;
 
+// The Channel reward occurrence seeds its UUID suffix from the exact death
+// key, Character and millisecond carried in the UUID prefix. The statistics
+// ledger records physical deaths even when the XP settlement has no receipt.
+fn credit_belongs_to_death(death_key: &[u8], principal: &[u8; 16], occurrence: &[u8; 16]) -> bool {
+    use sha2::{Digest, Sha256};
+    let mut millis = [0; 8];
+    millis[2..].copy_from_slice(&occurrence[..6]);
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:combat-death-xp-occurrence:v1")
+        .chain_update(death_key)
+        .chain_update(principal)
+        .chain_update(millis)
+        .finalize();
+    occurrence[6] == 0x70 | (digest[0] & 0x0f)
+        && occurrence[7] == digest[1]
+        && occurrence[8] == 0x80 | (digest[2] & 0x3f)
+        && occurrence[9..] == digest[3..10]
+}
+
 async fn credited_death(
     c: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -343,38 +362,64 @@ async fn credited_death(
 ) -> TestResult {
     let target = fight(c, key).await?;
     let principal = clients.characters[1];
+    let prefix = [
+        clients.world.as_slice(),
+        clients.channel.as_slice(),
+        &clients.scope_generation.to_be_bytes(),
+    ]
+    .concat();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-    let death = committed_hunt_death(c, clients, Some(principal), key, target, deadline).await?;
-    let occurrence = death
-        .reward_occurrence
-        .ok_or("P02 death missing principal reward occurrence")?;
-    let receipt = tokio::time::timeout_at(deadline, async {
+    verdict::Harness::global().bounded_wait(deadline, "p02-exact-death-proof");
+    let (occurrence, received) = tokio::time::timeout_at(deadline, async {
         let mut database = sqlx::PgConnection::connect(clients.url).await?;
         loop {
-            let receipt: Option<i32> = sqlx::query_scalar(
-                "SELECT kill_credit::integer FROM game_character_bosstiary_kill_receipts
-                 WHERE character_id=encode($1,'hex')::uuid
-                   AND occurrence_id=encode($2,'hex')::uuid AND boss_key=$3",
+            let death: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT death_key FROM game_statistics_creature_deaths
+                 WHERE world_id=encode($1,'hex')::uuid AND creature_key=$2 AND boss
+                   AND octet_length(death_key)=52 AND substring(death_key FROM 1 FOR 40)=$3
+                   AND substring(death_key FROM 45 FOR 8)=$4
+                   AND substring(sha256(convert_to('oteryn:runtime-player-placement:v1','UTF8')
+                       || death_key) FROM 1 FOR 16)=$5",
             )
-            .bind(principal.as_slice())
-            .bind(occurrence.as_slice())
+            .bind(clients.world.as_slice())
             .bind(key)
+            .bind(&prefix)
+            .bind(target.generation.to_be_bytes().as_slice())
+            .bind(target.identity.as_slice())
             .fetch_optional(&mut database)
             .await?;
-            if receipt.is_some() {
-                return TestResult::Ok(receipt);
+            if let Some(death) = death {
+                let receipts: Vec<(Vec<u8>, i32)> = sqlx::query_as(
+                    "SELECT uuid_send(occurrence_id), kill_credit::integer
+                     FROM game_character_bosstiary_kill_receipts
+                     WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 LIMIT 3",
+                )
+                .bind(principal.as_slice())
+                .bind(key)
+                .fetch_all(&mut database)
+                .await?;
+                if receipts.len() > 2 {
+                    return Err(format!("P02 too many credit receipts for {key}").into());
+                }
+                for (occurrence, received) in receipts {
+                    let occurrence: [u8; 16] = occurrence.as_slice().try_into()?;
+                    if credit_belongs_to_death(&death, &principal, &occurrence) {
+                        return TestResult::Ok((occurrence, received));
+                    }
+                }
             }
             c.service_liveness(Duration::from_millis(100)).await?;
             c.take_events();
         }
     })
     .await
-    .map_err(|_| "P02 missing Bosstiary receipt for exact death occurrence")??;
-    if receipt != Some(credit) {
-        return Err(format!(
-            "P02 exact death {target:?} expected credit {credit}, got {receipt:?}"
-        )
-        .into());
+    .map_err(|_| {
+        format!("P02 no matching physical death and Bosstiary credit for {key} {target:?}")
+    })??;
+    if received != credit {
+        return Err(
+            format!("P02 exact death {target:?} expected credit {credit}, got {received}").into(),
+        );
     }
     evidence(&format!(
         "P02_DEATH entity={target:?} occurrence={} boss={key} credit={credit}",
@@ -795,6 +840,31 @@ mod tests {
             reply.bonus = bonus;
             assert!(boosted_exclusion_slot(&reply, 6).is_err());
         }
+    }
+
+    #[test]
+    fn exact_credit_rejects_another_actor_generation_or_principal() {
+        let actor = [7; 52];
+        let principal = [8; 16];
+        let occurrence = [
+            0, 0, 0, 0, 0, 1, 123, 59, 128, 14, 209, 32, 138, 219, 123, 110,
+        ];
+        assert!(credit_belongs_to_death(&actor, &principal, &occurrence));
+        let mut wrong_actor = actor;
+        wrong_actor[43] ^= 1;
+        assert!(!credit_belongs_to_death(
+            &wrong_actor,
+            &principal,
+            &occurrence
+        ));
+        wrong_actor = actor;
+        wrong_actor[51] ^= 1;
+        assert!(!credit_belongs_to_death(
+            &wrong_actor,
+            &principal,
+            &occurrence
+        ));
+        assert!(!credit_belongs_to_death(&actor, &[9; 16], &occurrence));
     }
 
     #[test]
