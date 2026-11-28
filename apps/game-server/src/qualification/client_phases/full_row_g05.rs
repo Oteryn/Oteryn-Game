@@ -9,7 +9,7 @@ const SETTINGS_TEST: &str = concat!(
 
 const DESKTOP_TRANSFER: &str = "bevy_shell::game_ui::options::transfer::tests::transfer_exports_resets_imports_and_restores_the_saved_options";
 const DESKTOP_SHORTCUT: &str =
-    "bevy_shell::tests::ctrl_k_opens_the_hotkey_options_only_outside_blocked_input";
+    "bevy_shell::owner::tests::ctrl_k_opens_the_hotkey_options_only_outside_blocked_input";
 const TEST_TIMEOUT_SECONDS: u64 = 900;
 
 pub(super) async fn run_packet(_clients: &SeamClients<'_>) {
