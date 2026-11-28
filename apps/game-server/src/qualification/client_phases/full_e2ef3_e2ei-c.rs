@@ -855,6 +855,88 @@ async fn backpack(client: &mut DevClientSession) -> TestResult<BTreeMap<u32, u64
     Ok(totals(&container(client, handle).await?))
 }
 
+async fn gold_destination(client: &mut DevClientSession) -> TestResult {
+    let assign_main = loot::QuickLootRequest {
+        category: Some(loot::QuickLootCategory::Gold),
+        recipient: Some(loot::QuickLootRecipient::MainContainer),
+        ..request(Action::Assign)
+    };
+    let (status, reply) = quick(client, assign_main).await?;
+    if status != CommandStatus::Accepted || !reply.items.is_empty() {
+        return Err(format!("Gold/MainContainer assignment refused: {status:?} {reply:?}").into());
+    }
+    let present = provisioning::item_reference(&provisioning::item_index()?, 2855)?;
+    let handle = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|item| item.item_definition_ref == present)
+        })
+        .ok_or("category routing needs a carried present from ordinary trade")?
+        .handle;
+    let assign = loot::QuickLootRequest {
+        action: Action::AssignLoot,
+        recipient: Some(loot::QuickLootRecipient::Container),
+        ..assign_main
+    };
+    let payload = loot::encode_quick_loot_view_request(&assign, handle)
+        .map_err(|error| format!("Gold/container handle command: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            assign.action.command_type(),
+            &payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted || !reply.payload.is_empty() {
+        return Err(format!("Gold/container assignment refused: {:?}", reply.status).into());
+    }
+    let reviewed = async {
+        let action = Action::ReviewDestinations;
+        let payload = loot::encode_quick_loot_request(&request(action))
+            .map_err(|error| format!("quick-loot review command: {error:?}"))?;
+        let reply = client
+            .session_mut()
+            .gated_command(
+                loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+                action.command_type(),
+                &payload,
+            )
+            .await?;
+        if reply.status != CommandStatus::Accepted {
+            return Err(
+                format!("quick-loot destination review refused: {:?}", reply.status).into(),
+            );
+        }
+        let destinations = loot::decode_quick_loot_destinations(&reply.payload)
+            .map_err(|error| format!("quick-loot destination review: {error:?}"))?;
+        let gold = destinations
+            .loot
+            .iter()
+            .find(|row| row.category == assign.category);
+        if !gold.is_some_and(|row| {
+            row.recipient == loot::QuickLootRecipient::Container && row.recipient_id.is_some()
+        }) {
+            return Err(
+                format!("Gold/container destination missing from live review: {gold:?}").into(),
+            );
+        }
+        Ok::<_, Box<dyn std::error::Error>>(())
+    }
+    .await;
+    // Later loot probes expect Gold to land in the main backpack.
+    let (status, reply) = quick(client, assign_main).await?;
+    if status != CommandStatus::Accepted || !reply.items.is_empty() {
+        return Err(format!("failed to restore Gold/MainContainer: {status:?} {reply:?}").into());
+    }
+    reviewed?;
+    evidence("I07 Gold/container assignment and review verified through a carried item handle");
+    Ok(())
+}
+
 async fn loot_policy(
     client: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
@@ -1319,23 +1401,18 @@ pub(super) async fn run(
         |()| "manual-click,loot-all,accept-skip-filters,relogin-policy-custody=verified".into(),
     );
 
-    let category = async {
-        let live = client.as_mut().ok_or("connection closed")?;
-        let (status, reply) = quick(live, loot::QuickLootRequest {
-            category: Some(loot::QuickLootCategory::Gold),
-            recipient: Some(loot::QuickLootRecipient::MainContainer),
-            ..request(Action::Assign)
-        }).await?;
-        if status != CommandStatus::Accepted || !reply.items.is_empty() {
-            return Err(format!("Gold/MainContainer assignment refused: {status:?} {reply:?}").into());
-        }
-        Ok::<_, Box<dyn std::error::Error>>("Gold/MainContainer assignment accepted; distinct container requires a durable recipient UUID")
-    }.await;
+    let category = match client.as_mut() {
+        Some(live) => gold_destination(live).await,
+        None => Err("connection closed".into()),
+    };
     let category_failure = category
         .as_ref()
         .err()
         .map(|error| ("category-routing", verdict::classify(error.as_ref())));
-    let category = category.map_or_else(|error| error.to_string(), str::to_owned);
+    let category = category.map_or_else(
+        |error| error.to_string(),
+        |()| "Gold/MainContainer and carried category destination accepted and reviewed".into(),
+    );
     let ammunition = quiver(&mut client, clients, &hunt, &metadata.npcs, town).await;
     let ammunition_failure = ammunition
         .as_ref()

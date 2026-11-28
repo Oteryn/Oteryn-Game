@@ -198,6 +198,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
     // CORPSE48: domain 11 shows up to 48 corpse entries (requires 4).
     oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
+    oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
 ];
 
@@ -324,6 +325,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
     // chsw Channel on Party, VIP and Guild rows (513).
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
+    oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -521,6 +523,25 @@ fn battle_metadata_uses_existing_attack_capability() -> Result<(), &'static str>
             )
     ));
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn quick_loot_destinations_are_negotiated_and_routed() {
+    use oteryn_protocol_oteryn::quick_loot as wire;
+    let capability = wire::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1;
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+    assert_eq!(
+        gated_routes()
+            .find(|(id, _, _)| *id == capability)
+            .map(|(_, commands, _)| commands),
+        Some(
+            &[
+                wire::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+                wire::COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE,
+            ][..]
+        )
+    );
 }
 
 #[cfg(test)]
