@@ -754,7 +754,9 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                 semantics, record["semantics"]
             )
         prior = admitted.get(f"oteryn:item.tibia.i{item_id}")
-        if prior is not None:
+        # Cledwyn's worn definitions are owned by this capture. Replay their source
+        # facts independently of any previously emitted native profile.
+        if prior is not None and item_id not in CLEDWYN_WORN:
             refined = accepted.accepted_first(prior["semantics"], record["semantics"])
             record["semantics"] = (
                 accepted.accepted_first(semantics, refined)

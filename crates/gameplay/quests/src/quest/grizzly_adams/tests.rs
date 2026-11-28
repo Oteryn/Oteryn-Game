@@ -1349,23 +1349,26 @@ fn regional_hunt_reports_and_zlak_require_the_donor_keywords() -> Result<(), Str
     let callbacks = load_for(catalogue)?;
     let offered = offered_for(catalogue)?;
     let mut unexpected = Vec::new();
-    for (hunt, creature, held) in [
-        ("trolls", "trolls", false),
-        ("goblins", "goblins", false),
-        ("cyclops", "cyclops", false),
-        ("rotworms", "rotworms", false),
-        ("pirates", "pirates", false),
-        ("blue-djinns", "blue djinns", true),
-        ("green-djinns", "green djinns", true),
-        ("minotaurs", "minotaurs", true),
-        ("necromancers", "necromancers", true),
+    for (hunt, creature) in [
+        ("trolls", "trolls"),
+        ("goblins", "goblins"),
+        ("cyclops", "cyclops"),
+        ("rotworms", "rotworms"),
+        ("pirates", "pirates"),
+        ("blue-djinns", "blue djinns"),
+        ("green-djinns", "green djinns"),
+        ("minotaurs", "minotaurs"),
+        ("necromancers", "necromancers"),
     ] {
         let key = format!("oteryn:quest-reward/hunting-tasks/{hunt}/report");
         let callback = callbacks
             .iter()
             .find(|callback| callback.key == key)
             .ok_or(key)?;
-        assert_eq!(offered.iter().any(|entry| entry.key == callback.key), !held);
+        assert!(
+            offered.iter().any(|entry| entry.key == callback.key),
+            "{hunt}"
+        );
         let positive = if hunt == "minotaurs" {
             "mission"
         } else {

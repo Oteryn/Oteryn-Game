@@ -51,19 +51,7 @@
         "mission"
       ],
       "experience": 10000,
-      "per_occurrence_mint": true,
-      "state_ops": [
-        {
-          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/last-report",
-          "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 1
-          },
-          "effect": {
-            "kind": "set_now"
-          }
-        }
-      ]
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/cyclops/report",
@@ -211,19 +199,7 @@
         "mission"
       ],
       "experience": 10000,
-      "per_occurrence_mint": true,
-      "state_ops": [
-        {
-          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/last-report",
-          "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 1
-          },
-          "effect": {
-            "kind": "set_now"
-          }
-        }
-      ]
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/minotaurs/report",
@@ -375,19 +351,7 @@
         "mermaid",
         "pirate outfit"
       ],
-      "per_occurrence_mint": true,
-      "state_ops": [
-        {
-          "track": "oteryn:quest-progress/hunting-tasks/pirates/last-report",
-          "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 1
-          },
-          "effect": {
-            "kind": "set_now"
-          }
-        }
-      ]
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/rotworms/report",
@@ -586,54 +550,7 @@
         "mermaid",
         "pirate outfit"
       ],
-      "per_occurrence_mint": true,
-      "state_ops": [
-        {
-          "track": "oteryn:quest-progress/hunting-tasks/pirates/last-report",
-          "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 1
-          },
-          "effect": {
-            "kind": "set_now"
-          }
-        }
-      ]
-    }
-  ],
-  "tracks": [
-    {
-      "key": "oteryn:quest-progress/hunting-tasks/pirates/last-report",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 9223372036854775807,
-      "sources": [
-        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
-      ],
-      "writable": true
-    },
-    {
-      "key": "oteryn:quest-progress/hunting-tasks/green-djinns/last-report",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 9223372036854775807,
-      "sources": [
-        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
-      ],
-      "writable": true
-    },
-    {
-      "key": "oteryn:quest-progress/hunting-tasks/blue-djinns/last-report",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 9223372036854775807,
-      "sources": [
-        "https://tibia.fandom.com/wiki/Children_of_the_Revolution_Quest/Spoiler#Daily_Task:_Zzuppliezz"
-      ],
-      "writable": true
+      "per_occurrence_mint": true
     }
   ]
 }

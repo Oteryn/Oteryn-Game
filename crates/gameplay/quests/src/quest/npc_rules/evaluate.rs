@@ -402,7 +402,8 @@ fn plan_with_teleport(
             let renown;
             let (rule_effects, rule_reply) =
                 if let [NpcRuleEffect::GnomallyRenown { action }] = rule.effects.as_slice() {
-                    let Some(resolved) = renown::resolve(*action, input, &mut state, storage_only)?
+                    let Some(resolved) =
+                        renown::resolve(*action, rule, input, &mut state, storage_only)?
                     else {
                         continue;
                     };

@@ -1425,6 +1425,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("creature loot Wiki identity collision"));
             }
         }
+        // Souvenirs without a Crystal identity are qualified by their own Global
+        // item ID, revision and weight plus the matching client appearance.
+        let souvenir_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/token-souvenir-wiki-bindings.json"
+            ))
+            .map_err(|_| invalid("token souvenir Wiki identity"))?;
+        for binding in souvenir_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("token souvenir Wiki identity collision"));
+            }
+        }
         // W02: Crystal201189f items.cpp:163-174 indexes ItemType by the exact
         // appearance.id. Appearance48416 is independently captured by
         // boss_reward_item_profiles.py; the existing canonical identity is reused.

@@ -51375,17 +51375,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -52019,17 +52017,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -52546,17 +52542,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -54174,17 +54168,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -56842,17 +56834,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -59171,13 +59161,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -59559,17 +59549,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -60215,13 +60203,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -60612,17 +60600,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -61286,13 +61272,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -61685,17 +61671,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -63353,17 +63337,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -64129,6 +64111,9 @@
           "family": "Item",
           "key": "candidate:item/50147",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -64475,13 +64460,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -64767,7 +64752,7 @@
             "decay_target": {
               "state": "KNOWN",
               "value": {
-                "key": "oteryn:item.tibia.i39182",
+                "key": "oteryn:item.tibia.i50149",
                 "revision": "definition-r1"
               }
             }
@@ -64865,17 +64850,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -65124,13 +65107,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -65165,6 +65148,9 @@
           "family": "Item",
           "key": "candidate:item/50154",
           "revision": "cloot3-crystal-201189f"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -65459,13 +65445,13 @@
         "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
         "has_height": false,
         "immovable_block_solid": false,
+        "rune_consumption": null,
         "speed_bonus": 0,
-        "spell_augments": [],
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -65797,17 +65783,15 @@
         }
       },
       "attributes": {
-        "always_on_top": false,
-        "always_on_top_order": 0,
+        "spell_augments": [],
+        "speed_bonus": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "field_condition": null,
-        "field_replaceable": null,
-        "has_height": false,
         "immovable_block_solid": false,
-        "rune_consumption": null,
-        "speed_bonus": 0,
-        "spell_augments": []
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
       },
       "admission": {
         "materializable": true,
@@ -65842,6 +65826,9 @@
           "family": "Item",
           "key": "candidate:item/50156",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {

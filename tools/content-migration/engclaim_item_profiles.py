@@ -20,7 +20,18 @@ IDS = {
 }
 WIKI = {50335: 1143035, 50336: 1143038, 50337: 1143037, 50338: 1143036}
 # Token-exchange souvenirs with captured Global own IDs and physical weights.
-IDS.update({49272: 1350, 49273: 40, 42175: 600, 44755: 650, 50124: 650, 52725: 650})
+TOKEN_SOUVENIRS = {
+    49272: 1350,
+    49273: 40,
+    42175: 600,
+    44755: 650,
+    50124: 650,
+    52725: 650,
+}
+IDS.update(TOKEN_SOUVENIRS)
+TOKEN_BINDINGS = (
+    "tools/content-schema/native-gameplay/token-souvenir-wiki-bindings.json"
+)
 WIKI.update(
     {
         49272: 1082691,
@@ -116,6 +127,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )["bindings"]
+    crystal_by_key = {row["target"]["key"]: row for row in bindings}
+    generated[TOKEN_BINDINGS] = canonical(
+        [
+            binding(item)
+            for item in sorted(TOKEN_SOUVENIRS)
+            if f"oteryn:item.tibia.i{item}" not in crystal_by_key
+        ]
+    )
     present = {
         r["production_definition"]["production_key"] for r in document["records"]
     }
@@ -127,11 +146,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 continue
             item = int(key.rsplit(".i", 1)[1])
             identity = definition["identity"]
-            selected = (
-                binding(item)
-                if item in WIKI
-                else next(b for b in bindings if b["target"] == identity)
-            )
+            selected = crystal_by_key.get(key)
+            if selected is None:
+                selected = binding(item)
+            if selected["target"] != identity:
+                raise ValueError("ENGCLAIM_CANONICAL_BINDING_DRIFT:" + str(item))
             if (
                 not definition["materializable"]
                 or definition["stack_class"] != "NonStackable"

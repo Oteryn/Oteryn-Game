@@ -506,12 +506,23 @@ def renown_rules(root):
     prefix = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/"
     npc = "oteryn:npc.gnomally"
     rules = []
+    capture = json.loads((root / GNOMALLY_SOURCE).read_text())
+    fragments = next(row for row in capture["npcs"] if row["npc"] == npc)["fragments"]
+    parts = {row["line"]: row["literal_parts"] for row in fragments}
+    quote_start, quote_middle, quote_end = parts[138]
+    replies = {
+        "relations": [*parts[129], "$renown".join(parts[130])],
+        "ask": parts[172],
+        "quote": [quote_start + "$tokens" + quote_middle + "$renown" + quote_end],
+        "confirm": ["$renown".join(parts[179])],
+        "cancel": parts[190],
+    }
     for name, keywords, topics, line in [
         ("relations", ["relations"], None, 126),
-        ("ask", ["yes"], [121], 169),
+        ("ask", ["yes"], [121], 171),
         ("quote", [], [122], 135),
         ("confirm", ["yes"], None, 174),
-        ("cancel", ["no"], None, 186),
+        ("cancel", ["no"], None, 189),
     ]:
         rules.append(
             {
@@ -522,6 +533,8 @@ def renown_rules(root):
                 "keyword_mode": "msg_contains",
                 "keywords": keywords,
                 "any_message": not keywords,
+                "reply": replies[name],
+                "inventory_failure_reply": parts[181] if name == "confirm" else [],
                 "topics": topics,
                 "guards": [
                     {
@@ -535,6 +548,9 @@ def renown_rules(root):
                 "sources": [f"{source}:{line}"],
             }
         )
+    next(rule for rule in rules if rule["key"].endswith("/confirm"))["sources"].append(
+        f"crystal:{PIN}:data/libs/functions/player.lua:126-147"
+    )
     return {
         "schema": 1,
         "program_key": "oteryn:quest-npc-program.gnomally-renown",
@@ -548,7 +564,9 @@ def renown_rules(root):
         "source_files": [
             r
             for r in original["source_files"]
-            if r["path"].endswith(("gnomally.lua", "storages.lua"))
+            if r["path"].endswith(
+                ("gnomally.lua", "storages.lua", "functions/player.lua")
+            )
         ],
     }
 
