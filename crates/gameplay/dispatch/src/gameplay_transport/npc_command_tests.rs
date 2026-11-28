@@ -495,7 +495,7 @@ fn offers_project_in_order_with_the_player_side_and_drop_what_does_not_resolve()
     );
 }
 
-fn frodo_mordecai_book() -> Arc<NpcTalkBook> {
+fn source_npc_book() -> Arc<NpcTalkBook> {
     let catalogue = crate::content::NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -548,7 +548,7 @@ fn shown_items(window: &NpcTradeWindow, index: &ItemDefinitionIndex) -> Vec<u32>
 
 #[test]
 fn frodo_and_mordecai_trade_offers_reach_talk_in() {
-    let book = frodo_mordecai_book();
+    let book = source_npc_book();
     let index = shop_index(&[3577, 3180, 3165, 3174, 3152, 3177, 3178]);
     for (key, expected) in [
         ("oteryn:npc.frodo", &[3577][..]),
@@ -580,9 +580,42 @@ fn frodo_and_mordecai_trade_offers_reach_talk_in() {
 }
 
 #[test]
+fn rashid_first_trade_opens_window_and_sends_authored_line() {
+    let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.rashid");
+    let book = source_npc_book();
+    let chat = chat_with(session, Arc::clone(&book));
+    let index = shop_index(&[5917]);
+    let conversations = NpcConversations::default();
+    let say = |text, now| {
+        conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(now),
+            Some(&index),
+        )
+    };
+
+    let greeting = say("hi", BASE).conversation.expect("greeting");
+    assert_eq!(greeting.open, Some((npc, NpcConversationState::Open)));
+    let outcome = say("trade", BASE + 1_000_000);
+    let window = outcome.window.expect("trade window");
+    assert_eq!(window.open, Some((npc, book.catalogue_revision())));
+    assert_eq!(shown_items(&window, &index), [5917]);
+    let conversation = outcome.conversation.expect("trade conversation");
+    assert_eq!(conversation.open, Some((npc, NpcConversationState::Open)));
+    assert_eq!(
+        conversation.lines,
+        ["Take all the time you need to decide what you want!"]
+    );
+}
+
+#[test]
 fn frodo_phrase_keywords_reach_talk_in() {
     let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.frodo");
-    let chat = chat_with(session, frodo_mordecai_book());
+    let chat = chat_with(session, source_npc_book());
     let conversations = NpcConversations::default();
     let say = |text, now| {
         conversations.talk_in(
@@ -618,7 +651,7 @@ fn frodo_phrase_keywords_reach_talk_in() {
 #[test]
 fn frodo_authored_keyword_preempts_farewell_and_trade() {
     let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.frodo");
-    let chat = chat_with(session, frodo_mordecai_book());
+    let chat = chat_with(session, source_npc_book());
     let conversations = NpcConversations::default();
     let index = shop_index(&[3577]);
     let say = |text, now| {
@@ -650,7 +683,7 @@ fn frodo_authored_keyword_preempts_farewell_and_trade() {
 #[test]
 fn mordecai_categories_open_only_the_selected_offers() {
     let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.mordecai");
-    let book = frodo_mordecai_book();
+    let book = source_npc_book();
     let chat = chat_with(session, Arc::clone(&book));
     let conversations = NpcConversations::default();
     let index = shop_index(&[3074, 3180]);

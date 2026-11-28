@@ -335,7 +335,17 @@ pub(super) fn scenario_with_tour_pin(reward_fixture: bool, foreign_pin: bool) ->
             owner.refresh_quest_session(session, true).await;
         }
         talk(&owner, &dependencies, npc, 1, "hi").await?;
-        assert!(line(&talk(&owner, &dependencies, npc, 2, "venore").await?).contains("170 gold"));
+        let (destination, expected) = if reward_fixture {
+            ("venore", "Do you seek a passage to Venore for 170 gold?")
+        } else {
+            ("edron", "Do you seek a passage to Edron for 160 gold?")
+        };
+        let quote = talk(&owner, &dependencies, npc, 2, destination).await?;
+        assert_eq!(line(&quote), expected);
+        assert_eq!(
+            quote.conversation.and_then(|reply| reply.open),
+            Some((npc, oteryn_protocol_oteryn::npc_service::NpcConversationState::Confirming))
+        );
         if reward_fixture {
             super::engnpc_paid_confirmation_fixtures::assert_quote_scope(&mut owner, &dependencies, npc)
                 .await?;

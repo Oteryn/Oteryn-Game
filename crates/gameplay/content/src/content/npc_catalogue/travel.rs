@@ -57,6 +57,26 @@ pub struct TravelRoute {
     pub partial_quest_callback: Option<PartialTravelQuestCallback>,
 }
 
+impl TravelRoute {
+    /// Format the authored destination keyword for dialogue, including multiword place names.
+    pub fn display_name(&self) -> String {
+        self.keyword
+            .split([' ', '_'])
+            .filter(|word| !word.is_empty())
+            .map(|word| {
+                let mut letters = word.chars();
+                let mut name = String::new();
+                if let Some(first) = letters.next() {
+                    name.extend(first.to_uppercase());
+                }
+                name.push_str(letters.as_str());
+                name
+            })
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+}
+
 #[derive(Deserialize)]
 struct Correction {
     key: String,

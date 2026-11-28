@@ -200,14 +200,14 @@ async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
     let base = talk(&owner, &deps, npc, 4, "thais").await?;
     assert_eq!(
         base.conversation.ok_or("base quote")?.lines,
-        ["Do you seek a passage to thais for 180 gold?"]
+        ["Do you seek a passage to Thais for 180 gold?"]
     );
     seed_grand_postman_rank(&h).await?;
     owner.clock_origin -= Duration::from_secs(1);
     let discounted = talk(&owner, &deps, npc, 5, "thais").await?;
     assert_eq!(
         discounted.conversation.ok_or("Postman quote")?.lines,
-        ["Do you seek a passage to thais for 170 gold?"]
+        ["Do you seek a passage to Thais for 170 gold?"]
     );
 
     let arrived = talk(&owner, &deps, npc, 6, "yes").await?;

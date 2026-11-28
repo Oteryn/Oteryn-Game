@@ -195,6 +195,7 @@ pub struct NpcBankDialogue {
     pub greet: Vec<String>,
     pub farewell: Vec<String>,
     pub walkaway: Vec<String>,
+    pub send_trade: Vec<String>,
     pub keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
 }
 
@@ -519,6 +520,7 @@ pub fn build(
                             greet,
                             farewell,
                             walkaway,
+                            send_trade,
                             keywords,
                             ..
                         } = declaration
@@ -529,6 +531,7 @@ pub fn build(
                             greet: greet.clone(),
                             farewell: farewell.clone(),
                             walkaway: walkaway.clone(),
+                            send_trade: send_trade.clone(),
                             keywords: keywords.clone(),
                         })
                     })

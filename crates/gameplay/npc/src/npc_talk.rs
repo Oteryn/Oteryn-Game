@@ -249,6 +249,7 @@ pub struct NpcTalkEntry {
     focus_farewell: Option<source_dialogue::FocusReply>,
     source_name_templates: bool,
     source_walkaway: Option<String>,
+    send_trade: Vec<String>,
     /// The service lines, joined; `None` when the NPC has no service.
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
@@ -278,6 +279,11 @@ impl NpcTalkEntry {
     /// The admitted offers the trade window projects.
     pub fn offers(&self) -> &[ProjectV2ServiceOffer] {
         &self.offers
+    }
+
+    /// The authored messages sent when the shop window opens.
+    pub fn send_trade(&self) -> &[String] {
+        &self.send_trade
     }
 
     /// Whether the message contains a greeting authored for this NPC.
@@ -401,6 +407,7 @@ impl NpcTalkEntry {
             focus_farewell: None,
             source_name_templates: false,
             source_walkaway: None,
+            send_trade: Vec::new(),
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
             premium_services: Vec::new(),
@@ -1227,6 +1234,10 @@ impl NpcTalkBook {
                                 })
                             })
                     },
+                    send_trade: npc
+                        .bank_dialogue
+                        .as_ref()
+                        .map_or_else(Vec::new, |dialogue| dialogue.send_trade.clone()),
                     topic_reply,
                     dialogue_keywords,
                     source_keyword_count: source_dialogue.map_or(0, |source| source.keywords.len()),

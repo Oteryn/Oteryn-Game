@@ -423,7 +423,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let line = format!(
                 "Do you seek a passage to {} for {fare} gold?",
-                route.keyword
+                route.display_name()
             );
             let runtime = self.runtime.lock().await;
             if self

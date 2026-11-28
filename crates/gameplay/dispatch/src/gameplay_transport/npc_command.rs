@@ -430,13 +430,11 @@ impl NpcConversations {
             if category.is_none() && !asks_to_trade_for(&npc.key, text.as_str()) {
                 return None;
             }
+            let entry = chat.npc_talk().and_then(|book| book.get(&npc.key));
             if focused
-                && chat
-                    .npc_talk()
-                    .and_then(|book| book.get(&npc.key))
-                    .is_some_and(|entry| {
-                        entry.dialogue_keyword_preempts_trade(&npc.key, text.as_str())
-                    })
+                && entry.is_some_and(|entry| {
+                    entry.dialogue_keyword_preempts_trade(&npc.key, text.as_str())
+                })
             {
                 return None;
             }
@@ -446,7 +444,26 @@ impl NpcConversations {
                     lines: vec![category.reply()],
                 });
             }
-            self.open_window(chat, runtime, session, intent.npc_actor, items, category)
+            let window =
+                self.open_window(chat, runtime, session, intent.npc_actor, items, category)?;
+            if window.open.is_some()
+                && let Some(entry) = entry
+                && !entry.send_trade().is_empty()
+                && let Some(name) = chat.speaker_name(session)
+            {
+                let conversation = outcome.conversation.get_or_insert_with(|| NpcConversation {
+                    open: Some((intent.npc_actor, NpcConversationState::Open)),
+                    lines: Vec::new(),
+                });
+                let remaining = oteryn_protocol_oteryn::npc_service::MAX_REPLY_LINES
+                    .saturating_sub(conversation.lines.len());
+                conversation
+                    .lines
+                    .extend(entry.send_trade().iter().take(remaining).map(|line| {
+                        oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name)
+                    }));
+            }
+            Some(window)
         })
         .flatten();
         outcome.window = match opened {

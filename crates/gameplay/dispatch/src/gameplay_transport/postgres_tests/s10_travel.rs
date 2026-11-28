@@ -501,7 +501,7 @@ async fn regional_quotes(
                         .and_then(|row| row["donor_cost"].as_u64()).ok_or("donor fare")?
                 };
                 (
-                    format!("Do you seek a passage to {} for {fare} gold?", route.keyword),
+                    format!("Do you seek a passage to {} for {fare} gold?", route.display_name()),
                     NpcConversationState::Confirming,
                 )
             };
