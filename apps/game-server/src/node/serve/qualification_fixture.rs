@@ -920,6 +920,11 @@ async fn grant_premium(
     };
     let nonce =
         crate::premium::client::fresh_nonce().ok_or("qualification Premium nonce unavailable")?;
+    let (effective_from, effective_until) = if account_text == Q_S13C_ACCOUNT {
+        (timestamp(now)?, timestamp(now + 30 * 24 * 60 * 60)?)
+    } else {
+        ("2026-01-01T00:00:00Z".to_owned(), "2030-01-01T00:00:00Z".to_owned())
+    };
     let body = serde_json::to_vec(&serde_json::json!({
         "schema": SNAPSHOT_SCHEMA,
         "producer_revision": "0000000000000000000000000000000000000001",
@@ -932,8 +937,8 @@ async fn grant_premium(
         "entitlement_state": "ACTIVE",
         "lifecycle_revision": 1,
         "authority_revision": now,
-        "effective_from": "2026-01-01T00:00:00Z",
-        "effective_until": "2030-01-01T00:00:00Z",
+        "effective_from": effective_from,
+        "effective_until": effective_until,
         "authority_issued_at": timestamp(now)?,
         "authority_valid_until": timestamp(now + 3600)?,
         "refresh_after": timestamp(now + 2400)?,
