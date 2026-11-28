@@ -63,6 +63,7 @@ mod error;
 mod events;
 mod framing;
 mod pvp_expert;
+pub mod qualification_replay;
 pub use events::SessionEvent;
 /// Observer-relative guild emblems (capability 509).
 pub use oteryn_protocol_oteryn::guild_emblem;

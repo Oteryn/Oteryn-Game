@@ -11,16 +11,8 @@ use oteryn_protocol_oteryn::actor_spell::{self, ActorVitals};
 #[test]
 fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), BoxError> {
     block_on(async {
-        let (spatial_payload, vitals_payload, expected) = if let Some(path) =
-            std::env::var_os("E2E_ALL_CAPTURE_DIR")
-        {
-            let path = std::path::Path::new(&path);
-            (
-                std::fs::read(path.join("c20d-spatial.bin"))?,
-                std::fs::read(path.join("c20d-vitals.bin"))?,
-                std::fs::read_to_string(path.join("c20d-expected.txt"))?,
-            )
-        } else {
+        // This unit fixture exercises malformed input. The live row owns original-frame replay.
+        let (spatial_payload, vitals_payload, expected) = {
             let observation = WireSpatialObservation {
                 content_generation: [0x22; 32],
                 actor_position: ActorPosition {
@@ -41,7 +33,7 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
             (
                 encode_world_spatial(&observation),
                 actor_spell::encode_actor_vitals(&vitals).map_err(|error| format!("{error:?}"))?,
-                "32369 32238 7 150 150\n".into(),
+                "32369 32238 7 150 150\n",
             )
         };
         let observation = world_spatial::decode_world_spatial(&spatial_payload)
@@ -87,6 +79,92 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
                 .is_err()
         );
         assert_eq!(session.actor_vitals(), Some(&before));
+        Ok::<_, BoxError>(())
+    })?
+}
+
+#[test]
+fn original_respawn_frames_require_the_live_session_and_complete_sequence() -> Result<(), BoxError>
+{
+    block_on(async {
+        use crate::qualification_replay::{capture_inbound, finish_capture, replay_respawn};
+        let temple = ActorPosition {
+            x: 12,
+            y: 34,
+            floor: 7,
+        };
+        let position = encode_world_spatial(&WireSpatialObservation {
+            content_generation: [0x22; 32],
+            actor_position: temple,
+        });
+        let vitals = |health| {
+            actor_spell::encode_actor_vitals(&ActorVitals {
+                health,
+                max_health: 150,
+                mana: 55,
+                max_mana: 55,
+                soul: 0,
+                harmony: 0,
+                serene: false,
+            })
+            .map_err(|error| format!("{error:?}"))
+        };
+        let damaged = encode_state_delta(1, 41, 3, 3, 4, 1, &vitals(60)?)?;
+        let moved = encode_state_delta(1, 42, 1, 5, 6, 1, &position)?;
+        let healed = encode_state_delta(1, 43, 3, 4, 5, 1, &vitals(150)?)?;
+        let (client, mut peer) = tokio::io::duplex(64 * 1024);
+        let sender = tokio::spawn(async move {
+            send_vitals_join_with_content(&mut peer, [0x22; 32]).await?;
+            for frame in [&damaged, &moved, &healed] {
+                write_frame(&mut peer, frame).await?;
+            }
+            Ok::<_, BoxError>(())
+        });
+        let (capture, id) = capture_inbound(async {
+            let mut session = Session::admit(client, admission()?).await?;
+            for _ in 0..3 {
+                let _ = read_frame(&mut session.stream).await?;
+            }
+            Ok::<_, BoxError>((
+                finish_capture().ok_or("missing recorded bytes")?,
+                session.join_snapshot().game_session_id,
+            ))
+        })
+        .await?;
+        sender.await??;
+        replay_respawn(capture.clone(), admission()?, id, 43, temple, 150)
+            .await
+            .map_err(|error| error.to_string())?;
+        let other_session = GameSessionId::decode(&uuid_v7(9))?;
+        assert!(
+            replay_respawn(
+                capture.clone(),
+                admission()?,
+                other_session,
+                43,
+                temple,
+                150
+            )
+            .await
+            .is_err()
+        );
+        assert!(
+            replay_respawn(capture.clone(), admission()?, id, 44, temple, 150)
+                .await
+                .is_err()
+        );
+        assert!(
+            replay_respawn(
+                capture[..capture.len() - 1].to_vec(),
+                admission()?,
+                id,
+                43,
+                temple,
+                150
+            )
+            .await
+            .is_err()
+        );
         Ok::<_, BoxError>(())
     })?
 }
