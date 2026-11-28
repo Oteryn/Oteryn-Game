@@ -69,33 +69,37 @@ async fn replay() -> Result<(), Error> {
         label: "Cyclopedia waypoint".into(),
         color: 2,
     };
+    let open = |snapshot: &WorldMapViewSnapshot| -> Result<crate::play::PlayView, Error> {
+        let origin = snapshot.header.origin;
+        let mut view = crate::play::PlayView::new(
+            oteryn_renderer::TileCoord::new(origin.x, origin.y), origin.floor, &[],
+        )?;
+        lock(&view.minimap).root = Some(cache.path().to_owned());
+        view.bind_minimap_world(&world);
+        view.set_live_map(snapshot)?;
+        Ok(view)
+    };
+    let at = (marker.x, marker.y, marker.floor);
     {
-        let mut minimap = Minimap::default();
-        minimap.root = Some(cache.path().to_owned());
-        minimap.bind_world(&world);
-        minimap.observe(&entry);
-        assert!(minimap.markers.is_empty());
-        minimap.edit_marker(marker.x, marker.y, marker.floor, marker.label.clone(), marker.color)?;
-        assert_eq!(minimap.markers.as_slice(), std::slice::from_ref(&marker));
+        let mut view = open(&entry)?;
+        assert!(lock(&view.minimap).markers.is_empty());
+        view.edit_minimap_marker(at, marker.label.clone(), marker.color)?;
+        assert_eq!(lock(&view.minimap).markers.as_slice(), std::slice::from_ref(&marker));
     }
 
     let relog = admission(
-        &capture.join("relog.frames"), character, uuid(&world)?, relog_session,
+        &capture.join("relog.frames"),
+        character,
+        uuid(&world)?,
+        relog_session,
         std::env::var("G10_REPLAY_RELOG_SEQUENCE")?.parse()?,
     ).await?;
-    let mut minimap = Minimap::default();
-    minimap.root = Some(cache.path().to_owned());
-    minimap.bind_world(&world);
-    minimap.observe(&relog);
-    assert_eq!(minimap.markers.as_slice(), std::slice::from_ref(&marker));
-    minimap.remove_marker(marker.x, marker.y, marker.floor)?;
-    assert!(minimap.markers.is_empty());
-    drop(minimap);
-    let mut reopened = Minimap::default();
-    reopened.root = Some(cache.path().to_owned());
-    reopened.bind_world(&world);
-    reopened.observe(&relog);
-    assert!(reopened.markers.is_empty());
+    let mut view = open(&relog)?;
+    assert_eq!(lock(&view.minimap).markers.as_slice(), std::slice::from_ref(&marker));
+    view.remove_minimap_marker(at)?;
+    assert!(lock(&view.minimap).markers.is_empty());
+    drop(view);
+    assert!(lock(&open(&relog)?.minimap).markers.is_empty());
     println!("G10_MINIMAP_REPLAY position={},{},{} icon={} description={:?} persisted=true removed=true",
         marker.x, marker.y, marker.floor, marker.color, marker.label);
     Ok(())

@@ -48,24 +48,28 @@ async fn send(
 }
 
 /// The earned title ids and the selected id of a QuerySelf reply.
-fn titles(bytes: &[u8]) -> TestResult<(Vec<u8>, u8)> {
-    if bytes.first() != Some(&0) || bytes.len() < 71 {
-        return Err(format!("step=query;observed=malformed-len-{}", bytes.len()).into());
-    }
+fn titles(operation: info::CharacterInfoOperation, bytes: &[u8]) -> TestResult<(Vec<u8>, u8)> {
+    info::result_text(operation, bytes).ok_or("step=query;observed=malformed-client-reply")?;
     let count = usize::from(bytes[69]);
-    if bytes.len() != 71 + count {
-        return Err(format!("step=query;observed=count-{count}-len-{}", bytes.len()).into());
-    }
     Ok((bytes[70..70 + count].to_vec(), bytes[70 + count]))
+}
+
+fn selection_ack(operation: info::CharacterInfoOperation, bytes: &[u8]) -> TestResult {
+    info::result_text(operation, bytes).ok_or("step=select;observed=malformed-client-reply")?;
+    if bytes[1..] != 1u64.to_le_bytes() {
+        return Err("step=select;observed=unexpected-initial-selection-revision".into());
+    }
+    Ok(())
 }
 
 async fn query(client: &mut DevClientSession) -> TestResult<(Vec<u8>, u8)> {
     let page = info::PageRequest::new(0, 1).ok_or("step=query;observed=page")?;
-    let reply = send(client, info::CharacterInfoOperation::QuerySelf(page)).await?;
+    let operation = info::CharacterInfoOperation::QuerySelf(page);
+    let reply = send(client, operation).await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=query;observed={:?}", reply.status).into());
     }
-    titles(&reply.payload)
+    titles(operation, &reply.payload)
 }
 
 async fn cooldown_now(client: &mut DevClientSession) -> TestResult<u64> {
@@ -129,14 +133,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=select-prestate;observed=earned-{earned:?}-selected-{before}").into());
     }
     evidence("G10_CHECK fixture-level-50-derived-vitals-and-earned-trolltrasher");
-    let select = send(
-        &mut client,
-        info::CharacterInfoOperation::Select(Some(title)),
-    )
-    .await?;
+    let select_operation = info::CharacterInfoOperation::Select(Some(title));
+    let select = send(&mut client, select_operation).await?;
     if select.status != CommandStatus::Accepted {
         return Err(format!("step=select;observed={:?}", select.status).into());
     }
+    selection_ack(select_operation, &select.payload)?;
     if query(&mut client).await? != (earned.clone(), chosen) {
         return Err("step=select-delta;observed=incorrect-title-state".into());
     }
@@ -173,9 +175,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if again.join_snapshot().game_session_id == session {
         return Err("step=persist;observed=reused-session".into());
     }
-    let (_, persisted) = query(&mut again).await?;
-    if persisted != chosen {
-        return Err(format!("step=persist;observed={persisted};need={chosen}").into());
+    if query(&mut again).await? != (earned, chosen) {
+        return Err("step=persist;observed=earned-or-selected-title-state-changed".into());
     }
     logout(&mut again).await?;
     let root = std::path::PathBuf::from(std::env::var_os("NODE_BOOT_G10_REPLAY_DIR")
@@ -209,7 +210,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=minimap;observed=replay-failed;stdout={stdout};stderr={}", String::from_utf8_lossy(&child.stderr)).into());
     }
     evidence(checks[0]);
-    Ok(())
+    // The Server currently emits the same empty rejection for eligibility and storage errors.
+    Err(format!("step=refuse;needed=typed-unearned-title-refusal;observed={:?};payload={:?}", refused.status, refused.payload).into())
 }
 
 #[cfg(test)]
@@ -217,12 +219,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn titles_rejects_a_short_reply_and_reads_a_valid_one() {
-        assert!(titles(&[0; 10]).is_err());
-        let mut reply = vec![0u8; 70];
-        reply[69] = 1;
-        reply.extend_from_slice(&[7, 7]);
-        assert_eq!(titles(&reply).ok(), Some((vec![7], 7)));
+    fn titles_rejects_truncated_duplicate_unknown_and_unearned_selected_ids() {
+        let operation = info::CharacterInfoOperation::QuerySelf(info::PageRequest { offset: 0, limit: 1 });
+        assert!(titles(operation, &[0; 10]).is_err());
+        let mut reply = vec![0u8; 69];
+        reply.extend_from_slice(&[1, 7, 7]);
+        assert_eq!(titles(operation, &reply).ok(), Some((vec![7], 7)));
+        for tail in [&[2, 7, 7, 7][..], &[1, 255, 0], &[1, 7, 8]] {
+            reply.truncate(69);
+            reply.extend_from_slice(tail);
+            assert!(titles(operation, &reply).is_err());
+        }
+    }
+
+    #[test]
+    fn selection_rejects_truncated_mistagged_and_wrong_revision_acknowledgements() {
+        let operation = info::CharacterInfoOperation::Select(Some(info::CharacterTitle::Trolltrasher));
+        let mut reply = vec![3];
+        reply.extend_from_slice(&1u64.to_le_bytes());
+        assert!(selection_ack(operation, &reply).is_ok());
+        assert!(selection_ack(operation, &reply[..8]).is_err());
+        reply[0] = 2;
+        assert!(selection_ack(operation, &reply).is_err());
+        reply[0] = 3;
+        reply[1] = 0;
+        assert!(selection_ack(operation, &reply).is_err());
     }
 
     #[test]
