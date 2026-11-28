@@ -541,7 +541,9 @@ where
                     Some(request) => {
                         let payload =
                             crate::gameplay_transport::forge_preview::refused_reply(request.nonce)
-                                .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
+                                .ok_or_else(|| {
+                                    disconnect(command, "forge_preview", "serve_state_unavailable")
+                                })?;
                         Dispatch::Reply(crate::foundation::CommandStatus::Rejected, payload)
                     }
                     None => Dispatch::Unregistered,

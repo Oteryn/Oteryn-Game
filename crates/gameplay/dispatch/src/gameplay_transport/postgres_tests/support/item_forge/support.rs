@@ -129,9 +129,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
         item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         let (dust, limit) = match case {
             Case::Preview | Case::PreviewBusyHolder => (300, 300),
-            Case::FailureThenSuccess => (200, 200),
-            Case::Items(_) | Case::Chest(_) | Case::ChestFull | Case::ChestScheduledInputs | Case::ChestGuards(_)
-            | Case::Integrity | Case::CoreRefusal | Case::MixedFee => (1000, 1000),
+            Case::Items(_) | Case::Integrity | Case::CoreRefusal | Case::MixedFee => (1000, 1000),
             Case::Refusals | Case::BusyHolder => (59, 100),
             Case::DustCap => {
                 let max = crate::domain::forge_dust::DustLimit::from_upgrade_count(

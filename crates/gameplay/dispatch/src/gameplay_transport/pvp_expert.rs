@@ -94,21 +94,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         mut modes: ExpertFightModes,
-    ) -> AttackIntentDisposition {
+    ) -> Result<AttackIntentDisposition, DurabilityError> {
         let Some(permit) = self.spell_lane_permit().await else {
-            return AttackIntentDisposition::Rejected;
+            return Ok(AttackIntentDisposition::Rejected);
         };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         if states.get(&runtime, actor, session).is_none() {
-            return AttackIntentDisposition::Rejected;
+            return Ok(AttackIntentDisposition::Rejected);
         }
-        let Ok((world, black)) = self
+        let (world, black) = self
             .expert_context(&runtime, actor, session, command_id, &permit)
-            .await
-        else {
-            return AttackIntentDisposition::Rejected;
-        };
+            .await?;
         // Global fixes Hardcore to Red Fist; ignore the requested expert choice there.
         if world == WorldPvpType::Hardcore {
             modes.expert = ExpertMode::RedFist;
@@ -117,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Expert controls are disabled outside Open PvP; ignore the requested choice.
             modes.expert = ExpertMode::Dove;
         } else if black && modes.expert == ExpertMode::RedFist {
-            return AttackIntentDisposition::Rejected;
+            return Ok(AttackIntentDisposition::Rejected);
         }
         // No combat/skull lock on switching to peaceful modes is supported by the references.
         if self
@@ -127,9 +124,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .set_expert_modes(&runtime, actor, session, modes)
         {
-            AttackIntentDisposition::Ok
+            Ok(AttackIntentDisposition::Ok)
         } else {
-            AttackIntentDisposition::Rejected
+            Ok(AttackIntentDisposition::Rejected)
         }
     }
 

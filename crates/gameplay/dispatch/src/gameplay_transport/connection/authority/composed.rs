@@ -1955,6 +1955,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
         self.set_expert_fight_modes(actor, session, command_id, modes)
             .await
+            .unwrap_or(AttackIntentDisposition::Rejected)
     }
 
     async fn observe_expert_modes(

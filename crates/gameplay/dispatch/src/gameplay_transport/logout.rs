@@ -24,6 +24,29 @@ pub enum LogoutReply {
     Unknown,
 }
 
+#[cfg(test)]
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum ReleaseRetryStage {
+    ConditionsHolder,
+}
+
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct LogoutReleaseProbe {
+    pub(super) before_conditions: tokio::sync::Notify,
+    pub(super) resume_conditions: tokio::sync::Notify,
+    pub(super) retry_observed: tokio::sync::Notify,
+    pub(super) retry_exhausted: tokio::sync::Notify,
+    pub(super) logout_finished: tokio::sync::Notify,
+    pub(super) first_retry: std::sync::OnceLock<ReleaseRetryStage>,
+    pub(super) retry_count: std::sync::atomic::AtomicUsize,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static LOGOUT_RELEASE_PROBE: std::sync::Arc<LogoutReleaseProbe>;
+}
+
 pub(super) struct LogoutZones {
     pub(super) no_logout: bool,
     pub(super) protection_zone: Option<bool>,
@@ -353,8 +376,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let ReleaseAttempt::Retry(stage) = step else {
                 break step;
             };
+            #[cfg(test)]
+            if stage == "conditions_holder" {
+                let _ = LOGOUT_RELEASE_PROBE.try_with(|probe| {
+                    probe
+                        .retry_count
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    if probe
+                        .first_retry
+                        .set(ReleaseRetryStage::ConditionsHolder)
+                        .is_ok()
+                    {
+                        probe.retry_observed.notify_one();
+                    }
+                });
+            }
+            let holder = self
+                .root
+                .checked_out_pass_site()
+                .map_or_else(|| "none".to_owned(), |site| site.to_string());
             operator_event(&format!(
-                "event=logout_release_retry stage={stage} ms={}",
+                "event=logout_release_retry stage={stage} ms={} holder={holder}",
                 started.elapsed().as_millis()
             ));
             if stage == "familiar" {
@@ -409,6 +451,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ReleaseAttempt::Done(GraceExpiryResult::Unknown) => {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
+            }
+            ReleaseAttempt::Retry("conditions_holder") if !channel_switch => {
+                operator_event(
+                    "event=logout_busy stage=release_retry_exhausted phase=condition_save",
+                );
+                let lifted = self.states.fence_holders.lift(
+                    &mut *self.runtime.lock().await,
+                    actor,
+                    &mut hold,
+                );
+                if lifted.is_ok() {
+                    LogoutReply::Result(LogoutResult::Busy)
+                } else {
+                    self.states.fence_holders.keep(hold);
+                    LogoutReply::Unknown
+                }
             }
             ReleaseAttempt::Retry(_) => match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Lifted => {

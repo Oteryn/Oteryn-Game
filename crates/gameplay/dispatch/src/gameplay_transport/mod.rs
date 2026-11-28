@@ -1552,6 +1552,12 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// The budget of the durable reads that gate one in-session command, such as a step's PvP
     /// lock refresh (NODEBOOT-1): a busy holder is retried, waiting for its return, for at most
     /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
+    fn holder_wait_window() -> Duration {
+        connection::IDLE_LIVENESS
+            .interval
+            .saturating_sub(crate::durability::DB_PASS_DEADLINE)
+    }
+
     fn for_command(root: &'r DurabilityRoot) -> Self {
         Self::for_holder_window(root, COMMAND_HOLDER_WINDOW)
     }

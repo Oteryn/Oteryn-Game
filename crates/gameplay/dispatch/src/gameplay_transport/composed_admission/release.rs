@@ -271,15 +271,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(probe) = &probe {
             probe.pause().await;
         }
-        if !matches!(
-            self.save_conditions_at_actor_end(actor, session).await,
-            Ok(true)
-        ) {
+        #[cfg(test)]
+        if let Ok(Some(probe)) = super::super::logout::LOGOUT_RELEASE_PROBE
+            .try_with(|probe| (probe.first_retry.get().is_none()).then(|| probe.clone()))
+        {
+            probe.before_conditions.notify_one();
+            probe.resume_conditions.notified().await;
+        }
+        let saved_conditions = self.save_conditions_at_actor_end(actor, session).await;
+        if !matches!(saved_conditions, Ok(true)) {
             #[cfg(test)]
             if let Some(probe) = probe {
                 probe.blocked();
             }
-            return ReleaseAttempt::Retry("conditions");
+            let stage = if matches!(
+                saved_conditions,
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ) {
+                "conditions_holder"
+            } else {
+                "conditions"
+            };
+            return ReleaseAttempt::Retry(stage);
         }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
         progress.kills = match self.seal_kill_rewards(session).await {

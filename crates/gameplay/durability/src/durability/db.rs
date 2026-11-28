@@ -2243,6 +2243,12 @@ impl DurabilityRoot {
         owner.map(|(site, ..)| site)
     }
 
+    /// Site and elapsed hold time for the current checkout.
+    pub fn checked_out_semantic_pass(&self) -> Option<(&'static std::panic::Location<'static>, Duration)> {
+        let owner = self.holder_owner.lock().ok()?;
+        owner.filter(|_| !self.is_ready()).map(|(site, since, ..)| (site, since.elapsed()))
+    }
+
     /// Call site of the current root checkout, if one is active.
     pub fn checked_out_pass_site(&self) -> Option<&'static std::panic::Location<'static>> {
         let owner = self.holder_owner.lock().ok()?;
