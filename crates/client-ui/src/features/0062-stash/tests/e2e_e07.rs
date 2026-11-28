@@ -52,11 +52,11 @@ fn capture() -> Result<Capture, Error> {
     }
     Ok(Capture {
         open: reply(stash::StashOutcome::Opened, 0, 0)?,
-        stow: reply(stash::StashOutcome::Committed, 5, 5)?,
-        browse: reply(stash::StashOutcome::Opened, 0, 5)?,
-        withdraw: reply(stash::StashOutcome::Committed, 0, 4)?,
-        after: reply(stash::StashOutcome::Opened, 0, 4)?,
-        expected: "key=oteryn:item.tibia.i3277\nrevision=r1\nstowed=5\nopen_total=0\nafter_stow=5\nafter_withdraw=4\n".into(),
+        stow: reply(stash::StashOutcome::Committed, 2, 2)?,
+        browse: reply(stash::StashOutcome::Opened, 0, 2)?,
+        withdraw: reply(stash::StashOutcome::Committed, 0, 1)?,
+        after: reply(stash::StashOutcome::Opened, 0, 1)?,
+        expected: "key=oteryn:item.tibia.i3277\nrevision=r1\nstowed=2\n".into(),
     })
 }
 
@@ -74,8 +74,36 @@ fn response(payload: &[u8]) -> Result<StashResponse, Error> {
     })
 }
 
-fn total(panel: &StashPanel) -> u64 {
-    panel.rows.iter().map(|row| u64::from(row.quantity)).sum()
+fn exact_page(panel: &StashPanel, expected: Option<(&str, &str, u32)>) -> bool {
+    panel.page == 0
+        && !panel.has_more
+        && panel
+            .rows
+            .iter()
+            .map(|row| {
+                (
+                    row.definition_key.as_str(),
+                    row.definition_revision.as_str(),
+                    row.quantity,
+                    row.migration_required,
+                )
+            })
+            .eq(expected
+                .into_iter()
+                .map(|(key, revision, quantity)| (key, revision, quantity, false)))
+}
+
+fn check_withdrawal(
+    panel: &StashPanel,
+    response: &StashResponse,
+    key: &str,
+    revision: &str,
+) -> bool {
+    response.reply.outcome == stash::StashOutcome::Committed
+        && response.reply.stowed_quantity == 0
+        && !panel.pending
+        && panel.feedback.is_none()
+        && exact_page(panel, Some((key, revision, 1)))
 }
 
 #[test]
@@ -103,10 +131,7 @@ fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
 
     request(&mut panel, Intent::Refresh).ok_or("open")?;
     apply_result(&mut panel, &response(&data.open)?);
-    assert_eq!(
-        total(&panel),
-        value(&data.expected, "open_total")?.parse::<u64>()?
-    );
+    assert!(exact_page(&panel, None));
     assert_eq!(panel.feedback, None);
 
     let item = oteryn_client_runtime::depot::ItemEntry {
@@ -141,41 +166,30 @@ fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
         ))
     );
 
+    assert_eq!(stowed, 2);
+    assert!(exact_page(&panel, Some((key, revision, 2))));
     request(&mut panel, Intent::Refresh).ok_or("browse")?;
     apply_result(&mut panel, &response(&data.browse)?);
-    assert_eq!(
-        total(&panel),
-        value(&data.expected, "after_stow")?.parse::<u64>()?
-    );
-    let row = panel
-        .rows
-        .iter()
-        .position(|r| r.definition_key == key && r.definition_revision == revision)
-        .ok_or("stowed definition absent")?;
-    assert!(panel.rows[row].quantity >= stowed);
-    assert_eq!(
-        row_label(&panel.rows[row]),
-        format!("{key} ({revision}) × {}", panel.rows[row].quantity)
-    );
-
-    let command = request(&mut panel, Intent::Withdraw { row, amount: 1 }).ok_or("withdraw")?;
+    assert!(exact_page(&panel, Some((key, revision, 2))));
+    assert_eq!(row_label(&panel.rows[0]), format!("{key} ({revision}) × 2"));
+    let mapped = visible_withdraw(&panel, 0, 1).ok_or("visible withdrawal")?;
+    let command = request(&mut panel, mapped).ok_or("withdraw")?;
     let (intent, filter) =
         stash::decode_stash_query(&command.payload).map_err(|error| format!("{error:?}"))?;
     assert_eq!(filter, Some(stash::StashFilter::default()));
     assert_eq!(
         intent.action,
         stash::StashAction::Withdraw {
-            row: panel.rows[row].handle,
+            row: panel.rows[0].handle,
             amount: 1
         }
     );
-    apply_result(&mut panel, &response(&data.withdraw)?);
+    let withdrawn = response(&data.withdraw)?;
+    apply_result(&mut panel, &withdrawn);
+    assert!(check_withdrawal(&panel, &withdrawn, key, revision));
     request(&mut panel, Intent::Refresh).ok_or("after")?;
     apply_result(&mut panel, &response(&data.after)?);
-    assert_eq!(
-        total(&panel),
-        value(&data.expected, "after_withdraw")?.parse::<u64>()?
-    );
+    assert!(exact_page(&panel, Some((key, revision, 1))));
     let shown = panel
         .rows
         .iter()
@@ -191,5 +205,26 @@ fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
         Some("The item changed; select a carried item again")
     );
     assert_eq!(panel.rows, rows);
+    Ok(())
+}
+
+#[test]
+fn e07_rejects_wrong_withdrawal_before_refresh() -> Result<(), Error> {
+    let mut panel = StashPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let key = "oteryn:item.tibia.i3277";
+    let browse = response(&reply(stash::StashOutcome::Opened, 0, 2)?)?;
+    apply_result(&mut panel, &browse);
+    assert!(visible_withdraw(&panel, 1, 1).is_none());
+    let committed = response(&reply(stash::StashOutcome::Committed, 0, 1)?)?;
+    apply_result(&mut panel, &committed);
+    assert!(check_withdrawal(&panel, &committed, key, "r1"));
+    panel.feedback = Some("wrong".into());
+    assert!(!check_withdrawal(&panel, &committed, key, "r1"));
+    let wrong = response(&reply(stash::StashOutcome::Committed, 0, 2)?)?;
+    apply_result(&mut panel, &wrong);
+    assert!(!check_withdrawal(&panel, &wrong, key, "r1"));
     Ok(())
 }

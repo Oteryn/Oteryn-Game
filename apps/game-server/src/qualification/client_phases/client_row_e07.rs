@@ -47,8 +47,66 @@ async fn send(
     Ok((reply, result.payload, result.server_sequence))
 }
 
-fn total(panel: &ui::StashPanel) -> u64 {
-    panel.rows.iter().map(|row| u64::from(row.quantity)).sum()
+async fn walk_once(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, before, direction).ok_or("E07 planned step has no destination")?;
+        let result = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if !valid_step(
+            result.disposition,
+            result.world_spatial_delta.is_some(),
+            expected == actual,
+        ) {
+            let occupants: Vec<_> = client
+                .world_entities()
+                .into_iter()
+                .flat_map(|entities| entities.iter())
+                .filter(|entity| tile(entity.position).ok() == Some(expected))
+                .map(|entity| entity.entity)
+                .collect();
+            return Err(format!("E07 step direction={direction:?} before={before:?} expected={expected:?} actual={actual:?} occupants={occupants:?} reply={result:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        // Pace the next first attempt using the server's committed movement duration.
+        client
+            .service_liveness(Duration::from_millis(u64::from(result.step_wait_ms)))
+            .await?;
+        client.take_events();
+    }
+    Ok(())
+}
+
+fn valid_step(disposition: StepDisposition, has_delta: bool, reached_destination: bool) -> bool {
+    disposition == StepDisposition::Moved && has_delta && reached_destination
+}
+
+fn exact_page(reply: &stash::StashReply, expected: Option<(&str, &str, u32)>) -> TestResult {
+    let observed: Vec<_> = reply
+        .rows
+        .iter()
+        .map(|row| {
+            (
+                row.definition_key.as_str(),
+                row.definition_revision.as_str(),
+                row.quantity,
+            )
+        })
+        .collect();
+    let expected = expected.as_slice();
+    if reply.page != 0
+        || reply.has_more
+        || observed != expected
+        || reply.rows.iter().any(|row| row.migration_required)
+    {
+        return Err(format!("E07 stash page expected={expected:?} actual={reply:?}").into());
+    }
+    Ok(())
 }
 
 fn carried_quantity(
@@ -101,7 +159,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         near_locker(world, at)
     })
     .ok_or("no reachable authored depot locker")?;
-    walk(&mut client, world, &path).await?;
+    walk_once(&mut client, world, &path).await?;
     let mut panel = ui::StashPanel {
         selected: true,
         ..Default::default()
@@ -111,7 +169,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if opened.outcome != stash::StashOutcome::Opened {
         return Err(format!("stash open {:?}", opened.outcome).into());
     }
-    let before = total(&panel);
+    exact_page(&opened, None)?;
     // Global Supply Stash explicitly supports Health Potions. Inventory order is
     // unrelated to eligibility and can also put the starter gold stack first.
     let potion = provisioning::item_reference(&definitions, 266)?;
@@ -129,13 +187,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .definition_at(item.item_definition_ref)
         .map(|(key, revision)| (key.to_owned(), revision.to_owned()))
         .ok_or("carried definition unknown")?;
-    if panel
-        .rows
-        .iter()
-        .any(|row| row.definition_key == key && row.definition_revision == revision)
-    {
-        return Err("Health Potion balance already exists before stow".into());
-    }
     if carried_quantity(&client, potion)? != 2 {
         return Err("E07 requires exactly two carried Health Potions".into());
     }
@@ -147,70 +198,56 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("stow reply {stowed:?}").into());
     }
+    exact_page(&stowed, Some((&key, &revision, 2)))?;
     await_carried_quantity(&mut client, potion, 0).await?;
     let (browsed, browse_bytes, browse_sequence) =
         send(&mut client, &mut panel, ui::Intent::Refresh).await?;
-    let after_stow = total(&panel);
-    if after_stow != before + u64::from(item.count.get()) {
-        return Err("stash total differs from stowed quantity".into());
-    }
     if browsed.outcome != stash::StashOutcome::Opened {
         return Err(format!("stash browse after stow {:?}", browsed.outcome).into());
     }
-    let row = browsed
-        .rows
-        .iter()
-        .position(|r| {
-            r.definition_key == key && r.definition_revision == revision && r.quantity == 2
-        })
-        .ok_or("stowed definition absent from stash page")?;
-    let (withdrawn, withdraw_bytes, withdraw_sequence) = send(
-        &mut client,
-        &mut panel,
-        ui::Intent::Withdraw { row, amount: 1 },
-    )
-    .await?;
-    if withdrawn.outcome != stash::StashOutcome::Committed {
-        return Err(format!("withdraw outcome {:?}", withdrawn.outcome).into());
+    exact_page(&browsed, Some((&key, &revision, 2)))?;
+    let intent = ui::visible_withdraw(&panel, 0, 1).ok_or("E07 visible withdrawal unavailable")?;
+    let (withdrawn, withdraw_bytes, withdraw_sequence) =
+        send(&mut client, &mut panel, intent).await?;
+    if withdrawn.outcome != stash::StashOutcome::Committed
+        || withdrawn.stowed_quantity != 0
+        || panel.pending
+        || panel.feedback.is_some()
+    {
+        return Err(format!(
+            "E07 immediate withdrawal reply={withdrawn:?} feedback={:?}",
+            panel.feedback
+        )
+        .into());
     }
+    exact_page(&withdrawn, Some((&key, &revision, 1)))?;
     await_carried_quantity(&mut client, potion, 1).await?;
     let (after, after_bytes, after_sequence) =
         send(&mut client, &mut panel, ui::Intent::Refresh).await?;
-    let after_withdraw = total(&panel);
-    if after.outcome != stash::StashOutcome::Opened
-        || after_withdraw != after_stow - 1
-        || !after.rows.iter().any(|r| {
-            r.definition_key == key && r.definition_revision == revision && r.quantity == 1
-        })
-    {
-        return Err("one-unit withdrawal changed the wrong quantity".into());
+    if after.outcome != stash::StashOutcome::Opened {
+        return Err(format!("stash browse after withdrawal {:?}", after.outcome).into());
     }
+    exact_page(&after, Some((&key, &revision, 1)))?;
     let previous_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("E07 logout refused".into());
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("E07 logout refused: {logout:?}").into());
     }
     let mut fresh = connect_character(clients, 0x3a, 1).await?;
     if fresh.join_snapshot().game_session_id == previous_session {
         return Err("E07 relog reused the old session".into());
     }
     let (persisted, _, _) = send(&mut fresh, &mut panel, ui::Intent::Refresh).await?;
-    if carried_quantity(&fresh, potion)? != 1
-        || persisted.outcome != stash::StashOutcome::Opened
-        || total(&panel) != after_withdraw
-        || !persisted.rows.iter().any(|r| {
-            r.definition_key == key && r.definition_revision == revision && r.quantity == 1
-        })
-    {
-        return Err("E07 relog did not preserve exactly one stashed Health Potion".into());
+    if carried_quantity(&fresh, potion)? != 1 || persisted.outcome != stash::StashOutcome::Opened {
+        return Err("E07 relog did not preserve the withdrawal".into());
     }
+    exact_page(&persisted, Some((&key, &revision, 1)))?;
     let session = uuid_text(previous_session.as_bytes());
     let sequences = format!(
         "{open_sequence},{stow_sequence},{browse_sequence},{withdraw_sequence},{after_sequence}"
     );
     let expected = format!(
-        "key={key}\nrevision={revision}\nstowed={}\nopen_total={before}\nafter_stow={after_stow}\nafter_withdraw={after_withdraw}\nsession={session}\nsequences={sequences}\nhandle={}\ndefinition_ref={}\n",
+        "key={key}\nrevision={revision}\nstowed={}\nsession={session}\nsequences={sequences}\nhandle={}\ndefinition_ref={}\n",
         item.count.get(),
         item.handle,
         item.item_definition_ref
@@ -222,7 +259,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e07-after.bin", &after_bytes);
     capture("e07-expected.txt", expected.as_bytes());
     Ok(format!(
-        "session={session} sequences={sequences} key={key} stowed={} after_stow={after_stow} after_withdraw={after_withdraw}",
+        "session={session} sequences={sequences} key={key} stowed={} after_stow=2 after_withdraw=1",
         item.count.get()
     ))
 }
@@ -239,5 +276,52 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E07.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn e07_first_step_refusals_cannot_count_as_movement() {
+        for disposition in [
+            StepDisposition::Rejected,
+            StepDisposition::Blocked,
+            StepDisposition::TooEarly,
+        ] {
+            assert!(!valid_step(disposition, true, true));
+        }
+        assert!(!valid_step(StepDisposition::Moved, false, true));
+        assert!(!valid_step(StepDisposition::Moved, true, false));
+        assert!(valid_step(StepDisposition::Moved, true, true));
+    }
+
+    #[test]
+    fn e07_stash_rejects_equal_total_replacements_and_extra_rows() -> TestResult {
+        let mut reply = stash::StashReply {
+            outcome: stash::StashOutcome::Opened,
+            stowed_quantity: 0,
+            transaction: None,
+            page: 0,
+            has_more: false,
+            rows: vec![],
+        };
+        exact_page(&reply, None)?;
+        let potion = ("potion", "r1", 2);
+        reply.rows.push(stash::StashRow {
+            handle: [1; 16],
+            definition_key: "unrelated".into(),
+            definition_revision: "r1".into(),
+            quantity: 2,
+            migration_required: false,
+        });
+        assert!(exact_page(&reply, None).is_err());
+        assert!(exact_page(&reply, Some(potion)).is_err());
+        reply.rows[0].definition_key = "potion".into();
+        exact_page(&reply, Some(potion))?;
+        reply.has_more = true;
+        assert!(exact_page(&reply, Some(potion)).is_err());
+        Ok(())
     }
 }

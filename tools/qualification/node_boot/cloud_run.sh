@@ -110,6 +110,29 @@ interrupt_run() {
 trap 'interrupt_run 130' INT
 trap 'interrupt_run 143' TERM
 
+# Match the row selector's decimal usize range, including leading zeros and +.
+e07_selected() {
+  [[ "$1" == rows ]] || return 1
+  python3 - "${OTERYN_E2E_ROW_BATCH:-}" <<'PYTHON'
+import re
+import struct
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+parts = batch.split(":")
+if len(parts) != 2 or any(not re.fullmatch(r"\+?[0-9]+", part) for part in parts):
+    sys.exit(1)
+limit = (1 << (8 * struct.calcsize("P"))) - 1
+numbers = [part.lstrip("+").lstrip("0") or "0" for part in parts]
+if any(len(number) > len(str(limit)) for number in numbers):
+    sys.exit(1)
+start, length = map(int, numbers)
+sys.exit(not (start <= limit and length <= limit and start <= 151 < start + length))
+PYTHON
+}
+
 failed=0
 index=0
 for group in "$@"; do
@@ -118,7 +141,7 @@ for group in "$@"; do
   started=$SECONDS
   status=0
   row_env=()
-  if [[ "$group" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 151:1 ]]; then
+  if e07_selected "$group"; then
     capture_dir="$work_dir/$index-e07-captures"
     mkdir -- "$capture_dir" || blocked e07_capture_directory
     row_env+=("E2E_ALL_CAPTURE_DIR=$capture_dir")
