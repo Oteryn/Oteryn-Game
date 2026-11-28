@@ -1200,6 +1200,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         2,
     ),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),
+    // Published Soul War levers use the combat room and keep qualification closed.
+    (
+        "gameplay_transport/postgres_tests/w11_published_soul_war_lever.rs",
+        1,
+    ),
     // Wheel socket/unsocket fixtures add two explicit empty-room overrides;
     // the production qualified-room construction remains unchanged.
     ("gameplay_transport/postgres_tests/wheel_allocation.rs", 5),
