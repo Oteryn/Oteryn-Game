@@ -13,7 +13,10 @@ use std::collections::HashSet;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::connection::AdmittedSession;
-use super::{ComposedFreshAdmission, RECONCILE_ATTEMPTS, RECONCILE_BACKOFF, SecureIdentifiers};
+use super::{
+    AdmissionRetryBudget, ComposedFreshAdmission, RECONCILE_ATTEMPTS, RECONCILE_BACKOFF,
+    SecureIdentifiers,
+};
 use crate::domain::CharacterId;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
@@ -126,7 +129,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(Some(fence)) => fence,
                 // The session no longer owns the actor: any write would be fenced out.
                 Ok(None) => return MonkSave::FencedOut,
-                Err(()) => continue,
+                // The fence reader already waited for the holder. An outer
+                // write retry must not restart an exhausted checkout window.
+                Err(()) => return MonkSave::Unknown,
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let values = {
@@ -193,16 +198,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session_id: GameSessionId,
     ) -> Result<Option<CurrentCharacterGameplayFence>, ()> {
+        use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (session, _) = store.current_session_at(session_id).await.map_err(|_| ())?;
+        let budget = AdmissionRetryBudget::for_root(&session_id, self.root);
+        let (session, _) = budget
+            .retry_durability("monk_save_session", || store.current_session_at(session_id))
+            .await
+            .map_err(|_| ())?;
         if session.session_state() == GameSessionState::Terminal {
             return Ok(None);
         }
         let character_id =
             CharacterId::from_bytes(*session.commit().character_id().as_bytes()).map_err(|_| ())?;
-        let record = self
-            .root
-            .read_current_character(self.character, character_id)
+        let record = budget
+            .retry_holder(
+                || {
+                    self.root
+                        .read_current_character(self.character, character_id)
+                },
+                |error| {
+                    matches!(
+                        error,
+                        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable)
+                    )
+                },
+            )
             .await
             .map_err(|_| ())?;
         Ok(Some(CurrentCharacterGameplayFence {

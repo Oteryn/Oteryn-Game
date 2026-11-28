@@ -189,7 +189,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=logout_busy stage=spell_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         }
-        if !self.refresh_pvp_locks(actor, session).await {
+        if !self.refresh_logout_pvp_locks(actor, session).await {
             // An unreadable fence or PvP row proves no fight deadline. Close through the
             // ordinary unknown/control-loss path without authorizing a terminal release.
             operator_event("event=logout_unknown stage=pvp_refresh kind=unknown");
@@ -447,6 +447,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 UnendedSettle::Unknown => {
                     self.states.fence_holders.keep(hold);
+                    operator_event(&format!("event=logout_unknown stage={stage} kind=unknown"));
                     operator_event("event=logout_unknown stage=logout_settle kind=unknown");
                     LogoutReply::Unknown
                 }

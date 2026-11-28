@@ -1,5 +1,6 @@
 //! Live combat locks and their fenced readmission refresh.
 use super::*;
+use crate::gameplay_transport::AdmissionRetryBudget;
 
 pub(in crate::gameplay_transport) fn lock_mut(
     states: &mut ChannelSpellStates,
@@ -54,6 +55,18 @@ pub(in crate::gameplay_transport) fn pz_blocked(
         .any(|(a, s, l)| *a == actor && *s == session && l.blocks_pz_entry(now))
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn refresh_logout_pvp_locks(
+        &self,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+    ) -> bool {
+        let Ok(budget) = AdmissionRetryBudget::for_foreground_root(&session, self.root) else {
+            return false;
+        };
+        self.refresh_pvp_locks_with_budget(actor, session, None, budget)
+            .await
+    }
+
     pub(in crate::gameplay_transport) async fn refresh_pvp_locks(
         &self,
         actor: ExactActorRef,
@@ -69,15 +82,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         generation: Option<u64>,
     ) -> bool {
+        let Ok(budget) = AdmissionRetryBudget::for_foreground_command(self.root) else {
+            return false;
+        };
+        self.refresh_pvp_locks_with_budget(actor, session, generation, budget)
+            .await
+    }
+
+    async fn refresh_pvp_locks_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        generation: Option<u64>,
+        budget: AdmissionRetryBudget<'_>,
+    ) -> bool {
         // NODEBOOT-1: both reads go through the shared holder that background passes also
         // take, so a busy holder is retried briefly instead of refusing the command.
         use crate::durability::{
             DurabilityError, character_progression::CharacterProgressionError,
-        };
-        let Ok(budget) =
-            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
-        else {
-            return false;
         };
         let Ok((fence, stored, house_scope)) = budget
             .retry_durability("pvp_refresh", async || {

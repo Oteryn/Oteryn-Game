@@ -100,6 +100,24 @@ fn logout_retries_busy_familiar_write_and_releases_postgres() -> TestResult {
     scenario(false, Finish::HolderBusy("familiar_write"))
 }
 
+#[test]
+fn s03_logout_waits_for_monster_profile_background_holder_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(false, Finish::HolderBusy("monster_profile_holder"))
+}
+
+#[test]
+fn s04b_logout_waits_for_inventory_capacity_holder_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(false, Finish::HolderBusy("inventory_capacity_holder"))
+}
+
 #[derive(Clone, Copy)]
 enum Finish {
     Logout,
@@ -190,9 +208,40 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
             use tokio::sync::Notify;
 
             let barrier = Arc::new((Notify::new(), Notify::new()));
+            let checkout = match stage {
+                "monster_profile_holder" => "conditions",
+                "inventory_capacity_holder" => "kill_rewards",
+                _ => stage,
+            };
             let reply = tokio::time::timeout(Duration::from_secs(10), async {
+                let profile_checkout = if stage == "monster_profile_holder" {
+                    use crate::durability::DurabilityRoot;
+                    h.root.await_ready().await?;
+                    let (ready, ready_rx) = tokio::sync::oneshot::channel();
+                    let (start, start_rx) = tokio::sync::oneshot::channel();
+                    let (checkout, checkout_rx) = tokio::sync::oneshot::channel();
+                    let root = h.root.clone();
+                    let profile_turn = tokio::spawn(async move {
+                        DurabilityRoot::with_background_holder(root.with_background_operation(async {
+                            // The profile turn already has its background grant
+                            // when logout begins. Like the real owner, it may
+                            // take a further pass using that same grant.
+                            let Ok(first) = root.try_issue_background_semantic_pass() else { return; };
+                            if first.run(|_, _| Box::pin(async { Ok(()) })).await.is_ok()
+                                && ready.send(()).is_ok()
+                                && start_rx.await.is_ok()
+                            {
+                                let _ = checkout.send(root.try_issue_background_semantic_pass());
+                            }
+                        })).await;
+                    });
+                    ready_rx.await?;
+                    Some((start, checkout_rx, profile_turn))
+                } else {
+                    None
+                };
                 let mut logout = std::pin::pin!(LOGOUT_CHECKOUT_BARRIER.scope(
-                    (Cell::new(Some(stage)), barrier.clone()),
+                    (Cell::new(Some(checkout)), barrier.clone()),
                     owner.logout_command(admitted, 1),
                 ));
                 tokio::select! {
@@ -200,6 +249,27 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                     reply = &mut logout => return Err(format!("logout ended before {stage}: {reply:?}").into()),
                 }
                 h.root.await_ready().await?;
+                if stage == "inventory_capacity_holder" {
+                    // Block only the capacity read's PostgreSQL statement after
+                    // it takes the single holder. Release the lock promptly once
+                    // the logout attempts its gameplay-fence checkout.
+                    let mut lock = h.pool.begin().await?;
+                    sqlx::query("LOCK TABLE game_character_roots IN ACCESS EXCLUSIVE MODE")
+                        .execute(&mut *lock).await?;
+                    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(
+                        active.native_gameplay().ok_or("native item weights")?,
+                    ).with_wheel(owner.premium_coordinator);
+                    let mut capacity = std::pin::pin!(h.root.read_inventory_capacity(
+                        &authority, &h.node, admitted.item_fence.ok_or("current item fence")?, None, &weights,
+                    ));
+                    assert!(poll_fn(|cx| Poll::Ready(capacity.as_mut().poll(cx))).await.is_pending());
+                    assert!(matches!(h.root.try_issue_semantic_pass(), Err(crate::durability::DurabilityError::RootUnavailable)));
+                    barrier.1.notify_one();
+                    assert!(poll_fn(|cx| Poll::Ready(logout.as_mut().poll(cx))).await.is_pending());
+                    lock.rollback().await?;
+                    assert!(capacity.await?.is_some(), "the capacity reader must own a real observation");
+                    return TestResult::Ok(logout.await);
+                }
                 if stage == "offline_training_revision" {
                     // The first read has returned; only the old combined
                     // budget should age before the second checkout starts.
@@ -207,7 +277,14 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                     tokio::time::advance(crate::durability::ROOT_RECOVERY_WINDOW).await;
                     tokio::time::resume();
                 }
-                let held = h.root.try_issue_semantic_pass()?;
+                let held = if let Some((start, checkout, profile_turn)) = profile_checkout {
+                    start.send(()).map_err(|_| "monster profile turn ended early")?;
+                    let held = checkout.await??;
+                    profile_turn.await?;
+                    held
+                } else {
+                    h.root.try_issue_semantic_pass()?
+                };
                 barrier.1.notify_one();
                 assert!(poll_fn(|cx| Poll::Ready(logout.as_mut().poll(cx))).await.is_pending());
                 held.run(|_, _| Box::pin(async { Ok(()) })).await?;
