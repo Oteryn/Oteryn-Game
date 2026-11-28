@@ -906,32 +906,48 @@ async fn prepare_c07_magic(
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::durability::character_build::{BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState};
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState,
+    };
     use crate::durability::character_progression::CurrentCharacterGameplayFence;
     use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
-    ).map_err(qualification_build::debug)?;
+    )
+    .map_err(qualification_build::debug)?;
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(character).await;
     let record = qualification_build::retry_holder(
-        Some(root), deadline, qualification_build::authority_busy,
+        Some(root),
+        deadline,
+        qualification_build::authority_busy,
         async || root.read_current_character(authority, character).await,
-    ).await.map_err(qualification_build::debug)?;
+    )
+    .await
+    .map_err(qualification_build::debug)?;
     let before = qualification_build::retry_holder(
-        Some(root), deadline, qualification_build::progression_busy,
+        Some(root),
+        deadline,
+        qualification_build::progression_busy,
         async || root.read_character_build_state(authority, character).await,
-    ).await.map_err(qualification_build::debug)?;
+    )
+    .await
+    .map_err(qualification_build::debug)?;
     if before.vocation() != "sorcerer" || before.magic() != (0, 0) {
         return Err("C07 magic preparation requires an untrained sorcerer".into());
     }
-    let formula = native.training_formula().ok_or("C07 training formula absent")?;
+    let formula = native
+        .training_formula()
+        .ok_or("C07 training formula absent")?;
     let after = DurableBuildState::new(before.vocation(), (1, 0), before.skills())
         .map_err(qualification_build::debug)?;
     let occurrence = BuildOccurrence::from_bytes(fixture_occurrence(
-        character.as_bytes(), "c07-sorcerer", b"magic",
-    )).map_err(qualification_build::debug)?;
+        character.as_bytes(),
+        "c07-sorcerer",
+        b"magic",
+    ))
+    .map_err(qualification_build::debug)?;
     let fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -942,10 +958,22 @@ async fn prepare_c07_magic(
         expected_character_revision: record.revision,
     };
     slot.commit_build(
-        root, authority, proof, fence,
-        BuildChangeRequest { occurrence, cause: BuildCause::Training, before, after, pruned_stance: None },
-        formula, None,
-    ).await.map_err(qualification_build::debug)?;
+        root,
+        authority,
+        proof,
+        fence,
+        BuildChangeRequest {
+            occurrence,
+            cause: BuildCause::Training,
+            before,
+            after,
+            pruned_stance: None,
+        },
+        formula,
+        None,
+    )
+    .await
+    .map_err(qualification_build::debug)?;
     Ok(())
 }
 
