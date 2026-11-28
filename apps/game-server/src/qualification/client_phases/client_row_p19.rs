@@ -10,7 +10,8 @@ use std::num::NonZeroU32;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let result = verdict::indexed_timeout(
-        Duration::from_secs(180),
+        // The measured floor-10 approach is 281 paced steps.
+        Duration::from_secs(600),
         verdict::observe(prove(clients, world)),
     )
     .await;
@@ -109,10 +110,10 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
                 && (u64::from(at.x), u64::from(at.y)) != (x, y)
         }).ok_or_else(|| format!("P19 selected {creature_key} {exact:?} is unreachable from {origin:?} at {position}"))?;
         evidence(&format!("P19 approach entity={exact:?} origin={origin:?} target={position} steps={}", path.len()));
-        move_first_attempt(&mut client, world, path).await?;
-        if creature_key != "oteryn:creature.rat"
-            || encounters.iter().any(|(kind, _, _, _)| *kind == classification)
-        {
+        let needs_entry_evidence = creature_key == "oteryn:creature.rat"
+            && !encounters.iter().any(|(kind, _, _, _)| *kind == classification);
+        move_first_attempt(&mut client, world, path, needs_entry_evidence).await?;
+        if !needs_entry_evidence {
             tokio::time::timeout(Duration::from_secs(15), async {
                 loop {
                     let appearances = client.session_mut().visible_appearances();
@@ -197,7 +198,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let combat_tile = tile(client.world_spatial().actor_position)?;
         let retreat = route(world, combat_tile, |at| is_logout_rest_tile(world, at))
             .ok_or("P19 FIXTURE_PLACEMENT no rest tile for live-marker relog")?;
-        move_first_attempt(&mut client, world, retreat).await?;
+        move_first_attempt(&mut client, world, retreat, false).await?;
         let rest_position = client.world_spatial().actor_position;
         let previous = client.join_snapshot().game_session_id;
         require_logout(&mut client, clients).await?;
@@ -222,7 +223,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     for (classification, stacks, exact, combat_tile) in encounters {
         let approach = forge_route(world, tile(client.world_spatial().actor_position)?, |at| at == combat_tile)
             .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile")?;
-        move_first_attempt(&mut client, world, approach).await?;
+        move_first_attempt(&mut client, world, approach, false).await?;
         let pre_attack = rewards(&mut client, Path::new(&capture)).await?;
         if pre_attack != before {
             return Err(format!("P19 rewards changed before the attack: before_spawn={before:?} before_attack={pre_attack:?}").into());
@@ -285,7 +286,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             is_logout_rest_tile(world, at)
         })
         .ok_or("P19 FIXTURE_PLACEMENT no route to protection zone for fresh admission")?;
-        move_first_attempt(&mut client, world, retreat).await?;
+        move_first_attempt(&mut client, world, retreat, false).await?;
         let at = client.world_spatial().actor_position;
         let previous = client.join_snapshot().game_session_id;
         require_logout(&mut client, clients).await?;
@@ -408,9 +409,13 @@ async fn move_first_attempt(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: Vec<StepDirection>,
+    keep_entry_events: bool,
 ) -> TestResult {
     let total_steps = path.len();
     for (index, direction) in path.into_iter().enumerate() {
+        if !keep_entry_events {
+            client.take_events();
+        }
         let origin = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, origin, direction).ok_or("P19 route has no landing")?;
         let movement = client.step(direction).await?;
