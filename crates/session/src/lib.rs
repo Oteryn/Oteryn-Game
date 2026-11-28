@@ -19,8 +19,12 @@
 /// Real wire codecs for downstream transport fixtures; no session mutation helpers.
 #[cfg(feature = "test-support")]
 pub mod test_support {
+    pub use super::inventory_capture::InventoryCapture;
     pub use oteryn_protocol_oteryn as wire;
 }
+
+#[cfg(feature = "test-support")]
+mod inventory_capture;
 
 /// Account achievement query and typed result.
 pub mod account_achievements;
@@ -400,6 +404,8 @@ pub struct Session<S> {
     appearance: Option<appearance_state::AppearanceState>,
     chat_revision: u64,
     map_header: Option<oteryn_protocol_oteryn::world_map::MapViewHeader>,
+    #[cfg(feature = "test-support")]
+    inventory_capture: inventory_capture::InventoryCapture,
     inventory_revision: u64,
     container_revision: u64,
     inventory: Option<CharacterInventory>,

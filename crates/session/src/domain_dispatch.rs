@@ -436,6 +436,8 @@ impl<S: SessionStream> Session<S> {
                     self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
                 )
                 .map_err(SessionError::ItemView)?;
+                #[cfg(feature = "test-support")]
+                self.inventory_capture.record_delta(server_sequence, payload);
                 self.inventory = Some(value.clone());
                 self.inventory_revision = new_revision;
                 Ok(SessionEvent::Inventory(applied(

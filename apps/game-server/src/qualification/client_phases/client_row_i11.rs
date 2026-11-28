@@ -5,7 +5,6 @@
 //!    NothingToUse reply and no inventory delta (the refusal path).
 //! 4. Logout, freshly admit the same character, and re-check the durable dough/bread quantities.
 use super::*;
-use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
     encode_item_use_intent,
@@ -22,7 +21,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
             .await;
     let (status, detail) = match result {
-        Ok(Ok(())) => ("PASS", "client-inventory-payload-captured".to_owned()),
+        Ok(Ok(())) => ("PASS", "client-inventory-live-capture-replayed".to_owned()),
         Ok(Err(error)) => ("FAIL", error.to_string().replace([' ', '\n', '\r'], "_")),
         Err(_) => ("FAIL", "step-timeout-observed=no-reply".to_owned()),
     };
@@ -61,11 +60,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if before_dough != 1 {
         return Err(format!("step-2_observed=expected-one-dough-actual-{before_dough}").into());
     }
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
-        .ok_or("I11 inventory snapshot absent")?
-        .clone();
+    let before = client.inventory().ok_or("I11 inventory absent")?.clone();
+    let session_id = *client.join_snapshot().game_session_id.as_bytes();
+    let snapshot = client.session_mut().inventory_capture();
+    if snapshot.snapshot.is_empty() || snapshot.session_id != session_id {
+        return Err("I11 live admission inventory capture absent".into());
+    }
     let source = client
         .inventory()
         .and_then(|inventory| {
@@ -97,7 +97,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .session_mut()
         .world_context_use(&payload)
         .await
-        .map_err(|error| verdict::context(format!("step=bake phase=USE-result observed={error}"), error))?;
+        .map_err(|error| {
+            verdict::context(
+                format!("step=bake phase=USE-result observed={error}"),
+                error,
+            )
+        })?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -115,12 +120,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         before_bread + 1,
     )
     .await
-    .map_err(|error| verdict::context(format!("step=bake phase=inventory-update observed={error}"), error))?;
-    if delta.base_revision != snapshot.revision {
-        return Err("step-2_observed=bake-delta-does-not-follow-admission-inventory".into());
+    .map_err(|error| {
+        verdict::context(
+            format!("step=bake phase=inventory-update observed={error}"),
+            error,
+        )
+    })?;
+    if delta.server_sequence <= reply.server_sequence {
+        return Err("I11 bake update did not follow its USE result".into());
     }
-    let delta_payload = item_view::encode_character_inventory(&delta.value)
-        .map_err(|error| format!("I11 inventory capture encode: {error:?}"))?;
+    let captured = client.session_mut().inventory_capture().clone();
+    let delta_payload = captured
+        .delta(delta.server_sequence)
+        .ok_or("I11 live inventory delta absent")?;
+    let selected = client.session_mut().selected_capabilities().to_vec();
     let refusal_source = client
         .inventory()
         .and_then(|inventory| {
@@ -177,20 +190,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut reloaded).await?;
     capture("i11-result.bin", &reply.payload)?;
-    capture("i11-snapshot.bin", &snapshot.payload)?;
-    capture("i11-inventory.bin", &delta_payload)?;
+    let snapshot_path = capture("i11-snapshot.bin", &captured.snapshot)?;
+    let delta_path = capture("i11-inventory.bin", delta_payload)?;
     capture(
         "i11-revisions.txt",
         format!(
-            "{} {} {} {}",
-            snapshot.revision, delta.base_revision, delta.new_revision, delta.server_sequence
+            "{session_id:02x?} {} {} {} {} {} {} {selected:?}",
+            captured.snapshot_sequence,
+            captured.snapshot_revision,
+            reply.server_sequence,
+            delta.base_revision,
+            delta.new_revision,
+            delta.server_sequence
         )
         .as_bytes(),
     )?;
-    capture(
-        "i11-expected.txt",
-        visible_inventory(&delta.value).as_bytes(),
+    let (replayed_before, replayed_after) = captured.replay(
+        &std::fs::read(snapshot_path)?,
+        &std::fs::read(delta_path)?,
+        delta.server_sequence,
+        &selected,
     )?;
+    if replayed_before != before || replayed_after != delta.value {
+        return Err("I11 replay inventory differs from the live pre-state or bake outcome".into());
+    }
     Ok(())
 }
 
@@ -233,24 +256,15 @@ async fn wait_quantities(
     }
 }
 
-fn visible_inventory(inventory: &oteryn_dev_client::CharacterInventory) -> String {
-    inventory
-        .entries
-        .iter()
-        .map(|item| format!("{} {}\n", item.item_definition_ref, item.count))
-        .collect()
-}
-
-fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(std::path::Path::new(&path).join(name))
-            .and_then(|mut file| file.write_all(bytes))
-            .map_err(|error| format!("I11_CAPTURE_WRITE_ERROR file={name} error={error}"))?;
-    }
-    Ok(())
+fn capture(name: &str, bytes: &[u8]) -> TestResult<std::path::PathBuf> {
+    let path = std::path::Path::new(&required("E2E_ALL_CAPTURE_DIR")?).join(name);
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .and_then(|mut file| file.write_all(bytes))
+        .map_err(|error| format!("I11_CAPTURE_WRITE_ERROR file={name} error={error}"))?;
+    Ok(path)
 }
 
 async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {

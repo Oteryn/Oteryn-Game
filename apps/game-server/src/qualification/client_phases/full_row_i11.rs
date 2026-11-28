@@ -340,8 +340,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "the journey exercises live millstone, water source, and oven conversions",
     );
     let mut client = prepare_inputs(&clients, &[WHEAT, BUCKET, ROPE]).await?;
-    mill_wheat(&mut client, world, &bytes).await?;
     let index = provisioning::item_index()?;
+    let wheat = provisioning::item_reference(&index, WHEAT)?;
+    let flour = provisioning::item_reference(&index, FLOUR)?;
+    let before_flour = quantity(&client, flour)?;
+    mill_wheat(&mut client, world, &bytes).await?;
     let dough = provisioning::item_reference(&index, DOUGH)?;
     let bread = provisioning::item_reference(&index, BREAD)?;
     let rope = provisioning::item_reference(&index, ROPE)?;
@@ -446,6 +449,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut reloaded = connect_character(&clients, 0xb9, 0).await?;
     if quantity(&reloaded, dough)? != before_dough - 1
         || quantity(&reloaded, bread)? != before_bread + 1
+        || quantity(&reloaded, wheat)? != 0
+        || quantity(&reloaded, flour)? != before_flour
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
     }
@@ -474,7 +479,37 @@ async fn walk_once(
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, from, direction);
-        let step = client.step(direction).await?;
+        let mut step = client.step(direction).await?;
+        if step.disposition == StepDisposition::Blocked
+            && tile(client.world_spatial().actor_position)? == from
+            && let Some(blocked) = expected
+        {
+            use oteryn_dev_client::EntityKind;
+            let occupant = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == EntityKind::Creature && tile(entity.position).ok() == Some(blocked)
+                }).map(|entity| entity.entity)
+            });
+            let Some(id) = occupant else {
+                return Err(format!("BLOCKER-SERVER I11 STEP Blocked at {blocked:?} without a creature occupant").into());
+            };
+            evidence(&format!("I11_STEP_BLOCKED creature={id:?} at={blocked:?} command={} sequence={}", step.command_id, step.result_server_sequence));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+            loop {
+                client.service_liveness(Duration::from_millis(50)).await?;
+                let position = client.world_entities().and_then(|entities| {
+                    entities.iter().find(|entity| entity.entity == id).map(|entity| entity.position)
+                });
+                if position.is_some_and(|position| tile(position).ok() != Some(blocked)) {
+                    evidence(&format!("I11_STEP_CLEARED creature={id:?} position={position:?}"));
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("I11 creature {id:?} did not clear {blocked:?}").into());
+                }
+            }
+            step = client.step(direction).await?;
+        }
         let arrived = tile(client.world_spatial().actor_position)?;
         if step.status != CommandStatus::Accepted
             || step.disposition != StepDisposition::Moved

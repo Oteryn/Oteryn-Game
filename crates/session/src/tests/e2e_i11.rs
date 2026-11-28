@@ -1,4 +1,5 @@
-//! I11 client replay: food crafting changes domain 9, consumed by
+//! Unit regression for the I11 inventory reducer. Live I11 replays its capture inside the row.
+//! Food crafting changes domain 9, consumed by
 //! `SnapshotState::decode` (`snapshot_state.rs`) and `Session::apply_state_delta`
 //! (`domain_dispatch.rs`), then exposed by `Session::inventory` (`session_access.rs`).
 use super::*;
@@ -11,7 +12,7 @@ const SELECTED: &[u32] = &[
 ];
 
 #[test]
-fn e2e_i11_inventory_replay() -> Result<(), BoxError> {
+fn i11_inventory_reducer_rejects_malformed_delta() -> Result<(), BoxError> {
     crate::tests::block_on(async {
         let (snapshot, delta, metadata, expected) = fixture()?;
         let numbers = metadata
@@ -70,6 +71,22 @@ fn e2e_i11_inventory_replay() -> Result<(), BoxError> {
             .await
             .map_err(|error| format!("I11 delta: {error:?}"))?;
         assert_eq!(visible(session.inventory()), expected);
+        #[cfg(feature = "test-support")]
+        {
+            let capture = session.inventory_capture();
+            let body = capture
+                .delta(sequence)
+                .ok_or("inventory delta was not captured")?;
+            let (before, after) = capture.replay(&snapshot, body, sequence, SELECTED)?;
+            assert_eq!(visible(Some(&before)), "3604 1\n");
+            assert_eq!(Some(&after), session.inventory());
+            assert!(
+                capture
+                    .replay(&snapshot, body, sequence + 1, SELECTED)
+                    .is_err()
+            );
+            assert!(capture.replay(&delta, body, sequence, SELECTED).is_err());
+        }
 
         let before = session.inventory().cloned();
         let malformed = encode_state_delta(
@@ -132,15 +149,6 @@ fn entity_snapshot() -> Result<(u32, Vec<u8>), BoxError> {
 }
 
 fn fixture() -> Result<(Vec<u8>, Vec<u8>, String, String), BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        return Ok((
-            std::fs::read(path.join("i11-snapshot.bin"))?,
-            std::fs::read(path.join("i11-inventory.bin"))?,
-            std::fs::read_to_string(path.join("i11-revisions.txt"))?,
-            std::fs::read_to_string(path.join("i11-expected.txt"))?,
-        ));
-    }
     let item = |handle, definition| ItemEntry {
         appearance_id: 0,
         handle: ItemHandle::new(handle).unwrap_or(ItemHandle::MIN),

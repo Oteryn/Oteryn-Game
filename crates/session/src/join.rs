@@ -174,7 +174,15 @@ impl<S: SessionStream> Session<S> {
                     .map_err(|_| FoundationProtocolError::MalformedFrame)?,
             });
         }
+        #[cfg(feature = "test-support")]
+        let inventory_capture = inventory_capture::InventoryCapture::new(
+            &assembled_body,
+            *accepted_fields.game_session_id.as_bytes(),
+            begin.target_server_sequence,
+        )?;
         Ok(Self {
+            #[cfg(feature = "test-support")]
+            inventory_capture,
             bulletin: None,
             stream,
             deadline,
