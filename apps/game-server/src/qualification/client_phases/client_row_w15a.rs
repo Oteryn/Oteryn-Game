@@ -243,13 +243,19 @@ async fn prepare_journal(clients: &SeamClients<'_>) -> TestResult<DevClientSessi
         .ok_or("Sam is not visible at the authored placement")?;
     talk_to_sam(&mut client, actor, "hi").await?;
     let offer = talk_to_sam(&mut client, actor, "old backpack").await?;
-    if !offer.iter().any(|text| text.contains("my old backpack")) {
+    if !offer.iter().any(|text| text.contains("my old adventurer's backpack")) {
         return Err(format!("Sam did not offer the backpack hand-in: {offer:?}").into());
+    }
+    let condition = talk_to_sam(&mut client, actor, "yes").await?;
+    if !condition.iter().any(|text| text.contains("Is it in pristine condition?"))
+        || backpack_count(&client)? != 1
+    {
+        return Err(format!("Sam did not ask about the still-carried backpack: {condition:?}").into());
     }
     let confirmation = talk_to_sam(&mut client, actor, "yes").await?;
     if !confirmation
         .iter()
-        .any(|text| text.contains("Thank you for your help."))
+        .any(|text| text.contains("ask my old friend Kroox to provide you a special dwarven armor"))
     {
         return Err(format!("Sam did not confirm the backpack hand-in: {confirmation:?}").into());
     }
