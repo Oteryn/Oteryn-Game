@@ -117,6 +117,26 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
+  if [[ "$group" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 123:1 ]]; then
+    E2E_ALL_CAPTURE_DIR="$(mktemp -d "$work_dir/i12-capture.XXXXXX")" \
+      || blocked i12_capture_directory_unavailable
+    cargo test --locked -p oteryn-session --lib --no-run --message-format=json \
+      > "$work_dir/i12-replay-build.json" 2> "$work_dir/i12-replay-build.log" \
+      || blocked i12_replay_build_failed
+    OTERYN_I12_REPLAY_BIN="$(python3 - "$work_dir/i12-replay-build.json" <<'PY_I12_REPLAY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    for record in map(json.loads, stream):
+        if record.get("target", {}).get("name") == "oteryn_session" and record.get("profile", {}).get("test") and record.get("executable"):
+            print(record["executable"])
+            break
+PY_I12_REPLAY
+    )"
+    [[ -x "$OTERYN_I12_REPLAY_BIN" ]] || blocked i12_replay_executable_missing
+    export E2E_ALL_CAPTURE_DIR OTERYN_I12_REPLAY_BIN
+  fi
   NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
