@@ -57,11 +57,11 @@ fn captured() -> Result<Captured, Error> {
     let encode = |reply: &prey::Reply| prey::encode_reply(reply).map_err(|e| format!("{e:?}"));
     Ok(Captured {
         active: encode(&reply(0))?,
-        refused: encode(&reply(prey::STATUS_NOT_OFFERED))?,
+        refused: Vec::new(),
         refused_current: encode(&reply(0))?,
         expected: format!(
             "slot=1\nstate=2\nselected=oteryn:creature.rat\nbonus=3\ngrade=4\npercent=20\nselection_epoch=5\nrefusal_status={}\n",
-            prey::STATUS_NOT_OFFERED
+            CommandStatus::Rejected as u32
         ),
     })
 }
@@ -109,8 +109,9 @@ fn e2e_w22b_replays_active_rat_loot_bonus_and_refusal() -> Result<(), Error> {
     );
 
     // A refused SelectAny reports the refusal and leaves the active slot exactly as it was.
-    let refusal: u8 = value(expected, "refusal_status")?.parse()?;
-    assert_eq!(refusal, prey::STATUS_NOT_OFFERED);
+    let refusal: u32 = value(expected, "refusal_status")?.parse()?;
+    assert_eq!(refusal, CommandStatus::Rejected as u32);
+    assert!(prey::decode_reply(&captured.refused).is_err());
     let select = request(
         &mut panel,
         Intent::SelectAny {
@@ -121,11 +122,14 @@ fn e2e_w22b_replays_active_rat_loot_bonus_and_refusal() -> Result<(), Error> {
     .ok_or("select request")?;
     apply_result(
         &mut panel,
-        &answer(select, &captured.refused, Some(&captured.refused_current)),
+        &PreyResponse {
+            status: CommandStatus::Rejected,
+            ..answer(select, &captured.refused, Some(&captured.refused_current))
+        },
     );
     assert_eq!(
         panel.feedback,
-        Some("This creature has not been offered to you today.")
+        Some("The server refused this action; refresh the list before trying again.")
     );
     assert_eq!(panel.slot(number), Some(&slot));
 
