@@ -577,9 +577,16 @@ async fn spike(
     if inherited.is_some() {
         return Ok(());
     }
-    let migration = include_str!(
+    let legacy = include_str!(
         "../../../../../../../apps/game-server/migrations/3339_cave_completionist_backfill.sql"
     );
+    let migration = include_str!(
+        "../../../../../../../apps/game-server/migrations/3365_cave_completionist_reconciliation.sql"
+    );
+    let checksum: String = sqlx::query_scalar(
+        "SELECT encode(checksum, 'hex') FROM _sqlx_migrations WHERE version=3339 AND success",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(checksum, "f9a7dec9820958ca2182e399c2bc46ac04b17343597a94de4ac81f28f18b23240f0c29b65598123778e56ea95b1c8d7b");
     // Bazaar-locked roots still prove the account grant, with no Character
     // progress row to clear before the next lifecycle case.
     for (lifecycle, previous_progress) in [(2_i16, 1), (3, 0), (4, 1)] {
@@ -653,7 +660,10 @@ async fn spike(
     assert_eq!((purchaser, progress), (true, 0));
     // Reuse the two historical purchases. Move the completing purchase to the
     // seller's retained alt and leave the earlier purchaser on the buyer's account.
-    for (addon, suffix) in [(1, "first"), (2, "second")] {
+    for (addon, suffix, legacy_applied, tied) in [
+        (1, "first", false, false), (2, "second", false, false),
+        (1, "first", true, false), (1, "first", true, true), (1, "first", false, true),
+    ] {
         let mut split = sqlx::Acquire::begin(&mut *sale).await?;
         sqlx::raw_sql("SET LOCAL session_replication_role=replica;
             DELETE FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist';
@@ -673,9 +683,50 @@ async fn spike(
                 WHERE unlock_key=$2")
             .bind(alt).bind(format!("oteryn:outfit.cave_explorer/quest-grant/{addon}"))
             .execute(&mut *split).await?;
-        sqlx::raw_sql("SET LOCAL session_replication_role=origin; DROP TABLE cave_completionist_backfill_eligible")
+        if tied {
+            let changed = sqlx::query("UPDATE game_character_quest_receipts SET committed_at=1234
+                WHERE transition_key IN ('oteryn:quest-reward/l12-cave-explorer-first',
+                                         'oteryn:quest-reward/l12-cave-explorer-second')")
+                .execute(&mut *split).await?;
+            assert_eq!(changed.rows_affected(), 2);
+        }
+        if legacy_applied {
+            // Both purchasers still belong to the seller when 3339 credits addon 2.
+            sqlx::query("UPDATE game_character_roots SET account_id=(SELECT account_id FROM game_character_roots WHERE character_id=$1)")
+                .bind(alt).execute(&mut *split).await?;
+        }
+        sqlx::raw_sql("SET LOCAL session_replication_role=origin")
             .execute(&mut *split).await?;
-        sqlx::raw_sql(migration).execute(&mut *split).await?;
+        if legacy_applied {
+            sqlx::raw_sql(legacy).execute(&mut *split).await?;
+            let wrong: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_achievement_progress
+                WHERE character_id<>$1 AND achievement_key='oteryn:achievement/cave_completionist' AND progress=2")
+                .bind(alt).fetch_one(&mut *split).await?;
+            assert_eq!(wrong, 1);
+        }
+        for pass in 0..2 {
+            sqlx::raw_sql("DROP TABLE cave_completionist_reconciliation, cave_completionist_previous")
+                .execute(&mut *split).await?;
+            if legacy_applied && pass == 0 {
+                // Exercise SQLx's applied-checksum gate and forward migration together.
+                sqlx::query("DELETE FROM _sqlx_migrations WHERE version=3365")
+                    .execute(&mut *split).await?;
+                oteryn_gameplay_durability::GAME_MIGRATOR.run(&mut *split).await?;
+            } else {
+                sqlx::raw_sql(migration).execute(&mut *split).await?;
+            }
+            let (facts, counters): (i64, i64) = sqlx::query_as(
+                "SELECT count(*), (SELECT count(*) FROM game_character_achievement_progress
+                    WHERE achievement_key='oteryn:achievement/cave_completionist')
+                 FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'
+                 AND account_id=(SELECT account_id FROM game_character_roots WHERE character_id=$1)",
+            ).bind(alt).fetch_one(&mut *split).await?;
+            assert_eq!((facts, counters), (1, i64::from(!tied)));
+        }
+        if tied {
+            split.rollback().await?;
+            continue;
+        }
         let earned: (sqlx::types::Uuid, i64) = sqlx::query_as(
             "SELECT r.character_id, p.progress FROM game_account_achievement_grant_requests r
              JOIN game_character_achievement_progress p USING (character_id,achievement_key)
