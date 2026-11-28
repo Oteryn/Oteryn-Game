@@ -51,19 +51,32 @@ fn change(action: tr::TrackerAction, key: &str) -> tr::TrackerRequest {
     }
 }
 
-fn has(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> bool {
+fn has(snapshot: &tr::TrackerSnapshot, key: &str) -> bool {
     snapshot
-        .as_ref()
-        .is_some_and(|list| list.entries.iter().any(|entry| entry.creature_key == key))
+        .entries
+        .iter()
+        .any(|entry| entry.creature_key == key)
 }
 
-async fn read(
-    client: &mut DevClientSession,
+fn accepted(
     command: u32,
-) -> TestResult<Option<tr::TrackerSnapshot>> {
+    status: CommandStatus,
+    snapshot: Option<tr::TrackerSnapshot>,
+    step: &str,
+) -> TestResult<tr::TrackerSnapshot> {
+    expect(status == CommandStatus::Accepted, step, status)?;
+    let snapshot = snapshot.ok_or_else(|| format!("step={step};observed=missing-snapshot"))?;
+    expect(
+        snapshot.boss == (command == tr::COMMAND_TYPE_BOSSTIARY_TRACKER),
+        step,
+        "wrong-tracker-kind",
+    )?;
+    Ok(snapshot)
+}
+
+async fn read(client: &mut DevClientSession, command: u32) -> TestResult<tr::TrackerSnapshot> {
     let (status, list) = call(client, command, &tr::TrackerRequest::Read).await?;
-    expect(status == CommandStatus::Accepted, "read", status)?;
-    Ok(list)
+    accepted(command, status, list, "read")
 }
 
 const UNKNOWN: &str = "oteryn:creature.no-such-race-p22a";
@@ -73,62 +86,63 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     selected(&client)?;
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let boss = tr::COMMAND_TYPE_BOSSTIARY_TRACKER;
-    // A known start; the status of this remove is not judged.
-    call(&mut client, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-    let list = read(&mut client, best).await?;
-    expect(!has(&list, RAT), "baseline", "race-still-tracked")?;
+    let baseline = read(&mut client, best).await?;
+    expect(
+        !has(&baseline, RAT) && !has(&baseline, UNKNOWN),
+        "baseline",
+        &baseline,
+    )?;
+    let baseline_bosses = read(&mut client, boss).await?;
+    expect(
+        !has(&baseline_bosses, RAT),
+        "boss-baseline",
+        &baseline_bosses,
+    )?;
 
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
+    let added = accepted(best, status, list, "add")?;
+    let mut other_entries = added.clone();
+    other_entries
+        .entries
+        .retain(|entry| entry.creature_key != RAT);
     expect(
-        status == CommandStatus::Accepted && has(&list, RAT),
+        added.entries.len() == baseline.entries.len() + 1 && other_entries == baseline,
         "add",
-        status,
+        &added,
     )?;
     let list = read(&mut client, best).await?;
-    expect(has(&list, RAT), "read-after-add", "race-missing")?;
+    expect(list == added, "read-after-add", &list)?;
     let bosses = read(&mut client, boss).await?;
-    expect(
-        !has(&bosses, RAT),
-        "bosstiary-isolated",
-        "race-in-boss-list",
-    )?;
+    expect(bosses == baseline_bosses, "bosstiary-isolated", &bosses)?;
 
     let (status, _) = call(&mut client, best, &change(tr::TrackerAction::Add, UNKNOWN)).await?;
     expect(status == CommandStatus::Rejected, "unknown-race", status)?;
     let list = read(&mut client, best).await?;
-    expect(!has(&list, UNKNOWN), "unknown-race", "unknown-key-tracked")?;
+    expect(list == added, "unknown-race-state", &list)?;
 
-    // Durable: the entry survives logout and a fresh admission, and stays out of the bosses.
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xd3).await?;
     selected(&client)?;
     let list = read(&mut client, best).await?;
-    expect(has(&list, RAT), "relog-with-entry", "race-lost-after-relog")?;
+    expect(list == added, "relog-with-entry", &list)?;
     let bosses = read(&mut client, boss).await?;
     expect(
-        !has(&bosses, RAT),
+        bosses == baseline_bosses,
         "relog-bosstiary-isolated",
-        "race-in-boss-list",
+        &bosses,
     )?;
 
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-    expect(
-        status == CommandStatus::Accepted && !has(&list, RAT),
-        "remove",
-        status,
-    )?;
+    let removed = accepted(best, status, list, "remove")?;
+    expect(removed == baseline, "remove", &removed)?;
     let list = read(&mut client, best).await?;
-    expect(!has(&list, RAT), "read-after-remove", "race-still-tracked")?;
-    // Durable: the removal also survives logout and a fresh admission.
+    expect(list == baseline, "read-after-remove", &list)?;
+
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xd4).await?;
     selected(&client)?;
     let list = read(&mut client, best).await?;
-    expect(
-        !has(&list, RAT),
-        "relog-after-remove",
-        "race-back-after-relog",
-    )?;
+    expect(list == baseline, "relog-after-remove", &list)?;
     logout(&mut client).await?;
     Ok((
         "PASS",
@@ -140,7 +154,9 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
