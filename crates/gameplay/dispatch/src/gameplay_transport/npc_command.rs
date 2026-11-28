@@ -1052,11 +1052,16 @@ pub(super) async fn npc_bank_talk(
             .npc_talk()
             .and_then(|book| book.get("oteryn:npc.jimmy"))
             .is_some_and(|entry| entry.matches_greeting(&intent.text))
-        && let Some(reply) = jimmy::greet(admission, &mut runtime, session)
+        && let Some(remaining) = admission
+            .states
+            .quest_sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| jimmy::remaining(sessions.get(&session)?.copy.as_ref()?.tracks()))
     {
-        return match reply {
+        return match jimmy::greet(admission, &mut runtime, remaining) {
             Ok(line) => NpcConversations::bank_reply(&intent, line.into()),
-            Err(()) => rejected(),
+            Err(disposition) => NpcTalkOutcome::only(disposition),
         };
     }
     let alternate_opening = context

@@ -491,7 +491,7 @@ async fn framed_talk(
             != MessageType::SnapshotCommit
         {}
         let first = before.continuity.next_command_id;
-        let greeting = (text != "hi").then_some("hi");
+        let greeting = (!matches!(text, "hi" | "hello Jimmy")).then_some("hi");
         for (offset, words) in greeting.into_iter().chain([text]).enumerate() {
             let command_id = first + u64::try_from(offset)?;
             let payload = encode_npc_talk_intent(&NpcTalkIntent {

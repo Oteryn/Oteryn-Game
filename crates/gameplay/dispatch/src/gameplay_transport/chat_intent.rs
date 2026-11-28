@@ -22,7 +22,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatIntentResult, ChatLine, ChatRoom, ChatSpeaker, ChatSpeechMode,
 };
-use oteryn_protocol_oteryn::npc_service::{MAX_OPEN_CONVERSATIONS_PER_NPC, TALK_RANGE_TILES};
+use oteryn_protocol_oteryn::npc_service::{
+    MAX_OPEN_CONVERSATIONS_PER_NPC, NpcIntentDisposition, TALK_RANGE_TILES,
+};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::ComposedFreshAdmission;
@@ -829,7 +831,7 @@ fn chat_with_quest_greetings<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
     intent: &ChatIntent,
     now: SemanticTimeMicros,
     quest_tracks: Option<&BTreeMap<String, i64>>,
-    jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, ()>>,
+    jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, NpcIntentDisposition>>,
 ) -> ChatIntentResult {
     let ChatIntent::Say { mode, text } = intent else {
         // Private and room lines never take the Channel path (`ComposedFreshAdmission::chat_relay`).
@@ -978,7 +980,7 @@ fn npc_answer<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
     text: &ChatText,
     listeners: &[(GameSessionId, ChatPosition)],
     quest_tracks: Option<&BTreeMap<String, i64>>,
-    jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, ()>>,
+    jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, NpcIntentDisposition>>,
 ) {
     let visible = runtime.visible_entities();
     let mut spots = Vec::new();
@@ -1229,8 +1231,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let (mut runtime, states) =
             super::lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states).await;
+        let mut jimmy_remaining = None;
         let quest_tracks = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
+            jimmy_remaining = super::npc_command::jimmy::remaining(copy.tracks());
             Some(
                 oteryn_gameplay_npc::quest_greetings::CONDITIONAL_QUEST_TRACKS
                     .into_iter()
@@ -1247,7 +1251,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
             now,
             quest_tracks.as_ref(),
-            |runtime| super::npc_command::jimmy::greet(self, runtime, session),
+            |runtime| {
+                jimmy_remaining
+                    .map(|remaining| super::npc_command::jimmy::greet(self, runtime, remaining))
+            },
         )
     }
 
