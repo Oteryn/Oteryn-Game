@@ -158,7 +158,7 @@
         "item_reward": {
           "item": "oteryn:item.tibia.i6533",
           "count": 1,
-          "text": "A long-forgotten secret waits behind sealed stone and living flame. The key still carries the magic of those who forged it. What it unlocks may build a world or bring one down."
+          "text": "Guarded by fire and dark walls, a long forgotten secret lies.\nNever meant to be opened, yet now it awakes.\nKey to magic, wielded as a sword by those who fought.\nThe first and the last tease, creation and destruction."
         }
       }
     },
@@ -191,18 +191,11 @@
           "minimum": -1,
           "maximum": 1,
           "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/m07/chayenne_realm/draconia_book",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
         }
       ],
       "offerings": [],
       "return_on_failure": true,
-      "failure_message": "You need Chayenne's magical key and the knowledge from the Draconia book.",
+      "failure_message": "You need level 40 and Chayenne's magical key.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:8-16",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:285-288"
@@ -217,7 +210,8 @@
       "success_message": "You enter the Realm of Dreams.",
       "effects": {
         "teleport_effect": 11
-      }
+      },
+      "minimum_level": 40
     },
     {
       "key": "oteryn:quest-callback/m07/realm-exit",
@@ -403,7 +397,7 @@
       "success_message": "The passage opens.",
       "effects": {
         "reset_after_ms": 300000,
-        "passages_reset_after_ms": 300000,
+        "passages_reset_after_ms": 60000,
         "clear_area": {
           "minimum": {
             "x": 33074,
@@ -483,6 +477,12 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:391-394",
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
         "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i14682",
+          "count": 1
+        }
       ]
     }
   ]

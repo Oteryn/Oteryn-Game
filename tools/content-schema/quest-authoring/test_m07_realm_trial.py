@@ -32,12 +32,15 @@ class RealmTrialBindingTests(unittest.TestCase):
         self.assertEqual(begin["quest"], "oteryn:quest.chayenne_realm")
         self.assertNotIn("minimum_level", begin)
         entry = by_key[prefix + "entry"]
-        self.assertNotIn("minimum_level", entry)
-        book = by_key[prefix + "draconia-book"]["storage"][0]["track"]
-        self.assertIn(
-            {"track": book, "minimum": 1, "maximum": 1, "set": 1, "preserve": True},
-            entry["storage"],
-        )
+        self.assertEqual(entry["minimum_level"], 40)
+        book = by_key[prefix + "draconia-book"]
+        self.assertNotIn(book["storage"][0]["track"], [s["track"] for s in entry["storage"]])
+        self.assertEqual(book["effects"]["item_reward"]["text"].splitlines(), [
+            "Guarded by fire and dark walls, a long forgotten secret lies.",
+            "Never meant to be opened, yet now it awakes.",
+            "Key to magic, wielded as a sword by those who fought.",
+            "The first and the last tease, creation and destruction.",
+        ])
         self.assertEqual(
             (begin["storage"][0]["minimum"], begin["storage"][0]["set"]), (-1, 1)
         )
@@ -73,7 +76,7 @@ class RealmTrialBindingTests(unittest.TestCase):
             },
             trial["world_requirements"],
         )
-        self.assertNotIn("present", trial)
+        self.assertEqual(trial["present"], [{"item": key, "count": 1}])
         self.assertEqual(entry["present"], [{"item": key, "count": 1}])
         self.assertNotIn("item_on_target", trial)
         area = trial["effects"]["clear_area"]
@@ -99,7 +102,7 @@ class RealmTrialBindingTests(unittest.TestCase):
             },
         )
         self.assertEqual(trial["effects"]["reset_after_ms"], 300000)
-        self.assertEqual(trial["effects"]["passages_reset_after_ms"], 300000)
+        self.assertEqual(trial["effects"]["passages_reset_after_ms"], 60000)
         self.assertEqual(begin["selector"]["native"]["appearance"], 2124)
         self.assertEqual(trial["selector"]["action"], 55021)
         self.assertEqual(trial["selector"]["appearance"], 2772)

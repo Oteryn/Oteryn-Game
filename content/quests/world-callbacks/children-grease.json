@@ -25,7 +25,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
-          "minimum": 13,
+          "minimum": 12,
           "maximum": 13,
           "set": 14
         }
@@ -156,21 +156,14 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
-          "minimum": 7,
-          "maximum": 7,
-          "set": 7,
-          "preserve": true
-        },
-        {
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building_03",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 0,
           "set": 1
         },
         {
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 3,
           "set": 1,
           "increment": true
@@ -202,21 +195,14 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
-          "minimum": 7,
-          "maximum": 7,
-          "set": 7,
-          "preserve": true
-        },
-        {
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building_01",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 0,
           "set": 1
         },
         {
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 3,
           "set": 1,
           "increment": true
@@ -248,21 +234,14 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
-          "minimum": 7,
-          "maximum": 7,
-          "set": 7,
-          "preserve": true
-        },
-        {
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building_02",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 0,
           "set": 1
         },
         {
           "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 3,
           "set": 1,
           "increment": true

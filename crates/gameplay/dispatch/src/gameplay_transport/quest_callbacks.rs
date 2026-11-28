@@ -266,6 +266,19 @@ fn unique_eligible<'a>(
     if eligible.next().is_some() {
         return None;
     }
+    // The native inscription supplies the milestone when both scroll routes qualify.
+    for (native, tales) in [(selected, alternative), (alternative, selected)] {
+        if let Some(animal @ ("hyena" | "lizard" | "scorpion" | "snake")) = native
+            .key
+            .strip_prefix("oteryn:quest-callback/authored-lions-rock-inscription-")
+            && tales
+                .key
+                .strip_prefix("oteryn:quest-callback/tibia-tales/lion-sign-")
+                == Some(animal)
+        {
+            return Some(native);
+        }
+    }
     // The fire door and Orchid share a placement. Only the Orchid staging
     // tile can start that encounter; the chamber side still opens the door.
     const FIRE_DOOR: &str = "oteryn:quest-callback/engenc/asura/s3/door";
@@ -2421,6 +2434,32 @@ pub(in crate::gameplay_transport) fn prepare_bak_public_reset(
 #[cfg(test)]
 mod native_selector_tests {
     use super::*;
+
+    #[test]
+    fn unread_lion_sign_selects_one_milestone_in_either_order() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        for animal in ["snake", "lizard", "scorpion", "hyena"] {
+            let find = |prefix| {
+                let key = format!("oteryn:quest-callback/{prefix}{animal}");
+                callbacks.iter().find(|row| row.key == key).ok_or(key)
+            };
+            let native = find("authored-lions-rock-inscription-")?;
+            let tales = find("tibia-tales/lion-sign-")?;
+            let mut tracks = std::collections::BTreeMap::from([
+                (native.storage[0].track.clone(), 0),
+                (native.storage[1].track.clone(), 5),
+            ]);
+            for order in [[native, tales], [tales, native]] {
+                assert_eq!(
+                    unique_eligible(order, &tracks, None).map(|c| &c.key),
+                    Some(&native.key)
+                );
+            }
+            tracks.insert(native.storage[0].track.clone(), 1);
+            assert!(unique_eligible([native, tales], &tracks, None).is_none());
+        }
+        Ok(())
+    }
 
     #[test]
     fn native_selector_mismatch_never_falls_back_to_empty_legacy_selector()

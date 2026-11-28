@@ -18,15 +18,12 @@ fn realm_loader_binds_source_portals_and_retains_entry_key()
         .find(|c| c.selector.action == Some(55022))
         .ok_or("AID 55022")?;
     assert_eq!(entry.trigger, Trigger::StepIn);
-    assert_eq!(entry.minimum_level, None);
+    assert_eq!(entry.minimum_level, Some(40));
     assert!(
         entry
             .storage
             .iter()
-            .any(|state| state.track.ends_with("/draconia_book")
-                && state.minimum == 1
-                && state.maximum == 1
-                && state.preserve)
+            .all(|state| !state.track.ends_with("/draconia_book"))
     );
     assert_eq!(entry.present[0].item, "oteryn:item.tibia.i14682");
     assert!(entry.item_on_target.is_none());
@@ -106,7 +103,9 @@ fn realm_loader_binds_lever_to_independent_wall_and_switch_deadlines()
         .find(|c| c.selector.action == Some(55021))
         .ok_or("AID 55021")?;
     assert_eq!(lever.trigger, Trigger::Use);
-    assert!(lever.present.is_empty());
+    assert_eq!(lever.present.len(), 1);
+    assert_eq!(lever.present[0].item, "oteryn:item.tibia.i14682");
+    assert_eq!(lever.present[0].count, 1);
     assert!(
         lever
             .world_requirements
@@ -118,7 +117,7 @@ fn realm_loader_binds_lever_to_independent_wall_and_switch_deadlines()
         lever.reversible,
         "active source lever must accept its return use"
     );
-    assert_eq!(lever.effects.passages_reset_after_ms, Some(300_000));
+    assert_eq!(lever.effects.passages_reset_after_ms, Some(60_000));
     assert_eq!(lever.effects.reset_after_ms, Some(300_000));
     assert_eq!(lever.passages[0].appearance, 2129);
     Ok(())
@@ -181,6 +180,38 @@ fn children_loader_connects_zalamon_to_native_mission_sources()
                 .any(|c| c.quest == quest && c.selector.action == Some(aid)),
             "AID {aid}"
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn children_spy_visits_count_once_before_or_after_acceptance() -> Result<(), String> {
+    let state = load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    let catalogue = state.catalogue();
+    let visits = ["supplies", "weapons", "barracks"]
+        .map(|place| format!("oteryn:quest-callback/children-spy-{place}"));
+    let stage = "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline";
+    for early in 0..=visits.len() {
+        let mut tracks = std::collections::BTreeMap::from([(stage.to_owned(), 6)]);
+        for key in visits[..early]
+            .iter()
+            .map(String::as_str)
+            .chain(["oteryn:quest-reward/l2-zalamon-spy-accept"])
+            .chain(visits[early..].iter().map(String::as_str))
+            .chain(["oteryn:quest-reward/l2-zalamon-spy-report"])
+        {
+            let transition = catalogue.transition(key).ok_or(key)?;
+            for change in catalogue
+                .evaluate(transition, &tracks, 0)
+                .map_err(|e| format!("{key}: {e:?}"))?
+            {
+                tracks.insert(change.track, change.after);
+            }
+            if key.starts_with("oteryn:quest-callback/children-spy-") {
+                assert!(catalogue.evaluate(transition, &tracks, 0).is_err());
+            }
+        }
+        assert_eq!(tracks.get(stage), Some(&8));
     }
     Ok(())
 }

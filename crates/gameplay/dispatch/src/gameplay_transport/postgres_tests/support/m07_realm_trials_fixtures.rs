@@ -156,8 +156,8 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(map.facts.expire_movement_items(wall_due), 1);
     assert_eq!(map.facts.object_revision(wall), 2);
     assert_eq!(map.facts.object_revision(control), 1);
-    let control_due = wall_due;
-    assert_eq!(map.facts.next_movement_decay_time(), None);
+    let control_due = map.facts.next_movement_decay_time().ok_or("control cooldown")?;
+    assert_eq!(control_due - wall_due, 240_000_000);
     let remaining = control_due.checked_sub(owner.owner_now().get()).ok_or("live cooldown")?;
     owner.clock_origin = owner.clock_origin
         .checked_sub(std::time::Duration::from_micros(remaining))
@@ -200,6 +200,13 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(map.facts.expire_movement_items(due), 1);
     assert!(!map.facts.base_hidden(wall));
+    let cooldown = map.facts.next_movement_decay_time().ok_or("second control cooldown")?;
+    assert_eq!(cooldown - due, 240_000_000);
+    assert!(map.facts.quest_callback_cooldown_pending(control, due));
+    let remaining = cooldown.checked_sub(owner.owner_now().get()).ok_or("live cooldown")?;
+    owner.clock_origin = owner.clock_origin
+        .checked_sub(std::time::Duration::from_micros(remaining))
+        .ok_or("clock")?;
     assert_eq!(
         Box::pin(use_source(owner, admitted, 10, CONTROL, 3, 4)).await?,
         UseDisposition::Committed,

@@ -342,7 +342,7 @@ def append(add, callbacks, offers, declarations, inputs, pin):
         "Look inside all three buildings.",
         topic=6,
         words=("yes",),
-        mission=[("mission02", 0, 0, 1)],
+        mission=[("mission02", 0, 3, 1)],
     )
     progress(
         "spy-report",
@@ -350,7 +350,7 @@ def append(add, callbacks, offers, declarations, inputs, pin):
         8,
         "98-107",
         "A direct attack on an army that size would fail.",
-        mission=[("mission02", 4, 4, 5)],
+        mission=[("mission02", 1, 4, 5)],
         requires=[
             {"track": child + f"spy_building_0{number}", "minimum": 1, "maximum": 1}
             for number in range(1, 4)

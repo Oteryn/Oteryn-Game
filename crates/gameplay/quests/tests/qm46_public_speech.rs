@@ -54,24 +54,26 @@ fn qm46_grease_transition_requires_mission_three_and_preserves_atomic_progress()
             Err(QuestRefusal::StageMismatch)
         );
     }
-    let changes = catalogue
-        .evaluate(
-            transition,
-            &BTreeMap::from([(mission.into(), 3), (questline.into(), 13)]),
-            0,
-        )
-        .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(changes.len(), 2);
-    assert!(
-        changes
-            .iter()
-            .any(|c| c.track == mission && c.before == 3 && c.after == 4)
-    );
-    assert!(
-        changes
-            .iter()
-            .any(|c| c.track == questline && c.before == 13 && c.after == 14)
-    );
+    for stage in [12, 13] {
+        let changes = catalogue
+            .evaluate(
+                transition,
+                &BTreeMap::from([(mission.into(), 3), (questline.into(), stage)]),
+                0,
+            )
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(changes.len(), 2);
+        assert!(
+            changes
+                .iter()
+                .any(|c| c.track == mission && c.before == 3 && c.after == 4)
+        );
+        assert!(
+            changes
+                .iter()
+                .any(|c| c.track == questline && c.before == stage && c.after == 14)
+        );
+    }
     Ok(())
 }
 
