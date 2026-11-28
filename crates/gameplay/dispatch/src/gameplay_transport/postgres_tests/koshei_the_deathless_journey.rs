@@ -1,6 +1,7 @@
 use super::{
     TestResult,
     koshei_the_deathless_journey_fixtures::{CRYPT_GATE, NAME, SPATIAL},
+    quest_world_callbacks_fixtures::use_with_commit_probe,
 };
 
 #[test]
@@ -26,4 +27,21 @@ fn journey(name: &'static str) -> TestResult {
         started.elapsed()
     );
     Ok(())
+}
+
+#[tokio::test(start_paused = true)]
+async fn late_commit_probe_returns_the_observer_timeout() {
+    use std::time::Duration;
+    let pause = (tokio::sync::Notify::new(), tokio::sync::Notify::new());
+    let writer = async {
+        tokio::time::sleep(Duration::from_secs(6)).await;
+        pause.0.notify_one();
+        pause.1.notified().await;
+        Ok(())
+    };
+    let mut inspected = false;
+    let command = use_with_commit_probe(writer, &pause, || inspected = true);
+    let result = tokio::time::timeout(Duration::from_secs(7), command).await;
+    assert!(matches!(result, Ok(Err(error)) if error.is::<tokio::time::error::Elapsed>()));
+    assert!(!inspected);
 }
