@@ -8,7 +8,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::npc_talk::NpcTalkBook;
 use crate::gameplay_transport::npc_voice::NpcVoiceCycle;
-use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use oteryn_protocol_oteryn::{chat::ChatLine, world_spatial_entities::EntityRef};
 use std::sync::Arc;
 
 #[test]
@@ -19,7 +19,7 @@ fn s10_wandering_postgres_moves_within_source_radius_and_pauses_for_customers() 
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario("oteryn:npc.norf", None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 wandering PostgreSQL thread panicked")??;
     eprintln!(
@@ -29,9 +29,44 @@ fn s10_wandering_postgres_moves_within_source_radius_and_pauses_for_customers() 
     Ok(())
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "s10_wandering", false, false).await?;
+#[test]
+fn s10_maria_postgres_owner_cycle_speaks_and_walks_without_entering_occupied_cell() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario(
+                "oteryn:npc.maria",
+                Some("Hello, hello! Put your feet up and relax in the Hard Rock Tavern."),
+            )
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "S10 Maria PostgreSQL thread panicked")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED S10 maria duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+fn scenario(key: &'static str, voice: Option<&'static str>) -> TestResult {
+    run(async move |admin| {
+        let h = Harness::create_with_admission_seed(
+            admin,
+            if voice.is_some() {
+                "s10_maria_presence"
+            } else {
+                "s10_wandering"
+            },
+            false,
+            false,
+        )
+        .await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -91,16 +126,10 @@ fn scenario() -> TestResult {
                 .map(|text| text.as_str().to_owned())
         })
         .map_err(debug)?;
-        assert!(
-            talk.get("oteryn:npc.norf").is_some(),
-            "native customer conversation"
-        );
+        assert!(talk.get(key).is_some(), "native customer conversation");
         let walks = talk.source_walks().ok_or("source walk book")?;
-        assert!(walks.profile("oteryn:npc.norf").is_some());
-        assert!(
-            walks.terrain_qualified("oteryn:npc.norf"),
-            "source height binding"
-        );
+        assert!(walks.profile(key).is_some());
+        assert!(walks.terrain_qualified(key), "source height binding");
         owner.states.chat.install_npc_talk(Arc::new(talk));
         let session = deps.admitted.game_session_id;
         owner
@@ -117,7 +146,7 @@ fn scenario() -> TestResult {
                 .place_npcs(
                     &NpcPlacementTable {
                         npcs: vec![NpcPlacements {
-                            key: "oteryn:npc.norf".into(),
+                            key: key.into(),
                             placements: vec![NpcPlacement {
                                 x: 10,
                                 y: 10,
@@ -133,6 +162,13 @@ fn scenario() -> TestResult {
                 .actors[0]
         };
         assert!(owner.ensure_source_map_initialized().await);
+        if let Some(expected) = voice {
+            let result = verify_voice_and_walk(&owner, &deps, actor, expected).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return result.and(h.cleanup().await);
+        }
         let mut cycle = {
             let runtime = deps.runtime.lock().await;
             NpcVoiceCycle::new(&runtime, owner.states.chat.npc_talk().ok_or("talk book")?)
@@ -198,6 +234,79 @@ fn scenario() -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn verify_voice_and_walk(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    npc: crate::foundation::ExactActorRef,
+    expected: &str,
+) -> TestResult {
+    use crate::durability::DurabilityRoot;
+    use crate::gameplay_transport::source_item_cycle::SOURCE_OWNER_SWEEP_COMPLETE;
+    use std::sync::atomic::Ordering;
+    use std::time::Duration;
+
+    let _clock = owner.freeze_owner_clock_for_test();
+    let start = owner.owner_now().get();
+    let stop = oteryn_foundation::CancellationToken::new();
+    let swept = Arc::new(tokio::sync::Notify::new());
+    let wake = owner.states.spell_states.lock().await.owner_wake.clone();
+    wake.notify_one();
+    let cycle = DurabilityRoot::with_background_holder(
+        SOURCE_OWNER_SWEEP_COMPLETE.scope(Arc::clone(&swept), owner.run_source_owner_cycles(&stop)),
+    );
+    let observe = async {
+        let mut heard = false;
+        let mut moved = false;
+        let result: TestResult = async {
+            for tick in 1..=300 {
+                swept.notified().await;
+                let stamped = deps
+                    .runtime
+                    .lock()
+                    .await
+                    .borrow_movement_position()
+                    .read(npc)
+                    .map_err(debug)?;
+                let at = stamped.position();
+                assert!(at.x.abs_diff(10) <= 2 && at.y.abs_diff(10) <= 2 && at.floor == 7);
+                assert_ne!((at.x, at.y), (9, 10), "occupied player cell");
+                moved |= stamped.revision() > 1;
+                if let Some(ChatLine::Local {
+                    speaker,
+                    speaker_name,
+                    text,
+                    ..
+                }) = owner.states.chat.next(deps.admitted.game_session_id)
+                {
+                    assert_eq!(speaker.identity, npc.placement_identity());
+                    assert_eq!(speaker.generation.get(), npc.actor_local_generation());
+                    assert_eq!(speaker_name, "Maria");
+                    assert_eq!(text, expected);
+                    heard = true;
+                }
+                if heard && moved {
+                    return Ok(());
+                }
+                owner
+                    .states
+                    .test_owner_time
+                    .store(start + tick * 1_000_000 + 1, Ordering::Relaxed);
+                wake.notify_one();
+            }
+            Err("source owner did not publish Maria's voice and commit a legal step".into())
+        }
+        .await;
+        stop.cancel();
+        result
+    };
+    let (_, result) = tokio::time::timeout(Duration::from_secs(60), async {
+        tokio::join!(cycle, observe)
+    })
+    .await
+    .map_err(|_| "source owner cadence timed out")?;
+    result
 }
 
 fn world_fixture(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::BundleWorld> {

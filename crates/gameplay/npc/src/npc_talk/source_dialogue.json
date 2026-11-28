@@ -1279,16 +1279,11 @@
   },
   "oteryn:npc.king_tibianus": {
     "walkaway": "How rude!",
-    "greetings": [
-      "hail king",
-      "salutations king",
-      "hi",
-      "hello",
-      "hail"
-    ],
-    "greet": [
-      "I greet thee, my loyal subject |PLAYERNAME|."
-    ],
+    "greetings": [],
+    "focus_greet": {
+      "triggers": ["hail king", "hello king", "hail to the beloved king"],
+      "reply": "I greet thee, my loyal subject."
+    },
     "keywords": [
       {"key": "eremo", "triggers": ["eremo"], "reply": ["It is said that he lives on a small island near Edron. Maybe the people there know more about him."]},
       {"key": "baah", "triggers": ["baah"], "reply": ["Baah is awesome dude that rewrote my outfit script."]},
