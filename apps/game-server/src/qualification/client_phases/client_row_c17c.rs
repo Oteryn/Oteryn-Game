@@ -194,7 +194,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 async fn cast_rat<S: SessionStream>(client: &mut Session<S>) -> TestResult<CastEvidence> {
-    prepared_stats(&mut client).await?;
+    prepared_stats(client).await?;
     let own = *client
         .world_entities()
         .ok_or("C17c entities absent")?
