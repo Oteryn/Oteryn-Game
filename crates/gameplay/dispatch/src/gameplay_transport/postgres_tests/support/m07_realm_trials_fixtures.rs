@@ -55,12 +55,13 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(Box::pin(use_source(owner,admitted,2,CONTROL,3,0)).await?,UseDisposition::Rejected,"a key is not a started trial");
     assert_eq!(receipts(harness).await?,0);
     let mut selected = admitted.continuity.selected_capabilities.as_slice().to_vec();
-    selected.extend([4, 11, 15]);
+    selected.extend([3, 4, 6, 11, 15, 18]);
     selected.sort_unstable();
     selected.dedup();
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), &selected)
             .ok_or("Realm item use capabilities")?;
+    assert!(admitted.continuity.selected_capabilities.as_slice().contains(&11));
     let rune = Offering { position: BEGIN, item: "oteryn:item.tibia.i3148".into(), count: 1 };
     super::quest_world_callbacks_fixtures::input_item(owner, fence.item_fence(), &rune, 82, true).await?;
     assert_eq!(super::tibia_tales_fixtures::use_tool_at(owner, admitted, BEGIN, 1, 3148).await?, UseDisposition::Committed);
