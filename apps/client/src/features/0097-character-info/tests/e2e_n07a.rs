@@ -35,19 +35,6 @@ fn fixture() -> Captured {
     }
 }
 
-fn captured() -> Result<Captured, Error> {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(fixture());
-    };
-    let path = std::path::Path::new(&path);
-    Ok(Captured {
-        query: std::fs::read(path.join("n07a-query.bin"))?,
-        select: std::fs::read(path.join("n07a-select.bin"))?,
-        after: std::fs::read(path.join("n07a-query-after.bin"))?,
-        expected: std::fs::read_to_string(path.join("n07a-expected.txt"))?,
-    })
-}
-
 fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, Error> {
     expected
         .lines()
@@ -89,8 +76,8 @@ fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
 }
 
 #[test]
-fn e2e_n07a_replays_title_ownership_selection_and_refusal() -> Result<(), Error> {
-    let captured = captured()?;
+fn character_info_title_selector_fixture() -> Result<(), Error> {
+    let captured = fixture();
     let e = captured.expected.as_str();
     let owned = earned(e)?;
     let selected_before = title(value(e, "selected_before")?)?;
@@ -189,5 +176,75 @@ fn e2e_n07a_replays_title_ownership_selection_and_refusal() -> Result<(), Error>
     apply(&mut panel, &select, &result(CommandStatus::Accepted, cut));
     assert_eq!(panel.feedback, "Invalid character information reply");
     assert_eq!((panel.own_titles, panel.summary), (own, summary));
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a fresh, session-bound node-boot capture"]
+fn e2e_n07a_live_replays_captured_title_change() -> Result<(), Error> {
+    type Capture = (String, u64, u64, u8, Vec<u8>);
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing live capture directory")?;
+    let sessions = std::env::var("N07A_LIVE_SESSIONS")?;
+    let (session, relog) = sessions.split_once(' ').ok_or("missing captured session pair")?;
+    assert_ne!(session, relog);
+    let frames: [Capture; 6] = serde_json::from_reader(std::fs::File::open(
+        std::path::Path::new(&directory).join("n07a-wire.json"),
+    )?)?;
+    let mut panel = Panel {
+        selected: true,
+        fields: ["0".into(), "1".into(), String::new(), String::new()],
+        ..Panel::default()
+    };
+    let chosen = wire::CharacterTitle::Trolltrasher;
+    let unearned = wire::CharacterTitle::AdeptArmorer;
+    let mut previous = (0u64, 0u64);
+    let mut ownership = None;
+    for (index, (owner, command_id, server_sequence, captured_status, payload)) in frames.into_iter().enumerate() {
+        assert_eq!(owner, if index == 5 { relog } else { session });
+        assert!(command_id != 0 && server_sequence != 0);
+        if (1..5).contains(&index) {
+            assert_eq!(previous.0.checked_add(1), Some(command_id));
+            assert!(server_sequence > previous.1);
+        }
+        previous = (command_id, server_sequence);
+        let status = if index == 3 { CommandStatus::Rejected } else { CommandStatus::Accepted };
+        // Read status from the capture and require the response expected for this action.
+        assert_eq!(captured_status, status as u8);
+        let intent = match index {
+            1 => {
+                panel.fields[3] = chosen.id().to_string();
+                Intent::Select
+            }
+            3 => {
+                panel.fields[3] = unearned.id().to_string();
+                Intent::Select
+            }
+            _ => Intent::Query,
+        };
+        let command = pend(&mut panel, intent)?;
+        assert_eq!(command.payload, match index {
+            1 => vec![3, chosen.id()],
+            3 => vec![3, unearned.id()],
+            _ => vec![0, 0, 0, 1],
+        });
+        let summary = panel.summary.clone();
+        apply(&mut panel, &command, &GatedCommandResult { command_id, server_sequence, status, payload });
+        assert!(!panel.pending);
+        assert_eq!(panel.feedback, if index == 3 { "The server refused the request" } else { "Character information updated" });
+        let titles = panel.own_titles.as_ref().ok_or("missing replayed title list")?;
+        assert_eq!(titles.selected, if index == 0 { None } else { Some(chosen) });
+        if index == 0 {
+            assert!(titles.earned.contains(&chosen));
+            assert!(!titles.earned.contains(&unearned));
+            ownership = Some(titles.earned.clone());
+        }
+        assert_eq!(ownership.as_ref(), Some(&titles.earned));
+        if index == 3 {
+            assert_eq!(panel.summary, summary);
+        }
+        panel.title_filter = TitleFilter::Earned;
+        assert_eq!(title_rows(&panel).iter().filter(|row| row.selected).count(), usize::from(index != 0));
+    }
+    eprintln!("N07A_LIVE_REPLAY session={session} relog={relog}");
     Ok(())
 }

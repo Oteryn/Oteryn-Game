@@ -110,6 +110,17 @@ interrupt_run() {
 trap 'interrupt_run 130' INT
 trap 'interrupt_run 143' TERM
 
+replay_n07a() {
+  local log=$1 capture=$2 sessions replay_log="$2/replay.log"
+  sessions=$(sed -nE 's/^SEAM_EVIDENCE e2e_(capture|all) scenario=N07a\.client status=CAPTURED evidence=session=([0-9a-f-]{36}) relog=([0-9a-f-]{36}) .*/\2 \3/p' "$log")
+  [[ "$sessions" =~ ^[0-9a-f-]{36}\ [0-9a-f-]{36}$ ]] || return 1
+  N07A_LIVE_SESSIONS="$sessions" E2E_ALL_CAPTURE_DIR="$capture" \
+    cargo test --locked -p oteryn-client --lib \
+    play::feature_0097_character_info::protocol::e2e_n07a::e2e_n07a_live_replays_captured_title_change \
+    -- --exact --ignored --nocapture > "$replay_log" 2>&1 || return 1
+  grep -Fxq "N07A_LIVE_REPLAY session=${sessions% *} relog=${sessions#* }" "$replay_log"
+}
+
 failed=0
 index=0
 for group in "$@"; do
@@ -117,11 +128,28 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+  n07a_capture=
+  capture_env=()
+  if [[ "$group/${OTERYN_E2E_ROW_BATCH:-}" == rows/223:1 ]]; then
+    n07a_capture="$work_dir/$index-n07a"
+    mkdir "$n07a_capture" || blocked work_dir_unavailable
+    capture_env+=("E2E_ALL_CAPTURE_DIR=$n07a_capture")
+  fi
+  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if [[ -n "$n07a_capture" ]]; then
+    if [[ "$status" == 0 ]] && replay_n07a "$log" "$n07a_capture"; then
+      line="SEAM_EVIDENCE e2e_all scenario=N07a.client status=PASS evidence=title-change-refusal-relog-live-replay"
+      printf '%s\n' "$line" | tee -a "$log"
+    else
+      line="SEAM_EVIDENCE e2e_all scenario=N07a.client status=FAIL evidence=live-capture-or-replay-failed"
+      grep -E '^SEAM_EVIDENCE e2e_all scenario=N07a\.client status=FAIL ' "$log" || printf '%s\n' "$line" | tee -a "$log"
+      status=1
+    fi
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
