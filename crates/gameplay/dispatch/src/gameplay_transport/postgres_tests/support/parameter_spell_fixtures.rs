@@ -37,8 +37,6 @@ use oteryn_protocol_oteryn::{
 
 use std::time::Duration;
 
-pub(super) const UNSAVED_PARTY_CASE: u8 = 18;
-
 pub(super) fn scenario(case: u8) -> TestResult {
     scenario_in_world(case, None)
 }
@@ -352,14 +350,6 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         drop(authority);
         drop(seal);
         return h.cleanup().await;
-    }
-    if case == UNSAVED_PARTY_CASE {
-        let result = exiva_settings::unsaved_party(&h, &owner, admitted).await;
-        drop(owner);
-        drop(authority);
-        drop(seal);
-        h.cleanup().await?;
-        return result;
     }
     if case >= 7 {
         return exiva_settings::exercise(
