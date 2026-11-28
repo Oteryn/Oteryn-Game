@@ -105,6 +105,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (initial, query) = exchange(&mut client, 4, 0).await?;
     let (weekly, start) = exchange(&mut client, 5, 0).await?;
     if initial.weekly.started
+        || weekly.bounty.state != 0
+        || !weekly.bounty.offers.is_empty()
         || weekly.refusal != 0
         || !weekly.weekly.started
         || weekly.weekly.difficulty != 0

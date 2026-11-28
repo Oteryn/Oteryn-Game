@@ -73,6 +73,8 @@ fn e2e_p23c_replays_hunting_task_query_and_select() -> Result<(), Box<dyn std::e
     assert_eq!(weekly.weekly.pending_points, 0);
     assert_eq!(weekly.points, query.points);
     assert!(opened.bounty.active.is_none());
+    assert_eq!(weekly.bounty.state, 0);
+    assert!(weekly.bounty.offers.is_empty());
     assert_eq!(opened.bounty.state, 1);
     let offer = opened
         .bounty

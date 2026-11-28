@@ -78,6 +78,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || weekly.weekly.difficulty != 0
         || weekly.weekly.pending_points != 0
         || weekly.points != initial.points
+        || weekly.bounty.state != 0
+        || !weekly.bounty.offers.is_empty()
         || task.current != 0
         || task.required == 0
     {
