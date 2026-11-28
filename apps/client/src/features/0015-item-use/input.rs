@@ -134,9 +134,14 @@ impl PlayView {
         let realm_fire = matches!(selected_item, Some(crate::play::GroundItem::Map { item, position, .. })
             if item.appearance_id == 2124 && (position.x, position.y, position.floor) == (33080, 32583, 3)
                 && matches!(item.origin, oteryn_session::world_map::MapOrigin::BaseOrdinal { ordinal: 1, .. }));
-        let destroy_field = mailbox.world_context.rune_targeting && realm_fire && mailbox.inventory.rows().iter()
-            .chain(mailbox.containers.views.iter().flat_map(|views| &views.views).flat_map(|view| &view.entries))
-            .any(|item| item.handle == source && item.appearance_id == 3148);
+        const DESTROY_FIELD_REF: u32 = include!(concat!(env!("OUT_DIR"), "/destroy_field_ref.rs"));
+        let destroy_field = mailbox.world_context.rune_targeting
+            && realm_fire
+            && mailbox.inventory.rows().iter()
+                .chain(mailbox.containers.views.iter()
+                    .flat_map(|views| &views.views)
+                    .flat_map(|view| &view.entries))
+                .any(|item| item.handle == source && item.item_definition_ref.get() == DESTROY_FIELD_REF);
         let prefer_item = destroy_field || !mailbox.world_context.rune_targeting && self.scene.target().is_some_and(|entry| entry.tile == tile && entry.item.is_some());
         let target = oteryn_client_ui::item_use::input::destination(
             mailbox.world_context.rune_targeting && !destroy_field,

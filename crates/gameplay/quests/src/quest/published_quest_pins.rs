@@ -788,6 +788,16 @@ const SOURCE_ROUTE_PREDECESSORS: &[(&str, DefinitionHash)] = &[
         "oteryn:quest.spike_task",
         hash(b"3f03edd9b13bd48938ee76a9644e0c1f0acbe2528199ca6d0f3811202177ac7f"),
     ),
+    // Before the five-nest cap.
+    (
+        "oteryn:quest.spike_task",
+        hash(b"13cd4ab4d17a41fd0cb172ad4603145063f3b649ad0d971cf2215220198cdb02"),
+    ),
+    // Five-nest cap before legacy report recovery.
+    (
+        "oteryn:quest.spike_task",
+        hash(b"faa7ff22960c832126327a8d5f696fc32298fe8352d67e0cc6969dd5b6c1cc56"),
+    ),
 ];
 
 pub(super) fn retain_source_route_predecessors(catalogue: &mut QuestStateCatalogue) {

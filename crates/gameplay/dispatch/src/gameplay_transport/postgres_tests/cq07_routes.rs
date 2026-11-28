@@ -118,3 +118,8 @@ fn children_greased_levers_keep_their_native_reset_lifecycle() -> TestResult {
 fn spike_hunt_reports_fame_and_both_purchases_close_the_outfit() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-l12-cave-explorer-story")
 }
+
+#[test]
+fn spike_outpost_delivers_parcels_and_gnombold_settles_legacy_nests() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l12-spike-outpost-story")
+}

@@ -601,6 +601,16 @@ fn matches_menu_or_exact_keyword(npc: &str, keywords: &[String], text: &str) -> 
 }
 
 fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &str) -> bool {
+    if callback.npc == "oteryn:npc.gnome_trooper"
+        && callback
+            .key
+            .starts_with("oteryn:quest-reward/l12-spike-parcel-")
+    {
+        return callback
+            .keywords
+            .iter()
+            .any(|word| message_contains(text, word));
+    }
     if callback.npc == JORGE
         && callback.quest == "oteryn:quest.hunting_for_tokens"
         && callback.topic == 1

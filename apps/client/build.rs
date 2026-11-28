@@ -82,6 +82,23 @@ fn main() -> Result<(), String> {
     println!("cargo:rerun-if-changed=../../crates/client-ui/src/features");
     let bindings = preference_bindings::generate(&root.join("../.."))?;
     let out = std::env::var("OUT_DIR").map_err(|e| e.to_string())?;
+    // MAP-ITEM-REF-1 assigns one-based ordinals in the activated Item key set.
+    let keys = root.join("../../tools/content-schema/native-gameplay/item-keys.json");
+    println!("cargo:rerun-if-changed={}", keys.display());
+    let document: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(keys).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    let rune = document["records"]
+        .as_array()
+        .ok_or("missing native Item index")?
+        .iter()
+        .position(|row| row[0] == "oteryn:item.tibia.i3148" && row[1] == "definition-r1")
+        .ok_or("missing Destroy Field rune")?;
+    std::fs::write(
+        std::path::Path::new(&out).join("destroy_field_ref.rs"),
+        (rune + 1).to_string(),
+    )
+    .map_err(|e| e.to_string())?;
     prey_catalogue::emit(&root.join("../.."), std::path::Path::new(&out))?;
     println!("cargo:rerun-if-changed=build_support/spell_parameters.rs");
     spell_parameters::generate(root, std::path::Path::new(&out))?;

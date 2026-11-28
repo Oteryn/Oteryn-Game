@@ -417,12 +417,21 @@ fn repeated_tile_selection_uses_the_lower_server_ordinal_and_revision() -> Resul
 
 #[test]
 fn inventory_rune_uses_selected_realm_fire_below_an_occupied_stack() -> Result<(), Box<dyn std::error::Error>> {
+    for appearances in [false, true] {
+        select_realm_fire_with_inventory_snapshot(appearances)?;
+    }
+    Ok(())
+}
+
+fn select_realm_fire_with_inventory_snapshot(appearances: bool) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::item_view::{encode_character_inventory_with_appearances, decode_character_inventory_with_appearances};
     use oteryn_client_runtime::world_interaction::{Action, Target};
     use oteryn_input_actions::{ButtonState, Modifier, Modifiers, MouseButton, NormalizedInputEvent, PointerCoordinate, PointerDelta, PointerMotion, PointerPosition};
     use oteryn_session::world_map::MapOrigin;
 
     let mut world = view()?;
     let mut map = live_snapshot(33080);
+    map.header.bundle_digest = [0xa5; 32];
     let position = ActorPosition { x: 33080, y: 32583, floor: 3 };
     map.header.origin = position;
     map.header.first_visible_floor = 3;
@@ -438,11 +447,25 @@ fn inventory_rune_uses_selected_realm_fire_below_an_occupied_stack() -> Result<(
     let (link, mut commands, outbox) = crate::play::play_channel();
     outbox.world_context_initialize(true, false);
     outbox.targeting_initialize(true);
+    let keys: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"), "/../../tools/content-schema/native-gameplay/item-keys.json"
+    )))?;
+    let index = keys["records"].as_array().ok_or("Item index")?.iter()
+        .position(|row| row[0] == "oteryn:item.tibia.i3148").ok_or("Destroy Field")?;
     let rune = oteryn_session::ItemEntry {
-        handle: std::num::NonZeroU64::MIN, item_definition_ref: NonZeroU32::MIN,
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: u32::try_from(index + 1)?.try_into()?,
         appearance_id: 3148, count: NonZeroU32::MIN, sub_type: 0,
     };
-    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory { entries: vec![rune], ..Default::default() }), false);
+    let inventory = oteryn_session::CharacterInventory {
+        main_backpack: Some(oteryn_session::ItemEntry { handle: 2.try_into()?, appearance_id: 2854, item_definition_ref: NonZeroU32::MIN, ..rune }),
+        entries: vec![rune],
+        ..Default::default()
+    };
+    let snapshot = encode_character_inventory_with_appearances(&inventory, false, appearances).map_err(|e| format!("{e:?}"))?;
+    let decoded = decode_character_inventory_with_appearances(&snapshot, false, appearances).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(decoded.entries[0].appearance_id, if appearances { 3148 } else { 0 });
+    outbox.inventory_initialize(Some(decoded), false);
     let at = TileCoord::new(position.x, position.y);
     let screen = world.scene().view().tile_to_screen(at);
     let mut router = crate::input::MouseActions::new()?;

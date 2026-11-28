@@ -19,7 +19,8 @@ def dialogue(add, storage, callbacks, offers, declare, elapsed, stamp, fame):
     phase, clock, transformed = (
         BASE + part for part in ("progress", "reported_at", "transformed_at")
     )
-    declare(phase, 6, SOURCE)
+    # Saved nest runs could reach nine before the five-nest cap.
+    declare(phase, 9, SOURCE)
     declare(clock, 9_223_372_036_854_775_807, SOURCE)
     declare(transformed, 9_223_372_036_854_775_807, SOURCE)
     offers.append(
@@ -54,7 +55,7 @@ def dialogue(add, storage, callbacks, offers, declare, elapsed, stamp, fame):
         "gnombold",
         ["nests"],
         [
-            storage(phase, 6, 0),
+            storage(phase, 6, 0, maximum=9),
             storage(transformed, 0, 0, maximum=9_223_372_036_854_775_807),
         ],
         topic=1,

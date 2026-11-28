@@ -287,6 +287,10 @@ pub(super) async fn exercise(
         .strip_prefix("qengine-rewards-l12-")
         .and_then(|s| s.strip_suffix("-story"))
         .ok_or("trial")?;
+    if label == "spike-outpost" {
+        super::qengine_outfit_stories_fixtures::select_outfit_capabilities(owner, admitted)?;
+        return Box::pin(spike_outpost_and_legacy_reports(owner, admitted, h)).await;
+    }
     if label == "demon-wars" {
         return demon_wars_trial(owner, admitted, h).await;
     }
@@ -712,6 +716,67 @@ async fn spike(
     ).fetch_one(&h.pool).await?;
     assert_eq!(achievement, 1, "both main-era addons earn the achievement");
     Box::pin(spike_surveys(owner, admitted, h)).await
+}
+
+async fn spike_outpost_and_legacy_reports(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::{qengine_rewards_fixtures::talk, qengine_voucher_stories_fixtures as items};
+    use crate::foundation::MovementLocalPosition;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+
+    const PARCEL: &str = "oteryn:quest-progress/spike/lower/parcel/progress";
+    const NESTS: &str = "oteryn:quest-progress/spike/nests/progress";
+    const FAME: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points";
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        let at = MovementLocalPosition { x: 32157, y: 32520, floor: 15 };
+        runtime.relocate_arena_player(actor, admitted.game_session_id, before, at).map_err(debug)?;
+    }
+    let [trooper, bold] = super::classic_quests_fixtures::install_with_offsets(
+        owner, admitted, ["oteryn:npc.gnome_trooper", "oteryn:npc.gnombold"],
+        Some([(0, 1), (1, 0)]),
+    ).await?;
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(PARCEL.into(), 1), (NESTS.into(), 7)], 218,
+    ).await?;
+    items::mint(owner, admitted, 19219, 1, &mut 30_200).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    assert_eq!(talk(owner, admitted, trooper, 400, "hi").await?, NpcIntentDisposition::Ok);
+    let _ = talk(owner, admitted, trooper, 401, "handsomething").await?;
+    assert_eq!(items::quantity(h, 19219).await?, 1);
+    assert_eq!(count(h, PARCEL).await?, 1);
+    assert_eq!(talk(owner, admitted, trooper, 402, "I have something to deliver.").await?, NpcIntentDisposition::Ok);
+    assert_eq!(items::quantity(h, 19219).await?, 0);
+    assert_eq!(count(h, PARCEL).await?, 2);
+    let _ = talk(owner, admitted, trooper, 403, "bye").await?;
+    assert_eq!(talk(owner, admitted, bold, 404, "hi").await?, NpcIntentDisposition::Ok);
+
+    for progress in 7..=9 {
+        arrange_track(h, NESTS, progress).await?;
+        let mut fixture = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *fixture).await?;
+        let restored = sqlx::query("UPDATE game_character_quest_states SET definition_hash=decode($1,'hex') WHERE quest_key='oteryn:quest.spike_task'")
+            .bind("13cd4ab4d17a41fd0cb172ad4603145063f3b649ad0d971cf2215220198cdb02").execute(&mut *fixture).await?;
+        assert_eq!(restored.rows_affected(), 1);
+        fixture.commit().await?;
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
+        let fame = count(h, FAME).await?;
+        let command = 410 + 4 * u64::try_from(progress)?;
+        for (id, word) in [(command, "report"), (command + 1, "nests")] {
+            assert_eq!(talk(owner, admitted, bold, id, word).await?, NpcIntentDisposition::Ok);
+        }
+        assert_eq!(count(h, NESTS).await?, 0);
+        assert_eq!(count(h, FAME).await?, fame + 1);
+        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-reward/l12-spike-nests-report'")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(receipts, progress - 6);
+    }
+    Ok(())
 }
 
 pub(super) async fn recover_nest(

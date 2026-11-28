@@ -83,7 +83,7 @@
       "quest": "oteryn:quest.spike_task",
       "initial": 0,
       "min": 0,
-      "max": 6,
+      "max": 9,
       "writable": true,
       "sources": [
         "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
@@ -871,7 +871,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 6,
-          "maximum": 6,
+          "maximum": 9,
           "set": 0
         },
         {
