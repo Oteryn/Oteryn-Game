@@ -732,8 +732,18 @@ class CloudRunSummaryTests(unittest.TestCase):
 
     def test_imbuement_replay_requires_fresh_complete_capture_and_assertions(self):
         cloud = (HERE / "cloud_run.sh").read_text()
-        helper = cloud[cloud.index("replay_imbuement_capture()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
-        captured = "SEAM_EVIDENCE e2e_capture scenario=P21.client status=CAPTURED evidence=live\n"
+        helper = cloud[cloud.index("p21_capture_matches()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
+        import hashlib
+
+        digest = hashlib.sha256(b"capture").hexdigest()
+        expected = (
+            "session=01934f10-7c00-7000-8000-000000000020\nwindow_sequence=3\nrefused_sequence=4\n"
+            f"window_sha256={digest}\nrefused_sha256={digest}\n"
+        )
+        captured = (
+            "SEAM_EVIDENCE e2e_capture scenario=P21.client status=CAPTURED evidence="
+            + expected.replace("\n", ";") + "\n"
+        )
         failed = "SEAM_EVIDENCE e2e_all scenario=P21.client status=FAIL evidence=row-error\n"
         command = helper + textwrap.dedent(r'''
             cargo() {
@@ -755,12 +765,13 @@ class CloudRunSummaryTests(unittest.TestCase):
             (captured, "1", True, "pass", False),
             (captured, "0", False, "pass", False),
             (captured, "0", True, "unmatched", False),
+            (captured.replace("window_sequence=3", "window_sequence=2"), "0", True, "pass", False),
         ]:
             with self.subTest(node_log=node_log, status=status, complete=complete, replay=replay), tempfile.TemporaryDirectory() as temp:
                 log = Path(temp, "node.log")
                 log.write_text(node_log)
-                for name in ("p21-window.bin", "p21-expected.txt"):
-                    Path(temp, name).write_text("capture")
+                Path(temp, "p21-window.bin").write_text("capture")
+                Path(temp, "p21-expected.txt").write_text(expected)
                 if complete:
                     Path(temp, "p21-refused.bin").write_text("capture")
                 result = subprocess.run(

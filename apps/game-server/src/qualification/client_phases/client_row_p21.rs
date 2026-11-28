@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::imbuement::{
     ImbuementAction, ImbuementRequest, ImbuementResult, decode_imbuement_reply,
     decode_imbuement_reply_with_success, encode_imbuement_request,
 };
+use sha2::{Digest as _, Sha256};
 use std::num::NonZeroU64;
 
 const SWORD: u32 = 3264;
@@ -29,7 +30,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 async fn query(
     client: &mut DevClientSession,
     item: NonZeroU64,
-) -> TestResult<(CommandStatus, Vec<u8>)> {
+) -> TestResult<(CommandStatus, u64, Vec<u8>)> {
     let payload = encode_imbuement_request(&ImbuementRequest {
         item,
         action: ImbuementAction::Query,
@@ -39,7 +40,7 @@ async fn query(
         .session_mut()
         .gated_command(CAPABILITY_IMBUE_V1, COMMAND_TYPE_IMBUEMENT, &payload)
         .await?;
-    Ok((reply.status, reply.payload))
+    Ok((reply.status, reply.server_sequence, reply.payload))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -51,6 +52,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_P21_ACCOUNT").await?;
     let scope = dedicated.clients(clients);
     let mut client = connect_character(&scope, 0x46, 0).await?;
+    let definitions = provisioning::item_index()?;
+    let definition = provisioning::item_reference(&definitions, SWORD)?;
+    let before = client
+        .inventory()
+        .ok_or("fixture inventory frame missing")?;
+    if before
+        .entries
+        .iter()
+        .chain(before.main_backpack.iter())
+        .chain(before.equipment.iter().map(|entry| &entry.item))
+        .any(|entry| entry.item_definition_ref == definition)
+    {
+        return Err("P21 sword already present before fixture grant".into());
+    }
     let setup_session = client.join_snapshot().game_session_id;
     character_prep::grant_item(&client, SWORD, 1).await?;
     logout(&mut client).await?;
@@ -75,8 +90,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             decode_imbuement_reply(payload).map(|reply| (reply, Vec::new()))
         }
     };
-    let definitions = provisioning::item_index()?;
-    let definition = provisioning::item_reference(&definitions, SWORD)?;
     let inventory = client.inventory().ok_or("inventory frame missing")?;
     let mut swords = inventory
         .entries
@@ -87,7 +100,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("P21 expected exactly one fixture sword".into());
     }
     let handle = sword.handle;
-    let (status, payload) = query(&mut client, handle).await?;
+    let (status, window_sequence, payload) = query(&mut client, handle).await?;
     if status != CommandStatus::Accepted {
         return Err(format!("fixture sword query refused: {status:?}").into());
     }
@@ -101,8 +114,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("unexpected fixture sword window: {found:?}").into());
     }
     capture("p21-window.bin", &payload)?;
+    let before_refusal = client
+        .inventory()
+        .ok_or("inventory before refusal missing")?
+        .clone();
     let missing = NonZeroU64::new(u64::MAX).ok_or("nonzero handle")?;
-    let (status, refused) = query(&mut client, missing).await?;
+    let (status, refused_sequence, refused) = query(&mut client, missing).await?;
     if status != CommandStatus::Accepted {
         return Err(format!("unknown item query failed at command boundary: {status:?}").into());
     }
@@ -110,10 +127,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refusal.result != ImbuementResult::NotAllowed || refusal.window.is_some() {
         return Err(format!("unexpected unknown item query result: {refusal:?}").into());
     }
+    if client.inventory() != Some(&before_refusal) {
+        return Err("unknown item query changed the carried inventory".into());
+    }
     capture("p21-refused.bin", &refused)?;
+    if window_sequence == 0 || refused_sequence <= window_sequence {
+        return Err("P21 result sequences are not increasing".into());
+    }
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let window_sha256 = format!("{:x}", Sha256::digest(&payload));
+    let refused_sha256 = format!("{:x}", Sha256::digest(&refused));
     let refused_result = refusal.result;
     let mut expected = format!(
-        "success_selected={success_selected}\nslot_count={}\nclear_gold={}\napplied={}\noffers={}\n",
+        "session={session}\nwindow_sequence={window_sequence}\nrefused_sequence={refused_sequence}\nwindow_sha256={window_sha256}\nrefused_sha256={refused_sha256}\nsuccess_selected={success_selected}\nslot_count={}\nclear_gold={}\napplied={}\noffers={}\n",
         found.slot_count,
         found.clear_gold,
         found.applied.len(),

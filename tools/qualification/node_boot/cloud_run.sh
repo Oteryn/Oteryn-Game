@@ -108,6 +108,20 @@ replay_loyalty_capture() {
   return 1
 }
 
+p21_capture_matches() {
+  local log=$1 root=$2 expected window_hash refused_hash
+  [[ -s "$root/p21-expected.txt" && -s "$root/p21-window.bin" && -s "$root/p21-refused.bin" ]] || return 1
+  local binding="^session=[0-9a-f-]{36};window_sequence=[1-9][0-9]*;refused_sequence=[1-9][0-9]*;"
+  expected=$(tr '\n' ';' <"$root/p21-expected.txt") || return 1
+  [[ "$expected" =~ $binding ]] || return 1
+  [[ $(grep -Fc 'SEAM_EVIDENCE e2e_capture scenario=P21.client status=CAPTURED ' "$log") == 1 ]] || return 1
+  grep -Fqx "SEAM_EVIDENCE e2e_capture scenario=P21.client status=CAPTURED evidence=$expected" "$log" || return 1
+  window_hash=$(sha256sum <"$root/p21-window.bin") || return 1
+  refused_hash=$(sha256sum <"$root/p21-refused.bin") || return 1
+  [[ "$expected" == *";window_sha256=${window_hash%% *};"* &&
+     "$expected" == *";refused_sha256=${refused_hash%% *};"* ]]
+}
+
 replay_imbuement_capture() {
   local log=$1 capture_dir=$2 replay_log=$3 status=$4
   local test=imbue::e2e_p21::e2e_p21_replays_imbuement_window_and_refusal
@@ -116,8 +130,7 @@ replay_imbuement_capture() {
     return 1
   fi
   if [[ "$status" == 0 ]] &&
-    [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=P21\.client status=CAPTURED ' "$log") == 1 ]] &&
-    [[ -s "$capture_dir/p21-expected.txt" && -s "$capture_dir/p21-window.bin" && -s "$capture_dir/p21-refused.bin" ]] &&
+    p21_capture_matches "$log" "$capture_dir" &&
     E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
     grep -Fqx "test $test ... ok" "$replay_log"; then
     printf 'SEAM_EVIDENCE e2e_all scenario=P21.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
