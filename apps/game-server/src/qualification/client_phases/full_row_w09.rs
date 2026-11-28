@@ -279,30 +279,35 @@ async fn wait_inventory(
     Ok(())
 }
 
-async fn cast_paid(client: &mut DevClientSession, spell: NonZeroU32, mana_cost: u32) -> TestResult {
-    let before = client
-        .actor_vitals()
-        .copied()
-        .ok_or("W09 caster vitals missing")?;
-    let expected_mana = before
-        .mana
-        .checked_sub(mana_cost)
-        .ok_or("W09 insufficient mana for cooldown probe")?;
+async fn cast_paid(client: &mut DevClientSession, spell: NonZeroU32, mana_cost: u32) -> TestResult<Vec<SessionEvent>> {
+    let before_sequence = client.last_server_sequence();
+    let mut before = client.actor_vitals().copied().ok_or("W09 caster vitals missing")?;
     let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
+    let events = client.take_events();
+    // The transport can deliver a regeneration frame before the cast result.
+    // Use that exact wire state when it is the immediate predecessor of the debit.
+    let prior = events.iter().filter_map(|event| match event {
+        SessionEvent::ActorVitals(delta)
+            if delta.server_sequence > before_sequence
+                && delta.server_sequence < cast.result_server_sequence => Some(delta),
+        _ => None,
+    }).max_by_key(|delta| delta.server_sequence);
+    if let Some(delta) = prior {
+        if cast.actor_vitals_delta.as_ref().map(|debit| debit.base_revision) != Some(delta.new_revision) {
+            return Err("W09 pre-cast vitals revision does not precede the debit".into());
+        }
+        before = delta.value;
+        evidence(&format!("W09_CHECK cast-prestate command={} sequence={} revision={} mana={}", cast.command_id, delta.server_sequence, delta.new_revision, before.mana));
+    }
+    let expected_mana = before.mana.checked_sub(mana_cost)
+        .ok_or("W09 insufficient mana for cooldown probe")?;
     if cast.status != CommandStatus::Accepted
         || cast.disposition != SpellCastDisposition::Cast
-        || cast
-            .actor_vitals_delta
-            .as_ref()
-            .map(|delta| delta.value.mana)
-            != Some(expected_mana)
+        || cast.actor_vitals_delta.as_ref().map(|delta| delta.value.mana) != Some(expected_mana)
     {
-        return Err(format!(
-            "W09 spell {spell} did not spend {mana_cost} mana: before={before:?} cast={cast:?}"
-        )
-        .into());
+        return Err(format!("W09 spell {spell} did not spend {mana_cost} mana: before={before:?} cast={cast:?}").into());
     }
-    Ok(())
+    Ok(events)
 }
 
 async fn assert_cast_cooldowns(
@@ -311,10 +316,12 @@ async fn assert_cast_cooldowns(
     cast_started: tokio::time::Instant,
     spell_ms: u64,
     stance: bool,
+    mut events: Vec<SessionEvent>,
 ) -> TestResult<[ActorCooldown; 2]> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        for event in client.take_events() {
+        events.extend(client.take_events());
+        for event in std::mem::take(&mut events) {
             if let SessionEvent::ActorCooldowns(frame) = event {
                 let now = frame.value.server_now_ms;
                 // Global: https://www.tibiawiki.com.br/wiki/Conjure_Wand_of_Darkness
@@ -666,9 +673,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     client.take_events();
     let first_cast = tokio::time::Instant::now();
-    cast_paid(&mut client, spell, 250).await?;
+    let cast_events = cast_paid(&mut client, spell, 250).await?;
     *expected.entry(wand).or_default() += 1;
-    let cooldowns = assert_cast_cooldowns(&mut client, spell, first_cast, 1_800_000, false).await?;
+    let cooldowns = assert_cast_cooldowns(&mut client, spell, first_cast, 1_800_000, false, cast_events).await?;
     wait_inventory(&mut client, &expected).await?;
     let mut client = reconnect_cooldowns(client, &scope, cooldowns).await?;
     if quantities(&client)? != expected {
@@ -690,9 +697,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let stance = crate::qualification::client_spell_journey::spell_index(book, "uteta vis")?;
     client.take_events();
     let stance_cast = tokio::time::Instant::now();
-    cast_paid(&mut client, stance, 400).await?;
+    let cast_events = cast_paid(&mut client, stance, 400).await?;
     let [stance_spell, support] =
-        assert_cast_cooldowns(&mut client, stance, stance_cast, 30_000, true).await?;
+        assert_cast_cooldowns(&mut client, stance, stance_cast, 30_000, true, cast_events).await?;
     let stance_group = ActorCooldown {
         kind: ActorCooldownKind::Group,
         id: 9,
@@ -790,9 +797,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     ));
 
     let stance_recast = tokio::time::Instant::now();
-    cast_paid(&mut client, stance, 400).await?;
+    let cast_events = cast_paid(&mut client, stance, 400).await?;
     let [new_stance, _] =
-        assert_cast_cooldowns(&mut client, stance, stance_recast, 30_000, true).await?;
+        assert_cast_cooldowns(&mut client, stance, stance_recast, 30_000, true, cast_events).await?;
     if stance_cast.elapsed() >= Duration::from_secs(30) {
         return Err("W09 Master of Thunder recast did not precede natural Stance expiry".into());
     }
@@ -801,9 +808,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
     }
     let second_cast = tokio::time::Instant::now();
-    cast_paid(&mut client, spell, 250).await?;
+    let cast_events = cast_paid(&mut client, spell, 250).await?;
     let [new_conjure, new_support] =
-        assert_cast_cooldowns(&mut client, spell, second_cast, 1_800_000, false).await?;
+        assert_cast_cooldowns(&mut client, spell, second_cast, 1_800_000, false, cast_events).await?;
     let mut durable_cooldowns = [
         new_conjure,
         new_stance,
