@@ -7,6 +7,103 @@ use oteryn_protocol_oteryn::{
 use std::sync::Arc;
 use world_spatial_entities::{EntityRef, decode_world_spatial_entities_delta_with_sidecar};
 
+/// Records only bytes read from the server during an opted-in admission.
+pub struct AdmissionRecording<S> {
+    inner: S,
+    capture: AdmissionCapture,
+}
+
+/// The server transcript of one admission, until taken by the caller.
+#[derive(Clone, Default)]
+pub struct AdmissionCapture(Arc<std::sync::Mutex<Option<Vec<u8>>>>);
+
+impl AdmissionCapture {
+    /// Start recording reads from this transport. Writes are passed through untouched.
+    pub fn record<S>(stream: S) -> (AdmissionRecording<S>, Self) {
+        let capture = Self(Arc::new(std::sync::Mutex::new(Some(Vec::new()))));
+        (
+            AdmissionRecording {
+                inner: stream,
+                capture: capture.clone(),
+            },
+            capture,
+        )
+    }
+
+    /// Finish recording and take the length-prefixed server frames once.
+    pub fn finish(self) -> Option<Vec<u8>> {
+        self.0.lock().ok()?.take()
+    }
+}
+
+impl<S: AsyncRead + Unpin> AsyncRead for AdmissionRecording<S> {
+    fn poll_read(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        let this = self.get_mut();
+        let start = buf.filled().len();
+        let result = std::pin::Pin::new(&mut this.inner).poll_read(cx, buf);
+        if let std::task::Poll::Ready(Ok(())) = result {
+            let mut capture = this
+                .capture
+                .0
+                .lock()
+                .map_err(|_| std::io::Error::other("admission capture lock"))?;
+            if let Some(bytes) = capture.as_mut() {
+                let incoming = &buf.filled()[start..];
+                if bytes.len().saturating_add(incoming.len()) as u64
+                    > 2 * oteryn_protocol_oteryn::MAX_SNAPSHOT_ASSEMBLED_BYTES
+                {
+                    return std::task::Poll::Ready(Err(std::io::Error::other(
+                        "admission capture exceeds its bound",
+                    )));
+                }
+                bytes.extend_from_slice(incoming);
+            }
+        }
+        result
+    }
+}
+
+impl<S: AsyncWrite + Unpin> AsyncWrite for AdmissionRecording<S> {
+    fn poll_write(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &[u8],
+    ) -> std::task::Poll<std::io::Result<usize>> {
+        std::pin::Pin::new(&mut self.get_mut().inner).poll_write(cx, buf)
+    }
+
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::pin::Pin::new(&mut self.get_mut().inner).poll_flush(cx)
+    }
+
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::pin::Pin::new(&mut self.get_mut().inner).poll_shutdown(cx)
+    }
+}
+
+/// Admit a fresh local session using the unmodified server frames from a recorded admission.
+/// Bootstrap writes are discarded locally. No admission credential is read from capture.
+pub async fn replay_recorded_admission<'a>(
+    transcript: &'a [u8],
+    admission: Admission<'_>,
+) -> Result<Session<impl SessionStream + use<'a>>, SessionError> {
+    Session::admit(
+        tokio::io::join(std::io::Cursor::new(transcript), tokio::io::sink()),
+        admission,
+    )
+    .await
+}
+
 /// Maximum number of retained deltas per replay domain.
 pub const REPLAY_DELTA_LIMIT: usize = 32;
 

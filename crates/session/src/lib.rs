@@ -142,7 +142,10 @@ pub use oteryn_protocol_oteryn::{creature_push, target_move};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
-pub use replay_capture::{REPLAY_DELTA_LIMIT, RawReplayDelta};
+pub use replay_capture::{
+    AdmissionCapture, AdmissionRecording, REPLAY_DELTA_LIMIT, RawReplayDelta,
+    replay_recorded_admission,
+};
 mod chat_extended;
 mod guild_chat;
 mod private_channels;

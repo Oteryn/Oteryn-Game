@@ -281,7 +281,7 @@ pub async fn resume_session(
 }
 
 pub use oteryn_session::{Recovery, RecoveryState};
-pub use oteryn_session_tcp::TcpConnect as RecoveryTransport;
+pub use oteryn_session_tcp::{TcpConnect as RecoveryTransport, connect as connect_transport};
 
 /// An admitted, joined game session over the TLS/TCP adapter: `oteryn_session::Session` with the
 /// dev client's error type. Dropping it closes the connection.

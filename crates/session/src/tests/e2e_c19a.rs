@@ -72,7 +72,9 @@ fn e2e_c19a_starter_backpack_replay() -> Result<(), BoxError> {
             std::future::pending::<()>().await;
             Ok::<(), BoxError>(())
         });
-        let mut session = match Session::admit(client, admission_with(SELECTED)?).await {
+        let (client, recording) = AdmissionCapture::record(client);
+        let admission = admission_with(SELECTED)?;
+        let live = match Session::admit(client, admission).await {
             Ok(session) => session,
             Err(error) => {
                 peer.abort();
@@ -80,6 +82,17 @@ fn e2e_c19a_starter_backpack_replay() -> Result<(), BoxError> {
                 return Err(format!("C19a admission: {error:?}; peer={peer_error:?}").into());
             }
         };
+        let transcript = recording.finish().ok_or("recorded admission missing")?;
+        assert!(
+            replay_recorded_admission(&transcript[..transcript.len() - 1], admission)
+                .await
+                .is_err()
+        );
+        let mut session = replay_recorded_admission(&transcript, admission).await?;
+        assert_eq!(
+            session.join_snapshot().game_session_id,
+            live.join_snapshot().game_session_id
+        );
         let captured = session
             .gated_snapshot(STATE_DOMAIN_CHARACTER_INVENTORY)
             .ok_or("inventory join snapshot absent")?;
