@@ -90,6 +90,31 @@ impl ItemUseInventory {
         })
     }
 
+    /// An equipped lantern toggles in place. Keep the complete search bound and
+    /// reservation order even if a second lantern is present in a container.
+    pub fn first_novelty_source(
+        &self,
+        wanted: &TypedDefinitionRef,
+        reserved: &[[u8; 16]],
+    ) -> std::result::Result<[u8; 16], HotkeyRefusal> {
+        match self.first_unreserved(wanted, reserved) {
+            Err(HotkeyRefusal::EquipmentSource)
+                if oteryn_gameplay_items::novelty_items::is_ghostsilver_lantern(
+                    &wanted.production_key,
+                ) =>
+            {
+                self.equipment
+                    .iter()
+                    .find(|item| {
+                        item.definition == *wanted && !reserved.contains(&item.item_instance_id)
+                    })
+                    .map(|item| item.item_instance_id)
+                    .ok_or(HotkeyRefusal::EquipmentSource)
+            }
+            result => result,
+        }
+    }
+
     /// BAGS-0 §8: search this complete fenced snapshot in wire/display order, including
     /// closed bags. The pure items rule owns ordering, reservation skips and the whole-input
     /// bound; an equipment match refuses without falling through to a later stack.

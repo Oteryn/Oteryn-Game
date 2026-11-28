@@ -29,6 +29,7 @@ fn engenc_personal_encounter_pending_requires_original_command_and_physical_fenc
         flame: None,
         flame_effect_sent: false,
         projection_target: None,
+        tomb: None,
         selected_tool: None,
     };
     let allowed = |pending: &Pending| {

@@ -27,6 +27,32 @@ pub(super) struct StagedSourceBoss<'owner> {
     visit: Option<EncounterVisit>,
 }
 
+pub(super) fn koshei_defender(
+    runtime: &ChannelRuntimeV1,
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    census: &[(
+        ExactActorRef,
+        MovementPositionSnapshot,
+        Option<GameSessionId>,
+    )],
+) -> Result<ExactActorRef, UseDisposition> {
+    let [monster] = encounter.monsters.as_slice() else {
+        return Err(UseDisposition::Rejected);
+    };
+    let mut defenders = census.iter().filter_map(|(actor, pos, session)| {
+        (session.is_none()
+            && room_contains(encounter, pos.position())
+            && runtime.matches_live_creature_identity(*actor, monster.creature.as_bytes())
+            && runtime.creature_spawn_cell(*actor) == Some(local(monster.position)))
+        .then_some(*actor)
+    });
+    let defender = defenders.next().ok_or(UseDisposition::Occupied)?;
+    if defenders.next().is_some() {
+        return Err(UseDisposition::Occupied);
+    }
+    Ok(defender)
+}
+
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     at: MovementLocalPosition,
@@ -545,30 +571,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The mainland spawn owns Koshei's lifecycle. An authored admission
         // may bind the live native defender from that exact source cell.
         let native_koshei = if callback.key == TOMB_ENTRY {
-            let [monster] = encounter.monsters.as_slice() else {
-                return UseDisposition::Rejected;
+            let defender = match koshei_defender(runtime, encounter, &census) {
+                Ok(defender) => defender,
+                Err(disposition) => return disposition,
             };
-            let mut defenders = census.iter().filter_map(|(actor, pos, session)| {
-                (session.is_none()
-                    && room_contains(encounter, pos.position())
-                    && runtime.matches_live_creature_identity(*actor, monster.creature.as_bytes())
-                    && runtime.creature_spawn_cell(*actor) == Some(local(monster.position)))
-                .then_some(*actor)
-            });
-            let Some(defender) = defenders.next() else {
-                return UseDisposition::Occupied;
-            };
-            if defenders.next().is_some()
-                || self
-                    .states
-                    .quest_callbacks
-                    .encounters
-                    .lock()
-                    .map_or(true, |visits| {
-                        visits.iter().any(|visit| {
-                            visit.creatures.contains(&defender) && visit.active(runtime)
-                        })
-                    })
+            if self
+                .states
+                .quest_callbacks
+                .encounters
+                .lock()
+                .map_or(true, |visits| {
+                    visits
+                        .iter()
+                        .any(|visit| visit.creatures.contains(&defender) && visit.active(runtime))
+                })
             {
                 return UseDisposition::Occupied;
             }

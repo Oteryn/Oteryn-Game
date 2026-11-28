@@ -124,6 +124,26 @@ pub(super) async fn fight(
     potion: &str,
     chase: ChaseMode,
 ) -> TestResult {
+    fight_until_lethal(owner, member, target, generation, potion, chase).await?;
+    let outcome = owner.drain_kill_rewards(member.game_session_id).await;
+    assert!(
+        matches!(
+            outcome,
+            crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+        ),
+        "ordinary native XP/corpse/loot settlement: {outcome:?}"
+    );
+    Ok(())
+}
+
+pub(super) async fn fight_until_lethal(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    member: &mut AdmittedSession,
+    target: crate::foundation::ExactActorRef,
+    generation: u64,
+    potion: &str,
+    chase: ChaseMode,
+) -> TestResult {
     let player = member.runtime_actor.ok_or("player")?;
     let initial = owner
         .runtime
@@ -252,14 +272,6 @@ pub(super) async fn fight(
     assert!(
         killed && dealt_damage,
         "actual wire attacks must kill the full-health source defender"
-    );
-    let outcome = owner.drain_kill_rewards(member.game_session_id).await;
-    assert!(
-        matches!(
-            outcome,
-            crate::gameplay_transport::kill_reward::DrainOutcome::Drained
-        ),
-        "ordinary native XP/corpse/loot settlement: {outcome:?}"
     );
     Ok(())
 }

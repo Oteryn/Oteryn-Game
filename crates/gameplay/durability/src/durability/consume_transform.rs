@@ -345,9 +345,8 @@ async fn write<C: ItemLoopContent>(
     let permit =
         (!matches!(ground, ActionContext::DispenserHouseTarget(_))).then_some(ground_fences.permit);
     let world = fence.runtime_scope.world_id();
-    // The full Character fence/root lock precedes item locks. The only equipment
-    // source admitted here is the unchanged party hat in the actual head slot.
-    let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal,h.slot,1)::text AS ordinal,CASE WHEN h.item_instance_id IS NOT NULL THEN 2 WHEN n.item_instance_id IS NOT NULL THEN 4 ELSE 1 END AS custody,CASE WHEN h.item_instance_id IS NOT NULL THEN to_jsonb(h) WHEN n.item_instance_id IS NOT NULL THEN to_jsonb(n) ELSE to_jsonb(e) END AS source_location FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL LEFT JOIN game_character_equipment_slots h ON h.item_instance_id=i.item_instance_id AND h.character_id=encode($2,'hex')::uuid AND (h.slot=1 OR $4) AND h.world_id=i.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR h.item_instance_id IS NOT NULL OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")
+    // The Character fence/root lock precedes item locks and equipment admission.
+    let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal,h.slot,1)::text AS ordinal,CASE WHEN h.item_instance_id IS NOT NULL THEN 2 WHEN n.item_instance_id IS NOT NULL THEN 4 ELSE 1 END AS custody,CASE WHEN h.item_instance_id IS NOT NULL THEN to_jsonb(h) WHEN n.item_instance_id IS NOT NULL THEN to_jsonb(n) ELSE to_jsonb(e) END AS source_location FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL LEFT JOIN game_character_equipment_slots h ON h.item_instance_id=i.item_instance_id AND h.character_id=encode($2,'hex')::uuid AND (h.slot=1 OR $4 OR (h.slot=10 AND i.definition_production_key IN ('oteryn:item.tibia.i23734','oteryn:item.tibia.i23738'))) AND h.world_id=i.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR h.item_instance_id IS NOT NULL OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(matches!(ground, ActionContext::CakeBaker(_))).fetch_optional(&mut ***tx).await?;
     let Some(source) = source else {
         return Ok(ConsumeTransformResult::refused(UseDisposition::StaleState));
@@ -561,7 +560,24 @@ async fn write<C: ItemLoopContent>(
         .get("require_head")
         .and_then(Value::as_bool)
         .unwrap_or(false);
-    if conversion.recipe != cake::RECIPE
+    let equipped_lantern = source_kind == 2
+        && source.try_get::<String, _>("ordinal")? == "10"
+        && oteryn_gameplay_items::novelty_items::is_ghostsilver_lantern(&definition.production_key)
+        && conversion.effects["kind"] == "carried_transform";
+    if equipped_lantern {
+        // The selected output replaces this exact instance under its equipment fence.
+        let [(after, 1)] = conversion.outputs.as_slice() else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        if after.revision_ref != definition.revision_ref {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        }
+        conversion.outputs.clear();
+        conversion.consume_source = false;
+        conversion.source_count = 0;
+    }
+    if !equipped_lantern
+        && conversion.recipe != cake::RECIPE
         && (require_head != (source_kind == 2) || (source_kind == 2 && conversion.consume_source))
     {
         return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
@@ -1049,6 +1065,12 @@ async fn persist_action(
     super::consume_transform_cosmetics::apply(tx, fence, request, plan, &transaction).await?;
     if source_kind == 5 {
         house::apply_in_transaction(tx, &transaction).await?;
+    }
+    if source_kind == 2 && plan.effects["kind"] == "carried_transform" {
+        sqlx::query("SELECT game_ghostsilver_equipped_apply($1::uuid)")
+            .bind(&transaction)
+            .execute(&mut ***tx)
+            .await?;
     }
     if plan.consume_source
         && !(source_kind == 5

@@ -33,6 +33,7 @@ enum Case {
     GroundLanternOn,
     DefinitionLanternOff,
     DefinitionLanternOn,
+    EquippedLantern,
     GroundRocket,
     GroundTrumpet,
     NestedCostume,
@@ -49,7 +50,9 @@ impl Case {
         match self {
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
             Self::GroundLanternOff | Self::DefinitionLanternOff => "oteryn:item.tibia.i23738",
-            Self::GroundLanternOn | Self::DefinitionLanternOn => "oteryn:item.tibia.i23734",
+            Self::GroundLanternOn | Self::DefinitionLanternOn | Self::EquippedLantern => {
+                "oteryn:item.tibia.i23734"
+            }
             Self::DefinitionWatch(2906) => "oteryn:item.tibia.i2906",
             Self::DefinitionWatch(_) => "oteryn:item.tibia.i6091",
             Self::CarriedLanternClue { .. } => "oteryn:item.tibia.i23734",
@@ -182,6 +185,10 @@ fn novelty_ground_lantern_turns_on() -> TestResult {
 #[test]
 fn novelty_ground_lantern_turns_off() -> TestResult {
     run_case(Case::GroundLanternOn)
+}
+#[test]
+fn novelty_definition_toggles_equipped_lantern_in_place() -> TestResult {
+    run_case(Case::EquippedLantern)
 }
 #[test]
 fn novelty_definition_lantern_toggles() -> TestResult {

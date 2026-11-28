@@ -771,6 +771,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    tomb: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -934,6 +935,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    tomb: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -1273,6 +1275,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 movement_revision: expected.revision(),
                 party: party_context,
             };
+            let mut tomb_turn = if callback.key
+                == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY
+            {
+                let QuestCause::Use(command) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(turn) = self.reserve_tomb_entry(runtime, actor, command, fence, callback)
+                else {
+                    return UseDisposition::Rejected;
+                };
+                Some(turn)
+            } else {
+                None
+            };
             let context = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                 let record = pending.entry(session).or_insert(Pending {
                     actor,
@@ -1290,8 +1306,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
                     projection_target: None,
+                    tomb: None,
                     selected_tool: None,
                 });
+                if let Some(actors) = tomb_turn.as_ref().and_then(|turn| turn.affected()) {
+                    if record
+                        .tomb
+                        .as_ref()
+                        .is_some_and(|original| original.actors != actors)
+                    {
+                        pending.remove(&session);
+                        drop(pending);
+                        self.schedule_quest_refresh(session);
+                        return UseDisposition::StaleState;
+                    }
+                    record
+                        .tomb
+                        .get_or_insert_with(|| definition_target::PendingTomb::new(actors));
+                }
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
                 // that exact binding instead of the replaying caller's tool.
@@ -1303,11 +1335,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
                     record.paid_arrivals.clone(),
+                    record.tomb.clone(),
                 )
             } else {
                 return UseDisposition::Rejected;
             };
-            let (context, selected_tool, paid_arrivals) = context;
+            let (context, selected_tool, paid_arrivals, tomb) = context;
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1391,19 +1424,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Pending retains the exact source and receipt so the Character
             // commit can run without the Channel guards.
             let release_guards = callback.trigger == Trigger::Use
-                && callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest";
+                && (callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+                    || callback.key == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY);
+            if let (Some(guard), Some(tomb)) = (&mut tomb_turn, &tomb)
+                && !tomb.retain(guard)
+            {
+                return UseDisposition::Rejected;
+            }
             if release_guards {
                 drop(guards.take());
             }
             #[cfg(test)]
-            if callback.key == "oteryn:quest-callback/qc-twenty-miles-pile-1"
-                && let Some(pause) = self
-                    .states
-                    .quest_callbacks
-                    .before_commit
-                    .lock()
-                    .ok()
-                    .and_then(|mut pause| pause.take())
+            if matches!(
+                callback.key.as_str(),
+                "oteryn:quest-callback/qc-twenty-miles-pile-1"
+                    | oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY
+            ) && let Some(pause) = self
+                .states
+                .quest_callbacks
+                .before_commit
+                .lock()
+                .ok()
+                .and_then(|mut pause| pause.take())
             {
                 pause.0.notify_one();
                 pause.1.notified().await;
@@ -1446,6 +1488,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             (runtime, states) = (&mut **current_runtime, &mut **current_states);
+            if let Some(tomb) = &tomb {
+                if matches!(&outcome, Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_))) {
+                    return UseDisposition::Rejected;
+                }
+                tomb.release(runtime);
+            }
             if release_guards {
                 let current_actor = runtime.owner_fence().is_ok()
                     && runtime.read_actor_position(actor) == Ok(expected)
@@ -1557,7 +1605,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if callback.effects.encounter.is_none() {
                         self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
                     }
-                    self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
+                    // The scheduled refresh publishes objective eligibility for the tomb.
+                    if tomb_turn.is_none() {
+                        self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
+                    }
                     self.states.loop_ground.invalidate();
                     self.schedule_quest_refresh(session);
                 }

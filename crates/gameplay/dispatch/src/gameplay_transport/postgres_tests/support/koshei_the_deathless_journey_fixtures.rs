@@ -608,10 +608,31 @@ pub(super) async fn exercise(
     }
     move_to(owner, admitted, at(SWITCH.x - 1, SWITCH.y, SWITCH.floor)).await?;
     let switch = target(owner, SWITCH, 1)?;
-    assert_eq!(
-        use_next(owner, admitted, &switch).await?,
-        UseDisposition::Committed
-    );
+    let pause = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    let runtime = owner.runtime.clone();
+    let states = owner.states.clone();
+    let actor = admitted.runtime_actor.ok_or("Koshei player")?;
+    *states
+        .quest_callbacks
+        .before_commit
+        .lock()
+        .map_err(|_| "commit pause")? = Some(pause.clone());
+    let inspect = async {
+        tokio::time::timeout(std::time::Duration::from_secs(5), pause.0.notified()).await?;
+        let reserved = runtime
+            .try_lock()
+            .is_ok_and(|r| r.actor_spell_reserved(actor) && r.actor_spell_reserved(native_boss));
+        let states_free = states.spell_states.try_lock().is_ok();
+        pause.1.notify_one();
+        assert!(
+            reserved && states_free,
+            "tomb admission must reserve both actors while the Channel remains available"
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (used, checked) = tokio::join!(use_next(owner, admitted, &switch), inspect);
+    checked?;
+    assert_eq!(used?, UseDisposition::Committed);
     expected.mission[2] = 1;
     assert_eq!(State::read(h).await?, expected);
     let boss = {
@@ -720,7 +741,7 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(entry_receipts, 2, "entry has one receipt per admitted life");
     assert_eq!(State::read(h).await?, expected);
-    super::elvenbane_combat_fixtures::fight(
+    super::elvenbane_combat_fixtures::fight_until_lethal(
         owner,
         admitted,
         boss.actor,
@@ -729,9 +750,65 @@ pub(super) async fn exercise(
         ChaseMode::Chase,
     )
     .await?;
+    // Freeze the real reservation, then make its first settlement hit the database lock budget.
+    // Reads stay available to the mint owner while the receipt insert waits.
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query("LOCK TABLE game_item_mint_receipts IN SHARE MODE")
+        .execute(&mut *blocker)
+        .await?;
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Deferred
+    );
+    blocker.rollback().await?;
+    super::maintain_ready(owner.root).await?;
+    let occurred: i64 = sqlx::query_scalar(
+        "SELECT occurred_at FROM game_item_mint_reservations WHERE loot_table_production_key='oteryn:item.tibia.i7535' AND loot_purpose_key='CORPSE_MATERIALIZATION'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    tokio::time::sleep(std::time::Duration::from_secs(11)).await;
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
     expected.mission[3] = 1;
     assert_eq!(State::read(h).await?, expected);
 
+    let corpse_item = owner
+        .runtime
+        .lock()
+        .await
+        .visible_corpses()
+        .into_iter()
+        .find(|corpse| corpse.item.production_key == "oteryn:item.tibia.i7535")
+        .ok_or("fresh remains")?
+        .item
+        .item_instance_id;
+    let rejected = owner
+        .use_koshei_corpse(
+            actor,
+            crate::gameplay_transport::connection::UseCommand {
+                game_session_id: session,
+                command_id: admitted.continuity.next_command_id,
+                item_fence: None,
+            },
+            crate::gameplay_transport::item_view::ItemKey::Instance(corpse_item),
+        )
+        .await;
+    assert_eq!(
+        rejected.map(|result| result.disposition),
+        Some(UseDisposition::Rejected)
+    );
+    let mint_clock: (i64, i64) = sqlx::query_as(
+        "SELECT occurred_at,materialized_at FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(corpse_item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(mint_clock.0, occurred);
+    assert!(mint_clock.1 - occurred >= 10_000);
     let corpse = seal(owner, admitted).await?;
     let sample: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_quest_corpse_samples WHERE \
@@ -746,6 +823,53 @@ pub(super) async fn exercise(
         sample,
         "the seal receipt must identify the corpse minted by the encounter"
     );
+    {
+        let (sender, observed) = tokio::sync::oneshot::channel();
+        let (resume, paused) = tokio::sync::oneshot::channel();
+        *owner
+            .states
+            .quest_callbacks
+            .observed_corpse_expiry
+            .lock()
+            .map_err(|_| "expiry probe")? = Some(
+            crate::gameplay_transport::quest_callbacks::CorpseExpiryProbe {
+                observed: sender,
+                resume: paused,
+            },
+        );
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: session,
+            command_id: admitted.continuity.next_command_id,
+            item_fence: admitted.item_fence,
+        };
+        let mut using = std::pin::pin!(owner.use_koshei_corpse(
+            actor,
+            command,
+            crate::gameplay_transport::item_view::ItemKey::Instance(corpse)
+        ));
+        let expires = tokio::select! {
+            biased;
+            result = &mut using => return Err(format!("fresh USE resolved before the freshness observation: {result:?}").into()),
+            expires = observed => expires?,
+        };
+        let held = owner.states.spell_states.lock().await;
+        resume
+            .send(())
+            .map_err(|()| "corpse USE ended before contention")?;
+        std::future::poll_fn(|cx| {
+            assert!(std::future::Future::poll(using.as_mut(), cx).is_pending());
+            std::task::Poll::Ready(())
+        })
+        .await;
+        let runtime = owner.runtime.try_lock()?;
+        drop(held);
+        tokio::time::sleep_until(expires).await;
+        drop(runtime);
+        assert_eq!(
+            using.await.map(|result| result.disposition),
+            Some(UseDisposition::Rejected)
+        );
+    }
     expected.mission[4] = 1;
     expected.items[4] = 0;
     assert_eq!(State::read(h).await?, expected);

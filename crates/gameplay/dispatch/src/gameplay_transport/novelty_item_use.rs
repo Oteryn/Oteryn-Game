@@ -184,7 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let reserved = states
                 .item_uses
                 .reserved_sources(actor, command.game_session_id);
-            request.source = match inventory.first_unreserved(&definition, reserved) {
+            request.source = match inventory.first_novelty_source(&definition, reserved) {
                 Ok(id) => id,
                 Err(oteryn_gameplay_items::hotkey_search::HotkeyRefusal::BoundExceeded) => {
                     return Ok(Some(outcome(UseDisposition::Rejected)));
@@ -271,8 +271,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
         {
-            let runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
+            let (runtime, mut states) =
+                super::lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states)
+                    .await;
             let target = if effects.require_player_target {
                 let Some(wanted) = intent.use_with else {
                     return Ok(Some(outcome(UseDisposition::NoTarget)));
