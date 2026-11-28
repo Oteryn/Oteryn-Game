@@ -127,7 +127,16 @@ fn e2e_p06_replays_query_and_stale_revision_save() -> Result<(), Error> {
         (refresh.kind, refresh.payload.as_slice()),
         (161, &[8, 0][..])
     );
-    assert!(apply_result(&mut panel, &response(161, &captured.query)));
+    let query = response(refresh.kind, &captured.query);
+    let before_query = panel.clone();
+    assert!(
+        apply_result(&mut panel, &query),
+        "P06_QUERY_REPLAY expected_revision={revision} receipt={:?} wheel={:?} atelier_v2={:?} resources={:02x?} panel_before={before_query:?} panel_after={panel:?}",
+        wheel::decode_wheel_reply(&captured.query.receipt),
+        wheel::decode_wheel_reply(&captured.query.wheel),
+        atelier::v2::decode_reply(&captured.query.atelier),
+        captured.query.resources,
+    );
     assert!(panel.ready());
     assert_eq!(
         panel.confirmed_wheel.as_ref().map(|w| w.revision),
