@@ -110,7 +110,7 @@ use join::JoinAcceptance;
 pub use oteryn_protocol_oteryn::coin_market;
 pub use oteryn_protocol_oteryn::coin_transfer;
 pub use oteryn_protocol_oteryn::depot::{
-    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply,
+    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply, DepotRequest,
 };
 /// Guild command and query wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::guild;

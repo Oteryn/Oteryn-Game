@@ -189,6 +189,7 @@ pub struct BundleFacts {
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
     placements: Vec<(u64, Placement)>,
+    depot_towns: BTreeSet<u16>,
     map_source_items: BTreeMap<u64, CapturedMapItem>,
     map_source_children: BTreeMap<u64, Vec<u64>>,
     unsupported_source_containers: BTreeSet<u64>,
@@ -215,6 +216,7 @@ impl BundleFacts {
             movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements: self.placements.clone(),
+            depot_towns: self.depot_towns.clone(),
             map_source_items: self.map_source_items.clone(),
             map_source_children: self.map_source_children.clone(),
             unsupported_source_containers: self.unsupported_source_containers.clone(),
@@ -302,6 +304,7 @@ impl BundleFacts {
             movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements,
+            depot_towns: self.depot_towns.clone(),
             map_source_items: self
                 .map_source_items
                 .iter()
@@ -367,6 +370,7 @@ impl BundleFacts {
                 .filter(|(key, _)| view::placement_of(*key).is_some_and(|(pos, _)| inside(pos)))
                 .cloned()
                 .collect(),
+            depot_towns: self.depot_towns.clone(),
             houses: self
                 .houses
                 .iter()
@@ -461,6 +465,7 @@ impl BundleFacts {
             movement_blocks,
             ids: unique,
             placements: Vec::new(),
+            depot_towns: BTreeSet::new(),
             map_source_items: BTreeMap::new(),
             map_source_children: BTreeMap::new(),
             unsupported_source_containers: BTreeSet::new(),
@@ -709,6 +714,9 @@ impl BundleFacts {
                     .get(item.palette as usize)
                     .is_none_or(|entry| self.unique_index(entry.id) != Some(item.palette));
                 if placement != plain || ambiguous {
+                    if let Some(town) = placement.attrs.depot {
+                        self.depot_towns.insert(town);
+                    }
                     self.placements.push((key, placement));
                 }
             }
@@ -1045,6 +1053,11 @@ impl BundleFacts {
             || self.doors.facts(key, facts, doors),
             |(_, rotated)| *rotated,
         ))
+    }
+
+    /// An authored town compartment in the World containing this map.
+    pub fn has_depot_town(&self, town: u16) -> bool {
+        self.depot_towns.contains(&town)
     }
 
     /// Authored town binding of this top-level placement in the admitted bundle.

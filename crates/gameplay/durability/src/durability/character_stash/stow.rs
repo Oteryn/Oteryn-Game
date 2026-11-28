@@ -163,8 +163,8 @@ fn eligible<C: ItemLoopContent>(
         && stowable(native, &definition)
         && content.loop_facts(&definition).is_some_and(|facts| {
             facts.definition == definition && facts.container_capacity.is_none()
-                && stack_maximum(facts.stack).is_ok_and(|(maximum, _)| {
-                    maximum <= 100 && (1..=i64::from(maximum)).contains(&quantity)
+                && stack_maximum(facts.stack).is_ok_and(|(maximum, stackable)| {
+                    stackable && (1..=i64::from(maximum)).contains(&quantity)
                 })
         }))
 }

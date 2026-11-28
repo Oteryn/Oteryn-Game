@@ -1,5 +1,8 @@
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
-use crate::durability::character_stash::container::{Admission, Request, ResultView};
+use crate::durability::{
+    DurabilityError,
+    character_stash::container::{Admission, Request, ResultView},
+};
 use crate::foundation::{CommandId, CommandRef};
 
 macro_rules! authority_methods {
@@ -10,7 +13,10 @@ macro_rules! authority_methods {
             _id: u64,
             _request: crate::durability::character_stash::container::Request,
         ) -> impl std::future::Future<
-            Output = Result<Option<crate::durability::character_stash::container::ResultView>, ()>,
+            Output = Result<
+                Option<crate::durability::character_stash::container::ResultView>,
+                crate::durability::DurabilityError,
+            >,
         > {
             async { Ok(None) }
         }
@@ -25,7 +31,10 @@ macro_rules! composed_methods {
             admitted: AdmittedSession,
             id: u64,
             request: crate::durability::character_stash::container::Request,
-        ) -> Result<Option<crate::durability::character_stash::container::ResultView>, ()> {
+        ) -> Result<
+            Option<crate::durability::character_stash::container::ResultView>,
+            crate::durability::DurabilityError,
+        > {
             stash_container::execute(self, admitted, id, request).await
         }
     };
@@ -37,12 +46,12 @@ pub(super) async fn execute(
     admitted: AdmittedSession,
     id: u64,
     request: Request,
-) -> Result<Option<ResultView>, ()> {
+) -> Result<Option<ResultView>, DurabilityError> {
     let (Some(fence), Some(actor)) = (admitted.item_fence, admitted.runtime_actor) else {
         return Ok(None);
     };
     let Some(permit) = owner.spell_lane_permit().await else {
-        return Err(());
+        return Err(DurabilityError::Unavailable);
     };
     let (native, reachable) = {
         let mut runtime = owner.runtime.lock().await;
@@ -83,7 +92,7 @@ pub(super) async fn execute(
                 fence,
                 command: CommandRef::new(
                     admitted.game_session_id,
-                    CommandId::new(id).map_err(|_| ())?,
+                    CommandId::new(id).map_err(|_| DurabilityError::InvalidStoredState)?,
                 ),
                 reachable,
             },
@@ -92,5 +101,4 @@ pub(super) async fn execute(
             &super::item_ref_admission::NativeItemWeights(native),
         )
         .await
-        .map_err(|_| ())
 }

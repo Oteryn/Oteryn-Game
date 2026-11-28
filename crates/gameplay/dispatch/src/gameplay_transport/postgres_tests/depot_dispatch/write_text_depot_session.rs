@@ -221,7 +221,15 @@ pub(super) async fn send_at(
     intent: DepotIntent,
     slot: Option<u32>,
 ) -> TestResult {
-    let payload = encode_depot_intent_at(intent, slot).map_err(debug)?;
+    send_request(client, command_id, DepotRequest::local(intent, slot)).await
+}
+
+pub(super) async fn send_request(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+    request: DepotRequest,
+) -> TestResult {
+    let payload = encode_depot_request(request).map_err(debug)?;
     let frame = oteryn_protocol_oteryn::encode_client_command(
         1,
         &oteryn_protocol_oteryn::ClientCommandValue {

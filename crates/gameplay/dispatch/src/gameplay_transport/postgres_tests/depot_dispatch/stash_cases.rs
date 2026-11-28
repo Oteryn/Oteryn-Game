@@ -62,6 +62,150 @@ async fn result(client: &mut DuplexStream, id: u64, deltas: &mut usize) -> TestR
     }
 }
 
+pub(super) async fn stackable_only(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    pool: &sqlx::PgPool,
+    nonstackable: ItemHandle,
+    bag: ItemHandle,
+) -> TestResult {
+    use super::container_batch_cases::command;
+    use super::write_text_depot_session::exchange;
+    use super::write_text_ground_movement::{read_step, step};
+    use oteryn_protocol_oteryn::container_batch as batch_wire;
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+    use std::num::NonZeroU64;
+
+    runtime_role(owner.root).await?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[
+            4,
+            6,
+            18,
+            37,
+            62,
+            CAPABILITY_STASH_ACTIONS_V1,
+            batch_wire::CAPABILITY_STASH_CONTAINER_V1,
+        ],
+    )
+    .ok_or("stash actions selection")?;
+
+    exchange(owner, &mut admitted, async |client| {
+        let mut deltas = 0;
+        let browse = StashIntent {
+            page: 0,
+            action: StashAction::Browse,
+        };
+        send(client, 1, browse).await?;
+        assert_eq!(
+            result(client, 1, &mut deltas).await?.outcome,
+            StashOutcome::Opened
+        );
+        send(
+            client,
+            2,
+            StashIntent {
+                action: StashAction::Stow(nonstackable),
+                ..browse
+            },
+        )
+        .await?;
+        assert_eq!(
+            result(client, 2, &mut deltas).await?.outcome,
+            StashOutcome::Unsupported
+        );
+        send(
+            client,
+            3,
+            StashIntent {
+                action: StashAction::StowMatching(nonstackable),
+                ..browse
+            },
+        )
+        .await?;
+        let batch = result(client, 3, &mut deltas).await?;
+        assert_eq!(batch.outcome, StashOutcome::Unsupported);
+        assert!(batch.rows.is_empty());
+
+        let command_type = batch_wire::COMMAND_TYPE_STASH_CONTAINER;
+        let preview = batch_wire::Request::Preview {
+            source: bag,
+            recursive: true,
+        };
+        assert_eq!(
+            command(client, 4, command_type, preview).await?,
+            (
+                CommandStatus::Accepted,
+                Some(batch_wire::Reply::Preview(200))
+            ),
+        );
+        let confirm = batch_wire::Request::Confirm {
+            preview: NonZeroU64::new(4).ok_or("preview command")?,
+        };
+        assert_eq!(
+            command(client, 5, command_type, confirm).await?,
+            (
+                CommandStatus::Accepted,
+                Some(batch_wire::Reply::Committed(200))
+            ),
+        );
+
+        send(client, 6, browse).await?;
+        let local = result(client, 6, &mut deltas).await?;
+        assert_eq!(local.outcome, StashOutcome::Opened);
+        let [row] = local.rows.as_slice() else {
+            return Err("expected one stackable stash balance".into());
+        };
+        assert_eq!(row.quantity, 200);
+
+        step(client, 7, StepDirection::East).await?;
+        read_step(client, 7).await?;
+        send(client, 8, browse).await?;
+        assert_eq!(
+            result(client, 8, &mut deltas).await?.outcome,
+            StashOutcome::NoLocker
+        );
+        step(client, 9, StepDirection::East).await?;
+        read_step(client, 9).await?;
+        send(client, 10, browse).await?;
+        let other_town = result(client, 10, &mut deltas).await?;
+        assert_eq!(other_town.outcome, StashOutcome::Opened);
+        assert_eq!(other_town.rows, local.rows);
+
+        send(
+            client,
+            11,
+            StashIntent {
+                action: StashAction::Withdraw {
+                    row: row.handle,
+                    amount: row.quantity,
+                },
+                ..browse
+            },
+        )
+        .await?;
+        let withdrawn = result(client, 11, &mut deltas).await?;
+        assert_eq!(withdrawn.outcome, StashOutcome::Committed);
+        assert!(withdrawn.rows.is_empty());
+        Ok(())
+    })
+    .await?;
+
+    let carried_armor: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_container_entries e
+         JOIN game_item_instances i USING (item_instance_id)
+         WHERE i.definition_production_key='oteryn:item.tibia.i811' AND i.lifecycle=1",
+    )
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(
+        carried_armor, 1,
+        "stow actions preserve the armor in the backpack"
+    );
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
