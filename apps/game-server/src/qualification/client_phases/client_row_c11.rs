@@ -72,18 +72,116 @@ fn c11_threshold_rejects_always_inactive_and_zero_bonus() -> TestResult {
     require_status(&encode(active)?, active)
 }
 
-async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+async fn relog(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    placement: (&str, TilePos),
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
     let old = client.join_snapshot().game_session_id;
     let outcome = client.session_mut().logout().await?;
     evidence(&format!("C11_KNIGHT_LOGOUT attempt=1 reply={outcome:?}"));
     if outcome.result != Some(LogoutResult::Accepted) {
         return Err(format!("C11 Knight first logout refused: {outcome:?}").into());
     }
+    wait_character_released(clients, 1).await?;
+    let (label, target) = placement;
+    stage_position(clients, from, target).await?;
+    evidence(&format!(
+        "C11_FIXTURE placement={label} from={from:?} to={target:?}"
+    ));
     *client = connect_character(clients, 0xcd, 1).await?;
+    let observed = tile(client.world_spatial().actor_position)?;
+    if observed != target {
+        return Err(format!(
+            "C11 {label} fixture admission expected {target:?}, observed {observed:?}"
+        )
+        .into());
+    }
     if client.join_snapshot().game_session_id == old {
         return Err("C11 Knight relog reused the old session".into());
     }
     Ok(())
+}
+
+// Operates only on the isolated node-boot database after terminal release. Keep all
+// digests, vitals and lease fields from the real logout; advance its write order.
+async fn stage_position(clients: &SeamClients<'_>, from: TilePos, to: TilePos) -> TestResult {
+    use sqlx::Connection as _;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let result = sqlx::query(
+        "UPDATE game_character_last_positions AS p
+         SET tile_x=$6, tile_y=$7,
+             tile_floor=CASE WHEN p.tile_floor=$5::smallint THEN $8::smallint ELSE -($8::smallint) END,
+             write_sequence=p.write_sequence+1
+         WHERE p.world_id=encode($1,'hex')::uuid
+           AND p.character_id=encode($2,'hex')::uuid
+           AND p.tile_x=$3 AND p.tile_y=$4 AND p.tile_floor IN ($5::smallint,-($5::smallint))
+           AND p.house_key IS NULL
+           AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s
+                           WHERE s.character_id=p.character_id AND s.session_state<>3)",
+    )
+    .bind(clients.world.as_slice())
+    .bind(clients.characters[1].as_slice())
+    .bind(i32::from(from.x))
+    .bind(i32::from(from.y))
+    .bind(i16::from(from.floor))
+    .bind(i32::from(to.x))
+    .bind(i32::from(to.y))
+    .bind(i16::from(to.floor))
+    .execute(&mut db)
+    .await?;
+    db.close().await?;
+    if result.rows_affected() != 1 {
+        return Err(format!(
+            "C11 placement expected one released saved position at {from:?}: matched {}",
+            result.rows_affected()
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn combat_staging_tile(world: &BundleWorld) -> TestResult<TilePos> {
+    let usable = |pos: TilePos| {
+        world.enterable(pos)
+            && world
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .is_some_and(|tile| !tile.protection_zone() && !tile.no_logout())
+    };
+    world
+        .base()
+        .tiles()
+        .filter(|(floor, x, y, _)| {
+            *floor == TOWN.floor && x.abs_diff(TOWN.x).max(y.abs_diff(TOWN.y)) <= 40
+        })
+        .map(|(floor, x, y, _)| TilePos { x, y, floor })
+        .filter(|pos| {
+            usable(*pos)
+                && (-1..=1).all(|dx| {
+                    (-1..=1).all(|dy| {
+                        pos.x
+                            .checked_add_signed(dx)
+                            .zip(pos.y.checked_add_signed(dy))
+                            .is_some_and(|(x, y)| {
+                                usable(TilePos {
+                                    x,
+                                    y,
+                                    floor: pos.floor,
+                                })
+                            })
+                    })
+                })
+        })
+        .min_by_key(|pos| {
+            (
+                pos.x.abs_diff(TOWN.x).max(pos.y.abs_diff(TOWN.y)),
+                pos.y,
+                pos.x,
+            )
+        })
+        .ok_or_else(|| "C11 no authored non-PZ combat staging tile near Thais".into())
 }
 
 fn adjacent_creatures(
@@ -169,7 +267,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     character_prep::grant_item(&client, 3043, 2).await?;
     character_prep::grant_premium(&client).await?;
-    relog(&mut client, clients).await?;
+    // Authored King: (32311,32172,z=6). Stage on the adjacent throne-room floor.
+    let throne = TilePos {
+        x: 32311,
+        y: 32173,
+        floor: -6,
+    };
+    if !world.enterable(throne)
+        || !world
+            .base()
+            .tile(throne.x, throne.y, throne.floor)
+            .is_some_and(|tile| !tile.no_logout())
+    {
+        return Err(format!(
+            "C11 throne-room fixture tile is not enterable or logout-safe: {throne:?}"
+        )
+        .into());
+    }
+    relog(&mut client, clients, ("throne-room", throne)).await?;
     let (vocation, level) = admitted_vocation(&mut client).await?;
     if Some(vocation) != oteryn_protocol_oteryn::cyclopedia_character::vocation_id("knight")
         || level != 625
@@ -233,7 +348,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         shielding: 0,
     };
     query(&mut client, eligible).await?;
-    relog(&mut client, clients).await?;
+    let combat = combat_staging_tile(world)?;
+    relog(&mut client, clients, ("combat", combat)).await?;
     if wheel_command(&mut client, &read).await? != saved {
         return Err("C11 exact Wheel allocation failed to survive relog".into());
     }
