@@ -9,7 +9,8 @@
 //! 3. The target enables player-list mode and sends AddName(`<caster>`); List
 //!    returns mode 2 plus the caster's resolved character id and name.
 //! 4. The caster repeats `exiva "<target>"`; the server accepts the spell,
-//!    debits mana, and sends the directional Find Person reply.
+//!    debits mana, and sends the directional Find Person reply. The caster then
+//!    drinks the fixture-provisioned Mana Potion to restore the refusal baseline.
 //! 5. The target sends malformed SetModes(32); the server rejects it and a
 //!    subsequent List proves that the allow-list state did not change.
 //! 6. The target logs out and makes a fresh admission; List must return the
@@ -171,23 +172,69 @@ fn private_messages(client: &mut DevClientSession) -> Vec<String> {
         .collect()
 }
 
-// At full vitals, ordinary regeneration cannot change the refusal baseline.
-async fn await_full_vitals(
-    caster: &mut DevClientSession,
-    target: &mut DevClientSession,
-) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+const MANA_POTION: u32 = 268;
+
+fn require_full_vitals(caster: &DevClientSession) -> TestResult {
+    let vitals = caster.actor_vitals().ok_or("Exiva caster vitals absent")?;
+    if vitals.mana != vitals.max_mana || vitals.health != vitals.max_health {
+        return Err(format!("Exiva refusal requires full caster vitals: {vitals:?}").into());
+    }
+    evidence(&format!("E2E_P17_VITALS_BASELINE {vitals:?}"));
+    Ok(())
+}
+
+async fn drink_mana_potion(caster: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let before = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("Exiva caster vitals absent")?;
+    if before.mana >= before.max_mana {
+        return Err(format!("Mana Potion pre-state was already full: {before:?}").into());
+    }
+    let definition = provisioning::item_reference(&provisioning::item_index()?, MANA_POTION)?;
+    let handle = caster
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == definition)
+        })
+        .map(|entry| entry.handle)
+        .ok_or("P17 fixture Mana Potion is absent")?;
+    let result = caster.use_item(handle).await?;
+    if result.status != CommandStatus::Accepted || result.disposition != UseDisposition::Committed {
+        return Err(format!("P17 Mana Potion USE refused: {result:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        let vitals = caster.actor_vitals().ok_or("Exiva caster vitals absent")?;
-        if vitals.mana == vitals.max_mana && vitals.health == vitals.max_health {
-            evidence(&format!("E2E_P17_VITALS_BASELINE {vitals:?}"));
+        let consumed = caster.inventory().is_some_and(|inventory| {
+            !inventory
+                .entries
+                .iter()
+                .any(|entry| entry.item_definition_ref == definition)
+        });
+        if consumed
+            && caster
+                .actor_vitals()
+                .is_some_and(|vitals| vitals.mana == before.max_mana)
+        {
+            evidence(&format!(
+                "E2E_P17_MANA_POTION consumed=true mana={}->{}",
+                before.mana, before.max_mana
+            ));
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("Exiva caster did not regain full vitals: {vitals:?}").into());
+            return Err(format!(
+                "P17 Mana Potion outcome: consumed={consumed} vitals={:?}",
+                caster.actor_vitals()
+            )
+            .into());
         }
-        let poll = Duration::from_millis(250);
-        tokio::try_join!(caster.service_liveness(poll), target.service_liveness(poll))?;
+        caster.service_liveness(Duration::from_millis(50)).await?;
     }
 }
 
@@ -262,6 +309,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "c05-exiva".into(),
     )
     .await?;
+    request_fixture_control(
+        uuid_text(preparation_session.as_bytes()),
+        "--profile",
+        format!("item-{MANA_POTION}-1"),
+    )
+    .await?;
+    evidence("E2E_P17_FIXTURE input=one-mana-potion");
     logout(&mut caster).await?;
     drop(caster);
     let mut caster = connect_character(&caster_clients, 0xd7, 0).await?;
@@ -315,7 +369,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("deny-modes", 0_u8);
 
-    await_full_vitals(&mut caster, &mut target).await?;
+    require_full_vitals(&caster)?;
     let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
     if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 2 denial lacked protected reply: {denied:?}").into());
@@ -372,6 +426,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step 4 allowed cast lacked Find Person reply: {located:?}").into());
     }
     row.pass("allowed-cast", located);
+    drink_mana_potion(&mut caster).await?;
 
     malformed_refused(&mut target).await?;
     if list(&mut target).await? != allowed {
@@ -413,7 +468,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step 8 fresh admission did not retain the removed entry and mode".into());
     }
-    await_full_vitals(&mut caster, &mut target).await?;
+    require_full_vitals(&caster)?;
     let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
     if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 8 denial lacked protected reply: {denied:?}").into());
