@@ -228,7 +228,8 @@ class ConvertPlacementsTest(unittest.TestCase):
             "oteryn:npc.captain_greyhound": (32387, 31822, 6),
             "oteryn:npc.captain_seahorse": (33175, 31763, 6),
             "oteryn:npc.captain_sinbeard": (33091, 32883, 6),
-            "oteryn:npc.captain_tiberius": (32056, 32368, 6),
+            "oteryn:npc.sharon": (32056, 32368, 6),
+            "oteryn:npc.captain_tiberius": (32057, 32368, 6),
             "oteryn:npc.karith": (32818, 31278, 5),
             "oteryn:npc.petros": (33290, 32481, 6),
         }

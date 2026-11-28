@@ -96,6 +96,16 @@ impl ItemReward {
 
 mod reward_text;
 mod sinatuki;
+
+impl RewardCallback {
+    pub fn consumes_fish_stack(&self) -> bool {
+        self.key.starts_with("oteryn:quest-reward/sinatuki/stack-")
+    }
+}
+
+pub fn is_sinatuki_fish(key: &str) -> bool {
+    matches!(key, "oteryn:item.tibia.i7158" | "oteryn:item.tibia.i7159")
+}
 pub use reward_text::{RewardContentText, RewardText};
 
 #[cfg(test)]
@@ -3547,6 +3557,8 @@ mod tests {
             let mut progress = BTreeMap::new();
             let mut stage = -1;
             while held.values().sum::<u64>() > 0 {
+                let stack = held.iter().find(|(_, count)| **count > 0).ok_or("stack")?;
+                let selected = BTreeMap::from([(stack.0.clone(), *stack.1)]);
                 let rows: Vec<_> = callbacks
                     .iter()
                     .filter(|row| {
@@ -3558,7 +3570,7 @@ mod tests {
                                     .map(|track| track.initial)
                             });
                             value.is_some_and(|v| (gate.minimum..=gate.maximum).contains(&v))
-                        }) && row.inventory.iter().all(|rule| rule.holds(&held))
+                        }) && row.inventory.iter().all(|rule| rule.holds(&selected))
                             && row
                                 .state_ops
                                 .iter()
@@ -3573,7 +3585,11 @@ mod tests {
                 };
                 assert!(!first.completes && first.achievement.is_none() && first.give.is_none());
                 let cost = &first.take[0];
-                assert_eq!(cost.count, 1, "each nupi feeds one fish");
+                assert_eq!(
+                    u64::from(cost.count),
+                    *stack.1,
+                    "each nupi feeds the selected stack"
+                );
                 *held.get_mut(&cost.item).ok_or("fish")? -= u64::from(cost.count);
                 let changes = loaded
                     .catalogue()
@@ -3715,10 +3731,14 @@ mod tests {
         }
         assert!(expected.insert(colours_peer::KEY.to_owned()));
         for species in ["perch", "trout"] {
-            for fish in 1..=99 {
-                assert!(expected.insert(format!(
-                    "oteryn:quest-reward/sinatuki/{species}-fish-{fish}"
-                )));
+            for fish in 1..=100 {
+                for phase in ["feed", "ready"] {
+                    if fish < 99 || phase == "ready" {
+                        assert!(expected.insert(format!(
+                            "oteryn:quest-reward/sinatuki/stack-{species}-{fish}-{phase}"
+                        )));
+                    }
+                }
             }
             assert!(expected.insert(format!("oteryn:quest-reward/sinatuki/final-{species}")));
         }

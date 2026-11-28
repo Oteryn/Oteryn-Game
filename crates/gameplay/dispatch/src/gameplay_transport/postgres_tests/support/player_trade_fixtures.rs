@@ -170,6 +170,16 @@ async fn scenario(
     )
     .await?;
 
+    if quest_hand_in {
+        // Hold one fish back for the separate final exchange.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i7158','definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(94).as_slice()).bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,encode($4,'hex')::uuid)")
+            .bind(currents[0].commit().character_id().as_bytes().as_slice()).bind(id(WORLD).as_slice()).bind(id(90).as_slice()).bind(id(94).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
     if contents {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
@@ -581,19 +591,18 @@ async fn scenario(
                 assert_eq!(b.trade(Intent::Cancel).await?, ResultCode::Cancelled.payload());
             }
             assert!(!owner.states.player_trades.open(session));
-            // Sinatuki credits one fish per utterance. Exercise the same reserved
-            // stack through its final award, advancing the fixture talk-rate clock.
+            // The first hand-in consumes the reserved stack, the second earns the reward.
             let clock = &owner.states.test_owner_time;
             clock.store(owner.owner_now().get() + 1, std::sync::atomic::Ordering::Relaxed);
-            for given in 1..=100 {
+            for given in 1..=2 {
                 clock.fetch_add(
                     oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS + 1,
                     std::sync::atomic::Ordering::Relaxed,
                 );
                 let result = a.command(npc_wire::COMMAND_TYPE_NPC_TALK_INTENT, &payload).await?;
                 assert_eq!(npc_wire::decode_npc_intent_result(&result).map_err(debug)?, NpcIntentDisposition::Ok);
-                if given < 100 {
-                    assert_eq!(custody().await?, (100 - given, 0));
+                if given == 1 {
+                    assert_eq!(custody().await?, (0, 0));
                 }
             }
             assert_eq!(custody().await?, (0, 5), "the same hand-in commits with the trade closed");

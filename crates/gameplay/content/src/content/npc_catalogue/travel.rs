@@ -628,6 +628,13 @@ mod tests {
                 32_856,
                 7,
             ),
+            (
+                "captain_waverider",
+                "treasure_hunt_island",
+                32_045,
+                32_931,
+                7,
+            ),
             ("charles", "port_hope", 32_527, 32_784, 6),
             ("jack_fate", "liberty_bay", 32_285, 32_892, 6),
             ("karith", "yalahar", 32_816, 31_272, 6),
@@ -635,7 +642,14 @@ mod tests {
         ];
         let inbound_routes = travora_ports
             .iter()
-            .map(|(captain, ..)| format!("oteryn:service.travel.{captain}/travora"))
+            .map(|(captain, port, ..)| {
+                let destination = if *port == "treasure_hunt_island" {
+                    "travora_treasure_hunt_island"
+                } else {
+                    "travora"
+                };
+                format!("oteryn:service.travel.{captain}/{destination}")
+            })
             .collect::<Vec<_>>();
         let ticket = super::TravelTicketRequirement {
             track: "oteryn:quest-progress/travora/ticket_purchased".into(),
@@ -649,7 +663,7 @@ mod tests {
             assert!(inbound.native_addition && !inbound.held && !inbound.premium);
             assert_eq!(
                 (inbound.price, inbound.x, inbound.y, inbound.floor),
-                (0, 32_057, 32_368, 6)
+                (0, 32_055, 32_368, 6)
             );
             assert_eq!(inbound.ticket.as_ref(), Some(&ticket));
             assert!(inbound.return_origin.is_none());
@@ -664,7 +678,7 @@ mod tests {
                 (outbound.price, outbound.x, outbound.y, outbound.floor),
                 (0, *x, *y, *floor)
             );
-            assert!(outbound.ticket.is_none());
+            assert_eq!(outbound.ticket.as_ref(), Some(&ticket));
             assert_eq!(
                 outbound.return_origin.as_ref(),
                 Some(&super::TravelReturnRequirement {

@@ -80,7 +80,7 @@ pub(super) fn npc_in_talk_range(
         .then_some(npc)
 }
 
-pub(super) fn at_placement(
+pub(in crate::gameplay_transport) fn at_placement(
     runtime: &ChannelRuntimeV1,
     observer: ExactActorRef,
     session: GameSessionId,

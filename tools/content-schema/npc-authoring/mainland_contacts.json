@@ -172,7 +172,6 @@
     {"npc": "captain_seagull", "cell": [32735, 31670, 6], "line": 580, "direction": "north"},
     {"npc": "captain_seahorse", "cell": [33175, 31763, 6], "line": 604, "direction": "north"},
     {"npc": "captain_sinbeard", "cell": [33091, 32883, 6], "line": 1061, "direction": "north"},
-    {"npc": "captain_tiberius", "cell": [32056, 32368, 6], "line": 935, "direction": "north"},
     {"npc": "caramellia", "cell": [32586, 31786, 1], "line": 31, "direction": "north"},
     {"npc": "carina", "cell": [33015, 32048, 6], "line": 724, "direction": "north"},
     {"npc": "carlson", "cell": [32022, 31692, 7], "line": 1505, "direction": "north"},

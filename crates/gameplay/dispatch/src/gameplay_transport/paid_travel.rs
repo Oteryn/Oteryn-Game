@@ -19,6 +19,7 @@ pub(super) struct Prompt {
     route: TravelRoute,
     fare: u64,
     storm_roll: Option<bool>,
+    departure_confirmed: bool,
 }
 
 fn contains_whole_keyword(text: &str, keyword: &str) -> bool {
@@ -303,13 +304,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
                 };
             }
-            (
-                context,
-                entry.travel_routes.clone(),
-                fence,
-                previous,
-                source_confirmation,
-            )
+            let mut routes = entry.travel_routes.clone();
+            if context.2 == "oteryn:npc.captain_waverider" {
+                routes.retain(|route| {
+                    let cell = match route.route.key.as_str() {
+                        "travora" => (32346, 32859, -7),
+                        "travora_treasure_hunt_island" => (32043, 32931, -7),
+                        _ => return true,
+                    };
+                    npc_command::service_context::at_placement(
+                        &runtime,
+                        actor,
+                        session,
+                        intent.npc_actor,
+                        cell,
+                    )
+                });
+            }
+            (context, routes, fence, previous, source_confirmation)
         };
         if previous.as_ref().is_some_and(|prompt| {
             prompt.route.crystal_callback
@@ -323,7 +335,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .as_ref()
             .is_some_and(|prompt| prompt.route.crystal_callback)
             && contains_whole_keyword(&text, "yes");
-        let remembered = if context.2 == "oteryn:npc.captain_tiberius" && text == "passage" {
+        let remembered = if context.2 == "oteryn:npc.captain_tiberius"
+            && (text == "passage"
+                || routes
+                    .iter()
+                    .any(|route| route.return_origin.is_some() && route.matches_keyword(&text)))
+        {
             let Some(requirement) = routes.iter().find_map(|route| route.return_origin.as_ref())
             else {
                 return refusal(intent, TravelRefusal::UnavailableRoute);
@@ -353,10 +370,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let route = routes.into_iter().find(|route| {
             if let Some(origin) = remembered.as_deref() {
-                return route
-                    .return_origin
-                    .as_ref()
-                    .is_some_and(|gate| gate.return_from == origin);
+                return (text == "passage" || route.matches_keyword(&text))
+                    && route
+                        .return_origin
+                        .as_ref()
+                        .is_some_and(|gate| gate.return_from == origin);
             }
             let trigger = route.route.key.replace('_', " ");
             if route.crystal_callback {
@@ -374,6 +392,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if !prompt.matches_confirmation(intent.npc_actor, &context, fence, received_at.get()) {
                 return refusal(intent, TravelRefusal::StaleQuote);
+            }
+            if prompt.route.is_transfer_platform() && !prompt.departure_confirmed {
+                prompt.departure_confirmed = true;
+                let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
+                    return ordinary;
+                };
+                prompts.insert(session, prompt);
+                return npc_command::NpcConversations::reply_with_state(
+                    intent,
+                    "So, it's time for the big question: DO YOU REALLY WANT TO LEAVE THIS WORLD?"
+                        .into(),
+                    NpcConversationState::Confirming,
+                );
             }
             if prompt.route.service == "oteryn:service.travel.jack_fate"
                 && prompt.route.route.key == "thais"
@@ -471,7 +502,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             };
             let line = if route.is_transfer_platform() {
-                "You meet all in-game requirements for a character world transfer. Have you signed up and paid for your transfer, and are you ready to go to the departure platform?".into()
+                "You meet all in-game requirements for a character world transfer. Have you also paid in the Store and set the character and world in your account on the Tibia website?".into()
             } else {
                 format!(
                     "Do you seek a passage to {} for {fare} gold?",
@@ -501,6 +532,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     route,
                     fare,
                     storm_roll: None,
+                    departure_confirmed: false,
                 },
             );
             return npc_command::NpcConversations::reply_with_state(

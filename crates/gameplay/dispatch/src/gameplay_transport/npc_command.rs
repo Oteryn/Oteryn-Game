@@ -71,7 +71,7 @@ pub(super) mod reward_callbacks;
 pub use reward_callbacks::validate_quest_reward_offers;
 mod reward_facts;
 mod seasonal;
-mod service_context;
+pub(super) mod service_context;
 mod session_transfer;
 mod stag_beaks;
 mod threatened_dreams;

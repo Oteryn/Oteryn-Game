@@ -330,3 +330,49 @@ fn current_target_object_hotkey_without_target_arms_cursor()
     );
     Ok(())
 }
+
+#[test]
+fn closed_rune_requires_a_handle_before_arming_or_dispatching()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{CustomAction, ObjectTarget};
+    use oteryn_session::spell_catalog::{SpellCatalogEntry, encode_catalog};
+    let (link, mut commands, outbox) = play_channel();
+    let play = view()?;
+    outbox.targeting_initialize(true);
+    outbox.inventory_initialize(Some(Default::default()), false);
+    let rune = SpellCatalogEntry {
+        cast_index: 71,
+        name: "Test rune".into(),
+        words: "test".into(),
+        level: 1,
+        mana: 1,
+        mana_percent: false,
+        soul: 0,
+        learned: true,
+        available: true,
+        cooldown_groups: vec![],
+        rune_item: Some(900),
+    };
+    let catalog = encode_catalog(&[rune]).map_err(|e| format!("{e:?}"))?;
+    outbox.spell_catalog_initialize(true, Some(catalog))?;
+    for target in [
+        ObjectTarget::Cursor,
+        ObjectTarget::CurrentTarget,
+        ObjectTarget::CursorPosition,
+    ] {
+        let action = CustomAction::Object {
+            definition: 900,
+            sub_type: 0,
+            target,
+        };
+        assert!(!link.custom_hotkey_action(&play, &action));
+        assert!(
+            crate::play::mailbox::lock(&link.mailbox)
+                .world_context
+                .targeting_action()
+                .is_none()
+        );
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}

@@ -82,7 +82,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             inbound.route.destination.y,
             inbound.route.destination.floor
         ),
-        (32057, 32368, 6)
+        (32055, 32368, 6)
     );
 
     prepare_current_session(h).await?;
@@ -101,7 +101,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .active()
             .and_then(|active| active.native_gameplay())
             .ok_or("native content")?,
-        &[(33289, 32480), (32057, 32368)],
+        &[(33289, 32480), (32055, 32368)],
     )?;
     let cells = bundle
         .movement_cells(room.movement_cells())
@@ -171,12 +171,12 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
                 floor: -6,
             },
             Position {
-                x: 32056,
+                x: 32057,
                 y: 32368,
                 floor: -6,
             },
             Position {
-                x: 32055,
+                x: 32056,
                 y: 32368,
                 floor: -6,
             },
@@ -319,7 +319,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     for (route, expected) in [
         (inbound.clone(), Ok(1000)),
         (ankrahmun, Err(TravelRefusal::UnavailableRoute)),
-        (darashia, Ok(0)),
+        (darashia, Ok(1000)),
     ] {
         assert_eq!(
             h.root
@@ -348,12 +348,12 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
     talk(&mut owner, &deps.admitted, petros, 48105, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, petros, 48106, "travora").await?;
-    assert!(offer.iter().any(|line| line.contains("1000")));
+    assert!(offer.iter().any(|line| line.contains("for 0 gold")));
     talk(&mut owner, &deps.admitted, petros, 48107, "yes").await?;
     let (balance, renewed, paid): (i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT balance FROM game_account_bank_balances),
                 (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
-                (SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE command_id=48107)",
+                (SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE command_id=48104)",
     )
     .bind(TRACK)
     .fetch_one(&h.pool)
@@ -368,7 +368,14 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .iter()
             .any(|line| line.contains("in-game requirements"))
     );
-    let arrival = talk(&mut owner, &deps.admitted, sharon, 48110, "yes").await?;
+    let confirm = talk(&mut owner, &deps.admitted, sharon, 48110, "yes").await?;
+    assert!(confirm.iter().any(|line| line.contains("REALLY WANT TO LEAVE")));
+    let aboard = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position();
+    assert_eq!((aboard.x, aboard.y, aboard.floor), (inbound.route.destination.x, inbound.route.destination.y, inbound.route.destination.floor));
+    talk(&mut owner, &deps.admitted, sharon, 48111, "no").await?;
+    talk(&mut owner, &deps.admitted, sharon, 48112, "check").await?;
+    talk(&mut owner, &deps.admitted, sharon, 48113, "yes").await?;
+    let arrival = talk(&mut owner, &deps.admitted, sharon, 48114, "yes").await?;
     assert!(
         arrival
             .iter()

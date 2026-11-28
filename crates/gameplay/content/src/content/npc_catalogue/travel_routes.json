@@ -205,7 +205,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -272,7 +272,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -493,7 +493,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -572,7 +572,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -829,7 +829,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -906,7 +906,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1070,7 +1070,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1153,7 +1153,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1214,12 +1214,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_seagull/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1245,12 +1250,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_sinbeard/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1276,12 +1286,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_greyhound/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1307,12 +1322,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.petros/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1338,12 +1358,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_seahorse/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1369,12 +1394,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_pelagia/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1400,12 +1430,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.jack_fate/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1431,12 +1466,53 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_waverider/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_tiberius/treasure_hunt_island",
+    "keyword": "treasure hunt island",
+    "price": 0,
+    "premium": false,
+    "x": 32045,
+    "y": 32931,
+    "floor": 7,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "return_origin": {
+      "inbound_routes": [
+        "oteryn:service.travel.captain_bluebear/travora",
+        "oteryn:service.travel.captain_breezelda/travora",
+        "oteryn:service.travel.captain_fearless/travora",
+        "oteryn:service.travel.captain_greyhound/travora",
+        "oteryn:service.travel.captain_pelagia/travora",
+        "oteryn:service.travel.captain_seagull/travora",
+        "oteryn:service.travel.captain_seahorse/travora",
+        "oteryn:service.travel.captain_sinbeard/travora",
+        "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
+        "oteryn:service.travel.charles/travora",
+        "oteryn:service.travel.jack_fate/travora",
+        "oteryn:service.travel.karith/travora",
+        "oteryn:service.travel.petros/travora"
+      ],
+      "return_from": "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1462,12 +1538,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.charles/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1493,12 +1574,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_breezelda/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1524,12 +1610,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_bluebear/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1555,12 +1646,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.captain_fearless/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1586,12 +1682,17 @@
         "oteryn:service.travel.captain_seahorse/travora",
         "oteryn:service.travel.captain_sinbeard/travora",
         "oteryn:service.travel.captain_waverider/travora",
+        "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
         "oteryn:service.travel.charles/travora",
         "oteryn:service.travel.jack_fate/travora",
         "oteryn:service.travel.karith/travora",
         "oteryn:service.travel.petros/travora"
       ],
       "return_from": "oteryn:service.travel.karith/travora"
+    },
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
     }
   },
   {
@@ -1613,7 +1714,24 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
+    "y": 32368,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true,
+    "ticket": {
+      "track": "oteryn:quest-progress/travora/ticket_purchased",
+      "valid_for_seconds": 86400
+    }
+  },
+  {
+    "key": "oteryn:service.travel.captain_waverider/travora_treasure_hunt_island",
+    "keyword": "travora",
+    "price": 0,
+    "premium": false,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -1769,7 +1887,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -2322,7 +2440,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -2613,7 +2731,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
@@ -3071,7 +3189,7 @@
     "keyword": "travora",
     "price": 0,
     "premium": false,
-    "x": 32057,
+    "x": 32055,
     "y": 32368,
     "floor": 6,
     "postman": false,
