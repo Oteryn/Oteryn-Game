@@ -94,21 +94,28 @@ mod logout_close_tests {
     use super::*;
     use tokio::io::AsyncWriteExt;
 
-    #[tokio::test]
-    async fn logout_close_rejects_open_stream_and_trailing_data() -> Result<(), SessionError> {
-        let (mut client, mut server) = tokio::io::duplex(8);
-        assert!(
-            bounded(
-                Duration::from_millis(10),
-                "close",
-                expect_clean_eof(&mut client)
-            )
-            .await
-            .is_err()
-        );
-        server.write_all(&[1]).await?;
-        assert!(expect_clean_eof(&mut client).await.is_err());
-        server.shutdown().await?;
-        expect_clean_eof(&mut client).await
+    #[test]
+    fn logout_close_rejects_open_stream_and_trailing_data() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let (mut client, mut server) = tokio::io::duplex(8);
+                assert!(
+                    bounded(
+                        Duration::from_millis(10),
+                        "close",
+                        expect_clean_eof(&mut client)
+                    )
+                    .await
+                    .is_err()
+                );
+                server.write_all(&[1]).await?;
+                assert!(expect_clean_eof(&mut client).await.is_err());
+                server.shutdown().await?;
+                expect_clean_eof(&mut client).await
+            })?;
+        Ok(())
     }
 }
