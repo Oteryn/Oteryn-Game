@@ -202,13 +202,13 @@ fn result(npc_actor: EntityRef, code: u8) -> NpcTalkOutcome {
     let line = match code {
         1 => "The guild bank transfer is complete.",
         4 => "Your guild bank has insufficient gold for this transfer.",
-        _ => return NpcTalkOutcome::only(NpcIntentDisposition::Rejected),
+        _ => "The guild bank transfer was declined.",
     };
     NpcConversations::bank_reply(
         &NpcTalkIntent {
             npc_actor,
             text: String::new(),
         },
-        line.into(),
+        format!("{line} Check your Inbox for the receipt."),
     )
 }

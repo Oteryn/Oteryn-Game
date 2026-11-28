@@ -142,7 +142,7 @@ async fn apply(
             target = Some(uuid_text(&row.try_get::<String, _>("guild_id")?)?);
         }
     }
-    let Some(source) = source else { return Ok(finish(2)); };
+    let Some(source) = source else { return Err(GuildError::InvalidInput); };
     let guild = uuid_text(&source.try_get::<String, _>("guild_id")?)?;
     let rank: Option<i16> = sqlx::query_scalar(
         "SELECT rank_level FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid
@@ -174,14 +174,15 @@ async fn apply(
             if super::super::bank::fee_payer_is_junior(fence.character_id) {
                 6
             } else {
-                move_value(tx, &op, target, transfer.npc).await?
+                lock_receipt_inbox(tx, fence).await?;
+                move_value(tx, &op, target, transfer).await?
             }
         }
         (1 | 2, _, _) => 2,
         _ => 3,
     };
     if code != 1 {
-        record(tx, &op, refusal, transfer.npc, &refused(code)).await?;
+        record(tx, &op, refusal, transfer, &refused(code)).await?;
     }
     Ok(finish(code))
 }
@@ -199,7 +200,7 @@ async fn move_value(
     tx: &mut Transaction<'_, Postgres>,
     op: &Operation,
     target: [u8; 16],
-    npc: EntityRef,
+    transfer: &GuildBankTransfer,
 ) -> Result<u8> {
     // Both Guild rows are locked in UUID order above. Disband and Hall settlement
     // use those same rows before writing balances or changes that reserve credit.
@@ -223,7 +224,7 @@ async fn move_value(
         return Ok(5);
     }
     let values = PeerValues { target: Some(target), source_before, source_after, target_before, target_after };
-    record(&mut balances, op, values, npc, &GuildBankReply {
+    record(&mut balances, op, values, transfer, &GuildBankReply {
         guild_balance: source_after,
         ..refused(1)
     }).await?;
@@ -238,7 +239,7 @@ async fn record(
     tx: &mut Transaction<'_, Postgres>,
     op: &Operation,
     values: PeerValues,
-    npc: EntityRef,
+    transfer: &GuildBankTransfer,
     reply: &GuildBankReply,
 ) -> Result<()> {
     let command = op.command.ok_or_else(invalid)?;
@@ -247,10 +248,10 @@ async fn record(
         "INSERT INTO game_guild_bank_operations
          (operation_id,guild_id,world_id,account_id,actor,kind,request_binding,game_session_id,
           command_id,guild_revision,amount,result,bank_before,bank_after,guild_before,guild_after,claim_before,claim_after,
-          reply,occurred_at,transfer_target,transfer_target_before,transfer_target_after,transfer_npc_identity,transfer_npc_generation)
+          reply,occurred_at,transfer_target,transfer_target_before,transfer_target_after,transfer_npc_identity,transfer_npc_generation,transfer_recipient_name)
          VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,
           encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,encode($8,'hex')::uuid,
-          $9::text::numeric,$10::text::numeric,$11,$12,0,0,$13,$14,0,0,$15,$16,encode($17,'hex')::uuid,$18,$19,$20,$21::text::numeric)",
+          $9::text::numeric,$10::text::numeric,$11,$12,0,0,$13,$14,0,0,$15,$16,encode($17,'hex')::uuid,$18,$19,$20,$21::text::numeric,$22)",
     )
     .bind(op.operation.as_slice()).bind(op.guild.as_slice()).bind(op.world.as_slice())
     .bind(op.account.as_slice()).bind(op.actor.as_slice()).bind(op.kind).bind(op.binding.as_slice())
@@ -259,6 +260,6 @@ async fn record(
     .bind(to_i64(values.source_before)?).bind(to_i64(values.source_after)?)
     .bind(bytes).bind(op.occurred_at).bind(values.target.as_ref().map(|id| id.as_slice()))
     .bind(to_i64(values.target_before)?).bind(to_i64(values.target_after)?)
-    .bind(npc.identity.as_slice()).bind(npc.generation.to_string()).execute(&mut **tx).await?;
+    .bind(transfer.npc.identity.as_slice()).bind(transfer.npc.generation.to_string()).bind(&transfer.recipient).execute(&mut **tx).await?;
     Ok(())
 }

@@ -12,8 +12,8 @@ use oteryn_protocol_oteryn::item_inscription::{
     MAX_TEXT_LENGTH, Reply,
 };
 
-/// The item's content text profile: readable with a known maximum. `writable` is exactly
-/// whether the MAIL text writer's policy admits a rewrite of this definition.
+/// The item's content text profile. A generated Guild Bank receipt uses its
+/// fixed body length as the read window bound. MAIL policy controls rewriting.
 pub(super) fn reply(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
@@ -40,15 +40,22 @@ pub(super) fn reply(
     let Known(profile) = &policy.record().semantics.readable_writeable else {
         return None;
     };
-    let (Known(true), &Known(max_length @ 1..=MAX_TEXT_LENGTH)) =
-        (&profile.readable, &profile.max_text_length)
-    else {
+    if profile.readable != Known(true) {
         return None;
+    }
+    let writable = native.mail_text_policy(definition).is_ok();
+    let max_length = match profile.max_text_length {
+        Known(max_length @ 1..=MAX_TEXT_LENGTH) => max_length,
+        _ if !writable && matches!(
+            definition.production_key.as_str(),
+            "oteryn:item.tibia.i21932" | "oteryn:item.tibia.i21933"
+        ) => u32::try_from(text.chars().count().max(1)).ok()?,
+        _ => return None,
     };
     let reply = Reply {
         text,
         max_length,
-        writable: native.mail_text_policy(definition).is_ok(),
+        writable,
         writer_name: None,
         written_at_unix_ms: None,
     };

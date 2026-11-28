@@ -154,11 +154,6 @@ async fn exercise(h: &Harness) -> TestResult {
         .states
         .chat
         .install_npc_talk(Arc::new(NpcTalkBook::from_model(&model)));
-    owner
-        .states
-        .chat
-        .admit(player.game_session_id, "Fixture Hero", owner.owner_now());
-    owner.states.chat.set_npc_service(player.game_session_id);
     let command_id = player.continuity.next_command_id;
     let (status, bytes) = exchange(
         &owner,
@@ -179,6 +174,11 @@ async fn exercise(h: &Harness) -> TestResult {
             .guild_balance,
         100
     );
+    owner
+        .states
+        .chat
+        .admit(player.game_session_id, "Fixture Hero", owner.owner_now());
+    owner.states.chat.set_npc_service(player.game_session_id);
     let talk = |command_id, text: &str| {
         owner.npc_talk(
             deps.actor,
@@ -253,6 +253,32 @@ async fn exercise(h: &Harness) -> TestResult {
     assert_eq!(
         paired, 2,
         "one debit and one credit must share the operation"
+    );
+    let receipts: Vec<(i16, String, String)> = sqlx::query_as(
+        "SELECT o.result,i.definition_production_key,t.text
+         FROM game_guild_bank_operations o
+         JOIN game_character_inbox_deliveries d
+           ON d.cause_kind='GUILD_BANK_RECEIPT' AND d.cause_ref=o.operation_id::text
+          AND (d.character_id,d.world_id)=(o.actor,o.world_id)
+         JOIN game_item_instances i USING(item_instance_id)
+         JOIN game_item_texts t USING(item_instance_id)
+         WHERE o.kind='GUILD_TRANSFER' ORDER BY o.command_id",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(receipts.len(), 2);
+    assert_eq!(
+        (receipts[0].0, receipts[0].1.as_str()),
+        (1, "oteryn:item.tibia.i21932")
+    );
+    assert_eq!(
+        (receipts[1].0, receipts[1].1.as_str()),
+        (4, "oteryn:item.tibia.i21933")
+    );
+    assert!(
+        receipts
+            .iter()
+            .all(|receipt| receipt.2.contains("Recipient: Target Guild"))
     );
     Ok(())
 }

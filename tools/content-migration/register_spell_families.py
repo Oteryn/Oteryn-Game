@@ -1993,6 +1993,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
             for identifier in (49529, 49885, 49886, 49887)
         },
     )
+    import guild_bank_receipt_profiles
+
+    guild_bank_receipt_profiles.admit(
+        root, generated, item_path, provider_order, spell_import.canonical_bytes
+    )
     # SRX-1 keeps the historical single-line provider byte-identical. The loader
     # composes only the changed records from a separately pinned small supplement.
     import srx1_profile_updates

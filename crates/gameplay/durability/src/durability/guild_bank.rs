@@ -1,7 +1,7 @@
 //! GUILD0 §5 native Guild bank. Recovery -> occurrence -> Character -> Guild/member ->
 //! Guild balance/claim -> Account balance. Every value move commits a receipt and paired chains.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::{assert_item_only_fence, numeric_u64, uuid_text};
+use super::character_progression::{assert_market_item_fence, numeric_u64, uuid_text};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
@@ -110,12 +110,28 @@ async fn lock_actor(
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
 ) -> Result<[u8; 16]> {
-    assert_item_only_fence(tx, fence, node)
+    // Inbox settlement needs to coexist with another owner's foreign-key
+    // delivery to this Character. The no-key variant proves the same fence.
+    assert_market_item_fence(tx, fence, node)
         .await?
         .map_err(|_| GuildError::NotCurrent)?;
     let account:String=sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     Ok(uuid_text(&account)?)
+}
+async fn lock_receipt_inbox(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+) -> Result<()> {
+    sqlx::query("SELECT game_guild_bank_lock_receipt_inbox(
+        encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric)")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .bind(fence.game_session_id.as_bytes().as_slice())
+        .bind(fence.connection_generation.get().to_string())
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
 }
 fn invalid() -> GuildError {
     GuildError::Unavailable(DurabilityError::InvalidStoredState)
@@ -198,6 +214,9 @@ async fn execute(
     }
     if super::bank::fee_payer_is_junior(fence.character_id) {
         return store_refusal(tx, &op, 6).await;
+    }
+    if kind != audit::CLAIM {
+        lock_receipt_inbox(tx, fence).await?;
     }
     // Lazy balance creation is part of the value plan. A refusal retains only its
     // replay receipt, never an empty balance created while checking that plan.
