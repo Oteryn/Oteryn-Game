@@ -256,7 +256,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
         ..at
     };
-    let inventory_before_refusal = quantities(&client)?;
+    let inventory_before_refusal = client
+        .inventory()
+        .cloned()
+        .ok_or("step=browse-precondition observed=no-inventory-snapshot")?;
     let views_before_refusal = client.session_mut().container_views().cloned();
     if views_before_refusal
         .as_ref()
@@ -268,11 +271,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refused != tree::ContainerViewOutcome::TooFar
         || view.is_some()
         || tile(client.world_spatial().actor_position)? != distant
-        || quantities(&client)? != inventory_before_refusal
+        || client.inventory() != Some(&inventory_before_refusal)
         || client.session_mut().container_views() != views_before_refusal.as_ref()
     {
         return Err(format!(
-            "step=browse-other-floor observed={refused:?};needed=TooFar-without-moving"
+            "step=browse-other-floor observed={refused:?};needed=TooFar-with-unchanged-position-inventory-and-views"
         )
         .into());
     }
