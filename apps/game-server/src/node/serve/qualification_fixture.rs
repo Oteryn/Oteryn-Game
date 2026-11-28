@@ -17,6 +17,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
 fn spell_build(profile: &str) -> Option<(&str, u32, bool)> {
     match profile {
         "explorer" => Some(("knight", 100, false)),
+        "g23" => Some(("sorcerer", 100, false)),
         "knight-underlevel" => Some(("knight", 66, false)),
         "levitate" => Some(("sorcerer", 12, true)),
         "magic-rope" => Some(("sorcerer", 9, true)),
@@ -695,7 +696,16 @@ async fn prepare_build(
         root, authority, proof, &current, spec, policy, deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        deadline,
+        profile == "g23",
+    )
+    .await
 }
 
 pub(crate) fn fixture_build_spec<'a>(
@@ -743,6 +753,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    fund_promotion: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -815,15 +826,31 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
-        let key = format!("oteryn:item.tibia.i{id}");
+    // Axe, rope, shovel. The dedicated G23 Character also needs the normal
+    // promotion fee, which King Tibianus collects through the paid service.
+    use crate::domain::currency::Coin;
+    let gear = [
+        ("oteryn:item.tibia.i3276", 1),
+        ("oteryn:item.tibia.i3003", 1),
+        ("oteryn:item.tibia.i3457", 1),
+    ];
+    let promotion_coins = if fund_promotion {
+        let coin = Coin::Crystal;
+        let price = oteryn_gameplay_progression::promotion::PROMOTION_PRICE;
+        if !price.is_multiple_of(coin.worth()) {
+            return Err("promotion price is not a whole number of crystal coins".into());
+        }
+        Some((coin.production_key(), u32::try_from(price / coin.worth())?))
+    } else {
+        None
+    };
+    for (ordinal, (key, quantity)) in gear.into_iter().chain(promotion_coins).enumerate() {
+        let (_, item_key) = key.rsplit_once('.').ok_or("qualification Item key")?;
         let definition = TypedDefinitionRef {
             family: "Item".into(),
-            production_key: key.clone(),
+            production_key: key.into(),
             revision_ref: index
-                .revision(&key)
+                .revision(key)
                 .ok_or("qualification Item absent")?
                 .into(),
         };
@@ -831,7 +858,7 @@ async fn prepare_items(
             .equipment
             .iter()
             .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+            .any(|existing| existing.definition == definition && existing.quantity == quantity)
         {
             continue;
         }
@@ -847,15 +874,12 @@ async fn prepare_items(
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: fixture_gear_claim(
-                    current.current_game_session_id(),
-                    &format!("i{id}"),
-                ),
+                production_key: fixture_gear_claim(current.current_game_session_id(), item_key),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity,
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,

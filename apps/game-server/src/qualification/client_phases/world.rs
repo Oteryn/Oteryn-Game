@@ -2860,7 +2860,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(255) {
                 verdict::indexed("G23.full", async {
-                    full_row_g23::run_packet(clients).await;
+                    full_row_g23::run_packet(clients, world, &metadata.npcs).await;
                     release_row_characters(clients).await
                 })
                 .await;

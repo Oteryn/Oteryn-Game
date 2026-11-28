@@ -107,16 +107,23 @@ async fn vocation(client: &mut DevClientSession) -> TestResult<String> {
 }
 
 async fn promotion(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
+    promotion_for(clients, &clients.characters[1]).await
+}
+
+pub(super) async fn promotion_for(
+    clients: &SeamClients<'_>,
+    character: &[u8; 16],
+) -> TestResult<Option<String>> {
     use sqlx::Connection as _;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let purchase = sqlx::query_scalar(
         "SELECT purchase_occurrence_id::text FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
-    ).bind(clients.characters[1].as_slice()).fetch_optional(&mut db).await?;
+    ).bind(character.as_slice()).fetch_optional(&mut db).await?;
     db.close().await?;
     Ok(purchase)
 }
 
-async fn approach_npc(
+pub(super) async fn approach_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -211,7 +218,7 @@ async fn talk_with(
     }
 }
 
-async fn talk(
+pub(super) async fn talk(
     client: &mut DevClientSession,
     npc: oteryn_dev_client::EntityRef,
     text: &str,

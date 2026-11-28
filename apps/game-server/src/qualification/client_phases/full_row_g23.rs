@@ -1,5 +1,5 @@
 //! G23 wheel presentation and gem presentation (capability 148, commands 6119 and 6121).
-//! 1. Admit the node-boot character and read the current Wheel and Atelier projections.
+//! 1. Provision the dedicated character, buy promotion, and read Wheel and Atelier after admission.
 //! 2. Request both catalogues at those committed revisions. The Wheel reply must echo the
 //!    request, identify its vocation and graph, and explain any ineligibility. The Gem reply must
 //!    echo its request, list modifiers, and carry the same catalogue identity.
@@ -11,10 +11,17 @@ use oteryn_protocol_oteryn::{
     atelier, gem_presentation as gem, wheel as allocation, wheel_presentation as wheel,
 };
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) {
     let started = std::time::Instant::now();
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(journey(clients, world, npcs)),
+    )
+    .await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "wheel-and-gem-presentation-validated".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -57,10 +64,9 @@ async fn send(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let (result, detail, _, _) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail}").into());
     }
     Ok(())
 }
@@ -172,10 +178,10 @@ async fn catalogue_requests_use_committed_revisions(client: &mut DevClientSessio
         )
         .into());
     }
-    if atelier.refused {
+    if !wheel.eligible || atelier.refused {
         return Err(format!(
-            "step=atelier observed=uninitialized needed=eligible-admission wheel-reason={}",
-            wheel.reason
+            "step=atelier observed=eligible:{}-refused:{}-reason:{} needed=eligible-admission",
+            wheel.eligible, atelier.refused, wheel.reason
         )
         .into());
     }
@@ -192,8 +198,65 @@ async fn catalogue_requests_use_committed_revisions(client: &mut DevClientSessio
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x88).await?;
+async fn provision_promoted(
+    client: DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<DevClientSession> {
+    let mut client = provisioning::provision_profile(client, clients, 0, 100, "g23").await?;
+    let npc =
+        full_row_p20::approach_npc(&mut client, world, npcs, "oteryn:npc.king_tibianus").await?;
+    full_row_p20::talk(&mut client, npc, "hi").await?;
+    let quote = full_row_p20::talk(&mut client, npc, "promotion").await?;
+    let price = oteryn_gameplay_progression::promotion::PROMOTION_PRICE;
+    if quote
+        != [format!(
+            "Do you want to be promoted for {price} gold coins?"
+        )]
+    {
+        return Err(format!("step=promotion-quote observed={quote:?}").into());
+    }
+    let confirmation = full_row_p20::talk(&mut client, npc, "yes").await?;
+    if confirmation != ["You are now promoted."]
+        || full_row_p20::promotion_for(clients, &clients.characters[0])
+            .await?
+            .is_none()
+    {
+        return Err(format!(
+            "step=promotion-confirmation observed={confirmation:?} needed=committed-promotion"
+        )
+        .into());
+    }
+    let previous = client.join_snapshot().game_session_id;
+    finish(&mut client).await?;
+    drop(client);
+    let fresh = connect_character(clients, 0x89, 0).await?;
+    if fresh.join_snapshot().game_session_id == previous {
+        return Err("step=admission observed=reused-session needed=fresh-promotion-load".into());
+    }
+    Ok(fresh)
+}
+
+async fn journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    let accounts = [required("NODE_BOOT_G23_ACCOUNT")?];
+    let characters = [full_row_g01::fixture_character(clients, &accounts[0]).await?];
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    let mut client = connect_character(clients, 0x88, 0).await?;
+    if full_row_p20::promotion_for(clients, &characters[0])
+        .await?
+        .is_none()
+    {
+        client = provision_promoted(client, clients, world, npcs).await?;
+    }
     let outcome = verdict::observe(catalogue_requests_use_committed_revisions(&mut client)).await;
     let closed = verdict::observe(finish(&mut client)).await;
     outcome?;

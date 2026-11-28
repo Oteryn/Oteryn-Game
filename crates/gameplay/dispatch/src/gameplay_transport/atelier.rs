@@ -11,6 +11,40 @@ pub use oteryn_gameplay_progression::atelier::{
     AtelierAction, AtelierCommit, AtelierRefusal, AtelierState,
 };
 
+#[cfg(test)]
+pub(super) mod checkout_probe {
+    use crate::durability::{DurabilityRoot, IssuedSemanticPass};
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(in crate::gameplay_transport) enum Read {
+        Fence,
+        Projection,
+    }
+
+    tokio::task_local! {
+        pub(in crate::gameplay_transport) static BUSY: (Read, std::cell::Cell<bool>);
+    }
+
+    pub(super) fn hold(root: &DurabilityRoot, read: Read) -> Option<IssuedSemanticPass> {
+        BUSY.try_with(|(selected, fired)| {
+            if *selected != read || fired.get() {
+                return None;
+            }
+            let pass = root.try_issue_semantic_pass().ok()?;
+            fired.set(true);
+            Some(pass)
+        })
+        .ok()
+        .flatten()
+    }
+
+    pub(super) async fn release(pass: Option<IssuedSemanticPass>) {
+        if let Some(pass) = pass {
+            let _ = pass.run(|_, _| Box::pin(async { Ok(()) })).await;
+        }
+    }
+}
+
 /// Pure state-transition boundary; the wire path below adds the admitted Character fence,
 /// ordinary item/fee custody and immutable durable receipts.
 pub fn dispatch_atelier(
@@ -512,11 +546,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::character_progression::CharacterProgressionError as Error;
         let ruleset = self.wheel_ruleset.as_ref().ok_or(Error::InvalidInput)?;
         let gate = self.premium_coordinator.ok_or(Error::InvalidInput)?;
-        let fence = self
-            .current_quest_fence(session)
-            .await
-            .map_err(|_| Error::AuthorityRejected)?
-            .ok_or(Error::AuthorityRejected)?;
+        #[cfg(test)]
+        let checkout = checkout_probe::hold(self.root, checkout_probe::Read::Fence);
+        let fence = self.current_quest_fence_durable(session).await;
+        #[cfg(test)]
+        checkout_probe::release(checkout).await;
+        let fence = fence?.ok_or(Error::AuthorityRejected)?;
         if expected.is_some_and(|expected| {
             expected.character_id != fence.character_id
                 || expected.game_session_id != fence.game_session_id
