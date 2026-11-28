@@ -604,6 +604,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let definitions = provisioning::item_index()?;
     let dagger = provisioning::item_reference(&definitions, 3267)?;
     let pair = distinct_dagger_pair(&client, dagger)?;
+    let opening_page = confirmation_panel
+        .preview
+        .page
+        .clone()
+        .ok_or("Forge opening Browse page missing")?;
+    let opening_resources = wire::Resources {
+        carried_gold: 30_050,
+        bank_gold: 0,
+        bank_spendable: true,
+        dust: 100,
+        dust_limit: 100,
+        cores: 0,
+        slivers: 0,
+    };
+    if opening_page.after != 0
+        || opening_page.next.is_some()
+        || opening_page.resources != opening_resources
+    {
+        return Err(format!("Incorrect Forge opening Browse: {opening_page:?}").into());
+    }
 
     let balance = dust(&mut client).await?;
     if balance != (100, 100) {
@@ -800,6 +820,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         maximum_tier: 1,
         container: false,
     };
+    let reviewed_page = panel
+        .preview
+        .page
+        .as_ref()
+        .ok_or("Fusion Browse page missing")?;
+    if opening_page.items != reviewed_page.items
+        || !opening_page.items.contains(&item(pair.0))
+        || !opening_page.items.contains(&item(pair.1))
+    {
+        return Err(format!(
+            "Incorrect Forge opening Browse items: {:?}",
+            opening_page.items
+        )
+        .into());
+    }
     if panel.preview.item(pair.0.get()) != Some(&item(pair.0))
         || panel.preview.item(pair.1.get()) != Some(&item(pair.1))
     {

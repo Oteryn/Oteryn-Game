@@ -179,8 +179,26 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
             payload: browse.payload,
         },
     );
-    if !panel.open || panel.preview.page.is_none() {
-        return Err("Forge did not open with its captured browse page".into());
+    let opening_page = panel
+        .preview
+        .page
+        .clone()
+        .ok_or("Forge opening Browse page missing")?;
+    let opening_resources = oteryn_client_runtime::forge_preview::Resources {
+        carried_gold: 30_050,
+        bank_gold: 0,
+        bank_spendable: true,
+        dust: 100,
+        dust_limit: 100,
+        cores: 0,
+        slivers: 0,
+    };
+    if !panel.open
+        || opening_page.after != 0
+        || opening_page.next.is_some()
+        || opening_page.resources != opening_resources
+    {
+        return Err(format!("Incorrect captured Forge opening Browse: {opening_page:?}").into());
     }
     let mut previous = (*id, *sequence);
     for (index, (command_id, server_sequence, submitted_bytes)) in
@@ -233,6 +251,14 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                     payload: browse.payload,
                 },
             );
+            let reviewed_page = panel
+                .preview
+                .page
+                .as_ref()
+                .ok_or("Fusion Browse page missing")?;
+            if opening_page.items != reviewed_page.items {
+                return Err("Forge opening Browse items differ from the reviewed picker".into());
+            }
             previous = (*id, *sequence);
         }
         if matches!(index, 1..=5) {
