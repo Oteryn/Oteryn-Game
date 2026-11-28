@@ -293,9 +293,9 @@ async fn capture_journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture(directory, "w01a-inbound.bin", &wire)?;
     capture(directory, "w01a-expected.txt", expected.as_bytes())?;
     Ok(format!(
-        "{:x}:{:x}",
-        Sha256::digest(&wire),
-        Sha256::digest(expected.as_bytes())
+        "{}:{}",
+        hex(&Sha256::digest(&wire)),
+        hex(&Sha256::digest(expected.as_bytes()))
     ))
 }
 
