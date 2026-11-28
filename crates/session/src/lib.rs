@@ -454,7 +454,7 @@ pub mod property_services;
 pub use entities::WorldEntities;
 pub use error::SessionError;
 use framing::*;
-pub use framing::{read_frame, write_frame};
+pub use framing::{capture_server_frames, read_frame, write_frame};
 pub use outcomes::*;
 
 /// Optional server-executed Gem modifier presentation.

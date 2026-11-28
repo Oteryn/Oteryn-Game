@@ -1,6 +1,36 @@
 //! Framing and exchange validation shared by session features.
 use super::*;
 
+tokio::task_local! {
+    static SERVER_CAPTURE: std::cell::RefCell<Option<Vec<u8>>>;
+}
+
+/// Records complete inbound transport frames during one qualification operation.
+/// Outbound frames, including admission material, are never recorded.
+pub async fn capture_server_frames<F: Future>(operation: F) -> (F::Output, Option<Vec<u8>>) {
+    SERVER_CAPTURE
+        .scope(std::cell::RefCell::new(Some(Vec::new())), async {
+            let result = operation.await;
+            (result, SERVER_CAPTURE.with(|capture| capture.take()))
+        })
+        .await
+}
+
+fn record_server_frame(prefix: &[u8; 4], body: &[u8]) {
+    const MAX_CAPTURE_BYTES: usize = 8 * 1024 * 1024;
+    let _ = SERVER_CAPTURE.try_with(|capture| {
+        let mut capture = capture.borrow_mut();
+        if let Some(bytes) = capture.as_mut() {
+            if bytes.len() + prefix.len() + body.len() > MAX_CAPTURE_BYTES {
+                *capture = None;
+            } else {
+                bytes.extend_from_slice(prefix);
+                bytes.extend_from_slice(body);
+            }
+        }
+    });
+}
+
 /// A validated, correlated `CommandResult` with its typed payload still undecoded.
 pub(super) struct ReceivedResult {
     pub(super) command_id: u64,
@@ -125,6 +155,7 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    record_server_frame(&prefix, &body);
     Ok(body)
 }
 

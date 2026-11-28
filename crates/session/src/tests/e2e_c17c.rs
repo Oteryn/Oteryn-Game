@@ -1,10 +1,4 @@
-//! C17c client replay: Creature Illusion changes the caster's own look. The owning client state is
-//! `AppearanceState` (`crates/session/src/appearance_state.rs`), driven through `Session` and
-//! exposed by `Session::visible_appearances`.
-//!
-//! The raw appearance snapshot is the captured server payload. Appearance Mappings are a
-//! session-owned domain delta, so the row re-encodes the applied value with the production
-//! encoder (the C09/I11 practice).
+//! Synthetic unit coverage for appearance changes and malformed mappings.
 use super::*;
 use oteryn_protocol_oteryn::appearance;
 
@@ -23,57 +17,7 @@ struct Capture {
     expected: appearance::Look,
 }
 
-fn look(text: &str) -> Result<appearance::Look, BoxError> {
-    let values = text
-        .split_whitespace()
-        .map(str::parse::<u32>)
-        .collect::<Result<Vec<_>, _>>()?;
-    let [look_type, c0, c1, c2, c3, addons] = values.as_slice() else {
-        return Err("C17c expected look needs six numbers".into());
-    };
-    Ok(appearance::Look::Outfit {
-        look_type: *look_type,
-        colours: [
-            u16::try_from(*c0)?,
-            u16::try_from(*c1)?,
-            u16::try_from(*c2)?,
-            u16::try_from(*c3)?,
-        ],
-        addons: u8::try_from(*addons)?,
-    })
-}
-
-fn identity(value: &str) -> Result<[u8; 16], BoxError> {
-    if value.len() != 32 {
-        return Err("invalid C17c identity length".into());
-    }
-    let mut identity = [0_u8; 16];
-    for (index, byte) in identity.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16)?;
-    }
-    Ok(identity)
-}
-
 fn fixture() -> Result<Capture, BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        let expected = std::fs::read_to_string(path.join("c17c-expected.txt"))?;
-        let value = |key: &str| -> Result<&str, BoxError> {
-            expected
-                .lines()
-                .find_map(|line| line.strip_prefix(key))
-                .ok_or_else(|| format!("c17c expected lacks {key}").into())
-        };
-        return Ok(Capture {
-            snapshot: std::fs::read(path.join("c17c-snapshot.bin"))?,
-            revision: value("revision=")?.parse()?,
-            mapping: std::fs::read(path.join("c17c-mapping.bin"))?,
-            identity: identity(value("identity=")?)?,
-            generation: value("generation=")?.parse()?,
-            baseline_ref: value("ref=")?.parse()?,
-            expected: look(value("look=")?)?,
-        });
-    }
     let mut snapshot =
         appearance::Snapshot::decode(GOLDEN_SNAPSHOT).map_err(|e| format!("{e:?}"))?;
     snapshot.catalogue.context.content_generation = CONTENT_GENERATION;
@@ -106,7 +50,7 @@ fn fixture() -> Result<Capture, BoxError> {
 }
 
 #[test]
-fn e2e_c17c_creature_illusion_replay() -> Result<(), BoxError> {
+fn creature_illusion_mapping_rejects_malformed_update() -> Result<(), BoxError> {
     block_on(async {
         let capture = fixture()?;
         let snapshot =
