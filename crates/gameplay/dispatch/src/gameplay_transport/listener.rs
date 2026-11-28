@@ -319,8 +319,8 @@ where
     }
     let admit_started = tokio::time::Instant::now();
     use connection::join_recovery::{JOIN_RECOVERY, JoinRecovery};
-    let (end, served, pending_join, published, abandoned_resume) = JOIN_RECOVERY.scope(JoinRecovery::default(), async {
     let join_deadline = admit_started + crate::durability::ROOT_RECOVERY_WINDOW;
+    let (end, served, pending_join, published) = JOIN_RECOVERY.scope(JoinRecovery::by(join_deadline), async {
     let admitted = match trace {
         Some(trace) => {
             connection::with_connection_trace(
@@ -401,11 +401,11 @@ where
         },
     };
         JOIN_RECOVERY.with(|join| (
-            end, served, join.take_pending(), join.published(), join.abandoned_resume(),
+            end, served, join.take_pending(), join.published(),
         ))
     }).await;
-    report_transport_close(&end, served, admit_started.elapsed(), trace);
     drop(stream);
+    report_transport_close(&end, served, admit_started.elapsed(), trace);
     if let ConnectionEnd::AdmittedThenClosed(session, _)
     | ConnectionEnd::AdmittedThenDisconnected(session)
     | ConnectionEnd::AdmittedThenControlLost(session)
@@ -431,7 +431,9 @@ where
                 Duration::ZERO
             },
         )),
-        _ => None,
+        _ => pending_join
+            .as_ref()
+            .map(|pending| (pending.source, Duration::ZERO)),
     };
     // This physical socket has no subsequent loss/grace owner. Keep its
     // root through the whole serve future (including shutdown), then drop
@@ -449,7 +451,6 @@ where
         let reset = drain.and_then(|drain| drain.reset());
         LostControl {
             pending_join,
-            abandoned_resume,
             session,
             wait: if reset.is_some() {
                 Duration::ZERO
@@ -464,7 +465,6 @@ where
 /// An ended admitted connection whose control is lost after `wait` without restored control.
 pub(super) struct LostControl {
     pub(super) pending_join: Option<Box<connection::join_recovery::UnpublishedJoin>>,
-    pub(super) abandoned_resume: bool,
     pub(super) session: AdmittedSession,
     pub(super) wait: Duration,
     pub(super) reset: Option<crate::durability::world_reset::RetiringWorldReset>,
@@ -482,18 +482,26 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
     let settle = async {
         let mut backoff = RECONCILE_BACKOFF;
         loop {
-            let session = match lost.pending_join.as_deref() {
-                Some(pending) => {
-                    authority
-                        .settle_unpublished_join(pending, lost.session)
-                        .await
+            let deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+            let settled = connection::join_stage(Some(deadline), async {
+                let session = match lost.pending_join.as_deref() {
+                    Some(pending) => {
+                        authority
+                            .settle_unpublished_join(pending, lost.session)
+                            .await?
+                    }
+                    None => lost.session,
+                };
+                if lost.pending_join.is_some() && session.runtime_actor.is_none() {
+                    return Ok(None);
                 }
-                None => Ok(lost.session),
-            };
-            let settled = match session {
-                Ok(session) => authority.settle_activity_connection(session).await,
-                Err(()) => Err(()),
-            };
+                authority
+                    .settle_activity_connection(session)
+                    .await
+                    .map(Some)
+            })
+            .await
+            .unwrap_or(Err(()));
             match settled {
                 Ok(session) => break session,
                 Err(()) => {
@@ -503,7 +511,7 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
             }
         }
     };
-    let Some(session) = first(settle, shutdown.cancelled()).await else {
+    let Some(Some(session)) = first(settle, shutdown.cancelled()).await else {
         return;
     };
     let lost = LostControl { session, ..lost };
@@ -512,18 +520,6 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
         Err(()) => return,
     };
     let authority = scoped.as_ref().unwrap_or(authority);
-    if lost.abandoned_resume {
-        let release = async {
-            let mut backoff = RECONCILE_BACKOFF;
-            while authority.release_abandoned(lost.session).await == GraceExpiryResult::Unknown {
-                tokio::time::sleep(backoff).await;
-                backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
-            }
-            authority.finish_activity_connection_lineage(lost.session);
-        };
-        let _ = first(release, shutdown.cancelled()).await;
-        return;
-    }
     let lifecycle = async {
         let mut wait = lost.wait;
         let mut backoff = RECONCILE_BACKOFF;

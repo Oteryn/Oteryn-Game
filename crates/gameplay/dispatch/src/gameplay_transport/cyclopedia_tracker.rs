@@ -15,6 +15,7 @@ use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::content::creature_reward::CreatureRewardTable;
 use crate::domain::CharacterId;
 use crate::domain::bosstiary::{kill_thresholds, progress};
+use crate::durability::DurabilityError;
 use crate::durability::cyclopedia_tracker::{TrackedCreature, TrackerKind};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use oteryn_protocol_oteryn::cyclopedia_tracker::{
@@ -94,14 +95,7 @@ macro_rules! composed_methods {
             &self,
             admitted: $crate::gameplay_transport::connection::AdmittedSession,
         ) -> Result<Option<Vec<u8>>, ()> {
-            if self.root.holder_contended() {
-                return Ok(None);
-            }
-            match self.cyclopedia_tracker_snapshot(admitted).await {
-                Some(payload) => Ok(Some(payload)),
-                None if self.root.holder_contended() => Ok(None),
-                None => Err(()),
-            }
+            self.cyclopedia_tracker_for_publication(admitted).await
         }
 
         async fn cyclopedia_tracker_refresh(
@@ -230,28 +224,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         fence: CurrentCharacterItemFence,
         kind: TrackerKind,
-    ) -> Option<TrackerSnapshot> {
-        let _permit = self.spell_lane_permit().await?;
+    ) -> Result<TrackerSnapshot, DurabilityError> {
+        let _permit = self.spell_lane_permit().await.ok_or(DurabilityError::Unavailable)?;
         let tracked = self
             .root
             .cyclopedia_tracker(self.character, self.holder, fence, kind, None)
-            .await
-            .ok()??;
-        Some(snapshot(self.reward_table(), kind, tracked))
+            .await?
+            .ok_or(DurabilityError::CommitRejected)?;
+        Ok(snapshot(self.reward_table(), kind, tracked))
+    }
+
+    async fn read_cyclopedia_domains(
+        &self,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<Vec<u8>, DurabilityError> {
+        let bestiary = self.read_cyclopedia_tracker(fence, TrackerKind::Bestiary).await?;
+        let bosstiary = self.read_cyclopedia_tracker(fence, TrackerKind::Bosstiary).await?;
+        oteryn_protocol_oteryn::cyclopedia_tracker::encode_domain_snapshot(&bestiary, &bosstiary)
+            .ok_or(DurabilityError::InvalidStoredState)
     }
 
     pub(in crate::gameplay_transport) async fn cyclopedia_tracker_domain_snapshot(
         &self,
         admitted: AdmittedSession,
     ) -> Option<Vec<u8>> {
-        let fence = current_fence(&admitted)?;
-        let bestiary = self
-            .read_cyclopedia_tracker(fence, TrackerKind::Bestiary)
-            .await?;
-        let bosstiary = self
-            .read_cyclopedia_tracker(fence, TrackerKind::Bosstiary)
-            .await?;
-        oteryn_protocol_oteryn::cyclopedia_tracker::encode_domain_snapshot(&bestiary, &bosstiary)
+        self.read_cyclopedia_domains(current_fence(&admitted)?).await.ok()
+    }
+
+    pub(super) async fn cyclopedia_tracker_for_publication(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<Vec<u8>>, ()> {
+        let expected = current_fence(&admitted).ok_or(())?;
+        // A missing or replaced item fence is a required session failure.
+        // Only the tracker values themselves may wait for a future refresh.
+        let current = super::AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("cyclopedia_tracker_fence", || {
+                self.current_quest_fence_durable(admitted.game_session_id)
+            })
+            .await.map_err(|_| ())?
+            .ok_or(())?;
+        if current.item_fence() != expected {
+            return Err(());
+        }
+        let (read, contended) =
+            crate::durability::with_holder_contention(self.read_cyclopedia_domains(expected)).await;
+        match read {
+            Ok(payload) => Ok(Some(payload)),
+            Err(DurabilityError::RootUnavailable) if contended => Ok(None),
+            Err(_) => Err(()),
+        }
     }
 
     /// A tracker is pushed when one of its marked kills is on it. A failed read keeps the
@@ -277,7 +299,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if keys.is_empty() {
                 continue;
             }
-            let Some(tracker) = self.read_cyclopedia_tracker(fence, kind).await else {
+            let Ok(tracker) = self.read_cyclopedia_tracker(fence, kind).await else {
                 for key in &keys {
                     marks.mark(fence.character_id, kind, key);
                 }

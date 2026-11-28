@@ -101,6 +101,12 @@ impl<DB: Database> AsMut<DB::Connection> for PoolConnection<DB> {
 impl<DB: Database> PoolConnection<DB> {
     /// Keep application checkout ownership alive through pool cleanup, including
     /// cleanup executed by a cancelled caller's drop path.
+    ///
+    /// Upstream SQLx 0.9 has no per-connection attachment that lives through the
+    /// return-to-pool or close-on-drop cleanup future. Pool hooks have no caller
+    /// identity and cannot observe cancellation of the caller that drops a checkout.
+    /// Propose a generic PoolConnection attachment API upstream, then remove this
+    /// hook when that API is available.
     #[doc(hidden)]
     pub fn oteryn_track_checkout(&mut self, guard: impl Send + Sync + 'static) {
         self.checkout_guard = Some(Box::new(guard));
@@ -295,7 +301,10 @@ impl<DB: Database> Drop for PoolConnection<DB> {
         }
 
         // We still need to spawn a task to maintain `min_connections`.
-        if self.live.is_some() || self.pool.options.min_connections > 0 {
+        if self.live.is_some() && self.checkout_guard.is_some() {
+            let deadline = Instant::now() + self.pool.options.acquire_timeout.min(CLOSE_ON_DROP_TIMEOUT);
+            crate::rt::spawn(self.return_to_pool_observed_until(deadline));
+        } else if self.live.is_some() || self.pool.options.min_connections > 0 {
             crate::rt::spawn(self.return_to_pool());
         }
     }

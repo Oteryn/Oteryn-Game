@@ -1,3 +1,4 @@
+use super::super::capabilities::SelectedCapabilities;
 use super::*;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 use oteryn_protocol_oteryn::channel_switch::{SwitchLock, SwitchStatus};
@@ -82,7 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // evidence, bounded; the grant replay key still admits at most one GameSession.
         let mut premium_entry = None;
         let mut name = None;
-        let (request, reservation) = loop {
+        let (request, reservation, mut source) = loop {
             // D4: the five-second source-age bound requires evidence fetched for
             // this attempt; S2 custody retains it and the composition decides.
             if self
@@ -264,6 +265,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(refusal);
                 }
             };
+            let source_fence = request
+                .operation()
+                .authorization
+                .initial_commit()
+                .ok()
+                .and_then(|commit| {
+                    Some(CurrentCharacterItemFence {
+                        character_id,
+                        game_session_id: commit.game_session_id(),
+                        connection_generation: commit.connection_generation(),
+                        character_lease_generation: commit.character_lease_generation(),
+                        runtime_scope: RuntimeScopeRefV1::channel(
+                            commit.world_id(),
+                            commit.channel_id(),
+                        ),
+                        scope_ownership_generation: ScopeOwnershipGeneration::new(
+                            commit.scope_ownership_generation(),
+                        )
+                        .ok()?,
+                    })
+                });
+            let selected_capabilities =
+                connection::join_recovery::fresh_selection().unwrap_or(SelectedCapabilities::NONE);
+            let source = AdmittedSession {
+                game_session_id: attempt.game_session_id,
+                world_id: self.world_id,
+                channel_id: self.channel_id,
+                runtime_actor: None,
+                first_entry: FirstEntryOutcome::RefusedUnavailable,
+                controller: Some(ControllerBinding {
+                    transport: attempt.transport,
+                    account_id: *record.account_id.as_bytes(),
+                }),
+                continuity: SessionContinuity {
+                    selected_capabilities,
+                    achievement_notice_revision: selected_capabilities.contains(
+                        oteryn_protocol_oteryn::achievement_notices::CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+                    ).then_some(0),
+                    ..SessionContinuity::FRESH
+                },
+                item_fence: source_fence,
+            };
+            connection::join_recovery::retain_join(
+                source,
+                connection::join_recovery::JoinAction::Fresh {
+                    request: Box::new(request.clone()),
+                    reservation,
+                    channel_entry_started: false,
+                },
+            );
             let outcome = self
                 .root
                 .commit_composed_fresh_admission(
@@ -277,6 +328,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ),
                 )
                 .await;
+            #[cfg(test)]
+            let outcome = if matches!(outcome, Ok(FreshAdmissionDurableOutcomeV1::Committed(_)))
+                && let Ok(barrier) = FRESH_COMMIT_ACK_BARRIER.try_with(std::sync::Arc::clone)
+            {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+                Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable)
+            } else {
+                outcome
+            };
             if matches!(
                 outcome,
                 Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
@@ -288,6 +349,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_err()
             {
                 self.rollback_runtime_player(reservation).await?;
+                connection::join_recovery::clear_join();
                 return Err(AdmissionRefusal::PremiumRequired);
             }
             match outcome {
@@ -297,6 +359,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) => {}
                 Ok(FreshAdmissionDurableOutcomeV1::RejectedChannelSwitch(status)) => {
                     self.rollback_runtime_player(reservation).await?;
+                    connection::join_recovery::clear_join();
                     return Err(AdmissionRefusal::ChannelSwitch(status));
                 }
                 // The owner evidence moved after composition: proven noncommit.
@@ -304,6 +367,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if budget.stale_rounds < FRESH_ADMISSION_ROUNDS =>
                 {
                     self.rollback_runtime_player(reservation).await?;
+                    connection::join_recovery::clear_join();
                     budget.retries_stale().await;
                     continue;
                 }
@@ -314,6 +378,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority),
                 ) => {
                     self.rollback_runtime_player(reservation).await?;
+                    connection::join_recovery::clear_join();
                     return Err(Classified(match outcome {
                         FreshAdmissionDurableOutcomeV1::RejectedReplayConflict => {
                             N8::AdmissionGrantReplayed
@@ -334,6 +399,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ReconciliationDisposition::Committed => {}
                         ReconciliationDisposition::DefinitelyNotCurrent(refusal) => {
                             self.rollback_runtime_player(reservation).await?;
+                            connection::join_recovery::clear_join();
                             // No receipt under the admission locks proves noncommit (for
                             // example a commit refused on a busy holder): retry the round;
                             // the grant replay key still admits at most one GameSession.
@@ -357,51 +423,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Ok(_) => {
                     self.rollback_runtime_player(reservation).await?;
+                    connection::join_recovery::clear_join();
                     return Err(Rejected);
                 }
             }
-            break (request, reservation);
+            connection::join_recovery::retain_committed_session(source);
+            break (request, reservation, source);
         };
         let actor = self.commit_runtime_player(reservation).await?;
-        let source_fence = request
-            .operation()
-            .authorization
-            .initial_commit()
-            .ok()
-            .and_then(|commit| {
-                Some(CurrentCharacterItemFence {
-                    character_id,
-                    game_session_id: commit.game_session_id(),
-                    connection_generation: commit.connection_generation(),
-                    character_lease_generation: commit.character_lease_generation(),
-                    runtime_scope: RuntimeScopeRefV1::channel(
-                        commit.world_id(),
-                        commit.channel_id(),
-                    ),
-                    scope_ownership_generation: ScopeOwnershipGeneration::new(
-                        commit.scope_ownership_generation(),
-                    )
-                    .ok()?,
-                })
-            });
-        let source = AdmittedSession {
-            game_session_id: attempt.game_session_id,
-            world_id: self.world_id,
-            channel_id: self.channel_id,
-            runtime_actor: Some(actor),
-            first_entry: FirstEntryOutcome::RefusedUnavailable,
-            controller: Some(ControllerBinding {
-                transport: attempt.transport,
-                account_id: *record.account_id.as_bytes(),
-            }),
-            continuity: SessionContinuity::FRESH,
-            item_fence: source_fence,
-        };
-        connection::join_recovery::retain_committed_join(source, request.operation());
+        source.runtime_actor = Some(actor);
+        connection::join_recovery::retain_committed_session(source);
         if let Some(name) = name {
             connection::join_recovery::retain_join_name(actor, name);
         }
-        let mut checkpoint = source;
         let finish = async {
             // Q16: preserve the source and any exact destination transaction even
             // when neither the restore nor its fallback can read the holder.
@@ -420,7 +454,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let restored_house = match restore.await {
                 Ok(restored) => restored,
-                Err(Unavailable) if crate::durability::holder_deadline().is_some() => {
+                Err(_) if crate::durability::holder_deadline().is_some() => {
                     connection::join_recovery::require_join_recovery();
                     return Ok(source);
                 }
@@ -435,227 +469,244 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     entry.retain();
                 }
                 if admitted.game_session_id == attempt.game_session_id {
-                    self.admit_promotion(admitted.game_session_id).await;
-                    self.refresh_session_titles(admitted.game_session_id).await;
+                    let _ = connection::join_optional_stage(async {
+                        self.admit_promotion(admitted.game_session_id).await;
+                        self.refresh_session_titles(admitted.game_session_id).await;
+                    })
+                    .await;
                 }
                 return Ok(admitted);
             }
-            // #935: only after both COMMITs, revalidate current authority and let
-            // the Channel owner write the first-entry position. A failure here
-            // writes nothing and fabricates no rollback: the committed actor stays
-            // unpositioned and is not input-eligible.
-            // Every refusal before the Channel-owner write is a read of current authority or data
-            // through the single ready-only holder, which a concurrent pass (another session's
-            // release or tick) can briefly hold; the attempt wrote no runtime state, so it is
-            // repeated from fresh reads, bounded, before the actor is left unpositioned.
-            // NODEBOOT-1: the committed actor's entry steps share a window of their own, from the
-            // commit, and a busy holder is retried under it; stale authority keeps its round bound.
-            let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
-            let (first_entry, item_fence, decided) = self
-                .enter_committed_actor(
-                    &budget,
-                    &request,
-                    attempt.game_session_id,
-                    attempt.transport,
-                    actor,
-                )
-                .await;
-            #[cfg(test)]
-            if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
-                eprintln!("SEAM_EVIDENCE spell_first_entry outcome={first_entry:?}");
-            }
-            // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
             self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
             if let Some(entry) = premium_entry {
                 entry.retain();
             }
-            self.admit_promotion(attempt.game_session_id).await;
-            // PAR-P12a: login is Crystal's title check point (`iologindata_load_player.cpp:1045`).
-            self.refresh_session_titles(attempt.game_session_id).await;
-            let mut admitted = AdmittedSession {
-                first_entry,
-                continuity: SessionContinuity {
-                    house_input_pending: Some(false),
-                    ..SessionContinuity::FRESH
-                },
-                item_fence,
-                ..source
-            };
-            self.states.command_ingress.admit(admitted.game_session_id);
-            // A retained position also identifies progression exhaustion after placement.
-            let positioned = decided.is_some();
-            if matches!(
-                first_entry,
-                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-            ) {
-                budget = budget.for_post_entry();
-            }
-            // Hazard, arrival, training and prey share the post-entry recovery window.
-            if matches!(
-                admitted.first_entry,
-                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-            ) && budget
-                .retry_unavailable(async || self.admit_hazard_once(admitted).await)
-                .await
-                .is_err()
-            {
-                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
-            }
-            // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
-            // input-ineligible, its pending row intact for the next admission.
-            if matches!(
-                admitted.first_entry,
-                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-            ) {
-                let settled = self
-                    .consume_admitted_newhaven_arrival(
-                        &budget,
-                        admitted.game_session_id,
-                        actor,
-                        decided.as_ref(),
-                    )
-                    .await;
-                admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
-            }
-            if writes_after_progression(positioned, admitted.first_entry) {
-                let trained = admitted.first_entry;
-                loop {
-                    self.admit_loop_training(&mut admitted).await;
-                    if admitted.first_entry != FirstEntryOutcome::RefusedUnavailable
-                        || !budget.retries_unavailable(Unavailable).await
-                    {
-                        break;
-                    }
-                    admitted.first_entry = trained;
-                }
-                if writes_after_progression(positioned, admitted.first_entry)
-                    && self
-                        .admit_prey_with_budget(admitted, Some(&budget))
-                        .await
-                        .is_err()
+            connection::join_recovery::retain_channel_entry_started();
+            let admitted = self.finish_channel_entry(source, &request).await?;
+            connection::join_recovery::retain_committed_session(admitted);
+            let refreshed = connection::join_optional_stage(async {
+                self.admit_promotion(admitted.game_session_id).await;
+                self.refresh_session_titles(admitted.game_session_id).await;
+                if let Ok(target) =
+                    oteryn_protocol_oteryn::CharacterId::decode(character_id.as_bytes())
                 {
-                    admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+                    self.vip_presence_publish_target(target, true).await;
                 }
-            }
-            if writes_after_progression(positioned, admitted.first_entry) {
-                self.admit_quest_session(&admitted).await;
-            }
-            // CHARM-WIRE-1: snapshot CHARM-3 assignments before the session becomes input-eligible.
-            // The runtime actor/session check on installation fences the snapshot against a replaced
-            // session; a failed durable read leaves Charm evaluation unavailable (fail closed).
-            if writes_after_progression(positioned, admitted.first_entry)
-                && let Ok(state) = self
-                    .root
-                    .read_character_charm_state(self.character, character_id)
-                    .await
-            {
-                let state =
-                    crate::durability::charm_state::CombatCharmState::new(character_id, state);
-                let runtime = self.runtime.lock().await;
-                self.states.spell_states.lock().await.install_charm_state(
-                    &runtime,
-                    actor,
-                    admitted.game_session_id,
-                    state,
-                );
-            }
-            // A committed fresh admission is a presence transition; reconnect and Channel transfer
-            // use their existing continuity paths and do not emit a login hint.
-            if let Ok(target) = oteryn_protocol_oteryn::CharacterId::decode(character_id.as_bytes())
-            {
-                self.vip_presence_publish_target(target, true).await;
-            }
-            // Login is the repair path for characters created before automatic acquisition and for
-            // an earlier level-up whose durable projection could not be written.
-            // Both are reads or an idempotent fenced write through the shared holder, so a busy
-            // holder is retried within the attempt's window rather than refusing it (DEFLAKE-3).
-            if writes_after_progression(positioned, admitted.first_entry) {
-                checkpoint = AdmittedSession {
-                    first_entry: FirstEntryOutcome::AwaitingSpellRepair,
-                    ..admitted
-                };
-                #[cfg(test)]
-                if let Ok(barrier) = FRESH_SPELL_ADMISSION_BARRIER.try_with(std::sync::Arc::clone) {
-                    barrier.0.notify_one();
-                    barrier.1.notified().await;
-                }
-                // LIVEJOIN-1: the entry steps above share one window from the commit, and on a busy
-                // root they can spend all of it before this final step starts, leaving a committed,
-                // positioned actor unplayable. Like the other foreground lifecycle owners, the final
-                // spell repair takes its own window with foreground preference over background passes.
-                let spell_budget =
-                    AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
-                        .unwrap_or_else(|_| {
-                            AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root)
-                        });
-                let Ok(loaded) = spell_budget
-                    .retry_unavailable(async || {
-                        match load_character_cast_facts(self.root, self.character, character_id)
-                            .await
-                        {
-                            CastFactsLoad::Ready {
-                                facts,
-                                character_revision,
-                            } => Ok(Some((facts, character_revision))),
-                            CastFactsLoad::NoVocation { .. } => Ok(None),
-                            CastFactsLoad::Unavailable => Err(Unavailable),
-                        }
-                    })
-                    .await
-                else {
-                    // COMMIT already owns this identity. A refusal here would hide it from
-                    // the listener's control-loss lifecycle. Acknowledge it with the same
-                    // input-ineligible outcome as the other unavailable entry participants.
-                    operator_event("event=fresh_admission_pending phase=spell_facts");
-                    if matches!(
-                        admitted.first_entry,
-                        FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-                    ) {
-                        admitted.first_entry = FirstEntryOutcome::AwaitingSpellRepair;
-                    }
-                    return Ok(admitted);
-                };
-                let Some((facts, character_revision)) = loaded else {
-                    return Ok(admitted);
-                };
-                if spell_budget
-                    .retry_unavailable(async || {
-                        if self
-                            .reconcile_automatic_spells(
-                                character_id,
-                                admitted.game_session_id,
-                                character_revision,
-                                facts.level,
-                                facts.vocation,
-                            )
-                            .await
-                        {
-                            Ok(())
-                        } else {
-                            Err(Unavailable)
-                        }
-                    })
-                    .await
-                    .is_err()
-                {
-                    operator_event("event=fresh_admission_pending phase=automatic_spells");
-                    if matches!(
-                        admitted.first_entry,
-                        FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-                    ) {
-                        admitted.first_entry = FirstEntryOutcome::AwaitingSpellRepair;
-                    }
-                }
+            })
+            .await;
+            if refreshed.is_none() {
+                self.states.title_refresh.mark([character_id]);
             }
             Ok(admitted)
         };
-        match crate::durability::holder_deadline() {
-            Some(deadline) => match tokio::time::timeout_at(deadline, finish).await {
-                Ok(result) => result,
-                Err(_) => Ok(checkpoint),
-            },
-            None => finish.await,
+        finish.await
+    }
+
+    pub(in crate::gameplay_transport) async fn finish_channel_entry(
+        &self,
+        source: AdmittedSession,
+        request: &FreshAdmissionCommitRequestV1,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        use AdmissionRefusal::Unavailable;
+        let actor = source.runtime_actor.ok_or(Unavailable)?;
+        let controller = source.controller.ok_or(Unavailable)?;
+        let character_id = source.item_fence.ok_or(Unavailable)?.character_id;
+        // #935: only after both COMMITs, revalidate current authority and let
+        // the Channel owner write the first-entry position. A failure here
+        // writes nothing and fabricates no rollback: the committed actor stays
+        // unpositioned and is not input-eligible.
+        // Every refusal before the Channel-owner write is a read of current authority or data
+        // through the single ready-only holder, which a concurrent pass (another session's
+        // release or tick) can briefly hold; the attempt wrote no runtime state, so it is
+        // repeated from fresh reads, bounded, before the actor is left unpositioned.
+        // NODEBOOT-1: the committed actor's entry steps share a window of their own, from the
+        // commit, and a busy holder is retried under it; stale authority keeps its round bound.
+        let mut budget = AdmissionRetryBudget::for_root(&source.game_session_id, self.root);
+        let (first_entry, item_fence, decided) = self
+            .enter_committed_actor(
+                &budget,
+                request,
+                source.game_session_id,
+                controller.transport,
+                actor,
+            )
+            .await;
+        #[cfg(test)]
+        if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
+            eprintln!("SEAM_EVIDENCE spell_first_entry outcome={first_entry:?}");
         }
+        let mut admitted = AdmittedSession {
+            first_entry,
+            continuity: SessionContinuity {
+                house_input_pending: Some(false),
+                ..source.continuity
+            },
+            item_fence,
+            ..source
+        };
+        self.states.command_ingress.admit(admitted.game_session_id);
+        // A retained position also identifies progression exhaustion after placement.
+        let positioned = decided.is_some();
+        if matches!(
+            first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) {
+            budget = budget.for_post_entry();
+        }
+        // Hazard, arrival, training and prey share the post-entry recovery window.
+        if matches!(
+            admitted.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) && budget
+            .retry_unavailable(async || self.admit_hazard_once(admitted).await)
+            .await
+            .is_err()
+        {
+            admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+        }
+        // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
+        // input-ineligible, its pending row intact for the next admission.
+        if matches!(
+            admitted.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) {
+            let settled = self
+                .consume_admitted_newhaven_arrival(
+                    &budget,
+                    admitted.game_session_id,
+                    actor,
+                    decided.as_ref(),
+                )
+                .await;
+            admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
+        }
+        if writes_after_progression(positioned, admitted.first_entry) {
+            let trained = admitted.first_entry;
+            loop {
+                self.admit_loop_training(&mut admitted).await;
+                if admitted.first_entry != FirstEntryOutcome::RefusedUnavailable
+                    || !budget.retries_unavailable(Unavailable).await
+                {
+                    break;
+                }
+                admitted.first_entry = trained;
+            }
+            if writes_after_progression(positioned, admitted.first_entry)
+                && self
+                    .admit_prey_with_budget(admitted, Some(&budget))
+                    .await
+                    .is_err()
+            {
+                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            }
+        }
+        if writes_after_progression(positioned, admitted.first_entry) {
+            self.admit_quest_session(&admitted).await;
+        }
+        // CHARM-WIRE-1: snapshot CHARM-3 assignments before the session becomes input-eligible.
+        // The runtime actor/session check on installation fences the snapshot against a replaced
+        // session; a failed durable read leaves Charm evaluation unavailable (fail closed).
+        if writes_after_progression(positioned, admitted.first_entry)
+            && let Ok(state) = self
+                .root
+                .read_character_charm_state(self.character, character_id)
+                .await
+        {
+            let state = crate::durability::charm_state::CombatCharmState::new(character_id, state);
+            let runtime = self.runtime.lock().await;
+            self.states.spell_states.lock().await.install_charm_state(
+                &runtime,
+                actor,
+                admitted.game_session_id,
+                state,
+            );
+        }
+        // Login is the repair path for characters created before automatic acquisition and for
+        // an earlier level-up whose durable projection could not be written.
+        // Both are reads or an idempotent fenced write through the shared holder, so a busy
+        // holder is retried within the attempt's window rather than refusing it (DEFLAKE-3).
+        if writes_after_progression(positioned, admitted.first_entry) {
+            if matches!(
+                admitted.first_entry,
+                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+            ) {
+                connection::join_recovery::retain_committed_session(AdmittedSession {
+                    first_entry: FirstEntryOutcome::AwaitingSpellRepair,
+                    ..admitted
+                });
+            }
+            #[cfg(test)]
+            if let Ok(barrier) = FRESH_SPELL_ADMISSION_BARRIER.try_with(std::sync::Arc::clone) {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+            }
+            // LIVEJOIN-1: the entry steps above share one window from the commit, and on a busy
+            // root they can spend all of it before this final step starts, leaving a committed,
+            // positioned actor unplayable. Like the other foreground lifecycle owners, the final
+            // spell repair takes its own window with foreground preference over background passes.
+            let spell_budget =
+                AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+                    .unwrap_or_else(|_| {
+                        AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root)
+                    });
+            let Ok(loaded) = spell_budget
+                .retry_unavailable(async || {
+                    match load_character_cast_facts(self.root, self.character, character_id).await {
+                        CastFactsLoad::Ready {
+                            facts,
+                            character_revision,
+                        } => Ok(Some((facts, character_revision))),
+                        CastFactsLoad::NoVocation { .. } => Ok(None),
+                        CastFactsLoad::Unavailable => Err(Unavailable),
+                    }
+                })
+                .await
+            else {
+                // COMMIT already owns this identity. A refusal here would hide it from
+                // the listener's control-loss lifecycle. Acknowledge it with the same
+                // input-ineligible outcome as the other unavailable entry participants.
+                operator_event("event=fresh_admission_pending phase=spell_facts");
+                if matches!(
+                    admitted.first_entry,
+                    FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+                ) {
+                    admitted.first_entry = FirstEntryOutcome::AwaitingSpellRepair;
+                }
+                return Ok(admitted);
+            };
+            let Some((facts, character_revision)) = loaded else {
+                return Ok(admitted);
+            };
+            if spell_budget
+                .retry_unavailable(async || {
+                    if self
+                        .reconcile_automatic_spells(
+                            character_id,
+                            admitted.game_session_id,
+                            character_revision,
+                            facts.level,
+                            facts.vocation,
+                        )
+                        .await
+                    {
+                        Ok(())
+                    } else {
+                        Err(Unavailable)
+                    }
+                })
+                .await
+                .is_err()
+            {
+                operator_event("event=fresh_admission_pending phase=automatic_spells");
+                if matches!(
+                    admitted.first_entry,
+                    FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+                ) {
+                    admitted.first_entry = FirstEntryOutcome::AwaitingSpellRepair;
+                }
+            }
+        }
+        Ok(admitted)
     }
 
     /// Record authoritative unexpected control loss, fresh-origin or after a resume. The owning

@@ -544,11 +544,21 @@ async fn acquire_spawn_holder(
                 wild_spawn::SpawnRefusal::HolderBusy,
             ));
         }
-        match root.try_acquire_ready() {
+        let (acquired, contended) =
+            oteryn_gameplay_durability::durability::with_holder_contention(async {
+                root.try_acquire_ready()
+            })
+            .await;
+        match acquired {
             Ok(holder) => return Ok(holder),
-            Err(DurabilityError::RootUnavailable) => {
-                owner = root.holder_owner_description();
+            Err(DurabilityError::RootUnavailable) if contended => {
+                owner = Some(
+                    root.holder_owner_description()
+                        .unwrap_or_else(|| "holder returned during checkout retry".into()),
+                );
             }
+            Err(DurabilityError::RootUnavailable) => {}
+
             Err(error) => return Err(fence(error)),
         }
         // Hold priority and a FIFO turn only while retrying the checkout.

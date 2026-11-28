@@ -124,6 +124,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
     let generation = admitted.continuity.connection_generation;
     let selected = admitted.continuity.selected_capabilities;
     let mut staged = admitted;
+    let mut snapshot_started = false;
     let bootstrap = async {
         let (_, projection) = authority
             .house_scope_ack(staged)
@@ -173,7 +174,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         )
         .map_err(|_| ServeEnd::Disconnected)?;
         for frame in snapshot {
-            write_frame(stream, &frame)
+            write_frame_with_progress(stream, &frame, &mut snapshot_started)
                 .await
                 .map_err(|_| ServeEnd::Disconnected)?;
         }
@@ -207,19 +208,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             admitted = staged;
             ready
         }
-        Some(Err(_))
-            if join_deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) =>
-        {
+        Some(Err(_)) | None if join_deadline.is_some() && !snapshot_started => {
             return Err(Box::new(
                 join_unavailable(stream, admitted, generation).await,
             ));
         }
         Some(Err(end)) => return Err(Box::new(end.finish(admitted))),
-        None => {
-            return Err(Box::new(
-                join_unavailable(stream, admitted, generation).await,
-            ));
-        }
+        None => return Err(Box::new(ServeEnd::Disconnected.finish(admitted))),
     };
     let run = async {
         let mut podium = None::<PodiumWalk>;

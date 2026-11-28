@@ -81,6 +81,31 @@ fn busy_holder_cancelled_head_hands_off_postgres() -> TestResult {
 }
 
 #[test]
+fn busy_holder_idle_fifo_reservation_names_the_waiter_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, "idle_fifo_reservation", async |h| {
+        let root = &h.root;
+        let mut held = root.try_acquire_ready()?;
+        let ticket = DurabilityRoot::with_holder_owner(async {
+            root.holder_waiter().ok_or("oldest waiter")
+        }).await?;
+        assert_eq!(
+            held.return_to_pool_observed_until(Instant::now() + ROOT_RECOVERY_WINDOW).await,
+            PoolConnectionReturnDisposition::ReturnedToIdle,
+        );
+        assert!(root.is_ready());
+        assert!(root.try_acquire_ready().is_err());
+        let owner = root.holder_owner_description().ok_or("idle FIFO owner missing")?;
+        assert!(owner.contains("waiting_ms="), "{owner}");
+        drop(ticket);
+        root.try_issue_semantic_pass()?.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        Ok(())
+    })
+}
+
+#[test]
 fn busy_holder_background_grant_progress_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());

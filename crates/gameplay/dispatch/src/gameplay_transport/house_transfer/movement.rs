@@ -667,40 +667,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        matches!(self.read_house_resume(actor, session).await, Ok(true))
+    }
+
+    pub(in crate::gameplay_transport) async fn read_house_resume(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<bool, crate::durability::DurabilityError> {
         if !self.ensure_source_map_initialized().await {
-            return false;
+            // Source readiness can change while the shared holder is busy.
+            return Err(crate::durability::DurabilityError::RootUnavailable);
         }
         let Some(_lane) = self.spell_lane_permit().await else {
-            return false;
+            return Err(crate::durability::DurabilityError::Unavailable);
         };
-        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
+        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(session)
-            .await
-        else {
-            return false;
-        };
+            .await?;
         if !matches!(
             current.session_state(),
             GameSessionState::Active | GameSessionState::Reconnectable
         ) {
-            return false;
+            return Ok(false);
         }
         let Some(fence) = crate::gameplay_transport::item_fence_of(current) else {
-            return false;
+            return Ok(false);
         };
         let runtime = self.runtime.lock().await;
         let Ok(state) = runtime.house_actor_state(actor, session) else {
-            return false;
+            return Ok(false);
         };
         if state.scope != fence.runtime_scope
             || state.generation != fence.scope_ownership_generation
             || state.lease.character_id().as_bytes() != fence.character_id.as_bytes()
             || state.lease.generation() != fence.character_lease_generation
         {
-            return false;
+            return Ok(false);
         }
         let Some(house) = HouseId::new(self.world_id, &state.house) else {
-            return false;
+            return Ok(false);
         };
         let doors = self.door.lock().await.blocking_cells().clone();
         let record = self
@@ -739,7 +745,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
             .await;
-        result.is_ok() && context.valid
+        match result {
+            Err(crate::durability::DurabilityError::CommitRejected) => Ok(false),
+            otherwise => otherwise.map(|_| context.valid),
+        }
     }
 }
 

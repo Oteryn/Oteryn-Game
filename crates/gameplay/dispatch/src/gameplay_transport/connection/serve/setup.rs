@@ -41,7 +41,16 @@ where
     let generation = admitted.continuity.connection_generation;
     let revision = admitted.continuity.spatial_revision;
     let mut staged = *admitted;
-    let setup = join(stream, &mut staged, authority, actor, baseline, integrity);
+    let mut snapshot_started = false;
+    let setup = join(
+        stream,
+        &mut staged,
+        authority,
+        actor,
+        baseline,
+        integrity,
+        &mut snapshot_started,
+    );
     let result = match crate::durability::holder_deadline() {
         Some(deadline) => match tokio::time::timeout_at(deadline, setup).await {
             Ok(result) => result,
@@ -58,7 +67,9 @@ where
             .await
         }
         Err(JoinFailure::Unprepared(end)) => {
-            send_join_unavailable(stream, generation).await;
+            if !snapshot_started {
+                send_join_unavailable(stream, generation).await;
+            }
             Err(end)
         }
         Err(JoinFailure::Transport) => Err(ServeEnd::Disconnected),
@@ -72,6 +83,7 @@ async fn join<S, A>(
     actor: ExactActorRef,
     baseline: WorldSpatialObservation,
     integrity: integrity::Integrity,
+    snapshot_started: &mut bool,
 ) -> Result<LiveSetup, JoinFailure>
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -248,7 +260,10 @@ where
     };
     record_join_progress("snapshot_write", admitted.first_entry);
     for frame in &snapshot {
-        if write_frame(stream, frame).await.is_err() {
+        if write_frame_with_progress(stream, frame, snapshot_started)
+            .await
+            .is_err()
+        {
             return Err(JoinFailure::Transport);
         }
     }

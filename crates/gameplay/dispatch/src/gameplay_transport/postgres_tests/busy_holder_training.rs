@@ -95,7 +95,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let before = count_receipts().await?;
     let held = h.root.try_issue_semantic_pass()?;
     assert_eq!(
-        owner.save_spell_training(actor, session, false).await,
+        owner.save_periodic_spell_training(actor, session).await,
         TrainingSave::NotApplicable
     );
     assert_eq!(count_receipts().await?, before);

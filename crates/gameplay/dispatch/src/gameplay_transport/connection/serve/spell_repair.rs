@@ -33,6 +33,7 @@ where
     let liveness_deadline =
         tokio::time::Instant::now() + policy.interval.saturating_mul(policy.missed_limit);
     let deadline = join_deadline.map_or(liveness_deadline, |join| join.min(liveness_deadline));
+    let mut partial_probe = false;
     let waiting = async {
         let repair = authority.repair_pending_spells(*admitted);
         let mut repair = std::pin::pin!(repair);
@@ -63,8 +64,13 @@ where
                     };
                     let probe = encode_liveness_probe(generation, id)
                         .map_err(|_| ServeEnd::Disconnected)?;
-                    match tokio::time::timeout(policy.interval, write_frame(stream, &probe)).await {
-                        Ok(Ok(())) => {}
+                    match tokio::time::timeout(
+                        policy.interval,
+                        write_frame_with_progress(stream, &probe, &mut partial_probe),
+                    )
+                    .await
+                    {
+                        Ok(Ok(())) => partial_probe = false,
                         Ok(Err(_)) => return Err(ServeEnd::Disconnected),
                         Err(_) => return Err(ServeEnd::ControlLost("spell_repair_probe_timeout")),
                     }
@@ -99,7 +105,9 @@ where
     if join_deadline
         .is_some_and(|join| join <= liveness_deadline && tokio::time::Instant::now() >= join)
     {
-        send_join_unavailable(stream, generation).await;
+        if !partial_probe {
+            send_join_unavailable(stream, generation).await;
+        }
         return Err(ServeEnd::Disconnected);
     }
     match result {

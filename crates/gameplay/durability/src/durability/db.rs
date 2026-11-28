@@ -96,6 +96,23 @@ tokio::task_local! {
 
 tokio::task_local! {
     static HOLDER_DEADLINE: Option<TokioInstant>;
+    static HOLDER_CONTENTION: Option<Arc<AtomicBool>>;
+}
+
+/// Observe a checkout refusal before a returning owner can clear the evidence.
+/// Callers still distinguish permanent operation errors.
+pub async fn with_holder_contention<F: Future>(future: F) -> (F::Output, bool) {
+    let busy = Arc::new(AtomicBool::new(false));
+    let result = HOLDER_CONTENTION.scope(Some(Arc::clone(&busy)), future).await;
+    (result, busy.load(Ordering::Relaxed))
+}
+
+fn note_holder_contention(contended: bool) {
+    let _ = HOLDER_CONTENTION.try_with(|busy| {
+        if let Some(busy) = busy {
+            busy.store(contended, Ordering::Relaxed);
+        }
+    });
 }
 
 /// Limit every holder operation of this owner to its remaining budget.
@@ -292,8 +309,32 @@ fn record_checkout(waiter: Site, now: Instant, trace: Option<[u8; 16]>) {
     else {
         return;
     };
+    let held = now.duration_since(wait.first);
+    #[cfg(test)]
+    emit_holder_wait(wait, held, trace);
+    #[cfg(not(test))]
+    {
+        // Stderr can stall independently of the connection or the pool.
+        // Keep one bounded queue and one writer, dropping excess diagnostics.
+        use std::sync::mpsc::{SyncSender, sync_channel};
+        type HolderWaitReport = (PendingWait, Duration, Option<[u8; 16]>);
+        static REPORTS: OnceLock<Option<SyncSender<HolderWaitReport>>> = OnceLock::new();
+        if let Some(sender) = REPORTS.get_or_init(|| {
+            let (sender, receiver) = sync_channel::<HolderWaitReport>(32);
+            std::thread::Builder::new().name("holder-diagnostics".into()).spawn(move || {
+                while let Ok((wait, held, trace)) = receiver.recv() {
+                    emit_holder_wait(wait, held, trace);
+                }
+            }).ok().map(|_| sender)
+        }) {
+            let _ = sender.try_send((wait, held, trace));
+        }
+    }
+}
+
+fn emit_holder_wait(wait: PendingWait, held: Duration, trace: Option<[u8; 16]>) {
     let trace = trace.map(format_trace);
-    let mut line = holder_wait_line(&wait, now.duration_since(wait.first));
+    let mut line = holder_wait_line(&wait, held);
     if let Some(trace) = trace.as_deref() {
         line = line.trace(trace);
     }
@@ -1583,7 +1624,10 @@ impl DurabilityRoot {
         // Work spawned on an owner's behalf keeps that owner's place for the holder.
         let owner = holder_queue::spawned_for(holder_queue::current_owner(), future);
         let operation = foreground::inherit_operation(owner);
-        self.spawn_on_runtime(HOLDER_DEADLINE.scope(holder_deadline(), operation))
+        let contention = HOLDER_CONTENTION.try_with(Clone::clone).ok().flatten();
+        self.spawn_on_runtime(
+            HOLDER_CONTENTION.scope(contention, HOLDER_DEADLINE.scope(holder_deadline(), operation)),
+        )
     }
 
     fn spawn_on_runtime<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
@@ -1665,13 +1709,20 @@ impl DurabilityRoot {
             .holder_queue
             .lock()
             .map_err(|_| DurabilityError::RootUnavailable)?;
-        if queue.turn(owner, now) != Turn::Kept
-            && let Some(holder) = self.checkout_idle_holder(site)
+        note_holder_contention(false);
+        let reserved = queue.turn(owner, now) == Turn::Kept;
+        if !reserved
+            && let Some((holder, tracked)) = self.holder_priority.foreground_checkout(now, || self.checkout_idle_holder(site))
         {
             queue.served(owner);
+            drop(queue);
+            record_checkout(site, tracked.since, tracked.trace);
             return Ok(holder);
         }
         let kept = self.pool.num_idle() > 0;
+        if !self.pool.is_closed() && (reserved || !self.holder_priority.foreground_can_attempt(now)) {
+            note_holder_contention(true);
+        }
         queue.refused(owner, now);
         drop(queue);
         // A holder kept idle for an older owner needs no recovery.
@@ -1682,11 +1733,15 @@ impl DurabilityRoot {
         Err(DurabilityError::RootUnavailable)
     }
 
-    fn checkout_idle_holder(&self, site: Site) -> Option<PoolConnection<Postgres>> {
+    fn checkout_idle_holder(&self, site: Site) -> Option<(PoolConnection<Postgres>, HolderOwner)> {
         let mut current = self.holder_owner.lock().ok()?;
-        let mut connection = self.pool.try_acquire()?;
-        connection.oteryn_track_checkout(self.record_holder_checkout(&mut current, site, false));
-        Some(connection)
+        let connection = self.pool.try_acquire();
+        note_holder_contention(connection.is_none() && current.is_some() && !self.pool.is_closed());
+        let mut connection = connection?;
+        let checkout = self.record_holder_checkout(&mut current, site, false);
+        let owner = checkout.owner;
+        connection.oteryn_track_checkout(checkout);
+        Some((connection, owner))
     }
 
     fn record_holder_checkout(
@@ -1704,7 +1759,6 @@ impl DurabilityRoot {
             trace: holder_trace(),
         };
         *current = Some(owner);
-        record_checkout(site, owner.since, owner.trace);
         HolderCheckout {
             owner,
             slot: Arc::clone(&self.holder_owner),
@@ -1722,6 +1776,7 @@ impl DurabilityRoot {
                     !self.holder_priority.background_can_attempt(Instant::now())
                 } else {
                     self.holder_turn() == Turn::Kept
+                        || !self.holder_priority.foreground_can_attempt(Instant::now())
                 }
             } else {
                 self.holder_owner.lock().is_ok_and(|owner| owner.is_some())
@@ -1729,13 +1784,23 @@ impl DurabilityRoot {
     }
 
     pub fn holder_owner_description(&self) -> Option<String> {
-        let owner = self.holder_owner.lock().ok()?.as_ref().copied()?;
-        Some(format!(
-            "{:?} caller={} held_ms={}",
-            owner.key,
-            owner.site,
-            owner.since.elapsed().as_millis()
-        ))
+        let current = self.holder_owner.lock().ok()?.as_ref().copied();
+        if let Some(owner) = current {
+            return Some(format!(
+                "{:?} caller={} held_ms={}",
+                owner.key,
+                owner.site,
+                owner.since.elapsed().as_millis()
+            ));
+        }
+        if !self.is_ready() || self.pool.is_closed() {
+            return None;
+        }
+        let now = Instant::now();
+        if let Some((owner, since)) = self.holder_queue.lock().ok()?.reservation(holder_queue::current_owner(), now) {
+            return Some(format!("{owner:?} waiting_ms={}", now.duration_since(since).as_millis()));
+        }
+        (!self.holder_priority.foreground_can_attempt(now)).then(|| "scheduled background turn".into())
     }
 
     /// Takes the current owner's place in the holder queue after a refused checkout that it
@@ -1773,7 +1838,7 @@ impl DurabilityRoot {
             if self.pool.size() == 0 {
                 return false;
             }
-            if self.is_ready() {
+            if self.is_ready() && self.holder_priority.foreground_can_attempt(Instant::now()) {
                 match self.holder_turn() {
                     Turn::Mine => return true,
                     Turn::Free => {
@@ -1936,6 +2001,26 @@ impl DurabilityRoot {
         self.is_ready() && self.holder_priority.background_can_attempt(Instant::now())
     }
 
+    /// Give an active scheduled checkpoint one bounded return after the
+    /// foreground preference window expires. A failed turn remains retryable
+    /// by the scheduler and cannot reserve an idle holder indefinitely.
+    pub async fn await_scheduled_holder_turn(&self) -> bool {
+        if !holder_queue::is_background() {
+            return true;
+        }
+        let returned = self.holder_return_notification();
+        let now = Instant::now();
+        let deadline = now + foreground::BACKGROUND_HANDOFF;
+        if !self.holder_priority.reserve_background_turn(now, deadline) {
+            return false;
+        }
+        if self.is_ready() {
+            return true;
+        }
+        tokio::time::timeout_at(TokioInstant::from_std(deadline), returned).await.is_ok()
+            && self.is_ready()
+    }
+
     /// Subscribe before checking readiness. Returns published with `notify_waiters`
     /// are observable from creation of the future, before its first poll.
     pub fn holder_return_notification(&self) -> impl Future<Output = ()> + '_ {
@@ -2035,6 +2120,7 @@ impl DurabilityRoot {
         &self,
         caller: Site,
     ) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        note_holder_contention(false);
         self.holder_priority
             .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
                 // Priority already granted this operation its fairness turn. The ticket
@@ -2045,7 +2131,14 @@ impl DurabilityRoot {
                 }
                 holder
             })
+            .map(|(holder, owner)| {
+                record_checkout(caller, owner.since, owner.trace);
+                holder
+            })
             .ok_or_else(|| {
+                if !self.pool.is_closed() && !self.holder_priority.background_can_attempt(Instant::now()) {
+                    note_holder_contention(true);
+                }
                 record_refused_checkout(&self.holder_owner, caller);
                 DurabilityError::RootUnavailable
             })

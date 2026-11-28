@@ -373,7 +373,7 @@ pub(super) async fn take_corpse_entry(
     // The backpack wait holds no spell lane. Re-prove the original handle and
     // content under the original owner order before freezing the transfer.
     {
-        let runtime = admission.runtime.lock().await;
+        let mut runtime = admission.runtime.lock().await;
         let dead = admission.states.spell_states.lock().await.is_dead(actor);
         if corpse_for_take(&runtime, dead, corpse, entry)? != (corpse_id, entry_id)
             || pinned_index(&runtime, admission.active_generation).is_none()
@@ -383,6 +383,32 @@ pub(super) async fn take_corpse_entry(
                 .physical(command.game_session_id, None)
         {
             return Err(rejected());
+        }
+        let ItemKey::Entity(identity) = corpse else {
+            return Err(rejected());
+        };
+        let target = runtime
+            .bound_corpse(identity)
+            .ok_or_else(rejected)?
+            .position;
+        let own = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .map_err(|_| rejected())?
+            .position();
+        if !super::item_view::corpse_open::within_reach(
+            ActorPosition {
+                x: own.x,
+                y: own.y,
+                floor: own.floor,
+            },
+            ActorPosition {
+                x: target.x,
+                y: target.y,
+                floor: target.floor,
+            },
+        ) {
+            return Err(GroundPickupError::SourceMismatch);
         }
     }
     let request = ItemTransferRequest {

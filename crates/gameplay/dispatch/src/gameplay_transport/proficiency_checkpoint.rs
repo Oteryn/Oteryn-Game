@@ -210,7 +210,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => return TrainingSave::FencedOut,
             Err(_) => return TrainingSave::Unknown,
         };
-        let mut slot = self.revision_sequencer.acquire(current.character_id).await;
         let Ok(Ok(root)) = budget
             .retry_durability("proficiency_character", || async {
                 match self
@@ -250,6 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return TrainingSave::Unknown;
         };
+        let mut slot = self.revision_sequencer.acquire(current.character_id).await;
         let retained = {
             let runtime = self.runtime.lock().await;
             if runtime.player_control_facts(actor, session).is_err()
@@ -296,6 +296,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(retained.fence.expected_character_revision),
             )
             .await;
+        drop(slot);
         let receipt = match outcome {
             Ok(
                 ProficiencyCommitOutcome::Committed(receipt)
@@ -322,6 +323,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 | CharacterProgressionError::AuthorityRejected)
                     ) && let Ok(mut states) = self.states.proficiencies.lock()
                         && let Some(state) = states.get_mut(&session)
+                        && state
+                            .checkpoint
+                            .as_ref()
+                            .is_some_and(|checkpoint| checkpoint.request == retained.request)
                     {
                         state.checkpoint = None;
                     }
@@ -340,6 +345,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => return TrainingSave::FencedOut,
             Err(_) => return TrainingSave::Unknown,
         };
+        let _slot = self.revision_sequencer.acquire(current.character_id).await;
         if fresh.character_id != retained.fence.character_id
             || fresh.connection_generation != current.connection_generation
             || fresh.character_lease_generation != current.character_lease_generation

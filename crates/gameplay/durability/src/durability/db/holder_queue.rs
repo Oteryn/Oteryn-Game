@@ -125,6 +125,14 @@ impl HolderQueue {
         }
     }
 
+    pub(super) fn reservation(&self, owner: OwnerKey, now: Instant) -> Option<(OwnerKey, Instant)> {
+        let mine = self.find(owner);
+        self.waiters.iter().find_map(|waiter| {
+            let older = mine.is_none_or(|mine| waiter.ticket < mine.ticket);
+            (older && waiter.waiting(now)).then_some((waiter.owner, waiter.last_refused?))
+        })
+    }
+
     pub(super) fn notification(&self, owner: OwnerKey) -> Option<Arc<Notify>> {
         self.find(owner).map(|waiter| Arc::clone(&waiter.ready))
     }
@@ -133,10 +141,7 @@ impl HolderQueue {
     /// ticket.
     pub(super) fn turn(&self, owner: OwnerKey, now: Instant) -> Turn {
         let mine = self.find(owner);
-        let kept = self.waiters.iter().any(|waiter| {
-            mine.is_none_or(|mine| waiter.ticket < mine.ticket) && waiter.waiting(now)
-        });
-        if kept {
+        if self.reservation(owner, now).is_some() {
             Turn::Kept
         } else if mine.is_some_and(|mine| mine.refused(now)) {
             Turn::Mine

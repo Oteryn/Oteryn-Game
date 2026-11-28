@@ -296,6 +296,10 @@ impl State {
         if super::inventory_capacity::changes_carried_weight(&dispatch) {
             self.invalidate_capacity();
         }
+        let moved_to = match &dispatch {
+            Dispatch::Step(outcome, _) => outcome.moved_to,
+            _ => None,
+        };
         match dispatch {
             Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {
                 let text = if matches!(dispatch, Dispatch::NoLogout) {
@@ -399,7 +403,8 @@ impl State {
             }
             _ => {}
         }
-        self.spatial(stream, authority, admitted, false).await
+        self.spatial(stream, authority, admitted, false, moved_to)
+            .await
     }
 
     async fn item_delta<S: AsyncWrite + Unpin>(
@@ -489,9 +494,10 @@ impl State {
         authority: &A,
         admitted: &mut AdmittedSession,
         periodic: bool,
+        moved_to: Option<WorldSpatialObservation>,
     ) -> Result<(), ServeEnd> {
         if let Some(view) = self.visibility.as_mut() {
-            let entities = match crate::gameplay_transport::entity_names::observe_result(
+            let mut entities = match crate::gameplay_transport::entity_names::observe_result(
                 authority,
                 self.actor,
                 admitted.continuity.selected_capabilities,
@@ -499,9 +505,31 @@ impl State {
             .await
             {
                 Ok(entities) => entities,
+                Err(super::AdmissionRefusal::Unavailable) if moved_to.is_some() => {
+                    let without_names = admitted
+                        .continuity
+                        .selected_capabilities
+                        .without_projection(
+                        oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+                    );
+                    let mut channel = authority
+                        .observe_projected_entities(self.actor, without_names)
+                        .await
+                        .map_err(|_| ServeEnd::Disconnected)?;
+                    view.defer_unnamed_actors(&mut channel);
+                    channel
+                }
                 Err(super::AdmissionRefusal::Unavailable) => return Ok(()),
                 Err(_) => return Err(ServeEnd::Disconnected),
             };
+            if let Some(observation) = moved_to {
+                let own = entities
+                    .entities
+                    .iter_mut()
+                    .find(|entry| entry.identity == entities.observer)
+                    .ok_or(ServeEnd::Disconnected)?;
+                own.position = observation.actor_position;
+            }
             let sequence = admitted.continuity.server_sequence;
             let projection = self
                 .appearances
@@ -514,7 +542,7 @@ impl State {
                     &entities,
                     self.items.as_mut(),
                     (sequence, self.spatial_revision),
-                    false,
+                    moved_to.is_some(),
                 )
                 .await;
             let (_, revision) = match projection {
@@ -623,7 +651,8 @@ impl State {
         {
             self.npc(stream, authority, admitted, &update).await?;
         }
-        self.spatial(stream, authority, admitted, true).await?;
+        self.spatial(stream, authority, admitted, true, None)
+            .await?;
         let Some(view) = self.visibility.as_ref() else {
             return Ok(());
         };

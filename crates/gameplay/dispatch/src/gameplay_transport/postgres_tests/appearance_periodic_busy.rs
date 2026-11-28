@@ -30,6 +30,8 @@ use tokio::sync::Notify;
 enum Case {
     Busy,
     JoinBusy,
+    JoinRefused,
+    PartialSnapshot,
     Storage,
     Authority,
 }
@@ -44,6 +46,15 @@ fn appearance_periodic_holder_busy_postgres_keeps_live_peer_and_discards_staged_
 fn busy_holder_enrichment_degrades_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     run_case(Case::JoinBusy)
+}
+
+#[test]
+fn busy_holder_join_closes_with_one_error_or_a_partial_snapshot_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(Case::JoinRefused)?;
+    run_case(Case::PartialSnapshot)
 }
 
 #[test]
@@ -82,6 +93,7 @@ struct ProjectionOwner<'o, 'a, 'f, 's> {
     resume: Notify,
     busy: Cell<u32>,
     unavailable: Cell<u32>,
+    refuse_initial: bool,
 }
 
 impl FreshAdmissionAuthority for ProjectionOwner<'_, '_, '_, '_> {
@@ -156,6 +168,9 @@ impl FreshAdmissionAuthority for ProjectionOwner<'_, '_, '_, '_> {
         empty_outfit: bool,
         entities: Vec<appearance::EntityRef>,
     ) -> Result<Observation, ObservationError> {
+        if self.refuse_initial {
+            return Err(ObservationError::Unavailable);
+        }
         if self.arm.replace(false) {
             self.entered.notify_one();
             self.resume.notified().await;
@@ -185,6 +200,8 @@ fn scenario(case: Case) -> TestResult {
         let tag = match case {
             Case::Busy => "appearance_periodic_busy",
             Case::JoinBusy => "appearance_join_busy",
+            Case::JoinRefused => "appearance_join_refused",
+            Case::PartialSnapshot => "appearance_partial_snapshot",
             Case::Storage => "appearance_periodic_storage",
             Case::Authority => "appearance_periodic_authority",
         };
@@ -258,12 +275,47 @@ fn scenario(case: Case) -> TestResult {
             resume: Notify::new(),
             busy: Cell::new(0),
             unavailable: Cell::new(0),
+            refuse_initial: matches!(case, Case::JoinRefused),
         };
         assert_eq!(projection.channel.entities.len(), 1);
 
+        if matches!(case, Case::JoinRefused | Case::PartialSnapshot) {
+            let partial = matches!(case, Case::PartialSnapshot);
+            // Give the first snapshot write exactly enough credit for a partial
+            // prefix. The peer withholds reads until the deadline expires.
+            let (mut server, mut client) = tokio::io::duplex(if partial { 2 } else { 4096 });
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
+            let end = tokio::time::timeout_at(
+                deadline + std::time::Duration::from_millis(250),
+                crate::gameplay_transport::connection::serve_admitted_by(
+                    &mut server, admitted, &projection, IDLE_LIVENESS, Some(deadline),
+                ),
+            ).await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            drop(server);
+            let mut bytes = Vec::new();
+            client.read_to_end(&mut bytes).await?;
+            if partial {
+                assert_eq!(bytes, [0, 0], "only the partial snapshot prefix reached the peer");
+            } else {
+                let (prefix, frame) = bytes.split_first_chunk::<4>().ok_or("missing E1051 frame")?;
+                assert_eq!(usize::try_from(u32::from_be_bytes(*prefix))?, frame.len());
+                let envelope = decode_wire_envelope(frame).map_err(debug)?;
+                assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+                assert_eq!(envelope.connection_generation(), admitted.continuity.connection_generation);
+                let error = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload()).map_err(debug)?;
+                assert_eq!(error.error_code, 1051, "one complete E1051 with zero trailing bytes");
+            }
+            drop(projection);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+
         if matches!(case, Case::JoinBusy) {
             let mut held = owner.root.try_acquire_ready()?;
-            assert!(owner.chat_speaker_name(session).await.is_none());
+            let _ = owner.chat_open(session).await;
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let serving = async {
                 let deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
@@ -330,7 +382,7 @@ fn scenario(case: Case) -> TestResult {
             assert!(owner.runtime.try_lock().is_ok());
             assert!(owner.states.spell_states.try_lock().is_ok());
             match case {
-                Case::JoinBusy => return Err("join case reached live cadence".into()),
+                Case::JoinBusy | Case::JoinRefused | Case::PartialSnapshot => return Err("join case reached live cadence".into()),
                 Case::Busy => {
                     let held = owner.root.try_issue_semantic_pass().map_err(debug)?;
                     let held_at = tokio::time::Instant::now();
@@ -475,7 +527,7 @@ fn scenario(case: Case) -> TestResult {
             return Err(format!("responsive appearance peer lost control: {end:?}").into());
         };
         match case {
-            Case::JoinBusy => return Err("join case reached live result".into()),
+            Case::JoinBusy | Case::JoinRefused | Case::PartialSnapshot => return Err("join case reached live result".into()),
             Case::Busy => {
                 assert_eq!(ended.continuity.server_sequence, 3);
                 assert_eq!(ended.continuity.spatial_revision, 2);

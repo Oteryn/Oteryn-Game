@@ -166,7 +166,7 @@ use super::item_view::{
 pub use super::logout::LogoutReply;
 use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::npc_trade_command::NpcTradeStep;
-use super::tcp_tls::{FrameReader, read_frame, write_frame};
+use super::tcp_tls::{FrameReader, read_frame, write_frame, write_frame_with_progress};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
@@ -888,22 +888,30 @@ where
             let Some(transport) = identifiers.transport_ref() else {
                 return Err(ConnectionEnd::ResumeUnavailable);
             };
-            let resumed = authority
-                .resume(ResumeAttempt {
+            let resumed = join_stage(
+                Some(deadline),
+                authority.resume(ResumeAttempt {
                     game_session_id: resume.game_session_id,
                     recovery_material: resume.reconnect_material,
                     transport,
                     last_applied_server_sequence: resume.last_applied_server_sequence,
                     supported_capabilities: resume.supported_capabilities,
-                })
-                .await;
+                }),
+            )
+            .await
+            .unwrap_or(Err(AdmissionRefusal::Unavailable));
+            if resumed.is_err()
+                && let Some(committed) = join_recovery::committed_join()
+            {
+                return Err(join_unavailable(stream, committed, 0).await);
+            }
             let resumed = match resumed {
                 Ok(resumed) => resumed,
                 // ADMIT0 §4: the owner reached this only after authenticating the recovery
                 // credential, so the typed refusal may be revealed. One frame, then close.
                 Err(AdmissionRefusal::RecoveryCapabilityRequired) => {
-                    let _ = tokio::time::timeout(
-                        ADMISSION_REFUSAL_WRITE_BOUND,
+                    let _ = tokio::time::timeout_at(
+                        deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                         send_error(
                             stream,
                             FoundationProtocolError::RecoveryCapabilityRequired,
@@ -1013,13 +1021,17 @@ where
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
     // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
-    let Some(selected) =
-        fresh_capability_selection(authority, bootstrap.supported_capabilities).await
+    let Some(Some(selected)) = join_stage(
+        Some(deadline),
+        fresh_capability_selection(authority, bootstrap.supported_capabilities),
+    )
+    .await
     else {
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
         ));
     };
+    join_recovery::retain_fresh_selection(selected);
     if selected.contains(oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1) {
         enable_connection_trace();
     }
@@ -1032,15 +1044,21 @@ where
         transport,
         supported_capabilities: bootstrap.supported_capabilities,
     };
-    let mut admitted = match authority.admit(attempt).await {
+    let outcome = join_stage(Some(deadline), authority.admit(attempt))
+        .await
+        .unwrap_or(Err(AdmissionRefusal::Unavailable));
+    let mut admitted = match outcome {
         Ok(admitted) => admitted,
         Err(refusal) => {
+            if let Some(committed) = join_recovery::committed_join() {
+                return Err(join_unavailable(stream, committed, 0).await);
+            }
             report_admission_refusal(refusal);
             if let AdmissionRefusal::Classified(error) = refusal {
                 // N8: exactly one ProtocolError at generation 0, then close. A slow or
                 // failed peer write changes nothing: the refusal already stands.
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
+                let _ = tokio::time::timeout_at(
+                    deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                     send_error(stream, error, 0),
                 )
                 .await;
@@ -1049,8 +1067,8 @@ where
                 && status.lock == oteryn_protocol_oteryn::channel_switch::SwitchLock::ChannelFull
             {
                 let frame = oteryn_protocol_oteryn::admission_queue::encode_channel_full();
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
+                let _ = tokio::time::timeout_at(
+                    deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                     write_frame(stream, &frame),
                 )
                 .await;
@@ -1059,8 +1077,8 @@ where
                 && let Ok(frame) =
                     oteryn_protocol_oteryn::admission_queue::encode_queue_refusal(queue)
             {
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
+                let _ = tokio::time::timeout_at(
+                    deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                     write_frame(stream, &frame),
                 )
                 .await;
@@ -1068,7 +1086,7 @@ where
             return Err(ConnectionEnd::AdmissionRefused(refusal));
         }
     };
-    if join_requires_recovery() {
+    if join_requires_recovery() || tokio::time::Instant::now() >= deadline {
         return Err(join_unavailable(stream, admitted, 0).await);
     }
     admitted.continuity.selected_capabilities = selected;
@@ -1094,14 +1112,13 @@ where
     }) else {
         return Err(join_unavailable(stream, admitted, 0).await);
     };
-    let accepted = if let Ok(Some(document)) =
-        tokio::time::timeout_at(deadline, authority.client_bulletin()).await
-    {
-        oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
-            .unwrap_or(accepted)
-    } else {
-        accepted
-    };
+    let accepted =
+        if let Some(Some(document)) = join_optional_stage(authority.client_bulletin()).await {
+            oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
+                .unwrap_or(accepted)
+        } else {
+            accepted
+        };
     write_join_frame(stream, &accepted, admitted, 0, deadline).await?;
     Ok(admitted)
 }
@@ -1746,14 +1763,32 @@ async fn write_join_frame<S: AsyncWrite + Unpin>(
     if tokio::time::Instant::now() >= deadline {
         return Err(join_unavailable(stream, admitted, generation).await);
     }
-    match tokio::time::timeout_at(deadline, write_frame(stream, frame)).await {
+    let mut started = false;
+    match tokio::time::timeout_at(
+        deadline,
+        write_frame_with_progress(stream, frame, &mut started),
+    )
+    .await
+    {
         Ok(Ok(())) => Ok(()),
-        Ok(Err(_)) => Err(ConnectionEnd::AdmittedThenDisconnected(admitted)),
-        Err(_) => Err(join_unavailable(stream, admitted, generation).await),
+        Err(_) if !started => Err(join_unavailable(stream, admitted, generation).await),
+        Ok(Err(_)) | Err(_) => Err(ConnectionEnd::AdmittedThenDisconnected(admitted)),
     }
 }
 
-async fn join_stage<T>(
+/// Reserve the greater part of the remaining shared budget for required
+/// admission work. A ready optional observation still gets an immediate poll.
+pub(super) async fn join_optional_stage<T>(stage: impl Future<Output = T>) -> Option<T> {
+    let Some(deadline) = crate::durability::holder_deadline() else {
+        return Some(stage.await);
+    };
+    let now = tokio::time::Instant::now();
+    let allowance =
+        (deadline.saturating_duration_since(now) / 8).min(std::time::Duration::from_millis(200));
+    join_stage(Some(now + allowance), stage).await
+}
+
+pub(super) async fn join_stage<T>(
     deadline: Option<tokio::time::Instant>,
     stage: impl Future<Output = T>,
 ) -> Option<T> {
@@ -1777,8 +1812,12 @@ async fn join_stage<T>(
 /// `generation` (0 before the client was told it was admitted). A slow or failed write changes
 /// nothing: the end stays the same.
 async fn send_join_unavailable<S: AsyncWrite + Unpin>(stream: &mut S, generation: u64) {
-    let _ = tokio::time::timeout(
-        ADMISSION_REFUSAL_WRITE_BOUND,
+    let ordinary = tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND;
+    let deadline = join_recovery::join_deadline()
+        .or_else(crate::durability::holder_deadline)
+        .map_or(ordinary, |deadline| ordinary.min(deadline));
+    let _ = tokio::time::timeout_at(
+        deadline,
         send_error(
             stream,
             FoundationProtocolError::SessionJoinUnavailable,

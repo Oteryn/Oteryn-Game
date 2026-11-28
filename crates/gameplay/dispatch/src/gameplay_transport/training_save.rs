@@ -31,9 +31,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
-        if !force && self.root.holder_contended() {
-            return TrainingSave::NotApplicable;
-        }
         let Ok(_foreground) = self.root.foreground_demand() else {
             return TrainingSave::Unknown;
         };
@@ -43,11 +40,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _runtime = self.runtime.lock().await;
             let _states = self.states.spell_states.lock().await;
         }
-        let mut budget = AdmissionRetryBudget::for_command(self.root);
-        if !force {
-            budget.deadline = tokio::time::Instant::now();
-        }
+        let budget = AdmissionRetryBudget::for_command(self.root);
         self.save_spell_training_with_budget(actor, session, force, &budget)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn save_periodic_spell_training(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> TrainingSave {
+        if self.root.holder_contended() {
+            return TrainingSave::NotApplicable;
+        }
+        let budget = AdmissionRetryBudget::for_optional_read(self.root);
+        self.save_spell_training_with_budget(actor, session, false, &budget)
             .await
     }
 

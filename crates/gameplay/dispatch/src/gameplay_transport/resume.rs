@@ -9,6 +9,7 @@
 //! committed switch restores control of the still-present actor and returns the resumed
 //! session. A refused or unproven PREPARE is withdrawn, never left to strand the session.
 
+use super::connection::join_recovery::{self, JoinAction};
 use super::connection::{
     AdmissionRefusal, AdmittedSession, ControllerBinding, FreshAdmissionAuthority,
     GraceExpiryResult, ResumeAttempt,
@@ -37,9 +38,9 @@ use crate::foundation::{
     CompleteReconnectDurabilityOperationV1, CompleteReconnectFlowV1, CompleteReconnectOutcomeV1,
     CompleteReconnectProofTransitionV1, CompleteReconnectProofV1, CompleteReconnectRequestKindV1,
     CompleteReconnectSnapshotV1, CompleteReconnectSourceV1, ConnectionGeneration,
-    Fnd02ReconciliationFenceV1, Fnd04EvidenceError, GameSessionState, ReconnectAttemptRef,
-    ReconnectCandidateBindingV1, ReconnectDurabilityErrorV1, ReconnectIdentityV1,
-    StateDomainRevisionV1,
+    ControlLossEpochRefV1, Fnd02ReconciliationFenceV1, Fnd04EvidenceError, GameSessionState,
+    ReconnectAttemptRef, ReconnectCandidateBindingV1, ReconnectDurabilityErrorV1,
+    ReconnectIdentityV1, StateDomainRevisionV1,
 };
 use oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES;
 use oteryn_protocol_oteryn::container_tree::STATE_DOMAIN_CONTAINER_VIEWS;
@@ -219,7 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     loss_deadline = loss_deadline.min(durable_deadline);
                 }
             }
-            if !wait_for_loss_publication(published, loss_deadline).await {
+            if !wait_for_loss_publication(published, loss_deadline.min(retry.deadline)).await {
                 return Err(Unavailable);
             }
         };
@@ -677,6 +678,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(Rejected);
             }
             *wrote = true;
+            if join_recovery::retain_join(
+                lost,
+                JoinAction::CapabilityMismatch {
+                    epoch,
+                    activity_store: None,
+                },
+            ) {
+                return Err(Rejected);
+            }
             let release = self.release_capability_mismatch(lost, epoch).await;
             return Err(capability_mismatch_refusal(release));
         }
@@ -697,6 +707,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // from the committed resume, never carried over.
         resumed.item_fence = None;
         *wrote = true;
+        let recovery_retained = join_recovery::retain_join(
+            AdmittedSession {
+                item_fence: Some(
+                    crate::durability::item_transfer::CurrentCharacterItemFence {
+                        connection_generation: ConnectionGeneration::new(successor)
+                            .map_err(|_| Rejected)?,
+                        ..fence
+                    },
+                ),
+                ..resumed
+            },
+            JoinAction::Resume {
+                identity: Box::new(identity.clone()),
+                operation: None,
+                epoch,
+                house: house_resume,
+            },
+        );
         let prepared = match self
             .decide(
                 retry,
@@ -711,7 +739,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(outcome @ CompleteReconnectOutcomeV1::Prepared { .. }) => outcome,
             refused => {
                 // A PREPARE that landed but could not be proven must not stay named.
-                let _ = store.abort_complete_reconnect(&identity).await;
+                if !recovery_retained {
+                    let _ = store.abort_complete_reconnect(&identity).await;
+                }
                 return Err(refused.err().unwrap_or(Rejected));
             }
         };
@@ -755,6 +785,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 flow.take_request(CompleteReconnectRequestKindV1::Commit)
                     .map_err(|_| Rejected)?,
             );
+            join_recovery::retain_resume_operation(flow.operation());
             self.decide(
                 retry,
                 &store,
@@ -767,20 +798,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         .await;
         match committed {
-            Ok(CompleteReconnectOutcomeV1::Committed { .. }) => {}
+            Ok(CompleteReconnectOutcomeV1::Committed { .. }) => {
+                join_recovery::retain_committed_session(AdmittedSession {
+                    item_fence: Some(
+                        crate::durability::item_transfer::CurrentCharacterItemFence {
+                            connection_generation: ConnectionGeneration::new(successor)
+                                .map_err(|_| Rejected)?,
+                            ..fence
+                        },
+                    ),
+                    ..resumed
+                });
+            }
             Err(AdmissionRefusal::Unavailable) => {
                 // The COMMIT may have landed without proof. If it did, the session is ACTIVE on
                 // a candidate that will never serve: release it (only that exact transport),
                 // never strand it. If it did not, withdraw the prepared attempt.
-                crate::durability::outside_holder_deadline(async {
+                if !recovery_retained {
                     let _ = self.release_abandoned(resumed).await;
                     let _ = store.abort_complete_reconnect(&identity).await;
-                })
-                .await;
+                }
                 return Err(Unavailable);
             }
             refused => {
-                let _ = store.abort_complete_reconnect(&identity).await;
+                if !recovery_retained {
+                    let _ = store.abort_complete_reconnect(&identity).await;
+                }
                 return Err(refused.err().unwrap_or(Rejected));
             }
         }
@@ -789,36 +832,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // switch stands even if the runtime mark could not be cleared.
         if house_resume {
             let valid = retry
-                .retry_unavailable(async || {
-                    if self.validate_house_resume(actor, session_id).await {
-                        Ok(())
-                    } else if crate::durability::holder_deadline().is_some()
-                        && self.root.holder_contended()
-                    {
-                        Err(Unavailable)
-                    } else {
-                        Err(Rejected)
-                    }
+                .retry_durability("resume_house_placement", || {
+                    self.read_house_resume(actor, session_id)
                 })
                 .await;
-            if valid.is_err() {
-                // Current ACL or cell facts may have changed during COMMIT.
-                // Keep the native loss/fence until terminal recovery settles it.
-                if crate::durability::holder_deadline()
-                    .is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
-                {
-                    crate::gameplay_transport::connection::join_recovery::abandon_unpublished_resume();
-                    return Ok(resumed);
+            match valid {
+                Ok(true) => {}
+                Ok(false) => {
+                    if recovery_retained {
+                        return Err(Rejected);
+                    }
+                    let released = self.release_abandoned_session(resumed).await;
+                    return Err(capability_mismatch_refusal(released));
                 }
-                let released = crate::durability::outside_holder_deadline(
-                    self.release_abandoned_session(resumed),
-                )
-                .await;
-                return Err(if released == GraceExpiryResult::Released {
-                    Rejected
-                } else {
-                    Unavailable
-                });
+                Err(_) => return Err(Unavailable),
             }
         }
         #[cfg(test)]
@@ -826,6 +853,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             barrier.0.notify_one();
             barrier.1.notified().await;
         }
+        self.restore_committed_resume(
+            resumed,
+            epoch,
+            house_resume,
+            lost.continuity.connection_generation,
+        )
+        .await?;
+        // C2: the resumed session's item fence, from a current durable read of the session the
+        // COMMIT made ACTIVE on this candidate connection. An unreadable or already moved
+        // session leaves it `None`: the resume stands, and a chest `USE` is refused.
+        #[cfg(test)]
+        if let Ok(barrier) = PREPARE_TEST_BARRIER.try_with(Arc::clone)
+            && barrier.readback
+        {
+            barrier.committed.notify_one();
+            barrier.readback_release.notified().await;
+        }
+        // MAINRED14: a busy holder is not missing authority. Without this fence the first
+        // resumed command cannot reconcile retained NPC work and disconnects after its
+        // snapshot. Retry only the read, never the already committed reconnect.
+        let current = AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(session_id)
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::DurabilityError::RootUnavailable => Unavailable,
+                        _ => Rejected,
+                    })
+            })
+            .await;
+        if let Ok((current, _)) = current
+            && current.session_state() == GameSessionState::Active
+            && current.current_connection_generation().get() == successor
+            && current.current_transport() == Some(attempt.transport)
+        {
+            resumed.item_fence = super::item_fence_of(current);
+            join_recovery::retain_committed_session(resumed);
+            return Ok(resumed);
+        }
+        if recovery_retained {
+            return Err(Unavailable);
+        }
+        Ok(resumed)
+    }
+
+    pub(super) async fn restore_committed_resume(
+        &self,
+        resumed: AdmittedSession,
+        epoch: ControlLossEpochRefV1,
+        house_resume: bool,
+        predecessor: u64,
+    ) -> Result<(), AdmissionRefusal> {
+        use AdmissionRefusal::Unavailable;
+        let actor = resumed.runtime_actor.ok_or(Unavailable)?;
+        let session_id = resumed.game_session_id;
+        let successor = resumed.continuity.connection_generation;
         let reset_cooldowns = {
             let mut runtime = self.runtime.lock().await;
             if house_resume {
@@ -860,39 +944,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if reset_cooldowns {
             self.kooldown_aid_notice(session_id);
         }
-        self.forget_lost(session_id, lost.continuity.connection_generation);
-        // C2: the resumed session's item fence, from a current durable read of the session the
-        // COMMIT made ACTIVE on this candidate connection. An unreadable or already moved
-        // session leaves it `None`: the resume stands, and a chest `USE` is refused.
-        #[cfg(test)]
-        if let Ok(barrier) = PREPARE_TEST_BARRIER.try_with(Arc::clone)
-            && barrier.readback
-        {
-            barrier.committed.notify_one();
-            barrier.readback_release.notified().await;
-        }
-        // MAINRED14: a busy holder is not missing authority. Without this fence the first
-        // resumed command cannot reconcile retained NPC work and disconnects after its
-        // snapshot. Retry only the read, never the already committed reconnect.
-        let current = AdmissionRetryBudget::for_command(self.root)
-            .retry_unavailable(async || {
-                store
-                    .current_session_at(session_id)
-                    .await
-                    .map_err(|error| match error {
-                        crate::durability::DurabilityError::RootUnavailable => Unavailable,
-                        _ => Rejected,
-                    })
-            })
-            .await;
-        if let Ok((current, _)) = current
-            && current.session_state() == GameSessionState::Active
-            && current.current_connection_generation().get() == successor
-            && current.current_transport() == Some(attempt.transport)
-        {
-            resumed.item_fence = super::item_fence_of(current);
-        }
-        Ok(resumed)
+        self.forget_lost(session_id, predecessor);
+        Ok(())
     }
 
     /// One PREPARE or COMMIT through the durable adapter; an unproven outcome is reconciled

@@ -78,23 +78,23 @@ pub(in crate::gameplay_transport) async fn observe_result(
         let _runtime = admission.runtime.lock().await;
         let _states = admission.states.spell_states.lock().await;
     }
-    let retry = AdmissionRetryBudget::for_command(admission.root);
+    let retry = if crate::durability::holder_deadline().is_some() {
+        AdmissionRetryBudget::for_optional_read(admission.root)
+    } else {
+        AdmissionRetryBudget::for_command(admission.root)
+    };
     retry
         .retry_durability("appearance_observation", async || {
             let mut failure = None;
-            let observation = observe_once(
-                admission,
-                observer,
-                session,
-                empty_outfit,
-                &entities,
-                &mut failure,
-            )
-            .await;
+            let (observation, contended) = crate::durability::with_holder_contention(observe_once(
+                admission, observer, session, empty_outfit, &entities, &mut failure,
+            )).await;
             // All runtime/spell guards belong to observe_once and have dropped
             // before retry_durability can wait for the holder. Its durable reads
             // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
             match failure {
+                Some(ReadFailure::Durable(crate::durability::DurabilityError::RootUnavailable))
+                    if contended => Ok(Err(ObservationError::HolderBusy)),
                 Some(ReadFailure::Durable(error)) => Err(error),
                 Some(ReadFailure::HouseAccessBusy) => Ok(Err(ObservationError::HolderBusy)),
                 Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
@@ -102,10 +102,7 @@ pub(in crate::gameplay_transport) async fn observe_result(
             }
         })
         .await
-        .map_err(|error| match error {
-            crate::durability::DurabilityError::RootUnavailable if admission.root.holder_contended() => ObservationError::HolderBusy,
-            _ => ObservationError::Unavailable,
-        })?
+        .map_err(|_| ObservationError::Unavailable)?
 }
 
 fn read_result<T>(

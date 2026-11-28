@@ -169,10 +169,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         if house && !(index - 2).is_multiple_of(2) {
                             return;
                         }
+                        let equipment = (index - 2).is_multiple_of(2);
+                        if equipment && !self.root.await_scheduled_holder_turn().await {
+                            return;
+                        }
                         let Some(_permit) = self.spell_lane_permit().await else {
                             return;
                         };
-                        if (index - 2).is_multiple_of(2) {
+                        if equipment {
                             let checkpoint = self.checkpoint_timed_equipment(actor, session, false);
                             self.root.with_periodic_lock_budget(checkpoint).await;
                         } else {

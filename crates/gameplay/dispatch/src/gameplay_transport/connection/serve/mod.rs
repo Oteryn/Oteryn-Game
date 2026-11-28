@@ -275,6 +275,12 @@ where
         match scope {
             Ok(Some(next)) => scoped_authority = Some(next),
             Ok(None) => {}
+            Err(())
+                if join_deadline
+                    .is_some_and(|deadline| tokio::time::Instant::now() >= deadline) =>
+            {
+                return join_unavailable(stream, admitted, generation).await;
+            }
             Err(()) => return ServeEnd::Disconnected.finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
@@ -286,7 +292,12 @@ where
             return join_unavailable(stream, admitted, generation).await;
         };
         if !staff_ready {
-            return ServeEnd::Disconnected.finish(admitted);
+            return if join_deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
+            {
+                join_unavailable(stream, admitted, generation).await
+            } else {
+                ServeEnd::Disconnected.finish(admitted)
+            };
         }
         if !authority.remember_activity_connection(admitted) {
             return ServeEnd::Disconnected.finish(admitted);
@@ -300,7 +311,11 @@ where
             return join_unavailable(stream, admitted, generation).await;
         };
         if !callbacks_ready {
-            return ServeEnd::Disconnected.finish(admitted);
+            return if join_deadline.is_some() {
+                join_unavailable(stream, admitted, generation).await
+            } else {
+                ServeEnd::Disconnected.finish(admitted)
+            };
         }
         let mut repaired_io = if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
             && admitted.runtime_actor.is_some()
@@ -349,7 +364,11 @@ where
         );
         let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
             record_join_progress("held_unplayable", admitted.first_entry);
-            return hold_refused(stream, admitted, policy).await;
+            return if join_deadline.is_some() {
+                join_unavailable(stream, admitted, generation).await
+            } else {
+                hold_refused(stream, admitted, policy).await
+            };
         };
         record_join_progress("baseline", admitted.first_entry);
         let Some(baseline) = join_stage(join_deadline, authority.observe(actor)).await else {
@@ -357,7 +376,11 @@ where
         };
         let Some(baseline) = baseline else {
             record_join_progress("held_no_baseline", admitted.first_entry);
-            return hold_refused(stream, admitted, policy).await;
+            return if join_deadline.is_some() {
+                join_unavailable(stream, admitted, generation).await
+            } else {
+                hold_refused(stream, admitted, policy).await
+            };
         };
         // Keep the join snapshot and its temporary session state out of the
         // connection coroutine, which also carries the live command path.

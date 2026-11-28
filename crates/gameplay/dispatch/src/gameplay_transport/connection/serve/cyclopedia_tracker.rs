@@ -12,7 +12,11 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         .selected_capabilities
         .domain_selected(wire::STATE_DOMAIN_CYCLOPEDIA_TRACKER);
     if selected && session.cyclopedia_tracker_revision == 0 {
-        let Ok(Some(payload)) = authority.cyclopedia_tracker_join(session.admitted).await else {
+        let Some(payload) = authority
+            .cyclopedia_tracker_join(session.admitted)
+            .await
+            .map_err(|()| ServeEnd::Disconnected)?
+        else {
             return Ok(());
         };
         let sequence = session

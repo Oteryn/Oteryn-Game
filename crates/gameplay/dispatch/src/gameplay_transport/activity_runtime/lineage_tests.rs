@@ -442,7 +442,6 @@ fn activity_lineage_listener_completion_retains_only_unknown_and_cancelled_work(
                         &authority,
                         crate::gameplay_transport::listener::LostControl {
                             pending_join: None,
-                            abandoned_resume: false,
                             session: switch.source,
                             wait: Duration::ZERO,
                             reset: None,

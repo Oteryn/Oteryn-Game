@@ -1088,9 +1088,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
-        if self.root.holder_contended() {
-            return None;
-        }
         let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
         Box::pin(self.chat_speaker_name_with_budget(session, &retry))
             .await
@@ -1160,10 +1157,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// Opens (or keeps) the chat state of `session` and answers its open rooms (the snapshot).
     pub(super) async fn chat_open(&self, session: GameSessionId) -> ChatRoomSet {
-        let name = if self.states.chat.knows(session) {
+        let name = if self.states.chat.knows(session) || self.root.holder_contended() {
             None
         } else {
-            self.chat_speaker_name(session).await
+            let retry = super::AdmissionRetryBudget::for_optional_read(self.root);
+            self.chat_speaker_name_with_budget(session, &retry)
+                .await
+                .ok()
         };
         // Without a readable name and level the session is not admitted: it neither speaks nor
         // hears.

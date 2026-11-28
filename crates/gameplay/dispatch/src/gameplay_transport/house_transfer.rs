@@ -768,6 +768,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if loss.is_some() {
             return Ok(None);
         }
+        let runtime_scope = if let Some(key) = &candidate.ack.house {
+            HouseId::new(self.world_id, key)
+                .ok_or(Rejected)?
+                .runtime_scope()
+                .map_err(|_| Rejected)?
+        } else {
+            RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
+        };
+        let destination = retained_destination;
+        let expected = CurrentCharacterItemFence {
+            character_id: crate::domain::CharacterId::from_bytes(
+                *candidate.current.character_id.as_bytes(),
+            )
+            .map_err(|_| Unavailable)?,
+            game_session_id: destination,
+            connection_generation: crate::foundation::ConnectionGeneration::new(
+                candidate.ack.connection_generation,
+            )
+            .map_err(|_| Unavailable)?,
+            character_lease_generation: candidate.ack.lease_generation,
+            runtime_scope,
+            scope_ownership_generation: ScopeOwnershipGeneration::new(
+                candidate.ack.scope_generation,
+            )
+            .map_err(|_| Unavailable)?,
+        };
+        let mut pending = AdmittedSession {
+            game_session_id: destination,
+            world_id: self.world_id,
+            channel_id: self.channel_id,
+            runtime_actor: retained_actor,
+            first_entry: FirstEntryOutcome::RefusedUnavailable,
+            controller: Some(ControllerBinding {
+                transport: attempt.transport,
+                account_id: candidate.account,
+            }),
+            continuity: SessionContinuity {
+                connection_generation: candidate.ack.connection_generation,
+                selected_capabilities: selected,
+                house_input_pending: Some(true),
+                ..SessionContinuity::FRESH
+            },
+            item_fence: Some(expected),
+        };
+        super::connection::join_recovery::retain_join(
+            pending,
+            super::connection::join_recovery::JoinAction::NativeHouse(Box::new(candidate.clone())),
+        );
         let recovered = self
             .root
             .recover_house_transfer(
@@ -782,8 +830,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| Unavailable)?;
-        let destination = crate::foundation::GameSessionId::decode(&recovered.ack.session)
-            .map_err(|_| Unavailable)?;
+        pending.continuity.connection_generation = recovered.ack.connection_generation;
+        pending.item_fence = Some(CurrentCharacterItemFence {
+            connection_generation: crate::foundation::ConnectionGeneration::new(
+                recovered.ack.connection_generation,
+            )
+            .map_err(|_| Unavailable)?,
+            ..expected
+        });
+        super::connection::join_recovery::retain_committed_session(pending);
         // Replace the transport fence while runtime custody is still locked.
         // A live lost-ACK recovery can retain the previous actor and lease.
         if let Some(actor) = retained_actor {
@@ -799,6 +854,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(runtime);
         drop(_lane);
+        self.install_recovered_house(recovered, pending)
+            .await
+            .map(Some)
+    }
+
+    pub(super) async fn install_recovered_house(
+        &self,
+        recovered: crate::durability::house_transfer::HouseTransferRecovery,
+        pending: AdmittedSession,
+    ) -> Result<AdmittedSession, super::connection::AdmissionRefusal> {
+        use super::connection::AdmissionRefusal::*;
+        let destination = pending.game_session_id;
+        let retained_actor = pending.runtime_actor;
+        let controller = pending.controller.ok_or(Rejected)?;
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let retry = super::AdmissionRetryBudget::for_root(&destination, self.root);
         let current = retry
@@ -812,60 +881,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
             })
             .await;
-        let (current, _) = match current {
-            Ok(current) => current,
-            Err(Unavailable)
-                if crate::durability::holder_deadline()
-                    .is_some_and(|deadline| tokio::time::Instant::now() >= deadline) =>
-            {
-                // The authenticated native COMMIT replaced the transport, even
-                // though its observation was unavailable before publication.
-                let runtime_scope = if let Some(key) = &recovered.ack.house {
-                    HouseId::new(self.world_id, key)
-                        .ok_or(Rejected)?
-                        .runtime_scope()
-                        .map_err(|_| Rejected)?
-                } else {
-                    RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
-                };
-                let fence = CurrentCharacterItemFence {
-                    character_id: crate::domain::CharacterId::from_bytes(
-                        *recovered.current.character_id.as_bytes(),
-                    )
-                    .map_err(|_| Unavailable)?,
-                    game_session_id: destination,
-                    connection_generation: crate::foundation::ConnectionGeneration::new(
-                        recovered.ack.connection_generation,
-                    )
-                    .map_err(|_| Unavailable)?,
-                    character_lease_generation: recovered.ack.lease_generation,
-                    runtime_scope,
-                    scope_ownership_generation: ScopeOwnershipGeneration::new(
-                        recovered.ack.scope_generation,
-                    )
-                    .map_err(|_| Unavailable)?,
-                };
-                return Ok(Some(AdmittedSession {
-                    game_session_id: destination,
-                    world_id: self.world_id,
-                    channel_id: self.channel_id,
-                    runtime_actor: retained_actor,
-                    first_entry: FirstEntryOutcome::RefusedUnavailable,
-                    controller: Some(ControllerBinding {
-                        transport: attempt.transport,
-                        account_id: recovered.account,
-                    }),
-                    continuity: SessionContinuity {
-                        connection_generation: recovered.ack.connection_generation,
-                        selected_capabilities: selected,
-                        house_input_pending: Some(true),
-                        ..SessionContinuity::FRESH
-                    },
-                    item_fence: Some(fence),
-                }));
-            }
-            Err(error) => return Err(error),
-        };
+        let (current, _) = current?;
         let _lane = self.spell_lane_permit().await.ok_or(Unavailable)?;
         let mut runtime = self.runtime.lock().await;
         if let Some(previous) = retained_actor {
@@ -883,7 +899,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let fence = super::item_fence_of(current).ok_or(Unavailable)?;
-        if current.current_transport() != Some(attempt.transport)
+        if current.session_state() != crate::foundation::GameSessionState::Active
+            || current.current_transport() != Some(controller.transport)
+            || Some(fence) != pending.item_fence
             || current.current_connection_generation().get() != recovered.ack.connection_generation
         {
             return Err(Rejected);
@@ -1049,13 +1067,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .commit_house_transfer_views(&runtime, &mut attack, views)
                 .ok_or(Unavailable)?;
         }
-        if retained_actor != Some(actor) {
-            spells.replace_cooldown_transport(
-                actor,
-                destination,
-                recovered.ack.connection_generation,
-            );
-        }
+        spells.replace_cooldown_transport(actor, destination, recovered.ack.connection_generation);
         drop(attack);
         drop(spells);
         drop(runtime);
@@ -1070,23 +1082,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         let account = recovered.account;
         let mut admitted = AdmittedSession {
-            game_session_id: destination,
-            world_id: self.world_id,
-            channel_id: self.channel_id,
             runtime_actor: Some(actor),
             first_entry: FirstEntryOutcome::Reconciled,
-            controller: Some(ControllerBinding {
-                transport: attempt.transport,
-                account_id: account,
-            }),
-            continuity: SessionContinuity {
-                connection_generation: recovered.ack.connection_generation,
-                selected_capabilities: selected,
-                house_input_pending: Some(true),
-                ..SessionContinuity::FRESH
-            },
-            item_fence: Some(fence),
+            ..pending
         };
+        super::connection::join_recovery::retain_committed_session(admitted);
         if let Some(idle) = retained_idle {
             admitted.continuity.gameplay_idle = idle;
         }
@@ -1155,7 +1155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states.command_ingress.admit(destination);
         self.states.gameplay_idle_presence.observe(admitted);
         self.states.gameplay_idle_presence.forget(recovered.source);
-        Ok(Some(admitted))
+        Ok(admitted)
     }
 }
 

@@ -1535,6 +1535,19 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// Optional enrichment issues one ready attempt and never queues behind a
+    /// required join stage.
+    fn for_optional_read(root: &'r DurabilityRoot) -> Self {
+        Self {
+            deadline: tokio::time::Instant::now(),
+            _foreground: None,
+            backoff: RECONCILE_BACKOFF,
+            stale_rounds: FRESH_ADMISSION_ROUNDS,
+            root: Some(root),
+            waiter: std::sync::OnceLock::new(),
+        }
+    }
+
     /// [`Self::new`] whose retries wait for `root`'s holder instead of sleeping blind
     /// (NODEBOOT-1).
     fn for_root(game_session_id: &GameSessionId, root: &'r DurabilityRoot) -> Self {
