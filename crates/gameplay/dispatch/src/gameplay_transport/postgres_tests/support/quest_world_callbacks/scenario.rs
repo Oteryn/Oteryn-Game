@@ -2402,6 +2402,10 @@ fn scenario_case(
                 &callback,
             ))
             .await?;
+        } else if name == "spike/nest-32162-32507-11" {
+            Box::pin(super::super::qengine_kill_stories_fixtures::recover_nest(
+                &mut owner, &mut admitted, &h,
+            )).await?;
         } else if qready_craft {
             Box::pin(super::super::qready1_crafting_fixtures::exercise(
                 &owner,

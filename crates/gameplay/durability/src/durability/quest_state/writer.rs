@@ -1870,10 +1870,25 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    // Keep the real personal before/after values for the collection receipt.
+                    // The atomic stock reservation below checks the interval under its channel key.
+                    let shared_chest = callback.as_ref().is_some_and(|world|
+                        world.key == "oteryn:quest-callback/captain-iglues-left-chest");
+                    let mut collection;
+                    let evaluation = if shared_chest {
+                        collection = transition.clone();
+                        let [stamp] = collection.effects.as_mut_slice() else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        stamp.from = oteryn_gameplay_quests::quest::QuestComparison::Any;
+                        &collection
+                    } else {
+                        transition
+                    };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(
-                                || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                                || catalogue.evaluate_with_roll(evaluation, &stored, now, roll),
                                 |plan| Ok(plan.clone())),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
@@ -2047,7 +2062,7 @@ impl DurabilityRoot {
                         // occurrence. Historical receipts returned before this check.
                         let revision = format!("sha256:{}", admission.native.source_digest().iter()
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
-                        let claim = if world.has_fenced_regrowth_reward() {
+                        let claim = if shared_chest || world.has_fenced_regrowth_reward() {
                             super::super::reward_claim_mint::quest::QuestMintClaim::SourceUse
                         } else if let Some(track) = world.effects.item_reward_cycle.as_deref() {
                             let initial = catalogue.track(track).ok_or(DurabilityError::InvalidStoredState)?.initial;

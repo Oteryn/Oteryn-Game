@@ -25,8 +25,8 @@ tokio::task_local! {
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn execute_source_boss_lever(
         &self,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        mut runtime_guard: tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,
+        mut states_guard: tokio::sync::MutexGuard<'_, ChannelSpellStates>,
         actor: ExactActorRef,
         session: GameSessionId,
         source_use: SourceBossUse<'_>,
@@ -43,6 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
         };
+        let (runtime, states) = (&mut *runtime_guard, &mut *states_guard);
         let ready = self.execute_quest_encounter(
             runtime, states, actor, session, map, callback, key, revision, after, true, cause,
             None, None,
@@ -56,6 +57,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
+        drop(states_guard);
+        drop(runtime_guard);
+        let mut observed = Vec::new();
         let mut party = Vec::new();
         for &(member, at, member_session) in &census {
             let Some(member_session) = member_session else {
@@ -71,7 +75,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(Some(fence)) = self.current_quest_fence(member_session).await else {
                 return UseDisposition::Rejected;
             };
-            if !runtime
+            observed.push((member, member_session, fence));
+        }
+        let (mut runtime_guard, mut states_guard) = self.callback_guards().await;
+        let (runtime, states) = (&mut *runtime_guard, &mut *states_guard);
+        if runtime.positioned_melee_census().ok().as_ref() != Some(&census) {
+            return UseDisposition::StaleState;
+        }
+        for &(member, member_session, fence) in &observed {
+            if !states.current_cooldown_transport(
+                member,
+                member_session,
+                fence.connection_generation.get(),
+            ) || !runtime
                 .bound_attacker_lease(member, member_session)
                 .is_ok_and(|lease| {
                     lease.character_id().as_bytes() == fence.character_id.as_bytes()
@@ -107,6 +123,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(staged) => staged,
             Err(disposition) => return disposition,
         };
+        drop(states_guard);
+        drop(runtime_guard);
         #[cfg(test)]
         if let Ok(barrier) = PRE_SOURCE_BOSS_CHARGE.try_with(std::sync::Arc::clone) {
             barrier.0.notify_one();
@@ -153,8 +171,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return UseDisposition::Rejected;
                 }
-                self.publish_source_boss(staged, states, map, lever_projection);
-                UseDisposition::Committed
+                let (mut runtime, mut states) = self.callback_guards().await;
+                if observed.iter().any(|(member, session, fence)| {
+                    !states.current_cooldown_transport(
+                        *member,
+                        *session,
+                        fence.connection_generation.get(),
+                    )
+                }) {
+                    return UseDisposition::StaleState;
+                }
+                self.publish_source_boss(staged, &mut runtime, &mut states, map, lever_projection)
             }
             Ok(false) => UseDisposition::Rejected,
             Err(error) => {

@@ -111,7 +111,7 @@ pub(super) async fn exercise(
     assert_eq!(before.tracks().get(TRACK), Some(&1), "durable control state");
     let receipts_before = receipt_count(h, fence).await?;
 
-    let reply = wire(
+    let command = wire(
         owner,
         admitted,
         1,
@@ -123,8 +123,11 @@ pub(super) async fn exercise(
                 StepDirection::East
             },
         ),
-    )
-    .await?;
+    );
+    let reply = if oteryn_gameplay_quests::quest::carried_step::RECIPES.iter()
+        .any(|recipe| recipe.unique == callback.selector.unique.unwrap_or_default()) {
+        super::while_blocked(owner, h, "LOCK game_carried_step_receipts IN SHARE MODE", command).await?
+    } else { command.await? };
     assert_eq!(
         decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved

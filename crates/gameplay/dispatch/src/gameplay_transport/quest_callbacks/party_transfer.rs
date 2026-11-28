@@ -109,14 +109,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(Plan { proofs, members })
     }
 
-    pub(super) async fn party_context<P>(
+    pub(super) fn party_context<P>(
         &self,
         runtime: &ChannelRuntimeV1,
         plan: &Plan<P>,
+        fences: &[CurrentCharacterGameplayFence],
+        states: &ChannelSpellStates,
     ) -> Option<Vec<QuestWorldPartyMember>> {
         let mut result = Vec::new();
-        for member in &plan.members {
-            let fence = self.current_quest_fence(member.session).await.ok()??;
+        for (member, fence) in plan.members.iter().zip(fences) {
+            if runtime.read_actor_position(member.actor) != Ok(member.expected)
+                || !states.current_cooldown_transport(
+                    member.actor,
+                    member.session,
+                    fence.connection_generation.get(),
+                )
+                || fence.runtime_scope != runtime.binding().runtime_scope()
+                || fence.scope_ownership_generation != runtime.binding().scope_generation()
+            {
+                return None;
+            }
             let lease = runtime
                 .bound_attacker_lease(member.actor, member.session)
                 .ok()?;

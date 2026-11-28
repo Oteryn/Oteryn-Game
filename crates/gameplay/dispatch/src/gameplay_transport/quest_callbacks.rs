@@ -1267,6 +1267,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         pending.selected_tool.as_ref(),
                         None,
                         None,
+                        pending.ingress_settled,
+                        None,
                     ))
                     .await
                 }
@@ -1786,6 +1788,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 selected_tool.as_ref(),
                 scene_items.as_ref().map(|_| &mut scene_publication),
                 Some(&publication),
+                false,
+                None,
             ))
             .await;
             drop(slot);
@@ -2058,6 +2062,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let mut final_position = None;
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
@@ -2078,51 +2083,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         None,
                         None,
                         None,
+                        false,
+                        Some(&mut final_position),
                     ))
                     .await
                 }
                 Err(disposition) => disposition,
             };
-            let unresolved =
-                self.states
-                    .quest_callbacks
-                    .records
-                    .lock()
-                    .map_or(true, |mut records| {
-                        if let Some(pending) = records.get_mut(&session) {
-                            pending.origin = Some(origin);
-                            true
-                        } else {
-                            false
-                        }
-                    });
-            let (mut runtime, mut states) = self.callback_guards().await;
-            if result != UseDisposition::Committed
-                && !unresolved
-                && runtime.read_actor_position(actor) == Ok(entered)
-            {
-                self.refuse_quest_step(
-                    optional_pvp,
-                    &mut runtime,
-                    &mut states,
-                    actor,
-                    session,
-                    map,
-                    callback,
-                    entered,
-                    origin,
-                );
-            }
-            runtime.read_actor_position(actor).unwrap_or(entered)
+            (result, optional_pvp, final_position)
         };
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
-            Ok(snapshot) => snapshot,
+            Ok((UseDisposition::Committed, _, Some(position))) => position,
+            Ok((result, optional_pvp, _)) => {
+                let unresolved =
+                    self.states
+                        .quest_callbacks
+                        .records
+                        .lock()
+                        .map_or(true, |mut records| {
+                            if let Some(pending) = records.get_mut(&session) {
+                                pending.origin = Some(origin);
+                                true
+                            } else {
+                                false
+                            }
+                        });
+                let (mut runtime, mut states) = self.callback_guards().await;
+                if result != UseDisposition::Committed
+                    && !unresolved
+                    && runtime.read_actor_position(actor) == Ok(entered)
+                {
+                    self.refuse_quest_step(
+                        optional_pvp,
+                        &mut runtime,
+                        &mut states,
+                        actor,
+                        session,
+                        map,
+                        callback,
+                        entered,
+                        origin,
+                    );
+                }
+                runtime.read_actor_position(actor).unwrap_or(entered)
+            }
             Err(_) if callback.is_read_only() => {
                 // This path cannot have a durable commit to reconcile. A cancelled
                 // read returns to the step origin rather than reserving a write.
                 let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-                let mut runtime = self.runtime.lock().await;
-                let mut states = self.states.spell_states.lock().await;
+                let (mut runtime, mut states) = self.callback_guards().await;
                 if runtime.read_actor_position(actor) == Ok(entered) {
                     self.refuse_quest_step(
                         optional_pvp,
