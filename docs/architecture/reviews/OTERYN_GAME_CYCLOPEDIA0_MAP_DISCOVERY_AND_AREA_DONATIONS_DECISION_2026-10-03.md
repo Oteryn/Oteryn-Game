@@ -290,11 +290,11 @@ two title thresholds are derived from the subarea rows and content. None of them
 - **Discoverer outfit.** Charos (NPC-0 dialog) checks the count of fully discovered areas: 10 for
   the outfit, 15 for the first addon, 20 for the second. It grants through the account outfit path
   (D47), and the dialog content ships with the NPC lane.
-- **Raid warning.** Characters with the raid's area at 100% can see eligible committed raid
-  plans on the Cyclopedia Map within one hour of the first wave. During the last 15 minutes the
-  map also marks the affected subarea if it reaches ground floor. Capability 626 negotiates the
-  read-only warning overlay. The existing BOSS-RAID-0 text announcements continue to use their
-  committed steps.
+- **Raid warning.** Capability 626 exposes a read-only warning query for characters with the
+  raid's area at 100%. The server returns the area if the first wave of a committed raid is within
+  the next hour, and returns the affected subarea during the last 15 minutes if it reaches ground
+  floor. The native Cyclopedia Map displays these warnings. The existing BOSS-RAID-0
+  text announcements continue to use their committed steps.
 - **Creature list.** The client gets the subarea creature list from content (spawn points by
   subarea), plus the character's Bestiary state for silhouettes.
 - **Speed bonus.** This is a movement speed contribution in fully discovered areas that stacks

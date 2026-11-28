@@ -1,5 +1,5 @@
-use tokio::io::AsyncWriteExt;
 use super::*;
+use tokio::io::AsyncWriteExt;
 
 use crate::foundation::{MessageType, decode_wire_envelope};
 
@@ -220,31 +220,31 @@ fn build_world(
     if let Some(position) = raid_position {
         let x = u16::try_from(position.x)?;
         let y = u16::try_from(position.y)?;
-        let floor = i8::try_from(-position.floor)?;
+        // The admitted mask is on the surface even though Ferumbras spawns above it.
+        let floor = -7;
         let table = &mut parsed.manifest.subareas;
-        let tile = parsed.sectors[0].tiles.first().ok_or("fixture tile")?.clone();
-        for floor in std::collections::BTreeSet::from([floor, -7]) {
-            table.runs.push(oteryn_world_bundle::subarea::Run {
-                floor,
-                y,
-                begin: x,
-                end: x + 1,
-                subarea: 3,
-            });
-            table.masks[1].admitted_tiles += 1;
-            parsed.sectors.push(Sector {
-                floor,
-                sx: x / 32,
-                sy: y / 32,
-                tiles: vec![Tile { x, y, ..tile.clone() }],
-            });
-            parsed.manifest.world.floors.push(floor);
-        }
+        let tile = parsed.sectors[0]
+            .tiles
+            .first()
+            .ok_or("fixture tile")?
+            .clone();
+        table.runs.push(oteryn_world_bundle::subarea::Run {
+            floor,
+            y,
+            begin: x,
+            end: x + 1,
+            subarea: 3,
+        });
+        table.masks[1].admitted_tiles += 1;
+        parsed.sectors.push(Sector {
+            floor,
+            sx: x / 32,
+            sy: y / 32,
+            tiles: vec![Tile { x, y, ..tile }],
+        });
         table.runs.sort_by_key(|run| (run.floor, run.y, run.begin));
         parsed.manifest.world.max_x = parsed.manifest.world.max_x.max(x + 1);
         parsed.manifest.world.max_y = parsed.manifest.world.max_y.max(y + 1);
-        parsed.manifest.world.floors.sort_unstable();
-        parsed.manifest.world.floors.dedup();
         parsed.sectors.sort_by_key(bundle::order);
     }
     let bytes =

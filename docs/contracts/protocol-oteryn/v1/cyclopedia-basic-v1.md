@@ -184,15 +184,18 @@ keep their wire layouts. The read-only reply contains a little-endian
 `count:u16` followed by up to 1024 pairs `area:u32, subarea:u32`. Pairs are
 unique and sorted in ascending order. An area ID is nonzero. A zero subarea
 marks the area itself. A nonzero subarea identifies a child of that area.
-A zero count clears the warning overlay. The consumer is the Cyclopedia Map
-command-result reducer and map renderer. It refreshes while the map is open
-and clears the overlay on activity handoff.
+The native client negotiates the capability and renders warnings on the
+Cyclopedia Map. The consumer refreshes while the map is open and clears its
+overlay on a zero count or activity handoff. A failed advisory read rejects
+only the warning query.
 
-The warning is visible to a character only after completing all subareas of
-the affected area. The current World and Channel's committed raid plan supplies
-the first wave time and the pinned map supplies area membership. The area is
-marked when the first wave is within the next hour. During the last 15 minutes,
-the affected subarea is also marked if any part of it reaches ground floor.
+The server returns warnings only after the character completes all subareas
+of the affected area. The current World and Channel's committed raid plan supplies
+the first wave time and the pinned map supplies area membership. For a
+first-wave placement with no mask on its spawn floors, the projection uses
+overlapping ground-floor masks. The server includes the area when the first
+wave is within the next hour. During the last 15 minutes, it also includes
+the affected subarea if any part of it reaches ground floor.
 A firing leaves the projection at its first wave or on cancellation. Firings
 without a committed pre-wave interval carry no advance warning. This observation
 shares the current Character, session, node, bundle and scope fences and creates
