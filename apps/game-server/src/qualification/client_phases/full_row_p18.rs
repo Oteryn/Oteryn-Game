@@ -145,9 +145,18 @@ async fn observe_inventory(
 ) -> TestResult<bool> {
     // The receipt precedes the inventory projection, which may complete on a
     // subsequent server refresh. Only read from the existing session here.
-    let slices = if expect_change { 100 } else { 1 };
-    for _ in 0..slices {
-        if poll(Duration::from_millis(50)).await? {
+    let slice = Duration::from_millis(50);
+    if !expect_change {
+        return poll(slice).await;
+    }
+    // Use elapsed time so processing frames cannot renew the observation budget.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            break;
+        }
+        if poll(slice.min(remaining)).await? {
             return Ok(true);
         }
     }
@@ -191,11 +200,20 @@ async fn command(
     let expect_change = operation.changes_inventory()
         && reply.status == CommandStatus::Accepted
         && body["applied"] == true;
+    let observation_started = tokio::time::Instant::now();
     let changed = observe_inventory(expect_change, async |duration| {
         client.service_liveness(duration).await?;
         Ok(client.inventory() != Some(&before))
     })
     .await?;
+    if expect_change {
+        evidence(&format!(
+            "P18_INVENTORY_PUBLICATION operation={operation:?} command_id={command_id} reply_sequence={} last_frame={} elapsed_ms={} changed={changed}",
+            reply.server_sequence,
+            client.last_server_sequence(),
+            observation_started.elapsed().as_millis()
+        ));
+    }
     Ok(Observation {
         operation,
         status: reply.status,
@@ -837,8 +855,7 @@ async fn raise_cap_for_funding(
         {
             return Err(format!(
                 "live Forge cap upgrade {limit} → {} failed: {}",
-                final_limit,
-                result.body
+                final_limit, result.body
             )
             .into());
         }
@@ -1493,9 +1510,17 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn applied_forge_without_inventory_publication_stays_unchanged() -> TestResult {
-        assert!(!observe_inventory(true, async |_| Ok(false)).await?);
+        let started = tokio::time::Instant::now();
+        assert!(
+            !observe_inventory(true, async |_| {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                Ok(false)
+            })
+            .await?
+        );
+        assert_eq!(started.elapsed(), Duration::from_secs(5));
         assert!(observe_inventory(false, async |_| Ok(true)).await?);
         Ok(())
     }
