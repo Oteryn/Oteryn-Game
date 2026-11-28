@@ -1755,11 +1755,39 @@ fn check_service_uid(invoking: u32, service_uid: u32, qualification_uid: Option<
     Ok(())
 }
 
+/// Export the owner-importable catalogue without using a database credential.
+fn world_reset_house_catalogue(mut arguments: Arguments, uid: u32) -> Outcome {
+    use oteryn_game_server::durability::world_reset::BundleHouseCatalogue;
+    let bundle = PathBuf::from(arguments.take("bundle")?);
+    let digest = arguments.take("digest")?;
+    arguments.finish()?;
+    let digest =
+        hex_bytes::<32>(&digest).map_err(|_| Failure::Input("invalid bundle digest".into()))?;
+    let bytes = read_file(
+        "--bundle",
+        &bundle,
+        FileClass::Trusted,
+        uid,
+        oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
+    )?;
+    let catalogue = BundleHouseCatalogue::decode(&bytes, digest)
+        .map_err(|error| Failure::Input(error.to_string()))?;
+    let json = serde_json::json!({"bundle_digest": hex(&digest), "house_tiles": catalogue.tiles()});
+    serde_json::to_writer(std::io::stdout().lock(), &json)
+        .map_err(|error| Failure::Unavailable(error.to_string()))?;
+    println!();
+    Ok(())
+}
+
 async fn run(raw: Vec<String>) -> Outcome {
     let mut arguments = Arguments::parse(raw)?;
-    let config_path = PathBuf::from(arguments.take("config")?);
     let invoking = secure_file::effective_uid();
     let qualification_uid = oteryn_game_server::node::qualification_operator_uid();
+    if arguments.words == ["world-reset", "house-catalogue"] {
+        check_operator_uid(invoking, qualification_uid)?;
+        return world_reset_house_catalogue(arguments, invoking);
+    }
+    let config_path = PathBuf::from(arguments.take("config")?);
     check_operator_uid(invoking, qualification_uid)?;
     let document = read_file(
         "--config",

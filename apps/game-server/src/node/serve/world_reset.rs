@@ -1,5 +1,6 @@
 //! Running-node planned reset composition. A failed probe cannot authorize a drain.
 use super::*;
+use crate::durability::world_reset::BundleHouseCatalogue;
 use crate::gameplay_transport::gameplay_drain::GameplayDrain;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -70,41 +71,62 @@ pub(super) fn classify_exit(
     Ok(())
 }
 
-pub(super) async fn recover_retiring(
+pub(crate) async fn recover_retiring(
     root: &DurabilityRoot,
-    material: &Material,
+    config: &NodeConfig,
+    world: WorldId,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
+    bundle: Option<&crate::map::boot::CheckedBundle>,
 ) -> Result<u64, BootError> {
     let retiring = with_retries(
         root,
         "World reset record",
-        material.config.boot_pass_deadline(),
+        config.boot_pass_deadline(),
         boot_step_retryable,
         root_busy,
-        || root.retiring_world_reset(material.world),
+        || root.retiring_world_reset(world),
     )
     .await
     .map_err(|_| BootError::Readiness("World reset record"))?;
     if let Some(reset) = retiring {
-        // A full bundle still has Unknown House metadata (D1246). Never use
-        // the entry-room proof to authorize retirement of a bundle World.
-        if material.config.world_bundle.is_some() {
-            return Err(BootError::Readiness("World reset House qualification"));
-        }
+        let bundle_houses = match (config.world_bundle.is_some(), bundle) {
+            (true, Some(checked)) => {
+                let (bytes, digest) = checked.encoded_bundle();
+                Some(
+                    BundleHouseCatalogue::decode(bytes, digest)
+                        .map_err(|_| BootError::Readiness("World reset House qualification"))?,
+                )
+            }
+            (false, None) => None,
+            _ => return Err(BootError::Readiness("World reset House qualification")),
+        };
         let source_manifest = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST");
         let target_manifest = std::env::var_os("OTERYN_WORLD_RESET_TARGET_MANIFEST")
             .or_else(|| source_manifest.clone());
-        let source = qualify_room(material.world, source_manifest.as_deref())?;
-        let target = qualify_room(material.world, target_manifest.as_deref())?;
+        let source = qualify_room(world, source_manifest.as_deref())?;
+        let target = qualify_room(world, target_manifest.as_deref())?;
         let started = std::time::Instant::now();
-        let wait_until = tokio::time::Instant::now()
-            + Duration::from_millis(material.config.scope.assignment_wait_ms);
+        let wait_until =
+            tokio::time::Instant::now() + Duration::from_millis(config.scope.assignment_wait_ms);
         loop {
-            match root
-                .finish_world_reset(authority, node, &reset, &source, &target)
-                .await
-            {
+            let finished = match &bundle_houses {
+                Some(catalogue) => {
+                    root.finish_bundle_world_reset(
+                        authority,
+                        node,
+                        &reset,
+                        (&source, &target),
+                        catalogue,
+                    )
+                    .await
+                }
+                None => {
+                    root.finish_world_reset(authority, node, &reset, &source, &target)
+                        .await
+                }
+            };
+            match finished {
                 Ok(Some(epoch)) => {
                     let elapsed_ms = started.elapsed().as_millis();
                     eprintln!(
@@ -128,7 +150,7 @@ pub(super) async fn recover_retiring(
         }
     }
     Ok(root
-        .active_world_event_epoch(material.world)
+        .active_world_event_epoch(world)
         .await
         .map_err(|_| BootError::Readiness("World reset active epoch"))?
         .unwrap_or(0))

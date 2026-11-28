@@ -235,6 +235,11 @@ pub struct CheckedBundle {
 }
 
 impl CheckedBundle {
+    /// The checked, unprojected artifact used by the World reset qualifier.
+    pub fn encoded_bundle(&self) -> (&[u8], [u8; 32]) {
+        (&self.data, self.pins.digest)
+    }
+
     /// Regional/fixture bundles omit changes outside their admitted geography.
     #[cfg(test)]
     fn compose_admitted_layers(self, keys: &[&str]) -> Result<Self, BootRefusal> {

@@ -40,6 +40,8 @@ impl PlannedWorldReset {
 
 mod activation;
 mod active_epoch;
+mod bundle_houses;
+pub use bundle_houses::BundleHouseCatalogue;
 pub(super) mod census;
 mod content_preflight;
 mod ground_retirement;
