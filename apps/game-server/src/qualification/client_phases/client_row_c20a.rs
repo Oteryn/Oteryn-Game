@@ -143,6 +143,20 @@ async fn capture_journey(
         )
         .into());
     }
+    let combat_deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    verdict::Harness::global().bounded_wait(combat_deadline, "c20a-combat-lock");
+    while client
+        .session_mut()
+        .combat_state()
+        .ok_or("C20a combat state missing before logout")?
+        .in_fight
+    {
+        if tokio::time::Instant::now() >= combat_deadline {
+            return Err("C20a combat lock did not clear at the respawn tile".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xcc).await?;
