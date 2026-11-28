@@ -2,7 +2,7 @@
 use super::{adventurer, promotion};
 use crate::domain::death::{
     AMULET_OF_LOSS_BLESSINGS_EXCLUSIVE, CONTAINER_LOSS_PER_MILLE, EQUIPMENT_LOSS_PER_MILLE,
-    ITEM_LOSS_EXEMPT_MAX_LEVEL, death_experience_loss,
+    ITEM_LOSS_EXEMPT_MAX_LEVEL, death_experience_loss, death_experience_loss_for_experience,
 };
 use crate::durability::{
     DurabilityError, DurabilityRoot,
@@ -18,6 +18,7 @@ use oteryn_gameplay_combat_rules::pvp::death::{
     BlessingDisposition, TWIST_OF_FATE_KEY, blessing_disposition,
 };
 use oteryn_protocol_oteryn::cyclopedia_character::protection::{Consumption, Forecast, Scenario};
+use oteryn_simulation_determinism::ExactI64;
 use sqlx::Row;
 #[derive(Clone, Copy)]
 struct Facts {
@@ -34,7 +35,14 @@ struct Facts {
     pvp_available: bool,
 }
 fn project(f: Facts) -> Result<Forecast, DurabilityError> {
-    let raw = death_experience_loss(f.level, f.regular, f.promoted)
+    let experience = i64::try_from(f.experience).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let raw = death_experience_loss_for_experience(
+        f.level,
+        ExactI64::new(experience),
+        f.regular,
+        f.promoted,
+        0,
+    )
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let loss = raw.min(u128::from(f.experience)) as u64;
     let scenario = |pvp: bool| {

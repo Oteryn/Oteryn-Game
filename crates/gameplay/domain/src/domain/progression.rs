@@ -327,7 +327,7 @@ mod death_experience_tests {
     use super::*;
 
     #[test]
-    fn progression_death_uses_next_level_span_at_every_level()
+    fn progression_death_applies_current_xp_loss_below_level_twenty_four()
     -> Result<(), ProgressionCalculationError> {
         let context = ProgressionRevisionContext {
             profile: (),
@@ -358,10 +358,15 @@ mod death_experience_tests {
             death_loss_denominator: 1,
             death_loss_rounding: RoundingMode::Floor,
         };
-        for (level, experience, losses) in [
-            (1, 0, [100, 70, 44, 14]),
-            (10, 9_300, [3_700, 2_590, 1_628, 518]),
-            (23, 156_200, [23_200, 16_240, 10_208, 3_248]),
+        let low_levels = [
+            (1, 0, [0, 0, 0, 0]),
+            (1, 99, [10, 7, 5, 2]),
+            (10, 9_300, [930, 652, 465, 186]),
+            (10, 9_399, [940, 658, 470, 188]),
+            (23, 156_200, [15_620, 10_935, 7_810, 3_124]),
+            (23, 156_299, [15_630, 10_941, 7_815, 3_126]),
+        ];
+        let span_levels = [
             (24, 179_400, [25_400, 17_780, 11_176, 3_556]),
             (50, 1_847_300, [117_700, 82_390, 51_788, 16_478]),
             (
@@ -374,37 +379,41 @@ mod death_experience_tests {
                 132_933_899_800,
                 [199_700_200, 139_790_140, 87_868_088, 27_958_028],
             ),
-        ] {
+        ]
+        .into_iter()
+        .flat_map(|(level, experience, losses)| {
+            [
+                (level, experience, losses),
+                (level, experience + 99, losses),
+            ]
+        });
+        for (level, experience, losses) in low_levels.into_iter().chain(span_levels) {
             for (blessings, promoted, loss) in [
                 (0, false, losses[0]),
                 (0, true, losses[1]),
                 (7, false, losses[2]),
                 (7, true, losses[3]),
             ] {
-                for experience in [experience, experience + 99] {
-                    let snapshot = CurrentProgressionSnapshot {
-                        level,
-                        total_experience: ExactI64::new(experience),
-                        skill_progression: (),
-                        magic_progression: (),
-                    };
-                    let operation = ProgressionOperation::ApplyDeathExperienceLoss {
-                        death_occurrence: (),
-                        death_policy_revision: (),
-                        declared_difference_revision: (),
-                        regular_blessings: blessings,
-                        promoted_with_current_premium: promoted,
-                    };
-                    let outcome =
-                        calculate_progression(&snapshot, &context, &(), &operation, &policy)?;
-                    let expected = loss.min(experience);
-                    assert_eq!(
-                        outcome.death_experience_lost.get(),
-                        expected,
-                        "level {level}, blessings {blessings}, promoted {promoted}"
-                    );
-                    assert_eq!(outcome.experience_after.get(), experience - expected);
-                }
+                let snapshot = CurrentProgressionSnapshot {
+                    level,
+                    total_experience: ExactI64::new(experience),
+                    skill_progression: (),
+                    magic_progression: (),
+                };
+                let operation = ProgressionOperation::ApplyDeathExperienceLoss {
+                    death_occurrence: (),
+                    death_policy_revision: (),
+                    declared_difference_revision: (),
+                    regular_blessings: blessings,
+                    promoted_with_current_premium: promoted,
+                };
+                let outcome = calculate_progression(&snapshot, &context, &(), &operation, &policy)?;
+                assert_eq!(
+                    outcome.death_experience_lost.get(),
+                    loss,
+                    "level {level}, XP {experience}, blessings {blessings}, promoted {promoted}"
+                );
+                assert_eq!(outcome.experience_after.get(), experience - loss);
             }
         }
         Ok(())

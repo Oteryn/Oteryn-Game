@@ -175,8 +175,8 @@ impl From<DecisionError> for PveDeathError {
     }
 }
 
-/// Owner decision 2026-10-29 (replaces D58/D59): one canonical L→L+1
-/// experience-table span, with additive blessing/promotion reductions and floor rounding.
+/// Level-span estimate with additive blessing/promotion reductions and floor rounding.
+/// For a character's actual loss, use [`death_experience_loss_for_experience`].
 pub fn death_experience_loss(
     level: u32,
     regular_blessings: u8,
@@ -185,10 +185,7 @@ pub fn death_experience_loss(
     death_experience_loss_with_bless(level, regular_blessings, promotion_benefit_current, 0)
 }
 
-/// Bless reduces the residual death experience loss by 6%, 9% or 12%.
-/// Zero explicitly retains the death calculation without a current Bless assignment.
-/// Apply the multiplier after blessings and promotion, with the existing D68 floor once,
-/// before capping the loss at the character's current experience.
+/// Level-span estimate including an optional 6%, 9% or 12% residual Bless reduction.
 pub fn death_experience_loss_with_bless(
     level: u32,
     regular_blessings: u8,
@@ -197,14 +194,15 @@ pub fn death_experience_loss_with_bless(
 ) -> Result<u128, PveDeathError> {
     experience_loss(
         level,
+        None,
         regular_blessings,
         promotion_benefit_current,
         bless_reduction_percent,
     )
 }
 
-/// The raw loss is independent of total experience and progress within the level.
-/// Validate experience here; callers cap the reduced loss at current experience.
+/// Below level 24 the raw loss uses current experience. From level 24 it uses the
+/// canonical next-level span. Callers cap the reduced loss at current experience.
 pub fn death_experience_loss_for_experience(
     level: u32,
     total_experience: ExactI64,
@@ -217,6 +215,7 @@ pub fn death_experience_loss_for_experience(
     }
     experience_loss(
         level,
+        Some(total_experience),
         regular_blessings,
         promotion_benefit_current,
         bless_reduction_percent,
@@ -225,6 +224,7 @@ pub fn death_experience_loss_for_experience(
 
 fn experience_loss(
     level: u32,
+    total_experience: Option<ExactI64>,
     regular_blessings: u8,
     promotion_benefit_current: bool,
     bless_reduction_percent: u8,
@@ -237,6 +237,20 @@ fn experience_loss(
     }
     if !matches!(bless_reduction_percent, 0 | 6 | 9 | 12) {
         return Err(PveDeathError::InvalidBlessReduction);
+    }
+    if let Some(experience) = total_experience.filter(|_| level < 24) {
+        // Crystal 201189f8 player.cpp:7293-7314, 4076-4086 and 4113-4119.
+        // Keep the double operations in source order: their result is ceiled once.
+        let mut reduction = f64::from(regular_blessings) * 8.0 / 100.0;
+        if reduction >= 0.4 {
+            reduction = 0.5;
+        }
+        if promotion_benefit_current {
+            reduction += 0.3;
+        }
+        let mut loss_percent = 10.0 - (10.0 * reduction);
+        loss_percent -= loss_percent * (f64::from(bless_reduction_percent) / 100.0);
+        return Ok((experience.get() as f64 * (loss_percent / 100.0)).ceil() as u128);
     }
     let percent_kept =
         100 - 8 * u128::from(regular_blessings) - if promotion_benefit_current { 30 } else { 0 };
@@ -397,16 +411,68 @@ mod experience_tests {
     use super::*;
 
     #[test]
-    fn pve_death_uses_next_level_span_at_every_level() -> Result<(), PveDeathError> {
+    fn pve_death_matches_crystal_level_ten_probe() -> Result<(), PveDeathError> {
+        let input = PveDeathInput::<u8> {
+            level: 10,
+            total_experience: ExactI64::new(9_300),
+            regular_blessings: 0,
+            promotion_benefit_current: false,
+            has_vocation: true,
+            equipment: &[],
+            necklace_is_amulet_of_loss: false,
+        };
+        let outcome = calculate_pve_death(
+            &input,
+            &GameplayDecisionRoot::from_bytes([7; 32]),
+            DecisionOccurrenceId::from_bytes([1; 16]),
+        )?;
+        assert_eq!(outcome.experience_lost.get(), 930);
+        assert_eq!(outcome.experience_after.get(), 8_370);
+        Ok(())
+    }
+
+    #[test]
+    fn low_level_death_loss_matches_crystal_reduction_order() -> Result<(), PveDeathError> {
+        for (level, experience, blessings, promoted, losses) in [
+            (1, 0, 0, false, [0, 0, 0, 0]),
+            (1, 99, 7, true, [2, 2, 2, 2]),
+            (10, 9_300, 0, false, [930, 875, 847, 819]),
+            // Crystal's double multiplication yields 651.0000000000001 before ceil.
+            (10, 9_300, 0, true, [652, 612, 593, 573]),
+            (10, 9_300, 4, false, [633, 595, 576, 557]),
+            (10, 9_300, 5, false, [465, 438, 424, 410]),
+            (10, 9_300, 5, true, [186, 175, 170, 164]),
+            (10, 9_300, 7, false, [465, 438, 424, 410]),
+            (10, 9_300, 7, true, [186, 175, 170, 164]),
+            (10, 9_399, 0, false, [940, 884, 856, 828]),
+            (23, 156_200, 0, false, [15_620, 14_683, 14_215, 13_746]),
+            (23, 179_399, 0, false, [17_940, 16_864, 16_326, 15_788]),
+        ] {
+            for (bless, expected) in [0, 6, 9, 12].into_iter().zip(losses) {
+                assert_eq!(
+                    death_experience_loss_for_experience(
+                        level,
+                        ExactI64::new(experience),
+                        blessings,
+                        promoted,
+                        bless,
+                    )?,
+                    expected,
+                    "level {level}, XP {experience}, blessings {blessings}, promoted {promoted}, Bless {bless}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn pve_death_uses_next_level_span_from_level_twenty_four() -> Result<(), PveDeathError> {
         let root = GameplayDecisionRoot::from_bytes([7; 32]);
         let occurrence = DecisionOccurrenceId::from_bytes([1; 16]);
-        // Exact owner examples and boundary levels, independent of progress within the level.
         for (level, experience, losses) in [
-            (1, 0, [100, 70, 44, 14]),
-            (10, 9_300, [3_700, 2_590, 1_628, 518]),
-            (23, 156_200, [23_200, 16_240, 10_208, 3_248]),
             (24, 179_400, [25_400, 17_780, 11_176, 3_556]),
             (50, 1_847_300, [117_700, 82_390, 51_788, 16_478]),
+            (100, 15_694_800, [485_200, 339_640, 213_488, 67_928]),
             (
                 400,
                 1_050_779_800,
@@ -455,6 +521,27 @@ mod experience_tests {
                     }
                 }
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn pve_death_loss_never_exceeds_experience_held() -> Result<(), PveDeathError> {
+        let root = GameplayDecisionRoot::from_bytes([7; 32]);
+        let occurrence = DecisionOccurrenceId::from_bytes([1; 16]);
+        for (level, experience, expected) in [(1, 0, 0), (10, 1, 1), (24, 40, 40)] {
+            let input = PveDeathInput::<u8> {
+                level,
+                total_experience: ExactI64::new(experience),
+                regular_blessings: 0,
+                promotion_benefit_current: false,
+                has_vocation: true,
+                equipment: &[],
+                necklace_is_amulet_of_loss: false,
+            };
+            let outcome = calculate_pve_death_with_bless(&input, 12, &root, occurrence)?;
+            assert_eq!(outcome.experience_lost.get(), expected);
+            assert_eq!(outcome.experience_after.get(), 0);
         }
         Ok(())
     }
