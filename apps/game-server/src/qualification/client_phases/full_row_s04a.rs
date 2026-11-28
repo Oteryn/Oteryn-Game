@@ -250,7 +250,12 @@ async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_S04A_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 0)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let mut watcher = connect_character(clients, 0xb0, 0).await?;
+    character_prep::grant_premium(&watcher).await?;
+    evidence("S04A_FIXTURE account=q_s04a input=premium");
     let mut target = connect_character(clients, 0xb1, 1).await?;
     for capability in [7, 43, 258] {
         if !watcher.selected_capabilities().contains(&capability) {

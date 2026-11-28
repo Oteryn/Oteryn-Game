@@ -47,7 +47,12 @@ async fn raw(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_S04A_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 0)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let mut watcher = connect_character(clients, 0x4b, 0).await?;
+    character_prep::grant_premium(&watcher).await?;
+    evidence("S04A_FIXTURE account=q_s04a input=premium");
     let mut target = connect_character(clients, 0x4c, 1).await?;
     let name = super::full_row_s04a::peer_name(&mut watcher, &mut target).await?;
     evidence("S04A_CLIENT_DIAG step=discover-target observed=served-player-name");
