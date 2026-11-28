@@ -1,6 +1,8 @@
 //! World raid scheduling from the verified generated catalogue. Channel effects
 //! are consumed by the existing dispatch/monster owner after durable admission.
+pub(super) mod bank_robbery;
 pub(super) mod world_changes;
+use super::serve::{PROCESS, emit};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::raid_schedule::{
@@ -9,6 +11,7 @@ use crate::durability::raid_schedule::{
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{ChannelId, ChannelRuntimeV1, ScopeOwnershipGeneration, WorldId};
+use oteryn_error_codes::{FieldValue, Level, Line};
 use oteryn_foundation::CancellationToken;
 use oteryn_gameplay_encounter_rules::raid::{
     CHECK_INTERVAL_MS, CatalogueRaid, CatalogueSchedule, LuaRaidPolicy, RaidCatalogue, RaidError,
@@ -23,6 +26,7 @@ pub(super) struct RaidScheduler<'a, 'f, 's> {
     pub node: &'a NodeIncarnationProof,
     pub runtime: &'a Mutex<ChannelRuntimeV1>,
     pub map: Option<&'a crate::map::boot::BundleMap>,
+    pub movement_cells: &'a crate::content::NativeEntryMovementCells,
     pub world: WorldId,
     pub channel: ChannelId,
     pub generation: u64,
@@ -172,9 +176,6 @@ pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &Cancellatio
     let Some(bundle_digest) = scheduler.bundle_digest else {
         return;
     };
-    if scheduler.reset_epoch == 0 {
-        return;
-    }
     let Ok(generation) = ScopeOwnershipGeneration::new(scheduler.generation) else {
         return;
     };
@@ -185,11 +186,29 @@ pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &Cancellatio
             return;
         }
     };
+    let robbery_sites = match oteryn_gameplay_world::bank_robbery::loaded(scheduler.movement_cells)
+    {
+        Ok(sites) => Some(sites),
+        Err(error) => {
+            emit(
+                PROCESS,
+                &Line::new(Level::Warn, "node", "bank_robbery_config")
+                    .field("state", FieldValue::Token("refused"))
+                    .field("error", FieldValue::Owned(error.to_string())),
+            );
+            None
+        }
+    };
     let mut next_check = 0_i64;
     loop {
         let now_ms = i64::try_from(oteryn_error_codes::unix_ms()).unwrap_or(i64::MAX);
-        world_changes::observe(&scheduler, generation).await;
-        if now_ms >= next_check {
+        if let Some(sites) = robbery_sites {
+            bank_robbery::observe(&scheduler, generation, sites).await;
+        }
+        if scheduler.reset_epoch != 0 {
+            world_changes::observe(&scheduler, generation).await;
+        }
+        if scheduler.reset_epoch != 0 && now_ms >= next_check {
             {
                 let runtime = scheduler.runtime.lock().await;
                 if runtime.binding().scope_generation() != generation
@@ -434,6 +453,7 @@ mod tests {
             node: &h.node,
             runtime: &runtime,
             map: None,
+            movement_cells: &old_cells,
             world,
             channel,
             generation: 1,

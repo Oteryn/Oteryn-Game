@@ -98,6 +98,8 @@ pub enum ItemAbility {
 pub struct ItemAbilityProfile {
     /// `charges.count` or `temporal.duration` is Known (EQUIP-0 §3.2).
     pub timed: bool,
+    /// A hosted wear budget or deadline permits ordinary resistance while equipped.
+    pub duration_protection: bool,
     /// An Equipment pattern has `primary_slot == Extra`.
     pub extra_slot: bool,
     pub abilities: Vec<ItemAbility>,
@@ -140,10 +142,25 @@ fn item_error(item_key: &str, reason: &'static str) -> ItemAbilityError {
 pub fn item_ability_profile(
     semantics: &ReferenceItemSemantics,
 ) -> Result<ItemAbilityProfile, &'static str> {
-    let timed = matches!(&semantics.charges, ReferenceItemField::Known(charges)
-            if matches!(charges.count, ReferenceItemField::Known(_)))
-        || matches!(&semantics.temporal, ReferenceItemField::Known(temporal)
-            if matches!(temporal.duration, ReferenceItemField::Known(_)));
+    use super::ReferenceTemporalMode::{AuthoritativeActiveTimeBudget, DurableAbsoluteDeadline};
+    let charged = matches!(&semantics.charges, ReferenceItemField::Known(charges)
+        if matches!(charges.count, ReferenceItemField::Known(_)));
+    let duration = match &semantics.temporal {
+        ReferenceItemField::Known(temporal)
+            if matches!(temporal.duration, ReferenceItemField::Known(_)) =>
+        {
+            Some(temporal)
+        }
+        _ => None,
+    };
+    let timed = charged || duration.is_some();
+    let duration_protection = !charged
+        && duration.is_some_and(|temporal| {
+            matches!(
+                temporal.consumption_mode,
+                ReferenceItemField::Known(AuthoritativeActiveTimeBudget | DurableAbsoluteDeadline)
+            )
+        });
     let extra_slot = matches!(&semantics.equipment, ReferenceItemField::Known(equipment)
     if matches!(&equipment.patterns, ReferenceItemField::Known(patterns)
         if patterns.iter().any(|pattern| {
@@ -169,6 +186,7 @@ pub fn item_ability_profile(
     abilities.sort();
     Ok(ItemAbilityProfile {
         timed,
+        duration_protection,
         extra_slot,
         abilities,
     })

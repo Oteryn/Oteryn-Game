@@ -176,7 +176,8 @@ impl LastPositionFlush {
             // participant from moving between two owner snapshots in this pass;
             // all checkpoints below remain the existing exact-scope writers.
             let transition = authority.activity_runtimes.transitions.lock().await;
-            let mut failed = authority.write_due_last_positions(true).await
+            let mut failed = authority.drain_paid_quest_callbacks().await
+                + authority.write_due_last_positions(true).await
                 + authority.flush_wheel_gifts(&mut wheel_gifts_settled).await
                 + authority.flush_monk_states(&mut monks_settled).await
                 + authority.flush_spell_training(&mut training_settled).await;
@@ -184,7 +185,8 @@ impl LastPositionFlush {
                 Ok(owners) => {
                     for owner in owners {
                         let view = authority.runtime_view(&owner);
-                        failed += view.write_due_last_positions(true).await
+                        failed += view.drain_paid_quest_callbacks().await
+                            + view.write_due_last_positions(true).await
                             + view.flush_monk_states(&mut monks_settled).await
                             + view.flush_spell_training(&mut training_settled).await;
                     }

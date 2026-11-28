@@ -15,6 +15,7 @@ pub use stored::{
 // Preserve the original account-read seam while its runtime consumer awaits CP integration.
 #[allow(unused_imports)]
 pub use stored::{AccountAppearanceUnlock, read_account_appearance_unlocks};
+use crate::durability::db::commit_semantic_read;
 use stored::{decode_selection_fields, valid_provenance};
 
 use crate::domain::appearance::AppearanceSelection;
@@ -291,7 +292,7 @@ impl DurabilityRoot {
                     let selected = read_selected_appearance(&mut tx, character)
                         .await
                         .map_err(read_storage_error)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(selected))
                 })
             })
@@ -316,7 +317,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_appearance_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(receipt))
                 })
             })

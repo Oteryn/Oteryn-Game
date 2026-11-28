@@ -98,8 +98,7 @@ impl crate::play::PlayLink {
         crate::play::mailbox::lock(&self.mailbox)
             .spell_bar
             .bar
-            .cooldowns
-            .as_ref()
+            .last_cooldown_observation()
             .and_then(|cooldowns| cooldowns.rtt_ms)
     }
 }
@@ -152,16 +151,15 @@ mod tests {
         assert!(prefs.indicator(None, None).contains("Latency: unavailable"));
         let (link, _, outbox) = crate::play::play_channel();
         assert_eq!(link.performance_latency(), None);
-        outbox.spell_bar_initialize(Some(
-            oteryn_protocol_oteryn::presentation::encode_actor_cooldowns(
-                &oteryn_session::ActorCooldowns {
-                    server_now_ms: 10,
-                    rtt_ms: Some(42),
-                    entries: vec![],
-                },
-            )
-            .map_err(|_| "cooldown encode")?,
-        ));
+        outbox.spell_bar_initialize(Some(oteryn_session::ActorCooldownUpdate {
+            value: oteryn_session::ActorCooldowns {
+                server_now_ms: 10,
+                rtt_ms: Some(42),
+                entries: vec![],
+            },
+            received_at: std::time::Instant::now(),
+            snapshot: true,
+        }));
         assert_eq!(link.performance_latency(), Some(42));
         let fixture = crate::play::screenshot::TestDir::new()?;
         let path = fixture.join("frame-preferences.json");

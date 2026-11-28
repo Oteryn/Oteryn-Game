@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "You found sniper gloves?! Incredible! I would love to grant you the sniper gloves accessory, but I can only do that for premium warriors. However, I would pay you 2000 gold pieces for them. How about it?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "premium": false
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "no"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Maybe another time."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "You found sniper gloves?! Incredible! I would love to grant you the sniper gloves accessory, but I can only do that for premium warriors. However, I would pay you 2000 gold pieces for them. How about it?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "premium": false
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "no"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Maybe another time."
+      ]
+    }
+  ]
+}

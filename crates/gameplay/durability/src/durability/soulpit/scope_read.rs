@@ -1,4 +1,5 @@
 //! Bounded current-Instance lookup; a handoff UUID is never a placement grant.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::foundation::GameSessionId;
 
@@ -59,7 +60,7 @@ impl DurabilityRoot {
                 }
                 Some(SoulpitScopeBinding { handoff_id, members })
             } else { None };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(result))
         })).await?
     }

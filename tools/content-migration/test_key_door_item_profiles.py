@@ -20,7 +20,11 @@ class KeyDoorProfileTests(unittest.TestCase):
                                   (2968, 'KEY', False), (5097, 'DOOR', True),
                                   (6248, 'DOOR', True), (5102, 'DOOR', True),
                                   (5103, 'DOOR', False), (6264, 'DOOR', True),
-                                  (6265, 'DOOR', False)]:
+                                  (6265, 'DOOR', False), (5106, 'DOOR', True),
+                                  (5107, 'DOOR', True), (5108, 'DOOR', False),
+                                  (6251, 'DOOR', True), (6252, 'DOOR', True),
+                                  (6253, 'DOOR', False), (9565, 'DOOR', True),
+                                  (9566, 'DOOR', False)]:
             with self.subTest(item=item):
                 row = profiles.get(f'oteryn:item.tibia.i{item}')
                 self.assertIsNotNone(row, f'Production native profile missing: {item}')

@@ -1,6 +1,9 @@
 //! Current owner observations. Visibility supplies the exact player identities to read.
 use super::*;
 use crate::domain::carrier_values::CarrierError;
+use crate::gameplay_transport::paced_movement::special_movement::{
+    SWIMMING_LOOK_TYPE, swimming_selection,
+};
 use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
 #[path = "observation/house.rs"]
 mod house;
@@ -469,18 +472,21 @@ fn temporary(
     Some(match value {
         None => None,
         Some(TemporaryDisplayedAppearance::Outfit(selection)) => {
-            let registry = generation.native_gameplay()?.spell_appearances()?;
-            let member = registry.for_selection(look_type?, selection)?;
-            if member.source_digest() != content.source_digest()
-                || selection
-                    .colours
-                    .iter()
-                    .any(|c| *c >= content.palette_size())
-            {
+            let look_type = look_type?;
+            if selection.colours.iter().any(|c| *c >= content.palette_size()) {
                 return None;
             }
+            // Committed movement owns this built-in outfit. Other temporary selections
+            // still require membership in the pinned spell appearance registry.
+            if look_type != SWIMMING_LOOK_TYPE || *selection != swimming_selection() {
+                let registry = generation.native_gameplay()?.spell_appearances()?;
+                let member = registry.for_selection(look_type, selection)?;
+                if member.source_digest() != content.source_digest() {
+                    return None;
+                }
+            }
             Some(wire::Look::Outfit {
-                look_type: member.look_type(),
+                look_type,
                 colours: selection.colours,
                 addons: selection.addons,
             })

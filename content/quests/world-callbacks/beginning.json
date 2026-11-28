@@ -1,0 +1,247 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/beginning-santiago-cellar",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32036,
+          "y": 32277,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7767,
+        "native": {
+          "position": {
+            "x": 32036,
+            "y": 32277,
+            "floor": -6
+          },
+          "ordinal": 0,
+          "appearance": 7767
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32036,
+        "y": 32277,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 5,
+          "maximum": 6,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "Speak to Santiago before going into the cellar.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:161-168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/beginning-santiago-coat",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32032,
+          "y": 32276,
+          "floor": -5
+        },
+        "unique": 50080,
+        "action": null,
+        "appearance": 7757,
+        "native": {
+          "position": {
+            "x": 32032,
+            "y": 32276,
+            "floor": -5
+          },
+          "ordinal": 1,
+          "appearance": 7757
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i2853",
+        "count": 1,
+        "contents": [
+          {
+            "item": "oteryn:item.tibia.i3562",
+            "count": 1
+          }
+        ]
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santiago.lua:75-81",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3540-3559",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:108-119",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system1.lua:167-172"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/beginning-zirella-rope",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32067,
+          "y": 32264,
+          "floor": -8
+        },
+        "unique": 50094,
+        "action": null,
+        "appearance": 7757,
+        "native": {
+          "position": {
+            "x": 32067,
+            "y": 32264,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 7757
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_rope",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i3003",
+        "count": 1,
+        "contents": []
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Beginning_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3540-3559",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:367-374"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_rope": -1
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/beginning-zirella-shovel",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32059,
+          "y": 32265,
+          "floor": -7
+        },
+        "unique": 50093,
+        "action": null,
+        "appearance": 7757,
+        "native": {
+          "position": {
+            "x": 32059,
+            "y": 32265,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 7757
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_shovel",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i3457",
+        "count": 1,
+        "contents": []
+      },
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Beginning_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3540-3559",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:290-297"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_shovel": -1
+      }
+    }
+  ]
+}

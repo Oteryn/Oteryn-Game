@@ -1,12 +1,238 @@
 //! RANGED-ATTACK-1: ranged facts and costs of the existing auto-attack owner.
+use super::drain::SelectedSwing;
 use super::*;
 use crate::content::{ProjectV2RangedElement as Element, ProjectV2RangedWeapon};
 use crate::content::{ReferenceItemField, ReferenceWeaponType};
 use crate::durability::character_equipment::EquipmentSnapshot;
-use crate::spell::formula::Formula;
+use crate::spell::formula::{Formula, FormulaInputs};
 use oteryn_gameplay_combat_rules::attack::ranged::{
     player_distance_formula, shot_hit_chance, shot_hits, wand_formula,
 };
+use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
+use oteryn_gameplay_progression::hit_training::HitBlock;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ScriptedArrow {
+    Poison,
+    Burst,
+    Diamond,
+}
+
+#[derive(Debug, Clone)]
+pub(super) enum ShotImpact {
+    Ordinary,
+    Refused,
+    Area(Vec<ExactActorRef>),
+}
+
+// Crystal weapons.cpp selects among the center and its eight neighbours.
+const MISS_OFFSETS: [(i32, i32); 9] = [
+    (-1, -1),
+    (0, -1),
+    (1, -1),
+    (-1, 0),
+    (0, 0),
+    (1, 0),
+    (-1, 1),
+    (0, 1),
+    (1, 1),
+];
+
+fn missile_can_land(tile: Option<(native_combat_cast::TileFlags, bool)>) -> bool {
+    tile.is_some_and(|(flags, immovable)| flags.present && !immovable)
+}
+
+impl ScriptedArrow {
+    fn radius(self) -> u32 {
+        match self {
+            Self::Poison => 0,
+            Self::Burst => 1,
+            Self::Diamond => 2,
+        }
+    }
+
+    fn affects(self, center: MovementLocalPosition, at: MovementLocalPosition) -> bool {
+        let (dx, dy) = (center.x.abs_diff(at.x), center.y.abs_diff(at.y));
+        at.floor == center.floor
+            && dx.max(dy) <= self.radius()
+            // Crystal diamond_arrow.lua:1–7 excludes the four outer corners.
+            && (self != Self::Diamond || dx + dy < 4)
+    }
+
+    // Crystal combat.cpp:229–237 and weapons.cpp:984–1018 implement the
+    // skill formula for Poison and Burst. Diamond supplies its own skill callback.
+    fn bounds(self, inputs: &FormulaInputs) -> (u32, u32) {
+        match self {
+            Self::Diamond => {
+                let level = f64::from(inputs.level) * 0.2;
+                let distance = 0.09
+                    * inputs.attack_factor
+                    * f64::from(inputs.attack_skill)
+                    * f64::from(inputs.attack_value);
+                (level as u32, (distance + level) as u32)
+            }
+            Self::Poison | Self::Burst => {
+                let distance = (0.09_f32 * inputs.attack_factor as f32)
+                    * inputs.attack_skill as f32
+                    * inputs.attack_value as f32;
+                (0, (distance + (inputs.level / 5) as f32).round() as u32)
+            }
+        }
+    }
+
+    pub(super) fn damage(
+        self,
+        inputs: &FormulaInputs,
+        root: &GameplayDecisionRoot,
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId,
+    ) -> Option<(i64, &'static str)> {
+        let (minimum, maximum) = self.bounds(inputs);
+        let draw = oteryn_simulation_determinism::deterministic_decision_u64(
+            root,
+            occurrence,
+            "attack.scripted-arrow-damage",
+            0,
+        )
+        .ok()?;
+        let damage = oteryn_gameplay_domain::domain::source_normal_draw::source_normal_draw(
+            draw, minimum, maximum,
+        )?;
+        let revision = match self {
+            Self::Poison => "formula:poison-arrow",
+            Self::Burst => "formula:burst-arrow",
+            Self::Diamond => "formula:diamond-arrow",
+        };
+        Some((i64::from(damage), revision))
+    }
+}
+
+fn area_candidates(
+    entry: &ActorAttack,
+    runtime: &ChannelRuntimeV1,
+    room: &QualifiedNativeEntryRoom,
+    center: MovementLocalPosition,
+    radius: u32,
+    now: SemanticTimeMicros,
+) -> Vec<(ExactActorRef, MovementLocalPosition)> {
+    let visible = runtime.visible_entities();
+    visible
+        .creatures
+        .iter()
+        .chain(visible.players.iter())
+        .filter_map(|row| {
+            let actor = row.actor;
+            let at = runtime.read_actor_position(actor).ok()?.position();
+            if actor == entry.actor
+                || at.floor != center.floor
+                || center.x.abs_diff(at.x).max(center.y.abs_diff(at.y)) > radius
+            {
+                return None;
+            }
+            let facts = target_facts(runtime, room, entry.actor, entry.session, actor, now)?;
+            (facts.present_and_visible
+                && facts.attackable_kind
+                && facts.alive
+                && !facts.attacker_in_protection_zone
+                && !facts.target_in_protection_zone
+                && !facts.attacker_reentry_protected
+                && !facts.target_reentry_protected)
+                .then_some((actor, at))
+        })
+        .collect()
+}
+
+// The miss tile may move by one cell. Prepare native health metadata for
+// every possible blast target before the combat owner takes the real swing.
+pub(super) fn possible_area_targets(
+    entry: &ActorAttack,
+    selected: &SelectedSwing,
+    runtime: &ChannelRuntimeV1,
+    room: &QualifiedNativeEntryRoom,
+    now: SemanticTimeMicros,
+) -> Vec<ExactActorRef> {
+    let Some(arrow @ (ScriptedArrow::Burst | ScriptedArrow::Diamond)) = selected
+        .weapon
+        .ranged
+        .as_ref()
+        .and_then(|ranged| ranged.scripted_arrow())
+    else {
+        return Vec::new();
+    };
+    let Ok(center) = runtime.read_actor_position(selected.target) else {
+        return Vec::new();
+    };
+    area_candidates(
+        entry,
+        runtime,
+        room,
+        center.position(),
+        arrow.radius() + 1,
+        now,
+    )
+    .into_iter()
+    .map(|(actor, _)| actor)
+    .collect()
+}
+
+pub(super) fn poison_definition() -> Option<crate::foundation::ConditionDefinition> {
+    use crate::foundation::{ConditionDefinition, DotElement};
+    use oteryn_gameplay_foundation::foundation::condition::{DamageSchedule, DamageSegment};
+
+    // Crystal poison_arrow.lua:7–12. The first tick is delayed by the full interval.
+    ConditionDefinition::new_damage_schedule(
+        crate::gameplay_transport::pvp_live::POISON_ARROW_CONDITION,
+        1,
+        DotElement::Poison,
+        DamageSchedule::Fixed {
+            delayed: true,
+            segments: [(4, 3), (9, 2), (20, 1)]
+                .map(|(count, amount)| DamageSegment {
+                    count,
+                    amount,
+                    interval_ms: 4_000,
+                })
+                .into(),
+        },
+    )
+}
+
+pub(super) fn apply_creature_poison(
+    runtime: &mut ChannelRuntimeV1,
+    target: ExactActorRef,
+    source: ExactActorRef,
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    now: SemanticTimeMicros,
+) {
+    let (Ok(before), Some(definition)) = (runtime.companion_snapshot(target), poison_definition())
+    else {
+        return;
+    };
+    let facts = crate::foundation::ApplicationFacts {
+        now: now.get(),
+        base_speed: 0,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: false,
+        decision_root: root,
+        occurrence,
+    };
+    let mut next = before.state.clone();
+    if next
+        .conditions
+        .apply(
+            &definition,
+            Some(source),
+            crate::foundation::ConditionSourceKind::Player,
+            &next.policy.condition_immunities,
+            &facts,
+        )
+        .is_ok()
+    {
+        let _ = runtime.compare_companion_state(&before, next);
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct RangedLoadout {
@@ -28,7 +254,10 @@ enum Consumption {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RangedDamage {
     Distance {
+        /// Projectile or throwing-weapon attack, including proficiency.
         attack: u32,
+        /// Launcher attack contributes only to the roll and displayed attack.
+        launcher_attack: u32,
         elemental_attack: u32,
         element: Element,
         chance: i8,
@@ -137,7 +366,8 @@ pub(super) fn loadout(
                     (
                         *range_cells,
                         RangedDamage::Distance {
-                            attack: u32::from(*attack) + u32::from(ammo_attack),
+                            attack: u32::from(ammo_attack),
+                            launcher_attack: u32::from(*attack),
                             elemental_attack: u32::from(elemental_attack),
                             element,
                             chance,
@@ -158,6 +388,7 @@ pub(super) fn loadout(
                     *range_cells,
                     RangedDamage::Distance {
                         attack: u32::from(*attack),
+                        launcher_attack: 0,
                         elemental_attack: u32::from(*elemental_attack),
                         element: *element,
                         chance: *hit_chance,
@@ -239,6 +470,53 @@ fn throwing_consumption(key: &str) -> Option<Consumption> {
 }
 
 impl RangedLoadout {
+    fn uses_launcher_ammunition(&self) -> bool {
+        self.projectile
+            .as_ref()
+            .is_some_and(|projectile| projectile.item_instance_id != self.weapon.item_instance_id)
+    }
+
+    pub(super) fn scripted_arrow(&self) -> Option<ScriptedArrow> {
+        match self.projectile.as_ref()?.definition.production_key.as_str() {
+            "oteryn:item.tibia.i3448" => Some(ScriptedArrow::Poison),
+            "oteryn:item.tibia.i3449" => Some(ScriptedArrow::Burst),
+            "oteryn:item.tibia.i35901" => Some(ScriptedArrow::Diamond),
+            _ => None,
+        }
+    }
+
+    pub(super) fn hits_target(
+        &self,
+        entry: &ActorAttack,
+        selected: &SelectedSwing,
+        from: MovementLocalPosition,
+        to: MovementLocalPosition,
+        root: &GameplayDecisionRoot,
+        offence: &EquippedOffence,
+    ) -> Option<bool> {
+        let (dx, dy) = (from.x.abs_diff(to.x), from.y.abs_diff(to.y));
+        let draw = swing_draw(
+            root,
+            entry.actor,
+            selected.swing.lineage,
+            selected.ordinal,
+            b"hit-chance",
+            "attack.hit-chance",
+            0,
+            99,
+        )?;
+        let perfect = matches!(self.damage, RangedDamage::Distance { .. })
+            && (offence.perfect_damage(dx, dx) != 0 || offence.perfect_damage(dy, dy) != 0);
+        Some(
+            perfect
+                || self.hit(
+                    dx.max(dy),
+                    selected.skills.attack,
+                    u64::try_from(draw).ok()?,
+                )?,
+        )
+    }
+
     fn mana(&self) -> u32 {
         match self.damage {
             RangedDamage::Magic { mana, .. } => u32::from(mana),
@@ -259,13 +537,21 @@ impl RangedLoadout {
         match self.damage {
             RangedDamage::Distance {
                 attack,
+                launcher_attack,
                 elemental_attack,
                 ..
-            } => Some((
-                player_distance_formula(),
-                attack.checked_add(elemental_attack)?,
-                "formula:player-distance",
-            )),
+            } => {
+                // Launcher ammo contributes its elemental attack to the roll.
+                // A throwing weapon uses those points only to split that roll.
+                let ammunition = self.uses_launcher_ammunition();
+                Some((
+                    player_distance_formula(),
+                    attack
+                        .checked_add(launcher_attack)?
+                        .checked_add(if ammunition { elemental_attack } else { 0 })?,
+                    "formula:player-distance",
+                ))
+            }
             RangedDamage::Magic { min, max, .. } => Some((
                 wand_formula(u32::from(min), u32::from(max))?,
                 0,
@@ -273,6 +559,32 @@ impl RangedLoadout {
             )),
         }
     }
+    pub(super) fn roll_bounds(
+        &self,
+        formula: &Formula,
+        inputs: &crate::spell::formula::FormulaInputs,
+        creature: bool,
+    ) -> Option<(i64, i64)> {
+        let (minimum, maximum) = formula.bounds(inputs).ok()?;
+        // Crystal weapons.cpp:1015–1025 scales elemental launcher ammo
+        // before drawing. The player path still halves damage after the roll.
+        if matches!(
+            self.damage,
+            RangedDamage::Distance {
+                elemental_attack: 1..,
+                ..
+            }
+        ) && self.uses_launcher_ammunition()
+        {
+            return Some(if creature {
+                (minimum / 2, maximum / 2)
+            } else {
+                (minimum / 4, maximum)
+            });
+        }
+        Some((minimum, maximum))
+    }
+
     pub(super) fn hit(&self, distance: u32, skill: u32, draw: u64) -> Option<bool> {
         match self.damage {
             RangedDamage::Distance {
@@ -308,13 +620,15 @@ impl RangedDamage {
                 element,
                 ..
             } => {
+                if elemental_attack == 0 {
+                    return Some((damage, 0, element));
+                }
                 let total = i64::from(attack.checked_add(elemental_attack)?);
-                let physical = if total == 0 {
-                    damage
-                } else {
-                    damage.checked_mul(i64::from(attack))? / total
-                };
-                Some((physical, damage - physical, element))
+                Some((
+                    damage.checked_mul(i64::from(attack))? / total,
+                    damage.checked_mul(i64::from(elemental_attack))? / total,
+                    element,
+                ))
             }
         }
     }
@@ -395,6 +709,17 @@ pub(in crate::gameplay_transport) struct PendingShot {
     before: PlayerSpellState,
     paid: PlayerSpellState,
     request: SpellItemTransactionRequest,
+    impact: ShotImpact,
+}
+
+#[cfg(test)]
+thread_local! {
+    static LOSE_SHOT_ACK: std::cell::Cell<Option<GameSessionId>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn lose_shot_ack_for(session: GameSessionId) {
+    LOSE_SHOT_ACK.with(|fault| fault.set(Some(session)));
 }
 
 fn park(attempt: PendingShot) -> Box<dyn std::any::Any + Send> {
@@ -415,17 +740,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         entry: &mut ActorAttack,
         selected: &super::drain::SelectedSwing,
-    ) -> bool {
-        let Some(attempt) = self
+    ) -> Option<ShotImpact> {
+        let attempt = self
             .prepare_ranged_shot(
                 permit, runtime, states, objects, room, content, entry, selected,
             )
-            .await
-        else {
-            return false;
-        };
+            .await?;
         if attempt.request.operations.is_empty() {
-            return states.commit(runtime, attempt.actor, attempt.session, attempt.paid);
+            return states
+                .commit(runtime, attempt.actor, attempt.session, attempt.paid)
+                .then_some(attempt.impact);
         }
         let mut window = permit.open_commit_window(attempt, park);
         let a = window.attempt().clone();
@@ -443,6 +767,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(_) => {
+                #[cfg(test)]
+                if LOSE_SHOT_ACK.with(|fault| {
+                    if fault.get() != Some(a.session) {
+                        return false;
+                    }
+                    fault.set(None);
+                    true
+                }) {
+                    window.park();
+                    return None;
+                }
                 let attempt = window.install();
                 states.analyser.supplies(
                     attempt.actor,
@@ -450,17 +785,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &attempt.request.operations,
                 );
                 if !states.commit(runtime, attempt.actor, attempt.session, attempt.paid) {
-                    return false;
+                    return None;
                 }
                 entry.weapon = None;
-                true
+                Some(attempt.impact)
             }
             Err(_) => {
                 if !window.commit_called() {
                     window.release();
                 }
                 // An unknown commit parks the entire attempt through the existing lane.
-                false
+                None
             }
         }
     }
@@ -501,8 +836,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_actor_position(selected.target)
             .ok()?
             .position();
+        let root = GameplayDecisionRoot::from_bytes(content.source_digest());
+        let area = match ranged.scripted_arrow() {
+            Some(arrow @ (ScriptedArrow::Burst | ScriptedArrow::Diamond)) => {
+                let offence = super::equipped_offence::attacker_offence(
+                    states,
+                    runtime,
+                    entry.actor,
+                    entry.session,
+                );
+                Some((
+                    arrow,
+                    ranged.hits_target(entry, selected, from, to, &root, &offence)?,
+                ))
+            }
+            _ => None,
+        };
         let pass = self.root.try_issue_semantic_pass().ok()?;
-        let mut context = (self, permit, &*runtime, objects, room, content);
+        let mut context = (self, permit, &*runtime, objects, room, content, entry);
         let equipment = ranged.equipment.clone();
         let projectile = if runtime.is_tibiadrome(entry.actor)
             && ranged
@@ -536,7 +887,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let command = selected.swing.lineage;
-        let operations = pass
+        let (ordinal, now) = (selected.ordinal, selected.swing.at);
+        let (operations, impact) = pass
             .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
                     use crate::durability::DurabilityError;
@@ -544,7 +896,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     use crate::durability::native_world_items::{
                         QualifiedItemDefinition, SpellGroundTarget,
                     };
-                    let (owner, permit, runtime, objects, room, content) = context;
+                    let (owner, permit, runtime, objects, room, content, entry) = context;
                     let mut tx = items::begin_spell_owner_transaction(holder, deadline).await?;
                     let authority = items::assert_spell_item_authority_in_transaction(
                         &mut tx,
@@ -590,6 +942,119 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             return Err(DurabilityError::Unavailable);
                         }
                     }
+                    let impact = if let Some((arrow, hit)) = area {
+                        if arrow == ScriptedArrow::Burst
+                            && crate::durability::pvp_live::read_expert_pvp_context_in_transaction(
+                                &mut tx, owner.root, &authority,
+                            )
+                            .await
+                            .map_err(|_| DurabilityError::Unavailable)?
+                            .1
+                        {
+                            // weapons.cpp:327,391: a false onUseWeapon still spends one.
+                            ShotImpact::Refused
+                        } else {
+                            let center =
+                                if hit || from.x.abs_diff(to.x).max(from.y.abs_diff(to.y)) <= 1 {
+                                    to
+                                } else {
+                                    let mut landings = Vec::new();
+                                    for (dx, dy) in MISS_OFFSETS {
+                                        let (Some(x), Some(y)) =
+                                            (to.x.checked_add(dx), to.y.checked_add(dy))
+                                        else {
+                                            continue;
+                                        };
+                                        let candidate = MovementLocalPosition { x, y, ..to };
+                                        let tile = native_combat_cast::read_projectile_tile(
+                                            &mut tx,
+                                            &authority,
+                                            room,
+                                            runtime,
+                                            objects,
+                                            pos(candidate),
+                                        )
+                                        .await
+                                        .map_err(|_| DurabilityError::Unavailable)?;
+                                        if missile_can_land(tile) {
+                                            landings.push(candidate);
+                                        }
+                                    }
+                                    if landings.is_empty() {
+                                        to
+                                    } else {
+                                        let pick = swing_draw(
+                                            &root,
+                                            entry.actor,
+                                            command,
+                                            ordinal,
+                                            b"miss-tile",
+                                            "attack.miss-tile",
+                                            0,
+                                            landings.len() as i64 - 1,
+                                        )
+                                        .and_then(|index| usize::try_from(index).ok())
+                                        .ok_or(DurabilityError::Unavailable)?;
+                                        landings[pick]
+                                    }
+                                };
+                            // Crystal AreaCombat::getList evaluates sight from the cell
+                            // immediately toward the caster from the impact center.
+                            let (dx, dy) = (from.x - center.x, from.y - center.y);
+                            let sight_origin = MovementLocalPosition {
+                                x: center.x + if dx.abs() >= dy.abs() { dx.signum() } else { 0 },
+                                y: center.y + if dy.abs() >= dx.abs() { dy.signum() } else { 0 },
+                                ..center
+                            };
+                            let mut targets = Vec::new();
+                            'targets: for (actor, at) in
+                                area_candidates(entry, runtime, room, center, arrow.radius(), now)
+                            {
+                                if !arrow.affects(center, at) {
+                                    continue;
+                                }
+                                let Some((tile, _)) = native_combat_cast::read_projectile_tile(
+                                    &mut tx,
+                                    &authority,
+                                    room,
+                                    runtime,
+                                    objects,
+                                    pos(at),
+                                )
+                                .await
+                                .map_err(|_| DurabilityError::Unavailable)?
+                                else {
+                                    continue;
+                                };
+                                if !tile.present
+                                    || tile.projectile
+                                    || tile.protection
+                                    || tile.floor_change
+                                {
+                                    continue;
+                                }
+                                for (step, exempt) in
+                                    native_combat_cast::sight_steps(pos(sight_origin), pos(at))
+                                        .map_err(|_| DurabilityError::Unavailable)?
+                                {
+                                    if !exempt
+                                        && native_combat_cast::read_projectile_tile(
+                                            &mut tx, &authority, room, runtime, objects, step,
+                                        )
+                                        .await
+                                        .map_err(|_| DurabilityError::Unavailable)?
+                                        .is_none_or(|(tile, _)| tile.projectile)
+                                    {
+                                        continue 'targets;
+                                    }
+                                }
+                                targets.push(actor);
+                            }
+                            ShotImpact::Area(targets)
+                        }
+                    } else {
+                        ShotImpact::Ordinary
+                    };
                     let mut operations = Vec::new();
                     if let Some(projectile) = projectile {
                         let policy = content
@@ -630,7 +1095,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         operations.push(SpellItemOperation::ConsumeInventory(source));
                     }
-                    Ok(operations)
+                    Ok((operations, impact))
                 })
             })
             .await
@@ -657,6 +1122,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             before,
             paid,
+            impact,
         })
     }
 
@@ -808,7 +1274,7 @@ pub(super) fn immune(
                 .any(|key| key == element_key(element)))
 }
 
-fn element_key(element: Element) -> &'static str {
+pub(super) fn element_key(element: Element) -> &'static str {
     match element {
         Element::Physical => "physical",
         Element::Death => "death",
@@ -819,24 +1285,15 @@ fn element_key(element: Element) -> &'static str {
     }
 }
 
-fn resolved_damage(
-    damage: RangedDamage,
-    magnitude: i64,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
-) -> Option<(i64, i64, Element)> {
-    let (primary, secondary, element) = damage.split(magnitude)?;
-    offence.convert_physical(primary, secondary, element)
+pub(super) struct CreatureShot {
+    pub(super) parts: [i64; 2],
+    pub(super) blocks: (Option<HitBlock>, HitBlock),
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "keep independent weapon, target, decision, native health, Cruelty and Wheel inputs explicit"
-)]
 pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
-    damage: i64,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    (physical, elemental, element): (i64, i64, Element),
     (root, constants, actor, lineage, ordinal): (
         &GameplayDecisionRoot,
         &AttackConstants,
@@ -844,23 +1301,25 @@ pub(super) fn creature_damage(
         CommandRef,
         u16,
     ),
-    cruelty_drain: Option<u64>,
-    health_change: Option<&crate::foundation::NativeHealthChangeObservation>,
-    wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
-) -> Option<([i64; 2], Element)> {
+    wheel: Option<(&crate::spell::cast::PlayerSpellState, u64)>,
+) -> Option<CreatureShot> {
     use oteryn_gameplay_combat_rules::resolution::{
-        creature_damage_response_with_reduction, swing_mitigated,
+        creature_damage_response_with_reduction, swing_mitigated_with_block,
     };
-    let bow = wheel.is_some_and(|(state, now, _, _, _)| {
+    let bow = wheel.is_some_and(|(state, now)| {
         state
             .wheel_effects_at(now)
             .is_some_and(|effects| effects.active_unique_perks.contains("ballistic_mastery"))
             && state.wheel_equipment().and_then(|hands| hands.ammunition())
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
-    let (physical, elemental, element) = resolved_damage(ranged.damage, damage, offence)?;
-    let physical = if physical > 0 {
-        let physical = swing_mitigated(
+    let is_immune = |element| policy.damage_immunities.iter().any(|key| key == element);
+    let (physical, primary_block) = if matches!(ranged.damage, RangedDamage::Magic { .. }) {
+        (0, HitBlock::Unblocked)
+    } else if is_immune("physical") {
+        (0, HitBlock::Immunity)
+    } else {
+        let (physical, block) = swing_mitigated_with_block(
             root,
             constants,
             actor.placement_identity(),
@@ -873,59 +1332,44 @@ pub(super) fn creature_damage(
             None,
             policy.armor?,
         )?;
-        creature_damage_response_with_reduction(
-            policy,
-            physical,
-            "physical",
-            if bow { 2 } else { 0 },
-        )?
-    } else {
-        0
+        (
+            creature_damage_response_with_reduction(
+                policy,
+                physical,
+                "physical",
+                if bow { 2 } else { 0 },
+            )?,
+            block,
+        )
     };
-    let element_key = match element {
-        Element::Physical => "physical",
-        Element::Death => "death",
-        Element::Earth => "earth",
-        Element::Energy => "energy",
-        Element::Fire => "fire",
-        Element::Ice => "ice",
-    };
+    let key = element_key(element);
     let elemental = creature_damage_response_with_reduction(
         policy,
         elemental,
-        element_key,
-        if bow && element_key == "physical" {
-            2
-        } else {
-            0
-        },
+        key,
+        if bow && key == "physical" { 2 } else { 0 },
     )?;
-    let [physical, elemental] =
-        native_health_primary_components(ranged.damage, [physical, elemental], health_change)?;
-    let physical = super::cruelty_health_component(physical, cruelty_drain)?;
-    let elemental = super::cruelty_health_component(elemental, cruelty_drain)?;
-    if cruelty_drain.is_some() && physical == 0 && elemental == 0 {
-        return Some(([0, 0], element));
-    }
-    let (physical, elemental) = if let Some((state, now, health, maximum, adjacent)) = wheel {
-        if matches!(ranged.damage, RangedDamage::Magic { .. }) {
-            let (primary, _) = state
-                .finish_wheel_attack_components(elemental, 0, health, maximum, now, adjacent)?;
-            (0, primary)
-        } else {
-            state.finish_wheel_attack_components(
-                physical, elemental, health, maximum, now, adjacent,
-            )?
-        }
+    let training = if element == Element::Physical {
+        (None, primary_block)
     } else {
-        (physical, elemental)
+        (
+            Some(primary_block),
+            if is_immune(key) {
+                HitBlock::Immunity
+            } else {
+                HitBlock::Unblocked
+            },
+        )
     };
-    Some(([physical, elemental], element))
+    Some(CreatureShot {
+        parts: [physical, elemental],
+        blocks: training,
+    })
 }
 
 // Distance weapons keep their elemental contribution in the secondary slot;
 // wands/rods store their ONLY primary in the elemental slot instead.
-fn native_health_primary_components(
+pub(super) fn native_health_primary_components(
     damage: RangedDamage,
     [physical, elemental]: [i64; 2],
     observation: Option<&crate::foundation::NativeHealthChangeObservation>,
@@ -1028,6 +1472,80 @@ pub(super) fn analyser_element(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn crystal_equipment_ranged_proficiency_split_truncates_each_part() {
+        let arrow = RangedDamage::Distance {
+            attack: 41,
+            launcher_attack: 0,
+            elemental_attack: 40,
+            element: Element::Fire,
+            chance: 0,
+            cap: 100,
+            launcher_bonus: 0,
+        };
+        assert_eq!(arrow.split(107), Some((54, 52, Element::Fire)));
+    }
+
+    #[test]
+    fn area_arrow_miss_can_land_at_center_and_on_movable_blockers() {
+        let open_ground = native_combat_cast::TileFlags {
+            projectile: false,
+            solid: false,
+            floor_change: false,
+            protection: false,
+            present: true,
+        };
+        let wall = native_combat_cast::TileFlags {
+            solid: true,
+            ..open_ground
+        };
+        let missing_ground = native_combat_cast::TileFlags {
+            present: false,
+            ..open_ground
+        };
+        assert_eq!(
+            MISS_OFFSETS
+                .into_iter()
+                .collect::<std::collections::BTreeSet<_>>(),
+            (-1..=1)
+                .flat_map(|x| (-1..=1).map(move |y| (x, y)))
+                .collect()
+        );
+        assert!(missile_can_land(Some((wall, false))));
+        assert!(!missile_can_land(Some((wall, true))));
+        assert!(!missile_can_land(Some((missing_ground, false))));
+        assert!(!missile_can_land(None));
+    }
+
+    #[test]
+    fn crystal_scripted_arrow_masks_and_damage_bounds() {
+        let origin = MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: 7,
+        };
+        for (arrow, expected) in [(ScriptedArrow::Burst, 9), (ScriptedArrow::Diamond, 21)] {
+            let count = (3..=7)
+                .flat_map(|x| (3..=7).map(move |y| (x, y)))
+                .filter(|&(x, y)| arrow.affects(origin, MovementLocalPosition { x, y, ..origin }))
+                .count();
+            assert_eq!(count, expected);
+        }
+        let inputs = FormulaInputs {
+            level: 154,
+            magic_level: 0,
+            base_power: None,
+            attack_skill: 80,
+            attack_value: 37,
+            attack_factor: 1.0,
+            shielding_skill: 0,
+            shield_defense: None,
+        };
+        assert_eq!(ScriptedArrow::Diamond.bounds(&inputs), (30, 297));
+        assert_eq!(ScriptedArrow::Burst.bounds(&inputs), (0, 296));
+    }
+
     #[test]
     fn t174_converted_arrow_analyser_keeps_resolved_fire_element() -> Result<(), &'static str> {
         let offence = oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
@@ -1036,19 +1554,108 @@ mod tests {
         };
         let arrow = RangedDamage::Distance {
             attack: 40,
+            launcher_attack: 0,
             elemental_attack: 0,
             element: Element::Physical,
             chance: 0,
             cap: 100,
             launcher_bonus: 0,
         };
-        let (physical, elemental, element) =
-            resolved_damage(arrow, 100, &offence).ok_or("damage")?;
+        let (physical, elemental, element) = arrow.split(100).ok_or("arrow damage")?;
+        let (physical, elemental, element) = offence
+            .convert_physical(physical, elemental, element)
+            .ok_or("conversion")?;
         assert_eq!((physical, elemental), (50, 50));
         assert_eq!(
             analyser_element(element),
             oteryn_protocol_oteryn::damage_element::DamageElement::Fire
         );
+        Ok(())
+    }
+
+    #[test]
+    fn t174_elemental_distance_split_uses_projectile_attack() -> Result<(), String> {
+        use oteryn_gameplay_content::content::native_gameplay::{
+            NativeGameplayInput, compile_native_gameplay, decode,
+        };
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let mut source =
+            NativeGameplayInput::from_manifest(&manifest).map_err(|e| format!("{e:?}"))?;
+        source.source_world = None;
+        let mut id = [5; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let world = crate::foundation::WorldId::decode(&id).map_err(|e| format!("{e:?}"))?;
+        let room =
+            crate::content::qualify_native_entry_room(world).map_err(|e| format!("{e:?}"))?;
+        let artefact =
+            compile_native_gameplay(room.compiled(), &source).map_err(|e| format!("{e:?}"))?;
+        let native = decode(&artefact.server_artifact)
+            .map_err(|e| format!("{e:?}"))?
+            .state;
+        let item = |slot, production_key: &str| EquippedItem {
+            tier: 0,
+            slot,
+            item_instance_id: [slot; 16],
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: production_key.into(),
+                revision_ref: "definition-r1".into(),
+            },
+            quantity: 1,
+            state_revision: 1,
+        };
+        let mut equipment = EquipmentSnapshot {
+            character: id,
+            content_digest: native.source_digest(),
+            character_revision: 1,
+            revision: 1,
+            combat_mode: None,
+            items: vec![
+                item(5, "oteryn:item.tibia.i52332"),
+                item(10, "oteryn:item.tibia.i763"),
+            ],
+        };
+        let mut shot = loadout(&native, &equipment, &[])
+            .flatten()
+            .ok_or("Crypt Spine and flaming arrow loadout")?;
+        let RangedDamage::Distance { attack, .. } = &mut Arc::make_mut(&mut shot).damage else {
+            return Err("distance loadout".into());
+        };
+        *attack += 2;
+        assert_eq!(shot.formula().map(|(_, attack, _)| attack), Some(38));
+        assert_eq!(shot.split(100), Some((53, 46, Element::Fire)));
+        let (formula, attack_value, _) = shot.formula().ok_or("distance formula")?;
+        let inputs = crate::spell::formula::FormulaInputs {
+            level: 200,
+            magic_level: 0,
+            base_power: None,
+            attack_skill: 100,
+            attack_value,
+            attack_factor: 1.0,
+            shielding_skill: 0,
+            shield_defense: None,
+        };
+        let (minimum, maximum) = formula.bounds(&inputs).map_err(|err| format!("{err:?}"))?;
+        assert_eq!(
+            shot.roll_bounds(&formula, &inputs, true),
+            Some((minimum / 2, maximum / 2))
+        );
+        assert_eq!(
+            shot.roll_bounds(&formula, &inputs, false),
+            Some((minimum / 4, maximum))
+        );
+
+        equipment.items = vec![item(5, "oteryn:item.tibia.i25735")];
+        let throwing = loadout(&native, &equipment, &[])
+            .flatten()
+            .ok_or("leaf star loadout")?;
+        let RangedDamage::Distance { attack, .. } = throwing.damage else {
+            return Err("throwing loadout".into());
+        };
+        assert_eq!(throwing.formula().map(|(_, value, _)| value), Some(attack));
+        assert_eq!(throwing.split(99), Some((95, 3, Element::Earth)));
         Ok(())
     }
 
@@ -1150,6 +1757,7 @@ mod tests {
                     .map_err(|error| format!("{error:?}"))?;
                 let distance = RangedDamage::Distance {
                     attack: 31,
+                    launcher_attack: 0,
                     elemental_attack: 11,
                     element: Element::Fire,
                     chance: 100,

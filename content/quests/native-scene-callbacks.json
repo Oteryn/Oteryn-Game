@@ -2,6 +2,84 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-callback/katana-hidden-lever",
+      "quest": "oteryn:quest.katana_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32182,
+          "y": 32145,
+          "floor": -11
+        },
+        "unique": 30029,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32177,
+                "y": 32148,
+                "floor": -11
+              },
+              "remove": 5107,
+              "create": 5108,
+              "passable": true
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32177,
+                "y": 32148,
+                "floor": -11
+              },
+              "remove": 5108,
+              "create": 5107,
+              "passable": false
+            }
+          ],
+          "evacuate_close": [
+            {
+              "players_to": {
+                "x": 32178,
+                "y": 32148,
+                "floor": -11
+              },
+              "creatures_to": {
+                "x": 32178,
+                "y": 32148,
+                "floor": -11
+              },
+              "all": true,
+              "from": {
+                "x": 32177,
+                "y": 32148,
+                "floor": -11
+              }
+            }
+          ],
+          "relocate_items_close": true
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/rookgaard/katana_quest/katana_quest_lever.lua:6-28"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/mintwallin-cyclops-scene",
       "quest": "oteryn:quest.mintwallin_cyclops_quest",
       "trigger": "use",
@@ -149,6 +227,203 @@
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua:1-23",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
         "Committed native region-z14-x127-y125.b3: lever32600,32105,14 appearance2772 ordinal1; action30008 is not retained, so no legacy tag is invented."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/serpentine-tower-lever",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33152,
+          "y": 32866,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5633,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 33148,
+                "y": 32867,
+                "floor": -9
+              },
+              "remove": 2129,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 33149,
+                "y": 32867,
+                "floor": -9
+              },
+              "remove": 2129,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 33148,
+                "y": 32868,
+                "floor": -9
+              },
+              "remove": 2129,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 33149,
+                "y": 32868,
+                "floor": -9
+              },
+              "remove": 2129,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 33148,
+                "y": 32867,
+                "floor": -9
+              },
+              "remove": null,
+              "create": 2129,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 33149,
+                "y": 32867,
+                "floor": -9
+              },
+              "remove": null,
+              "create": 2129,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 33148,
+                "y": 32868,
+                "floor": -9
+              },
+              "remove": null,
+              "create": 2129,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 33149,
+                "y": 32868,
+                "floor": -9
+              },
+              "remove": null,
+              "create": 2129,
+              "passable": false
+            }
+          ],
+          "evacuate_close": [
+            {
+              "from": {
+                "x": 33148,
+                "y": 32867,
+                "floor": -9
+              },
+              "players_to": {
+                "x": 33148,
+                "y": 32869,
+                "floor": -9
+              },
+              "creatures_to": {
+                "x": 33148,
+                "y": 32869,
+                "floor": -9
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 33149,
+                "y": 32867,
+                "floor": -9
+              },
+              "players_to": {
+                "x": 33149,
+                "y": 32869,
+                "floor": -9
+              },
+              "creatures_to": {
+                "x": 33149,
+                "y": 32869,
+                "floor": -9
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 33148,
+                "y": 32868,
+                "floor": -9
+              },
+              "players_to": {
+                "x": 33148,
+                "y": 32869,
+                "floor": -9
+              },
+              "creatures_to": {
+                "x": 33148,
+                "y": 32869,
+                "floor": -9
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 33149,
+                "y": 32868,
+                "floor": -9
+              },
+              "players_to": {
+                "x": 33149,
+                "y": 32869,
+                "floor": -9
+              },
+              "creatures_to": {
+                "x": 33149,
+                "y": 32869,
+                "floor": -9
+              },
+              "all": true
+            }
+          ],
+          "relocate_items_close": true
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:79-83"
       ]
     }
   ]

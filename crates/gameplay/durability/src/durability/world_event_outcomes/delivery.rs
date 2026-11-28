@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_gameplay_native_admission_source::world_event_outcomes::{Publication, Watermark};
 
@@ -22,7 +23,7 @@ impl DurabilityRoot {
     let wire=String::from_utf8(bytes).map_err(invalid)?;Snapshot::decode(&wire).map_err(invalid)?;
     Ok(Publication{id:r.try_get("publication_id")?,delivery_token:None,family:family.clone(),epoch:wire::decimal(&r.try_get::<String,_>("projection_epoch")?,false).map_err(invalid)?,revision:wire::decimal(&r.try_get::<String,_>("projection_revision")?,false).map_err(invalid)?,wire,sha256:hash,audit:r.try_get("audit")?,audit_event_id:r.try_get("audit_event_id")?,transaction_id:r.try_get("transaction_id")?})
    }).transpose()?;
-   commit_semantic_transaction(tx,deadline).await?;Ok(publication)
+   commit_semantic_read(tx,deadline).await?;Ok(publication)
   })).await
     }
     pub async fn t94_ack(
@@ -81,7 +82,7 @@ impl DurabilityRoot {
    let cut=pending.map_or(c.cut,|at|c.cut.min(u64::try_from(at.saturating_sub(1)).unwrap_or(0)));
    if cut==0||cut>now as u64{return Ok(None)}
    let watermark=Watermark{contract_version:1,operation:"PublishLeagueWatermarkV1".into(),source_authority:c.authority,family,projection_epoch:c.epoch.to_string(),complete_through:cut.to_string(),observed_at:now.to_string()};
-   watermark.encode(now as u64).map_err(invalid)?;commit_semantic_transaction(tx,deadline).await?;Ok(Some(watermark))
+   watermark.encode(now as u64).map_err(invalid)?;commit_semantic_read(tx,deadline).await?;Ok(Some(watermark))
   })).await
     }
     /// Audit delivery has a separate acknowledgement; projection acknowledgement never drops it.
@@ -95,7 +96,7 @@ impl DurabilityRoot {
    let Some(_c)=control(&mut tx,recovery.recovery_generation).await?else{return Ok(None)};
    let row=sqlx::query("SELECT publication_id::text,family,projection_epoch::text,projection_revision::text,wire,wire_sha256,audit,audit_event_id::text,transaction_id::text FROM game_t94_publications WHERE NOT audit_acknowledged AND octet_length(audit)>0 AND occurred_at_ms>=floor(extract(epoch FROM statement_timestamp())*1000)::bigint-7776000000 ORDER BY delivery_order LIMIT 1").fetch_optional(&mut *tx).await?;
    let p=row.map(|r|->Result<Publication>{Ok(Publication{id:r.try_get("publication_id")?,delivery_token:None,family:r.try_get("family")?,epoch:wire::decimal(&r.try_get::<String,_>("projection_epoch")?,false).map_err(invalid)?,revision:wire::decimal(&r.try_get::<String,_>("projection_revision")?,false).map_err(invalid)?,wire:String::from_utf8(r.try_get("wire")?).map_err(invalid)?,sha256:r.try_get("wire_sha256")?,audit:r.try_get("audit")?,audit_event_id:r.try_get("audit_event_id")?,transaction_id:r.try_get("transaction_id")?})}).transpose()?;
-   commit_semantic_transaction(tx,deadline).await?;Ok(p)
+   commit_semantic_read(tx,deadline).await?;Ok(p)
   })).await
     }
     pub async fn t94_ack_audit(
@@ -320,7 +321,7 @@ impl DurabilityRoot {
  let Some(c)=control(&mut tx,recovery.recovery_generation).await?else{return Ok(false)};
  if c.epoch!=epoch{return Ok(false)}
  let current:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_t94_delivery_lanes WHERE family=$1 AND token=$2::uuid AND lease_until>=clock_timestamp()+interval '6 seconds')").bind(family).bind(token).fetch_one(&mut *tx).await?;
- commit_semantic_transaction(tx,deadline).await?;Ok(current)
+ commit_semantic_read(tx,deadline).await?;Ok(current)
  })).await
     }
 }

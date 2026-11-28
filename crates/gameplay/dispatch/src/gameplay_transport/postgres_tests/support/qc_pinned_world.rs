@@ -1,7 +1,7 @@
 //! Verify the production callback selectors against the node's pinned artifact.
 use super::TestResult;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -29,23 +29,32 @@ pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
                 // interrupted build never leaves a partial artifact at the shared path.
                 let staging =
                     std::env::temp_dir().join(format!("qc-pin-{digest}-{}", std::process::id()));
-                let status = std::process::Command::new("cargo")
-                    .current_dir(root)
-                    .args([
-                        "run",
-                        "--locked",
-                        "--release",
-                        "-p",
-                        "oteryn-world-bundle-compiler",
-                        "--",
-                        "pin-check",
-                        ".",
-                    ])
-                    .arg(&staging)
-                    .status()?;
-                if !status.success() {
-                    return Err("world pin-check failed".into());
+                // The fixture needs the exact published bytes once. Use the
+                // compiler already linked into the test binary so the lock
+                // never encloses a Cargo build or a second parity compile.
+                use oteryn_world_bundle_compiler::{bundle, compile, project, source};
+                let identity = serde_json::from_slice(&std::fs::read(
+                    root.join("content/world/pins/oteryn.identity.json"),
+                )?)?;
+                let project = source::project(&root)?;
+                let (registry, palette) = source::registry(&root, &project)?;
+                let compiled = compile::compile(
+                    &compile::Input {
+                        regions: &project.regions,
+                        palette: &palette,
+                        identity,
+                        world: source::world_extent(&root)?,
+                        build_class: bundle::BuildClass::NonProduction,
+                        draft_areas: project::draft_areas(&project.index)?,
+                        families: &project.families,
+                    },
+                    &registry,
+                )?;
+                if oteryn_world_bundle::npc::hex(&compiled.digest) != digest {
+                    return Err("compiled World differs from the published pin".into());
                 }
+                std::fs::create_dir_all(&staging)?;
+                std::fs::write(staging.join(&filename), compiled.bytes)?;
                 std::fs::rename(staging.join(&filename), path.join(&filename))?;
                 let _ = std::fs::remove_dir_all(&staging);
             }
@@ -100,7 +109,7 @@ pub(super) fn world_near(
     boot(native, &projected, &pins)
 }
 
-fn boot_pins(pin: &serde_json::Value) -> TestResult<crate::map::boot::BootPins> {
+pub(super) fn boot_pins(pin: &serde_json::Value) -> TestResult<crate::map::boot::BootPins> {
     let field = |key: &str| -> TestResult<&str> { Ok(pin[key].as_str().ok_or("world pin field")?) };
     let hex = field("digest")?;
     let mut digest = [0; 32];
@@ -140,6 +149,76 @@ fn boot(
         |key| crate::map::boot::native_item_definition(Some(native), key),
     )
     .map_err(super::fixture::debug)
+}
+
+/// Boot the selected sectors of the verified bundle so each isolated scenario
+/// retains the authored tiles without rebuilding the entire world's collision index.
+pub(super) fn crop(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    start: oteryn_gameplay_quests::quest::world_callbacks::Position,
+    positions: &[oteryn_gameplay_quests::quest::world_callbacks::Position],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, writer};
+    static WORLD: OnceLock<Result<bundle::Bundle, String>> = OnceLock::new();
+    let source = WORLD
+        .get_or_init(|| {
+            let (bytes, pin) = artifact().map_err(|error| error.to_string())?;
+            let source = bundle::read(&bytes).map_err(|error| error.to_string())?;
+            if pin["digest"].as_str() != Some(hex_digest(&source.digest).as_str()) {
+                return Err("pinned world bytes differ from the repository pin".into());
+            }
+            Ok(source)
+        })
+        .as_ref()
+        .map_err(String::as_str)?;
+    let sectors: Vec<_> = source
+        .sectors
+        .iter()
+        .filter(|sector| {
+            std::iter::once(&start).chain(positions).any(|position| {
+                (sector.floor, sector.sx, sector.sy)
+                    == (position.floor, position.x / 32, position.y / 32)
+            })
+        })
+        .cloned()
+        .collect();
+    let mut manifest = source.manifest.clone();
+    manifest.spawns = Default::default();
+    manifest.npcs = Default::default();
+    manifest
+        .dropped_teleports
+        .retain(|key| bundle::names_entry(&sectors, *key));
+    let bytes = writer::write(&manifest, &sectors, &Default::default())?;
+    let digest = bundle::read(&bytes)?.digest;
+    let identity = &manifest.identity;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            bundle: crate::map::BundlePins {
+                digest,
+                project_format_version: identity.project_format_version.clone(),
+                world_schema_version: identity.world_schema_version.clone(),
+                content_revision: identity.content_revision.clone(),
+                production: false,
+            },
+            map_revision: format!("sha256:{}", hex_digest(&digest)),
+            start: crate::map::overlay::TilePos {
+                x: start.x,
+                y: start.y,
+                floor: start.floor,
+            },
+        },
+        crate::foundation::WorldId::decode(&super::fixture::id(42))
+            .map_err(super::fixture::debug)?,
+        crate::foundation::ChannelId::decode(&super::fixture::id(43))
+            .map_err(super::fixture::debug)?,
+        |key| crate::map::boot::native_item_definition(Some(native), key),
+    )
+    .map_err(super::fixture::debug)
+}
+
+fn hex_digest(digest: &[u8; 32]) -> String {
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 pub(super) fn ordinal(

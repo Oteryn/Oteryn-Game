@@ -118,7 +118,9 @@ fn owner_with_equipment(
 ) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
     let (vocation, key) = match spell.name.as_str() {
         "Food" | "Heal Friend" | "Druid familiar" => (Vocation::Druid, "druid"),
-        "Chained Penance" => (Vocation::Monk, "monk"),
+        _ if spell.vocations.len() == 1 && spell.vocations.contains(&Vocation::Monk) => {
+            (Vocation::Monk, "monk")
+        }
         "Annihilation" => (Vocation::Knight, "knight"),
         _ => (Vocation::Paladin, "paladin"),
     };
@@ -384,6 +386,55 @@ fn gp001_qualified_magic_keeps_raw_build_binding_and_live_state_checks() -> Resu
 }
 
 #[test]
+fn qualified_unarmed_skill_casts_receive_source_attack_inputs() -> Result<(), String> {
+    let content = content()?;
+    for name in [
+        "Lesser Ethereal Spear",
+        "Ethereal Spear",
+        "Strong Ethereal Spear",
+        "Ethereal Barrage",
+        "Swift Jab",
+        "Double Jab",
+        "Forceful Uppercut",
+        "Tiger Clash",
+        "Greater Tiger Clash",
+        "Devastating Knockout",
+        "Greater Flurry of Blows",
+        "Mystic Repulse",
+        "Thousand Fist Blows",
+        "Chained Penance",
+        "Spiritual Outburst",
+        "Flurry of Blows",
+    ] {
+        let mut spell = spell(&content, name)?;
+        let (state, owned) = owner(&content, &spell, 0, 0)?;
+        let caster = owned
+            .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+            .map_err(|error| format!("{name}: {error:?}"))?;
+        assert_eq!(
+            (
+                caster.attack_skill,
+                caster.attack_value,
+                caster.attack_factor,
+                caster.melee_weapon
+            ),
+            (0, 7, 0.0, false),
+            "{name}"
+        );
+        assert!(
+            owned.intrinsic_weapon_for_spell(&spell, &content).is_none(),
+            "{name}"
+        );
+        spell.needs_weapon = true;
+        assert!(matches!(
+            owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
+            Err(OwnedFactsError::UnavailableEquipment)
+        ));
+    }
+    Ok(())
+}
+
+#[test]
 fn source_skill_formulas_without_a_weapon_use_unarmed_inputs() -> Result<(), String> {
     let content = content()?;
     for name in ["Chained Penance", "Ethereal Spear"] {
@@ -408,7 +459,7 @@ fn missing_equipment_reaches_the_ordered_cast_rules_without_payment() -> Result<
     let (state, owned) = owner(&content, &spell, 0, 0)?;
     assert!(spell.needs_weapon);
     let caster = owned
-        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+        .caster_for_admission(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
         .map_err(|error| format!("qualified caster without equipment: {error:?}"))?;
     assert!(!caster.melee_weapon);
     let empty_cooldowns = crate::spell::Cooldowns::default();
@@ -466,7 +517,7 @@ fn missing_equipment_reaches_the_ordered_cast_rules_without_payment() -> Result<
     spell.needs_weapon = false;
     spell.needs_shield = true;
     let caster = owned
-        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+        .caster_for_admission(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
         .map_err(|error| format!("qualified caster without shield: {error:?}"))?;
     assert_eq!(caster.shield_defense, None);
     assert_eq!(
@@ -556,13 +607,15 @@ fn equipped_spell_fixture() -> Result<(NativeGameplayState, Vec<EquippedItem>), 
         )),
         hatchet,
     )?;
-    let offhand = record(
+    let mut offhand = record(
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../content/items/definitions/starting-loadout-profiles.json"
         )),
         spellbook,
     )?;
+    // Hold the offhand observation unknown even as the shipped spellbook gains facts.
+    offhand["semantics"]["weapon"] = json!({"state": "UNKNOWN"});
     assert_eq!(offhand["semantics"]["weapon"]["state"], "UNKNOWN");
     let profiles = serde_json::to_vec(&json!({
         "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",

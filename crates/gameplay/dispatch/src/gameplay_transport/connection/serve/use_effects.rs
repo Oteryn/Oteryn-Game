@@ -39,14 +39,18 @@ where
     }
     // ITEM-USE-1c: a committed food or potion changed the owner's vitals revision
     // (fed time or health/mana); its ACTOR_VITALS delta follows at once, as a spell's.
-    if outcome.disposition == UseDisposition::Committed
+    let current = if outcome.disposition == UseDisposition::Committed
         && session.admitted.continuity.vitals_revision != 0
-        && let Some((to, value)) = authority
+    {
+        authority
             .observe_vitals(session.actor, session.admitted.game_session_id)
             .await
-            .filter(|(observed_revision, _)| {
-                *observed_revision > session.admitted.continuity.vitals_revision
-            })
+    } else {
+        None
+    };
+    cooldowns::refresh(stream, authority, session).await?;
+    if let Some((to, value)) =
+        current.filter(|(revision, _)| *revision > session.admitted.continuity.vitals_revision)
     {
         let Some((delta_sequence, delta)) = vitals_delta(
             session.generation,
