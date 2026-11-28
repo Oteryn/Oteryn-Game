@@ -383,6 +383,19 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
             };
             let caster_file = capture("caster", caster_binding, &caster_effects)?;
             let member_file = capture("member", member_binding, &member_effects)?;
+            let caster_replay = std::fs::read(caster_file)?;
+            let member_replay = std::fs::read(member_file)?;
+            if caster_replay != caster_effects || member_replay != member_effects {
+                return Err("session-bound capture differs from live response".into());
+            }
+            verify_panel(slot, &caster_replay, &member_replay)?;
+            evidence(&format!(
+                "S13C_CLIENT_REPLAY caster_session={} caster_sequence={} member_session={} member_sequence={} status=PASS",
+                uuid_text(caster_binding.0.as_bytes()),
+                caster_binding.1,
+                uuid_text(member_binding.0.as_bytes()),
+                member_binding.1,
+            ));
             full::logout(&mut peer).await?;
             full::logout(&mut caster).await?;
             drop((caster, peer));
@@ -403,11 +416,6 @@ async fn flow(clients: &SeamClients<'_>, strict: bool) -> TestResult<Observed> {
                 saved_peer,
             )
             .await?;
-            let caster_replay = std::fs::read(caster_file)?;
-            let member_replay = std::fs::read(member_file)?;
-            if caster_replay != caster_effects || member_replay != member_effects {
-                return Err("session-bound capture differs from live response".into());
-            }
             (caster_replay, member_replay)
         }
     };
@@ -473,7 +481,7 @@ pub(super) fn report(
     }
 }
 
-fn verify_panel(value: &Observed) -> TestResult {
+fn verify_panel(slot: usize, caster: &[u8], member: &[u8]) -> TestResult {
     use oteryn_dev_client::client_ui::party_effects::{PartyEffectsPanel, panel_text, request};
 
     let label = [
@@ -483,12 +491,9 @@ fn verify_panel(value: &Observed) -> TestResult {
         "Heal Party",
         "Enlighten Party",
     ]
-    .get(value.slot)
+    .get(slot)
     .ok_or("party spell slot out of range")?;
-    for (who, payload) in [
-        ("caster", &value.caster_effects),
-        ("member", &value.member_effects),
-    ] {
+    for (who, payload) in [("caster", caster), ("member", member)] {
         let mut panel = PartyEffectsPanel {
             selected: true,
             ..PartyEffectsPanel::default()
@@ -497,14 +502,14 @@ fn verify_panel(value: &Observed) -> TestResult {
             return Err(format!("step=panel {who} did not decode live party effects").into());
         }
         let snapshot = panel.snapshot.ok_or("party effects snapshot absent")?;
-        let remaining = snapshot.party_spell_remaining_ms[value.slot];
+        let remaining = snapshot.party_spell_remaining_ms[slot];
         if !snapshot.in_party
             || remaining == 0
             || snapshot
                 .party_spell_remaining_ms
                 .iter()
                 .enumerate()
-                .any(|(slot, ms)| slot != value.slot && *ms != 0)
+                .any(|(index, ms)| index != slot && *ms != 0)
         {
             return Err(
                 format!("step=panel {who} has wrong party spell slots: {snapshot:?}").into(),
@@ -554,14 +559,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             return;
         }
     };
-    if let Err(error) = verify_panel(&value) {
-        evidence(&format!("S13C_CLIENT_GAP {error}"));
-        evidence(&format!(
-            "e2e_all scenario=S13c.client status=FAIL seconds={:.3} evidence=party-effects-panel",
-            started.elapsed().as_secs_f64()
-        ));
-        return;
-    }
     capture("s13c-caster-effects.bin", &value.caster_effects);
     capture("s13c-member-effects.bin", &value.member_effects);
     capture(

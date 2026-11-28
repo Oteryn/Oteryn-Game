@@ -143,10 +143,14 @@ pub(super) async fn effects(
 }
 
 pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused need=accepted-logout".into());
+    let session = client.join_snapshot().game_session_id;
+    let outcome = client.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "step=logout session={} observed={outcome:?} need=accepted-logout",
+            uuid_text(session.as_bytes()),
+        )
+        .into());
     }
     Ok(())
 }
