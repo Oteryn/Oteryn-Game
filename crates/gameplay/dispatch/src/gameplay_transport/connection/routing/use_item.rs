@@ -130,6 +130,23 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         {
             return Some(Dispatch::Use(UseOutcome::rejected()));
         }
+        // Global retired melee weapon enchanting in 11.40. For two current
+        // backpack handles the pinned definitions can answer before any writable
+        // owner or receipt probe, even when the durability holder is busy.
+        if let Some(source) = source.flatten()
+            && let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(target)) =
+                intent.use_with_map_item
+            && let Some(view) = item_view.as_ref()
+            && let Some(target) = view.resolve(target)
+            && let (Some(source), Some(target)) =
+                (view.backpack_definition(&source), view.backpack_definition(&target))
+            && authority.legacy_weapon_enchanting(source, target).await
+        {
+            return Some(Dispatch::Use(UseOutcome {
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse,
+                ..UseOutcome::rejected()
+            }));
+        }
     }
     if let Ok(intent) = &decoded
         && intent.use_with.is_none()

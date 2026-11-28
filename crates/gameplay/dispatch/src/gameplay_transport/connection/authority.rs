@@ -962,6 +962,14 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    fn legacy_weapon_enchanting(
+        &self,
+        _source: std::num::NonZeroU32,
+        _target: std::num::NonZeroU32,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
     fn use_craft(
         &self,

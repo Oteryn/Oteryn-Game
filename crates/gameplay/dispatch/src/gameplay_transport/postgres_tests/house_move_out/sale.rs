@@ -5,6 +5,20 @@ use oteryn_protocol_oteryn::house_sale as sale;
 mod setup;
 #[path = "charged.rs"]
 mod charged;
+
+#[test]
+fn g26_house_sale_catalogue_survives_busy_holder_after_settlement_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "G26 sale thread failed")??;
+    Ok(())
+}
+
 #[test]
 fn t135_house_transfer_catalogue_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -12,12 +26,12 @@ fn t135_house_transfer_catalogue_real_dispatch() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "T135 sale thread failed")??;
     Ok(())
 }
-fn scenario() -> TestResult {
+fn scenario(observe_busy_settlement: bool) -> TestResult {
     run(async |admin| {
         reset();
         let mut h =
@@ -76,6 +90,22 @@ fn scenario() -> TestResult {
             owner.drain_source_house_dispositions().await.map_err(debug)?;
             let owner_id:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(owner_character_id) FROM game_house_properties WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?;
             assert_eq!(owner_id,setup::buyer());
+            if observe_busy_settlement {
+                let command_id = buyer.continuity.next_command_id;
+                let (status, payload) = HOLD_SETTLED_CATALOGUE_HOLDER
+                    .scope((), exchange(&owner, &mut buyer, command_id, sale::COMMAND, &request))
+                    .await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                let page = sale::decode_reply(&payload).map_err(debug)?;
+                let [row] = page.rows.as_slice() else {
+                    return Err("expected the settled house in the catalogue".into());
+                };
+                assert_eq!(row.house, HOUSE);
+                assert_eq!(row.owner, "House Recipient");
+                assert_eq!(row.transfer_state, 0);
+                assert!(row.recipient.is_empty());
+                eprintln!("POSTGRES_CASE_COMPLETED g26_house_sale_catalogue_survives_busy_holder_after_settlement");
+            }
             assert_eq!(setup::balance(&h,id(40)).await?,300);
             assert_eq!(setup::balance(&h,setup::account()).await?,750);
             seed::assert_wrapped(&h,wrapped).await?;

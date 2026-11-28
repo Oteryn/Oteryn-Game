@@ -1,6 +1,7 @@
 //! T135 admitted selection -> current actor -> fenced ownership/bank authority.
-use super::{ComposedFreshAdmission, connection::AdmittedSession};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::{AdmittedSession, AdmissionRefusal}};
 use crate::durability::house_sale::HouseSaleError;
+use crate::durability::{DurabilityError, SqlxFailureClass};
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::house_sale as wire;
 #[derive(Debug)]
@@ -9,6 +10,16 @@ pub enum HouseSaleReply {
     Payload(Vec<u8>),
     Unavailable,
 }
+
+fn catalogue_contention(error: &DurabilityError) -> bool {
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+    )
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn house_sale_wire(
         &self,
@@ -46,9 +57,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             #[cfg(test)] eprintln!("T135 sale actor rejected current={actor_current} scope={:?}",fence.runtime_scope);
             return HouseSaleReply::Rejected;
         }
-        let snapshot = match self
-            .root
-            .house_sale_request(
+        let catalogue = request.action == 0;
+        let request_sale = async |request| {
+            self.root.house_sale_request(
                 self.character,
                 self.holder,
                 self.premium_coordinator,
@@ -57,16 +68,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 request,
             )
             .await
-        {
+        };
+        let result = if catalogue {
+            // The catalogue is read-only. Each attempt re-proves the durable
+            // session fence. Let settlement advance while the holder is busy.
+            drop(runtime);
+            let retry = AdmissionRetryBudget::for_command(self.root);
+            loop {
+                let result = request_sale(request.clone()).await;
+                if !matches!(&result, Err(HouseSaleError::Unavailable(error)) if catalogue_contention(error))
+                    || !retry.retries_unavailable(AdmissionRefusal::Unavailable).await
+                {
+                    break result;
+                }
+            }
+        } else {
+            request_sale(request).await
+        };
+        let snapshot = match result {
             Ok(snapshot) => snapshot,
             Err(HouseSaleError::Rejected | HouseSaleError::Conflict) => {
                 return HouseSaleReply::Rejected;
             }
             Err(HouseSaleError::Unavailable(error)) => {
-                #[cfg(test)]
-                eprintln!("T135 house sale unavailable: {error:?}");
-                #[cfg(not(test))]
-                let _ = error;
+                super::operator_event(&format!(
+                    "event=house_sale_unavailable catalogue={catalogue} command_id={} error={error:?}",
+                    id.get(),
+                ));
+                if catalogue && catalogue_contention(&error) {
+                    return HouseSaleReply::Rejected;
+                }
                 return HouseSaleReply::Unavailable;
             }
         };

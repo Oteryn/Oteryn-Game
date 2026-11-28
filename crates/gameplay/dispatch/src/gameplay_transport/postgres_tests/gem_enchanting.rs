@@ -13,6 +13,23 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use tokio::io::AsyncWriteExt;
 
+tokio::task_local! {
+    static HOLD_LEGACY_WEAPON_USE_HOLDER: ();
+}
+
+#[test]
+fn i19_legacy_weapon_use_refuses_with_busy_holder_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "legacy weapon USE thread panicked")??;
+    Ok(())
+}
+
 #[test]
 fn gemx_shrine_stack_wire_atomic_replay_and_refusals() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -20,7 +37,7 @@ fn gemx_shrine_stack_wire_atomic_replay_and_refusals() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "craft e2e panic")??;
     Ok(())
@@ -33,13 +50,13 @@ fn gemx_weapon_and_ammunition_wire_atomic_replay() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "enchanting e2e panic")??;
     Ok(())
 }
 
-fn scenario(weapon: bool) -> TestResult {
+fn scenario(weapon: bool, busy_legacy: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "gemx", true, false).await?;
         super::reset();
@@ -213,24 +230,44 @@ fn scenario(weapon: bool) -> TestResult {
                 .map(|s| s.vitals())
                 .ok_or("live")
         };
-        if weapon {
+        if busy_legacy {
+            let intent = UseIntent {
+                use_with_map_item: Some(MapUseTarget::Item(std::num::NonZeroU64::MIN)),
+                ..intent.clone()
+            };
+            let payload = encode_item_use_intent(&intent).map_err(debug)?;
+            let before = live().await?;
+            let (_, disposition, _) = HOLD_LEGACY_WEAPON_USE_HOLDER
+                .scope(
+                    (),
+                    exchange(
+                        &owner,
+                        admitted,
+                        1,
+                        &payload,
+                        reference("oteryn:item.tibia.i676"),
+                        reference("oteryn:item.tibia.i3271"),
+                    ),
+                )
+                .await?;
+            assert_eq!(disposition, UseDisposition::NothingToUse);
+            assert_eq!(live().await?, before);
+            let crafts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_craft_records")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(crafts, 0);
+            eprintln!("POSTGRES_CASE_COMPLETED i19_legacy_weapon_use_refuses_with_busy_holder");
+        } else if weapon {
             for (command, target, result_key, count, charges) in [
                 (
                     1,
-                    "oteryn:item.tibia.i3271",
-                    "oteryn:item.tibia.i660",
-                    1_i64,
-                    Some(1000_i32),
+                    "oteryn:item.tibia.i3447",
+                    "oteryn:item.tibia.i763",
+                    73_i64,
+                    None::<i32>,
                 ),
                 (
                     2,
-                    "oteryn:item.tibia.i3447",
-                    "oteryn:item.tibia.i763",
-                    73,
-                    None,
-                ),
-                (
-                    3,
                     "oteryn:item.tibia.i8077",
                     "oteryn:item.tibia.i8078",
                     1,
@@ -273,7 +310,7 @@ fn scenario(weapon: bool) -> TestResult {
                     i64::try_from(command)?
                 );
             }
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i676'").fetch_one(&harness.pool).await?, 0);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i676'").fetch_one(&harness.pool).await?, 1);
             eprintln!("GEMX_WEAPON_AMMO_EXECUTED");
         } else {
             // A wrong item and wrong shrine spend no resources and create no receipt.
@@ -448,10 +485,17 @@ async fn exchange(
                 payload: &actual,
             },
         )?;
+        let held = HOLD_LEGACY_WEAPON_USE_HOLDER
+            .try_with(|()| ())
+            .is_ok()
+            .then(|| owner.root.try_issue_semantic_pass())
+            .transpose()?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        client.shutdown().await?;
-        loop {
+        if held.is_none() {
+            client.shutdown().await?;
+        }
+        let result = loop {
             let raw = super::item_look_fixtures::read_frame(&mut client)
                 .await
                 .map_err(|error| format!("result {command_id}: {error}"))?;
@@ -462,10 +506,15 @@ async fn exchange(
                     let disposition =
                         oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
                             .map_err(debug)?;
-                    return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                    break (disposition, actual);
                 }
             }
+        };
+        if let Some(held) = held {
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            client.shutdown().await?;
         }
+        Ok::<_, Box<dyn std::error::Error>>(result)
     };
     use std::future::Future;
     use std::task::Poll;

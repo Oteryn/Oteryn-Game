@@ -21,6 +21,10 @@ mod seed;
 #[path = "house_move_out/sale.rs"]
 mod sale;
 
+tokio::task_local! {
+    static HOLD_SETTLED_CATALOGUE_HOLDER: ();
+}
+
 #[test]
 fn house_move_out_postgres_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -57,28 +61,41 @@ async fn exchange(
                 break;
             }
         }
-        write_frame(
-            &mut client,
-            &encode_client_command(
-                before.continuity.connection_generation,
-                &ClientCommandValue {
-                    command_id: id,
-                    command_type: kind,
-                    payload,
-                },
+        let send = async |client: &mut tokio::io::DuplexStream, id| -> TestResult<_> {
+            write_frame(
+                client,
+                &encode_client_command(
+                    before.continuity.connection_generation,
+                    &ClientCommandValue {
+                        command_id: id,
+                        command_type: kind,
+                        payload,
+                    },
+                )
+                .map_err(debug)?,
             )
-            .map_err(debug)?,
-        )
-        .await?;
-        let reply = loop {
-            let frame = read_frame(&mut client).await?;
-            let env = decode_wire_envelope(&frame).map_err(debug)?;
-            if env.message_type() == MessageType::CommandResult {
-                let r = decode_command_result(env.payload()).map_err(debug)?;
-                assert_eq!(r.command_id, id);
-                break (r.status, r.payload.to_vec());
+            .await?;
+            loop {
+                let frame = read_frame(client).await?;
+                let env = decode_wire_envelope(&frame).map_err(debug)?;
+                if env.message_type() == MessageType::CommandResult {
+                    let reply = decode_command_result(env.payload()).map_err(debug)?;
+                    assert_eq!(reply.command_id, id);
+                    return Ok((reply.status, reply.payload.to_vec()));
+                }
             }
         };
+        let held = HOLD_SETTLED_CATALOGUE_HOLDER
+            .try_with(|()| ())
+            .is_ok()
+            .then(|| owner.root.try_issue_semantic_pass())
+            .transpose()?;
+        let mut reply = send(&mut client, id).await?;
+        if let Some(held) = held {
+            assert_eq!(reply, (CommandStatus::Rejected, Vec::new()));
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            reply = send(&mut client, id.checked_add(1).ok_or("catalogue command range")?).await?;
+        }
         client.shutdown().await?;
         Ok(reply)
     };

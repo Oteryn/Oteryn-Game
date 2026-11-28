@@ -1557,6 +1557,39 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn legacy_weapon_enchanting(
+        &self,
+        source: std::num::NonZeroU32,
+        target: std::num::NonZeroU32,
+    ) -> bool {
+        use crate::content::{ReferenceItemField::Known, ReferenceWeaponType};
+        use oteryn_gameplay_items::item_craft::enchanting::{ENCHANTED, source_id};
+
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return false;
+        };
+        let runtime = self.runtime.lock().await;
+        let Some(index) = item_ref_admission::pinned_index(&runtime, self.active_generation) else {
+            return false;
+        };
+        if !index
+            .definition_at(source)
+            .is_some_and(|(key, _)| source_id(key).is_some_and(|id| ENCHANTED.contains(&id)))
+        {
+            return false;
+        }
+        index.definition_at(target)
+            .and_then(|(key, revision)| native.item_policy(key, revision))
+            .is_some_and(|policy| {
+                matches!(&policy.record().semantics.weapon,
+                    Known(weapon) if matches!(weapon.weapon_type,
+                        Known(ReferenceWeaponType::Sword | ReferenceWeaponType::Axe | ReferenceWeaponType::Club)))
+            })
+    }
+
     async fn use_craft(
         &self,
         actor: ExactActorRef,
