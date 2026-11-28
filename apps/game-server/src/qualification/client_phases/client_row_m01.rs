@@ -405,7 +405,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let client_session = client.join_snapshot().game_session_id;
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("M01 logout refused: {:?}", logout.result).into());
+        return Err(format!(
+            "M01 logout refused: {:?} command_id={} server_sequence={}",
+            logout.result, logout.command_id, logout.result_server_sequence
+        )
+        .into());
     }
     drop(client);
     let relog = connect_world(clients, 0x6f).await?;
