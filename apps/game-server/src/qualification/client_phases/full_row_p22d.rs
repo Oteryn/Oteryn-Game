@@ -4,7 +4,7 @@
 //! 3. Verify the pushed tracker update and read the same kill count after logout and relog.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
-use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
 use oteryn_protocol_oteryn::{CommandStatus, cyclopedia_tracker as tr};
 
 const RAT: &str = "oteryn:creature.rat";
@@ -271,11 +271,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         .checked_add(1)
         .ok_or("step=add;observed=kill-count-overflow")?;
 
+    let mode = client
+        .session_mut()
+        .set_fight_modes(&FightModes {
+            chase: ChaseMode::Chase,
+            ..FightModes::DEFAULT
+        })
+        .await?;
+    expect(
+        mode.disposition == AttackIntentDisposition::Ok,
+        "chase-mode",
+        mode,
+    )?;
     let target = walk_to_rat(&mut client, world, &metadata.spawns).await?;
     evidence(&format!(
         "p22d target={:?} position={:?}",
         target.entity, target.position
     ));
+    let prior_corpses: std::collections::BTreeSet<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
+    let mut last_target_position = target.position;
+    let mut corpse = None;
     client.take_events();
     let attack = client
         .session_mut()
@@ -292,6 +313,34 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let mut refreshed = false;
     while tokio::time::Instant::now() < deadline {
         for event in client.take_events() {
+            if let SessionEvent::WorldSpatialEntities(delta) = &event {
+                if let Some(live) = delta
+                    .value
+                    .update
+                    .iter()
+                    .chain(&delta.value.enter)
+                    .find(|entity| entity.entity == target.entity)
+                {
+                    last_target_position = live.position;
+                }
+                if corpse.is_none()
+                    && client
+                        .world_entities()
+                        .is_some_and(|entities| entities.get(&target.entity).is_none())
+                    && let Some(dead) = delta.value.enter.iter().find(|entity| {
+                        entity.kind == EntityKind::Corpse
+                            && entity.position == last_target_position
+                            && !prior_corpses.contains(&entity.entity)
+                    })
+                {
+                    evidence(&format!(
+                        "p22d kill target={:?} corpse={:?} sequence={}",
+                        target.entity, dead.entity, delta.server_sequence
+                    ));
+                    corpse = Some(dead.entity);
+                    verdict::Harness::global().progress("p22d-kill");
+                }
+            }
             let SessionEvent::GatedSnapshotReplaced(delta) = event else {
                 continue;
             };
@@ -313,22 +362,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
             verdict::Harness::global().progress("p22d-live-tracker");
             refreshed = true;
         }
-        if refreshed
-            && client
-                .world_entities()
-                .is_some_and(|entities| entities.get(&target.entity).is_none())
-        {
+        if refreshed && corpse.is_some() {
             break;
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    expect(refreshed, "live-refresh", "no-domain-98-push")?;
     expect(
-        client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target.entity).is_none()),
+        corpse.is_some(),
         "kill",
-        "target-still-present",
+        (target.entity, last_target_position),
+    )?;
+    expect(
+        refreshed,
+        "live-refresh",
+        "confirmed-kill-without-domain-98-push",
     )?;
     // The PvE in-fight lock lasts 60 seconds after the last hit.
     let lock_duration = Duration::from_secs(60);
