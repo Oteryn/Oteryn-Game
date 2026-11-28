@@ -368,6 +368,12 @@ impl<S: SessionStream> Session<S> {
                 }
                 continue;
             }
+            if envelope.message_type() == MessageType::StateDelta
+                && decode_state_delta(envelope.payload())?.domain_id
+                    == STATE_DOMAIN_CHARACTER_INVENTORY
+            {
+                self.replay.inventory_frame = Some(frame.clone());
+            }
             if envelope.message_type() != MessageType::LivenessProbe {
                 return Ok(frame);
             }

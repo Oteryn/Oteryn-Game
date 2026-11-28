@@ -54,8 +54,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let snapshot = client
         .session_mut()
-        .gated_snapshot(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
-        .ok_or("no inventory gated snapshot")?
+        .admission_snapshot(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
+        .ok_or("no inventory admission snapshot")?
         .clone();
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(pick),
@@ -65,6 +65,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     })
     .map_err(|error| format!("pick intent: {error:?}"))?;
     client.take_events();
+    client.session_mut().take_inventory_frame();
+    let session = client.join_snapshot().game_session_id;
+    let baseline_sequence = client.session_mut().last_server_sequence();
+    let selected = client.session_mut().selected_capabilities().to_vec();
     let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("pick reply: {error:?}"))?;
@@ -80,8 +84,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             _ => None,
         })
         .ok_or("committed pick refine sent no inventory delta")?;
+    let frame = client
+        .session_mut()
+        .take_inventory_frame()
+        .ok_or("no received inventory frame")?;
+    let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+    if envelope.server_sequence() != delta.server_sequence
+        || delta.base_revision != snapshot.revision
+        || delta.server_sequence <= baseline_sequence
+    {
+        return Err("inventory frame does not match refining observation".into());
+    }
     let observed = super::full_row_w19a::quantities(&client)?;
-    // Crystal 201189f8, data-global/scripts/lib/register_actions.lua:614-628.
+    // Global: https://tibia.fandom.com/wiki/Shiny_Stone (documented outputs).
     let mut matches_reward = false;
     for id in [3028, 3031, 3035, 3043] {
         let reward = provisioning::item_reference(&index, id)?.get();
@@ -101,16 +116,44 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("refining final logout refused".into());
     }
-    let delta_payload = item_view::encode_character_inventory(&delta.value)
-        .map_err(|error| format!("inventory capture: {error:?}"))?;
     capture(
         &snapshot.payload,
-        &delta_payload,
+        &frame,
         &reply.payload,
-        snapshot.revision,
+        &format!(
+            "{} {} {} {} {} {} {}",
+            uuid_text(session.as_bytes()),
+            baseline_sequence,
+            snapshot.revision,
+            delta.base_revision,
+            delta.new_revision,
+            delta.server_sequence,
+            selected
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
         &delta,
     )?;
-    Ok("committed-inventory-delta-captured".into())
+    let replay = std::env::var_os("OTERYN_I12_REPLAY_BIN")
+        .ok_or("I12 requires the named replay executable")?;
+    let replay_result = std::process::Command::new(replay)
+        .args([
+            "--exact",
+            "tests::e2e_i12::pick_refining_replays_real_inventory_payload",
+        ])
+        .env("OTERYN_I12_SESSION", uuid_text(session.as_bytes()))
+        .output()?;
+    let report = String::from_utf8(replay_result.stdout)?;
+    evidence(report.trim());
+    if !replay_result.status.success()
+        || !report
+            .contains("test tests::e2e_i12::pick_refining_replays_real_inventory_payload ... ok")
+    {
+        return Err(format!("I12 named replay failed: {}", replay_result.status).into());
+    }
+    Ok("committed-inventory-delta-replayed".into())
 }
 
 async fn relog(
@@ -134,12 +177,11 @@ fn capture(
     snapshot: &[u8],
     delta: &[u8],
     reply: &[u8],
-    snapshot_revision: u64,
+    metadata: &str,
     applied: &oteryn_dev_client::AppliedDelta<oteryn_dev_client::CharacterInventory>,
 ) -> TestResult {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("I12 requires a fresh capture directory")?;
     let root = Path::new(&root);
     let expected = applied
         .value
@@ -152,22 +194,16 @@ fn capture(
         ("i12-inventory.bin", delta),
         ("i12-result.bin", reply),
     ] {
-        std::fs::write(root.join(name), bytes)?;
+        std::io::Write::write_all(&mut std::fs::File::create_new(root.join(name))?, bytes)?;
     }
     for (name, value) in [
         ("i12-expected.txt", expected),
-        (
-            "i12-revisions.txt",
-            format!(
-                "{} {} {} {}",
-                snapshot_revision,
-                applied.base_revision,
-                applied.new_revision,
-                applied.server_sequence
-            ),
-        ),
+        ("i12-revisions.txt", metadata.to_owned()),
     ] {
-        std::fs::write(root.join(name), value)?;
+        std::io::Write::write_all(
+            &mut std::fs::File::create_new(root.join(name))?,
+            value.as_bytes(),
+        )?;
     }
     Ok(())
 }

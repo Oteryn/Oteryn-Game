@@ -22,6 +22,7 @@ pub struct RawReplayDelta {
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct ReplayRetention {
+    pub(super) inventory_frame: Option<Vec<u8>>,
     pub(super) world_snapshot: Option<Arc<GatedSnapshot>>,
     pub(super) world_sequence: u64,
     pub(super) world_deltas: VecDeque<RawReplayDelta>,
@@ -47,6 +48,11 @@ pub(super) fn retain_delta(
 }
 
 impl<S> Session<S> {
+    /// Take the most recent inventory delta envelope received on this session.
+    pub fn take_inventory_frame(&mut self) -> Option<Vec<u8>> {
+        self.replay.inventory_frame.take()
+    }
+
     /// Most recent applied world entity deltas, oldest first, since the latest world snapshot.
     /// The oldest entries are evicted at [`REPLAY_DELTA_LIMIT`].
     pub fn raw_world_entity_deltas(&self) -> &VecDeque<RawReplayDelta> {
