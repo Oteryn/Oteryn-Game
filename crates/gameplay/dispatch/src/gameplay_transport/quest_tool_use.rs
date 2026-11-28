@@ -173,7 +173,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || c.creature_target.is_some()
                         || c.self_target.is_some())
                         == intent.use_with.is_some()
-                }) && eligible(&c.storage)
+                }) && reward_callbacks::fresh_carried_source(c, catalogue, tracks)
+                    && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
                         .iter()
@@ -257,7 +258,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let proof = if let Some(corpse) = corpse {
                 crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current_corpse(
-                    runtime, actor, fence, command_ref, &callback, intent, corpse)
+                    runtime, actor, fence, command_ref, &callback, intent, corpse, &permit)
             } else {
                 crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
                     runtime, actor, fence, command_ref, &callback, intent)

@@ -59,12 +59,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: crate::foundation::GameSessionId,
     ) -> bool {
+        self.refresh_pvp_locks_for_transport(actor, session, None)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn refresh_pvp_locks_for_transport(
+        &self,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        generation: Option<u64>,
+    ) -> bool {
         let Ok(budget) =
             crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
         else {
             return false;
         };
-        self.refresh_pvp_locks_within(actor, session, &budget)
+        self.refresh_pvp_locks_within(actor, session, generation, &budget)
             .await
             .is_ok()
     }
@@ -73,6 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: crate::foundation::GameSessionId,
+        generation: Option<u64>,
         budget: &crate::gameplay_transport::AdmissionRetryBudget<'_>,
     ) -> Result<(), crate::durability::DurabilityError> {
         // NODEBOOT-1: both reads go through the shared holder that background passes also
@@ -136,6 +147,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(DurabilityError::CommitRejected);
         }
         let mut states = self.states.spell_states.lock().await;
+        if generation.is_some_and(|generation| {
+            generation != fence.connection_generation.get()
+                || !states.current_cooldown_transport(actor, session, generation)
+        }) {
+            return Err(DurabilityError::CommitRejected);
+        }
         states.pvp_locks.retain(|(a, s, _)| {
             runtime.player_control_facts(*a, *s).is_ok()
                 || runtime.house_player_control_facts(*a, *s).is_ok()

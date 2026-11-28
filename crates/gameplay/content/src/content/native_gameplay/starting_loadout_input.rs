@@ -2,7 +2,7 @@
 //! The old provider bytes remain exact when the optional supplement is absent.
 use super::{
     ContentError, ItemProfilesDocument, MAX_ITEM_PROFILES, MAX_ITEM_RECORDS, PinnedGameplayBytes,
-    hex, invalid, qualify, sha256,
+    invalid, pin_composed_item_profiles, qualify,
 };
 use std::collections::BTreeSet;
 
@@ -40,18 +40,13 @@ pub(super) fn merge(
     }
     drop(keys);
     items.records.extend(extra.records);
-    let bytes =
-        serde_json::to_vec(&items).map_err(|_| invalid("starting loadout Item encoding"))?;
-    super::bounded(&bytes, MAX_ITEM_PROFILES)?;
-    Ok(Some(PinnedGameplayBytes {
-        sha256: hex(sha256(&bytes)),
-        bytes,
-    }))
+    pin_composed_item_profiles(&items).map(Some)
 }
 
 #[cfg(test)]
 mod reaudit_starting_progression {
     use super::*;
+    use crate::content::native_gameplay::{hex, sha256};
     fn pin(bytes: &[u8]) -> PinnedGameplayBytes {
         PinnedGameplayBytes {
             bytes: bytes.to_vec(),

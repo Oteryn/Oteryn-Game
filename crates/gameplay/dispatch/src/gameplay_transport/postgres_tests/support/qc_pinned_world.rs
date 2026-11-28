@@ -1,7 +1,7 @@
 //! Verify the production callback selectors against the node's pinned artifact.
 use super::TestResult;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -149,6 +149,76 @@ fn boot(
         |key| crate::map::boot::native_item_definition(Some(native), key),
     )
     .map_err(super::fixture::debug)
+}
+
+/// Boot the selected sectors of the verified bundle so each isolated scenario
+/// retains the authored tiles without rebuilding the entire world's collision index.
+pub(super) fn crop(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    start: oteryn_gameplay_quests::quest::world_callbacks::Position,
+    positions: &[oteryn_gameplay_quests::quest::world_callbacks::Position],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, writer};
+    static WORLD: OnceLock<Result<bundle::Bundle, String>> = OnceLock::new();
+    let source = WORLD
+        .get_or_init(|| {
+            let (bytes, pin) = artifact().map_err(|error| error.to_string())?;
+            let source = bundle::read(&bytes).map_err(|error| error.to_string())?;
+            if pin["digest"].as_str() != Some(hex_digest(&source.digest).as_str()) {
+                return Err("pinned world bytes differ from the repository pin".into());
+            }
+            Ok(source)
+        })
+        .as_ref()
+        .map_err(String::as_str)?;
+    let sectors: Vec<_> = source
+        .sectors
+        .iter()
+        .filter(|sector| {
+            std::iter::once(&start).chain(positions).any(|position| {
+                (sector.floor, sector.sx, sector.sy)
+                    == (position.floor, position.x / 32, position.y / 32)
+            })
+        })
+        .cloned()
+        .collect();
+    let mut manifest = source.manifest.clone();
+    manifest.spawns = Default::default();
+    manifest.npcs = Default::default();
+    manifest
+        .dropped_teleports
+        .retain(|key| bundle::names_entry(&sectors, *key));
+    let bytes = writer::write(&manifest, &sectors, &Default::default())?;
+    let digest = bundle::read(&bytes)?.digest;
+    let identity = &manifest.identity;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            bundle: crate::map::BundlePins {
+                digest,
+                project_format_version: identity.project_format_version.clone(),
+                world_schema_version: identity.world_schema_version.clone(),
+                content_revision: identity.content_revision.clone(),
+                production: false,
+            },
+            map_revision: format!("sha256:{}", hex_digest(&digest)),
+            start: crate::map::overlay::TilePos {
+                x: start.x,
+                y: start.y,
+                floor: start.floor,
+            },
+        },
+        crate::foundation::WorldId::decode(&super::fixture::id(42))
+            .map_err(super::fixture::debug)?,
+        crate::foundation::ChannelId::decode(&super::fixture::id(43))
+            .map_err(super::fixture::debug)?,
+        |key| crate::map::boot::native_item_definition(Some(native), key),
+    )
+    .map_err(super::fixture::debug)
+}
+
+fn hex_digest(digest: &[u8; 32]) -> String {
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 pub(super) fn ordinal(

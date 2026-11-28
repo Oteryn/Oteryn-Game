@@ -250,6 +250,14 @@ def bound_keys(bindings: bytes, defined: set[str] | None = None) -> dict[int, st
     return keys
 
 
+def placed_door_keys(root: Path, defined: set[str]) -> dict[int, str]:
+    """Map keys for the ordinary doors admitted by the separate Item binding cohort."""
+    path = root / "imports/crystalserver/bindings/ordinary-doors.json"
+    if not path.is_file():
+        return {}
+    return bound_keys(path.read_bytes(), defined)
+
+
 def catalogue_records(family: str, root: Path = ROOT):
     """Every record of a committed A12 section 4.6 catalogue: ``(Tibia id, record)``."""
     directory, stem, prefix = CATALOGUES[family]
@@ -924,6 +932,8 @@ def build(
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings, defined)
+    if defined is not None:
+        bound.update(placed_door_keys(ROOT, defined))
     collector = Collector(*teleport_links(blobs[OTBM]), script_links(blobs))
     replace_row = next(
         (r for r in FILL if "replace" in r and fill_key(r) in blobs), None
@@ -1227,6 +1237,9 @@ def build(
         import qh_jimmy_stub
 
         qh_jimmy_stub.overlay_outputs(out, ROOT)
+        import spirit_will_pickups
+
+        spirit_will_pickups.overlay_outputs(out, ROOT)
         import guarded_crystal_sphere
 
         guarded_crystal_sphere.overlay_outputs(out, ROOT)
@@ -1311,6 +1324,8 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(drafted, "items_added")
         - count(authored, "items_added")
         - jimmy_stub["items"]
+        - count(summary.get("source", {}).get("spirit_will_pickups", {}), "items_added")
+        - count(summary.get("source", {}).get("quest_chests", {}), "wiki_items_added")
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")

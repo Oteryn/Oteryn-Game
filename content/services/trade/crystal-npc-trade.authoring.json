@@ -1,0 +1,122 @@
+{
+  "shops": [
+    {
+      "npc": "aurelia",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/aurelia.lua:sha256:8c957d5a170398b8eaa9de72817cb7595729092485580d5dde8e53653683b02b",
+      "offers": [
+        {"item": 3338, "direction": "SellToPlayer", "unit_price": 75, "line": 73},
+        {"item": 3578, "direction": "SellToPlayer", "unit_price": 5, "line": 75},
+        {"item": 3174, "direction": "SellToPlayer", "unit_price": 20, "line": 79},
+        {"item": 3286, "direction": "SellToPlayer", "unit_price": 90, "line": 80},
+        {"item": 35562, "direction": "SellToPlayer", "unit_price": 400, "line": 82},
+        {"item": 3003, "direction": "SellToPlayer", "unit_price": 50, "line": 84},
+        {"item": 3294, "direction": "SellToPlayer", "unit_price": 26, "line": 85},
+        {"item": 3457, "direction": "SellToPlayer", "unit_price": 9, "line": 86},
+        {"item": 3277, "direction": "SellToPlayer", "unit_price": 9, "line": 87},
+        {"item": 3723, "direction": "SellToPlayer", "unit_price": 6, "line": 90},
+        {"item": 3338, "direction": "BuyFromPlayer", "unit_price": 20, "line": 96},
+        {"item": 3578, "direction": "BuyFromPlayer", "unit_price": 2, "line": 103},
+        {"item": 3286, "direction": "BuyFromPlayer", "unit_price": 30, "line": 112},
+        {"item": 3003, "direction": "BuyFromPlayer", "unit_price": 15, "line": 120},
+        {"item": 3457, "direction": "BuyFromPlayer", "unit_price": 8, "line": 125},
+        {"item": 3277, "direction": "BuyFromPlayer", "unit_price": 3, "line": 131},
+        {"item": 3723, "direction": "BuyFromPlayer", "unit_price": 2, "line": 138}
+      ]
+    },
+    {
+      "npc": "briasol",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/briasol.lua:sha256:b1091927eb3f772bf9973211e2b2ed884c9bd09c9a2eca73ae3cf1abf1f173e0",
+      "offers": [
+        {"item": 44602, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 134},
+        {"item": 44605, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 135},
+        {"item": 44611, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 136},
+        {"item": 44608, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 137},
+        {"item": 22193, "direction": "BuyFromPlayer", "unit_price": 400, "line": 141}
+      ]
+    },
+    {
+      "npc": "enpa_deia_pema",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:sha256:d5f803179e213a87af296d1ecf8bcdbc33f5e4a299c0ece6c78242abb1c2c6a5",
+      "offers": [
+        {"item": 50166, "direction": "SellToPlayer", "unit_price": 250, "line": 136}
+      ]
+    },
+    {
+      "npc": "gail",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gail.lua:sha256:c8d50bdf2f44a3b41bfbcc18a2c8efda106adefcc79841090ce17e207bd469f5",
+      "offers": [
+        {"item": 44602, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 129},
+        {"item": 44605, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 130},
+        {"item": 44611, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 131},
+        {"item": 44608, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 132},
+        {"item": 22193, "direction": "BuyFromPlayer", "unit_price": 400, "line": 136}
+      ]
+    },
+    {
+      "npc": "gamon",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gamon.lua:sha256:466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83",
+      "offers": [
+        {"item": 2797, "replaces_item": 2998, "direction": "SellToPlayer", "unit_price": 50, "line": 107, "service": "oteryn:service.trade_variant.gamon_globe_kit"},
+        {"item": 2800, "replaces_item": 2998, "direction": "SellToPlayer", "unit_price": 30, "line": 140}
+      ]
+    },
+    {
+      "npc": "habdel",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/habdel.lua:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78",
+      "offers": [
+        {"item": 3264, "direction": "SellToPlayer", "unit_price": 25, "line": 157}
+      ]
+    },
+    {
+      "npc": "hanna",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+      "offers": [
+        {"item": 44602, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 162},
+        {"item": 44605, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 163},
+        {"item": 44611, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 164},
+        {"item": 44608, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 165},
+        {"item": 22193, "direction": "BuyFromPlayer", "unit_price": 400, "line": 169}
+      ]
+    },
+    {
+      "npc": "iriana",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iriana.lua:sha256:c281174055d0701709d6b536185c273c24cda0b29e3e09130652e02aca3cfc3c",
+      "offers": [
+        {"item": 2853, "direction": "SellToPlayer", "unit_price": 4, "line": 56}
+      ]
+    },
+    {
+      "npc": "ishina",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ishina.lua:sha256:9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71",
+      "offers": [
+        {"item": 44602, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 152},
+        {"item": 44605, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 153},
+        {"item": 44611, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 154},
+        {"item": 44608, "direction": "BuyFromPlayer", "unit_price": 1000, "line": 155},
+        {"item": 22193, "direction": "BuyFromPlayer", "unit_price": 400, "line": 159}
+      ]
+    },
+    {
+      "npc": "lily",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lily.lua:sha256:84bf609bac04e07c472da970a67afe351d83ad30bb5a25306570b5962ad572f1",
+      "offers": [
+        {"item": 3588, "direction": "BuyFromPlayer", "unit_price": 1, "line": 292}
+      ]
+    },
+    {
+      "npc": "uzgod",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/uzgod.lua:sha256:77f914320f96ef8b519b188443e5e97c8cc72c3604292050f5f3a10c5af00305",
+      "offers": [
+        {"item": 3269, "direction": "BuyFromPlayer", "unit_price": 310, "line": 182}
+      ]
+    },
+    {
+      "npc": "willard",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/willard.lua:sha256:fed1ecfe970bdc80c4556fa26fca893157999889b2acac9a658db3f4c1031852",
+      "offers": [
+        {"item": 3279, "direction": "SellToPlayer", "unit_price": 10000, "line": 204},
+        {"item": 3279, "direction": "BuyFromPlayer", "unit_price": 450, "line": 204}
+      ]
+    }
+  ]
+}

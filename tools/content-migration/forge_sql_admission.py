@@ -28,25 +28,37 @@ SLOTS = {
 }
 
 
+def active_profiles():
+    content = ROOT / 'content'
+    manifest = json.loads((content / 'spells.manifest.json').read_bytes())
+    records = {}
+    # Match the loader's base, corrections and disjoint starter supplement.
+    for field in ('item_profiles', 'item_profile_updates', 'starting_loadout_item_profiles'):
+        pin = manifest[field]
+        raw = (content / pin['path']).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != pin['sha256']:
+            raise ValueError('FORGE_SQL_PROFILE_PIN:' + field)
+        for row in json.loads(raw)['records']:
+            identity = row['production_definition']
+            key = identity['production_key']
+            if key in records and (field != 'item_profile_updates'
+                                   or records[key]['production_definition'] != identity):
+                raise ValueError('FORGE_SQL_PROFILE_DUPLICATE:' + key)
+            records[key] = row
+    return records.values()
+
+
 def policy():
-    native = json.loads(
-        (ROOT / "content/items/definitions/spell-native-profiles.json").read_bytes()
-    )
     admitted = owners(ROOT)
     profiles, materials = [], []
-    for row in native["records"]:
-        identity = row["production_definition"]
-        if identity["production_key"] in (
-            "oteryn:item.tibia.i37109",
-            "oteryn:item.tibia.i37110",
-        ):
-            if (
-                row["admission"]["stack_class"] != "StackCapable"
-                or row["semantics"]["stack"]["value"]["stack_max"]["value"] != 100
-            ):
-                raise ValueError("FORGE_SQL_MATERIAL_PROFILE")
-            materials.append((identity["production_key"], identity["revision_ref"]))
-        forge = row.get("authoring", {}).get("forge")
+    for row in active_profiles():
+        identity = row['production_definition']
+        if identity['production_key'] in ('oteryn:item.tibia.i37109', 'oteryn:item.tibia.i37110'):
+            if (row['admission']['stack_class'] != 'StackCapable'
+                    or row['semantics']['stack']['value']['stack_max']['value'] != 100):
+                raise ValueError('FORGE_SQL_MATERIAL_PROFILE')
+            materials.append((identity['production_key'], identity['revision_ref']))
+        forge = row.get('authoring', {}).get('forge')
         if forge is None:
             continue
         owner = admitted[identity["production_key"]]

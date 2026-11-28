@@ -43,7 +43,7 @@ def policies(root=ROOT, *, creatures=None):
     roots = {7535} if creatures is None else set()
     if creatures is None:
         # MP09 settles a real Bonelord kill through the ordinary corpse owner.
-        creatures = covered_creatures(root) | {BONELORD}
+        creatures = covered_creatures(root) | {BONELORD, 'oteryn:creature.magma_bubble'}
     raw = (root / CREATURES).read_bytes()
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:

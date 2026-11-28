@@ -114,6 +114,7 @@ def admit(root, document, order):
     # SRX-1 admits these writing rows with their qualified attributes. The
     # final loot projection checks custody against the composed Item provider.
     ids = item_ids(root) - set(writing_ids(root))
+    keys = {f"{ITEM_PREFIX}{item}" for item in ids}
     source_needed = {
         item
         for item in ids
@@ -122,7 +123,7 @@ def admit(root, document, order):
         is None
     }
     if not source_needed:
-        return
+        return keys
     qualified = {
         item: profile
         for item, profile in source_profiles(root)
@@ -167,6 +168,7 @@ def admit(root, document, order):
         added, json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     )
     document["records"].sort(key=order)
+    return keys
 
 
 def apply_loot_facts(root, tables, facts, profiles):

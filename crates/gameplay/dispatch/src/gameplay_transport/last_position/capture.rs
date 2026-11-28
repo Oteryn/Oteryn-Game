@@ -103,7 +103,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             Err(()) => return Captured::Held,
         };
-        if self.states.dawnport_departures.held(session)
+        if self.has_pending_paid_quest_callback(session)
+            || self.states.dawnport_departures.held(session)
             || self.states.guild_stone_moves.held(session)
             || self
                 .states

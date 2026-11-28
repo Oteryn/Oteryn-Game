@@ -323,6 +323,33 @@ mod tests {
     }
 
     #[test]
+    fn chocolate_blob_is_available_in_the_native_list_draw()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::{
+            native_gameplay::NativeGameplayInput, native_gameplay_test_world_id,
+            qualified_native_gameplay_test_state, qualify_selected_native_gameplay_room,
+        };
+
+        const BLOB: &str = "oteryn:creature.chocolate_blob";
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let input = NativeGameplayInput::from_manifest(&manifest)?;
+        let room = qualify_selected_native_gameplay_room(native_gameplay_test_world_id()?, &input)?;
+        let native = qualified_native_gameplay_test_state(room.compiled())?;
+        let catalogue = PreyCatalogue::try_from(&native)?;
+        let blacklist = catalogue
+            .creatures
+            .iter()
+            .filter(|(key, _, _)| key != BLOB)
+            .map(|(key, _, _)| key.clone())
+            .collect::<Vec<_>>();
+        let offered = Draw::new(&[7; 32], &[5; 16], b"oteryn.prey.list.v1")
+            .list(&catalogue, 1, 9, &blacklist)?;
+        assert_eq!(offered, [BLOB]);
+        Ok(())
+    }
+
+    #[test]
     fn prey_draw_is_receipt_stable_unique_and_respects_bands() -> Result<(), DurabilityError> {
         let catalogue = PreyCatalogue {
             rules: fixture_rules(),

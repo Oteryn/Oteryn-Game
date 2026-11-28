@@ -3,12 +3,9 @@
 import json
 from pathlib import Path
 
-from questpc7_world_seal import refresh
 
-
-def install_pema_display_name(root: Path) -> None:
+def install_pema_display_name(world: Path) -> None:
     """Preserve the donor spelling when the World Project is rebuilt from its predecessor."""
-    world = root / "content/world"
     path = world / "definitions/declarations.json"
     document = json.loads(path.read_bytes())
     npc, = (
@@ -21,8 +18,12 @@ def install_pema_display_name(root: Path) -> None:
     fields.append({"field_path": field_path, "value": {"type": "Text", "value": "Enpa-Deia Pema"}})
     npc["fields"] = sorted(fields, key=lambda field: field["field_path"])
     path.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n")
-    refresh(root, world)
 
 
 if __name__ == "__main__":
-    install_pema_display_name(Path(__file__).resolve().parents[2])
+    from questpc7_world_seal import refresh
+
+    root = Path(__file__).resolve().parents[2]
+    world = root / "content/world"
+    install_pema_display_name(world)
+    refresh(root, world)

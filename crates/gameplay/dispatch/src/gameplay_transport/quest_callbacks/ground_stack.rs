@@ -261,6 +261,70 @@ mod tests {
     }
 
     #[test]
+    fn ape_city_saved_route_selects_each_overlapping_map_object_once() -> Result<(), String> {
+        use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+        let state = load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let callbacks = world_callbacks::load_for(state.catalogue())?;
+        let saved_stage = "oteryn:quest-progress/chosen/ape-city/stage";
+        let mut tested = 0;
+        for authored in callbacks.iter().filter(|callback| {
+            let key = callback.key.as_str();
+            key == "oteryn:quest-callback/authored-ape-city-holy-hair"
+                || key.starts_with("oteryn:quest-callback/authored-ape-city-lever-")
+                || matches!(
+                    key,
+                    "oteryn:quest-callback/authored-ape-city-gate"
+                        | "oteryn:quest-callback/authored-ape-city-exit-gate"
+                )
+        }) {
+            let supplemental = callbacks
+                .iter()
+                .find(|callback| {
+                    callback.key.starts_with("oteryn:quest-callback/ape-city-")
+                        && callback.selector.native.as_ref().is_some_and(|source| {
+                            Some(source.position) == authored.selector.position
+                                && Some(u16::from(source.ordinal)) == authored.selector.ordinal
+                                && Some(source.appearance) == authored.selector.appearance
+                        })
+                })
+                .ok_or("supplemental callback on the authored placement")?;
+            let mut tracks: std::collections::BTreeMap<_, _> = authored
+                .storage
+                .iter()
+                .map(|effect| (effect.track.clone(), effect.minimum))
+                .collect();
+            for effect in &supplemental.storage {
+                tracks.insert(effect.track.clone(), effect.minimum);
+            }
+            assert!(tracks.get(saved_stage).is_some_and(|stage| *stage > 0));
+            assert_eq!(
+                unique_eligible([supplemental, authored], &tracks).map(|callback| &callback.key),
+                Some(&authored.key),
+                "{} must own the authored save",
+                authored.key
+            );
+            if authored.key.ends_with("/authored-ape-city-gate") {
+                let lever = "oteryn:quest-progress/chosen/ape-city/lever-1";
+                tracks.insert(lever.into(), 0);
+                assert!(
+                    unique_eligible([authored, supplemental], &tracks).is_none(),
+                    "the supplemental gate must not bypass the authored switches"
+                );
+            }
+            tracks.insert(saved_stage.into(), 0);
+            assert_eq!(
+                unique_eligible([authored, supplemental], &tracks).map(|callback| &callback.key),
+                Some(&supplemental.key),
+                "{} must own the supplemental save",
+                supplemental.key
+            );
+            tested += 1;
+        }
+        assert_eq!(tested, 9);
+        Ok(())
+    }
+
+    #[test]
     fn nomads_advice_keeps_both_actual_ground_contracts_and_requires_unique_selection()
     -> Result<(), Box<dyn std::error::Error>> {
         use oteryn_gameplay_quests::quest::ground_stack::GroundStackEntry as ObservedEntry;

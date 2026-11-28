@@ -113,7 +113,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         budget: &super::AdmissionRetryBudget<'_>,
     ) -> Result<Result<UseDisposition, UseDisposition>, UseOwnerError> {
         let session = command.game_session_id;
-        match self.refresh_pvp_locks_within(actor, session, budget).await {
+        match self
+            .refresh_pvp_locks_within(actor, session, None, budget)
+            .await
+        {
             Ok(()) => {}
             Err(DurabilityError::RootUnavailable) => return Err(UseOwnerError::HolderBusy),
             Err(_) => return Ok(Err(self.refuse_stone(session))),

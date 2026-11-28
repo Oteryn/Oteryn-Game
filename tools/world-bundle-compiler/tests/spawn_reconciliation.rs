@@ -67,10 +67,9 @@ fn slice_one_reconciled_points_realize_from_world_sources() -> Result<(), Box<dy
         missing.first().map(|point| point.to)
     );
 
-    // Crystal 201189f8 data-global/world/world-monster.xml:190614–190616
-    // supplies the Shard of Corruption source and its single realized point.
-    assert_eq!((report.sources, report.points), (54_692, 87_820));
-    assert_eq!(report.realized_points, 85_745);
+    // Includes Crystal 201189f8 Shard of Corruption from world-monster.xml:190614–190616.
+    assert_eq!((report.sources, report.points), (55_075, 88_477));
+    assert_eq!(report.realized_points, 86_402);
     assert_eq!(report.dropped.len(), 2_075);
     for (reason, expected) in [
         (SpawnReason::NoGround, 2),

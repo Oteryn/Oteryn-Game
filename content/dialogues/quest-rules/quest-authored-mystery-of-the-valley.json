@@ -46,7 +46,8 @@
         }
       ],
       "reply": [
-        "Find the three shrine fragments in Inukaya, the Muggy Plains and Kilmaresh. Bring them to the crystal in Kha'zeel to assemble the guardian statue."
+        "The blue valley is the sacred home of the Merudri. For centuries outsiders were forbidden to enter.",
+        "Legend tells of a wayfarer who saw a Merudri pilgrim travel to the valley with a guardian statue. Ask me about the legend."
       ],
       "effects": [
         {
@@ -55,6 +56,221 @@
           "value": 1
         }
       ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/legend",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "legend"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "le",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "The pilgrim carried a statue of three dragons holding a crystal. When the crystal broke, the wayfarer took a shard.",
+        "He carved a little statue around the shard. Frightened by its power, he broke the statue and built three shrines to house the pieces.",
+        "Enpa Udra knows where those shrines stand. Do you want to find them?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/accept",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "le",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "I will try to reach Enpa Udra. Start where the snow and ice never melt."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/hint-first",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "fragment of a statue"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Enpa Udra shows me ice and snow. The first shrine is on a cliff near a large human settlement."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/hint-second",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "fragment of a statue"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The first shrine is near Svargrond. Around the second I see shimmering heat and hear insects. Bamboo and grass grow beside two shrines."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/hint-third",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "fragment of a statue"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "The third shrine stands among large rocks and cliffs. A large river cuts through the dry land, and someone walks nearby."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/hint-crystal",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "fragment of a statue"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "ge",
+          "value": 4
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "le",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "You found all three pieces. Look for fragments of the shattered crystal atop a rock in the Kha'zeel mountains. Use your pieces there to rebuild the statue."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/hint-complete",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "fragment of a statue"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "You reconstructed the guardian statue. Dahr-Enpa Udra seems to accept it. Perhaps the Merudri will open the valley to outsiders one day."
+      ],
+      "effects": [],
       "sources": [
         "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
         "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"

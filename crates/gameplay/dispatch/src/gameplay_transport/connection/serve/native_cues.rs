@@ -1,22 +1,6 @@
 //! Existing map callback receipts delivered on the native connection cadence.
 use super::*;
 use oteryn_protocol_oteryn::presentation as cooldown_wire;
-use std::collections::BTreeMap;
-
-type CooldownDeadlines = BTreeMap<(cooldown_wire::ActorCooldownKind, u32), u64>;
-
-pub(super) struct CooldownProjection {
-    revision: u64,
-    deadlines: CooldownDeadlines,
-}
-
-fn deadlines(message: &cooldown_wire::ActorCooldowns) -> CooldownDeadlines {
-    message
-        .entries
-        .iter()
-        .map(|entry| ((entry.kind, entry.id), entry.expires_at_ms))
-        .collect()
-}
 
 /// Presentation observation is independently negotiated from casting. Preserve
 /// any existing producer's rows and cooldown data; fill only absent domains.
@@ -25,11 +9,11 @@ pub(super) fn observation_snapshots(
     presentation_revision: u64,
     cooldowns: Option<cooldown_wire::ActorCooldowns>,
     domains: &mut Vec<crate::gameplay_transport::item_view::ItemViewSnapshotDomain>,
-) -> Result<Option<CooldownProjection>, ServeEnd> {
+) -> Result<(), ServeEnd> {
     use crate::gameplay_transport::item_view::ItemViewSnapshotDomain as Domain;
     use oteryn_protocol_oteryn::presentation as wire;
     if !selected.contains(wire::CAPABILITY_PRESENTATION_V1) {
-        return Ok(None);
+        return Ok(());
     }
     if !domains
         .iter()
@@ -42,16 +26,11 @@ pub(super) fn observation_snapshots(
             payload: wire::encode_presentation_snapshot(),
         });
     }
-    if let Some(row) = domains
+    if domains
         .iter()
-        .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
+        .any(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
     {
-        let cooldowns = wire::decode_actor_cooldowns(&row.payload)
-            .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
-        return Ok(Some(CooldownProjection {
-            revision: row.revision,
-            deadlines: deadlines(&cooldowns),
-        }));
+        return Ok(());
     }
     let cooldowns = cooldowns.unwrap_or(wire::ActorCooldowns {
         server_now_ms: 0,
@@ -65,10 +44,7 @@ pub(super) fn observation_snapshots(
         payload: wire::encode_actor_cooldowns(&cooldowns)
             .map_err(|_| ServeEnd::server("state_projection_unavailable"))?,
     });
-    Ok(Some(CooldownProjection {
-        revision: 0,
-        deadlines: deadlines(&cooldowns),
-    }))
+    Ok(())
 }
 
 pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
@@ -76,19 +52,12 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
     actor: ExactActorRef,
     admitted: &AdmittedSession,
     domains: &mut Vec<crate::gameplay_transport::item_view::ItemViewSnapshotDomain>,
-) -> Result<Option<CooldownProjection>, ServeEnd> {
+) -> Result<(), ServeEnd> {
     let selected = admitted.continuity.selected_capabilities;
-    let cooldowns = if selected.contains(cooldown_wire::CAPABILITY_PRESENTATION_V1) {
-        authority
-            .observe_actor_cooldowns(actor, admitted.game_session_id)
-            .await
-    } else {
-        None
-    };
-    let projection = observation_snapshots(
+    observation_snapshots(
         &selected,
         admitted.continuity.presentation_revision,
-        cooldowns,
+        None,
         domains,
     )?;
     if admitted
@@ -116,82 +85,9 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
             1
         };
     }
-    Ok(projection)
-}
-
-/// Publish changes to the negotiated own-actor domain after a successful cast.
-pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
-    stream: &mut S,
-    authority: &A,
-    session: &mut ServeState,
-) -> Result<(), ServeEnd> {
-    use cooldown_wire as wire;
-    let Some(previous) = session.cooldowns.as_mut() else {
-        return Ok(());
-    };
-    let Some(mut current) = authority
-        .observe_actor_cooldowns(session.actor, session.admitted.game_session_id)
-        .await
-    else {
-        return Ok(());
-    };
-    let next = deadlines(&current);
-    current.entries.retain(|entry| {
-        previous.deadlines.get(&(entry.kind, entry.id)) != Some(&entry.expires_at_ms)
-    });
-    // Natural expiry is already known to the client. An early reset needs a tombstone.
-    current.entries.extend(
-        previous
-            .deadlines
-            .iter()
-            .filter_map(|(&(kind, id), &expiry)| {
-                (expiry > current.server_now_ms && !next.contains_key(&(kind, id))).then_some(
-                    wire::ActorCooldown {
-                        kind,
-                        id,
-                        expires_at_ms: 0,
-                    },
-                )
-            }),
-    );
-    if current.entries.is_empty() {
-        previous.deadlines = next;
-        return Ok(());
-    }
-    let revision = previous
-        .revision
-        .checked_add(1)
-        .ok_or(ServeEnd::server("state_projection_unavailable"))?;
-    let sequence = session
-        .sequence
-        .checked_add(1)
-        .ok_or(ServeEnd::server("state_projection_unavailable"))?;
-    let payload = wire::encode_actor_cooldowns(&current)
-        .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
-    let frame = encode_state_delta(
-        session.generation,
-        sequence,
-        wire::STATE_DOMAIN_ACTOR_COOLDOWNS,
-        previous.revision,
-        revision,
-        wire::DELTA_TYPE_ACTOR_COOLDOWNS_V1,
-        &payload,
-    )
-    .map_err(|_| ServeEnd::server("state_projection_unavailable"))?;
-    write_frame(stream, &frame)
-        .await
-        .map_err(|error| ServeEnd::Transport(TransportEnd::Write(error.kind())))?;
-    session.sequence = sequence;
-    session.admitted.continuity.server_sequence = sequence;
-    *previous = CooldownProjection {
-        revision,
-        deadlines: next,
-    };
     Ok(())
 }
 
-/// House commands retain their own live loop, but consume the same scoped
-/// movement-effect owner and negotiated presentation frame as Channel commands.
 pub(super) async fn refresh_house_effects<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
     authority: &A,

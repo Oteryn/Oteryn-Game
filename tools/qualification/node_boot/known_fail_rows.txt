@@ -42,7 +42,6 @@ S16a.full assertion at S16a/oressa-reachable
 S18.full assertion at S18/yell; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
 W01b.full assertion at W01b.full/admission
 W18.full assertion at W18.full/admission; step:prerequisite-or-mechanic-refused
-W19a.full deadline at W19a.full/walk
 W20a.full assertion at W20a/sunrise; 120s-timeout
 W20b.full assertion at W20b/light-cast-mana
 W22b.full assertion at W22b.full/fixture-release; steps=1,2,3,4,5,6,7;step-1:prey_query_returned_no_unlocked_slot|step-2:no_reachable_visible_rat|step-3:no_reachable_visible_rat|step-4:Gut_r

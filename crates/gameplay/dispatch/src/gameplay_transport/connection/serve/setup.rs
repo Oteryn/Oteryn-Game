@@ -3,7 +3,6 @@
 use super::*;
 
 struct LiveSetup {
-    cooldowns: Option<native_cues::CooldownProjection>,
     integrity: integrity::Integrity,
     initial: snapshot::InitialSnapshot,
     items: snapshot::ItemSnapshot,
@@ -204,8 +203,13 @@ where
     if let Some(message) = zones_nologout_transport::snapshot(authority, admitted) {
         payloads.push(message.map_err(|()| ServeEnd::server("join_snapshot_unavailable"))?);
     }
-    let cooldowns =
-        native_cues::snapshot_observations(authority, actor, admitted, &mut payloads).await?;
+    native_cues::snapshot_observations(authority, actor, admitted, &mut payloads).await?;
+    cooldowns::snapshot(
+        authority,
+        admitted,
+        initial.cooldowns.as_mut(),
+        &mut payloads,
+    )?;
     let mut domains = payloads
         .iter()
         .map(|domain| DomainSnapshot {
@@ -269,7 +273,6 @@ where
         generation,
         revision,
         LiveSetup {
-            cooldowns,
             integrity,
             initial,
             items,
@@ -300,7 +303,6 @@ async fn live<A: FreshAdmissionAuthority>(
     setup: LiveSetup,
 ) -> Result<ServeState, ServeEnd> {
     let LiveSetup {
-        cooldowns,
         integrity,
         initial,
         items,
@@ -308,6 +310,7 @@ async fn live<A: FreshAdmissionAuthority>(
         world,
     } = setup;
     let snapshot::InitialSnapshot {
+        cooldowns,
         spell_catalog,
         overlay_served,
         notices_selected,

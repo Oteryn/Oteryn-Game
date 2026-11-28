@@ -184,10 +184,11 @@ fn door_poses_preserve_independent_crystal_collision_flags() {
         (8352, false, false, false, true),
         (12249, false, false, true, false),
     ] {
-        let pose = palette_door(&format!("oteryn:item.tibia.i{id}"), &items);
+        let closed = super::super::door_registry::closed_of(id).unwrap_or(id);
+        let pose = palette_door(&format!("oteryn:item.tibia.i{id}"), id, closed, &items);
         assert!(
-            matches!(pose, PaletteDoor::Pair { locked, authored_closed, open, open_solid: solid, key_forms, .. }
-                if locked == initially_locked && authored_closed.is_some() == starts_open
+            matches!(pose, PaletteDoor::Pair { locked, starts_open: open_at_boot, open, open_solid: solid, key_forms, .. }
+                if locked == initially_locked && open_at_boot == starts_open
                     && solid == open_solid && open.blocks_projectile == open_blocks_projectile
                     && key_forms.is_some() == (id != 12249)),
             "Crystal door {id} has unexpected pose {pose:?}"

@@ -154,6 +154,16 @@ fn guard_case(
                             payload: &payload,
                         },
                     )?
+                } else if command_type == oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT {
+                    use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode, encode_expert_fight_modes};
+                    let payload = encode_expert_fight_modes(&ExpertFightModes {
+                        modes: FightModes::DEFAULT,
+                        expert: ExpertMode::Dove,
+                    });
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue { command_id: 1, command_type, payload: &payload },
+                    )?
                 } else if command_type == COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB {
                     oteryn_protocol_oteryn::encode_client_command(
                         1,

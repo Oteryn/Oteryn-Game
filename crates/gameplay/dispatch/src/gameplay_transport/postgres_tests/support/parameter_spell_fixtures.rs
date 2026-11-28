@@ -86,9 +86,18 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
     eprintln!(
         "PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}"
     );
-    prepare_current_session(&h).await?;
+    let recovery = if matches!(case, 104 | 106) {
+        let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+        Some(source)
+    } else {
+        prepare_current_session(&h).await?;
+        None
+    };
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5 | 6 | LOGOUT_WITH_COOLDOWN) {
+    let cooldown_cast_replay_case = matches!(case, COOLDOWN_CASE | COOLDOWN_WITHOUT_PRESENTATION_CASE);
+    let has_observer = !matches!(case, 1 | 5 | 6 | LOGOUT_WITH_COOLDOWN) && !cooldown_cast_replay_case;
+    if has_observer {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -120,7 +129,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
         pin.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        (2, 11, -7),
+        if cooldown_cast_replay_case {
+            (12, 14, -7) // Walkable, ground-only protection-zone tile in the pinned Thalom map.
+        } else {
+            (2, 11, -7)
+        },
     );
     let mut deps = Dependencies::with_content_and_capacity(
         cp,
@@ -131,6 +144,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
+    if let Some(recovery) = &recovery {
+        owner.evidence = &recovery.evidence;
+    }
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
@@ -248,7 +264,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5 | 6 | LOGOUT_WITH_COOLDOWN) {
+    let target_actor = if has_observer {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -272,7 +288,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5 | 6 | LOGOUT_WITH_COOLDOWN)).then_some(target_session),
+        has_observer.then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -365,6 +381,20 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, check_
                 .mana,
             before - 20
         );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
+    if cooldown_cast_replay_case {
+        cooldown_cast_replay::check(&owner, admitted, native.spell_book(), case == COOLDOWN_CASE).await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
+    if (101..=108).contains(&case) {
+        cooldowns::exercise(&owner, admitted, native.spell_book(), case).await?;
         drop(owner);
         drop(authority);
         drop(seal);
@@ -947,3 +977,12 @@ pub(super) async fn exchange_from(
 
 #[path = "parameter_spell/exiva_settings.rs"]
 pub(super) mod exiva_settings;
+
+#[path = "parameter_spell/cooldown_cast_replay.rs"]
+mod cooldown_cast_replay;
+
+#[path = "parameter_spell/cooldowns.rs"]
+mod cooldowns;
+
+pub(super) const COOLDOWN_WITHOUT_PRESENTATION_CASE: u8 = 253;
+pub(super) const COOLDOWN_CASE: u8 = 254;

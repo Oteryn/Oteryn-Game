@@ -474,6 +474,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         item: ItemKey,
+        replay_only: bool,
     ) -> Option<Option<UseOutcome>> {
         let ItemKey::Instance(id) = item else {
             return None;
@@ -482,7 +483,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         let command_id = CommandId::new(command.command_id).ok()?;
         let reference = CommandRef::new(command.game_session_id, command_id);
-        let permit = self.spell_lane_permit().await?;
+        self.states
+            .command_ingress
+            .set_use_receipt(reference, Some(super::session_ingress::UseReceipt::Coin));
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Some(None);
+        };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let outcome = |changed| {
             Some(Some(UseOutcome {
@@ -525,6 +531,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(receipt)) => return outcome(receipt.changed),
+            Ok(None) if replay_only => {
+                self.states.command_ingress.set_use_receipt(reference, None);
+                return None;
+            }
             Ok(None) => {}
             Err(_) => return Some(None),
         }
@@ -538,6 +548,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && Coin::from_production_key(&entry.item.definition.production_key).is_none()
             })
         {
+            self.states.command_ingress.set_use_receipt(reference, None);
             return None;
         }
         let inventory = match budget
@@ -555,14 +566,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(inventory) => inventory,
             Err(_) => return Some(None),
         };
-        let entry = inventory
+        let coin = inventory
             .backpack
             .iter()
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
-            .find(|e| e.item.item_instance_id == id)?;
-        let coin = Coin::from_production_key(&entry.item.definition.production_key)?;
-        let exchange = match (coin, entry.item.quantity) {
+            .find(|e| e.item.item_instance_id == id)
+            .and_then(|entry| {
+                Coin::from_production_key(&entry.item.definition.production_key)
+                    .map(|coin| (coin, entry.item.quantity))
+            });
+        let Some((coin, quantity)) = coin else {
+            self.states.command_ingress.set_use_receipt(reference, None);
+            return None;
+        };
+        let exchange = match (coin, quantity) {
             (Coin::Gold, _) => CoinExchange::GoldToPlatinum,
             (Coin::Platinum, 100) => CoinExchange::PlatinumToCrystal,
             (Coin::Platinum, _) => CoinExchange::PlatinumToGold,

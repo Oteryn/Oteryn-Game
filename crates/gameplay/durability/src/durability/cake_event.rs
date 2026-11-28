@@ -403,6 +403,19 @@ impl DurabilityRoot {
                 .bind(world.as_bytes().as_slice()).bind(year).bind(fence.character_id.as_bytes().as_slice())
                 .bind(actor.as_slice()).bind(movement_revision.to_string()).bind(epoch.to_string())
                 .bind(position).bind(i32::from(source)).fetch_one(&mut *tx).await?;
+            // Crystal movements_cake_base_isle.lua:15-23 grants on stage-three
+            // Cake Base entry, even when the Brutus errand is armed or complete.
+            if matches!(source, 12090..=12095) && matches!(outcome.as_str(), "armed" | "complete") {
+                let event = [actor.as_slice(), &movement_revision.to_be_bytes(), &epoch.to_be_bytes()].concat();
+                super::account_achievement::grant_missing(
+                    &mut tx,
+                    fence.character_id,
+                    &["oteryn:achievement/i_did_my_part"],
+                    "oteryn:cake-isle",
+                    &event,
+                )
+                .await?;
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(outcome)
         })).await

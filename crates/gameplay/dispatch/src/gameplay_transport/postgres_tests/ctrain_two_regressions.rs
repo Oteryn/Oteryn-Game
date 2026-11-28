@@ -14,6 +14,11 @@ fn storkus_accepts_deposits_and_confirms_in_separate_steps() -> TestResult {
 }
 
 #[test]
+fn storkus_refreshes_collection_and_answers_empty_yes_please() -> TestResult {
+    qengine_rewards_fixtures::scenario("qengine-rewards-storkus-empty-dust")
+}
+
+#[test]
 fn nomad_ignores_shared_xp_disabled_in_the_world_owner() -> TestResult {
     scenario(
         stringify!(nomad_ignores_shared_xp_disabled_in_the_world_owner),

@@ -123,7 +123,7 @@ where
             session,
             command,
             dispatch,
-            result,
+            (Vec::new(), result),
             CommandOutcome {
                 second_logout: false,
                 lost_while_logging_out: None,
@@ -403,6 +403,19 @@ where
     if matches!(dispatch, Dispatch::Vip(None)) {
         return Err(ServeEnd::server("command_outcome_unavailable"));
     }
+    let cast_revision = match &dispatch {
+        Dispatch::Spell(cast) | Dispatch::ParameterSpell(cast, _) => {
+            cast.vitals.map(|(revision, _)| revision)
+        }
+        _ => None,
+    };
+    let cooldown_frames = cooldowns::frames(
+        authority,
+        session.cooldowns.as_ref(),
+        &mut session.admitted.continuity,
+        cast_revision,
+    )?;
+    session.sequence = session.admitted.continuity.server_sequence;
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
     if guard_deferred
@@ -447,7 +460,13 @@ where
         result::encode(session, command, &mut dispatch)?
     };
     outbound::finish(
-        stream, authority, session, command, dispatch, result, outcome,
+        stream,
+        authority,
+        session,
+        command,
+        dispatch,
+        (cooldown_frames, result),
+        outcome,
     )
     .await?;
     if no_path {

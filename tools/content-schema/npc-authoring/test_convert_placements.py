@@ -69,6 +69,32 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_marid_journey_npcs_use_crystal_global_anchors(self):
+        expected = {
+            "bo_ques": (33102, 32521, 5),
+            "fa_hradin": (33102, 32540, 5),
+            "gabel": (33101, 32520, 1),
+            "haroun": (33109, 32525, 4),
+            "maryza": (32634, 31889, 9),
+            "melchior": (33142, 32817, 7),
+            "nah_bob": (33103, 32520, 2),
+            "rata_mari": (33037, 32626, 7),
+            "the_orc_king": (32983, 31732, 9),
+            "umar": (33102, 32531, 6),
+        }
+        actual = []
+        for record in self.records:
+            row = record["declaration"]
+            key = row["npc"].removeprefix("oteryn:npc.")
+            if key in expected:
+                actual.append((key, tuple(row["cell"][axis] for axis in ("x", "y", "floor"))))
+            if key == "umar":
+                adjustment, = [source for source in row["provenance"]
+                               if source.get("basis") == "CHOSEN_OTERYN_APPROXIMATION"]
+                self.assertEqual(adjustment["source_cell"], {"x": 33102, "y": 32532, "floor": 6})
+                self.assertEqual(adjustment["cell"], row["cell"])
+        self.assertEqual(sorted(actual), sorted(expected.items()))
+
     def test_classic_quest_contacts_use_the_pinned_global_npc_anchors(self):
         expected = {
             "alesar": (33048, 32621, 5),
@@ -109,6 +135,16 @@ class ConvertPlacementsTest(unittest.TestCase):
         source, = rows[0]['provenance']
         self.assertEqual(source['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
         self.assertEqual(source['source_row'], 'data-global/world/world-npc.xml')
+
+    def test_captain_max_leaves_the_ferry_return_clear(self):
+        rows = [r["declaration"] for r in self.records
+                if r["declaration"]["npc"] == "oteryn:npc.captain_max"]
+        self.assertEqual([row["cell"] for row in rows], [{"x": 32298, "y": 32895, "floor": 6}])
+        self.assertEqual(rows[0]["direction"], "north")
+        routes = cp.ROOT / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json"
+        route, = [row for row in json.loads(routes.read_text())
+                  if row["key"] == "oteryn:service.travel.captain_max_calassa/liberty_bay"]
+        self.assertEqual((route["x"], route["y"], route["floor"]), (32298, 32896, 6))
 
     def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
         actual = [r['declaration'] for r in self.records

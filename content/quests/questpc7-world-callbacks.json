@@ -41,7 +41,7 @@
       "failure_message": "Ask the king about the anniversary exhibition first.",
       "success_message": "You have found the Formal Dress anniversary exhibition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:8389cc5f8c6e897be9d2a0a4eb16b41719cfda78277e7b37fc7f317eb4a7c216"
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:187c48e45a16bf6a40101c95959b73912d68d6d0cdf4fc1c8ead9e27298da73c"
       ]
     },
     {
@@ -84,7 +84,7 @@
       "failure_message": "Ask the king about the anniversary exhibition first.",
       "success_message": "You have earned the Formal Dress outfit. Ask the king for a formal brass button.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:8389cc5f8c6e897be9d2a0a4eb16b41719cfda78277e7b37fc7f317eb4a7c216"
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:187c48e45a16bf6a40101c95959b73912d68d6d0cdf4fc1c8ead9e27298da73c"
       ],
       "effects": {
         "outfit_reward": {
@@ -142,11 +142,17 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17680,
+        "reset_after_ms": 240000
       },
       "return_on_failure": false,
       "failure_message": null,
@@ -157,9 +163,9 @@
       },
       "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:da0e18cfab9c23a0100618615c4d3ffa38fc804efad3870588600f2756b11658",
+        "content/world/placements/index.json:1:sha256:2065b20ba233e0cc6f12df7c04234ac73601e55df18b628ef67548acae21f1ed",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -212,11 +218,17 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17680,
+        "reset_after_ms": 240000
       },
       "return_on_failure": false,
       "failure_message": null,
@@ -227,9 +239,9 @@
       },
       "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:da0e18cfab9c23a0100618615c4d3ffa38fc804efad3870588600f2756b11658",
+        "content/world/placements/index.json:1:sha256:2065b20ba233e0cc6f12df7c04234ac73601e55df18b628ef67548acae21f1ed",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -282,11 +294,17 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17680,
+        "reset_after_ms": 240000
       },
       "return_on_failure": false,
       "failure_message": null,
@@ -297,9 +315,9 @@
       },
       "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:da0e18cfab9c23a0100618615c4d3ffa38fc804efad3870588600f2756b11658",
+        "content/world/placements/index.json:1:sha256:2065b20ba233e0cc6f12df7c04234ac73601e55df18b628ef67548acae21f1ed",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -351,7 +369,7 @@
       "success_message": "You apply the rat urine to the marked pond for Rafzan.",
       "sources": [
         "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -384,6 +402,78 @@
         {
           "track": "oteryn:quest-progress/questpc7/goblin/trunks",
           "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You smash the junk trunk.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-1-last",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33101,
+          "y": 32047,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 2,
           "maximum": 2,
           "set": 3,
           "add": 1
@@ -397,31 +487,33 @@
       ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/trunks",
-        "minimum": 0,
+        "minimum": 2,
         "maximum": 2
       },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
       "offerings": [],
-      "item_on_target": null,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": [],
-        "owned_items": [
-          {
-            "item": "oteryn:item.tibia.i17676",
-            "count": 1
-          }
-        ]
-      },
-      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "success_message": "You smash the last trunk and your hammer breaks.",
       "sources": [
         "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -454,6 +546,78 @@
         {
           "track": "oteryn:quest-progress/questpc7/goblin/trunks",
           "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You smash the junk trunk.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-2-last",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33143,
+          "y": 32051,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 2,
           "maximum": 2,
           "set": 3,
           "add": 1
@@ -467,31 +631,33 @@
       ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/trunks",
-        "minimum": 0,
+        "minimum": 2,
         "maximum": 2
       },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
       "offerings": [],
-      "item_on_target": null,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": [],
-        "owned_items": [
-          {
-            "item": "oteryn:item.tibia.i17676",
-            "count": 1
-          }
-        ]
-      },
-      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "success_message": "You smash the last trunk and your hammer breaks.",
       "sources": [
         "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -524,6 +690,78 @@
         {
           "track": "oteryn:quest-progress/questpc7/goblin/trunks",
           "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You smash the junk trunk.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-3-last",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33136,
+          "y": 32076,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 2,
           "maximum": 2,
           "set": 3,
           "add": 1
@@ -537,31 +775,33 @@
       ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/trunks",
-        "minimum": 0,
+        "minimum": 2,
         "maximum": 2
       },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
       "offerings": [],
-      "item_on_target": null,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": [],
-        "owned_items": [
-          {
-            "item": "oteryn:item.tibia.i17676",
-            "count": 1
-          }
-        ]
-      },
-      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "success_message": "You smash the last trunk and your hammer breaks.",
       "sources": [
         "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -606,7 +846,7 @@
       "failure_message": null,
       "success_message": "You have surveyed the concealed Corym chamber. Defeat five Coryms before searching its valuables.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e"
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e"
       ]
     },
     {
@@ -651,7 +891,7 @@
       "failure_message": null,
       "success_message": "You recover the valuables hidden in the Corym chamber.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e"
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e"
       ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/hidden/programme",
@@ -721,7 +961,7 @@
       "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
       "success_message": "You have found the old surveying route. Search the nearby chest for the hoist plan.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424"
       ]
     },
     {
@@ -772,7 +1012,7 @@
       "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
       "success_message": "The recovered plan describes the hoist fittings. Examine them beside the platform.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424"
       ]
     },
     {
@@ -823,7 +1063,7 @@
       "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
       "success_message": "The fittings match the plan. You understand the operating instructions. Enter the platform and set the lower lever.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424"
       ]
     },
     {
@@ -885,7 +1125,7 @@
       "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
       "success_message": "The hoist is ready. You have completed the surveying route.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424"
       ],
       "completes": true
     },
@@ -933,10 +1173,11 @@
         "premium": true,
         "completed_quests": []
       },
-      "success_message": "You have reached the Hydra nest. Defeat its guardian and recover an egg.",
+      "success_message": "You have reached the Hydra nest. Recover an egg from the northeast nest.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
-        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072",
+        "tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:149279"
       ]
     },
     {
@@ -963,13 +1204,6 @@
           "minimum": 1,
           "maximum": 1,
           "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/hydra/kills",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
         }
       ],
       "minimum_level": null,
@@ -993,8 +1227,9 @@
       },
       "success_message": "You have recovered an egg from the Hydra nest.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
-        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072",
+        "tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:149279"
       ],
       "completes": true
     },
@@ -1050,7 +1285,7 @@
       "failure_message": null,
       "success_message": "A voice beneath Rathleton leads you toward the workshop. Examine the machinery for evidence.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
       ]
     },
@@ -1094,7 +1329,7 @@
       "failure_message": null,
       "success_message": "The workshop evidence exposes the plot. Follow the passage east into the dungeon.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
       ]
     },
@@ -1138,7 +1373,7 @@
       "failure_message": null,
       "success_message": "You have earned access to this investigation route. Defeat ten hostile Glooth Golems, then Professor Maxxen.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
       ]
     },
@@ -1202,10 +1437,14 @@
       "failure_message": null,
       "success_message": "The conspiracy is ended. You recover the blueprint, four Glooth Bags and five platinum coins.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
-        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_reward.lua:2-12,18"
       ],
       "completes": true,
+      "achievements": [
+        "oteryn:achievement/the_professor_s_nut"
+      ],
       "item_reward": {
         "item": "oteryn:item.tibia.i21897",
         "count": 1,
@@ -1286,7 +1525,7 @@
       },
       "success_message": "You have found the infernal entrance. Offer ten Demonic Essences at its ritual flame.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/movements_entrance.lua:1:sha256:39ba5182b22c0881bd4dd88bfaffa317d2460fb8effe6b354fe37964afcb60ba",
         "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d"
       ]
@@ -1345,7 +1584,7 @@
       },
       "success_message": "The ten essences empower your chosen god-slaying ritual. The first seal awaits.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/movements_entrance.lua:1:sha256:39ba5182b22c0881bd4dd88bfaffa317d2460fb8effe6b354fe37964afcb60ba",
         "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d"
       ]
@@ -1414,7 +1653,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_plagirath.lua:1:sha256:b26bbfee0013e159760774af9491f6912442d862bc84e666fad66ff42fd013c8",
         "content/world/placements/region-z13-x129-y123.b3:1:sha256:d62f9bda79c2a39811b522e0c9fdc84bd5d166692734438df9b0ad2a15a57715"
       ]
@@ -1483,7 +1722,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_zamulosh.lua:1:sha256:b1235772e4a7409b7c8d7c17609c6292b13b1b7597f460ef2a56c1523e56b278",
         "content/world/placements/region-z11-x131-y127.b3:1:sha256:f109ef8bc953b434085af40fd03d4238ca8ae69d0f6cbc1470f036efdc2b90a9"
       ]
@@ -1552,7 +1791,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_mazoran.lua:1:sha256:aa42e74df7fe8513799dc9dae7d8f1e0ae0e40be47a0218071b3ea4000ec48b3",
         "content/world/placements/region-z14-x131-y127.b3:1:sha256:f1bf5ad6ab7f45a56a1a08b5152b6585f78687b356307d6265d1b8d935a5ddd3"
       ]
@@ -1621,7 +1860,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_razzagorn.lua:1:sha256:21faaf1355ff47db52995885a6d02d2da0174234b5320d75bc422a50fad8b0de",
         "content/world/placements/region-z14-x130-y126.b3:1:sha256:be75ad3406f6c5058fa8dd6b62d2f3828cca8ffa6440523885ce48c70d96a549"
       ]
@@ -1690,7 +1929,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ragiaz.lua:1:sha256:3535982e927b467b0fbd399ef1d03fea1af6ca67ae8fc839a273b6e39c1f0a29",
         "content/world/placements/region-z13-x130-y126.b3:1:sha256:a525ef0f1187968cf8e950c51437204cf49ba32b50136b43fd6507f6f5ce03db"
       ]
@@ -1759,7 +1998,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_tarbaz.lua:1:sha256:f5f6e183c5b9059a1074a8a9e94b7fcc186d9c487d17b801a63cd6a51a7c3925",
         "content/world/placements/region-z11-x130-y128.b3:1:sha256:40f496ecff1b96ad0ce31da3635d0c5d43283c6724a369ce9b50ddc62a99b67d"
       ]
@@ -1828,7 +2067,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_shulgrax.lua:1:sha256:caa78225a995594732f4371b1f54c6a39f5e459528c3c6d7964d620a090660d0",
         "content/world/placements/region-z13-x130-y128.b3:1:sha256:ed2759cc06ee7a2ebcac399d3d9e520bfdc2403cb00d9c60348f109c8287ef87"
       ]
@@ -1891,7 +2130,7 @@
       },
       "success_message": "This seal is broken. You may continue the chosen expedition.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1:sha256:da25bca87561d9f917f90ce7bc50c4e7fc7f0357e7146516a2713212057b18c2",
         "content/world/placements/region-z14-x130-y122.b3:1:sha256:e4dcf7855b7d22e9d1464e8e7661399f9d4f933dcd516fdce363a9caca5ddc13"
       ]
@@ -1950,7 +2189,7 @@
       },
       "success_message": null,
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:10503bd8303c27fba14e9877fd76e0d6a31c17e32d03da792264ff536726f35e",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:812fd66ffef59759ed936b45f2434683d1ea8cdfb7ee2ce38ebe91d34042152e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_reward.lua:1:sha256:8bc9b9b52b43d5f092f78c8ad7e16089934690922565eb7b7bb464f61fc0002c",
         "content/world/placements/region-z14-x130-y122.b3:1:sha256:e4dcf7855b7d22e9d1464e8e7661399f9d4f933dcd516fdce363a9caca5ddc13",
         "https://tibia.fandom.com/index.php?curid=76901&oldid=1110095"
@@ -2051,7 +2290,7 @@
       },
       "success_message": "You sense twelve haunted graves. Examine this grave to follow the chosen spectral trail.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x129-y123.b3:1:sha256:94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2107,7 +2346,7 @@
       },
       "success_message": "You have visited the haunted grave in Edron north. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x129-y123.b3:1:sha256:94184ed8613633e2927441c90ee4e8ea77f852658ece4b126bca75ff539569b3",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2163,7 +2402,7 @@
       },
       "success_message": "You have visited the haunted grave in Dark Cathedral. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x127-y126.b3:1:sha256:da0a3174ca0b9208b95f4f01b9478a6d57b2c44562bbfe87c3aadb7de6b30771",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2219,7 +2458,7 @@
       },
       "success_message": "You have visited the haunted grave in Ghostlands. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x125-y124.b3:1:sha256:b37687ad30db1d15d0ce2af67348a70d979a9b61e002123e7b6547ecaf9cfc3a",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2275,7 +2514,7 @@
       },
       "success_message": "You have visited the haunted grave in Cormaya. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x129-y124.b3:1:sha256:a3fdfadb42b96372256f5672fbbcdd4de109501da834741e1c004747af1f7014",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2331,7 +2570,7 @@
       },
       "success_message": "You have visited the haunted grave in Femor Hills. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z06-x127-y124.b3:1:sha256:5e3aa6796ec4ac19ff73372d298189e3503be68a5bdfba08c1fdf8d9f42a2d91",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2387,7 +2626,7 @@
       },
       "success_message": "You have visited the haunted grave in isle northeast of Ankrahmun. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x130-y128.b3:1:sha256:724df7c4659c21072cfc6e6f6a36652c8b326235fb5bcd19f0eb1ba2392084fe",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2443,7 +2682,7 @@
       },
       "success_message": "You have visited the haunted grave in Kilmaresh. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z09-x132-y123.b3:1:sha256:5c66f4a7b9c6ddf863e8f4ef57a2e87f40b1f436669750384194287aca801429",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2499,7 +2738,7 @@
       },
       "success_message": "You have visited the haunted grave in Vengoth. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x128-y123.b3:1:sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2555,7 +2794,7 @@
       },
       "success_message": "You have visited the haunted grave in Darashia. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z11-x129-y126.b3:1:sha256:25000632406f556ca125613aa69a3ed52a6ddca472e4874c2c4b6f1761dd5f94",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2611,7 +2850,7 @@
       },
       "success_message": "You have visited the haunted grave in old Thais temple. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z12-x126-y125.b3:1:sha256:620da51fd36cc225af401d30a7eb2d2e24da60a7d8d9d91aad4e1e7b7d2921f7",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2667,7 +2906,7 @@
       },
       "success_message": "You have visited the haunted grave in Orclands entrance. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x128-y124.b3:1:sha256:56853b840ff3bd613ec2a37e75ae8dd8ac0eee96db652f6feaba5eccdd506368",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2735,7 +2974,7 @@
       },
       "success_message": "You have visited the haunted grave in southern Ice Islands. The spectral trail continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x125-y123.b3:1:sha256:c3b33f29be0264ac9e82205321606fd44cc69c627d584a2b65a27b4ddd83b2a4",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2811,7 +3050,7 @@
       },
       "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2887,7 +3126,7 @@
       },
       "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -2963,7 +3202,7 @@
       },
       "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -3045,7 +3284,7 @@
       },
       "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -3134,7 +3373,7 @@
       },
       "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -3196,9 +3435,22 @@
       },
       "success_message": "King Zelos is defeated. Investigate the Cobra Bastion.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
-        "content/world/placements/region-z13-x130-y123.b3:1:sha256:fdd5e457c35b1a3622485103aa9006e2dbb33a622cba968fe792260c1cdac26e",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "content/world/placements/region-z13-x130-y123.b3:1:sha256:0557345c5961ec16890e37aad7df65471a684687a504a020f37238e7a557bd0b",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 0,
+            "minimum": 4
+          }
+        }
       ]
     },
     {
@@ -3258,7 +3510,7 @@
       },
       "success_message": "You have investigated the Cobra Bastion. Confront Scarlett Etzel.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y127.b3:1:sha256:dda5c6165990fc024b707fc6dcaca826b830a2d2b083ce98d19d0df470d3e127",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ],
@@ -3326,7 +3578,7 @@
       },
       "success_message": "Scarlett is defeated. Examine the armour to close the investigation.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -3369,12 +3621,6 @@
           "maximum": 1,
           "set": 1,
           "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
-          "minimum": -1,
-          "maximum": 1,
-          "set": 1
         }
       ],
       "minimum_level": null,
@@ -3389,26 +3635,17 @@
         "premium": true,
         "completed_quests": []
       },
-      "success_message": "The twelve graves, Lich Knights, Zelos and Cobra threat are resolved. You earn Hand of the Inquisition and Inquisition's Hand.",
+      "success_message": "The twelve graves, Lich Knights, Zelos and Cobra threat are resolved.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ],
       "completes": true,
-      "achievements": [
-        "oteryn:achievement/inquisition_s_hand"
-      ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/grave/programme",
         "minimum": 3,
         "maximum": 3
-      },
-      "effects": {
-        "outfit_reward": {
-          "outfit": "oteryn:outfit.hand_of_the_inquisition",
-          "addons": 0
-        }
       }
     },
     {
@@ -3457,7 +3694,7 @@
       },
       "success_message": "Investigate five nightshade plots on Grimvale.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -3513,7 +3750,7 @@
       },
       "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -3579,7 +3816,7 @@
       },
       "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -3645,7 +3882,7 @@
       },
       "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -3711,7 +3948,7 @@
       },
       "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -3782,7 +4019,7 @@
       },
       "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -3854,7 +4091,7 @@
       },
       "success_message": "You prepare the silvered trap for Feroxa.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -3915,7 +4152,7 @@
       },
       "success_message": "The silvered trap is deployed. Confront Feroxa.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z11-x130-y123.b3:1:sha256:d2d37319a334a62251391ffdb9901a3ccdadfc4fed047ec06934a0c595436a18",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -3982,7 +4219,7 @@
       },
       "success_message": "Feroxa is defeated. Trace the curse to Edron.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z11-x130-y123.b3:1:sha256:d2d37319a334a62251391ffdb9901a3ccdadfc4fed047ec06934a0c595436a18",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4038,7 +4275,7 @@
       },
       "success_message": "You investigate the curse in Edron.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x129-y124.b3:1:sha256:a3fdfadb42b96372256f5672fbbcdd4de109501da834741e1c004747af1f7014",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4105,7 +4342,7 @@
       },
       "success_message": "You investigate the curse in Cormaya.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z09-x130-y125.b3:1:sha256:2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4174,7 +4411,7 @@
       },
       "success_message": "The were-beast leader is defeated.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x129-y125.b3:1:sha256:29959154e97f6a6dd24b0cf3076f3316b218717ea0f2a0165b1dc90530ee9ea4",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4243,8 +4480,8 @@
       },
       "success_message": "The were-beast leader is defeated.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
-        "content/world/placements/region-z09-x129-y124.b3:1:sha256:54c43306cd0fa522c1edc7a359fcee0723cd83930a915f901dd7a0b831cfb1f1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "content/world/placements/region-z09-x129-y124.b3:1:sha256:5b887802fb6c0986801830c793bb937becc5ff066a0493d124eda319c147e613",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
     },
@@ -4312,7 +4549,7 @@
       },
       "success_message": "The were-beast leader is defeated.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z09-x129-y125.b3:1:sha256:ab9e36320980f97138b022f778bb9021cb83dff2bf732fd15869b726e72a0bbc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4374,7 +4611,7 @@
       },
       "success_message": "The were-beast leader is defeated.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z09-x130-y125.b3:1:sha256:2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4430,7 +4667,7 @@
       },
       "success_message": "The investigation continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4486,7 +4723,7 @@
       },
       "success_message": "The investigation continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4541,7 +4778,7 @@
       },
       "success_message": "You destroy the influence at the cursed site. Defeat twenty Werehyaenas.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4597,7 +4834,7 @@
       },
       "success_message": "The lairs are cleared. Request Domizian's pardon.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4653,7 +4890,7 @@
       },
       "success_message": "You investigate the island's ancient symbols.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x129-y128.b3:1:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4708,7 +4945,7 @@
       },
       "success_message": "You investigate the island's ancient symbols.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x128-y128.b3:1:sha256:bd808a71a6bdd1284444209c02b3991b5e315ff2cccb2cc72f434c1061f3c004",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4766,7 +5003,7 @@
       },
       "success_message": "The ancient ritual stills the local curse. You earn the Foxtail Amulet, Over the Moon and Drama in Darama.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x128-y128.b3:1:sha256:bd808a71a6bdd1284444209c02b3991b5e315ff2cccb2cc72f434c1061f3c004",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ],
@@ -4831,7 +5068,7 @@
       },
       "success_message": "Your completed investigation opens the island route.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x129-y128.b3:1:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4881,7 +5118,7 @@
       },
       "success_message": "Your completed investigation opens the island route.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x128-y128.b3:1:sha256:bd808a71a6bdd1284444209c02b3991b5e315ff2cccb2cc72f434c1061f3c004",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4930,7 +5167,7 @@
       },
       "success_message": "You enter the Otherworld expedition through the Zao breach.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z08-x129-y122.b3:1:sha256:9532e85c1307dca1f61cb21293635e380ae9a535e3a5f351592db5762ab0f80f",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -4994,7 +5231,7 @@
       },
       "success_message": "The Destruction Destabilizer secures the expedition route.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -5063,7 +5300,7 @@
       },
       "success_message": "The breach boss is defeated. The expedition continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -5132,7 +5369,7 @@
       },
       "success_message": "The breach boss is defeated. The expedition continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -5201,7 +5438,7 @@
       },
       "success_message": "The breach boss is defeated. The expedition continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -5270,7 +5507,7 @@
       },
       "success_message": "The breach boss is defeated. The expedition continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -5339,7 +5576,7 @@
       },
       "success_message": "The breach boss is defeated. The expedition continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -5401,7 +5638,7 @@
       },
       "success_message": "The breach boss is defeated. The expedition continues.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -5450,7 +5687,7 @@
       },
       "success_message": "You recover a Heavy Old Tome for the temple record.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ],
@@ -5511,7 +5748,7 @@
       },
       "success_message": "The restored record opens the Energy Portal.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5573,7 +5810,7 @@
       },
       "success_message": "The ancient guardian is defeated. Follow the restored path.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x128-y128.b3:1:sha256:e8f96a7b6754fcf438b1a55bbe0d73cedd6e4e3321b0b6c33303c294dffe7f3b",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5629,7 +5866,7 @@
       },
       "success_message": "The ancient guardian is defeated. Follow the restored path.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5685,7 +5922,7 @@
       },
       "success_message": "The ancient guardian is defeated. Follow the restored path.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x127-y128.b3:1:sha256:f818c8913aab12300cd2e84dc6593a76215f758a8b83c8ac9c62c5329b29b3e7",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5747,7 +5984,7 @@
       },
       "success_message": "The ancient guardian is defeated. Follow the restored path.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z10-x130-y121.b3:1:sha256:8eda13410a87ebf971595eeacb54bbe16eb2ba2bfc379fc4f1cd3af7fd8a48ef",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5809,7 +6046,7 @@
       },
       "success_message": "The ancient guardian is defeated. Follow the restored path.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5865,7 +6102,7 @@
       },
       "success_message": "The ancient guardian is defeated. Follow the restored path.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z14-x124-y128.b3:1:sha256:2a5e9f0f36729af80ae8a40c92d07ebde9b20410966aefc248512247cb73e791",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5920,7 +6157,7 @@
       },
       "success_message": "You secure the Dragon Mother egg and restore the selected Ice Portal route.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z03-x128-y127.b3:1:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -5976,7 +6213,7 @@
       },
       "success_message": "Find Ivalisse's father, disguised as a chalice.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -6039,7 +6276,7 @@
       },
       "success_message": "The password zzubaran opens the fire route.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -6085,20 +6322,98 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
         "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
         "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef"
       ]
     },
     {
-      "key": "oteryn:quest-callback/authored-smith-cache-reward",
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-talon",
       "quest": "oteryn:quest.giant_smithhammer_quest",
       "trigger": "use",
       "selector": {
         "position": {
-          "x": 32777,
-          "y": 32254,
+          "x": 32774,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-talon",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3034",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-talon-last",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32774,
+          "y": 32253,
           "floor": -8
         },
         "appearance": 2472,
@@ -6122,6 +6437,18 @@
           "maximum": 1,
           "set": 1,
           "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-talon",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
         }
       ],
       "offerings": [],
@@ -6133,27 +6460,336 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
         "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
-        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef"
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
       ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3034",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-hammer",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32776,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-hammer",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3208",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-hammer-last",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32776,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-hammer",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
       "completes": true,
       "effects": {
         "item_reward": {
           "item": "oteryn:item.tibia.i3208",
           "count": 1,
-          "contents": [],
-          "backpack_outputs": [
-            {
-              "item": "oteryn:item.tibia.i3034",
-              "count": 1
-            },
-            {
-              "item": "oteryn:item.tibia.i3031",
-              "count": 100
-            }
-          ]
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-gold",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32778,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-gold",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3031",
+          "count": 100,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-gold-last",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32778,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-gold",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3031",
+          "count": 100,
+          "contents": []
         }
       }
     },
@@ -6214,7 +6850,7 @@
       },
       "success_message": "The silver Death Knell rings over the grave site.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6281,7 +6917,7 @@
       },
       "success_message": "The silver Death Knell rings over the grave site.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6347,7 +6983,7 @@
       },
       "success_message": "The silver Death Knell rings over the grave site.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6402,7 +7038,7 @@
       },
       "success_message": "You grind the skull into bone meal. Place a grave flower beside the apparatus and distil it.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6467,7 +7103,7 @@
       },
       "success_message": "The bone meal and grave flower become a potion with a skull cork. Ask Norbert for the scalpel.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6545,7 +7181,7 @@
       },
       "success_message": "You drink the potion and enter the Brain Grounds. Use the scalpel on the ulcer twenty times.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ]
@@ -6604,7 +7240,7 @@
       },
       "success_message": "You take one personal ulcer probe.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6677,7 +7313,7 @@
       },
       "success_message": "Return the twenty personal samples to Para Norbert.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ]
@@ -6736,7 +7372,7 @@
       },
       "success_message": "You collect a personal lost soul.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6810,7 +7446,7 @@
       },
       "success_message": "You purify one lost soul.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ],
@@ -6890,7 +7526,7 @@
       },
       "success_message": "Return the twenty purified souls to Norbert.",
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:7f64f7e8abe363b502c7b2c6cdcdc210c3601b642fb2e8e4ed579b91fbd4d9a7",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:d7a346c3dd520e65efcd1fa87415cdc336f3d8f9243855fd05d62910c861c424",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ]

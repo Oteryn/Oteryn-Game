@@ -66,6 +66,15 @@ def read_documents(root: Path, *, exact: bool = False) -> dict[str, bytes]:
     return result
 
 
+def install_trade_successors(repo_root: Path, package: Path) -> None:
+    from crystal_npc_trade import install_crystal_npc_trade
+    from import_cyclopedia_global import apply_trade_source, load_capture
+
+    reference = json.loads((package / "definitions/reference.json").read_bytes())
+    apply_trade_source(package, load_capture(repo_root), reference, Counter())
+    install_crystal_npc_trade(repo_root, package)
+
+
 def complete_world_project(
     repo_root: Path,
     input_root: Path,
@@ -75,6 +84,10 @@ def complete_world_project(
     materializer: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
+    from crystal_creature_parity import PACKET as PARITY_PACKET
+    from crystal_creature_parity import install_documents as install_parity
+    from crystal_spawn_creatures import PATH as SPAWN_PACKET
+    from crystal_spawn_creatures import install as install_spawn_creatures
     from questpc7_thaian_authoring import _install_documents
     from regenerate_content import source_cohort_extent
     from travel_route_corrections import project_routes
@@ -93,7 +106,7 @@ def complete_world_project(
             str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))
         ]
     elif use_materializer:
-        command = [str(materializer)]
+        command = [str(materializer.resolve(strict=True))]
     else:
         command = [
             "cargo",
@@ -116,22 +129,22 @@ def complete_world_project(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
+        if (repo_root / SPAWN_PACKET).is_file():
+            install_spawn_creatures(repo_root, staging_root)
+        if (repo_root / PARITY_PACKET).is_file():
+            install_parity(repo_root, staging_root)
         if include_world_successors:
-            from import_cyclopedia_global import apply_trade_source, load_capture
+            from pema_display_name import install_pema_display_name
             from questpc7_world_seal import refresh
             from regional_npc_dialogue import install as install_dialogue
             from regional_npc_prices import install as install_prices
 
             install_buddel(repo_root, staging_root)
             project_routes(repo_root, staging_root)
-            reference = json.loads(
-                (staging_root / "definitions/reference.json").read_bytes()
-            )
-            apply_trade_source(
-                staging_root, load_capture(repo_root), reference, Counter()
-            )
+            install_trade_successors(repo_root, staging_root)
             install_prices(repo_root, staging_root)
             install_dialogue(repo_root, staging_root)
+            install_pema_display_name(staging_root)
             refresh(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.

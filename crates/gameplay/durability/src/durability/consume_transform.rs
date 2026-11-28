@@ -31,6 +31,8 @@ mod house;
 pub(super) use house::house_action_current_in_transaction;
 pub use house::{HouseActionContext, HouseDecorationBaseItem};
 
+const SECRET_AGENT_JAM: &str = "oteryn:tool.secret-agent-jam";
+
 #[derive(Debug, Clone)]
 pub struct ConsumeTransformRequest {
     pub command: CommandRef,
@@ -86,6 +88,7 @@ pub(super) struct ExtraInput {
 enum ActionContext<'a> {
     #[default]
     Carried,
+    SecretAgentJam,
     CakeBaker(&'a CakeBakerContext),
     Ground(&'a GroundActionContext),
     DispenserTarget(&'a GroundActionContext),
@@ -196,6 +199,25 @@ impl DurabilityRoot {
         ).await?)
     }
 
+    /// Commit the source-selected Secret Agent jam through the carried Item timer owner.
+    #[allow(clippy::too_many_arguments, reason = "existing carried Item write fences")]
+    pub async fn jam_secret_agent_tool<C: ItemLoopContent>(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ConsumeTransformRequest,
+        native: &NativeGameplayState,
+        content: &C,
+    ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
+        self.consume_transform_inner(
+            permit, recovery, node, fence, request, native, content, false,
+            None, ActionContext::SecretAgentJam,
+        )
+        .await
+    }
+
     /// Probe or commit an action. Replay precedes live handle and custody resolution;
     /// an unknown acknowledgement cannot select a second outcome or repeat its grant.
     #[allow(clippy::too_many_arguments)]
@@ -248,6 +270,7 @@ impl DurabilityRoot {
                         && cake::is_baker(&caller.npc_key)
                         && effects.get("npc_key").and_then(Value::as_str)==Some(caller.npc_key.as_str())
                         && effects.get("reset_epoch").and_then(Value::as_str)==Some(caller.expected_epoch.to_string().as_str()),
+                    ActionContext::SecretAgentJam => recipe == SECRET_AGENT_JAM,
                     _ => recipe!=cake::RECIPE,
                 };
                 let result = if caller_matches && intent == request.intent && character == fence.character_id.as_bytes() {
@@ -358,7 +381,36 @@ async fn write<C: ItemLoopContent>(
     } else {
         None
     };
-    let planting_plan = if cake_plan.is_some() {
+    let planting_plan = if matches!(ground, ActionContext::SecretAgentJam) {
+        let session = *fence.game_session_id.as_bytes();
+        let command = request.command.command_id().get();
+        let jammed = oteryn_gameplay_items::secret_agent::jammed_successor(&definition.production_key)
+            .filter(|_| {
+                request.target.is_none()
+                    && oteryn_gameplay_items::secret_agent::jams(session, command, request.source)
+            })
+            .and_then(|id| native.item_policy_for_source_id(id))
+            .and_then(|policy| {
+                super::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy).ok()
+            });
+        let Some(jammed) = jammed else {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        };
+        let Some(decay) = jammed.decay.filter(|decay| decay.target.as_ref() == Some(&definition)) else {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        };
+        Some(ActionPlan {
+            recipe: SECRET_AGENT_JAM.into(),
+            outputs: vec![(jammed.definition, 1)],
+            consume_source: true,
+            source_count: 1,
+            effects: json!({"timed_output":{
+                "duration_ms": decay.duration_millis,
+                "decay_to": definition.production_key.rsplit(".i").next().and_then(|id| id.parse::<u32>().ok()),
+            }}),
+            extra_inputs: Vec::new(),
+        })
+    } else if cake_plan.is_some() {
         cake_plan
     } else {
         match dispenser::prepare(
@@ -942,12 +994,39 @@ async fn persist_action(
             event.as_bytes(),
         )
         .await?;
+    } else if plan.recipe == SECRET_AGENT_JAM {
+        super::account_achievement::add_progress(
+            tx,
+            fence.character_id,
+            "oteryn:achievement/bad_timing",
+            10,
+            oteryn_gameplay_progression::achievement_granters::TRANSFORM_SOURCE_KIND,
+            &super::item_mint::uuid_text(&event)?,
+        )
+        .await?;
     }
     apply_achievements(tx, fence, &plan.effects, &event).await?;
+    use oteryn_gameplay_progression::achievement_granters::{self, TRANSFORM_SOURCE_KIND};
+    let progress = if plan.recipe == "oteryn:lottery-ticket.v1" && plan.outputs.is_empty() {
+        // TibiaWiki page 62544, revision 844225: only a blank ticket counts.
+        Some(achievement_granters::JINX)
+    } else if plan.recipe.starts_with("oteryn:event-container.") {
+        before["definition_production_key"]
+            .as_str()
+            .and_then(achievement_granters::christmas_bundle)
+    } else {
+        None
+    };
+    if let Some(progress) = progress {
+        super::account_achievement::add_progress(
+            tx, fence.character_id, progress.key, progress.total, TRANSFORM_SOURCE_KIND,
+            event.as_bytes(),
+        ).await?;
+    }
     // Keep the established rust-remover achievement. Seed use is another two-input
     // conversion, so source recipe rather than operand count qualifies this progress.
     if plan.recipe.starts_with("oteryn:rust-remover.") && !plan.outputs.is_empty() {
-        use oteryn_gameplay_progression::achievement_granters::{POLISHER, TRANSFORM_SOURCE_KIND};
+        use oteryn_gameplay_progression::achievement_granters::POLISHER;
         super::account_achievement::add_progress(
             tx,
             fence.character_id,
@@ -1161,24 +1240,47 @@ async fn apply_achievements(
 ) -> Result<(), DurabilityError> {
     if effects.get("kind").and_then(Value::as_str) == Some("house_decoration") {
         let event = super::item_mint::uuid_text(event)?;
+        let family = effects.get("decoration_family").and_then(Value::as_str);
+        // Crystal birdcage.lua:3-9 transforms a full cage to 2975 on the rare roll.
+        // TibiaWiki awards Oops on the use that leaves the cage empty.
+        if family == Some("birdcage")
+            && effects.get("source_item_id").and_then(Value::as_u64) == Some(2976)
+            && effects["house_after"]["key"].as_str() == Some("oteryn:item.tibia.i2975")
+        {
+            super::account_achievement::grant_missing(
+                tx,
+                fence.character_id,
+                &["oteryn:achievement/oops"],
+                oteryn_gameplay_progression::item_use_achievement::SOURCE_KIND,
+                &event,
+            )
+            .await?;
+        }
         let progress = effects
             .get("achievement_progress")
             .and_then(Value::as_array)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        // Crystal data-global/scripts/actions/other/music.lua:65-66: each use
-        // advances the existing Rockstar achievement; no alternate achievement writer.
+        let rule = match family {
+            // Crystal data-global/scripts/actions/other/music.lua:65-66.
+            Some("music") => Some(("oteryn:achievement/rockstar", 10000)),
+            // TibiaWiki page 62811, revision 844405 excludes exhausted mirror uses.
+            Some("mirror") if effects.get("decoration_cooldown").is_some_and(Value::is_object) => {
+                Some(("oteryn:achievement/vanity", 300))
+            }
+            _ => None,
+        };
         for row in progress {
-            if effects.get("decoration_family").and_then(Value::as_str) != Some("music")
-                || row.get("key").and_then(Value::as_str) != Some("oteryn:achievement/rockstar")
-                || row.get("target").and_then(Value::as_u64) != Some(10000)
+            let (key, total) = rule.ok_or(DurabilityError::InvalidStoredState)?;
+            if row.get("key").and_then(Value::as_str) != Some(key)
+                || row.get("target").and_then(Value::as_u64) != Some(u64::from(total))
             {
                 return Err(DurabilityError::InvalidStoredState);
             }
             super::account_achievement::add_progress(
                 tx,
                 fence.character_id,
-                "oteryn:achievement/rockstar",
-                10000,
+                key,
+                total,
                 oteryn_gameplay_progression::item_use_achievement::SOURCE_KIND,
                 &event,
             )

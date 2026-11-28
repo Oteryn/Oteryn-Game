@@ -8,6 +8,7 @@ mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
 mod npc_input;
+pub mod paid_projection;
 mod selected_tool;
 mod tool_reads;
 mod vampire_coffin;
@@ -35,7 +36,11 @@ use super::{
 };
 use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_quests::quest::npc_rules::legacy_defaults;
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, VampireCoffinKind};
+use oteryn_gameplay_quests::quest::{
+    carried_step::recipe,
+    native_rules::NativeRule,
+    world_callbacks::{Callback, ItemOnTarget, Position, VampireCoffinKind},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
@@ -154,6 +159,18 @@ impl super::DurabilityRoot {
                         &catalogue, &callback.quest, &pin.definition_hash,
                     );
                 }
+                use oteryn_gameplay_quests::quest::venore_predecessor;
+                let mut legacy = std::collections::BTreeMap::new();
+                if callback.quest == venore_predecessor::QUEST {
+                    let stage: Option<i64> = sqlx::query_scalar(
+                        "SELECT value FROM game_character_quest_tracks
+                         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+                    ).bind(fence.character_id.as_bytes().as_slice()).bind(venore_predecessor::STAGE)
+                        .bind(&callback.quest).fetch_optional(&mut *tx).await?;
+                    if let Some(stage) = stage {
+                        legacy.insert(venore_predecessor::STAGE.to_owned(), stage);
+                    }
+                }
                 for storage in &callback.storage {
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
@@ -164,6 +181,7 @@ impl super::DurabilityRoot {
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
                         .bind(&callback.quest).fetch_optional(&mut *tx).await?;
                     let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
+                        .or_else(|| venore_predecessor::inherited_value(&storage.track, &legacy))
                         .unwrap_or(track.initial);
                     if !(storage.minimum..=storage.maximum).contains(&value) {
                         return Ok(Ok(false));
@@ -199,6 +217,24 @@ fn read_only_pin_allows(
         || legacy_defaults(catalogue, quest, &stored.definition_hash).is_some()
         || (quest == "oteryn:quest.children_of_the_revolution_quest"
             && stored.definition_hash == CHILDREN_MAIN_ERA_HASH))
+}
+
+/// Keep the source occurrence live across session release whenever its writer
+/// can debit a physical input. Conditional recipes reserve the same release
+/// window until the exact branch of their receipt is known.
+pub fn may_debit(callback: &Callback) -> bool {
+    recipe(&callback.key).is_some()
+        || !callback.offerings.is_empty()
+        || !callback.effects.carried_inputs.is_empty()
+        || callback.item_on_target.as_ref().is_some_and(|input| {
+            spends_source(input)
+                || !input.ingredients.is_empty()
+                || matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. }))
+        })
+}
+
+fn spends_source(input: &ItemOnTarget) -> bool {
+    input.count > 0 && !input.reusable
 }
 
 struct Input {
@@ -327,7 +363,13 @@ pub(super) async fn consume_reward_inputs(
     keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
     keys.sort_unstable();
     keys.dedup();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
+        AND (i.definition_production_key<>'oteryn:item.tibia.i4837'
+             OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p
+                WHERE p.item_instance_id=i.item_instance_id
+                  AND p.definition_production_key=i.definition_production_key
+                  AND p.expires_at_unix_ms>floor(extract(epoch FROM statement_timestamp())*1000)::bigint))
+        ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if let Some(use_) = carried_use {
         let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
@@ -506,6 +548,18 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    if oteryn_gameplay_quests::quest::hive_access::checkpoint_stage(&callback.key).is_some()
+        && !super::world_event::changes::callbacks::hive_gate_permitted(
+            tx,
+            world_id,
+            context.reset_epoch,
+            fence.character_id,
+            &callback.key,
+        )
+        .await?
+    {
+        return Ok(false);
+    }
     // M03: promotion is a permanent Character purchase, not a client vocation
     // name or copied quest storage. The outer writer holds the Character root.
     if callback.admission.as_ref().is_some_and(|a| a.promotion)
@@ -646,6 +700,12 @@ pub(super) async fn consume(
         tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
     .await?;
+    if consumed
+        && may_debit(callback)
+        && !paid_projection::write_arrivals(tx, fence, callback, context).await?
+    {
+        return Ok(false);
+    }
     if consumed && coffin == Some(VampireCoffinKind::Weakened) {
         return vampire_coffin::record_encounter(tx, fence.character_id).await;
     }
@@ -828,7 +888,7 @@ async fn consume_inputs(
                 ice_islands_seals::consumes_paint(seal, changes)
                     .map_err(|_| DurabilityError::InvalidStoredState)?
             }
-            _ => !required.reusable,
+            _ => spends_source(required),
         };
         if consume {
             inputs.push(input);
@@ -895,14 +955,14 @@ async fn consume_inputs(
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              to_jsonb(g) AS before_ground,i.quantity FROM game_item_ground_locations g \
-             JOIN game_item_instances i USING(item_instance_id) \
+             JOIN game_item_instances i USING(item_instance_id,world_id) \
              WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid \
              AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 \
              AND g.native_room_placement_context=$6 \
              AND g.runtime_scope_ownership_generation=$7::text::numeric \
              AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$8 \
              AND i.quantity >= $9 AND game_item_loop_drop_ref(g.corpse_ref) \
-             ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i,g",
+             ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(world_id.as_bytes().as_slice())
         .bind(channel_id.as_bytes().as_slice())
@@ -920,10 +980,22 @@ async fn consume_inputs(
         if inputs.iter().any(|input| input.item == item) {
             return Ok(false);
         }
+        // Ground's runtime grant permits deleting custody. The item lock
+        // serializes moves, and this fresh read checks the selected snapshot.
+        let location: serde_json::Value = row.try_get("before_ground")?;
+        let current: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=$1::uuid",
+        )
+        .bind(&item)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if current.as_ref() != Some(&location) {
+            return Ok(false);
+        }
         inputs.push(Input {
             item,
             before: row.try_get("before_item")?,
-            location: row.try_get("before_ground")?,
+            location,
             kind: "ground".into(),
             quantity: row.try_get("quantity")?,
             count: if callback.effects.party_transfer.is_some() {
@@ -1148,6 +1220,12 @@ pub(super) async fn consume_npc_inputs(
         return Ok(false);
     };
     use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
+    // Kevin takes the complete carried count of both bone definitions. The
+    // locked inventory query below still caps the number of consumed instances.
+    let all_postman_bones = plan
+        .selected_rule_keys
+        .first()
+        .is_some_and(|key| key == "oteryn:quest-npc/postman/kevin/bones_complete");
     let mut remaining = std::collections::BTreeMap::<(String, Option<u16>), i64>::new();
     for effect in &plan.effects {
         if let NpcRuleEffect::TakeItem {
@@ -1161,7 +1239,7 @@ pub(super) async fn consume_npc_inputs(
             *total = total
                 .checked_add(i64::from(*count))
                 .ok_or(DurabilityError::InvalidStoredState)?;
-            if *total > 100 {
+            if *total > 100 && !all_postman_bones {
                 return Ok(false);
             }
         }
@@ -1376,6 +1454,37 @@ mod read_only_pin_tests {
         stored.definition_hash[0] ^= 1;
         assert!(
             !read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dreamer_callback_admits_a_saved_merge_base_definition() -> Result<(), String> {
+        let quest = "oteryn:quest.dreamer_s_challenge_quest";
+        let loaded =
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-current")
+                .map_err(|error| format!("{error:?}"))?;
+        let mut saved = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-previous".into(),
+            // Captured by the production loader at d48146720.
+            definition_hash: [
+                150, 187, 115, 173, 106, 90, 14, 49, 151, 7, 72, 74, 242, 100, 217, 214, 172, 72,
+                179, 215, 181, 171, 221, 118, 126, 124, 218, 225, 21, 220, 141, 140,
+            ],
+            completed: false,
+        };
+        assert_ne!(
+            loaded.catalogue().definition_hash(quest),
+            Some(saved.definition_hash)
+        );
+        assert!(
+            read_only_pin_allows(&saved, loaded.catalogue(), quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        saved.definition_hash[0] ^= 1;
+        assert!(
+            !read_only_pin_allows(&saved, loaded.catalogue(), quest)
                 .map_err(|error| format!("{error:?}"))?
         );
         Ok(())

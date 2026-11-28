@@ -286,6 +286,7 @@ pub struct PreparedMagnitudeOwner {
     now_ms: u64,
     /// The physical actor condition owner is independently re-read before HP publication.
     canonical_hex: Vec<(ExactActorRef, ConditionBuffDelta)>,
+    intrinsic_weapon: Option<IntrinsicWeaponDamage>,
     plan: NativeCombatPlan,
     targets: Vec<Target>,
     shared_extensions: Option<(Option<i64>, bool)>,
@@ -307,6 +308,7 @@ pub struct PreparedMagnitudeOwner {
     // is minted only after finish_inner applied the real target's source block stage.
     player_block_shielding: Vec<(ExactActorRef, u32)>,
     finished_player_damage: Vec<(ExactActorRef, i64)>,
+    damage_components: Vec<DamageComponents>,
 }
 
 /// Values whose timing D.1.3 fixes at planting. Original owner observations stay
@@ -338,8 +340,7 @@ impl StrikeCastModifiers {
         )
         .map_err(|_| Error::InvalidMagnitude)?;
         Ok(Self {
-            // Keep the established raw/stance snapshot. Crystal's delayed Combat
-            // reads gem and Focus bonuses at the actual strike, not at planting.
+            // Crystal's delayed Combat reads current gem and Focus bonuses.
             source_bonus: needed(a.source_damage_multiplier_percent)?,
             damage_percent,
             base_damage_augments: a.item_augments.iter().filter(|augment| {
@@ -397,6 +398,22 @@ fn compound(value: i64, bonus: u32) -> Result<i64, Error> {
     // C++ compound += converts the complete expression, not the isolated bonus.
     signed_truncate(value as f64 + value as f64 * f64::from(bonus) / 100.0)
 }
+fn analyser_damage_element(
+    element: Element,
+) -> oteryn_protocol_oteryn::damage_element::DamageElement {
+    use oteryn_protocol_oteryn::damage_element::DamageElement as D;
+    match element {
+        Element::Physical => D::Physical,
+        Element::Energy => D::Energy,
+        Element::Fire => D::Fire,
+        Element::Death => D::Death,
+        Element::Ice => D::Ice,
+        Element::Earth => D::Earth,
+        Element::Holy => D::Holy,
+        Element::Healing => D::Untyped,
+    }
+}
+
 fn element_key(element: Element) -> &'static str {
     match element {
         Element::Physical => "physical",
@@ -409,6 +426,20 @@ fn element_key(element: Element) -> &'static str {
         Element::Healing => "healing",
     }
 }
+
+fn weapon_damage_element(
+    element: oteryn_gameplay_content::content::ProjectV2RangedElement,
+) -> Element {
+    use oteryn_gameplay_content::content::ProjectV2RangedElement as Ranged;
+    match element {
+        Ranged::Physical => Element::Physical,
+        Ranged::Energy => Element::Energy,
+        Ranged::Fire => Element::Fire,
+        Ranged::Death => Element::Death,
+        Ranged::Ice => Element::Ice,
+        Ranged::Earth => Element::Earth,
+    }
+}
 fn condition_attributes(
     state: &PlayerSpellState,
     now_ms: u64,
@@ -416,6 +447,88 @@ fn condition_attributes(
     Ok(state
         .conditions
         .attributes_at(now_ms.checked_mul(1000).ok_or(Error::InvalidCondition)?))
+}
+
+/// Qualified components at the block and final HP stages of a hit.
+#[derive(Debug, Clone, Copy)]
+pub struct DamageComponents {
+    /// The exact target of both components.
+    pub target: ExactActorRef,
+    /// The primary and secondary components at the final HP owner.
+    pub final_parts: [i64; 2],
+    /// The secondary component's element.
+    pub secondary_element: Option<oteryn_protocol_oteryn::damage_element::DamageElement>,
+    finish: DamageFinish,
+    hit_bonus: u32,
+    effect_ordinal: Option<u16>,
+}
+
+impl DamageComponents {
+    /// Components after source and target block, before HealthChange.
+    pub fn post_block(self) -> [i64; 2] {
+        self.finish.post_block
+    }
+
+    pub fn matches_effect(self, target: ExactActorRef, ordinal: u16, total: i64) -> bool {
+        self.target == target
+            && self
+                .effect_ordinal
+                .is_none_or(|expected| expected == ordinal)
+            && self.final_parts[0].checked_add(self.final_parts[1]) == Some(total)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct DamageFinish {
+    post_block: [i64; 2],
+    health: u64,
+    side_percent: Option<u32>,
+}
+
+/// PREY-0 §7 rounds each damage contribution up. The Talisman
+/// contribution that follows it truncates independently.
+pub fn boost_creature_damage(amount: i64, prey: u8, talisman: u16) -> i64 {
+    if amount <= 0 {
+        return amount;
+    }
+    let amount = i128::from(amount);
+    let prey_damage = amount + (amount * i128::from(prey) + 99) / 100;
+    let damage = prey_damage * (10_000 + i128::from(talisman)) / 10_000;
+    i64::try_from(damage).unwrap_or(i64::MAX)
+}
+
+/// Attack points used to divide a skill callback's roll into damage components.
+#[derive(Debug, Clone, Copy)]
+pub struct IntrinsicWeaponDamage {
+    pub physical_attack: u32,
+    pub elemental_attack: u32,
+    pub element: oteryn_gameplay_content::content::ProjectV2RangedElement,
+}
+
+impl IntrinsicWeaponDamage {
+    pub(crate) fn from_melee(
+        weapon: oteryn_gameplay_combat_rules::resolution::SwingWeapon,
+    ) -> Option<Self> {
+        let oteryn_gameplay_combat_rules::resolution::SwingWeapon::Melee {
+            attack, elemental, ..
+        } = weapon
+        else {
+            return None;
+        };
+        let (elemental_attack, element) = elemental.unwrap_or((
+            0,
+            oteryn_gameplay_content::content::ProjectV2RangedElement::Physical,
+        ));
+        Some(Self {
+            physical_attack: attack,
+            elemental_attack,
+            element,
+        })
+    }
+
+    pub fn total_attack(self) -> u32 {
+        self.physical_attack.saturating_add(self.elemental_attack)
+    }
 }
 
 impl PreparedMagnitudeOwner {
@@ -471,18 +584,77 @@ impl PreparedMagnitudeOwner {
     pub fn analyser_element(&self) -> oteryn_protocol_oteryn::damage_element::DamageElement {
         use oteryn_protocol_oteryn::damage_element::DamageElement as D;
         match &self.plan {
-            NativeCombatPlan::Combat(plan) => match plan.element {
-                Element::Physical => D::Physical,
-                Element::Energy => D::Energy,
-                Element::Fire => D::Fire,
-                Element::Death => D::Death,
-                Element::Ice => D::Ice,
-                Element::Earth => D::Earth,
-                Element::Holy => D::Holy,
-                Element::Healing => D::Untyped,
-            },
+            NativeCombatPlan::Combat(plan) => analyser_damage_element(plan.element),
             _ => D::Untyped,
         }
+    }
+
+    /// Component observations in the same order as the emitted damage effects.
+    pub fn damage_components(&self) -> impl Iterator<Item = DamageComponents> + '_ {
+        self.damage_components.iter().copied()
+    }
+
+    /// Apply creature-specific modifiers between the block and HP stages. The
+    /// cursor consumes observations in effect order, including repeated targets.
+    pub fn apply_creature_damage_modifiers(
+        &mut self,
+        cursor: &mut usize,
+        actor: ExactActorRef,
+        ordinal: u16,
+        magnitude: i64,
+        (prey, talisman, elite): (u8, u16, bool),
+    ) -> Result<Option<(i64, i64)>, Error> {
+        let Some(offset) = self
+            .damage_components
+            .get(*cursor..)
+            .ok_or(Error::InvalidBatch)?
+            .iter()
+            .position(|parts| parts.matches_effect(actor, ordinal, magnitude))
+        else {
+            return Ok(None);
+        };
+        let index = *cursor + offset;
+        *cursor = index + 1;
+        let record = self.damage_components[index];
+        let target = self
+            .targets
+            .iter()
+            .find(|target| target.actor == actor)
+            .ok_or(Error::InvalidBatch)?;
+        if !matches!(target.owner, TargetOwner::Creature(_)) {
+            return invalid();
+        }
+        let finish = |prey| {
+            let boosted = record
+                .finish
+                .post_block
+                .map(|part| boost_creature_damage(part, prey, talisman));
+            let parts = if boosted == record.finish.post_block {
+                record.final_parts
+            } else {
+                self.finish_damage_components(boosted, record.finish, record.hit_bonus, target)?
+            };
+            Ok::<_, Error>(if elite {
+                parts.map(|part| part / 2)
+            } else {
+                parts
+            })
+        };
+        let total = |[primary, secondary]: [i64; 2]| {
+            primary
+                .checked_add(secondary)
+                .ok_or(Error::InvalidMagnitude)
+        };
+        let parts = finish(prey)?;
+        let final_damage = total(parts)?;
+        let leech_damage = if prey == 0 {
+            final_damage
+        } else {
+            total(finish(0)?)?
+        };
+        self.damage_components[index].final_parts = parts;
+        self.damage_components[index].effect_ordinal = Some(ordinal);
+        Ok(Some((final_damage, leech_damage)))
     }
 
     fn damage_dealt_percent(&self) -> Result<u32, Error> {
@@ -507,15 +679,15 @@ impl PreparedMagnitudeOwner {
         )
         .map_err(|_| Error::InvalidMagnitude)
     }
-    /// F's planted raw/late-modifier split. This changes only numerical inputs;
+    /// Retain the damage buffs sampled when the strike was planted.
     /// `attributes` and `caster` remain intact for commit-time owner validation.
     pub fn select_planted_strike(&mut self, snapshot: &StrikeCastModifiers) -> Result<(), Error> {
         let wheel_bonus = self.selected_wheel_damage_bonus()?;
         self.selected_item_augments.retain(|augment| augment.kind != oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage);
         self.selected_item_augments
             .extend(snapshot.base_damage_augments.iter().cloned());
-        // The raw formula remains planted. Wheel flat belongs to the current
-        // Combat after target block, alongside its current gem/Focus modifiers.
+        // Wheel flat belongs to the current Combat after target block,
+        // alongside its current gem/Focus modifiers.
         self.resolved_attributes.source_damage_multiplier_percent = Some(
             snapshot
                 .source_bonus
@@ -949,6 +1121,7 @@ impl PreparedMagnitudeOwner {
             now_ms,
             canonical_hex,
             plan: plan.clone(),
+            intrinsic_weapon: None,
             targets,
             shared_extensions: None,
             charm_critical: Vec::new(),
@@ -960,6 +1133,7 @@ impl PreparedMagnitudeOwner {
             wheel_masterless,
             player_block_shielding,
             finished_player_damage: Vec::new(),
+            damage_components: Vec::new(),
         })
     }
 
@@ -1224,6 +1398,23 @@ impl PreparedMagnitudeOwner {
         Ok((roll.is_some_and(|roll| roll <= i64::from(chance)), fatal))
     }
 
+    pub fn bind_intrinsic_weapon(
+        &mut self,
+        weapon: oteryn_gameplay_combat_rules::resolution::SwingWeapon,
+    ) {
+        if let Some(damage) = IntrinsicWeaponDamage::from_melee(weapon) {
+            self.bind_intrinsic_weapon_damage(damage);
+        }
+    }
+
+    pub fn bind_intrinsic_weapon_damage(&mut self, damage: IntrinsicWeaponDamage) {
+        if damage.total_attack() > 0
+            && matches!(&self.plan, NativeCombatPlan::Combat(combat) if combat.element == Element::Physical)
+        {
+            self.intrinsic_weapon = Some(damage);
+        }
+    }
+
     /// Retains source healingMap separately from the residual damage; the
     /// actual combat batch owns atomic capped healing followed by damage.
     pub fn finish_with_damage_healing(
@@ -1234,7 +1425,30 @@ impl PreparedMagnitudeOwner {
         draw: &mut dyn FnMut(i64, i64) -> i64,
     ) -> Result<(i64, i64), Error> {
         let mut healing = 0;
-        let magnitude = self.finish_inner(plan, hit, binding, draw, &mut healing)?;
+        let mut finish = DamageFinish::default();
+        let (primary, secondary, secondary_element) =
+            self.finish_inner(plan, hit, binding, draw, &mut healing, &mut finish)?;
+        let magnitude = primary
+            .checked_add(secondary)
+            .ok_or(Error::InvalidMagnitude)?;
+        if (magnitude > 0 || healing > 0)
+            && matches!(plan, NativeCombatPlan::Combat(combat) if combat.element != Element::Healing)
+        {
+            if self.damage_components.len() >= MAX_EFFECTS {
+                return invalid();
+            }
+            self.damage_components
+                .try_reserve(1)
+                .map_err(|_| Error::InvalidBatch)?;
+            self.damage_components.push(DamageComponents {
+                target: binding.actor,
+                final_parts: [primary, secondary],
+                secondary_element: secondary_element.map(analyser_damage_element),
+                finish,
+                hit_bonus: hit.bonus_percent,
+                effect_ordinal: None,
+            });
+        }
         if magnitude > 0
             && matches!(plan, NativeCombatPlan::Combat(combat) if combat.element != Element::Healing)
             && self.targets.iter().any(|target| {
@@ -1268,7 +1482,8 @@ impl PreparedMagnitudeOwner {
         binding: &LiveActorBinding,
         draw: &mut dyn FnMut(i64, i64) -> i64,
         damage_healing: &mut i64,
-    ) -> Result<i64, Error> {
+        finish: &mut DamageFinish,
+    ) -> Result<(i64, i64, Option<Element>), Error> {
         if plan != &self.plan
             || hit.delay_ms != 0
             || hit.magnitude < 0
@@ -1319,22 +1534,57 @@ impl PreparedMagnitudeOwner {
             self.extensions(shared, charm_chance, draw)?
         };
         let a = &self.resolved_attributes;
-        let mut value = signed_truncate(hit.magnitude as f64)?;
-        #[cfg(feature = "qualification-cast-evidence")]
-        let unaugmented = value;
-        // Item base bonuses precede critical, target mitigation and Wheel flat stages.
-        for augment in &self.selected_item_augments {
-            use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
-            if matches!((augment.kind, element), (K::BaseHealing, Element::Healing))
-                || (augment.kind == K::BaseDamage && element != Element::Healing)
-            {
+        let raw = signed_truncate(hit.magnitude as f64)?;
+        // Crystal splits the callback roll by attack points and rounds each component.
+        let (raw, secondary) = if let Some(damage) = self
+            .intrinsic_weapon
+            .filter(|damage| damage.elemental_attack > 0)
+        {
+            let factor = f64::from(damage.elemental_attack)
+                / (f64::from(damage.physical_attack) + f64::from(damage.elemental_attack));
+            let secondary_value = signed_round(raw as f64 * factor)?;
+            (
+                signed_round(raw as f64 * (1.0 - factor))?,
+                Some((weapon_damage_element(damage.element), secondary_value)),
+            )
+        } else {
+            (raw, None)
+        };
+        let critical_bonus = if critical {
+            Some(
+                self.critical_extra()?
+                    .checked_add(i32::from(charm_extra))
+                    .ok_or(Error::InvalidMagnitude)?,
+            )
+        } else {
+            None
+        };
+        let apply_raw_bonuses = |mut value: i64, element| -> Result<(i64, i64), Error> {
+            // Item base bonuses precede critical, target mitigation and Wheel flat stages.
+            for augment in &self.selected_item_augments {
+                use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
+                if matches!((augment.kind, element), (K::BaseHealing, Element::Healing))
+                    || (augment.kind == K::BaseDamage && element != Element::Healing)
+                {
+                    value = value
+                        .checked_add(signed_truncate(
+                            value as f64 * f64::from(augment.value) / 10000.0,
+                        )?)
+                        .ok_or(Error::InvalidMagnitude)?;
+                }
+            }
+            let after_augment = value;
+            if let Some(bonus) = critical_bonus {
+                value = signed_truncate(value as f64 * (1.0 + f64::from(bonus) / 10000.0))?;
+            }
+            if fatal {
                 value = value
-                    .checked_add(signed_truncate(
-                        value as f64 * f64::from(augment.value) / 10000.0,
-                    )?)
+                    .checked_add(signed_round(value as f64 * 0.6)?)
                     .ok_or(Error::InvalidMagnitude)?;
             }
-        }
+            Ok((value, after_augment))
+        };
+        let (mut value, _after_augment) = apply_raw_bonuses(raw, element)?;
         #[cfg(feature = "qualification-cast-evidence")]
         if element != Element::Healing
             && self.selected_spell.as_deref().is_some_and(|spell| {
@@ -1345,8 +1595,8 @@ impl PreparedMagnitudeOwner {
         {
             self.base_damage_evidence.push((
                 binding.actor,
-                unaugmented,
-                value,
+                raw,
+                _after_augment,
                 critical,
                 element_key(element),
                 self.selected_item_augments.iter()
@@ -1354,18 +1604,7 @@ impl PreparedMagnitudeOwner {
                     .map(|augment| u64::from(augment.value)).sum(),
             ));
         }
-        if critical {
-            let bonus = self
-                .critical_extra()?
-                .checked_add(i32::from(charm_extra))
-                .ok_or(Error::InvalidMagnitude)?;
-            value = signed_truncate(value as f64 * (1.0 + f64::from(bonus) / 10000.0))?;
-        }
-        if fatal {
-            value = value
-                .checked_add(signed_round(value as f64 * 0.6)?)
-                .ok_or(Error::InvalidMagnitude)?;
-        }
+
         let party = self
             .caster
             .virtue_party_bonuses(self.now_ms.saturating_mul(1_000));
@@ -1374,7 +1613,7 @@ impl PreparedMagnitudeOwner {
             value = target.native_primary(value)?;
             value = cruelty_health_component(value, target.cruelty_drain)?;
             if target.cruelty_drain.is_some() && value == 0 {
-                return Ok(0);
+                return Ok((0, 0, None));
             }
             value = compound(
                 value,
@@ -1411,107 +1650,241 @@ impl PreparedMagnitudeOwner {
                     u32::try_from(retained).map_err(|_| Error::InvalidMagnitude)?,
                 )?;
             }
-            return Ok(value.max(0));
+            return Ok((value.max(0), 0, None));
+        }
+        let mut secondary = secondary
+            .map(|(element, raw)| {
+                apply_raw_bonuses(raw, element).map(|(value, _)| (element, value))
+            })
+            .transpose()?;
+        let offence = self.caster.equipped_offence();
+        if let Some(damage) = self.intrinsic_weapon
+            && offence.elemental_conversion.is_some()
+        {
+            // Weapon imbuement replaces any intrinsic component after critical
+            // and fatal, including on weapons whose intrinsic damage is physical.
+            let raw = secondary.map_or(0, |(_, raw)| raw);
+            let (physical, converted, element) = offence
+                .convert_physical(value, raw, damage.element)
+                .ok_or(Error::InvalidMagnitude)?;
+            value = physical;
+            if secondary.is_some() || converted != 0 {
+                secondary = Some((weapon_damage_element(element), converted));
+            }
         }
         value = percent(value, 100 + party.spell_damage)?;
         if let Some(side) = hit.side_percent {
             value = signed_round(value as f64 * f64::from(side) / 100.0)?;
         }
-        if let TargetOwner::Player(target_state) = &target.owner {
-            let black = self
-                .pvp_targets
-                .iter()
-                .find(|(a, _)| *a == target.actor)
-                .ok_or(Error::InvalidBatch)?
-                .1;
-            value = percent(value, self.damage_dealt_percent()?)?;
-            // Crystal combat.cpp:796-801 halves PvP before target blockHit and
-            // game.cpp:7945-7946 applies Wheel multipliers/flat afterwards.
-            let pvp = oteryn_gameplay_combat_rules::pvp::pvp_damage(
-                u32::try_from(value.max(0)).map_err(|_| Error::InvalidMagnitude)?,
-                black,
-            );
-            let shielding = self
-                .player_block_shielding
-                .iter()
-                .find(|(actor, _)| *actor == target.actor)
-                .ok_or(Error::InvalidBatch)?
-                .1;
-            let kind =
-                crate::player_lethal::PlayerHitKind::from_element(Some(element_key(element)));
-            let now_us = self
-                .now_ms
-                .checked_mul(1_000)
-                .ok_or(Error::InvalidMagnitude)?;
-            value = i64::from(
-                target_state
-                    .after_player_baseline(pvp, kind, shielding, now_us)
-                    .ok_or(Error::InvalidMagnitude)?,
-            );
-            use oteryn_gameplay_content::content::ReferenceResistanceKind as Resistance;
-            let resistance = match element {
-                Element::Physical => Resistance::Physical,
-                Element::Energy => Resistance::Energy,
-                Element::Fire => Resistance::Fire,
-                Element::Death => Resistance::Death,
-                Element::Ice => Resistance::Ice,
-                Element::Earth => Resistance::Earth,
-                Element::Holy => Resistance::Holy,
-                Element::Healing => return invalid(),
-            };
-            if let Some(protection) = target_state.equipped_element_protection(resistance) {
-                protection.validate().map_err(|_| Error::InvalidMagnitude)?;
-                // EQUIP-0: clamp the signed sum to +/-100%, then truncate the
-                // removed portion once, before Wheel resistance and Avatar.
-                let (numerator, denominator) =
-                    if protection.numerator.unsigned_abs() / protection.denominator >= 100 {
-                        (protection.numerator.signum() * 100, 1)
-                    } else {
-                        (protection.numerator, protection.denominator)
-                    };
-                let divisor = i64::try_from(denominator)
-                    .ok()
-                    .and_then(|denominator| denominator.checked_mul(100))
-                    .ok_or(Error::InvalidMagnitude)?;
-                let removed = value
-                    .checked_mul(numerator)
-                    .and_then(|value| value.checked_div(divisor))
-                    .ok_or(Error::InvalidMagnitude)?;
-                value = value.checked_sub(removed).ok_or(Error::InvalidMagnitude)?;
+        let secondary = secondary
+            .map(|(element, raw)| -> Result<_, Error> {
+                let value = percent(raw, 100 + party.spell_damage)?;
+                let value = if let Some(side) = hit.side_percent {
+                    signed_round(value as f64 * f64::from(side) / 100.0)?
+                } else {
+                    value
+                };
+                Ok((element, value))
+            })
+            .transpose()?;
+        let secondary_element = secondary.map(|(element, _)| element);
+        let damage_dealt = self.damage_dealt_percent()?;
+        let (health, maximum) = Self::target_health(&target)?;
+        let (primary, secondary, health, side_percent) = match &target.owner {
+            TargetOwner::Player(target_state) => {
+                let block = |element, raw| {
+                    self.player_component(&target, target_state, element, raw, damage_dealt)
+                };
+                let primary = block(element, value)?;
+                let secondary = secondary
+                    .map(|(element, raw)| block(element, raw))
+                    .transpose()?
+                    .unwrap_or(0);
+                (primary, secondary, health, None)
             }
-            value = i64::from(
-                target_state
-                    .after_wheel_block(
-                        u32::try_from(value).map_err(|_| Error::InvalidMagnitude)?,
-                        kind,
-                        now_us,
+            TargetOwner::Creature(creature) => {
+                let policy = &creature.state.policy;
+                let healing = |element, raw| {
+                    policy
+                        .damage_healing(element_key(element), raw)
+                        .map_err(Error::Owner)
+                };
+                *damage_healing = healing(element, value)?
+                    .checked_add(
+                        secondary
+                            .map(|(element, raw)| healing(element, raw))
+                            .transpose()?
+                            .unwrap_or(0),
                     )
-                    .ok_or(Error::InvalidMagnitude)?,
-            );
-            if value == 0 {
+                    .ok_or(Error::InvalidMagnitude)?;
+                let health = health
+                    .saturating_add(
+                        u64::try_from(*damage_healing).map_err(|_| Error::InvalidMagnitude)?,
+                    )
+                    .min(maximum);
+                let mut block = |element, raw, primary| {
+                    self.creature_component(
+                        policy,
+                        element,
+                        percent(raw, damage_dealt)?,
+                        primary && armor,
+                        draw,
+                    )
+                };
+                let primary = block(element, value, true)?;
+                let secondary = secondary
+                    .map(|(element, raw)| block(element, raw, false))
+                    .transpose()?
+                    .unwrap_or(0);
+                (primary, secondary, health, hit.side_percent)
+            }
+        };
+        *finish = DamageFinish {
+            post_block: [primary, secondary],
+            health,
+            side_percent,
+        };
+        let [primary, secondary] =
+            self.finish_damage_components(finish.post_block, *finish, hit.bonus_percent, &target)?;
+        Ok((primary, secondary, secondary_element))
+    }
+
+    fn finish_damage_components(
+        &self,
+        [mut primary, mut secondary]: [i64; 2],
+        finish: DamageFinish,
+        hit_bonus: u32,
+        target: &Target,
+    ) -> Result<[i64; 2], Error> {
+        let a = &self.resolved_attributes;
+        if matches!(target.owner, TargetOwner::Creature(_)) {
+            if primary > 0 {
+                primary = target
+                    .native_primary(primary.checked_neg().ok_or(Error::InvalidMagnitude)?)?
+                    .checked_neg()
+                    .ok_or(Error::InvalidMagnitude)?;
+            }
+            primary = cruelty_health_component(primary, target.cruelty_drain)?;
+            secondary = cruelty_health_component(secondary, target.cruelty_drain)?;
+        }
+        if primary == 0 && secondary == 0 {
+            return Ok([0, 0]);
+        }
+        let finish_component = |value: i64, primary: bool| -> Result<i64, Error> {
+            if value == 0 && !primary {
                 return Ok(0);
             }
             let bonus = needed(a.source_damage_multiplier_percent)?
-                .checked_add(hit.bonus_percent)
+                .checked_add(hit_bonus)
                 .ok_or(Error::InvalidMagnitude)?;
-            value = compound(value, bonus)?
-                .checked_add(i64::from(needed(a.wheel_flat_damage)?))
+            let mut flat = i64::from(needed(a.wheel_flat_damage)?);
+            if let Some(side) = finish.side_percent {
+                flat = signed_round(flat as f64 * f64::from(side) / 100.0)?;
+            }
+            self.finish_wheel_damage(
+                compound(value, bonus)?
+                    .checked_add(flat)
+                    .ok_or(Error::InvalidMagnitude)?,
+                target,
+                finish.health,
+            )
+        };
+        Ok([
+            finish_component(primary, true)?,
+            finish_component(secondary, false)?,
+        ])
+    }
+
+    fn player_component(
+        &self,
+        target: &Target,
+        target_state: &PlayerSpellState,
+        element: Element,
+        mut value: i64,
+        damage_dealt: u32,
+    ) -> Result<i64, Error> {
+        let black = self
+            .pvp_targets
+            .iter()
+            .find(|(a, _)| *a == target.actor)
+            .ok_or(Error::InvalidBatch)?
+            .1;
+        // Crystal combat.cpp:796-801 halves PvP before target blockHit and
+        // game.cpp:7945-7946 applies Wheel multipliers/flat afterwards.
+        let pvp = oteryn_gameplay_combat_rules::pvp::pvp_damage(
+            u32::try_from(value.max(0)).map_err(|_| Error::InvalidMagnitude)?,
+            black,
+        );
+        let pvp = u32::try_from(percent(i64::from(pvp), damage_dealt)?)
+            .map_err(|_| Error::InvalidMagnitude)?;
+        let shielding = self
+            .player_block_shielding
+            .iter()
+            .find(|(actor, _)| *actor == target.actor)
+            .ok_or(Error::InvalidBatch)?
+            .1;
+        let kind = crate::player_lethal::PlayerHitKind::from_element(Some(element_key(element)));
+        let now_us = self
+            .now_ms
+            .checked_mul(1_000)
+            .ok_or(Error::InvalidMagnitude)?;
+        value = i64::from(
+            target_state
+                .after_player_baseline(pvp, kind, shielding, now_us)
+                .ok_or(Error::InvalidMagnitude)?,
+        );
+        use oteryn_gameplay_content::content::ReferenceResistanceKind as Resistance;
+        let resistance = match element {
+            Element::Physical => Resistance::Physical,
+            Element::Energy => Resistance::Energy,
+            Element::Fire => Resistance::Fire,
+            Element::Death => Resistance::Death,
+            Element::Ice => Resistance::Ice,
+            Element::Earth => Resistance::Earth,
+            Element::Holy => Resistance::Holy,
+            Element::Healing => return invalid(),
+        };
+        if let Some(protection) = target_state.equipped_element_protection(resistance) {
+            protection.validate().map_err(|_| Error::InvalidMagnitude)?;
+            // EQUIP-0: clamp the signed sum to +/-100%, then truncate the
+            // removed portion once, before Wheel resistance and Avatar.
+            let (numerator, denominator) =
+                if protection.numerator.unsigned_abs() / protection.denominator >= 100 {
+                    (protection.numerator.signum() * 100, 1)
+                } else {
+                    (protection.numerator, protection.denominator)
+                };
+            let divisor = i64::try_from(denominator)
+                .ok()
+                .and_then(|denominator| denominator.checked_mul(100))
                 .ok_or(Error::InvalidMagnitude)?;
-            return self.finish_wheel_damage(value, &target);
+            let removed = value
+                .checked_mul(numerator)
+                .and_then(|value| value.checked_div(divisor))
+                .ok_or(Error::InvalidMagnitude)?;
+            value = value.checked_sub(removed).ok_or(Error::InvalidMagnitude)?;
         }
-        let TargetOwner::Creature(source_target) = &target.owner else {
-            return invalid();
-        };
-        *damage_healing = source_target
-            .state
-            .policy
-            .damage_healing(element_key(element), value)
-            .map_err(Error::Owner)?;
-        value = percent(value, self.damage_dealt_percent()?)?;
-        let TargetOwner::Creature(creature) = &target.owner else {
-            return invalid();
-        };
-        let policy = &creature.state.policy;
+        value = i64::from(
+            target_state
+                .after_wheel_block(
+                    u32::try_from(value).map_err(|_| Error::InvalidMagnitude)?,
+                    kind,
+                    now_us,
+                )
+                .ok_or(Error::InvalidMagnitude)?,
+        );
+        Ok(value)
+    }
+
+    fn creature_component(
+        &self,
+        policy: &oteryn_gameplay_content::content::creature_policy::CompiledCreaturePolicy,
+        element: Element,
+        mut value: i64,
+        armor: bool,
+        draw: &mut dyn FnMut(i64, i64) -> i64,
+    ) -> Result<i64, Error> {
+        let a = &self.resolved_attributes;
         let key = element_key(element);
         if policy.damage_immunities.iter().any(|v| v == key) {
             return Ok(0);
@@ -1570,35 +1943,7 @@ impl PreparedMagnitudeOwner {
             }
             sensitivity = (sensitivity + pierce / 2.0).min(original.max(original * 2.0));
         }
-        value = signed_round(value as f64 * sensitivity / 100.0)?.max(0);
-        // Source immunity/armor zero short-circuit occurs BEFORE Wheel flat damage.
-        if value == 0 {
-            return Ok(0);
-        }
-        value = target
-            .native_primary(value.checked_neg().ok_or(Error::InvalidMagnitude)?)?
-            .checked_neg()
-            .ok_or(Error::InvalidMagnitude)?;
-        value = cruelty_health_component(value, target.cruelty_drain)?;
-        if value == 0 {
-            return Ok(0);
-        }
-        // Wheel uses signed negative C++ damage and compound truncation towards zero.
-        let negative = value.checked_neg().ok_or(Error::InvalidMagnitude)?;
-        let bonus = needed(a.source_damage_multiplier_percent)?
-            .checked_add(hit.bonus_percent)
-            .ok_or(Error::InvalidMagnitude)?;
-        value = compound(negative, bonus)?
-            .checked_neg()
-            .ok_or(Error::InvalidMagnitude)?;
-        let mut flat = i64::from(needed(a.wheel_flat_damage)?);
-        if let Some(side) = hit.side_percent {
-            flat = signed_round(flat as f64 * f64::from(side) / 100.0)?;
-        }
-        self.finish_wheel_damage(
-            value.checked_add(flat).ok_or(Error::InvalidMagnitude)?,
-            &target,
-        )
+        Ok(signed_round(value as f64 * sensitivity / 100.0)?.max(0))
     }
 
     fn critical_extra(&self) -> Result<i32, Error> {
@@ -1662,7 +2007,7 @@ impl PreparedMagnitudeOwner {
         }
     }
 
-    fn finish_wheel_damage(&self, value: i64, target: &Target) -> Result<i64, Error> {
+    fn finish_wheel_damage(&self, value: i64, target: &Target, health: u64) -> Result<i64, Error> {
         let Some(effects) = &self.resolved_attributes.wheel_effects else {
             return Ok(value);
         };
@@ -1683,7 +2028,7 @@ impl PreparedMagnitudeOwner {
         let value = value
             .checked_add(i64::from(ascetic))
             .ok_or(Error::InvalidMagnitude)?;
-        let (health, maximum) = Self::target_health(target)?;
+        let (_, maximum) = Self::target_health(target)?;
         let two_handed = self
             .caster
             .wheel_equipment()
@@ -2016,6 +2361,7 @@ mod tests {
                     now_ms: 1,
                     canonical_hex: vec![],
                     plan: plan.clone(),
+                    intrinsic_weapon: None,
                     targets: vec![Target {
                         native_health_required: false,
                         native_health: None,
@@ -2035,6 +2381,7 @@ mod tests {
                     wheel_masterless: vec![],
                     player_block_shielding: vec![(actor, 0)],
                     finished_player_damage: vec![],
+                    damage_components: vec![],
                 };
                 assert_eq!(
                     owner
