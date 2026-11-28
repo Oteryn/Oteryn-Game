@@ -2,6 +2,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::npc_shop;
+use oteryn_protocol_oteryn::world_map::MapOrigin;
 use oteryn_protocol_oteryn::world_object::{self, MapUseTarget, UseIntent, UseTarget};
 use oteryn_protocol_oteryn::{item_view as items, npc_service as npc, timed_item as timed};
 use std::collections::BTreeSet;
@@ -155,7 +156,11 @@ fn carried(client: &DevClientSession, reference: NonZeroU32) -> Option<items::It
         .map(|entry| entry.handle)
 }
 
-async fn rejoin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<()> {
+async fn rejoin(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    stage: Option<TilePos>,
+) -> TestResult<()> {
     let before = client.join_snapshot().game_session_id;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     verdict::Harness::global().bounded_wait(deadline, "relog-after-combat");
@@ -176,7 +181,13 @@ async fn rejoin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Tes
             }
         }
     }
-    let position = client.world_spatial().actor_position;
+    let position = if let Some(at) = stage {
+        let position = full_e2ef3_e2ei_b::position(at);
+        reset_core_fixture_position(clients, position).await?;
+        position
+    } else {
+        client.world_spatial().actor_position
+    };
     *client = connect_world(clients, 0x79).await?;
     if client.world_spatial().actor_position != position {
         return Err(format!(
@@ -485,7 +496,7 @@ async fn refine(
         return Err(format!("refinement replay changed the result or custody: {replay:?}").into());
     }
     check.action = "relogin-refinement";
-    rejoin(client, clients).await?;
+    rejoin(client, clients, None).await?;
     let observed = quantities(client)?;
     if observed != saved {
         return Err(format!("refinement before={saved:?} after={observed:?}").into());
@@ -508,7 +519,7 @@ async fn move_ring(
     client: &mut DevClientSession,
     source: items::ItemHandle,
     destination: items::ItemMoveDestination,
-) -> TestResult<()> {
+) -> TestResult<u64> {
     let result = client
         .move_item(&items::ItemMoveIntent {
             source,
@@ -518,7 +529,7 @@ async fn move_ring(
     if result.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("ring MOVE: {result:?}").into());
     }
-    Ok(())
+    Ok(result.command_id)
 }
 
 async fn inspect_timer(
@@ -555,6 +566,65 @@ async fn inspect_timer(
     Ok(result)
 }
 
+const DEMONA_RING_CHEST: TilePos = TilePos {
+    x: 32515,
+    y: 31596,
+    floor: -14,
+};
+const DEMONA_RING_APPROACH: TilePos = TilePos {
+    x: 32514,
+    ..DEMONA_RING_CHEST
+};
+
+async fn claim_demona_ring(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    ring: NonZeroU32,
+) -> TestResult<()> {
+    let mut expected = quantities(client)?;
+    *expected.entry(ring.get()).or_default() += 1;
+    rejoin(client, clients, Some(DEMONA_RING_APPROACH)).await?;
+    let claim: TestResult = async {
+        let chest = full_e2ef3_e2ei_b::visible_item(client, DEMONA_RING_CHEST, 2472).await?;
+        let MapOrigin::BaseOrdinal {
+            ordinal,
+            object_revision,
+        } = chest.origin
+        else {
+            return Err(format!("Demona ring chest has no base placement: {chest:?}").into());
+        };
+        let id = crate::map::view::placement_key(DEMONA_RING_CHEST, ordinal)
+            .ok_or("Demona ring chest has no placement key")?;
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&id.to_be_bytes());
+        let payload = world_object::encode_use_intent(&world_object::WorldObjectTarget {
+            placement,
+            expected_revision: object_revision,
+        })
+        .map_err(|error| format!("Demona ring chest USE encoding: {error:?}"))?;
+        let reply = client.session_mut().world_context_use(&payload).await?;
+        if reply.status != CommandStatus::Accepted
+            || world_object::decode_use_result(&reply.payload)
+                != Ok(world_object::UseDisposition::Committed)
+        {
+            return Err(format!("Demona ring chest USE refused: {reply:?}").into());
+        }
+        wait(client, Duration::from_secs(5), |client| {
+            (quantities(client).ok()? == expected).then_some(())
+        })
+        .await?;
+        Ok(())
+    }
+    .await;
+    let returned = rejoin(client, clients, Some(TOWN)).await;
+    claim.and(returned)?;
+    if quantities(client)? != expected {
+        return Err("Demona ring reward inventory changed after fresh admission".into());
+    }
+    Ok(())
+}
+
 async fn energy_ring(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -566,11 +636,23 @@ async fn energy_ring(
     let base = provisioning::item_reference(index, 3051)?;
     let active = provisioning::item_reference(index, 3088)?;
     if carried(client, base).is_none() && equipped(client, active).is_none() {
-        // The Demona chest is outside the town crop. Hunt a compiled loot source instead.
-        hunt_for(client, world, &metadata.spawns, 3051, |client| {
-            carried(client, base).is_some()
-        })
-        .await?;
+        if world
+            .bundle
+            .base()
+            .tile(
+                DEMONA_RING_CHEST.x,
+                DEMONA_RING_CHEST.y,
+                DEMONA_RING_CHEST.floor,
+            )
+            .is_some()
+        {
+            claim_demona_ring(client, clients, &world.bundle, base).await?;
+        } else {
+            hunt_for(client, world, &metadata.spawns, 3051, |client| {
+                carried(client, base).is_some()
+            })
+            .await?;
+        }
     }
     check.action = "equip";
     if let Some(source) = carried(client, base) {
@@ -615,7 +697,7 @@ async fn energy_ring(
     }
 
     check.action = "relogin-timer";
-    rejoin(client, clients).await?;
+    rejoin(client, clients, None).await?;
     let paused_handle =
         carried(client, base).ok_or("paused Energy Ring 3051 missing after login")?;
     let restored = inspect_timer(client, paused_handle, paused.revision).await?;
@@ -625,7 +707,13 @@ async fn energy_ring(
 
     check.action = "expiry";
     let previous = quantities(client)?.get(&base.get()).copied().unwrap_or(0);
-    move_ring(
+    let remaining = restored
+        .remaining_ms
+        .ok_or("restored timer missing remaining budget")?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let earliest_activation = server_time_ms(&mut database).await?;
+    let activation_session = client.join_snapshot().game_session_id;
+    let activation_command = move_ring(
         client,
         paused_handle,
         items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
@@ -635,9 +723,9 @@ async fn energy_ring(
         equipped(client, active)
     })
     .await?;
-    let remaining = restored
-        .remaining_ms
-        .ok_or("restored timer missing remaining budget")?;
+    let deadline =
+        tokio::time::Instant::now() + Duration::from_millis(remaining) + RING_EXPIRY_GRACE;
+    let latest_activation = server_time_ms(&mut database).await?;
     let retired = |client: &DevClientSession| {
         let count = quantities(client)
             .ok()?
@@ -653,13 +741,27 @@ async fn energy_ring(
     };
     wait(
         client,
-        Duration::from_millis(remaining) + Duration::from_secs(5),
+        deadline.saturating_duration_since(tokio::time::Instant::now()),
         retired,
     )
     .await?;
     let retirement_sequence = client.last_server_sequence();
+    let retired_at: Option<i64> = sqlx::query_scalar(
+        "SELECT w.committed_at FROM game_character_equipment_receipts r
+         JOIN game_item_timed_state_writes w USING (item_instance_id)
+         JOIN game_item_instances i USING (item_instance_id)
+         WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric
+         AND r.to_slot IS NOT NULL AND w.holder_character_id=r.character_id AND w.cause=2
+         AND w.definition_before_production_key='oteryn:item.tibia.i3051'
+         AND i.lifecycle=2 AND i.last_transaction_id=w.transaction_id",
+    )
+    .bind(activation_session.as_bytes().as_slice())
+    .bind(activation_command.to_string())
+    .fetch_optional(&mut database)
+    .await?;
+    database.close().await?;
     check.action = "relogin-timer";
-    rejoin(client, clients).await?;
+    rejoin(client, clients, None).await?;
     if retired(client).is_none() {
         return Err(format!(
             "expired ring reappeared on fresh admission; inventory={:?}",
@@ -667,16 +769,48 @@ async fn energy_ring(
         )
         .into());
     }
-    verify_ring_expiry_timing(&mut check.action, remaining, retirement_sequence)
+    verify_ring_expiry_timing(
+        &mut check.action,
+        remaining,
+        retirement_sequence,
+        retired_at.map(|at| (earliest_activation, latest_activation, at)),
+    )
+}
+
+const RING_EXPIRY_GRACE: Duration = Duration::from_secs(5);
+
+async fn server_time_ms(database: &mut sqlx::PgConnection) -> TestResult<i64> {
+    Ok(
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint")
+            .fetch_one(database)
+            .await?,
+    )
 }
 
 fn verify_ring_expiry_timing(
     action: &mut &'static str,
     remaining_ms: u64,
     retirement_sequence: u64,
+    timing: Option<(i64, i64, i64)>,
 ) -> TestResult {
     *action = "verify-server-ring-expiry-timing";
-    Err(format!("SERVER-GAP missing server timestamps for Energy Ring resumed activation and retirement; restored budget={remaining_ms}ms; retirement-observed-by-sequence={retirement_sequence}; owner clock at timed_item_clock.rs:375; timer reply at timed_item.rs:42").into())
+    let Some((earliest_activation, latest_activation, retired_at)) = timing else {
+        return Err(format!("SERVER-GAP missing server timestamps for Energy Ring resumed activation and retirement; restored budget={remaining_ms}ms; retirement-observed-by-sequence={retirement_sequence}; owner clock at timed_item_clock.rs:375; timer reply at timed_item.rs:42").into());
+    };
+    let remaining = i64::try_from(remaining_ms)?;
+    let grace = i64::try_from(RING_EXPIRY_GRACE.as_millis())?;
+    if earliest_activation > latest_activation
+        || earliest_activation
+            .checked_add(remaining)
+            .is_none_or(|earliest| retired_at < earliest)
+        || latest_activation
+            .checked_add(remaining)
+            .and_then(|latest| latest.checked_add(grace))
+            .is_none_or(|latest| retired_at > latest)
+    {
+        return Err(format!("Energy Ring retirement {retired_at} outside resumed activation window [{earliest_activation}, {latest_activation}] with {remaining_ms}ms remaining; retirement-observed-by-sequence={retirement_sequence}").into());
+    }
+    Ok(())
 }
 
 async fn observe_shield(
@@ -750,7 +884,7 @@ async fn observe_shield(
 #[test]
 fn ring_expiry_requires_server_timestamps() {
     let mut action = "relogin-timer";
-    let result = verify_ring_expiry_timing(&mut action, 600, 42);
+    let result = verify_ring_expiry_timing(&mut action, 600, 42, None);
     assert_eq!(action, "verify-server-ring-expiry-timing");
     assert!(result.is_err_and(|error| {
         let error = error.to_string();
@@ -758,6 +892,16 @@ fn ring_expiry_requires_server_timestamps() {
             && error.contains("restored budget=600ms")
             && error.contains("retirement-observed-by-sequence=42")
     }));
+}
+
+#[test]
+fn ring_expiry_requires_the_restored_budget_within_the_activation_window() -> TestResult {
+    let mut action = "relogin-timer";
+    verify_ring_expiry_timing(&mut action, 600, 42, Some((800, 825, 1425)))?;
+    for timing in [(800, 825, 1399), (800, 825, 6426), (825, 800, 1425)] {
+        assert!(verify_ring_expiry_timing(&mut action, 600, 42, Some(timing)).is_err());
+    }
+    Ok(())
 }
 
 #[test]

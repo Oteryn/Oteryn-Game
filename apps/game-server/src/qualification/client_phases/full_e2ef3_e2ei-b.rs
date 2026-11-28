@@ -121,7 +121,7 @@ pub(super) async fn run(
     Ok(client)
 }
 
-fn position(at: TilePos) -> ActorPosition {
+pub(super) fn position(at: TilePos) -> ActorPosition {
     ActorPosition {
         x: i32::from(at.x),
         y: i32::from(at.y),
@@ -147,7 +147,7 @@ async fn approach(
     walk(client, world, &path).await
 }
 
-async fn visible_item(
+pub(super) async fn visible_item(
     client: &mut DevClientSession,
     at: TilePos,
     appearance: u16,
