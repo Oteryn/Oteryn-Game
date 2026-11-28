@@ -37,13 +37,69 @@ pub(super) async fn exchange(
     Ok((reply, capture))
 }
 
+pub(super) async fn connect_seeded(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    row: &str,
+) -> TestResult<DevClientSession> {
+    use oteryn_protocol_oteryn::cyclopedia_character as general;
+    character_prep::declare_seeded(row, "level-8-knight", "Task Board Beginner eligibility");
+    let mut client = connect_character(clients, tag, 0).await?;
+    let previous = client.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(previous.as_bytes()),
+        "--profile",
+        "p23c-knight".into(),
+    )
+    .await?;
+    let result = client.session_mut().logout().await?;
+    if result.result != Some(LogoutResult::Accepted) {
+        return Err(format!("step=preparation-logout observed={result:?}").into());
+    }
+    drop(client);
+    let mut client = connect_character(clients, tag, 0).await?;
+    let vocation_selected = general_stats::selected(&client);
+    let stats = client
+        .session_mut()
+        .gated_command(
+            general::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            general::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[1, 0, 0, 1],
+        )
+        .await?;
+    let vocation = general_stats::validate(&stats.payload, vocation_selected)?;
+    let level = u32::from_le_bytes(stats.payload[9..13].try_into()?);
+    let vitals = client.actor_vitals().ok_or("seeded vitals missing")?;
+    if client.join_snapshot().game_session_id == previous
+        || stats.status != CommandStatus::Accepted
+        || level != 8
+        || (vocation_selected && vocation != general::vocation_id("knight"))
+        || (vitals.max_health, vitals.max_mana) != (185, 90)
+    {
+        return Err(format!(
+            "step=prepared-stats level={level} vocation={vocation:?} vitals={vitals:?}"
+        )
+        .into());
+    }
+    evidence("P23C_CHECK step=prepared-stats level=8 max-health=185 max-mana=90");
+    Ok(client)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let directory = Path::new(&required("OTERYN_P23C_CAPTURE_DIR")?).to_path_buf();
     let run = directory
         .file_name()
         .and_then(|name| name.to_str())
         .ok_or("invalid capture directory")?;
-    let mut client = connect_character(clients, 0x45, 1).await?;
+    let character = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_P23C_ACCOUNT",
+        Some("Bounty Task Hunter"),
+    )
+    .await?;
+    let clients = &character.clients(clients);
+    let mut client = connect_seeded(clients, 0x45, "P23c.client").await?;
     let session = format!("{:?}", client.join_snapshot().game_session_id);
     let (initial, query) = exchange(&mut client, 4, 0).await?;
     let (weekly, start) = exchange(&mut client, 5, 0).await?;
@@ -87,7 +143,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if logout.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=client-logout observed={logout:?}").into());
     }
-    let mut relog = connect_character(clients, 0x46, 1).await?;
+    let mut relog = connect_character(clients, 0x46, 0).await?;
     let (persisted, _) = exchange(&mut relog, 4, 0).await?;
     let relog_session = format!("{:?}", relog.join_snapshot().game_session_id);
     if session == relog_session || persisted != selected {

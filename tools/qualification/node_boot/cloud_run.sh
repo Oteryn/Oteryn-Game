@@ -98,6 +98,7 @@ replay_loyalty_capture() {
 selected_p23c_replay() {
   [[ "$1" == rows ]] || return 1
   local batch=${OTERYN_E2E_ROW_BATCH:-}
+  [[ "$batch" != all ]] || return 0
   [[ "$batch" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 1
   local first=$((10#${BASH_REMATCH[1]})) length=$((10#${BASH_REMATCH[2]}))
   (( first <= 178 && 178 < first + length ))
@@ -191,6 +192,9 @@ for group in "$@"; do
   fi
   if [[ -n "$p23c_capture_dir" ]] && ! replay_p23c_capture "$log" "$p23c_capture_dir" "$work_dir/$index-p23c.log"; then
     status=1
+    if grep -q '^NODE_BOOT_RESULT=NODE_BOOT_PASS' "$log"; then
+      printf 'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged reason=p23c_client_replay\n' >>"$log"
+    fi
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1

@@ -46,8 +46,15 @@ async fn command(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    use super::client_row_p23c::exchange;
-    let mut client = connect_character(clients, 0xc3, 1).await?;
+    use super::client_row_p23c::{connect_seeded, exchange};
+    let character = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_P23C_ACCOUNT",
+        Some("Weekly Task Hunter"),
+    )
+    .await?;
+    let clients = &character.clients(clients);
+    let mut client = connect_seeded(clients, 0xc3, "P23c.full").await?;
     let legacy = command(&mut client, 0, 0).await?;
     if legacy.status != CommandStatus::Accepted
         || legacy.reply.refused
@@ -206,7 +213,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
     }
     logout(&mut client).await?;
-    let mut relog = connect_character(clients, 0xc4, 1).await?;
+    let mut relog = connect_character(clients, 0xc4, 0).await?;
     let (persisted, _) = exchange(&mut relog, 4, 0).await?;
     logout(&mut relog).await?;
     if relog.join_snapshot().game_session_id == session {
