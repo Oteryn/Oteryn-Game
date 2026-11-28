@@ -303,6 +303,22 @@ WORK=.
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
+class S04aSelectionTests(unittest.TestCase):
+    def test_replay_follows_every_batch_containing_the_client_row(self):
+        selector = section("s04a_selected() {", "secret_to()")
+        for batch, selected in [
+            ("182:1", True), ("181:2", True), ("182:2", True),
+            ("+0181:+0002", True), ("all", True), ("181:1", False),
+            ("183:1", False), ("182:0", False), ("182:", False),
+        ]:
+            with self.subTest(batch=batch):
+                result = bash(
+                    selector + f"\nNODE_BOOT_WORLD=1 NODE_BOOT_E2E_ONLY=rows "
+                    f"OTERYN_E2E_ROW_BATCH={batch} s04a_selected 182\n"
+                )
+                self.assertEqual(result.returncode, 0 if selected else 1, result.stderr)
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 

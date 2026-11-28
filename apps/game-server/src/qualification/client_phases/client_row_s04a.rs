@@ -6,6 +6,11 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::vip::vip as wire;
 use oteryn_protocol_oteryn::CommandStatus;
+use sha2::{Digest, Sha256};
+
+fn payload_digest(bytes: &[u8]) -> String {
+    Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect()
+}
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write;
@@ -16,6 +21,17 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
         .open(Path::new(&root).join(name))?
         .write_all(bytes)?;
     Ok(())
+}
+
+fn only_entry(view: &serde_json::Value) -> TestResult<&serde_json::Value> {
+    match view["entries"].as_array().map(Vec::as_slice) {
+        Some([entry]) if view["next_entry"].as_u64() == Some(0) => Ok(entry),
+        _ => Err("S04a client readback requires exactly one VIP entry".into()),
+    }
+}
+
+fn renamed_group_matches(view: &serde_json::Value, group: u64) -> bool {
+    view["groups"] == serde_json::json!([{"group": group, "name": "Raid Team"}])
 }
 
 fn request(operation: wire::Operation, number: u64, text: &str) -> wire::Request {
@@ -76,7 +92,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let entry = added.number;
     let (_, after_add, _) = raw(&mut watcher, &query).await?;
     let added_view: serde_json::Value = serde_json::from_str(&after_add.view)?;
-    let new_entry = &added_view["entries"][0];
+    let new_entry = only_entry(&added_view)?;
     if after_add.code != 1 || after_add.revision != added.revision
         || new_entry["entry"].as_u64() != Some(entry)
         || new_entry["name"].as_str() != Some(&name)
@@ -119,7 +135,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .await?;
     let (_, after_edit, _) = raw(&mut watcher, &query).await?;
     let edit_view: serde_json::Value = serde_json::from_str(&after_edit.view)?;
-    let edited_entry = &edit_view["entries"][0];
+    let edited_entry = only_entry(&edit_view)?;
     if after_edit.code != 1 || after_edit.revision != edited.revision
         || edited_entry["entry"].as_u64() != Some(entry)
         || edited_entry["name"].as_str() != Some(&name)
@@ -150,13 +166,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 && item["notify"].as_bool() == Some(true)
         })
     });
-    let group_ok = view["groups"].as_array().is_some_and(|groups| {
-        groups.iter().any(|item| {
-            item["group"].as_u64() == Some(group.number)
-                && item["name"].as_str() == Some("Raid Team")
-        })
-    });
-    if listed.code != 1 || listed.revision != renamed.revision || !entry_ok || !group_ok
+    if listed.code != 1 || listed.revision != renamed.revision || !entry_ok || !renamed_group_matches(&view, group.number)
+        || view["next_entry"].as_u64() != Some(0)
         || view["entries"] != edit_view["entries"] {
         return Err(format!("Query view mismatch: {view}").into());
     }
@@ -179,10 +190,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("VIP capture sequences did not advance".into());
     }
     let session = uuid_text(watcher.join_snapshot().game_session_id.as_bytes());
-    let expected = format!(
+    let mut expected = format!(
         "name={name}\nentry={entry}\ngroup={}\nrevision={}\nadded_revision={}\nduplicate_code={}\nsession={session}\nadded_sequence={added_sequence}\nlisted_sequence={listed_sequence}\nduplicate_sequence={duplicate_sequence}\n",
         group.number, listed.revision, added.revision, duplicate.code
     );
+    use std::fmt::Write;
+    for (label, bytes) in [
+        ("added", &added_bytes),
+        ("listed", &listed_bytes),
+        ("duplicate", &duplicate_bytes),
+    ] {
+        writeln!(expected, "{label}_sha256={}", payload_digest(bytes))?;
+    }
     capture("s04a-expected.txt", expected.as_bytes())?;
     let old_session = watcher.join_snapshot().game_session_id;
     if watcher.session_mut().logout().await?.result
@@ -219,4 +238,21 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )),
         Err(_) => evidence("e2e_all scenario=S04a.client status=FAIL evidence=timeout"),
     }
+}
+
+#[test]
+fn s04a_client_readbacks_reject_extra_entries_and_groups() {
+    let mut view = serde_json::json!({
+        "entries": [{"entry": 1}],
+        "next_entry": 0,
+        "groups": [{"group": 4, "name": "Raid Team"}]
+    });
+    assert!(only_entry(&view).is_ok());
+    assert!(renamed_group_matches(&view, 4));
+    view["entries"] = serde_json::json!([{"entry": 1}, {"entry": 2}]);
+    assert!(only_entry(&view).is_err());
+    view["groups"] = serde_json::json!([
+        {"group": 4, "name": "Raid Team"}, {"group": 5, "name": "Extra"}
+    ]);
+    assert!(!renamed_group_matches(&view, 4));
 }

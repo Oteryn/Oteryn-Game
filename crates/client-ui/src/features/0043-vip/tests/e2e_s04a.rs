@@ -3,6 +3,7 @@
 //! bytes are decoded by `vip::decode_result`, exactly as the runtime `send` does.
 use super::*;
 use oteryn_client_runtime::vip::CommandStatus;
+use sha2::{Digest, Sha256};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -13,20 +14,43 @@ struct Replay {
     expected: String,
 }
 
+fn payload_digest(bytes: &[u8]) -> String {
+    Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, Error> {
     text.lines()
         .find_map(|line| line.strip_prefix(&format!("{key}=")))
         .ok_or_else(|| format!("expected line {key} absent").into())
 }
 
+fn verify_payload(expected: &str, label: &str, bytes: &[u8]) -> Result<(), Error> {
+    let digest = payload_digest(bytes);
+    if value(expected, &format!("{label}_sha256"))? != digest {
+        return Err(format!("S04a {label} payload does not match its live manifest").into());
+    }
+    Ok(())
+}
+
 fn load() -> Result<Replay, Error> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
+        let expected = std::fs::read_to_string(root.join("s04a-expected.txt"))?;
+        if std::env::var_os("OTERYN_S04A_CAPTURE_REQUIRED").is_some()
+            && std::env::var("OTERYN_S04A_LIVE_MANIFEST")? != expected.replace('\n', ";")
+        {
+            return Err("S04a manifest does not match the live capture evidence".into());
+        }
+        let read = |label: &str| -> Result<Vec<u8>, Error> {
+            let bytes = std::fs::read(root.join(format!("s04a-{label}.bin")))?;
+            verify_payload(&expected, label, &bytes)?;
+            Ok(bytes)
+        };
         return Ok(Replay {
-            added: std::fs::read(root.join("s04a-added.bin"))?,
-            listed: std::fs::read(root.join("s04a-listed.bin"))?,
-            duplicate: std::fs::read(root.join("s04a-duplicate.bin"))?,
-            expected: std::fs::read_to_string(root.join("s04a-expected.txt"))?,
+            added: read("added")?,
+            listed: read("listed")?,
+            duplicate: read("duplicate")?,
+            expected,
         });
     }
     if std::env::var_os("OTERYN_S04A_CAPTURE_REQUIRED").is_some() {
@@ -53,6 +77,26 @@ fn response(bytes: &[u8]) -> Result<VipResponse, Error> {
     })
 }
 
+fn only_item<'a>(view: &'a serde_json::Value, field: &str) -> Result<&'a serde_json::Value, Error> {
+    match view[field].as_array().map(Vec::as_slice) {
+        Some([item]) => Ok(item),
+        _ => Err(format!("S04a replay requires exactly one item in {field}").into()),
+    }
+}
+
+fn check_group_encoder(intent: Intent, expected: vip::Request) -> Result<(), Error> {
+    let mut panel = VipPanel {
+        selected: true,
+        ..VipPanel::default()
+    };
+    let command = request(&mut panel, intent).ok_or("VIP intent did not encode")?;
+    let (kind, bytes) = vip::encode_request(&expected).map_err(|error| format!("{error:?}"))?;
+    if (command.kind, command.payload.as_slice()) != (kind, bytes.as_slice()) {
+        return Err(format!("VIP encoder mismatch for {:?}", expected.operation).into());
+    }
+    Ok(())
+}
+
 #[test]
 fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     let replay = load()?;
@@ -61,6 +105,50 @@ fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     let group: u64 = value(&replay.expected, "group")?.parse()?;
     let revision: u64 = value(&replay.expected, "revision")?.parse()?;
     let added_revision: u64 = value(&replay.expected, "added_revision")?.parse()?;
+    let group_number = u8::try_from(group)?;
+    for (intent, operation, number, text) in [
+        (
+            Intent::GroupAdd("Raid Friends".into()),
+            vip::Operation::GroupAdd,
+            0,
+            "Raid Friends",
+        ),
+        (
+            Intent::GroupRename(group, "Raid Team".into()),
+            vip::Operation::GroupRename,
+            group,
+            "Raid Team",
+        ),
+    ] {
+        check_group_encoder(
+            intent,
+            vip::Request {
+                operation,
+                number,
+                text: text.into(),
+                icon: 0,
+                notify: false,
+                groups: vec![],
+            },
+        )?;
+    }
+    check_group_encoder(
+        Intent::Edit {
+            number: entry,
+            text: "node-boot friend".into(),
+            icon: 7,
+            notify: true,
+            groups: vec![group_number],
+        },
+        vip::Request {
+            operation: vip::Operation::Edit,
+            number: entry,
+            text: "node-boot friend".into(),
+            icon: 7,
+            notify: true,
+            groups: vec![group_number],
+        },
+    )?;
     let mut panel = VipPanel {
         selected: true,
         ..VipPanel::default()
@@ -90,15 +178,16 @@ fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     assert_eq!((panel.revision, panel.feedback.clone()), (revision, None));
     let view: serde_json::Value =
         serde_json::from_str(panel.view.as_deref().ok_or("view absent")?)?;
-    let item = &view["entries"][0];
+    let item = only_item(&view, "entries")?;
     assert_eq!(item["entry"].as_u64(), Some(entry));
     assert_eq!(item["name"].as_str(), Some(name));
     assert_eq!(item["description"].as_str(), Some("node-boot friend"));
     assert_eq!(item["icon"].as_u64(), Some(7));
     assert_eq!(item["notify"].as_bool(), Some(true));
-    assert_eq!(item["groups"][0].as_u64(), Some(group));
-    assert_eq!(view["groups"][0]["group"].as_u64(), Some(group));
-    assert_eq!(view["groups"][0]["name"].as_str(), Some("Raid Team"));
+    assert_eq!(item["groups"], serde_json::json!([group]));
+    let renamed = only_item(&view, "groups")?;
+    assert_eq!(renamed["group"].as_u64(), Some(group));
+    assert_eq!(renamed["name"].as_str(), Some("Raid Team"));
     assert_eq!(Some(panel_text(&panel)), panel.view.clone());
     let listed_view = panel.view.clone();
 
@@ -123,4 +212,72 @@ fn vip_replay_add_edit_query_and_duplicate_refusal() -> Result<(), Error> {
     // A truncated reply never reaches the panel.
     assert!(vip::decode_result(&replay.listed[..replay.listed.len() - 3]).is_err());
     Ok(())
+}
+
+#[test]
+fn rejects_extra_rows_and_equivalent_payload_substitution() -> Result<(), Error> {
+    let view = serde_json::json!({"entries": [1, 2], "groups": [1, 2]});
+    assert!(only_item(&view, "entries").is_err());
+    assert!(only_item(&view, "groups").is_err());
+    let encode = |view| vip::encode_result(1, 8, 0, 0, view).map_err(|error| format!("{error:?}"));
+    let original = encode("{}")?;
+    let substitute = encode("{ }")?;
+    let expected = format!("listed_sha256={}", payload_digest(&original));
+    verify_payload(&expected, "listed", &original)?;
+    assert!(verify_payload(&expected, "listed", &substitute).is_err());
+    Ok(())
+}
+
+#[test]
+fn rejects_wrong_edit_and_group_intents() {
+    for (intent, operation, number, text, icon, notify, groups) in [
+        (
+            Intent::GroupAdd("Wrong".into()),
+            vip::Operation::GroupAdd,
+            0,
+            "Raid Friends",
+            0,
+            false,
+            vec![],
+        ),
+        (
+            Intent::GroupRename(8, "Raid Team".into()),
+            vip::Operation::GroupRename,
+            4,
+            "Raid Team",
+            0,
+            false,
+            vec![],
+        ),
+        (
+            Intent::Edit {
+                number: 1,
+                text: "node-boot friend".into(),
+                icon: 7,
+                notify: false,
+                groups: vec![4],
+            },
+            vip::Operation::Edit,
+            1,
+            "node-boot friend",
+            7,
+            true,
+            vec![4],
+        ),
+    ] {
+        assert!(
+            check_group_encoder(
+                intent,
+                vip::Request {
+                    operation,
+                    number,
+                    text: text.into(),
+                    icon,
+                    notify,
+                    groups,
+                }
+            )
+            .is_err()
+        );
+    }
 }

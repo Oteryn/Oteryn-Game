@@ -733,9 +733,34 @@ CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_co
 CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
 SQL
-if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 && "$NODE_BOOT_WORLD" == 1 &&
-      "${NODE_BOOT_E2E_ONLY:-}" == rows &&
-      "${OTERYN_E2E_ROW_BATCH:-}" =~ ^(43|182):1$ ]]; then
+s04a_selected() {
+  [[ "$NODE_BOOT_WORLD" == 1 ]] || return 1
+  # Match e2e_row_batch.rs, including Rust's unsigned integer syntax and bounds.
+  python3 - "${NODE_BOOT_E2E_ONLY:-}" "${OTERYN_E2E_ROW_BATCH-0:15}" "$@" <<'PY_S04A_SELECTED'
+import re
+import sys
+
+groups, batch, *indices = sys.argv[1:]
+if groups.strip() and "rows" not in {group.strip() for group in groups.split(",")}:
+    sys.exit(1)
+if batch == "all":
+    sys.exit(0)
+if not re.fullmatch(r"\+?[0-9]+:\+?[0-9]+", batch):
+    sys.exit(1)
+# Strip leading zeros before converting so arbitrarily padded valid usize values work.
+parts = [part.lstrip("+").lstrip("0") or "0" for part in batch.split(":")]
+limit = 2 * sys.maxsize + 1
+if any(len(part) > len(str(limit)) or int(part) > limit for part in parts):
+    sys.exit(1)
+start, length = map(int, parts)
+sys.exit(not any(0 <= int(index) - start < length for index in indices))
+PY_S04A_SELECTED
+}
+
+secret_to() { # owner source destination
+  install_owned "$1" -m 0600 "$2" "$3"
+}
+if s04a_selected 43 182; then
   # The disposable login needs the Server's documented relay logging pins.
   psql_admin oteryn_node_boot <<'SQL'
 GRANT SET ON PARAMETER log_parameter_max_length, log_statement,
@@ -744,13 +769,11 @@ SQL
   relay_key="$BASE/node/secrets/s04a-relay"
   (
     umask 077
-    { printf '1 0 '; openssl rand -base64 32; } > "$relay_key"
+    { printf '1 0 '; openssl rand -base64 32; } > "$WORK/s04a-relay"
   )
+  secret_to "$SERVICE_UID" "$WORK/s04a-relay" "$relay_key"
   NODE_GAMEPLAY_ENV+=("OTERYN_CHAT_RELAY_KEYS_FILE=$relay_key")
 fi
-secret_to() { # owner source destination
-  install_owned "$1" -m 0600 "$2" "$3"
-}
 printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
 secret_to root "$WORK/control-password" "$BASE/ops/pg-password"
@@ -1892,7 +1915,7 @@ s04a_client_replay() {
     echo "SEAM_EVIDENCE e2e_all scenario=S04a.client status=FAIL evidence=capture-manifest-mismatch"
     return 1
   fi
-  if ! OTERYN_S04A_CAPTURE_REQUIRED=1 \
+  if ! OTERYN_S04A_CAPTURE_REQUIRED=1 OTERYN_S04A_LIVE_MANIFEST="$expected" \
     cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
     vip::e2e_s04a::vip_replay_add_edit_query_and_duplicate_refusal -- --exact --nocapture > "$replay_log" 2>&1 ||
     [[ $(grep -Ec '^test .*::vip_replay_add_edit_query_and_duplicate_refusal \.\.\. ok$' "$replay_log") != 1 ]]; then
@@ -1904,8 +1927,7 @@ s04a_client_replay() {
   echo "SEAM_EVIDENCE e2e_all scenario=S04a.client status=PASS evidence=fresh-session-sequence-bound-replay"
 }
 
-if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows &&
-      "${OTERYN_E2E_ROW_BATCH:-}" == 182:1 ]]; then
+if s04a_selected 182; then
   export E2E_ALL_CAPTURE_DIR="$WORK/s04a-captures"
   mkdir -m 0700 -- "$E2E_ALL_CAPTURE_DIR"
 fi
@@ -1941,7 +1963,7 @@ else
 fi
 fi
 if [[ "${E2E_ALL_CAPTURE_DIR:-}" == "$WORK/s04a-captures" ]]; then
-  stage s04a_client_replay "$seam_stage_name" -- s04a_client_replay
+  stage s04a_client_replay -- s04a_client_replay
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
