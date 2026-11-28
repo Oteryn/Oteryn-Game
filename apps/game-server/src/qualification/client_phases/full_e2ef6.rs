@@ -1791,8 +1791,8 @@ async fn experience_loss(
             if blessed {
                 earn_death_prerequisites(&mut client, world, spawns, 20, 20_000).await?;
                 let npc = approach_service(&mut client, world, npcs, "oteryn:npc.eremo").await?;
-                let quote = "Do you want to buy The Wisdom of Solitude at the price for your current level?";
-                purchase_service(&mut client, npc, "The Wisdom of Solitude", quote, "You have received the blessing.").await?;
+                let quote = blessing_offer(&mut client, WISDOM).await?;
+                purchase_service(&mut client, npc, "The Wisdom of Solitude", &quote, "You have received the blessing.").await?;
                 let held = blessings(&mut client).await?;
                 if held != ["oteryn:blessing.the_wisdom_of_solitude"] { return Err(format!("blessing purchase did not change native ownership: {held:?}").into()); }
                 row.pass("blessing-purchased", &held);
@@ -2134,6 +2134,23 @@ fn blessing_price(level: u32, key: &str) -> u64 {
     }
 }
 
+async fn blessing_offer(
+    client: &mut DevClientSession,
+    service: (&str, &str, &str),
+) -> TestResult<String> {
+    if service == WISDOM {
+        let price = blessing_price(progress(client).await?.1, service.2);
+        Ok(format!(
+            "Would you like to receive that protection for a sacrifice of {price} gold, child?"
+        ))
+    } else {
+        Ok(format!(
+            "Do you want to buy {} at the price for your current level?",
+            service.1
+        ))
+    }
+}
+
 fn held_with(held: &[String], keys: &[&str]) -> Vec<String> {
     held.iter()
         .map(String::as_str)
@@ -2200,10 +2217,7 @@ async fn buy_blessing(
     }
     let npc = approach_service(client, world, npcs, service.0).await?;
     service_talk(client, npc, "hi").await?;
-    let quote = format!(
-        "Do you want to buy {} at the price for your current level?",
-        service.1
-    );
+    let quote = blessing_offer(client, service).await?;
     let lines = service_talk(client, npc, service.1).await?;
     if lines != [quote] {
         // Runtime NPC response, plus the traced resolver, establish this gap.
@@ -2662,8 +2676,9 @@ async fn blessing_services(
         let npc = approach_service(&mut client, world, npcs, WISDOM.0).await?;
         let owned = custody(client.inventory().ok_or("decline inventory missing")?);
         service_talk(&mut client, npc, "hi").await?;
+        let expected_quote = blessing_offer(&mut client, WISDOM).await?;
         let quote = service_talk(&mut client, npc, WISDOM.1).await?;
-        if quote != [format!("Do you want to buy {} at the price for your current level?", WISDOM.1)] { return Err(format!("blessing quote unavailable: {quote:?}").into()); }
+        if quote != [expected_quote] { return Err(format!("blessing quote unavailable: {quote:?}").into()); }
         for text in ["no", "yes"] {
             let lines = service_talk(&mut client, npc, text).await?;
             if lines.iter().any(|line| line == "You have received the blessing.") || blessings(&mut client).await? != baseline {

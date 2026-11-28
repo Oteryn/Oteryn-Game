@@ -365,7 +365,7 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
             .await?;
         tokio::time::sleep(std::time::Duration::from_millis(1050)).await;
         const WISDOM_OFFER: &str =
-            "Do you want to buy The Wisdom of Solitude at the price for your current level?";
+            "Would you like to receive that protection for a sacrifice of 20000 gold, child?";
         for (command_id, text) in [(6, "wisdom"), (7, "yes")] {
             let outcome = owner
                 .npc_talk(

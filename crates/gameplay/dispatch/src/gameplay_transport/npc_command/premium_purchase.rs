@@ -19,6 +19,7 @@ pub(super) struct PendingPurchase {
 
 pub(super) enum Step {
     Reply(String),
+    QuoteWisdom(Box<PendingPurchase>),
     Buy(Box<PendingPurchase>),
 }
 
@@ -65,9 +66,8 @@ pub(super) fn prepare(
     let service =
         oteryn_gameplay_npc::npc_promotion::select(&intent.text, &entry.premium_services)?;
     let fence = command.item_fence?;
-    let line = oteryn_gameplay_npc::npc_promotion::prompt(service);
     state.bank = None;
-    state.premium = Some(PendingPurchase {
+    let pending = PendingPurchase {
         service: service.clone(),
         context,
         npc: intent.npc_actor,
@@ -77,8 +77,53 @@ pub(super) fn prepare(
             *admission.holder.fact().node_id().as_bytes(),
             admission.holder.fact().registration_revision(),
         ),
-    });
+    };
+    if matches!(service, PremiumNpcService::Blessing(blessing)
+        if blessing.service == "oteryn:service.blessing.the_wisdom_of_solitude")
+    {
+        return Some(Step::QuoteWisdom(Box::new(pending)));
+    }
+    let line = oteryn_gameplay_npc::npc_promotion::prompt(service);
+    state.premium = Some(pending);
     Some(Step::Reply(line))
+}
+
+async fn quote_wisdom(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    intent: &NpcTalkIntent,
+    mut pending: PendingPurchase,
+) -> Option<NpcTalkOutcome> {
+    let PremiumNpcService::Blessing(blessing) = &pending.service else {
+        return None;
+    };
+    let progression = admission
+        .root
+        .read_character_progression(admission.character, pending.fence.character_id)
+        .await
+        .ok()??;
+    let price = blessing.price(progression.level);
+    let session = pending.fence.game_session_id;
+    let runtime = admission.runtime.lock().await;
+    let conversations = &admission.states.npc_conversations;
+    if conversations.current_npc(&admission.states.chat, &runtime, actor, session, intent)
+        != Some(pending.context.clone())
+        || !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+    {
+        return None;
+    }
+    let mut sessions = conversations.sessions.lock().ok()?;
+    pending.opened = admission.owner_now().get();
+    sessions.get_mut(&session)?.premium = Some(pending);
+    // Crystal's Eremo wording, using the Global price curve shared by settlement.
+    Some(NpcConversations::bank_reply(
+        intent,
+        format!(
+            "Would you like to receive that protection for a sacrifice of {price} gold, child?"
+        ),
+    ))
 }
 
 pub(super) async fn apply(
@@ -90,6 +135,11 @@ pub(super) async fn apply(
 ) -> NpcTalkOutcome {
     let pending = match step {
         Step::Reply(line) => return NpcConversations::bank_reply(&intent, line),
+        Step::QuoteWisdom(pending) => {
+            return quote_wisdom(admission, actor, &intent, *pending)
+                .await
+                .unwrap_or_else(|| NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
+        }
         Step::Buy(pending) => *pending,
     };
     let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
