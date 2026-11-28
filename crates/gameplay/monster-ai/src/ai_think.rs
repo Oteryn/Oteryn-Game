@@ -17,6 +17,7 @@ pub mod movement_goal;
 pub(crate) mod native_profile;
 pub mod profile_schedule;
 mod source_target;
+mod source_voice;
 pub mod summon_plan;
 #[cfg(any(test, feature = "test-support"))]
 mod summon_plan_test_support;
@@ -98,6 +99,8 @@ pub struct ThinkReport {
     /// Due and drawn non-melee entries, at most `CREATUREAI0-RL-07`.
     pub proposals: Vec<ProfileAbilityProposal>,
     pub summon_proposals: Vec<profile_schedule::ProfileSummonProposal>,
+    /// Selected entry in the current native profile's authored voice list.
+    pub voice_index: Option<usize>,
     pub refusal: Option<ScheduleError>,
     pub fleeing: bool,
     /// §2.1 item 1: nothing perceived, no target and no active condition; no next think.
@@ -137,6 +140,7 @@ pub struct CreatureAiState {
     /// Canary monster.cpp:1456-1462: Fatal Hold suppresses fleeing without changing targeting.
     fatal_hold_until: u64,
     change_ticks_ms: u64,
+    voice_ticks_ms: u64,
     schedule: ProfileScheduleState,
     last: Option<ThinkReport>,
     /// The admitted creature definition key, `oteryn:creature.<name>`; selects the think hook.
@@ -179,6 +183,7 @@ impl CreatureAiState {
             forced_distance: None,
             fatal_hold_until: 0,
             change_ticks_ms: 0,
+            voice_ticks_ms: 0,
             schedule: ProfileScheduleState::new(actor),
             last: None,
             creature_key: None,

@@ -3,7 +3,7 @@
 //! It is the projection of the validated v2 behaviour authoring (`ProjectV2BehaviorAuthoring`)
 //! onto what the think consumes: `targeting` (all fields), `movement.wander`, `attacks[]` and
 //! `defenses[]`, with the Ability profiles those entries name. Native projection also retains
-//! summons and event bindings; voices and periodic audio remain with their existing owners. The carrier
+//! summons, voices and event bindings. The carrier
 //! holds one per creature, given at admission; a creature without one is refused
 //! (`PROFILE_MISSING`) and never defaulted. This module holds no profile literal: every value
 //! arrives from content (or, until SPAWN-1a, from test data).
@@ -132,11 +132,11 @@ impl CreatureBehaviourProfile {
             }
         }
         let mut projected = behavior.clone();
-        projected.voices = None;
         projected.summons = None;
         projected.periodic_audio = None;
         projected.faction = None;
         if !native {
+            projected.voices = None;
             projected.event_bindings.clear();
         }
         Ok(Self {

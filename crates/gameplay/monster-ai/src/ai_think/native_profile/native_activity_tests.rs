@@ -207,6 +207,66 @@ fn srx3_native_monster_uses_symmetric_eleven_tile_source_perception() -> Result<
 }
 
 #[test]
+fn native_monster_think_emits_one_authored_voice_when_due() -> Result<(), String> {
+    run(|native, mut runtime| {
+        let position = at(100, 100);
+        let rat = actor(&mut runtime, "oteryn:creature.rat", position)?;
+        let session =
+            crate::foundation::GameSessionId::decode(&uuid(4)).map_err(|e| format!("{e:?}"))?;
+        let reserved = runtime
+            .reserve_fresh_session(session)
+            .map_err(|e| format!("{e:?}"))?;
+        let player = runtime
+            .commit_fresh_session(reserved)
+            .map_err(|e| format!("{e:?}"))?;
+        let next_tile = at(101, 100);
+        runtime
+            .initialize_pinned_test_position(player, next_tile)
+            .map_err(|e| format!("{e:?}"))?;
+        let players = [super::super::targeting::TargetCandidate {
+            actor: player,
+            position: next_tile,
+            eligible: true,
+            invisible: false,
+            health: 100,
+            damage: 0,
+        }];
+
+        let creature = reference(native, "oteryn:creature.rat")?;
+        let profile = project_native(&runtime, native, &creature).map_err(|e| format!("{e:?}"))?;
+        let mut behavior = profile.behavior().clone();
+        let voices = behavior
+            .voices
+            .as_mut()
+            .expect("native projection retains the Rat voice");
+        assert_eq!(voices.entries[0].text, "Meep!");
+        // Make the due roll certain without changing the admitted content fixture on disk.
+        voices.chance_ppm = 1_000_000;
+        let interval = voices.interval_ms;
+        let profile =
+            CreatureBehaviourProfile::project_native(Some(&behavior), profile.abilities())
+                .map_err(|e| format!("{e:?}"))?;
+        let mut table = CreatureAiTable::default();
+        table.admit(CreatureAiState::new(rat, profile, position), 0);
+
+        let step = CREATURE_THINK_INTERVAL_MILLIS;
+        let due_tick = interval.div_ceil(step);
+        for tick in 1..=due_tick + 1 {
+            let now = table.due(rat).expect("active Rat still has a think");
+            let reports = think(&mut table, &mut runtime, &players, now)?;
+            assert_eq!(reports.len(), 1);
+            assert_eq!(
+                reports[0].1.voice_index,
+                (tick == due_tick).then_some(0),
+                "one Rat voice on the due think only"
+            );
+            assert!(think(&mut table, &mut runtime, &players, now)?.is_empty());
+        }
+        Ok(())
+    })
+}
+
+#[test]
 fn srx3_fresh_native_canonical_condition_prevents_idle_without_players() -> Result<(), String> {
     run(|native, mut runtime| {
         let rat = actor(&mut runtime, "oteryn:creature.rat", at(100, 100))?;

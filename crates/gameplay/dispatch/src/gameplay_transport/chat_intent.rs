@@ -11,6 +11,7 @@
 
 mod cake_speech;
 mod item_actions;
+mod monster_speech;
 mod private_echo;
 mod source_speech;
 
@@ -1387,6 +1388,72 @@ mod tests {
             (first, first_session),
             (second, second_session),
         )
+    }
+
+    #[test]
+    fn monster_speech_outbox_preserves_text_exact_actor_and_yell_reach() {
+        use crate::content::creature_policy::CompiledCreaturePolicies;
+        use crate::content::{ProjectV2SpeechMode, ProjectV2Voice};
+
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                let (mut runtime, chat, (near_actor, near), (_, far)) = two_players(10);
+                let pin = runtime.content_pin();
+                let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../../content/spells.manifest.json");
+                let native = crate::content::native_gameplay::retained_callback_native_fixture_at(
+                    pin.world_id(),
+                    &manifest,
+                );
+                let key = "oteryn:creature.rat";
+                let policy = native
+                    .policies()
+                    .policies()
+                    .iter()
+                    .find(|policy| policy.definition_key == key)
+                    .expect("Rat policy");
+                let policies = CompiledCreaturePolicies::from_active_artifact(
+                    pin.server_artifact_digest(),
+                    vec![policy.as_ref().clone()],
+                )
+                .expect("fixture policy");
+                runtime
+                    .install_companion_policies(policies)
+                    .expect("qualified policy");
+                let mut source = runtime
+                    .read_actor_position(near_actor)
+                    .expect("position")
+                    .position();
+                source.x += 1;
+                let rat = runtime
+                    .spawn_arena_opponent(key, source, |_, _| Some(true))
+                    .expect("live Rat");
+                let mut voice = ProjectV2Voice {
+                    text: "Meep!".to_owned(),
+                    mode: ProjectV2SpeechMode::Say,
+                };
+                chat.publish_monster_speech(&runtime, rat, &voice);
+                let lines = chat.drain(near);
+                assert!(matches!(lines.as_slice(), [ChatLine::Local {
+                    speaker, speaker_name, mode: ChatSpeechMode::MonsterSay, text, ..
+                }] if speaker.identity == rat.placement_identity()
+                    && speaker.generation.get() == rat.actor_local_generation()
+                    && speaker_name == &policy.display_name && text == &voice.text));
+                assert!(chat.drain(far).is_empty());
+
+                voice.mode = ProjectV2SpeechMode::Yell;
+                chat.publish_monster_speech(&runtime, rat, &voice);
+                assert_eq!(chat.drain(near), lines);
+                assert_eq!(chat.drain(far), lines);
+
+                runtime.remove_arena_opponent(rat).expect("retired Rat");
+                chat.publish_monster_speech(&runtime, rat, &voice);
+                assert!(chat.drain(near).is_empty() && chat.drain(far).is_empty());
+            })
+            .expect("speech fixture thread")
+            .join()
+            .expect("speech fixture assertions");
     }
 
     fn say(text: &str) -> ChatIntent {

@@ -98,6 +98,7 @@ impl CreatureAiState {
                     goal: MovementGoal::Stand,
                     proposals: Vec::new(),
                     summon_proposals: Vec::new(),
+                    voice_index: None,
                     refusal: None,
                     fleeing: false,
                     idle: false,
@@ -245,6 +246,7 @@ impl CreatureAiState {
                 goal,
                 proposals: Vec::new(),
                 summon_proposals: Vec::new(),
+                voice_index: None,
                 refusal: None,
                 fleeing,
                 idle: perceived.is_empty()
@@ -283,6 +285,14 @@ impl CreatureAiState {
             actor: self.actor,
             sequence: selected.report.sequence,
         };
+        if !selected.report.idle
+            && self
+                .last
+                .as_ref()
+                .is_none_or(|last| last.sequence != occurrence.sequence)
+        {
+            selected.report.voice_index = self.select_voice(occurrence, facts.root);
+        }
         let input = ProfileScheduleInput {
             occurrence,
             behavior: self.profile.behavior(),

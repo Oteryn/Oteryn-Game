@@ -685,6 +685,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut reader,
                         |runtime, table, actor, report, reader| {
                             publish_native_facing(runtime, table, actor);
+                            if let Some(voice) = report.voice_index.and_then(|index| {
+                                table.state(actor)?.profile().behavior().voices.as_ref()?.entries.get(index)
+                            }) {
+                                owner.states.chat.publish_monster_speech(runtime, actor, voice);
+                            }
                             let selected = report.proposals.iter().filter(|proposal| {
                                 source_attack_abilities.contains(&proposal.ability)
                                     || accepts_source_overlay(runtime,native,actor,&proposal.ability)
