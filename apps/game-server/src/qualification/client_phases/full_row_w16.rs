@@ -147,6 +147,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let spawn = TilePos { x: 33946, y: 32645, floor: -5 };
+    let start = ActorPosition { x: 33945, y: 32645, floor: 5 };
+    if !world.enterable(tile(start)?) || !metadata.spawns.sources.iter().any(|source| {
+        source.floor == spawn.floor && source.points.iter().any(|point| {
+            (point.x, point.y) == (spawn.x, spawn.y)
+                && metadata.spawns.creatures.get(point.creature as usize)
+                    .is_some_and(|entry| entry.key == "oteryn:creature.radiant_acolyte")
+        })
+    }) {
+        return Err("W16 authored Acolyte fixture cells absent or blocked".into());
+    }
+    logout_w16(&mut fresh).await?;
+    drop(fresh);
+    let mut fresh = stage_at(clients, 0xb8, "radiant_acolyte", start).await?;
     for &(suffix, name) in SUMMER_ACTORS {
         let key = format!("oteryn:creature.{suffix}");
         super::full_row_w22a::travel_to_named_spawn(&mut fresh, world, &metadata.spawns, &key, name)
@@ -220,12 +234,29 @@ pub(super) async fn approach(
     {
         return Err(format!("W16 invalid landing {landing:?} from {start:?} toward {npc:?}").into());
     }
+    let mut client = stage_at(clients, tag, key, start).await?;
+    let reply = client.session_mut().target_walk(landing).await?;
+    require_target_walk(key, reply.status, &reply.payload)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    while client.world_spatial().actor_position != landing {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=target-walk-{key} expected={landing:?} observed={:?}", client.world_spatial().actor_position).into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    evidence(&format!("W16_WALK npc={key} start={start:?} landing={landing:?}"));
+    Ok(client)
+}
+
+async fn stage_at(
+    clients: &SeamClients<'_>, tag: u8, key: &str, start: ActorPosition,
+) -> TestResult<DevClientSession> {
     wait_character_released(clients, 0).await?;
     let staged_floor = tokio::time::timeout(Duration::from_secs(5), async {
         let mut connection = sqlx::PgConnection::connect(clients.url).await?;
         sqlx::query_scalar::<_, i16>(
             "UPDATE game_character_last_positions p
-             SET tile_x=$4, tile_y=$5, tile_floor=CASE WHEN p.tile_floor < 0 THEN -6 ELSE 6 END,
+             SET tile_x=$4, tile_y=$5, tile_floor=CASE WHEN p.tile_floor < 0 THEN -$6::smallint ELSE $6::smallint END,
                  write_sequence=p.write_sequence+1
              WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
              AND EXISTS (SELECT 1 FROM game_character_roots r
@@ -238,27 +269,18 @@ pub(super) async fn approach(
         .bind(clients.characters[0].as_slice())
         .bind(clients.world.as_slice())
         .bind(&clients.accounts[0])
-        .bind(x)
-        .bind(y)
+        .bind(start.x)
+        .bind(start.y)
+        .bind(start.floor)
         .fetch_one(&mut connection)
         .await
     })
     .await??;
-    evidence(&format!("FIXTURE q_w16 npc={key} start={start:?} saved_floor={staged_floor} expected_walk_landing={landing:?}"));
-    let mut client = connect_character(clients, tag, 0).await?;
+    evidence(&format!("FIXTURE q_w16 source={key} start={start:?} saved_floor={staged_floor}"));
+    let client = connect_character(clients, tag, 0).await?;
     if client.world_spatial().actor_position != start {
         return Err(format!("W16 fixture admission expected={start:?} observed={:?}", client.world_spatial().actor_position).into());
     }
-    let reply = client.session_mut().target_walk(landing).await?;
-    require_target_walk(key, reply.status, &reply.payload)?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    while client.world_spatial().actor_position != landing {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=target-walk-{key} expected={landing:?} observed={:?}", client.world_spatial().actor_position).into());
-        }
-        client.service_liveness(Duration::from_millis(25)).await?;
-    }
-    evidence(&format!("W16_WALK npc={key} start={start:?} landing={landing:?}"));
     Ok(client)
 }
 
