@@ -28,6 +28,8 @@ pub struct ForgeSpawnCandidate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FiendishTickPlan {
     pub selected: Vec<u64>,
+    /// Slots unfilled by live retained candidates, before drawing replacements.
+    pub vacancy: usize,
     pub next_tick_micros: u64,
 }
 
@@ -73,6 +75,7 @@ pub fn plan_fiendish_tick(
     selected.extend(eligible.into_iter().take(missing));
     FiendishTickPlan {
         selected,
+        vacancy: missing,
         next_tick_micros: now_micros.saturating_add(FIENDISH_RESPAWN_MICROS),
     }
 }
@@ -225,6 +228,7 @@ mod tests {
             .collect();
         let plan = super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates);
         assert_eq!(plan.selected, vec![2, 4, 1, 5]);
+        assert_eq!(plan.vacancy, 3);
         assert_eq!(
             plan,
             super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates)

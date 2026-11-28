@@ -1,5 +1,6 @@
 //! Forge classification lives in the existing spawn and actor owners.
 use super::*;
+use runtime_actor_companion::CompanionSnapshot;
 #[cfg(feature = "qualification-spawn")]
 #[path = "forge_population_draw.rs"]
 mod qualification;
@@ -11,7 +12,9 @@ use oteryn_gameplay_domain::domain::forge_creature::{
 #[cfg(feature = "qualification-spawn")]
 pub(super) use qualification::PendingDraw;
 #[cfg(feature = "qualification-spawn")]
-pub use qualification::{ForgePopulationCensus, ForgePopulationDrawRefusal};
+pub use qualification::{
+    ForgePopulationCensus, ForgePopulationDrawRefusal, ForgePopulationSelection,
+};
 use sha2::{Digest, Sha256};
 
 // Canary's Game::updateForgeableMonsters maintenance cadence, in owner semantic time.
@@ -49,6 +52,15 @@ impl ChannelRuntimeV1 {
         &mut self,
         actor: ExactActorRef,
         kind: ForgeCreature,
+    ) -> Result<(), CarrierError> {
+        self.apply_forge_classification_observed(actor, kind, |_| {})
+    }
+
+    fn apply_forge_classification_observed(
+        &mut self,
+        actor: ExactActorRef,
+        kind: ForgeCreature,
+        observe: impl FnOnce(&CompanionSnapshot),
     ) -> Result<(), CarrierError> {
         self.assert_actor_spell_unreserved(actor)?;
         let snapshot = self.companion_snapshot(actor)?;
@@ -91,6 +103,7 @@ impl ChannelRuntimeV1 {
         *health = current;
         spell_combat.maximum_health = maximum;
         spell_combat.forge = Some(kind);
+        observe(&snapshot);
         Ok(())
     }
 
@@ -168,6 +181,18 @@ impl ChannelRuntimeV1 {
         } else {
             usize::from(FIENDISH_SIMULTANEOUS_MAX).saturating_sub(self.forge_fiends.len())
         };
+        #[cfg(feature = "qualification-spawn")]
+        if let Some(draw) = &mut draw {
+            draw.census.fiendish_available_slots = available;
+            draw.census.retained.extend(
+                self.forge_fiends
+                    .iter()
+                    .filter(|(actor, due)| {
+                        due.is_some() && self.companion_snapshot(*actor).is_err()
+                    })
+                    .map(|(actor, _)| (*actor, ForgeCreature::Fiendish)),
+            );
+        }
         let mut candidates = Vec::new();
         let mut actors = Vec::new();
         let mut existing = Vec::new();
@@ -193,8 +218,13 @@ impl ChannelRuntimeV1 {
                 });
                 actors.push((identity, actor));
                 #[cfg(feature = "qualification-spawn")]
-                if eligible && let Some(draw) = &mut draw {
-                    draw.census.eligible.push((identity, actor));
+                if let Some(draw) = &mut draw {
+                    if eligible {
+                        draw.census.eligible.push((identity, actor));
+                    }
+                    if let Some(kind) = snapshot.forge {
+                        draw.census.retained.push((actor, kind));
+                    }
                 }
                 if snapshot.forge == Some(ForgeCreature::Fiendish) {
                     existing.push(identity);
@@ -209,18 +239,26 @@ impl ChannelRuntimeV1 {
             )
         });
         let plan = plan_fiendish_tick(now, seed, &existing, &candidates);
+        #[cfg(feature = "qualification-spawn")]
+        if let Some(draw) = &mut draw {
+            draw.census.fiendish_vacancy = plan.vacancy;
+        }
         let mut selected = 0;
         for identity in &plan.selected {
             if selected < available
                 && !existing.contains(identity)
                 && let Some((_, actor)) = actors.iter().find(|(id, _)| id == identity)
             {
-                self.apply_forge_classification(*actor, ForgeCreature::Fiendish)?;
+                let kind = ForgeCreature::Fiendish;
+                self.apply_forge_classification_observed(*actor, kind, |snapshot| {
+                    #[cfg(feature = "qualification-spawn")]
+                    if let Some(draw) = &mut draw {
+                        draw.record_selection(snapshot, kind);
+                    }
+                    #[cfg(not(feature = "qualification-spawn"))]
+                    let _ = snapshot;
+                })?;
                 self.forge_fiends.push((*actor, None));
-                #[cfg(feature = "qualification-spawn")]
-                if let Some(draw) = &mut draw {
-                    draw.census.selected.push((*actor, ForgeCreature::Fiendish));
-                }
                 selected += 1;
             }
         }
@@ -257,11 +295,14 @@ impl ChannelRuntimeV1 {
                 .min(1),
         ) {
             if let Some(kind) = ForgeCreature::new_influenced(1 + (roll % 5) as u8) {
-                self.apply_forge_classification(actor, kind)?;
-                #[cfg(feature = "qualification-spawn")]
-                if let Some(draw) = &mut draw {
-                    draw.census.selected.push((actor, kind));
-                }
+                self.apply_forge_classification_observed(actor, kind, |snapshot| {
+                    #[cfg(feature = "qualification-spawn")]
+                    if let Some(draw) = &mut draw {
+                        draw.record_selection(snapshot, kind);
+                    }
+                    #[cfg(not(feature = "qualification-spawn"))]
+                    let _ = snapshot;
+                })?;
             }
         }
         let next_scan = now.saturating_add(POPULATION_TICK_MICROS);

@@ -104,6 +104,19 @@ async fn qualified_draw(
     let selected: Vec<_> = census
         .selected
         .into_iter()
+        .map(|selection| {
+            let position = selection.position;
+            serde_json::json!({
+                "id": id(selection.actor),
+                "stacks": selection.kind.reward_stacks(),
+                "creature_key": selection.creature_key,
+                "position": {"x": position.x, "y": position.y, "floor": position.floor},
+            })
+        })
+        .collect();
+    let retained: Vec<_> = census
+        .retained
+        .into_iter()
         .map(|(actor, kind)| serde_json::json!({"id": id(actor), "stacks": kind.reward_stacks()}))
         .collect();
     let eligible: Vec<_> = census
@@ -119,6 +132,9 @@ async fn qualified_draw(
     Ok(serde_json::json!({
         "now_micros": census.now_micros,
         "selected": selected,
+        "retained": retained,
+        "fiendish_vacancy": census.fiendish_vacancy,
+        "fiendish_available_slots": census.fiendish_available_slots,
         "eligible": eligible,
         "excluded_owned_summons": excluded_owned_summons,
     }))
