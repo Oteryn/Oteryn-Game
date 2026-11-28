@@ -119,6 +119,10 @@ async fn walk_segment(client: &mut DevClientSession, to: TilePos) -> TestResult 
     if client.world_spatial().actor_position == target {
         return Ok(());
     }
+    evidence(&format!(
+        "I10_CHECK step=walk-segment from={:?} target={target:?}",
+        client.world_spatial().actor_position
+    ));
     let reply = client.session_mut().target_walk(target).await?;
     if reply.status != CommandStatus::Accepted || reply.payload != [8, 1] {
         return Err(format!("step=walk-once target={target:?} observed={reply:?}").into());
@@ -150,7 +154,8 @@ const DOOR: TilePos = TilePos {
 
 async fn enter_house(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, |at| at == ENTRANCE)
+    let path = route_live(client, world, |at| at == ENTRANCE)
+        .await?
         .ok_or("I10 authored route to Upper Swamp Lane 2 is unavailable")?;
     let mut at = start;
     // The live target-walk command admits targets within 12 tiles.
@@ -166,6 +171,9 @@ async fn enter_house(client: &mut DevClientSession, world: &BundleWorld) -> Test
 async fn transfer_house(client: &mut DevClientSession, exit: bool, to: TilePos) -> TestResult {
     use oteryn_dev_client::client_runtime::house_transfer as transfer;
     let before = tile(client.world_spatial().actor_position)?;
+    evidence(&format!(
+        "I10_CHECK step=house-transfer-request exit={exit} from={before:?} destination={to:?}"
+    ));
     let request = transfer::encode_house_transfer_intent(&transfer::HouseTransferIntent {
         exit,
         house: HOUSE.into(),
