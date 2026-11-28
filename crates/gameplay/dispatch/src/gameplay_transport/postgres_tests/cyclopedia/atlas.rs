@@ -41,7 +41,10 @@ pub(super) async fn verify(
     let progress = atlas.progress.as_ref().ok_or("home area progress")?;
     assert_eq!(progress.epoch, 3);
     assert!(progress.improved, "atlas projects the active respawn epoch");
-    assert_eq!(progress.pool, 0, "atlas projects the cleared winning pool");
+    assert_eq!(
+        progress.pool, 5_000_000,
+        "atlas projects the carried surplus"
+    );
     assert!(atlas.cells.contains(&2));
     assert!(atlas.areas.iter().any(|a| a.id == 2 && a.parent == 1));
     assert!(

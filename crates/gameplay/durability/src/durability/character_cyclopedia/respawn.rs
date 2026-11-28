@@ -220,8 +220,8 @@ async fn settle(
     ).bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&new_areas)
         .bind(&boosts).bind(&donation_winners).bind(&pools_before).execute(&mut ***tx).await?;
     if let Some(winner) = selection.donation {
-        sqlx::query("UPDATE game_world_cyclopedia SET pool=0 WHERE world_id=encode($1,'hex')::uuid AND area_id=$2")
-            .bind(world.as_bytes().as_slice()).bind(winner).execute(&mut ***tx).await?;
+        sqlx::query("UPDATE game_world_cyclopedia SET pool=pool-$3 WHERE world_id=encode($1,'hex')::uuid AND area_id=$2")
+            .bind(world.as_bytes().as_slice()).bind(winner).bind(DONATION_GOAL as i64).execute(&mut ***tx).await?;
     }
     Ok(())
 }

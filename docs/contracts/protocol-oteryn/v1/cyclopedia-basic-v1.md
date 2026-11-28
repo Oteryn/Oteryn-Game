@@ -49,7 +49,8 @@ imports their spendable balance once, guarded by a unique import constraint.
 
 Each canonical main area owns its pool. At server save the World selects one donation
 winner from the eligible areas with the highest pool of at least 10,000,000 gp,
-breaking ties by draw. Its pool resets to zero. All other pools carry forward.
+with a deterministic draw for tied totals. The winning pool spends exactly
+10,000,000 gp and carries the excess. Other pools carry forward in full.
 With 33% probability a separate draw improves one of the remaining eligible areas.
 Areas improved in the preceding epoch are ineligible for either draw. An improvement
 doubles home spawn rates until the next server save. Both draws use the World ID and
@@ -57,14 +58,11 @@ epoch, with separate purposes for chance, area and tie. Selection, winning pool 
 and immutable epoch records commit together across Channels. Already-recorded days
 remain effective on upgrade.
 
-The Global Cyclopedia reference states “There is a 33% chance that one randomly
-selected area of the map will have its respawn rate improved” and “Thus, an area
-cannot have its spawn increased two days in a row.”
+The Global Cyclopedia reference states “The area with the most gold donated (above
+10kk) at the Server Save will have its spawn increased.” It also documents the
+separate 33% random boost and the ban on consecutive boosts. Oteryn retains its
+existing one-goal debit and excess carryover.
 [Cyclopedia, Improved Respawn Rate](https://tibia.fandom.com/wiki/Cyclopedia#Improved_Respawn_Rate)
-
-The retained Global interface reference specifies “Tie at highest donation = random
-winner; winning area's gold resets to 0, others carry their gold forward.”
-[Tibia interface reference](../../../reference/tibia-manual/interface.md#322-cyclopedia-map)
 
 ## Automatic discovery and POI reset (T186/T187, 2026-11-09)
 

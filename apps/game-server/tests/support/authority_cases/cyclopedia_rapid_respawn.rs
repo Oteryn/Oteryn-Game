@@ -1,4 +1,4 @@
-//! Exercise World selection and migration 3340 through the fenced respawn owner.
+//! Exercise World selection and the existing debit guard through the fenced respawn owner.
 use crate::bestiary_postgres_harness as fixture;
 use crate::durability::character_cyclopedia::CyclopediaWorldBinding;
 use crate::durability::spell_owner_commit::SpellLanePermit;
@@ -78,7 +78,7 @@ async fn verify(h: &fixture::Harness) -> fixture::TestResult {
     };
 
     sqlx::query(
-        "ALTER TABLE game_world_cyclopedia ADD CONSTRAINT reject_debit CHECK(pool>0) NOT VALID",
+        "ALTER TABLE game_world_cyclopedia ADD CONSTRAINT reject_debit CHECK(area_id<>2 OR pool<>15000000) NOT VALID",
     )
     .execute(&h.pool)
     .await?;
@@ -123,15 +123,15 @@ async fn verify(h: &fixture::Harness) -> fixture::TestResult {
         saved,
         vec![
             (1, true, false, 10_000_000, 10_000_000),
-            (2, true, true, 25_000_000, 0),
+            (2, true, true, 25_000_000, 15_000_000),
             (3, false, false, 15_000_000, 15_000_000),
             (4, false, false, 30_000_000, 30_000_000),
         ]
     );
 
-    // Migration 3340 still rejects a debit that has no same-transaction winner receipt.
+    // The existing pool guard rejects a debit that has no same-transaction winner receipt.
     let mut tx = h.pool.begin().await?;
-    sqlx::query("UPDATE game_world_cyclopedia SET pool=0 WHERE area_id=3")
+    sqlx::query("UPDATE game_world_cyclopedia SET pool=pool-10000000 WHERE area_id=3")
         .execute(&mut *tx)
         .await?;
     let error = tx

@@ -755,7 +755,7 @@ fn scenario(canonical: bool) -> TestResult {
         owner.reset_epoch = 1;
         let (_, epoch) = support::exchange(&owner, &mut admitted, 19, 72, &[]).await?;
         assert_eq!(epoch[28], 2);
-        assert_eq!(pool(&epoch), 0, "the winning pool is cleared");
+        assert_eq!(pool(&epoch), 15_000_000, "the winner spends one goal and carries excess");
         let selected_areas: Vec<i64> = sqlx::query_scalar(
             "SELECT area_id FROM game_world_cyclopedia_epochs WHERE epoch=1 ORDER BY area_id",
         )
@@ -785,18 +785,8 @@ fn scenario(canonical: bool) -> TestResult {
         let (_, refused) =
             support::exchange(&owner, &mut admitted, 20, 73, &request(4, 1)).await?;
         assert_eq!(refused[0], 7, "a boosted area refuses donations before charging");
-        assert_eq!(pool(&refused), 0);
+        assert_eq!(pool(&refused), 15_000_000);
 
-        // Fund the same area in the fixture to exercise exclusion independently of the
-        // winning-pool debit and the active-day donation guard.
-        let mut snapshot = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *snapshot)
-            .await?;
-        sqlx::query("UPDATE game_world_cyclopedia SET pool=15000000 WHERE area_id=1")
-            .execute(&mut *snapshot)
-            .await?;
-        snapshot.commit().await?;
         sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,2,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=1").execute(&h.pool).await?;
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2")
             .execute(&h.pool)
@@ -825,7 +815,7 @@ fn scenario(canonical: bool) -> TestResult {
         owner.reset_epoch = 3;
         let (_, epoch_three) = support::exchange(&owner, &mut admitted, 22, 72, &[]).await?;
         assert_eq!(epoch_three[28], 2, "funded areas are eligible after a day off");
-        assert_eq!(pool(&epoch_three), 0);
+        assert_eq!(pool(&epoch_three), 5_000_000);
         let (improved, winner): (bool, bool) = sqlx::query_as(
             "SELECT improved,donation_winner FROM game_world_cyclopedia_epochs WHERE epoch=3",
         )
