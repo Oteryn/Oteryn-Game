@@ -16,7 +16,9 @@ use oteryn_protocol_oteryn::{analyser_catalogue as items, analyser_party as hunt
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -78,10 +80,9 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let result = client.session_mut().logout().await?.result;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={result:?}").into());
     }
     Ok(())
 }
@@ -248,24 +249,43 @@ async fn body(
     b: &mut DevClientSession,
     clients: &SeamClients<'_>,
 ) -> TestResult {
+    let a_name = name_of(clients, 0).await?;
+    let b_name = name_of(clients, 1).await?;
+    for client in [&mut *a, &mut *b] {
+        assert_solo(client).await?;
+    }
     let b_seen = see_each_other(a, b, clients).await?;
     let (reply, _) = party(a, Some(PartyIntent::Invite(b_seen))).await?;
     if reply != PartyDisposition::Ok {
         return Err(format!("step=invite observed={reply:?}").into());
     }
     let (_, invitation) = party(b, None).await?;
-    let handle = invitation
-        .invitations
-        .first()
-        .ok_or("step=invite observed=no-invitation-for-peer")?
-        .handle;
-    let (reply, _) = party(b, Some(PartyIntent::Accept(handle))).await?;
+    let [invite] = invitation.invitations.as_slice() else {
+        return Err("step=invite observed=unexpected-invitation-count".into());
+    };
+    if invite.name != a_name || invite.expires_at == 0 || !invitation.members.is_empty() {
+        return Err(format!("step=invite observed={invitation:?}").into());
+    }
+    let (reply, _) = party(b, Some(PartyIntent::Accept(invite.handle))).await?;
     if reply != PartyDisposition::Ok {
         return Err(format!("step=accept observed={reply:?}").into());
     }
-    let (_, view) = party(a, None).await?;
-    if view.members.len() < 2 {
-        return Err(format!("step=party observed=members:{}", view.members.len()).into());
+    for client in [&mut *a, &mut *b] {
+        let (reply, view) = party(client, None).await?;
+        if reply != PartyDisposition::Ok
+            || !view.invitations.is_empty()
+            || view.members.len() != 2
+            || !view
+                .members
+                .iter()
+                .any(|entry| entry.name == a_name && entry.leader)
+            || !view
+                .members
+                .iter()
+                .any(|entry| entry.name == b_name && !entry.leader)
+        {
+            return Err(format!("step=party observed={reply:?}/{view:?}").into());
+        }
     }
 
     let index = provisioning::item_index()?;
@@ -331,8 +351,6 @@ async fn body(
             supply: Some(1),
         })
         .collect();
-    let a_name = name_of(clients, 0).await?;
-    let b_name = name_of(clients, 1).await?;
     for (who, client) in [("leader", &mut *a), ("member", &mut *b)] {
         let rows = members(client, &prices).await?;
         if !names_present(&rows, &[a_name.as_str(), b_name.as_str()]) {
@@ -342,6 +360,14 @@ async fn body(
             )
             .into());
         }
+    }
+    Ok(())
+}
+
+async fn assert_solo(client: &mut DevClientSession) -> TestResult {
+    let (reply, view) = party(client, None).await?;
+    if reply != PartyDisposition::Ok || !view.members.is_empty() || !view.invitations.is_empty() {
+        return Err(format!("step=solo observed={reply:?}/{view:?}").into());
     }
     Ok(())
 }
@@ -356,14 +382,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(error);
         }
     };
-    let outcome = verdict::observe(body(&mut a, &mut b, clients)).await;
-    party(&mut b, Some(PartyIntent::Leave)).await.ok();
-    party(&mut a, Some(PartyIntent::Leave)).await.ok();
+    let before = a.world_spatial().actor_position;
+    let outcome = verdict::observe(async {
+        body(&mut a, &mut b, clients).await?;
+        let (reply, _) = party(&mut b, Some(PartyIntent::Leave)).await?;
+        if reply != PartyDisposition::Ok {
+            return Err(format!("step=leave observed={reply:?}").into());
+        }
+        assert_solo(&mut b).await?;
+        assert_solo(&mut a).await?;
+        let after = a.world_spatial().actor_position;
+        if after == before {
+            return Err("step=position observed=unchanged".into());
+        }
+        TestResult::Ok(after)
+    })
+    .await;
     let closed_b = verdict::observe(finish(&mut b)).await;
     let closed_a = verdict::observe(finish(&mut a)).await;
-    outcome?;
+    let expected = outcome?;
     closed_b?;
-    closed_a
+    closed_a?;
+    let mut relogged = connect_character(clients, 0x7a, 0).await?;
+    let restored = verdict::observe(async {
+        let actual = relogged.world_spatial().actor_position;
+        if actual != expected {
+            return Err(format!("step=relog position={actual:?} expected={expected:?}").into());
+        }
+        assert_solo(&mut relogged).await
+    })
+    .await;
+    let closed = verdict::observe(finish(&mut relogged)).await;
+    restored?;
+    closed
 }
 
 #[cfg(test)]
