@@ -219,6 +219,7 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
         &mut observer,
         caster_capture.observe(full_row_c17b::wait_rat_combat_end(&mut caster)),
     )).await?;
+    verdict::Harness::global().progress("c17b-combat-ended");
     let before_sent = Instant::now();
     let (before, before_sequence) = capture.observe(full_e2ef5::with_observer_liveness(
         &mut observer,
@@ -241,61 +242,6 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
     let observer_sequence = observer.last_server_sequence();
     let observer_session = uuid_text(observer.join_snapshot().game_session_id.as_bytes());
     let (received, commands) = capture.take();
-    let (durable_vitals, logout_sent, logout_received, logout_sequence) =
-        capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
-            let vitals = caster.actor_vitals().ok_or("C17b logout vitals absent")?;
-            let durable = (vitals.mana, vitals.soul);
-            let logout_sent = Instant::now();
-            let result = caster.session_mut().logout().await?;
-            let logout_received = Instant::now();
-            require_mechanic_acceptance(result.status, "C17b first logout")?;
-            if result.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-                || result.result_server_sequence <= before_sequence {
-                return Err(format!("C17b first logout invalid after condition sequence {before_sequence}: {result:?}").into());
-            }
-            Ok((durable, logout_sent, logout_received, result.result_server_sequence))
-        }))).await?;
-    if durable_vitals.0 >= vitals_before.mana {
-        return Err("C17b spent mana did not persist until logout".into());
-    }
-    capture.observe(full_row_c17b::wait_visible(&mut observer, caster_ref, false)).await?;
-    // Keep the character definitely offline long enough to distinguish a
-    // paused timer from one running across the admission round trips.
-    capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
-        tokio::time::sleep(std::time::Duration::from_secs(20)).await;
-        Ok(())
-    }))).await?;
-    let login_sent = Instant::now();
-    caster = capture.observe(full_e2ef5::with_observer_liveness(
-        &mut observer,
-        caster_capture.observe(connect_character(&caster_clients, 0xc3, 0)),
-    )).await?;
-    let login_received = Instant::now();
-    let admission_sequence = caster.last_server_sequence();
-    let relog_session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
-    let admission_position = caster.world_spatial().actor_position;
-    let admission_vitals = caster.actor_vitals().map(|vitals| (vitals.mana, vitals.soul));
-    let fresh_ref = own(&caster)?;
-    evidence(&format!("C17B_CLIENT_ADMISSION old_session={caster_session} new_session={relog_session} old_entity={caster_ref:?} new_entity={fresh_ref:?} expected_position={position:?} actual_position={admission_position:?} expected_mana_soul={durable_vitals:?} actual_mana_soul={admission_vitals:?} sequence={admission_sequence}"));
-    let after_sent = Instant::now();
-    let (remaining, after_sequence) = full_row_c17b::invisibility_sample(&mut caster).await?;
-    let after_received = Instant::now();
-    let online_min = (logout_sent - before_received) + (after_sent - login_received);
-    let online_max = (logout_received - before_sent) + (after_received - login_sent);
-    let offline_min = login_sent - logout_received;
-    let remaining = remaining.ok_or("C17b Invisible missing after relog")?;
-    evidence(&format!("C17B_CLIENT_CONDITION before_sequence={before_sequence} logout_sequence={logout_sequence} admission_sequence={admission_sequence} after_sequence={after_sequence} before_ms={before} after_ms={remaining} online_min_us={} online_max_us={} offline_min_us={}", online_min.as_micros(), online_max.as_micros(), offline_min.as_micros()));
-    verify_condition_pause(before, remaining, online_min, online_max, offline_min)?;
-    if caster_session == relog_session || fresh_ref == caster_ref
-        || admission_position != position || admission_vitals != Some(durable_vitals)
-        || after_sequence <= admission_sequence {
-        return Err("C17b relog admission state mismatch; see C17B_CLIENT_ADMISSION".into());
-    }
-    capture.observe(full_row_c17b::wait_visible(&mut observer, fresh_ref, true)).await?;
-    evidence(&format!(
-        "C17B_CLIENT_RELOG fresh_session=true paid_mana={} invisible_before_ms={initial} remaining_ms={remaining}",
-        paid.value.mana
-    ));
     use oteryn_protocol_oteryn::{decode_command_result, decode_wire_envelope};
     let [frame] = frames.as_slice() else {
         return Err("C17b expected one original cast reply".into());
@@ -340,6 +286,63 @@ async fn journey(clients: &SeamClients<'_>, caster_capture: &oteryn_session::tes
             .open(root.join(name))?;
         output.write_all(&serde_json::to_vec(&value)?)?;
     }
+    verdict::Harness::global().progress("c17b-capture-written");
+    let (durable_vitals, logout_sent, logout_received, logout_sequence) =
+        capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
+            let vitals = caster.actor_vitals().ok_or("C17b logout vitals absent")?;
+            let durable = (vitals.mana, vitals.soul);
+            let logout_sent = Instant::now();
+            let result = caster.session_mut().logout().await?;
+            let logout_received = Instant::now();
+            require_mechanic_acceptance(result.status, "C17b first logout")?;
+            if result.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+                || result.result_server_sequence <= before_sequence {
+                return Err(format!("C17b first logout invalid after condition sequence {before_sequence}: {result:?}").into());
+            }
+            Ok((durable, logout_sent, logout_received, result.result_server_sequence))
+        }))).await?;
+    if durable_vitals.0 >= vitals_before.mana {
+        return Err("C17b spent mana did not persist until logout".into());
+    }
+    capture.observe(full_row_c17b::wait_visible(&mut observer, caster_ref, false)).await?;
+    verdict::Harness::global().progress("c17b-logout-observed");
+    // Keep the character definitely offline long enough to distinguish a
+    // paused timer from one running across the admission round trips.
+    capture.observe(full_e2ef5::with_observer_liveness(&mut observer, caster_capture.observe(async {
+        tokio::time::sleep(std::time::Duration::from_secs(20)).await;
+        Ok(())
+    }))).await?;
+    let login_sent = Instant::now();
+    caster = capture.observe(full_e2ef5::with_observer_liveness(
+        &mut observer,
+        caster_capture.observe(connect_character(&caster_clients, 0xc3, 0)),
+    )).await?;
+    let login_received = Instant::now();
+    let admission_sequence = caster.last_server_sequence();
+    let relog_session = uuid_text(caster.join_snapshot().game_session_id.as_bytes());
+    let admission_position = caster.world_spatial().actor_position;
+    let admission_vitals = caster.actor_vitals().map(|vitals| (vitals.mana, vitals.soul));
+    let fresh_ref = own(&caster)?;
+    evidence(&format!("C17B_CLIENT_ADMISSION old_session={caster_session} new_session={relog_session} old_entity={caster_ref:?} new_entity={fresh_ref:?} expected_position={position:?} actual_position={admission_position:?} expected_mana_soul={durable_vitals:?} actual_mana_soul={admission_vitals:?} sequence={admission_sequence}"));
+    let after_sent = Instant::now();
+    let (remaining, after_sequence) = full_row_c17b::invisibility_sample(&mut caster).await?;
+    let after_received = Instant::now();
+    let online_min = (logout_sent - before_received) + (after_sent - login_received);
+    let online_max = (logout_received - before_sent) + (after_received - login_sent);
+    let offline_min = login_sent - logout_received;
+    let remaining = remaining.ok_or("C17b Invisible missing after relog")?;
+    evidence(&format!("C17B_CLIENT_CONDITION before_sequence={before_sequence} logout_sequence={logout_sequence} admission_sequence={admission_sequence} after_sequence={after_sequence} before_ms={before} after_ms={remaining} online_min_us={} online_max_us={} offline_min_us={}", online_min.as_micros(), online_max.as_micros(), offline_min.as_micros()));
+    verify_condition_pause(before, remaining, online_min, online_max, offline_min)?;
+    if caster_session == relog_session || fresh_ref == caster_ref
+        || admission_position != position || admission_vitals != Some(durable_vitals)
+        || after_sequence <= admission_sequence {
+        return Err("C17b relog admission state mismatch; see C17B_CLIENT_ADMISSION".into());
+    }
+    capture.observe(full_row_c17b::wait_visible(&mut observer, fresh_ref, true)).await?;
+    evidence(&format!(
+        "C17B_CLIENT_RELOG fresh_session=true paid_mana={} invisible_before_ms={initial} remaining_ms={remaining}",
+        paid.value.mana
+    ));
     Ok(())
 }
 
