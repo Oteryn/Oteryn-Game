@@ -57,6 +57,7 @@ pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;
 pub mod proficiency_orb;
+pub mod promotion_scroll;
 pub mod rotten_essence;
 pub mod soul_war_source;
 pub mod temple_scroll;
@@ -99,6 +100,8 @@ pub enum ItemUseKind {
         wire_binding: [u8; 32],
         percentile: u8,
     },
+    /// A one-unit burn whose receipt grants permanent Wheel points.
+    PromotionScroll,
     /// WU26-06: one Temple Teleport Scroll composed with its `game_temple_scroll_uses` row.
     TempleScroll,
 }
@@ -118,6 +121,7 @@ impl ItemUseKind {
             Self::HirelingLamp { .. } => super::house_hireling::LAMP_USE_CAUSE,
             Self::HirelingFood { .. } => gourmet::GOURMET_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
+            Self::PromotionScroll => promotion_scroll::PROMOTION_SCROLL_CAUSE,
             Self::TempleScroll => temple_scroll::TEMPLE_SCROLL_CAUSE,
         }
     }
@@ -245,6 +249,15 @@ impl ItemUseRequest {
         {
             return Err(ItemUseError::InvalidInput);
         }
+        if self.kind == ItemUseKind::PromotionScroll
+            && promotion_scroll::points(
+                &self.source_definition.family,
+                &self.source_definition.production_key,
+            )
+            .is_none()
+        {
+            return Err(ItemUseError::InvalidInput);
+        }
         let flask_valid = match (&self.flask, self.kind) {
             (
                 ItemUseFlaskPlan::None,
@@ -258,6 +271,7 @@ impl ItemUseRequest {
                 | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
                 | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::PromotionScroll
                 | ItemUseKind::TempleScroll,
             ) => true,
             (
@@ -271,6 +285,7 @@ impl ItemUseRequest {
                 | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
                 | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::PromotionScroll
                 | ItemUseKind::TempleScroll,
             ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
@@ -442,6 +457,7 @@ impl DurabilityRoot {
                 | ItemUseKind::MountTaming
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
+                | ItemUseKind::PromotionScroll
                 | ItemUseKind::TempleScroll
                 | ItemUseKind::RottenEssence
                 | ItemUseKind::SoulWarSourceUse { .. }
@@ -631,6 +647,7 @@ impl DurabilityRoot {
                                 | ItemUseKind::HirelingLamp { .. }
                                 | ItemUseKind::HirelingFood { .. }
                                 | ItemUseKind::DromeCube { .. }
+                                | ItemUseKind::PromotionScroll
                                 | ItemUseKind::TempleScroll => None,
                             };
                             if let Some(counted) = counted {

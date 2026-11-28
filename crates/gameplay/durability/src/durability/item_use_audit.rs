@@ -317,6 +317,14 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             }
         }
     } else if value.house_key.is_some()
+        || (cause.kind == super::item_use::promotion_scroll::PROMOTION_SCROLL_CAUSE
+            && before.definition.as_ref().is_none_or(|definition| {
+                super::item_use::promotion_scroll::points(
+                    &definition.family,
+                    &definition.production_key,
+                )
+                .is_none()
+            }))
         || (cause.kind == super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE
             && before.definition.as_ref().is_none_or(|definition| {
                 definition.family != "Item"
@@ -401,6 +409,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::drome_cube::DROME_CUBE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE
+            | super::item_use::promotion_scroll::PROMOTION_SCROLL_CAUSE
             | super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE
     ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
@@ -439,6 +448,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::soul_war_source::SOURCE_USE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE
+            | super::item_use::promotion_scroll::PROMOTION_SCROLL_CAUSE
             | super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE,
             None,
             false,

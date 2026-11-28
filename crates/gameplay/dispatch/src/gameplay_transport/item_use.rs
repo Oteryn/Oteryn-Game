@@ -42,6 +42,7 @@ use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::item_use::fluid::{
     ItemFluidChange, ItemFluidOutcome, ItemFluidRequest, ItemFluidSplash,
 };
+use crate::durability::item_use::promotion_scroll::{self, PromotionScrollOutcome};
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
@@ -127,13 +128,8 @@ impl ItemUseGate {
             ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. } => {
                 return Err(UseDisposition::Rejected);
             }
-            // The concoction cooldown is durable; the writer refuses inside it.
-            ItemUseKind::Concoction => {
-                self.in_flight_since_ms = Some(now_ms);
-                return Ok(());
-            }
-            // WU26-06: the Temple Teleport Scroll has no cooldown of its own.
-            ItemUseKind::TempleScroll => {
+            // The concoction cooldown is durable. Scrolls have no cooldown of their own.
+            ItemUseKind::Concoction | ItemUseKind::PromotionScroll | ItemUseKind::TempleScroll => {
                 self.in_flight_since_ms = Some(now_ms);
                 return Ok(());
             }
@@ -352,8 +348,6 @@ pub(super) fn hireling_refusal(
 enum Effect {
     Food(u16),
     Potion(Vec<ReferencePotionRestore>),
-    /// W22c: the durable effect row is the whole effect; the kill settle reads it.
-    Concoction,
 }
 
 enum UseSource {
@@ -663,26 +657,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
+            _ if promotion_scroll::points(
+                &entry.item.definition.family,
+                &entry.item.definition.production_key,
+            )
+            .is_some() =>
+            {
+                (ItemUseKind::PromotionScroll, None, ItemUseFlaskPlan::None)
+            }
             _ if entry.item.definition.production_key
                 == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
             {
-                (
-                    ItemUseKind::Concoction,
-                    Effect::Concoction,
-                    ItemUseFlaskPlan::None,
-                )
+                (ItemUseKind::Concoction, None, ItemUseFlaskPlan::None)
             }
             None => return Err(UseDisposition::NothingToUse),
             Some(consumption) => match consumption {
                 ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
                     if food.regeneration_seconds > 0 =>
                 {
-                    let effect = Effect::Food(food.regeneration_seconds);
+                    let effect = Some(Effect::Food(food.regeneration_seconds));
                     (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
                 }
                 ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
                     let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
-                    let effect = Effect::Potion(potion.restores.clone());
+                    let effect = Some(Effect::Potion(potion.restores.clone()));
                     (ItemUseKind::Potion, effect, flask)
                 }
                 _ => return Err(UseDisposition::NothingToUse),
@@ -727,13 +725,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .then(|| states.get(&runtime, actor, session))
                 .flatten()
                 .ok_or(UseDisposition::Rejected)?;
-            if record.is_some_and(|record| {
-                !requirements_met(&record.semantics.use_requirements, state.character_facts())
-            }) {
+            if kind != ItemUseKind::PromotionScroll
+                && record.is_some_and(|record| {
+                    !requirements_met(&record.semantics.use_requirements, state.character_facts())
+                })
+            {
                 return Err(UseDisposition::RequirementNotMet);
             }
             // FOOD-REGEN-1: eating that would reach the cap is refused; nothing is burned.
-            if let Effect::Food(seconds) = effect
+            if let Some(Effect::Food(seconds)) = effect
                 && eat_food(&mut state.clone(), seconds, self.owner_ms()).is_err()
             {
                 return Err(UseDisposition::Full);
@@ -747,17 +747,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let analyser_supply =
             matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
-        let commit = self
-            .root
-            .commit_item_use(self.character, self.holder, fence, request);
+        let commit = async {
+            if kind == ItemUseKind::PromotionScroll {
+                return self
+                    .root
+                    .redeem_promotion_scroll(self.character, self.holder, fence, request)
+                    .await
+                    .map(|outcome| match outcome {
+                        PromotionScrollOutcome::Redeemed => (UseDisposition::Committed, true),
+                        PromotionScrollOutcome::AlreadyCommitted => {
+                            (UseDisposition::Committed, false)
+                        }
+                        PromotionScrollOutcome::LevelRequired => {
+                            (UseDisposition::RequirementNotMet, false)
+                        }
+                        PromotionScrollOutcome::AlreadyUsed => {
+                            self.states.chat.push_quest_feedback(
+                                session,
+                                "You have already used an item of this type",
+                            );
+                            (UseDisposition::NotPossible, false)
+                        }
+                    });
+            }
+            self.root
+                .commit_item_use(self.character, self.holder, fence, request)
+                .await
+                .map(|outcome| {
+                    (
+                        UseDisposition::Committed,
+                        matches!(outcome, ItemUseOutcome::Written { .. }),
+                    )
+                })
+        };
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
         {
-            Ok(Ok(ItemUseOutcome::Written { .. })) => (UseDisposition::Committed, true, false),
-            // A replay committed earlier; its effect, if any, was applied then.
-            Ok(Ok(ItemUseOutcome::AlreadyCommitted { .. })) => {
-                (UseDisposition::Committed, false, false)
-            }
+            Ok(Ok((disposition, written))) => (disposition, written, false),
             Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, false, false),
             Ok(Err(ItemUseError::Cooldown)) => (UseDisposition::Exhausted, false, false),
             Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => {
@@ -771,15 +797,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(definition) = &analyser_supply {
                 states.analyser.supply(actor, session, definition, 1);
             }
-            apply_effect(
-                &runtime,
-                &mut states,
-                actor,
-                session,
-                command.command_id,
-                &effect,
-                self.owner_ms(),
-            );
+            if let Some(effect) = &effect {
+                apply_effect(
+                    &runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    command.command_id,
+                    effect,
+                    self.owner_ms(),
+                );
+            }
+            if kind == ItemUseKind::PromotionScroll {
+                self.states.chat.push_quest_feedback(
+                    session,
+                    "You have successfully used the item and received bonus promotion points.",
+                );
+            }
         }
         if disposition == UseDisposition::Committed && matches!(kind, ItemUseKind::Potion) {
             *utterance = Some(PotionUtterance::Restore);
@@ -1380,7 +1414,6 @@ fn apply_effect(
                 };
             }
         }
-        Effect::Concoction => {}
     }
 }
 
