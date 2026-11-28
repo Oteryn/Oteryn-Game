@@ -17,7 +17,7 @@
 
 
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 
 const SUMMER_ACTORS: &[(&str, &str)] = &[
     ("radiant_acolyte", "Radiant Acolyte"),
@@ -78,7 +78,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let start = tile(before)?;
     let expected = destination(world, start, StepDirection::East)
         .ok_or("step=initial-step observed=no-compiled-east-landing")?;
-    let step = client.step(StepDirection::East).await?;
+    let step = population_step(&mut client, world, StepDirection::East).await?;
     if step.disposition != StepDisposition::Moved || step.world_spatial_delta.is_none() {
         return Err(format!("step=initial-step observed={step:?}").into());
     }
@@ -163,7 +163,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             drop(fresh);
             fresh = stage_at(clients, 0xb8, suffix, start).await?;
         }
-        super::full_row_w22a::travel_to_named_spawn(&mut fresh, world, &metadata.spawns, &key, name)
+        observe_population(&mut fresh, world, &metadata.spawns, &key, name)
             .await
             .map_err(|error| format!("step=summer-population-route need={key} observed={error}"))?;
         if !fresh.world_entities().is_some_and(|entities| {
@@ -183,6 +183,136 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=final-logout observed=refused".into());
     }
     Err("step=summer-boss-encounters observed=no-authored-player-entry need=Maior-Domus,Mimar-Haffar,Phosphorus,Rakesh-Moonfang,The-Moonsnow-Magnolia".into())
+}
+
+async fn population_step(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    direction: StepDirection,
+) -> TestResult<oteryn_dev_client::StepOutcome> {
+    let before = client.world_spatial().actor_position;
+    let expected = destination(world, tile(before)?, direction).ok_or("W16 step has no compiled landing")?;
+    let mut waited = false;
+    loop {
+        let outcome = client.step(direction).await?;
+        if outcome.disposition == StepDisposition::Moved {
+            return Ok(outcome);
+        }
+        evidence(&format!(
+            "W16_STEP_REFUSED from={before:?} landing={expected:?} direction={direction:?} command={} sequence={} status={:?} disposition={:?} reason={:?}",
+            outcome.command_id, outcome.result_server_sequence, outcome.status,
+            outcome.disposition, client.session_mut().last_refusal_detail()
+        ));
+        if waited || outcome.disposition != StepDisposition::Blocked
+            || client.world_spatial().actor_position != before
+        {
+            return Err(format!("W16 step refused: {outcome:?}").into());
+        }
+        let entities = client.world_entities().ok_or("W16 cannot identify a blocker without visibility")?;
+        let occupant = entities.iter().find(|entity| tile(entity.position).ok() == Some(expected));
+        let Some(occupant) = occupant else {
+            return Err(format!("BLOCKER-SERVER W16 blocked compiled landing {expected:?} without visible occupant").into());
+        };
+        let blocker = occupant.entity;
+        if occupant.kind != EntityKind::Creature {
+            return Err(format!("W16 blocked by {:?} entity={blocker:?} tile={expected:?}", occupant.kind).into());
+        }
+        evidence(&format!("W16_CREATURE_WAIT entity={blocker:?} tile={expected:?} budget_ms=2000"));
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            client.service_liveness(Duration::from_millis(25)).await?;
+            let entities = client.world_entities().ok_or("W16 creature visibility was lost")?;
+            let current = entities.iter().find(|entity| entity.entity == blocker)
+                .and_then(|entity| tile(entity.position).ok());
+            if current.is_some_and(|at| at != expected)
+                && !entities.iter().any(|entity| tile(entity.position).ok() == Some(expected))
+            {
+                evidence(&format!("W16_CREATURE_MOVED entity={blocker:?} from={expected:?} to={current:?}"));
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("W16 creature {blocker:?} did not clear {expected:?}").into());
+            }
+        }
+        waited = true;
+    }
+}
+
+async fn follow_population_path(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, from, direction).ok_or("W16 compiled step has no landing")?;
+        let outcome = population_step(client, world, direction).await?;
+        if outcome.world_spatial_delta.is_none() || tile(client.world_spatial().actor_position)? != expected {
+            return Err(format!("W16 wrong landing from={from:?} expected={expected:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        if outcome.step_wait_ms != 0 {
+            client.service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms))).await?;
+        }
+        client.take_events();
+    }
+    Ok(())
+}
+
+async fn observe_population(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    key: &str,
+    name: &str,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let mut approaches = std::collections::BTreeSet::new();
+    for source in &spawns.sources {
+        for point in &source.points {
+            if !spawns.creatures.get(point.creature as usize).is_some_and(|entry| entry.key == key) {
+                continue;
+            }
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    if let (Some(x), Some(y)) = (point.x.checked_add_signed(dx), point.y.checked_add_signed(dy))
+                        && world.base().tile(x, y, source.floor).is_some_and(|tile| !tile.protection_zone()) {
+                            approaches.insert((x, y, source.floor));
+                    }
+                }
+            }
+        }
+    }
+    if approaches.is_empty() {
+        return Err(format!("BLOCKED-CONTENT no compiled approach tiles for {key}").into());
+    }
+    let path = find_route(from, |at| approaches.contains(&(at.x, at.y, at.floor)),
+        |at, direction| destination(world, at, direction))
+        .map_err(|visited| format!("BLOCKED-CONTENT no compiled route for {key} from={from:?} visited={visited}"))?;
+    evidence(&format!("W16_POPULATION_ROUTE source={key} from={from:?} steps={}", path.len()));
+    follow_population_path(client, world, &path).await?;
+    let here = client.world_spatial().actor_position;
+    let actor = client.world_entities().and_then(|entities| entities.iter()
+        .filter(|entry| entry.kind == EntityKind::Creature && entry.position.floor == here.floor
+            && entry.display_name.is_some_and(|label| label.as_str().is_ok_and(|shown| shown.eq_ignore_ascii_case(name))))
+        .min_by_key(|entry| entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)))
+        .map(|entry| entry.entity)).ok_or_else(|| format!("W16 no visible live {name}"))?;
+    for _ in 0..32 {
+        let target = client.world_entities().and_then(|entities| entities.iter()
+            .find(|entry| entry.entity == actor).map(|entry| entry.position))
+            .ok_or_else(|| format!("W16 creature {actor:?} vanished during approach"))?;
+        let target = tile(target)?;
+        let here = tile(client.world_spatial().actor_position)?;
+        let path = route(world, here, |at| at.floor == target.floor
+            && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1)
+            .ok_or_else(|| format!("W16 live creature {actor:?} unreachable from={here:?} target={target:?}"))?;
+        let Some(direction) = path.first() else {
+            evidence(&format!("W16_POPULATION_OBSERVED source={key} entity={actor:?} tile={target:?}"));
+            return Ok(());
+        };
+        follow_population_path(client, world, std::slice::from_ref(direction)).await?;
+    }
+    Err(format!("W16 creature {actor:?} approach exceeded 32 steps").into())
 }
 
 fn population_fixture(suffix: &str) -> Option<(TilePos, ActorPosition)> {
