@@ -4,15 +4,9 @@
 //! parameter-cast, Exiva-preference, and PostgreSQL owner tests:
 //! 1. Prepare the dedicated caster at level 8, then admit it and the ordinary target.
 //!    Obtain the target's served name.
-//! 2. As the target, send the player Exiva-settings command to allow all locates;
-//!    assert the accepted result frame and persisted settings-list delta/reply.
-//! 3. As the caster, say `exiva "<target>"`; assert an accepted chat result, the
-//!    private Game locate reply naming the target, and the exact 20-mana delta.
-//! 4. As the target, send the player settings command denying all locates; assert
-//!    its accepted result, then cast again and assert the protected refusal reply
-//!    and no mana/state cost.
-//! 5. Log the target out, freshly admit it with a different game session, list the
-//!    durable setting, and re-cast to prove denial and no-cost refusal survived.
+//! 2. Deny all locates. Prove the settings changed and the caster is refused without cost.
+//! 3. Log out and readmit the target, then prove the exact denial and refusal survived.
+//! 4. Allow locates and prove the exact position reply and 20-mana cost.
 use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{
@@ -170,6 +164,84 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             format!("initial Exiva settings differ from expected defaults: {initial:?}").into(),
         );
     }
+    if setting(&mut target, &[0, 0]).await? != [1] {
+        return Err("deny step missing committed [1] reply".into());
+    }
+    let denied = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?)
+        .ok_or("deny step invalid settings list")?;
+    if denied.modes != 0 || !denied.players.is_empty() {
+        return Err(format!("deny step observed {denied:?}").into());
+    }
+    evidence(&format!(
+        "C05_CHECK {} PASS observed-deny-settings",
+        ACTIONS[2]
+    ));
+    let before_refusal = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("refusal step missing vitals")?;
+    if before_refusal.mana != before_refusal.max_mana {
+        return Err("refusal step expected an unspent mana pool".into());
+    }
+    let (refused, messages) = cast(&mut caster, &target_name).await?;
+    let after_refusal = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("refusal step missing post-cast vitals")?;
+    let protected =
+        "The character you are trying to find with Exiva is currently protected from your spell.";
+    if refused.status != CommandStatus::Rejected
+        || refused.disposition != ChatDisposition::Rejected
+        || before_refusal != after_refusal
+        || messages != [protected]
+    {
+        return Err(format!("refusal step observed status={:?} disposition={:?} replies={messages:?} vitals_changed={}", refused.status, refused.disposition, before_refusal != after_refusal).into());
+    }
+    evidence(&format!("C05_CHECK {} PASS protected-no-cost", ACTIONS[3]));
+
+    let old_session = target.join_snapshot().game_session_id;
+    if target.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("fresh-admission step logout refused".into());
+    }
+    drop(target);
+    let mut target = connect_character(&target_clients, 0xc7, 0)
+        .await
+        .map_err(|error| admission_error("target-readmission", error))?;
+    if target.join_snapshot().game_session_id == old_session {
+        return Err("fresh-admission step reused game session".into());
+    }
+    let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?)
+        .ok_or("fresh-admission step invalid settings list")?;
+    if list != denied {
+        return Err(format!("fresh-admission step observed modes={}", list.modes).into());
+    }
+    let before = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("fresh refusal missing vitals")?;
+    if before.mana != before.max_mana {
+        return Err("fresh refusal expected an unspent mana pool".into());
+    }
+    let (refused, messages) = cast(&mut caster, &target_name).await?;
+    let after = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("fresh refusal missing post-cast vitals")?;
+    if refused.status != CommandStatus::Rejected
+        || refused.disposition != ChatDisposition::Rejected
+        || before != after
+        || messages != [protected]
+    {
+        return Err(format!(
+            "fresh-admission refusal observed status={:?} disposition={:?} before={before:?} after={after:?} replies={messages:?}",
+            refused.status, refused.disposition
+        )
+        .into());
+    }
+    evidence(&format!("C05_CHECK {} PASS durable-denial", ACTIONS[4]));
+    // Spend mana only after both privacy refusals so regeneration cannot alter their pre-state.
     let caster_position = caster.world_spatial().actor_position;
     let target_position = target.world_spatial().actor_position;
     if caster_position.floor != target_position.floor
@@ -228,87 +300,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "C05_CHECK {} PASS locate-reply-and-mana-delta",
         ACTIONS[1]
     ));
-
-    if setting(&mut target, &[0, 0]).await? != [1] {
-        return Err("deny step missing committed [1] reply".into());
-    }
-    let denied = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?)
-        .ok_or("deny step invalid settings list")?;
-    if denied.modes != 0 || !denied.players.is_empty() {
-        return Err(format!("deny step observed {denied:?}").into());
-    }
-    evidence(&format!(
-        "C05_CHECK {} PASS observed-deny-settings",
-        ACTIONS[2]
-    ));
-    // Exiva starts its spell and support cooldowns on success. A refusal
-    // during that interval would not exercise the target's privacy gate.
-    let ready_at = tokio::time::Instant::now() + Duration::from_secs(2);
-    while tokio::time::Instant::now() < ready_at {
-        caster.service_liveness(Duration::from_millis(25)).await?;
-        target.service_liveness(Duration::from_millis(25)).await?;
-    }
-    let before_refusal = caster
-        .actor_vitals()
-        .copied()
-        .ok_or("refusal step missing vitals")?;
-    let (refused, messages) = cast(&mut caster, &target_name).await?;
-    let after_refusal = caster
-        .actor_vitals()
-        .copied()
-        .ok_or("refusal step missing post-cast vitals")?;
-    let protected =
-        "The character you are trying to find with Exiva is currently protected from your spell.";
-    if refused.status != CommandStatus::Rejected
-        || refused.disposition != ChatDisposition::Rejected
-        || before_refusal != after_refusal
-        || messages != [protected]
-    {
-        return Err(format!("refusal step observed status={:?} disposition={:?} replies={messages:?} vitals_changed={}", refused.status, refused.disposition, before_refusal != after_refusal).into());
-    }
-    evidence(&format!("C05_CHECK {} PASS protected-no-cost", ACTIONS[3]));
-
-    let old_session = target.join_snapshot().game_session_id;
-    if target.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("fresh-admission step logout refused".into());
-    }
-    drop(target);
-    let mut target = connect_character(&target_clients, 0xc7, 0)
-        .await
-        .map_err(|error| admission_error("target-readmission", error))?;
-    if target.join_snapshot().game_session_id == old_session {
-        return Err("fresh-admission step reused game session".into());
-    }
-    let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?)
-        .ok_or("fresh-admission step invalid settings list")?;
-    if list != denied {
-        return Err(format!("fresh-admission step observed modes={}", list.modes).into());
-    }
-    // The target's relog can leave unrelated caster regeneration deltas queued.
-    caster.service_liveness(Duration::from_millis(50)).await?;
-    let before = caster
-        .actor_vitals()
-        .copied()
-        .ok_or("fresh refusal missing vitals")?;
-    let (refused, messages) = cast(&mut caster, &target_name).await?;
-    let after = caster
-        .actor_vitals()
-        .copied()
-        .ok_or("fresh refusal missing post-cast vitals")?;
-    if refused.status != CommandStatus::Rejected
-        || refused.disposition != ChatDisposition::Rejected
-        || before != after
-        || messages != [protected]
-    {
-        return Err(format!(
-            "fresh-admission refusal observed status={:?} disposition={:?} before={before:?} after={after:?} replies={messages:?}",
-            refused.status, refused.disposition
-        )
-        .into());
-    }
-    evidence(&format!("C05_CHECK {} PASS durable-denial", ACTIONS[4]));
     for client in [&mut caster, &mut target] {
         let logout = client.session_mut().logout().await?;
         if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
