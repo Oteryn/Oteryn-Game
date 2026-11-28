@@ -37,6 +37,7 @@ mod journey {
                 &[stats::CharacterTab::GeneralStats as u8, 0, 0, 1],
             )
             .await?;
+        evidence(&format!("C20b general stats result={stats_reply:?}"));
         if stats_reply.status != CommandStatus::Accepted
             || stats_reply.payload.get(9..13) != Some(9_u32.to_le_bytes().as_slice())
         {
@@ -89,9 +90,32 @@ mod journey {
         let mut damaged = false;
         loop {
             client.service_liveness(Duration::from_millis(100)).await?;
-            damaged |= client.take_events().into_iter().any(|event| {
-                matches!(event, oteryn_dev_client::SessionEvent::ActorVitals(delta) if delta.value.health < health)
-            });
+            for event in client.take_events() {
+                match event {
+                    oteryn_dev_client::SessionEvent::ActorVitals(delta) => {
+                        if delta.value.health < health || damaged {
+                            evidence(&format!(
+                                "C20b vitals sequence={} revision={} health={} max_health={}",
+                                delta.server_sequence,
+                                delta.new_revision,
+                                delta.value.health,
+                                delta.value.max_health
+                            ));
+                        }
+                        damaged |= delta.value.health < health;
+                    }
+                    oteryn_dev_client::SessionEvent::Inventory(delta) => {
+                        evidence(&format!(
+                            "C20b inventory sequence={} revision={} backpack={:?} entries={}",
+                            delta.server_sequence,
+                            delta.new_revision,
+                            delta.value.main_backpack,
+                            delta.value.entries.len()
+                        ));
+                    }
+                    _ => {}
+                }
+            }
             if damaged
                 && client.world_spatial().actor_position == temple
                 && client
@@ -102,6 +126,16 @@ mod journey {
                 break;
             }
             if tokio::time::Instant::now() >= deadline {
+                match tokio::time::timeout(
+                    Duration::from_secs(5),
+                    report_durable_death(clients),
+                )
+                .await
+                {
+                    Ok(Ok(())) => {}
+                    Ok(Err(error)) => evidence(&format!("C20b death diagnostic failed: {error}")),
+                    Err(_) => evidence("C20b death diagnostic timed out"),
+                }
                 return Err(format!(
                     "C20b death outcome missing: damaged={damaged} position={:?} inventory={:?}",
                     client.world_spatial().actor_position,
@@ -153,6 +187,31 @@ mod journey {
             inventory,
             client_session.selected_capabilities(),
         )
+    }
+
+    async fn report_durable_death(clients: &SeamClients<'_>) -> TestResult {
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        let records: Vec<(String, bool, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT r.death_occurrence_id::text, p.death_occurrence_id IS NOT NULL, \
+                    i.destination_corpse_id::text, i.replacement_bag_id::text \
+             FROM game_character_death_receipts r \
+             LEFT JOIN game_character_pending_respawns p USING (death_occurrence_id) \
+             LEFT JOIN game_player_death_item_records i USING (death_occurrence_id) \
+             WHERE r.character_id = encode($1, 'hex')::uuid \
+               AND r.death_world_id = encode($2, 'hex')::uuid \
+               AND r.death_channel_id = encode($3, 'hex')::uuid \
+             ORDER BY r.committed_at DESC, r.death_occurrence_id, i.item_instance_id LIMIT 16",
+        )
+        .bind(clients.characters[0].as_slice())
+        .bind(clients.world.as_slice())
+        .bind(clients.channel.as_slice())
+        .fetch_all(&mut database)
+        .await?;
+        database.close().await?;
+        evidence(&format!(
+            "C20b durable death (receipt, pending_respawn, corpse, replacement_bag)={records:?}"
+        ));
+        Ok(())
     }
 
     fn capture_and_replay(
