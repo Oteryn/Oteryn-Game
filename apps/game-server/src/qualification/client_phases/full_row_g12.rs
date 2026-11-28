@@ -104,19 +104,78 @@ async fn state(client: &mut DevClientSession, definition: u32) -> TestResult<wir
     Ok(state)
 }
 
+// Command 660 has no typed Busy payload. In this single-row run it has one
+// producer, so only a unique matching guard event written during this request
+// can distinguish pre-dispatch contention from another empty rejection.
+fn catalogue_holder_busy(log: &str, command_id: u64) -> Option<&str> {
+    let suffix = format!(
+        "guard=house_transfer_input kind=holder_busy command_type=660 command_id={command_id}"
+    );
+    let mut matching = log.lines().filter_map(|line| {
+        let (head, fields) = line.split_once("event=command_guard_deferred ")?;
+        let fields = fields.strip_prefix("trace=")?;
+        let (trace, reason) = fields.split_once(' ')?;
+        (head.contains("module=gameplay_transport ") && reason == suffix).then_some(trace)
+    });
+    let trace = matching.next()?;
+    matching.next().is_none().then_some(trace)
+}
+
 async fn catalogue_page(
     client: &mut DevClientSession,
     offset: u32,
 ) -> TestResult<catalogue::ProficiencyCataloguePage> {
-    let payload = accepted(
-        client,
-        catalogue::CAPABILITY_WEAPON_PROFICIENCY_V1,
-        catalogue::COMMAND_TYPE_PROFICIENCY_CATALOGUE,
-        &offset.to_be_bytes(),
-    )
-    .await?;
-    let page = catalogue::ProficiencyCataloguePage::decode(&payload)
-        .ok_or("step=catalogue observed=decode-failed")?;
+    let capability = catalogue::CAPABILITY_WEAPON_PROFICIENCY_V1;
+    let command = catalogue::COMMAND_TYPE_PROFICIENCY_CATALOGUE;
+    gate(client, capability)?;
+    let payload = offset.to_be_bytes();
+    let log_path = (std::env::var("OTERYN_E2E_ROW_BATCH").as_deref() == Ok("244:1"))
+        .then(|| std::env::var_os("NODE_BOOT_CAST_EVIDENCE_LOG"))
+        .flatten();
+    let mut attempt = 1;
+    let page = loop {
+        let mut log = log_path.as_ref().and_then(|path| {
+            use std::io::{Seek, SeekFrom};
+            let mut file = std::fs::File::open(path).ok()?;
+            file.seek(SeekFrom::End(0)).ok()?;
+            Some(file)
+        });
+        let reply = client
+            .session_mut()
+            .gated_command(capability, command, &payload)
+            .await?;
+        evidence(&format!(
+            "G12_CHECK step=catalogue offset={offset} attempt={attempt} command_id={} server_sequence={} status={:?} payload_bytes={}",
+            reply.command_id,
+            reply.server_sequence,
+            reply.status,
+            reply.payload.len()
+        ));
+        client.service_liveness(Duration::from_millis(50)).await?;
+        if reply.status == CommandStatus::Accepted {
+            break catalogue::ProficiencyCataloguePage::decode(&reply.payload)
+                .ok_or("step=catalogue observed=decode-failed")?;
+        }
+        if reply.status != CommandStatus::Rejected || !reply.payload.is_empty() {
+            return Err(format!("step=catalogue observed=status:{:?}", reply.status).into());
+        }
+        let mut observed = String::new();
+        if let Some(file) = log.as_mut() {
+            use std::io::Read;
+            file.take(1024 * 1024).read_to_string(&mut observed)?;
+        }
+        let trace = catalogue_holder_busy(&observed, reply.command_id)
+            .ok_or("step=catalogue observed=unattributed-refusal")?;
+        evidence(&format!(
+            "G12_CHECK step=catalogue-holder-busy attempt={attempt} command_id={} server_sequence={} trace={trace}",
+            reply.command_id, reply.server_sequence
+        ));
+        if attempt == 3 {
+            return Err("step=catalogue observed=holder-busy-attempt-limit".into());
+        }
+        attempt += 1;
+        client.service_liveness(Duration::from_millis(250)).await?;
+    };
     if page.offset != offset || page.entries.is_empty() {
         return Err(format!(
             "step=catalogue observed=page-offset:{};expected:{offset};entries:{}",
@@ -256,12 +315,18 @@ async fn body(
         .into());
     }
     let level = 0;
-    let first_perk = entry.levels.first().ok_or("step=perk observed=no-first-level")?;
+    let first_perk = entry
+        .levels
+        .first()
+        .ok_or("step=perk observed=no-first-level")?;
     if initial.thresholds[0] <= initial.experience
         || entry.thresholds[0] != initial.thresholds[0]
         || entry.thresholds[0] > entry.experience
         || first_perk.selected.is_some()
-        || first_perk.perks.first().is_none_or(|label| label.is_empty())
+        || first_perk
+            .perks
+            .first()
+            .is_none_or(|label| label.is_empty())
     {
         return Err("step=perk observed=first-ordinary-offer-not-unlocked".into());
     }
@@ -387,6 +452,18 @@ async fn durable_selection(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn catalogue_busy_requires_unique_matching_guard_event() {
+        let busy = "oteryn-game-server ts=1 level=warn module=gameplay_transport event=command_guard_deferred trace=abc guard=house_transfer_input kind=holder_busy command_type=660 command_id=1";
+        assert_eq!(catalogue_holder_busy(busy, 1), Some("abc"));
+        assert_eq!(catalogue_holder_busy(busy, 2), None);
+        assert_eq!(
+            catalogue_holder_busy(&busy.replace("holder_busy", "deadline"), 1),
+            None
+        );
+        assert_eq!(catalogue_holder_busy(&format!("{busy}\n{busy}"), 1), None);
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {
