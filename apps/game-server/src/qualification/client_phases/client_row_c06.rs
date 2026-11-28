@@ -71,6 +71,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let payload = world_object::encode_item_use_intent(&invalid)
         .map_err(|error| format!("C06 refusal encode: {error:?}"))?;
     let reply = client.session_mut().world_context_use(&payload).await?;
+    evidence(&format!(
+        "C06_CLIENT_USE_RESULT session={} command_id={} status={:?} server_sequence={} payload={:?}",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        reply.command_id,
+        reply.status,
+        reply.server_sequence,
+        reply.payload,
+    ));
     let (payload, detail) =
         oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
             .map_err(|error| format!("C06 refusal detail: {error:?}"))?;
