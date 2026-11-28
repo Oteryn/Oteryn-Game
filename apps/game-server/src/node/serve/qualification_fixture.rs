@@ -83,7 +83,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
-        || profile == "premium";
+        || matches!(profile, "p08-track" | "premium");
     allowed.then_some((session, profile))
 }
 
@@ -827,6 +827,18 @@ async fn prepare_build(
     .map_err(|error| format!("qualification interpretation: {error:?}"))?
     .ok_or("qualification interpretation unavailable")?;
     let [profile_revision, ruleset_revision, content_revision, _] = interpretation.revisions();
+    #[cfg(feature = "qualification-spawn")]
+    if profile == "p08-track" {
+        return prepare_p08_track(
+            root,
+            authority,
+            proof,
+            &current,
+            character,
+            content_revision,
+        )
+        .await;
+    }
     let progression = native
         .progression()
         .ok_or("qualification progression unavailable")?;
@@ -875,6 +887,115 @@ async fn prepare_build(
         None,
     )
     .await
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn prepare_p08_track(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    character: crate::domain::CharacterId,
+    content_revision: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::character_proficiency::{
+        DurableProficiencyState, ProficiencyCause, ProficiencyChangeRequest,
+        ProficiencyCommitOutcome, ProficiencyDefinitions, ProficiencyLineCandidate,
+        ProficiencyOccurrence, ResolvedProficiencyDefinition,
+    };
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+    use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue;
+
+    struct BoundCatalogue {
+        catalogue: std::sync::Arc<ProductionProficiencyCatalogue>,
+        revision: String,
+    }
+
+    impl ProficiencyDefinitions for BoundCatalogue {
+        fn content_revision(&self) -> &str {
+            &self.revision
+        }
+
+        fn digest(&self) -> [u8; 32] {
+            self.catalogue.digest()
+        }
+
+        fn active_weapon_count(&self) -> usize {
+            self.catalogue.active_weapon_count()
+        }
+
+        fn resolve_weapon(&self, item_key: &str) -> Option<ResolvedProficiencyDefinition> {
+            self.catalogue.resolve_weapon(item_key)
+        }
+
+        fn retained_definition(
+            &self,
+            item_key: &str,
+            definition_key: &str,
+            revision: &str,
+        ) -> Option<crate::domain::weapon_proficiency::ProficiencySelectionShape> {
+            self.catalogue
+                .retained_definition(item_key, definition_key, revision)
+        }
+    }
+
+    let policy = std::sync::Arc::new(BoundCatalogue {
+        catalogue: ProductionProficiencyCatalogue::embedded()
+            .ok_or("P08 proficiency catalogue missing")?,
+        revision: content_revision.into(),
+    });
+    let item = "oteryn:item.tibia.i3074";
+    let definition = policy
+        .resolve_weapon(item)
+        .ok_or("P08 Wand of Vortex binding missing")?;
+    let shape = definition.shape.track_shape();
+    let progress = u64::from(shape.class().thresholds()[0]);
+    let state = |progress| {
+        DurableProficiencyState::new(
+            item,
+            &definition.definition_key,
+            &definition.definition_revision,
+            progress,
+            vec![None; usize::from(shape.perk_levels())],
+        )
+    };
+    let request = ProficiencyChangeRequest::new(
+        ProficiencyOccurrence::from_bytes(fixture_occurrence(
+            character.as_bytes(),
+            "p08-track",
+            b"training",
+        ))?,
+        ProficiencyCause::Training,
+        vec![ProficiencyLineCandidate::new(
+            ProficiencyCause::Training,
+            state(0)?,
+            state(progress)?,
+        )?],
+        None,
+        policy.digest(),
+    )?;
+    let record = root
+        .read_current_character(authority, character)
+        .await
+        .map_err(qualification_build::debug)?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: record.revision,
+    };
+    let outcome = root
+        .commit_character_proficiency(authority, proof, fence, request, policy)
+        .await?;
+    match outcome {
+        ProficiencyCommitOutcome::Committed(_) => Ok(()),
+        other => Err(format!("P08 fixture track commit: {other:?}").into()),
+    }
 }
 
 #[cfg(feature = "qualification-spawn")]
@@ -2015,6 +2136,7 @@ mod tests {
             "c11-knight",
             "c12-monk",
             "c06-sorcerer",
+            "p08-track",
             "premium",
             "item-43895-1",
             "item-6506-2",
