@@ -960,8 +960,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     paid_arrivals: Vec::new(),
                     flame: None,
                     gate_admitted: false,
-                    nest_draw: None,
                     ingress_settled: false,
+                    nest_spawn: None,
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
@@ -1143,8 +1143,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     paid_arrivals: Vec::new(),
                     flame: None,
                     gate_admitted: false,
-                    nest_draw: None,
                     ingress_settled: false,
+                    nest_spawn: None,
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
@@ -1419,7 +1419,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let durable = callback.requires_durable_commit()
             && !callback.is_read_only()
             && !(close && callback.opening_only);
-        let mut nest_spawn = None;
         let mut fresh_effects = !durable;
         let mut success_message = if !durable {
             callback.success_message.clone()
@@ -1535,6 +1534,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let mut nest_spawn = None;
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -1582,8 +1582,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     paid_arrivals: Vec::new(),
                     flame: None,
                     gate_admitted: false,
-                    nest_draw: None,
                     ingress_settled: false,
+                    nest_spawn: None,
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
                     projection_target: None,
@@ -1592,37 +1592,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !owns_reservation(record) {
                     return UseDisposition::StaleState;
                 }
-                if callback
-                    .key
-                    .starts_with("oteryn:quest-callback/spike/nest-")
-                    && let QuestCause::Use(command) = cause
-                {
-                    let draw = record.nest_draw.get_or_insert_with(|| {
-                        #[cfg(test)]
-                        {
-                            let forced = self
-                                .states
-                                .quest_callbacks
-                                .nest_draw
-                                .swap(0, std::sync::atomic::Ordering::AcqRel);
-                            if forced != 0 {
-                                return forced;
-                            }
-                        }
-                        use std::hash::{BuildHasher, RandomState};
-                        static DRAW: OnceLock<RandomState> = OnceLock::new();
-                        1 + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100)
-                            as u8
-                    });
-                    nest_spawn = nest_creature(*draw);
-                }
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
                 // that exact binding instead of the replaying caller's tool.
                 if record.context.is_none() {
+                    if callback
+                        .key
+                        .starts_with("oteryn:quest-callback/spike/nest-")
+                        && let QuestCause::Use(command) = cause
+                    {
+                        use std::hash::{BuildHasher, RandomState};
+                        static DRAW: OnceLock<RandomState> = OnceLock::new();
+                        let draw = 1
+                            + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100)
+                                as u8;
+                        #[cfg(test)]
+                        let draw = match self
+                            .states
+                            .quest_callbacks
+                            .nest_draw
+                            .swap(0, std::sync::atomic::Ordering::AcqRel)
+                        {
+                            0 => draw,
+                            forced => forced,
+                        };
+                        record.nest_spawn = nest_creature(draw);
+                    }
                     record.selected_tool = selected_tool.cloned();
                     record.paid_arrivals = paid_arrivals;
                 }
+                nest_spawn = record.nest_spawn;
                 (
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
