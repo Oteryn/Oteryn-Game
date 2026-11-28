@@ -20,7 +20,12 @@ pub(super) struct Widgets {
 #[derive(Component)]
 pub(super) struct OptionCaption(pub Kind);
 
-pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> Widgets {
+pub(super) fn build(
+    commands: &mut Commands,
+    skin: &Skins,
+    generation: u64,
+    options_selected: bool,
+) -> Widgets {
     // NpcDialog.qml: width600/minHeight350; NpcTrade.qml: addonWidth180 and35px offer rows.
     // The transcript and optional trade addon share this one retained NPC dialog.
     let panel = commands
@@ -113,7 +118,17 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
     for (kind, caption) in [
         (Kind::IgnoreCapacity, "Ignore capacity"),
         (Kind::OnlyOwned, "Only owned"),
-    ] {
+    ]
+    .into_iter()
+    .chain(
+        options_selected
+            .then_some([
+                (Kind::BuyInBackpacks, "Buy in backpacks"),
+                (Kind::IncludeEquipped, "Include equipped in Sell All"),
+            ])
+            .into_iter()
+            .flatten(),
+    ) {
         let button = action(
             commands,
             skin,
@@ -145,13 +160,14 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             180.,
         );
     }
-    // The accepted trade intent has no backpack-purchase flag or packing price.
-    label(
-        commands,
-        skin,
-        shop_controls,
-        "Buy in backpacks: unavailable from this server. Purchases use your existing backpack.",
-    );
+    if !options_selected {
+        label(
+            commands,
+            skin,
+            shop_controls,
+            "Buy in backpacks: unavailable from this server. Purchases use your existing backpack.",
+        );
+    }
     action(
         commands,
         skin,
@@ -460,4 +476,50 @@ fn field(
         .id();
     commands.entity(frame).add_child(editor);
     commands.entity(parent).add_child(frame);
+}
+
+// Carried counts affect captions, search results and the only-owned filter.
+pub(super) fn inventory_changed_rows(
+    previous: &mut RenderedOffers,
+    current: &LiveShop,
+) -> Option<Vec<Quote>> {
+    let before = previous
+        .shop
+        .inventory
+        .as_ref()
+        .map(|inventory| &inventory.entries);
+    let after = current
+        .inventory
+        .as_ref()
+        .map(|inventory| &inventory.entries);
+    let unchanged = if current.includes_equipment() {
+        previous.shop.inventory == current.inventory
+    } else {
+        before == after
+    };
+    if unchanged {
+        return None;
+    }
+    let same_count = |item| {
+        previous.shop.inventory.is_some() == current.inventory.is_some()
+            && previous.shop.sale_owned(item) == current.sale_owned(item)
+            && previous.shop.owned(item) == current.owned(item)
+    };
+    if !current
+        .window
+        .offers
+        .iter()
+        .filter(|offer| previous.side.is_none_or(|side| offer.side == side))
+        .all(|offer| same_count(offer.item_definition_ref))
+    {
+        let rows = catalogue_rows(current, previous.side, &previous.query, previous.sort);
+        if previous.query.trim().is_empty()
+            || rows != previous.rows
+            || !rows.iter().all(|row| same_count(row.item))
+        {
+            return Some(rows);
+        }
+    }
+    previous.shop.inventory.clone_from(&current.inventory);
+    None
 }

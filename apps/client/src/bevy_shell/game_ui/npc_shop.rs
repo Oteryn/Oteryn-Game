@@ -36,6 +36,8 @@ enum Kind {
     Close,
     IgnoreCapacity,
     OnlyOwned,
+    BuyInBackpacks,
+    IncludeEquipped,
     SortName,
     SortWeight,
     SortPrice,
@@ -135,12 +137,20 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             state.feedback.clear();
             true
         }
-        Kind::IgnoreCapacity | Kind::OnlyOwned => {
+        Kind::IgnoreCapacity | Kind::OnlyOwned | Kind::BuyInBackpacks | Kind::IncludeEquipped => {
             let mut options = panel.live.options;
             match action.kind {
                 Kind::IgnoreCapacity => options.ignore_capacity = !options.ignore_capacity,
                 Kind::OnlyOwned => options.only_owned = !options.only_owned,
-                _ => {}
+                Kind::BuyInBackpacks if state.side == Some(NpcTradeSide::Buy) => {
+                    options.buy_in_backpacks = !options.buy_in_backpacks;
+                }
+                Kind::IncludeEquipped
+                    if state.side == Some(NpcTradeSide::Sell) && state.sales.is_empty() =>
+                {
+                    options.ignore_equipped = !options.ignore_equipped;
+                }
+                _ => return false,
             }
             play.link.npc_shop_options(options)
         }
@@ -169,7 +179,8 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
                 .collect();
             if let Some(first) = state.sales.pop_front() {
                 let sent = play.link.npc_sell_all_request(first);
-                state.sale_inventory = sent.then(|| (first.item, panel.live.owned(first.item)));
+                state.sale_inventory =
+                    sent.then(|| (first.item, panel.live.sale_owned(first.item)));
                 if !sent {
                     state.sales.clear();
                 }
@@ -265,42 +276,6 @@ fn catalogue_rows(
     rows
 }
 
-// Carried counts affect captions, search results and the only-owned filter.
-fn inventory_changed_rows(previous: &mut RenderedOffers, current: &LiveShop) -> Option<Vec<Quote>> {
-    let before = previous
-        .shop
-        .inventory
-        .as_ref()
-        .map(|inventory| &inventory.entries);
-    let after = current
-        .inventory
-        .as_ref()
-        .map(|inventory| &inventory.entries);
-    if before == after {
-        return None;
-    }
-    let same_count = |item| {
-        before.is_some() == after.is_some() && previous.shop.owned(item) == current.owned(item)
-    };
-    if !current
-        .window
-        .offers
-        .iter()
-        .filter(|offer| previous.side.is_none_or(|side| offer.side == side))
-        .all(|offer| same_count(offer.item_definition_ref))
-    {
-        let rows = catalogue_rows(current, previous.side, &previous.query, previous.sort);
-        if previous.query.trim().is_empty()
-            || rows != previous.rows
-            || !rows.iter().all(|row| same_count(row.item))
-        {
-            return Some(rows);
-        }
-    }
-    previous.shop.inventory.clone_from(&current.inventory);
-    None
-}
-
 // One retained model, its fields and source widget entities compose this floating panel.
 #[allow(clippy::too_many_arguments)]
 fn project(
@@ -349,7 +324,12 @@ fn project(
             side: Some(NpcTradeSide::Buy),
             ..default()
         };
-        state.widgets = Some(widgets::build(&mut commands, &skins, generation));
+        state.widgets = Some(widgets::build(
+            &mut commands,
+            &skins,
+            generation,
+            panel.live.options_selected,
+        ));
     }
     sales::advance(&mut state, &owner, &play.link, &panel);
     if panel.live.weight_pending.is_none() {
@@ -411,12 +391,13 @@ fn project(
             if (*sort != Sort::Weight || shown.shop.weights == panel.live.weights)
                 && shown.shop.window == panel.live.window
                 && (*side == Some(NpcTradeSide::Buy)
-                    || shown.shop.options.only_owned == panel.live.options.only_owned)
+                    || (shown.shop.options.only_owned == panel.live.options.only_owned
+                        && shown.shop.includes_equipment() == panel.live.includes_equipment()))
                 && shown.side == *side
                 && shown.query == *query
                 && shown.selection == *selection =>
         {
-            inventory_changed_rows(shown, &panel.live)
+            widgets::inventory_changed_rows(shown, &panel.live)
         }
         _ => Some(catalogue_rows(&panel.live, *side, query, *sort)),
     };
@@ -429,6 +410,8 @@ fn project(
         let checked = match caption.0 {
             Kind::IgnoreCapacity => panel.live.options.ignore_capacity,
             Kind::OnlyOwned => panel.live.options.only_owned,
+            Kind::BuyInBackpacks => panel.live.options.buy_in_backpacks,
+            Kind::IncludeEquipped => panel.live.includes_equipment(),
             _ => false,
         };
         text.0 = if checked { "[x]" } else { "[ ]" }.into();
@@ -471,17 +454,24 @@ fn project(
             _ if panel.pending || panel.live.pending || state.pending.is_some() => false,
             Kind::Cyclopedia => state.selection.is_some() && play.link.inspection_panel().selected,
             Kind::Look => panel.selected && state.selection.is_some(),
+            Kind::BuyInBackpacks => {
+                panel.live.options_selected
+                    && panel.live.selected
+                    && state.side == Some(NpcTradeSide::Buy)
+            }
+            Kind::IncludeEquipped => {
+                panel.live.options_selected
+                    && panel.selected
+                    && state.side == Some(NpcTradeSide::Sell)
+                    && state.sales.is_empty()
+            }
             Kind::SellAll => {
                 panel.selected
                     && state.side == Some(NpcTradeSide::Sell)
-                    && panel.live.inventory.as_ref().is_some_and(|inventory| {
-                        inventory.entries.iter().any(|entry| {
+                    && state.rendered.as_ref().is_some_and(|shown| {
+                        panel.live.sale_entries().any(|entry| {
                             let id = entry.item_definition_ref.get();
-                            !panel.sale_exclusions.contains(&id)
-                                && state
-                                    .rendered
-                                    .as_ref()
-                                    .is_some_and(|shown| shown.sell_items.contains(&id))
+                            !panel.sale_exclusions.contains(&id) && shown.sell_items.contains(&id)
                         })
                     })
             }

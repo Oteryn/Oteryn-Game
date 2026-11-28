@@ -495,7 +495,7 @@ fn npc_shop_explains_backpack_purchase_contract_limit() -> Result {
         .init_asset::<Font>()
         .add_systems(Startup, crate::bevy_shell::ui::setup)
         .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
-            widgets::build(&mut commands, &skins, 1);
+            widgets::build(&mut commands, &skins, 1, false);
         });
     app.update();
     assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|
@@ -512,7 +512,7 @@ fn npc_dialog_uses_global_geometry() -> Result {
         .init_resource::<crate::bevy_shell::ui::window_layout::WindowLayouts>()
         .add_systems(Startup, crate::bevy_shell::ui::setup)
         .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
-            widgets::build(&mut commands, &skins, 1);
+            widgets::build(&mut commands, &skins, 1, false);
         })
         .add_systems(PostUpdate, crate::bevy_shell::ui::window_layout::project);
     app.update();
@@ -865,3 +865,6 @@ fn inspected_purchase(pays_with_coins: bool) -> Result {
     assert!(matches!(commands.try_recv()?, PlayCommand::NpcTrade(_)));
     Ok(())
 }
+
+#[path = "tests/options.rs"]
+mod options;

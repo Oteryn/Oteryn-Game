@@ -53,7 +53,8 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     assert!(link.npc_shop_options(ShopOptions {
         ignore_capacity: true,
         ignore_equipped: true,
-        only_owned: true
+        only_owned: true,
+        ..Default::default()
     }));
     let panel = link.npc_shop_panel();
     let quotes = panel.live.filtered_quotes(Some(NpcTradeSide::Sell), "");
@@ -62,7 +63,8 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     assert!(!link.npc_shop_options(ShopOptions {
         ignore_capacity: false,
         ignore_equipped: false,
-        only_owned: true
+        only_owned: true,
+        ..Default::default()
     }));
     assert_eq!(
         link.npc_shop_panel()
@@ -74,7 +76,8 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     assert!(link.npc_shop_options(ShopOptions {
         ignore_capacity: false,
         ignore_equipped: true,
-        only_owned: true
+        only_owned: true,
+        ..Default::default()
     }));
     link.npc_trade_request(quotes[0], 1);
     let crate::combat_input::PlayCommand::NpcTrade(intent) = commands.try_recv()? else {
@@ -111,7 +114,8 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     assert!(link.npc_shop_options(ShopOptions {
         ignore_capacity: true,
         ignore_equipped: true,
-        only_owned: false
+        only_owned: false,
+        ..Default::default()
     }));
     link.npc_trade_request(buy, 1);
     assert!(

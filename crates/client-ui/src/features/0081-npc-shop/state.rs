@@ -18,6 +18,9 @@ pub struct Quote {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LiveShop {
     pub options: ShopOptions,
+    pub options_selected: bool,
+    /// Captures the packed option until the queued trade receives its result.
+    pub pending_pack_in_backpacks: Option<bool>,
     pub weights: std::collections::BTreeMap<u32, Option<u32>>,
     pub weight_pending: Option<Quote>,
     pub inspection_selected: bool,
@@ -69,7 +72,7 @@ impl LiveShop {
             .filter(|quote| {
                 !self.options.only_owned
                     || quote.side == NpcTradeSide::Buy
-                    || self.owned(quote.item) > 0
+                    || self.sale_owned(quote.item) > 0
             })
             .collect()
     }
@@ -116,17 +119,31 @@ impl LiveShop {
             name,
             quote.count,
             quote.price,
-            self.inventory
-                .as_ref()
-                .map_or_else(|| "unknown".into(), |_| self.owned(quote.item).to_string()),
+            self.inventory.as_ref().map_or_else(
+                || "unknown".into(),
+                |_| {
+                    if quote.side == NpcTradeSide::Sell {
+                        self.sale_owned(quote.item)
+                    } else {
+                        self.owned(quote.item)
+                    }
+                    .to_string()
+                }
+            ),
             self.maximum_amount(quote)
         )
     }
     pub fn total(&self, quote: Quote, amount: u32) -> String {
+        // Crystal charges 20 gold for the shopping bag on a packed purchase.
+        let bag_price = if self.packs_purchase(quote.side) {
+            20
+        } else {
+            0
+        };
         lfmt!(
             "{} items; {} gold",
             u64::from(quote.count) * u64::from(amount),
-            u64::from(quote.price) * u64::from(amount)
+            u64::from(quote.price) * u64::from(amount) + bag_price
         )
     }
     pub fn look(&self, quote: Quote) -> Option<super::npc_shop::NpcShopIntent> {
@@ -163,7 +180,7 @@ impl LiveShop {
         (1..=100).contains(&amount) && u64::from(quote.price) * u64::from(amount) <= maximum
     }
     pub fn trade(&mut self, quote: Quote, amount: u32) -> Option<npc_service::NpcTradeIntent> {
-        if !self.selected || self.pending {
+        if !self.selected || self.pending || self.pending_pack_in_backpacks.is_some() {
             return None;
         }
         if !self.valid_amount(quote, amount) {
@@ -183,13 +200,16 @@ impl LiveShop {
             quantity: amount,
             expected_unit_price: quote.price,
         };
-        npc_service::encode_npc_trade_intent(&intent).ok()?;
+        let packed = self.packs_purchase(quote.side);
+        npc_service::encode_npc_trade_intent_for(&intent, packed).ok()?;
+        self.pending_pack_in_backpacks = self.options_selected.then_some(packed);
         self.pending = true;
         self.feedback = tr!("Trade pending").into();
         Some(intent)
     }
     pub fn result(&mut self, result: NpcIntentDisposition) {
         self.pending = false;
+        self.pending_pack_in_backpacks = None;
         self.feedback = if result == NpcIntentDisposition::Ok {
             tr!("Trade completed; inventory updated by server").into()
         } else {
@@ -223,7 +243,11 @@ impl LiveShop {
         format!(
             "{state}\n{}\n{gold}\n{slots}\n{}",
             self.feedback,
-            "Purchases go into the main backpack. Sales use its direct entries; move equipped items there first."
+            if self.options_selected {
+                "Pack purchases for 20 gold. Sell All can include equipped items."
+            } else {
+                "Purchases go into the main backpack. Sales use its direct entries; move equipped items there first."
+            }
         )
     }
 }

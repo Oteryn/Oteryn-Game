@@ -2,7 +2,10 @@ use crate::play::{
     Outbox, Stepper,
     mailbox::{Mailbox, lock},
 };
-use oteryn_session::{NpcIntentDisposition, SessionEvent, npc_service};
+use oteryn_client_runtime::npc_shop::{shop_command, shop_reply, trade_command, trade_reply};
+use oteryn_session::{
+    NpcIntentDisposition, SessionEvent, npc_service, npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1,
+};
 #[path = "weights.rs"]
 mod weights;
 impl Outbox {
@@ -11,6 +14,7 @@ impl Outbox {
         mailbox.npc_shop.selected = session.npc_shop_selected();
         let shop = &mut mailbox.npc_shop.live;
         shop.selected = session.feature_selected(3);
+        shop.options_selected = session.feature_selected(CAPABILITY_NPC_SHOP_OPTIONS_V1);
         shop.resources_selected = session.feature_selected(272);
         if let Some(payload) = session.feature_snapshot(14)
             && let Ok(views) =
@@ -85,7 +89,13 @@ impl Outbox {
         session: &mut T,
         intent: &npc_service::NpcTradeIntent,
     ) -> Result<(), oteryn_session::SessionError> {
-        let result = session.npc_trade(intent).await?;
+        let packed = lock(&self.0).npc_shop.live.pending_pack_in_backpacks.unwrap_or(false);
+        let result = if packed {
+            require_shop_options(session)?;
+            trade_reply(session.feature(&trade_command(intent, true)?).await?)?
+        } else {
+            session.npc_trade(intent).await?
+        };
         lock(&self.0).npc_shop.live.result(result);
         if result == NpcIntentDisposition::Ok {
             let mut mailbox = lock(&self.0);
@@ -102,7 +112,14 @@ impl Outbox {
         command: &oteryn_client_runtime::npc_shop::NpcShopCommand,
     ) -> Result<(), oteryn_session::SessionError> {
         use oteryn_client_runtime::npc_shop::npc_shop::NpcShopAction;
-        let response = session.npc_shop(command).await?;
+        let include_equipped = command.0.action == NpcShopAction::SellAll
+            && lock(&self.0).npc_shop.live.includes_equipment();
+        let response = if include_equipped {
+            require_shop_options(session)?;
+            shop_reply(session.feature(&shop_command(command, true)?).await?)?
+        } else {
+            session.npc_shop(command).await?
+        };
         self.npc_shop_result(&response);
         if response
             .result
@@ -121,6 +138,16 @@ impl Outbox {
         result: &oteryn_client_runtime::npc_shop::NpcShopResponse,
     ) {
         oteryn_client_ui::npc_shop::apply_result(&mut lock(&self.0).npc_shop, result);
+    }
+}
+
+fn require_shop_options(session: &impl Stepper) -> Result<(), oteryn_session::SessionError> {
+    if session.feature_selected(CAPABILITY_NPC_SHOP_OPTIONS_V1) {
+        Ok(())
+    } else {
+        Err(oteryn_session::SessionError::CapabilityNotSelected {
+            capability: CAPABILITY_NPC_SHOP_OPTIONS_V1,
+        })
     }
 }
 

@@ -4,6 +4,7 @@ use crate::npc_shop::{NpcTradeSide, Quote};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ShopOptions {
     pub ignore_capacity: bool,
+    pub buy_in_backpacks: bool,
     pub ignore_equipped: bool,
     pub only_owned: bool,
 }
@@ -11,12 +12,57 @@ impl Default for ShopOptions {
     fn default() -> Self {
         Self {
             ignore_capacity: false,
+            buy_in_backpacks: false,
             ignore_equipped: true,
             only_owned: false,
         }
     }
 }
 impl LiveShop {
+    pub fn set_options(&mut self, options: ShopOptions) -> bool {
+        if self.pending
+            || self.pending_pack_in_backpacks.is_some()
+            || (!self.options_selected && (options.buy_in_backpacks || !options.ignore_equipped))
+        {
+            return false;
+        }
+        self.options = options;
+        true
+    }
+
+    pub fn includes_equipment(&self) -> bool {
+        self.options_selected && !self.options.ignore_equipped
+    }
+
+    pub fn packs_purchase(&self, side: NpcTradeSide) -> bool {
+        self.options_selected && self.options.buy_in_backpacks && side == NpcTradeSide::Buy
+    }
+
+    pub fn sale_owned(&self, item: u32) -> u64 {
+        self.sale_entries()
+            .filter(|entry| entry.item_definition_ref.get() == item)
+            .map(|entry| u64::from(entry.count.get()))
+            .sum()
+    }
+
+    pub fn sale_entries(
+        &self,
+    ) -> impl Iterator<Item = &oteryn_client_runtime::npc_shop::ItemEntry> {
+        let equipped = self
+            .inventory
+            .as_ref()
+            .filter(|_| self.includes_equipment());
+        self.inventory
+            .iter()
+            .flat_map(|inventory| &inventory.entries)
+            .chain(
+                equipped
+                    .into_iter()
+                    .flat_map(|inventory| &inventory.equipment)
+                    .map(|equipped| &equipped.item),
+            )
+    }
+
     pub fn backpack_owned(&self, item: u32) -> u64 {
         self.inventory.as_ref().map_or(0, |inventory| {
             inventory

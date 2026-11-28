@@ -7,6 +7,7 @@ impl PlayLink {
     pub fn npc_shop_panel(&self) -> oteryn_client_ui::npc_shop::NpcShopPanel {
         let mailbox = lock(&self.mailbox);
         let mut shop = mailbox.npc_shop.clone();
+        shop.live.pending |= shop.live.pending_pack_in_backpacks.is_some();
         shop.live.inspection_selected = mailbox.discovery.inspection.selected;
         shop.live.free_capacity = mailbox.inventory.capacity.map(|c| c.free);
         shop

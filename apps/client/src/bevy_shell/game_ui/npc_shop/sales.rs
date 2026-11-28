@@ -7,7 +7,7 @@ pub(super) fn eligible(
     panel.live.quotes().into_iter().filter(|q| {
         q.side == NpcTradeSide::Sell
             && q.count == 1
-            && panel.live.owned(q.item) > 0
+            && panel.live.sale_owned(q.item) > 0
             && !panel.sale_exclusions.contains(&q.item)
     })
 }
@@ -38,7 +38,7 @@ pub(super) fn advance(
     }
     if state
         .sale_inventory
-        .is_some_and(|(item, before)| panel.live.owned(item) >= before)
+        .is_some_and(|(item, before)| panel.live.sale_owned(item) >= before)
     {
         return;
     }
@@ -50,8 +50,8 @@ pub(super) fn advance(
             state.sales.clear();
             return;
         }
-        if panel.live.owned(quote.item) > 0 {
-            state.sale_inventory = Some((quote.item, panel.live.owned(quote.item)));
+        if panel.live.sale_owned(quote.item) > 0 {
+            state.sale_inventory = Some((quote.item, panel.live.sale_owned(quote.item)));
             if !link.npc_sell_all_request(quote) {
                 state.sales.clear();
             }
