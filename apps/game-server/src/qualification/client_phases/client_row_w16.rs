@@ -96,7 +96,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let target = ActorPosition {
         x: i32::from(placement.x),
         y: i32::from(placement.y),
-        floor: -i16::from(placement.floor),
+        floor: oteryn_protocol_oteryn::world_spatial::native_floor(i16::from(placement.floor)),
     };
     let world = full_e2ef7::qualification_world(clients)?;
     let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_W16_ACCOUNT").await?;

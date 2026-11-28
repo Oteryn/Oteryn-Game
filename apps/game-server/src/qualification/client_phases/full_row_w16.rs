@@ -100,7 +100,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             let target = ActorPosition {
                 x: i32::from(placement.x),
                 y: i32::from(placement.y),
-                floor: -i16::from(placement.floor),
+                floor: oteryn_protocol_oteryn::world_spatial::native_floor(i16::from(placement.floor)),
             };
             logout_w16(&mut client).await?;
             drop(client);
