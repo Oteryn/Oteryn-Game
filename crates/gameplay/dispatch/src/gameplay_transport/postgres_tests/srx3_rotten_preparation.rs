@@ -8,6 +8,7 @@ use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_pl
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::MovementLocalPosition;
 
+use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
@@ -128,7 +129,9 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                 })
                 .map_err(debug)?;
             if mode == FlameCase::EssenceAlreadyHeld {
-                let (first, _) = flame_wire(&owner, &mut admitted, 1, item_use.clone()).await?;
+                let (first, _) = flame_wire(
+                    &owner, &mut admitted, 1, item_use.clone(), CommandStatus::Accepted,
+                ).await?;
                 assert_eq!(
                     oteryn_protocol_oteryn::world_object::decode_use_result(&first)
                         .map_err(debug)?,
@@ -140,7 +143,9 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                     .movement_effects_since(0)
                     .last()
                     .map_or(0, |(seq, _, _)| *seq);
-                let (second, feedback) = flame_wire(&owner, &mut admitted, 2, item_use).await?;
+                let (second, feedback) = flame_wire(
+                    &owner, &mut admitted, 2, item_use, CommandStatus::Accepted,
+                ).await?;
                 assert_eq!(
                     oteryn_protocol_oteryn::world_object::decode_use_result(&second)
                         .map_err(debug)?,
@@ -239,22 +244,23 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("source USE clock")?;
-            let use_flame = flame_wire(
-                &owner,
-                &mut admitted,
-                if mode == FlameCase::NoEssence { 1 } else { 2 },
-                payload,
-            );
-            let interrupted = matches!(mode, FlameCase::Interrupted(_));
-            let (reply, feedback) = crate::gameplay_transport::quest_callbacks::INTERRUPT_FLAME_VISUAL
-                .scope(std::cell::Cell::new(interrupted), use_flame).await?;
-            if interrupted {
-                assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
-            }
+            let command = if mode == FlameCase::NoEssence { 1 } else { 2 };
+            let expected_status = if matches!(mode, FlameCase::Interrupted(_)) {
+                interrupt_flame_wire(&owner, &mut admitted, command, &payload).await?;
+                assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+                CommandStatus::DuplicateReplay
+            } else {
+                CommandStatus::Accepted
+            };
+            // Reopening serve_admitted reconciles a pending callback before it reads
+            // the replay of the original command ID and payload.
+            let (reply, feedback) = flame_wire(
+                &owner, &mut admitted, command, payload, expected_status,
+            ).await?;
             assert_eq!(
                 oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-                if interrupted { UseDisposition::Rejected } else { UseDisposition::Committed },
-                "actual source flame USE returns true for mode {mode:?}; only Normal consumes the essence"
+                UseDisposition::Committed,
+                "actual source flame USE returns true for mode {mode:?}"
             );
             if !matches!(mode, FlameCase::Normal | FlameCase::Interrupted(_)) {
                 let held=sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(id(41).as_slice()).bind(source.storage).fetch_optional(&h.pool).await?.unwrap_or(0);
@@ -353,32 +359,91 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
     result
 }
 
+async fn flame_stream(
+    generation: u64,
+    command: u64,
+    payload: &[u8],
+) -> TestResult<(tokio::io::DuplexStream, tokio::io::DuplexStream)> {
+    use oteryn_protocol_oteryn as protocol;
+    use tokio::io::AsyncWriteExt;
+
+    let frame = protocol::encode_client_command(
+        generation,
+        &protocol::ClientCommandValue {
+            command_id: command,
+            command_type: 2,
+            payload,
+        },
+    )
+    .map_err(debug)?;
+    let (server, mut client) = tokio::io::duplex(1 << 20);
+    client
+        .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+        .await?;
+    client.write_all(&frame).await?;
+    Ok((server, client))
+}
+
+async fn interrupt_flame_wire(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    command: u64,
+    payload: &[u8],
+) -> TestResult {
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::quest_callbacks::INTERRUPT_FLAME_VISUAL;
+    use oteryn_protocol_oteryn as protocol;
+    use tokio::io::AsyncReadExt;
+
+    let (mut server, mut client) =
+        flame_stream(admitted.continuity.connection_generation, command, payload).await?;
+    let session = *admitted;
+    let serving = async move {
+        INTERRUPT_FLAME_VISUAL
+            .scope(
+                std::cell::Cell::new(true),
+                serve_admitted(&mut server, session, owner, IDLE_LIVENESS),
+            )
+            .await
+    };
+    let reader = async move {
+        let mut prefix = [0; 4];
+        while client.read(&mut prefix[..1]).await? != 0 {
+            client.read_exact(&mut prefix[1..]).await?;
+            let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
+            client.read_exact(&mut frame).await?;
+            let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
+            assert_ne!(envelope.message_type(), protocol::MessageType::CommandResult);
+        }
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, read) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        tokio::join!(serving, reader)
+    })
+    .await?;
+    read?;
+    let ConnectionEnd::AdmittedThenDisconnected(session) = end else {
+        return Err("interrupted flame USE must disconnect".into());
+    };
+    *admitted = session;
+    Ok(())
+}
+
 /// Actual command transport with native feedback observed through a CHAT egress marker.
 async fn flame_wire(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     command: u64,
     payload: Vec<u8>,
+    expected_status: CommandStatus,
 ) -> TestResult<(Vec<u8>, Vec<oteryn_protocol_oteryn::chat::ChatLine>)> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use oteryn_protocol_oteryn::{self as protocol, chat::ChatLine};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::io::AsyncReadExt;
 
     const CHAT_MARKER: &str = "SRX3 flame test egress marker";
-    let frame = protocol::encode_client_command(
-        1,
-        &protocol::ClientCommandValue {
-            command_id: command,
-            command_type: 2,
-            payload: &payload,
-        },
-    )
-    .map_err(debug)?;
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    client
-        .write_all(&u32::try_from(frame.len())?.to_be_bytes())
-        .await?;
-    client.write_all(&frame).await?;
+    let (mut server, mut client) =
+        flame_stream(admitted.continuity.connection_generation, command, &payload).await?;
     let admitted_session = *admitted;
     let session = admitted_session.game_session_id;
     let reader = async move {
@@ -395,6 +460,7 @@ async fn flame_wire(
                     let reply =
                         protocol::decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(reply.command_id, command);
+                    assert_eq!(reply.status, expected_status);
                     result = Some(reply.payload.to_vec());
                     // The command has already queued its feedback. The same FIFO
                     // delivers the marker after every line queued by the command.
