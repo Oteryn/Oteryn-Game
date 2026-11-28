@@ -44,27 +44,63 @@ fn own(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_F5_C17D_ACCOUNT").await?;
+    let (accounts, characters) = fixture.replace_slot(clients, 0)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    character_prep::declare_seeded("C17d.client", "knight,level-20,premium", "spell access inputs");
+    let mut caster = character_prep::Seeded {
+        profile: "f5-c17d",
+        reason: "Challenge tests retargeting rather than leveling",
+    }.connect(clients, 0xd5, 0).await?;
+    character_prep::grant_premium(&caster).await?;
     let mut victim = connect_character(clients, 0xd4, 1).await?;
-    let mut caster = connect_character(clients, 0xd5, 0).await?;
-    full_e2ef5::with_observer_liveness(
-        &mut caster,
-        travel_to_spawn(&mut victim, world, &metadata.spawns, "oteryn:creature.rat"),
-    )
-    .await?;
+    let open = |at: TilePos| {
+        world.base().tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+    };
+    let from = tile(victim.world_spatial().actor_position)?;
+    let caster_at = tile(caster.world_spatial().actor_position)?;
+    let path = route_avoiding(world, from, |at| {
+        at.floor == from.floor && open(at)
+            && [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+                .into_iter()
+                .filter(|direction| destination(world, at, *direction)
+                    .is_some_and(|next| next.floor == at.floor && open(next)))
+                .count() >= 2
+    }, |at| at != caster_at).ok_or("no nearby open Challenge staging ground")?;
+    evidence(&format!("C17d.client victim staging steps={}", path.len()));
+    full_e2ef5::with_observer_liveness(&mut caster, walk(&mut victim, world, &path)).await?;
     let victim_at = tile(victim.world_spatial().actor_position)?;
-    let path = route(world, tile(caster.world_spatial().actor_position)?, |at| {
-        at.floor == victim_at.floor && at.x.abs_diff(victim_at.x).max(at.y.abs_diff(victim_at.y)) <= 1
-    }).ok_or("no route for Challenge caster")?;
+    let session = uuid_text(victim.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, "oteryn:creature.rat".into()).await?;
+    let rat = parse_spawned_entity(&answer)?;
+    evidence(&format!("C17d.client FIXTURE rat={rat:?} victim_at={victim_at:?}"));
+    let rat_at = full_e2ef5::with_observer_liveness(&mut caster, async {
+        tokio::time::timeout(Duration::from_secs(3), async {
+            loop {
+                if let Some(entity) = victim.world_entities().and_then(|entities| entities.get(&rat)) {
+                    return tile(entity.position);
+                }
+                victim.service_liveness(Duration::from_millis(50)).await?;
+            }
+        }).await.map_err(|_| "fixture rat not visible to victim")?
+    }).await?;
+    let path = route_avoiding(world, caster_at, |at| {
+        open(at) && at.floor == rat_at.floor
+            && at.x.abs_diff(rat_at.x).max(at.y.abs_diff(rat_at.y)) == 1
+    }, |at| at != victim_at && at != rat_at).ok_or("no route for Challenge caster")?;
+    evidence(&format!("C17d.client caster staging steps={}", path.len()));
     full_e2ef5::with_observer_liveness(&mut victim, walk(&mut caster, world, &path)).await?;
-    let rat = caster.world_entities().and_then(|entities| entities.iter().find(|entry| {
-        entry.kind == oteryn_dev_client::EntityKind::Creature
-            && entry.position.floor == caster.world_spatial().actor_position.floor
-            && entry.position.x.abs_diff(caster.world_spatial().actor_position.x)
-                .max(entry.position.y.abs_diff(caster.world_spatial().actor_position.y)) <= 1
-    })).map(|entry| entry.entity).ok_or("adjacent rat absent")?;
+    let caster_at = tile(caster.world_spatial().actor_position)?;
+    let rat_at = caster.world_entities().and_then(|entities| entities.get(&rat))
+        .map(|entity| tile(entity.position)).transpose()?.ok_or("fixture rat absent")?;
+    if rat_at.floor != caster_at.floor
+        || rat_at.x.abs_diff(caster_at.x).max(rat_at.y.abs_diff(caster_at.y)) != 1
+    {
+        return Err(format!("fixture rat outside Challenge range: rat={rat_at:?} caster={caster_at:?}").into());
+    }
     let caster_ref = own(&caster)?;
     let victim_ref = own(&victim)?;
     if !victim.take_events().into_iter().any(|event| {
