@@ -1,5 +1,6 @@
 //! Discovery runs on the accepted movement path, including clients with no map window open.
 use super::*;
+use crate::durability::DurabilityError;
 use crate::foundation::{ExactActorRef, GameSessionId, MovementPositionSnapshot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -12,10 +13,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.cyclopedia_content().is_none() {
             return;
         }
+        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
+        // STEP has already committed. Give a temporarily busy holder time to return
+        // before the next movement can make this landing stale.
+        if retry
+            .retry_command_guard(async || {
+                self.credit_cyclopedia_landing(actor, session, entered)
+                    .await
+            })
+            .await
+            .is_err()
+        {
+            super::super::operator_event("cyclopedia_step_unavailable");
+        }
+    }
+
+    async fn credit_cyclopedia_landing(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+    ) -> Result<(), DurabilityError> {
         let Some(current) =
-            super::super::character_gameplay_fence::current(self, session, false).await
+            super::super::character_gameplay_fence::current_once(self, session, false).await?
         else {
-            return;
+            return Ok(());
         };
         let mut slot = self.revision_sequencer.acquire(current.character_id).await;
         let area_at = {
@@ -31,12 +53,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .read_actor_position(actor)
                     .is_ok_and(|position| position == entered)
             {
-                return;
+                return Ok(());
             }
             let Some(position) =
                 super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
             else {
-                return;
+                return Ok(());
             };
             let at = Point {
                 x: position.at.x,
@@ -46,7 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content::admit_at(self, at).map(|area| (area, at))
         };
         let Some((area, at)) = area_at else {
-            return;
+            return Ok(());
         };
         let binding: [u8; 32] = Sha256::new()
             .chain_update(b"oteryn:cyclopedia-step:v1")
@@ -59,7 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut compact = [0; 8];
         compact.copy_from_slice(&binding[..8]);
         let Ok(id) = CommandId::new(u64::from_be_bytes(compact).max(1)) else {
-            return;
+            return Ok(());
         };
         let occurrence =
             super::super::npc_trade_command::derived(b"cyclopedia:step", session, id.get());
@@ -81,8 +103,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             event: occurrence,
             now: super::super::npc_trade_command::unix_ms_now(),
         };
-        let Ok(before) = slot.cursor(self.root, self.character).await else {
-            return;
+        let before = match slot.cursor(self.root, self.character).await {
+            Ok(before) => before,
+            Err(crate::durability::character_authority::CharacterAuthorityError::Unavailable(
+                error,
+            )) => {
+                return Err(error);
+            }
+            Err(_) => return Ok(()),
         };
         match slot
             .cyclopedia(
@@ -107,7 +135,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                 }
             }
+            Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
             Err(_) => super::super::operator_event("cyclopedia_step_unavailable"),
         }
+        Ok(())
     }
 }

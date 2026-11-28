@@ -146,7 +146,7 @@ fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleW
 }
 
 fn membership(world: &BundleWorld, at: TilePos) -> Option<(u32, u32)> {
-    world.base().subareas.resolve(at.x, at.y, -at.floor)
+    world.base().subareas.resolve(at.x, at.y, at.floor)
 }
 
 async fn discover_area(
