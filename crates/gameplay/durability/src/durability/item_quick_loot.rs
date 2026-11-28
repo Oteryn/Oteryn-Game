@@ -58,7 +58,8 @@ pub(super) async fn assert_corpse_source(
         JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id
         JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id
         WHERE g.item_instance_id=encode($2,'hex')::uuid
-          AND g.item_instance_id=game_quick_loot_corpse_root(encode($1,'hex')::uuid,encode($3,'hex')::uuid)
+          AND g.item_instance_id=(SELECT corpse FROM game_corpse_loot_origin(encode($1,'hex')::uuid,encode($3,'hex')::uuid))
+          AND NOT EXISTS (SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)
           AND g.world_id=encode($3,'hex')::uuid AND g.channel_id=encode($4,'hex')::uuid
           AND (g.runtime_scope_ownership_generation=$5::text::numeric OR game_dragged_rat_ground_current(i.item_instance_id,g.world_id,g.channel_id,$5::text::numeric,g.stack_ordinal)) AND g.spatial_position=$6
           AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
@@ -364,23 +365,13 @@ async fn corpse_entries(
     remaining: usize,
 ) -> LoopResult<Vec<([u8; 16], TypedDefinitionRef)>> {
     let rows = sqlx::query(
-        "WITH RECURSIVE loot(item, world, placement_path, depth) AS (
-            SELECT e.item_instance_id, e.world_id, ARRAY[e.placement_ordinal::numeric], 1
-              FROM game_item_corpse_container_entries e
-              JOIN game_item_instances i USING (item_instance_id, world_id)
-             WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1
-            UNION ALL
-            SELECT n.item_instance_id, n.world_id, l.placement_path || n.placement_ordinal::numeric, l.depth+1
-              FROM loot l JOIN game_item_nested_entries n ON n.parent_item_instance_id=l.item AND n.world_id=l.world
-              JOIN game_item_instances i USING (item_instance_id, world_id)
-             WHERE l.depth<8 AND i.lifecycle=1
-         )
-         SELECT i.item_instance_id::text, i.definition_family, i.definition_production_key, i.definition_revision_ref
-           FROM loot l JOIN game_item_instances i ON i.item_instance_id=l.item AND i.world_id=l.world
-          ORDER BY l.placement_path || 18446744073709551616::numeric LIMIT $2 FOR UPDATE OF i",
+        "SELECT i.item_instance_id::text, i.definition_family, i.definition_production_key, i.definition_revision_ref
+           FROM game_corpse_loot_postorder(encode($1,'hex')::uuid,$2) loot
+           JOIN game_item_instances i ON i.item_instance_id=loot.item AND i.lifecycle=1
+          ORDER BY loot.visit_ordinal FOR UPDATE OF i",
     )
     .bind(corpse.as_slice())
-    .bind(remaining as i64)
+    .bind(i32::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState)?)
     .fetch_all(&mut **tx)
     .await?;
     rows.into_iter()

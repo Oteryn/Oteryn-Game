@@ -502,40 +502,52 @@ async fn admit(
             DecayRetireRefusal::NotYetDue,
         )));
     }
+    let mut death_entry = None;
     let placement_ordinal = if step.is_corpse_step() {
-        let remaining: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM game_item_corpse_container_entries \
-              WHERE parent_item_instance_id = encode($1,'hex')::uuid",
+        let remaining: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_item_corpse_container_entries
+                WHERE parent_item_instance_id=encode($1,'hex')::uuid)",
         )
         .bind(step.corpse_item_instance_id.as_slice())
         .fetch_one(&mut **tx)
         .await?;
-        if remaining != 0 {
-            return Ok(Err(DecayRetireError::Refused(
-                DecayRetireRefusal::EntriesRemain,
-            )));
+        if remaining {
+            return Ok(Err(DecayRetireError::Refused(DecayRetireRefusal::EntriesRemain)));
         }
         None
     } else {
-        let ordinal: Option<String> = sqlx::query_scalar(
-            "SELECT placement_ordinal::text FROM game_item_corpse_container_entries \
-              WHERE item_instance_id = encode($1,'hex')::uuid \
-                AND parent_item_instance_id = encode($2,'hex')::uuid",
+        let source: Option<(String, Option<String>, i32)> = sqlx::query_as(
+            "SELECT ordinal::text, nested_parent::text, depth FROM (
+                SELECT c.placement_ordinal AS ordinal, NULL::uuid AS nested_parent, 1 AS depth
+                FROM game_item_corpse_container_entries c
+                WHERE c.item_instance_id=encode($1,'hex')::uuid AND c.parent_item_instance_id=encode($2,'hex')::uuid
+                UNION ALL
+                SELECT n.placement_ordinal, n.parent_item_instance_id, origin.depth
+                FROM game_item_nested_entries n
+                JOIN LATERAL game_corpse_loot_origin(n.item_instance_id,n.world_id) origin
+                    ON origin.corpse=encode($2,'hex')::uuid
+                WHERE n.item_instance_id=encode($1,'hex')::uuid
+             ) source",
         )
         .bind(step.item_instance_id.as_slice())
         .bind(step.corpse_item_instance_id.as_slice())
         .fetch_optional(&mut **tx)
         .await?;
-        let Some(ordinal) = ordinal else {
-            return Ok(Err(DecayRetireError::Refused(
-                DecayRetireRefusal::NotInCorpse,
-            )));
+        let Some((ordinal, parent, depth)) = source else {
+            return Ok(Err(DecayRetireError::Refused(DecayRetireRefusal::NotInCorpse)));
         };
-        Some(
-            ordinal
-                .parse()
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-        )
+        let ordinal = ordinal.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
+        if let Some(parent) = parent {
+            use super::world_reset::ground_step::{DeathEntryKind, DeathTreeEntry};
+            death_entry = Some(DeathTreeEntry {
+                item: step.item_instance_id,
+                parent: uuid_text(&parent)?,
+                ordinal,
+                kind: DeathEntryKind::Nested,
+                depth,
+            });
+        }
+        Some(ordinal)
     };
     let quantity = u32::try_from(item.try_get::<i64, _>("quantity")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -551,7 +563,7 @@ async fn admit(
         key_number: u32::try_from(item.try_get::<i64, _>("key_number")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         placement_ordinal,
-        death_entry: None,
+        death_entry,
         corpse_ground: OneItemGroundV1 {
             world_id: world_id.to_vec(),
             channel_id: runtime_scope
@@ -594,7 +606,7 @@ async fn apply_retire(
             )
             .bind(item)
             .execute(&mut **tx)
-            .await?
+            .await?.rows_affected()
         }
         Some(ordinal) => {
             use super::world_reset::ground_step::DeathEntryKind;
@@ -602,6 +614,17 @@ async fn apply_retire(
                 (DeathEntryKind::Corpse, step.corpse_item_instance_id),
                 |entry| (entry.kind, entry.parent),
             );
+            if kind == DeathEntryKind::Nested && matches!(step.cause, RetireCause::CorpseDecay) {
+                let removed: i64 = sqlx::query_scalar(
+                    "SELECT game_corpse_decay_remove_nested(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
+                )
+                .bind(item)
+                .bind(parent.as_slice())
+                .bind(reservation.transaction_id.as_slice())
+                .fetch_one(&mut **tx)
+                .await?;
+                u64::try_from(removed).map_err(|_| DurabilityError::InvalidStoredState)?
+            } else {
             let query = match kind {
                 DeathEntryKind::Direct => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
                 DeathEntryKind::Nested => "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
@@ -612,10 +635,11 @@ async fn apply_retire(
                 .bind(parent.as_slice())
                 .bind(ordinal.to_string())
                 .execute(&mut **tx)
-                .await?
+                .await?.rows_affected()
+            }
         }
     };
-    if removed.rows_affected() != 1 {
+    if removed != 1 {
         return Err(DurabilityError::InvalidStoredState);
     }
     let retired = sqlx::query(
