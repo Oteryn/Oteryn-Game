@@ -40,8 +40,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "c17a-client".into(),
     )
     .await?;
-    character_prep::grant_premium(&client).await?;
-    require_current_premium(&mut client, "before_relog").await?;
     logout(&mut client).await?;
     drop(client);
     wait_character_released(clients, 0).await?;
@@ -73,10 +71,54 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .spoken("utani gran hur")
         .ok_or("C17a Strong Haste absent")?
         .spell;
-    // As in W19d, the last-session logout releases current proof.
-    // Provision Premium on the consuming admission before either cast.
+    let world = full_e2ef7::qualification_world(clients)?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let (outward, inward, neighbor) = [
+        (StepDirection::North, StepDirection::South),
+        (StepDirection::East, StepDirection::West),
+        (StepDirection::South, StepDirection::North),
+        (StepDirection::West, StepDirection::East),
+    ]
+    .into_iter()
+    .find_map(|(outward, inward)| {
+        let neighbor = destination(world, start, outward)?;
+        (neighbor.floor == start.floor
+            && world.ground_speed(neighbor) == world.ground_speed(start)
+            && destination(world, neighbor, inward) == Some(start)
+            && world
+                .base()
+                .tile(neighbor.x, neighbor.y, neighbor.floor)
+                .is_some_and(|tile| tile.protection_zone()))
+        .then_some((outward, inward, neighbor))
+    })
+    .ok_or("C17a no same-ground protected speed probe from the start")?;
+    let ground = world.ground_speed(start);
+    let base = oteryn_gameplay_characters::speed::player_base_speed(level)
+        .ok_or("C17a invalid base speed")?;
+    check_step(&mut client, outward, neighbor, base, ground).await?;
+    let strong_index = client
+        .session_mut()
+        .spell_catalog()?
+        .and_then(|catalog| {
+            catalog
+                .entries
+                .into_iter()
+                .find(|entry| entry.words == "utani gran hur")
+        })
+        .and_then(|entry| std::num::NonZeroU32::new(entry.cast_index))
+        .ok_or("C17a Strong Haste index absent on free admission")?;
+    assert_refusal(
+        &mut client,
+        strong_index,
+        oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Rejected,
+        false,
+    )
+    .await?;
+    let _ = cast_and_query(&mut client, "utani hur", 390, 30_000).await?;
+    check_step(&mut client, inward, start, base * 130 / 100, ground).await?;
     character_prep::grant_premium(&client).await?;
-    require_current_premium(&mut client, "after_relog").await?;
+    require_current_premium(&mut client, "after_free_cast").await?;
+    wait_support_cooldown(&mut client).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {
         if client
@@ -103,22 +145,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     full_e2ef5::prepare_spell_access(&mut client, strong_spell).await?;
     let (before, _) = query_conditions(&mut client).await?;
-    if before
-        .conditions
-        .iter()
-        .any(|condition| condition.icon == 13)
-    {
-        return Err("C17a caster started with Haste".into());
+    if haste_remaining(&before)? > 28_000 {
+        return Err("C17a free Haste cooldown did not elapse".into());
     }
-    let (haste, haste_payload) = cast_and_query(&mut client, "utani hur", 390, 30_000).await?;
+    let (haste, haste_payload) = cast_and_query(&mut client, "utani hur", 330, 30_000).await?;
     let haste_sequence = client.last_server_sequence();
+    assert_refusal(
+        &mut client,
+        strong_index,
+        oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::CoolingDown,
+        true,
+    )
+    .await?;
     let before_strong = wait_support_cooldown(&mut client).await?;
     if haste_remaining(&before_strong)? <= 22_000 {
         return Err("C17a pre-Strong Haste condition does not distinguish replacement".into());
     }
     let (strong, strong_payload) =
-        cast_and_query(&mut client, "utani gran hur", 290, 22_000).await?;
+        cast_and_query(&mut client, "utani gran hur", 230, 22_000).await?;
     let strong_sequence = client.last_server_sequence();
+    check_step(&mut client, outward, neighbor, base * 170 / 100, ground).await?;
     let cast_session = client.join_snapshot().game_session_id;
     let strong_remaining = haste_remaining(&strong)?;
     logout(&mut client).await?;
@@ -130,10 +176,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let (retained, _) = query_conditions(&mut client).await?;
     if haste_remaining(&retained)? > strong_remaining
-        || client.actor_vitals().map(|vitals| vitals.mana) != Some(290)
+        || client.actor_vitals().map(|vitals| vitals.mana) != Some(230)
     {
         return Err("C17a fresh admission did not retain Strong Haste and its mana debit".into());
     }
+    check_step(&mut client, inward, start, base * 170 / 100, ground).await?;
     logout(&mut client).await?;
 
     let path = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C17a capture directory missing")?;
@@ -151,6 +198,65 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "C17A_CAPTURE session={} haste_sequence={haste_sequence} strong_sequence={strong_sequence}",
         uuid_text(cast_session.as_bytes())
+    ));
+    Ok(())
+}
+
+async fn check_step(
+    client: &mut oteryn_dev_client::DevClientSession,
+    direction: StepDirection,
+    destination: TilePos,
+    speed: u32,
+    ground: u16,
+) -> TestResult {
+    use oteryn_gameplay_characters::speed::StepSpeedTable;
+    let expected = StepSpeedTable::embedded()
+        .and_then(|table| table.step_duration(u16::try_from(speed).ok()?, ground))
+        .ok_or("C17a expected pace unavailable")?;
+    let frame = client.step(direction).await?;
+    if frame.disposition != StepDisposition::Moved
+        || tile(client.world_spatial().actor_position)? != destination
+        || u128::from(frame.step_wait_ms) != expected.as_millis()
+    {
+        return Err(format!(
+            "C17a movement mismatch expected_speed={speed} ground={ground} expected_ms={} actual_ms={} disposition={:?}",
+            expected.as_millis(), frame.step_wait_ms, frame.disposition
+        ).into());
+    }
+    evidence(&format!(
+        "C17A_STEP speed={speed} ground={ground} frame={frame:?}"
+    ));
+    Ok(())
+}
+
+async fn assert_refusal(
+    client: &mut oteryn_dev_client::DevClientSession,
+    spell: std::num::NonZeroU32,
+    expected: oteryn_protocol_oteryn::actor_spell::SpellCastDisposition,
+    within_cooldown: bool,
+) -> TestResult {
+    use oteryn_protocol_oteryn::actor_spell::SpellTarget;
+    let (before, _) = query_conditions(client).await?;
+    let vitals = client.actor_vitals().copied();
+    let refusal = client.cast_spell(spell, SpellTarget::None, false).await?;
+    let (after, _) = query_conditions(client).await?;
+    let unchanged = if within_cooldown {
+        let remaining = haste_remaining(&after)?;
+        remaining > 28_000 && remaining <= haste_remaining(&before)?
+    } else {
+        before.conditions.is_empty() && after.conditions.is_empty()
+    };
+    if refusal.disposition != expected
+        || refusal.actor_vitals_delta.is_some()
+        || client.actor_vitals().copied() != vitals
+        || !unchanged
+    {
+        return Err(
+            format!("C17a expected {expected:?} without a state change: {refusal:?}").into(),
+        );
+    }
+    evidence(&format!(
+        "C17A_REFUSAL expected={expected:?} frame={refusal:?}"
     ));
     Ok(())
 }
