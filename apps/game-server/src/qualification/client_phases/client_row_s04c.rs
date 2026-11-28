@@ -8,13 +8,15 @@
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatRoom, DevClientSession};
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S04C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, bytes: &[u8]) -> TestResult {
+    use std::io::Write;
+
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join("s04c-expected.txt"))?
+        .write_all(bytes)?;
+    Ok(())
 }
 
 fn speaker(client: &DevClientSession, room: ChatRoom, text: &str) -> Option<String> {
@@ -39,17 +41,27 @@ async fn say(
     text: &str,
     expected: ChatDisposition,
 ) -> TestResult<(CommandStatus, u32)> {
+    if speaker(client, room, text).is_some() {
+        return Err(format!("step=say {room:?} line already present").into());
+    }
     let reply = client
         .chat(&ChatIntent::Room { room, text: text.to_owned() })
         .await?;
     if reply.disposition != expected {
         return Err(format!("step=say {room:?} observed {reply:?}, expected {expected:?}").into());
     }
-    settle(client).await?;
+    if expected == ChatDisposition::Ok {
+        full_row_s04c::wait_for(client, |client| speaker(client, room, text).is_some())
+            .await
+            .map_err(|error| format!("step=say {room:?} line delta missing: {error}"))?;
+    } else {
+        full_row_s04c::require_no_line(client, room, text).await?;
+    }
     Ok((reply.status, reply.wait_seconds))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory missing")?;
     let mut client = full_row_s04c::connect_speaker(clients, "S04c.client", 0x63, 1).await?;
     let mut expected = String::new();
     let mut note = |step: &str, status: CommandStatus, disposition: ChatDisposition, wait: u32, who: &str| {
@@ -116,14 +128,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     note("muted-world", reply.status, reply.disposition, reply.wait_seconds, "-");
     let _ = client.session_mut().logout().await;
-    capture("s04c-expected.txt", expected.as_bytes());
+    capture(Path::new(&root), expected.as_bytes())?;
     Ok(format!("steps={}", expected.lines().count()))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
     match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S04c.client status=CAPTURED evidence={observed}"

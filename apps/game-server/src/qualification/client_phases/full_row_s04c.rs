@@ -87,7 +87,7 @@ fn has_line(client: &DevClientSession, room: ChatRoom, text: &str) -> bool {
     })
 }
 
-async fn wait_for(
+pub(super) async fn wait_for(
     client: &mut DevClientSession,
     predicate: impl Fn(&DevClientSession) -> bool,
 ) -> TestResult {
@@ -102,7 +102,7 @@ async fn wait_for(
     Ok(())
 }
 
-async fn require_no_line(client: &mut DevClientSession, room: ChatRoom, text: &str) -> TestResult {
+pub(super) async fn require_no_line(client: &mut DevClientSession, room: ChatRoom, text: &str) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_millis(200);
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(20)).await?;
