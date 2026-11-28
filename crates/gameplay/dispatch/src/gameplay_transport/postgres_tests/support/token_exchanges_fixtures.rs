@@ -662,3 +662,18 @@ pub(super) async fn exercise(
 
     Ok(())
 }
+
+pub(super) async fn seed_unfinished_exchanges(h: &Harness, variant: &str) -> TestResult {
+    for (quest, train, published) in [
+        ("oteryn:quest.bigfoot_s_burden_quest", "91fe6ba3798095b75eed90c90ed2db0985dae1549dd4923ccc53d070f31fe542", Some("f4aea058bd9f28e4c1f12b44413cc4f37ad6ad8488246bc66626f8d7b497ddc8")),
+        ("oteryn:quest.hunting_for_tokens", "697aa47c5147077c4931644597aefe3ef96698212b6e1f4c84143d90d32a9592", Some("f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3")),
+        ("oteryn:quest.present_quest", "5d491ab6c563697f5d5318b0b9c3464878c505c7cb10c7a9f116cc712bddc859", None),
+        ("oteryn:quest.rift_warrior_outfits_quest", "2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49", Some("c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94")),
+        ("oteryn:quest.vampire_hunter_quest", "1c364b5af97b6e6a9bea86be0e9bed30a8778c234e49af4bf81d23977950931e", None),
+    ] {
+        if let Some(pin) = if variant == "train-save" { Some(train) } else { published } {
+            super::qc_pinned_world::seed_unfinished_state(h, quest, pin).await?;
+        }
+    }
+    Ok(())
+}

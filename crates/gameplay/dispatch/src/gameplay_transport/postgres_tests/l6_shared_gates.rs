@@ -26,6 +26,10 @@ fn l6_shared_gate_closed_50138_uses_exact_threshold() -> TestResult {
 fn l6_shared_gate_open_50138_uses_exact_threshold() -> TestResult {
     run("l6-tomb-gate-open-50138")
 }
+#[test]
+fn l6_shared_gate_expired_50135_at_publication() -> TestResult {
+    run("l6-tomb-gate-expires-50135")
+}
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

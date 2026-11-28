@@ -993,6 +993,7 @@ pub struct ChannelActorCarrier {
     scope_generation: ScopeOwnershipGeneration,
     pub slots: Box<[Slot]>,
     free_head: Option<u32>,
+    encounter_reservation: Option<encounter_access::ReservedEncounterSlots>,
     /// Canonical physical tile insertion ordinal; boxed actor state retains membership order.
     tile_entry_counter: u64,
     /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ...
@@ -1730,6 +1731,7 @@ impl ChannelRuntimeV1 {
         &mut self,
         game_session_id: GameSessionId,
     ) -> Result<PlayerActorReservation, CarrierError> {
+        self.reclaim_abandoned_quest_encounter();
         self.carrier
             .reserve_player(&self.continuity, game_session_id)
     }
@@ -1842,6 +1844,7 @@ impl ChannelActorCarrier {
             source_corpse_projection_pin: None,
             soulpit: None,
             house_custody: Vec::new(),
+            encounter_reservation: None,
             activity_transfers: Vec::new(),
             cloak_blood_events: Vec::new(),
             movement_latest: Vec::new(),
@@ -2012,7 +2015,7 @@ impl ChannelActorCarrier {
     }
 
     fn assert_slot_spell_unreserved(&self, index: usize) -> Result<(), CarrierError> {
-        if !self.native_move_events.is_empty() {
+        if self.encounter_slot_reserved(index) || !self.native_move_events.is_empty() {
             return Err(CarrierError::PlanConflict);
         }
         match &self.slots[index] {
@@ -2042,6 +2045,9 @@ impl ChannelActorCarrier {
         released: &[usize],
     ) -> Result<(), CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
+        if self.encounter_slot_reserved(index) {
+            return Err(CarrierError::PlanConflict);
+        }
         match &self.slots[index] {
             Slot::Occupied {
                 generation,

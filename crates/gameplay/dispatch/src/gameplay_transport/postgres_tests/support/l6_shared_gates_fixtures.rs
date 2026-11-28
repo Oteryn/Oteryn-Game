@@ -84,7 +84,8 @@ pub(super) async fn exercise(
     let unique = name.rsplit('-').next().ok_or("gate UID")?.parse()?;
     let (_, required, success) = spec(unique)?;
     let open = name.contains("-open-");
-    let count = if open { required } else { required - 1 };
+    let expires = name.contains("-expires-");
+    let count = if open || expires { required } else { required - 1 };
     let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&h.pool)
         .await?;
@@ -159,7 +160,28 @@ pub(super) async fn exercise(
     }
     step(owner, admitted, &mut ordinal, StepDirection::South).await?;
     let gate_command = ordinal;
-    step(owner, admitted, &mut ordinal, StepDirection::East).await?;
+    if expires {
+        use crate::gameplay_transport::quest_callbacks::TIMED_GATE_READ;
+        use std::sync::Arc;
+        let runtime = owner.runtime.clone();
+        let states = Arc::clone(&owner.states);
+        let after_expiry = owner.owner_now().get() + 1_300_000_000;
+        let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+        let crossing = TIMED_GATE_READ.scope(barrier.clone(), step(owner, admitted, &mut ordinal, StepDirection::East));
+        tokio::pin!(crossing);
+        tokio::select! {
+            _ = &mut crossing => return Err("STEP missed the positive switch observation".into()),
+            () = barrier.0.notified() => {}
+        }
+        {
+            let _guard = runtime.try_lock().map_err(|_| "switch read retained runtime")?;
+            barrier.1.notify_one();
+            states.test_owner_time.store(after_expiry + 1, std::sync::atomic::Ordering::Relaxed);
+        }
+        crossing.await?;
+    } else {
+        step(owner, admitted, &mut ordinal, StepDirection::East).await?;
+    }
     let expected = if open {
         success
     } else {

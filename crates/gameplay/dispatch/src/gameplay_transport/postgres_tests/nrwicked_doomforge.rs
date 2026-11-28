@@ -120,6 +120,12 @@ fn nrwicked_charge_refuses_stale_party_session_without_payment() -> TestResult {
     run_case(admin, "nrwicked_stale_charge", FORGE, Scenario::StaleCharge)
 }
 
+#[test]
+fn nrwicked_paid_projection_recovers_once_from_peer_input() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    run_case(admin, "nrwicked_paid_resume", FORGE, Scenario::ResumePublication)
+}
+
 #[derive(Clone, Copy)]
 enum Scenario {
     Portal,
@@ -129,6 +135,7 @@ enum Scenario {
     FireDeadline,
     AdmissionAckLost,
     PaidBeforePublication,
+    ResumePublication,
     PaidAfterPublication,
     StaleCharge,
 }
@@ -558,7 +565,7 @@ async fn two_player_encounter(
     if matches!(case, Scenario::AdmissionAckLost) {
         owner.states.quest_callbacks.lose_source_boss_commit_ack.store(true, Ordering::Release);
     }
-    if matches!(case, Scenario::PaidBeforePublication) {
+    if matches!(case, Scenario::PaidBeforePublication | Scenario::ResumePublication) {
         owner.states.quest_callbacks.interrupt_source_boss_before_projection.store(true, Ordering::Release);
     }
     let use_lever = owner.use_object(first, UseCommand {
@@ -600,6 +607,8 @@ async fn two_player_encounter(
         assert_eq!(changed.rows_affected(), 1);
         barrier.1.notify_one();
         using_lever.await
+    } else if matches!(case, Scenario::AdmissionAckLost) {
+        super::source_boss_handoff_fixtures::with_unrelated_admission(owner, use_lever).await?
     } else {
         use_lever.await
     };
@@ -631,7 +640,14 @@ async fn two_player_encounter(
             .map_err(|()| "peer fence")?.ok_or("missing peer fence")?;
         return assert_paid_handoff(h, deps, owner, lever, vec![fence.item_fence(), peer.item_fence()]).await;
     }
-    assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
+    if matches!(case, Scenario::ResumePublication) {
+        assert_eq!(outcome.disposition, UseDisposition::Rejected);
+        assert!(owner.reconcile_quest_callbacks(other_session).await);
+        assert!(owner.reconcile_quest_callbacks(session).await);
+        assert_eq!(active_cooldowns(h, lever).await?.len(), 2);
+    } else {
+        assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
+    }
     if matches!(case, Scenario::AdmissionAckLost) {
         assert!(!owner.states.quest_callbacks.lose_source_boss_commit_ack.load(Ordering::Acquire));
         let cooldowns = active_cooldowns(h, lever).await?;
@@ -695,7 +711,7 @@ async fn two_player_encounter(
             .map_err(|()| "published peer fence")?.ok_or("missing published peer fence")?;
         return assert_paid_handoff(h, deps, owner, lever, vec![fence.item_fence(), peer.item_fence()]).await;
     }
-    if matches!(case, Scenario::AdmissionAckLost) {
+    if matches!(case, Scenario::AdmissionAckLost | Scenario::ResumePublication) {
         assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
         return Ok(());
     }

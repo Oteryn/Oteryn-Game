@@ -15,23 +15,97 @@ pub struct StagedQuestEncounter<'owner, T> {
     output: (Vec<MovementPositionSnapshot>, T),
 }
 
-/// A staged spawn can cross a durable call only with its original carrier
-/// image. Reacquisition refuses to overwrite any intervening owner change.
-pub struct DetachedQuestEncounter<T> {
-    binding: ScopeRuntimeAssignmentBinding,
-    activation: u64,
-    before: ChannelActorCarrier,
-    after: ChannelActorCarrier,
-    output: (Vec<MovementPositionSnapshot>, T),
+/// A dropped command releases its actor fences immediately. Recycle its detached
+/// free-list prefix at an owner boundary, preserving burned IDs.
+#[derive(Debug, Clone)]
+pub(super) struct ReservedEncounterSlots {
+    owner: std::sync::Weak<()>,
+    occupied: Vec<usize>,
+    vacant: Vec<(u32, u64)>,
 }
 
-impl<T> DetachedQuestEncounter<T> {
-    pub fn resume(self, runtime: &mut ChannelRuntimeV1) -> Option<StagedQuestEncounter<'_, T>> {
-        (runtime.owner_fence().is_ok()
-            && runtime.binding() == self.binding
-            && runtime.content_pin().activation_sequence() == self.activation
-            && runtime.carrier == self.before)
-            .then(|| StagedQuestEncounter::new(runtime, self.after, self.output))
+impl PartialEq for ReservedEncounterSlots {
+    fn eq(&self, other: &Self) -> bool {
+        self.owner.ptr_eq(&other.owner)
+            && self.occupied == other.occupied
+            && self.vacant == other.vacant
+    }
+}
+
+impl Eq for ReservedEncounterSlots {}
+
+impl ChannelActorCarrier {
+    pub(super) fn encounter_slot_reserved(&self, index: usize) -> bool {
+        self.encounter_reservation
+            .as_ref()
+            .is_some_and(|held| held.owner.strong_count() != 0 && held.occupied.contains(&index))
+    }
+
+    pub(super) fn reclaim_abandoned_encounter_slots(&mut self) {
+        if self
+            .encounter_reservation
+            .as_ref()
+            .is_some_and(|held| held.owner.strong_count() == 0)
+        {
+            self.release_encounter_slots(false);
+        }
+    }
+
+    fn release_encounter_slots(&mut self, restaging: bool) {
+        if let Some(held) = self.encounter_reservation.take() {
+            for (index, original_generation) in held.vacant.into_iter().rev() {
+                self.slots[index as usize] = Slot::VacantReusable {
+                    generation: if restaging {
+                        original_generation
+                    } else {
+                        original_generation + 1
+                    },
+                    next_free: self.free_head,
+                };
+                self.free_head = Some(index);
+            }
+        }
+    }
+}
+
+pub struct ReservedQuestEncounter {
+    binding: ScopeRuntimeAssignmentBinding,
+    activation: u64,
+    owner: std::sync::Arc<()>,
+}
+
+impl ChannelRuntimeV1 {
+    pub fn reclaim_abandoned_quest_encounter(&mut self) {
+        self.carrier.reclaim_abandoned_encounter_slots();
+    }
+}
+
+impl ReservedQuestEncounter {
+    /// Repeat the native room checks against the live world with the exact reserved
+    /// spawn identities at the free head. Roll back the generation claims on refusal.
+    pub fn publish(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        publish: impl FnOnce(&mut ChannelRuntimeV1) -> bool,
+    ) -> bool {
+        if runtime.owner_fence().is_err()
+            || runtime.binding() != self.binding
+            || runtime.content_pin().activation_sequence() != self.activation
+            || !runtime
+                .carrier
+                .encounter_reservation
+                .as_ref()
+                .is_some_and(|held| held.owner.ptr_eq(&std::sync::Arc::downgrade(&self.owner)))
+        {
+            return false;
+        }
+        let before = runtime.carrier.clone();
+        runtime.carrier.release_encounter_slots(true);
+        if publish(runtime) {
+            return true;
+        }
+        runtime.carrier = before;
+        false
     }
 }
 
@@ -57,31 +131,51 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         self.runtime.contains_live_creature(actor) || self.runtime.corpse_projection_pinned(actor)
     }
 
-    pub fn detach(self) -> DetachedQuestEncounter<T> {
-        DetachedQuestEncounter {
-            binding: self.runtime.binding(),
-            activation: self.runtime.content_pin().activation_sequence(),
-            before: self.runtime.carrier.clone(),
-            after: self.carrier,
-            output: self.output,
-        }
-    }
-
-    /// Keep an identity used by a durable write retired even if staging is dropped.
-    /// Only the generation advances in the live carrier; the slot remains vacant.
-    pub fn retain_spawn_generation(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
-        let index = self
-            .carrier
-            .validate_ref(&self.runtime.continuity, actor.0)?;
-        let Slot::VacantReusable { generation, .. } = &mut self.runtime.carrier.slots[index] else {
-            return Err(CarrierError::PlanConflict);
-        };
-        let staged_generation = actor.actor_local_generation();
-        if generation.checked_add(1) != Some(staged_generation) {
+    pub fn reserve(self) -> Result<ReservedQuestEncounter, CarrierError> {
+        let binding = self.runtime.binding();
+        let activation = self.runtime.content_pin().activation_sequence();
+        let live = &mut self.runtime.carrier;
+        if live.encounter_reservation.is_some() {
             return Err(CarrierError::PlanConflict);
         }
-        *generation = staged_generation;
-        Ok(())
+        let occupied = live
+            .occupied
+            .iter()
+            .map(|&slot| slot as usize)
+            .filter(|&index| live.slots[index] != self.carrier.slots[index])
+            .collect();
+        let mut vacant = Vec::new();
+        let mut head = live.free_head;
+        while let Some(index) = head {
+            let Slot::CreatureOccupied { generation, .. } = &self.carrier.slots[index as usize]
+            else {
+                break;
+            };
+            let Slot::VacantReusable {
+                generation: original,
+                next_free,
+            } = live.slots[index as usize]
+            else {
+                return Err(CarrierError::PlanConflict);
+            };
+            if original.checked_add(1) != Some(*generation) {
+                return Err(CarrierError::PlanConflict);
+            }
+            vacant.push((index, original));
+            head = next_free;
+        }
+        let owner = std::sync::Arc::new(());
+        live.free_head = head;
+        live.encounter_reservation = Some(ReservedEncounterSlots {
+            owner: std::sync::Arc::downgrade(&owner),
+            occupied,
+            vacant,
+        });
+        Ok(ReservedQuestEncounter {
+            binding,
+            activation,
+            owner,
+        })
     }
 
     pub fn publish(
@@ -437,6 +531,7 @@ impl ChannelRuntimeV1 {
         ) -> Result<T, CarrierError>,
         deferred_spawns: bool,
     ) -> Result<StagedQuestEncounter<'_, T>, CarrierError> {
+        self.carrier.reclaim_abandoned_encounter_slots();
         if players.is_empty()
             || players.len() > 16
             || (!deferred_spawns && monsters.is_empty())

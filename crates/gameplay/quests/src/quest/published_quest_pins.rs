@@ -776,7 +776,7 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
 
 const BIGFOOT: &str = "oteryn:quest.bigfoot_s_burden_quest";
 const BIGFOOT_DAILY_PIN: DefinitionHash =
-    hash(b"91fe6ba3798095b75eed90c90ed2db0985dae1549dd4923ccc53d070f31fe542");
+    hash(b"0c8dd2347c67d09d85b1ed585625845e70e390a68b1a4b355b8a6684e4da1f2c");
 const DANGEROUS_DEPTHS: &str = "oteryn:quest.dangerous_depths_quest";
 const DANGEROUS_DEPTHS_DAILY_PIN: DefinitionHash =
     hash(b"0e54cafb1c5ad445756bf3046d5e08a0f3f081cf0d73672908e927cc795a6e87");
@@ -788,9 +788,10 @@ const DAILY_PREDECESSORS: &[GameplayPredecessors] = &[
     (
         BIGFOOT,
         BIGFOOT_DAILY_PIN,
-        &[hash(
-            b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258",
-        )],
+        &[
+            hash(b"91fe6ba3798095b75eed90c90ed2db0985dae1549dd4923ccc53d070f31fe542"),
+            hash(b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258"),
+        ],
     ),
     (
         DANGEROUS_DEPTHS,
@@ -871,7 +872,7 @@ const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
         "oteryn:quest.hunting_for_tokens",
         hash(b"2d9c2d53f7ad233d907fd87905dd9686aa5ba0c7b170e9a365b9ec056cec4a4a"),
-        hash(b"697aa47c5147077c4931644597aefe3ef96698212b6e1f4c84143d90d32a9592"),
+        hash(b"0ef835e4fe57b7f3483e2e3f5b7c88086e5b83e94f09ddbdcd1c276f9155ca83"),
     ),
     (
         "oteryn:quest.hydra_egg_quest",
@@ -981,8 +982,9 @@ pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatal
     const PINS: &[GameplayPredecessors] = &[
         (
             "oteryn:quest.killing_in_the_name_of_quest",
-            hash(b"4a317ee678707134f01b13b2bd781e299c7d781df6bb6efb644259f7b62085d3"),
+            hash(b"92bf087bc5d571e39874da82ba7e1b8d24d60fdebc569d16420fb5b947b057c0"),
             &[
+                hash(b"4a317ee678707134f01b13b2bd781e299c7d781df6bb6efb644259f7b62085d3"),
                 hash(b"dbb0bbd7ead5a280f2085e685637ff0071e3c04013fb937376d89901950e6e61"),
                 hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
                 hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
@@ -992,11 +994,33 @@ pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatal
         ),
         (
             "oteryn:quest.wrath_of_the_emperor_quest",
-            hash(b"542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
+            hash(b"1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
             &[
+                hash(b"542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
                 hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
                 hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
             ],
+        ),
+        (
+            "oteryn:quest.hunting_for_tokens",
+            hash(b"0ef835e4fe57b7f3483e2e3f5b7c88086e5b83e94f09ddbdcd1c276f9155ca83"),
+            &[hash(
+                b"697aa47c5147077c4931644597aefe3ef96698212b6e1f4c84143d90d32a9592",
+            )],
+        ),
+        (
+            "oteryn:quest.present_quest",
+            hash(b"50822b5d22b5c9763a4892271213c5f15a332bd9bf56d30ee5e8e750dd5dbd11"),
+            &[hash(
+                b"5d491ab6c563697f5d5318b0b9c3464878c505c7cb10c7a9f116cc712bddc859",
+            )],
+        ),
+        (
+            "oteryn:quest.vampire_hunter_quest",
+            hash(b"8296a12d921ee5e0c5a64636fd14690104160faafa8e0e10f09d6975fac6c7a0"),
+            &[hash(
+                b"1c364b5af97b6e6a9bea86be0e9bed30a8778c234e49af4bf81d23977950931e",
+            )],
         ),
     ];
     retain(catalogue, PINS);
@@ -1006,32 +1030,96 @@ pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatal
 // Generated with quest_definition_hashes on main and the reviewed exchange catalogue.
 const TOKEN_EXCHANGE_PREDECESSORS: &[GameplayPredecessors] = &[(
     "oteryn:quest.rift_warrior_outfits_quest",
-    hash(b"2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49"),
-    &[hash(
-        b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94",
-    )],
+    hash(b"59e73314648b213f65869a0b306e35bbe1ad4985c357faec5f79dbdb56155293"),
+    &[
+        hash(b"2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49"),
+        hash(b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94"),
+    ],
 )];
 
 pub(super) fn retain_daily_predecessors(catalogue: &mut QuestStateCatalogue) {
     retain(catalogue, DAILY_PREDECESSORS);
 
-    // On e2750951, NPC lowering admitted these pre-NPC definitions with their
-    // historical absent-track values. The only newly declared track is Bigfoot's
-    // crystal package counter, which was absent from those saves.
-    for (quest, active, current_npc, previous, added_track) in [
+    // Preserve each pre-NPC catalogue's absent-track values. The listed tracks
+    // first appeared after the saved definition (origin/main, e2750951 or 6ed77c6).
+    for (quest, active, current_npc, previous, added_tracks) in [
         (
             BIGFOOT,
             BIGFOOT_DAILY_PIN,
             hash(b"dfe6bb5c8b930d54b72eec6ac8092638ec142437e0e9277984770e617641bf6e"),
             hash(b"f4aea058bd9f28e4c1f12b44413cc4f37ad6ad8488246bc66626f8d7b497ddc8"),
-            Some(BIGFOOT_CRYSTAL_PACKAGES),
+            &[BIGFOOT_CRYSTAL_PACKAGES][..],
         ),
         (
             DANGEROUS_DEPTHS,
             DANGEROUS_DEPTHS_DAILY_PIN,
             hash(b"7eeeb51a19ab487323a17ca610d6c4add87a0497a2ad0afe6f40c05cd22d1b73"),
             hash(b"b40749d3d6b71955c959b55b17a6041183beb23d80ac97e6ce96a5997ea25722"),
-            None,
+            &[],
+        ),
+        (
+            "oteryn:quest.killing_in_the_name_of_quest",
+            hash(b"92bf087bc5d571e39874da82ba7e1b8d24d60fdebc569d16420fb5b947b057c0"),
+            hash(b"6f892d40c4524b9d02323597128f9f3fa4b426e298cfebac0a92c4b28c68a06d"),
+            hash(b"a93a877941b43d3bd8af8164f1703f9be75d069267f9d507f016097a869494a8"),
+            &[
+                "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+                "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+                "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+                "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+                "oteryn:quest-progress/hunting-tasks/pirates/boss-visits",
+                "oteryn:quest-progress/hunting-tasks/pirates/phase",
+            ],
+        ),
+        (
+            "oteryn:quest.killing_in_the_name_of_quest",
+            hash(b"92bf087bc5d571e39874da82ba7e1b8d24d60fdebc569d16420fb5b947b057c0"),
+            hash(b"6f892d40c4524b9d02323597128f9f3fa4b426e298cfebac0a92c4b28c68a06d"),
+            hash(b"3ab25e379c74158e9a2f9a093fd6684084de2e257e6d179ac39f426268768ff1"),
+            &[
+                "oteryn:quest-progress/chosen/killing_in_the_name_of/count",
+                "oteryn:quest-progress/chosen/killing_in_the_name_of/phase",
+                "oteryn:quest-progress/chosen/killing_in_the_name_of/reported",
+                "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+                "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+                "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+                "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+                "oteryn:quest-progress/hunting-tasks/pirates/boss-visits",
+                "oteryn:quest-progress/hunting-tasks/pirates/phase",
+            ],
+        ),
+        (
+            "oteryn:quest.wrath_of_the_emperor_quest",
+            hash(b"1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
+            hash(b"7adb730fed07f97911455a8152504bd4aec534a955154430cff9b4b7ad3fab1b"),
+            hash(b"f3d60b1ad2225008433ceaea7e987126f6303e627da3a332c4ef54d4dedd3adb"),
+            &[
+                "oteryn:quest-progress/wrath-city/completed",
+                "oteryn:quest-progress/wrath-city/crate-collected-at",
+                "oteryn:quest-progress/wrath-city/fish-collected-at",
+                "oteryn:quest-progress/wrath-city/last-report",
+            ],
+        ),
+        (
+            "oteryn:quest.wrath_of_the_emperor_quest",
+            hash(b"1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
+            hash(b"7adb730fed07f97911455a8152504bd4aec534a955154430cff9b4b7ad3fab1b"),
+            hash(b"6eaae3ce74eaedd8e8bd32d9714a148691090c7db9ba5be350f4f7bf6584c7b6"),
+            &[
+                "oteryn:quest-progress/1150",
+                "oteryn:quest-progress/chosen/wrath/crystals",
+                "oteryn:quest-progress/chosen/wrath/magistrati",
+                "oteryn:quest-progress/chosen/wrath/nobles",
+                "oteryn:quest-progress/chosen/wrath/stage",
+                "oteryn:quest-progress/wrath-city/completed",
+                "oteryn:quest-progress/wrath-city/crate",
+                "oteryn:quest-progress/wrath-city/crate-collected-at",
+                "oteryn:quest-progress/wrath-city/fish",
+                "oteryn:quest-progress/wrath-city/fish-collected-at",
+                "oteryn:quest-progress/wrath-city/last-report",
+                "oteryn:quest-progress/wrath-city/prisoners",
+                "oteryn:quest-progress/wrath-city/supplies",
+            ],
         ),
     ] {
         if catalogue.definition_hash(quest) != Some(active) {
@@ -1047,7 +1135,7 @@ pub(super) fn retain_daily_predecessors(catalogue: &mut QuestStateCatalogue) {
         let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
         if predecessors.iter().all(|entry| entry.hash != previous) {
             let mut defaults = source_defaults.clone();
-            if let Some(track) = added_track {
+            for &track in added_tracks {
                 defaults.remove(track);
             }
             predecessors.push(NpcDefinitionPredecessor {
@@ -1068,7 +1156,7 @@ mod tests {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
-        // Active production definitions captured on e2750951.
+        // Active production definitions captured on e2750951 and 6ed77c6.
         let saved = [
             (
                 "oteryn:quest.bigfoot_s_burden_quest",
@@ -1097,6 +1185,34 @@ mod tests {
             (
                 "oteryn:quest.wrath_of_the_emperor_quest",
                 hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+            ),
+            (
+                "oteryn:quest.bigfoot_s_burden_quest",
+                hash(b"91fe6ba3798095b75eed90c90ed2db0985dae1549dd4923ccc53d070f31fe542"),
+            ),
+            (
+                "oteryn:quest.hunting_for_tokens",
+                hash(b"697aa47c5147077c4931644597aefe3ef96698212b6e1f4c84143d90d32a9592"),
+            ),
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"4a317ee678707134f01b13b2bd781e299c7d781df6bb6efb644259f7b62085d3"),
+            ),
+            (
+                "oteryn:quest.present_quest",
+                hash(b"5d491ab6c563697f5d5318b0b9c3464878c505c7cb10c7a9f116cc712bddc859"),
+            ),
+            (
+                "oteryn:quest.rift_warrior_outfits_quest",
+                hash(b"2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49"),
+            ),
+            (
+                "oteryn:quest.vampire_hunter_quest",
+                hash(b"1c364b5af97b6e6a9bea86be0e9bed30a8778c234e49af4bf81d23977950931e"),
+            ),
+            (
+                "oteryn:quest.wrath_of_the_emperor_quest",
+                hash(b"542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
             ),
         ];
         let mut refused = Vec::new();
