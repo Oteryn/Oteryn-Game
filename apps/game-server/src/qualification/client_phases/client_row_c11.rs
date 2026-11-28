@@ -300,12 +300,17 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         "oteryn:npc.king_tibianus",
     )
     .await?;
-    if talk(&mut client, king, "Hail King").await?.is_empty()
-        || talk(&mut client, king, "promotion").await?
-            != ["Do you want to be promoted for 20000 gold coins?"]
-        || talk(&mut client, king, "yes").await? != ["You are now promoted."]
-    {
-        return Err("C11 King Tibianus promotion dialogue did not confirm purchase".into());
+    let greeting = talk(&mut client, king, "Hail King").await?;
+    if greeting.is_empty() {
+        return Err("C11 King Tibianus command=Hail King observed=[]".into());
+    }
+    let quote = talk(&mut client, king, "promotion").await?;
+    if quote != ["Do you want to be promoted for 20000 gold coins?"] {
+        return Err(format!("C11 King Tibianus command=promotion observed={quote:?}").into());
+    }
+    let confirmation = talk(&mut client, king, "yes").await?;
+    if confirmation != ["You are now promoted."] {
+        return Err(format!("C11 King Tibianus command=yes observed={confirmation:?}").into());
     }
 
     query(&mut client, wire::BattleInstinctStatus::default()).await?;
