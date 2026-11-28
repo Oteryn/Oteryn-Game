@@ -612,15 +612,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return outcome(UseDisposition::Rejected);
         }
-        let observed = tokio::time::Instant::now();
-        let Ok(Some(remaining)) = self
+        let Ok(Some(expires)) = self
             .root
-            .koshei_corpse_remaining(&permit, fence, corpse.item.item_instance_id)
+            .koshei_corpse_deadline(&permit, fence, corpse.item.item_instance_id)
             .await
         else {
-            return outcome(UseDisposition::Rejected);
-        };
-        let Some(expires) = observed.checked_add(remaining) else {
             return outcome(UseDisposition::Rejected);
         };
         #[cfg(test)]

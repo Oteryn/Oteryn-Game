@@ -13,6 +13,8 @@ use oteryn_protocol_oteryn::world_object::{
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 pub(super) const NAME: &str = "koshei_the_deathless_full_journey";
+pub(super) const KICK: &str = "koshei_committed_gate_staff_retirement";
+pub(super) const LOSS: &str = "koshei_cancelled_gate_grace_expiry";
 pub(super) const SPATIAL: &str = "koshei_spatial_corpse_on_first_visit";
 const QUEST: &str = "oteryn:quest.koshei_the_deathless_quest";
 const ENTRY: &str = "oteryn:quest-callback/koshei/tomb-entry";
@@ -468,8 +470,9 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     world: &crate::map::boot::BundleWorld,
-    spatial_corpse: bool,
+    name: &str,
 ) -> TestResult {
+    let spatial_corpse = name == SPATIAL;
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
     use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
     use oteryn_protocol_oteryn::attack::ChaseMode;
@@ -661,6 +664,59 @@ pub(super) async fn exercise(
     let runtime = owner.runtime.clone();
     let states = owner.states.clone();
     let actor = admitted.runtime_actor.ok_or("Koshei player")?;
+    if name == KICK {
+        states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
+        assert!(use_next(owner, admitted, &gate).await.is_err());
+        {
+            let runtime = owner.runtime.lock().await;
+            assert!(runtime.actor_spell_reserved(actor));
+            assert!(runtime.actor_spell_reserved(native_boss));
+        }
+        let transport = admitted.controller.ok_or("gate controller")?.transport;
+        assert_eq!(owner.release_terminal(*admitted, crate::gameplay_transport::TerminalRelease::StaffKick(transport)).await,
+            crate::gameplay_transport::connection::GraceExpiryResult::Released);
+        expected.mission[2] = 1;
+        assert_eq!(State::read(h).await?, expected);
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.read_actor_position(actor).is_err());
+        assert!(!runtime.actor_spell_reserved(native_boss));
+        return Ok(());
+    }
+    let interrupted = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    *states.quest_callbacks.before_commit.lock().map_err(|_| "commit pause")? =
+        Some(interrupted.clone());
+    tokio::select! {
+        result = use_next(owner, admitted, &gate) => return Err(format!("gate returned before interruption: {result:?}").into()),
+        () = interrupted.0.notified() => {}
+    }
+    if name == LOSS {
+        use crate::gameplay_transport::connection::{ControlLossResult, GraceExpiryResult};
+        assert_eq!(owner.lose_control_for_cause(*admitted, std::time::Duration::ZERO, None).await,
+            ControlLossResult::Recorded);
+        let maintain = async {
+            loop {
+                super::maintain_ready(&h.root).await?;
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        };
+        tokio::select! {
+            released = tokio::time::timeout(std::time::Duration::from_secs(70), owner.expire_session_control_loss(*admitted)) =>
+                assert_eq!(released?, GraceExpiryResult::Released),
+            ready = maintain => return ready,
+        }
+        assert_eq!(State::read(h).await?, expected);
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.read_actor_position(actor).is_err());
+        assert!(!runtime.actor_spell_reserved(native_boss));
+        return Ok(());
+    }
+    assert_eq!(owner.drain_paid_quest_callbacks().await, 0);
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(!runtime.actor_spell_reserved(actor));
+        assert!(!runtime.actor_spell_reserved(native_boss));
+    }
+    states.command_ingress.recover_trade_continuity(admitted).ok_or("interrupted gate continuity")?;
     *states
         .quest_callbacks
         .before_commit
@@ -795,6 +851,23 @@ pub(super) async fn exercise(
     assert_eq!(mint_clock.0, occurred);
     assert!(mint_clock.1 - occurred >= 10_000);
     let corpse = seal(owner, admitted, spatial_corpse).await?;
+    // Hold the database future at its first I/O suspension. Both observations
+    // refer to the same stored expiry regardless of the delay entering the transaction.
+    {
+        let permit = owner.spell_lane_permit().await.ok_or("corpse lane")?;
+        let fence = admitted.item_fence.ok_or("corpse fence")?;
+        let query = || owner.root.koshei_corpse_deadline(&permit, fence, corpse);
+        let mut delayed = std::pin::pin!(query());
+        std::future::poll_fn(|cx| {
+            assert!(std::future::Future::poll(delayed.as_mut(), cx).is_pending());
+            std::task::Poll::Ready(())
+        }).await;
+        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        let delayed = delayed.await.map_err(debug)?.ok_or("delayed expiry")?;
+        let again = query().await.map_err(debug)?.ok_or("current expiry")?;
+        assert!(delayed + std::time::Duration::from_millis(150) >= again,
+            "time before the freshness statement shortened the USE deadline");
+    }
     let sample: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_quest_corpse_samples WHERE \
          character_id=encode($1,'hex')::uuid AND corpse_item=encode($2,'hex')::uuid \

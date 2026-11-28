@@ -69,8 +69,8 @@ fn scenario_case(
     };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
-    let spatial_corpse = name == super::super::koshei_the_deathless_journey_fixtures::SPATIAL;
-    let koshei = spatial_corpse || name == super::super::koshei_the_deathless_journey_fixtures::NAME;
+    use super::super::koshei_the_deathless_journey_fixtures as koshei_cases;
+    let koshei = matches!(name, koshei_cases::NAME | koshei_cases::SPATIAL | koshei_cases::KICK | koshei_cases::LOSS);
     let cyclops_amulet = matches!(
         name,
         "questpc7-friends-draconian-amulet-replaces-steel"
@@ -2282,7 +2282,7 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if koshei {
             Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(
-                &mut owner, &mut admitted, &h, &world, spatial_corpse,
+                &mut owner, &mut admitted, &h, &world, name,
             )).await?;
         } else if explorer {
             Box::pin(super::super::explorer_society_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
