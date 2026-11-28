@@ -1511,6 +1511,21 @@ PY
   evidence "control_socket service_user_peer=closed"
 }
 
+bootstrap_character_fixture() { # exact operation id, safe to replay on ambiguity
+  local operation="$1" attempt rc
+  for attempt in 1 2 3; do
+    rc=0
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || rc=$?
+    if (( rc == 0 )); then
+      return 0
+    fi
+    if [[ "$NODE_BOOT_WORLD_PROFILE" != published ]] || (( rc != 7 || attempt == 3 )); then
+      return "$rc"
+    fi
+    evidence "FIXTURE_RETRY action=character_bootstrap operation=$operation attempt=$attempt cause=OPS_OUTCOME_AMBIGUOUS"
+  done
+}
+
 character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name requested_vocation failed=0 vocation="${NODE_BOOT_PROFILE^}"
   [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
@@ -1531,9 +1546,9 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       failed=1
       continue
     fi
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
+    bootstrap_character_fixture "$operation" || { failed=1; continue; }
     # An exact retry of the same operation id is idempotent.
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
+    bootstrap_character_fixture "$operation" || failed=1
   done
   [[ $failed == 0 ]] || fail "Character bootstrap"
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
@@ -1541,8 +1556,8 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     local s16_operation=01934f10-7c04-7018-805b-3b1122334418
     python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
       "$WORK" "$C11_UNASSIGNED_ACCOUNT" "$WORLD_ID" "$s16_operation" "${INTERPRETATION[@]}" "First Vocation Candidate" Knight
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
+    bootstrap_character_fixture "$s16_operation"
+    bootstrap_character_fixture "$s16_operation"
   fi
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }
