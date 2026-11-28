@@ -137,6 +137,19 @@ pub async fn serve_gameplay(
             .map(|client| std::sync::Arc::new(tokio::sync::Mutex::new(client))),
         store_purchases: owners.store_purchases,
     };
+    #[cfg(feature = "qualification-clock")]
+    if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some()
+        && std::env::var_os("OTERYN_QUALIFICATION_ECHO_PORTAL").as_deref()
+            == Some(std::ffi::OsStr::new("1"))
+    {
+        authority
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .enable_qualification_echo_portal();
+    }
     // Capture actual registered source execution time before startup awaits,
     // rather than anchoring a GlobalEvent to its first Think or a boss birth.
     let registered_global_us = authority.owner_now().get();

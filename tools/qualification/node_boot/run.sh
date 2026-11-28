@@ -869,6 +869,9 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
+  if [[ "${OTERYN_QUALIFICATION_ECHO_PORTAL:-0}" == 1 ]]; then
+    NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_ECHO_PORTAL=1")
+  fi
 fi
 if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   # Use the Platform's disposable Premium-purpose client and trust root.
