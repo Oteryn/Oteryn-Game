@@ -34,11 +34,10 @@ pub(super) struct ReservedSourceBoss {
 
 impl StagedSourceBoss<'_> {
     pub(super) fn reserve(self) -> Result<ReservedSourceBoss, UseDisposition> {
-        let actors = self.players.iter().map(|p| p.0).collect::<Vec<_>>();
         Ok(ReservedSourceBoss {
             native: self
                 .native
-                .reserve(&actors)
+                .reserve()
                 .map_err(|_| UseDisposition::Rejected)?,
             players: self.players,
         })

@@ -978,7 +978,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<Vec<_>>(),
             Err(_) => return 1,
         };
-        let mut failed = 0;
+        let mut failed = usize::from(!self.reconcile_source_boss(None).await);
         for session in sessions {
             if !self.settle_paid_quest_callbacks(session).await {
                 failed += 1;
@@ -1128,7 +1128,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
-        if !self.reconcile_source_boss(session).await || !self.reconcile_grizzly_boss(session).await
+        if !self.reconcile_source_boss(Some(session)).await
+            || !self.reconcile_grizzly_boss(session).await
         {
             return false;
         }

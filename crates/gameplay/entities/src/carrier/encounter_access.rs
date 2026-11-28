@@ -125,10 +125,7 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         self.runtime.contains_live_creature(actor) || self.runtime.corpse_projection_pinned(actor)
     }
 
-    pub fn reserve(
-        self,
-        participants: &[ExactActorRef],
-    ) -> Result<ReservedQuestEncounter, CarrierError> {
+    pub fn reserve(self) -> Result<ReservedQuestEncounter, CarrierError> {
         let binding = self.runtime.binding();
         let activation = self.runtime.content_pin().activation_sequence();
         let live = &mut self.runtime.carrier;
@@ -136,10 +133,12 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         if live.encounter_reservation.is_some() {
             return Err(CarrierError::PlanConflict);
         }
-        let mut occupied = Vec::new();
-        for actor in participants {
-            occupied.push(live.validate_ref(&self.runtime.continuity, actor.0)?);
-        }
+        let occupied = live
+            .occupied
+            .iter()
+            .map(|&slot| slot as usize)
+            .filter(|&index| live.slots[index] != self.carrier.slots[index])
+            .collect();
         let mut vacant = Vec::new();
         let mut head = live.free_head;
         while let Some(index) = head {

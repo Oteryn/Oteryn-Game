@@ -143,6 +143,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         4 => {
                             if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.reconcile_source_boss(None))
+                                    .await;
                                 self.drain_quest_encounter_deadlines().await;
                             }
                         }

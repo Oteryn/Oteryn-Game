@@ -68,23 +68,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
-        let Ok(census) = runtime.positioned_melee_census() else {
+        let staging_party = |runtime: &ChannelRuntimeV1| {
+            runtime.positioned_melee_census().map(|census| {
+                census
+                    .into_iter()
+                    .filter_map(|(member, at, session)| {
+                        let session = session?;
+                        encounter
+                            .players
+                            .iter()
+                            .any(|p| local(p.from) == at.position())
+                            .then_some((member, at, session))
+                    })
+                    .collect::<Vec<_>>()
+            })
+        };
+        let Ok(members) = staging_party(runtime) else {
             return UseDisposition::Rejected;
         };
         drop(spell_guard);
         drop(runtime_guard);
         let mut party = Vec::new();
-        for &(member, at, member_session) in &census {
-            let Some(member_session) = member_session else {
-                continue;
-            };
-            if !encounter
-                .players
-                .iter()
-                .any(|p| local(p.from) == at.position())
-            {
-                continue;
-            }
+        for &(member, at, member_session) in &members {
             let Ok(Some(fence)) = self.current_quest_fence(member_session).await else {
                 return UseDisposition::Rejected;
             };
@@ -123,17 +128,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let (mut runtime, mut states) = self.quest_turn_with(&self.states.spell_states).await;
-        if runtime.positioned_melee_census().ok().as_ref() != Some(&census) {
+        if staging_party(&runtime).ok().as_ref() != Some(&members)
+            || members
+                .iter()
+                .any(|member| self.states.quest_callbacks.closing(member.2))
+        {
             return UseDisposition::StaleState;
         }
-        let staged =
-            match self.stage_source_boss(&mut runtime, &mut states, actor, session, &source_use) {
-                Ok(staged) => match staged.reserve() {
-                    Ok(held) => held,
-                    Err(disposition) => return disposition,
-                },
-                Err(disposition) => return disposition,
-            };
+        let held = self
+            .stage_source_boss(&mut runtime, &mut states, actor, session, &source_use)
+            .and_then(super::encounter::StagedSourceBoss::reserve);
+        let staged = match held {
+            Ok(held) => held,
+            Err(disposition) => return disposition,
+        };
         {
             let Ok(mut pending) = self.states.quest_callbacks.source_boss.lock() else {
                 return UseDisposition::Rejected;
@@ -243,7 +251,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    pub(super) async fn reconcile_source_boss(&self, session: GameSessionId) -> bool {
+    pub(in crate::gameplay_transport) async fn reconcile_source_boss(
+        &self,
+        session: Option<GameSessionId>,
+    ) -> bool {
         let admission = || {
             self.states
                 .quest_callbacks
@@ -251,7 +262,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .ok()?
                 .as_ref()
-                .filter(|p| p.staged.players.iter().any(|player| player.1 == session))
+                .filter(|p| {
+                    session.is_none_or(|session| {
+                        p.staged.players.iter().any(|player| player.1 == session)
+                    })
+                })
                 .map(|p| p.admission.clone())
         };
         if admission().is_none() {
