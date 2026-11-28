@@ -300,7 +300,7 @@ MAP_REVISION=map-s3b-1
             self.assertEqual(sql.count("NULL, 'map-s3b-1');"), 2, sql)
 
     def test_only_the_disposable_town_profile_selects_the_m03_portal(self):
-        compile_world = section('  evidence "world_profile=', '  PIN="$WORK/world.json"')
+        compile_world = section('    compile_world=compile-regions', '    python3 - "$published_pin"')
         setup = r'''set -Eeuo pipefail
 evidence() { :; }
 compile_bundle() { printf '%s\n' "$1"; }
@@ -314,6 +314,34 @@ WORK=.
                 result = bash(setup + compile_world, {'NODE_BOOT_WORLD_PROFILE': profile}, cwd=work)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
+
+    def test_published_profile_requires_the_checked_in_digest(self):
+        stage = section('  published_pin=', '  WORLD_DIGEST=')
+        setup = """set -Eeuo pipefail
+compile_bundle() {
+    [[ "$1" == compile && "$5" == non-production ]]
+    printf '{"digest":"%s"}\n' "$BUNDLE_DIGEST"
+}
+WORLD_COMPILER=(compile_bundle)
+GAME_SOURCE=.
+WORK=.
+"""
+        for digest in ['pinned', 'different']:
+            with self.subTest(digest=digest), tempfile.TemporaryDirectory() as work:
+                pin = Path(work, 'content/world/pins/oteryn.json')
+                pin.parent.mkdir(parents=True)
+                pin.write_text('{"digest":"pinned","entry_start":{"floor":7}}')
+                result = bash(setup + stage, {
+                    'NODE_BOOT_WORLD_PROFILE': 'published', 'BUNDLE_DIGEST': digest,
+                }, cwd=work)
+                staged = Path(work, 'world.json')
+                if digest == 'pinned':
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual(staged.read_bytes(), pin.read_bytes())
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('published World digest mismatch', result.stderr)
+                    self.assertFalse(staged.exists())
 
     def test_grave_danger_region_follows_w13_row_selection(self):
         profile = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE')
