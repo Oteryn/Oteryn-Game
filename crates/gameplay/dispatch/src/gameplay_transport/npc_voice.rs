@@ -59,6 +59,9 @@ impl NpcVoiceCycle {
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn emit_npc_voices(&self, cycle: &mut NpcVoiceCycle, now_us: u64) {
+        let schedule_now = crate::world_clock::now_utc_ms()
+            .and_then(|now| i64::try_from(now).ok())
+            .unwrap_or(0);
         {
             let mut runtime = self.runtime.lock().await;
             if runtime.owner_fence().is_err() || runtime.pinned_movement_context() != cycle.context
@@ -67,8 +70,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             // Source schedule ownership belongs to this Channel cadence, including quiet NPCs.
             // An occupied arrival cell retries on the next pass without moving any occupant.
-            let rotated =
-                runtime.rotate_rashid_at(super::npc_trade_command::unix_ms_now()) == Ok(true);
+            let rotated = runtime.rotate_rashid_at(schedule_now) == Ok(true);
             let visible = runtime.visible_entities();
             if rotated
                 && let Some(npc) = visible.npcs.iter().find(|npc| {

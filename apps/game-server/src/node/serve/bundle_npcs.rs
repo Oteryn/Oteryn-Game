@@ -546,10 +546,8 @@ pub(super) fn place(
                         || super::daily_world_changes::retain_bundle_npc(daily, npc)
                 });
             }
-            let unix_ms = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .ok()
-                .and_then(|elapsed| i64::try_from(elapsed.as_millis()).ok())
+            let unix_ms = crate::world_clock::now_utc_ms()
+                .and_then(|now| i64::try_from(now).ok())
                 .unwrap_or(0);
             oteryn_gameplay_entities::rashid_schedule::rotate_placements(&mut table, unix_ms);
             let outcome = runtime
@@ -940,6 +938,30 @@ pub(crate) mod tests {
             assert_eq!(positions, [expected], "{key}");
         }
         Ok(())
+    }
+
+    pub(crate) fn place_rashid_for_clock_test(
+        mut placements: Vec<NpcPlacement>,
+    ) -> Result<crate::foundation::MovementLocalPosition, String> {
+        use oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY;
+        placements.sort_unstable_by_key(|at| (at.floor, at.y, at.x));
+        let mut boot = timed_boot(&[RASHID_NPC_KEY]);
+        let NpcBoot::Place { table, .. } = &mut boot else {
+            return Err("Rashid boot fixture has no placements".into());
+        };
+        table.npcs.push(NpcPlacements {
+            key: RASHID_NPC_KEY.into(),
+            placements,
+        });
+        let mut runtime = channel_runtime();
+        assert_eq!(
+            place(&mut runtime, Some(&boot), None).map_err(|err| err.to_string())?,
+            1
+        );
+        let visible = runtime.visible_entities();
+        let npc = visible.npcs.first().ok_or("placed Rashid")?;
+        assert_eq!(runtime.npc_key(npc.actor), Some(RASHID_NPC_KEY));
+        Ok(npc.position)
     }
 
     fn timed_boot(keys: &[&str]) -> NpcBoot {
