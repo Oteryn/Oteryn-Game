@@ -51,6 +51,9 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const Q_S04A_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 const S02_KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b1";
 #[cfg(feature = "qualification-spawn")]
 const S02_SORCERER_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b2";
@@ -801,7 +804,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | PARTY_CASTER_ACCOUNT,
+                | PARTY_CASTER_ACCOUNT | Q_S04A_ACCOUNT,
             ) => {
                 if !config
                     .premium_activation
