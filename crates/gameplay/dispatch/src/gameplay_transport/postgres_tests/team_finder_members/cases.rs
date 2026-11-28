@@ -193,6 +193,62 @@ async fn replay_result(
     Ok(())
 }
 
+pub(super) async fn drive_lost_notice(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    characters: &[[u8; 16]],
+    [mut leader_peer, mut member_peer, mut other_peer]: [Peer; 3],
+    lost_rx: tokio::sync::oneshot::Receiver<crate::gameplay_transport::connection::AdmittedSession>,
+) -> TestResult {
+    use crate::gameplay_transport::{AdmissionRetryBudget, connection::ControlLossResult};
+    use std::time::Duration;
+
+    leader_peer.snapshot().await?;
+    member_peer.snapshot().await?;
+    other_peer.snapshot().await?;
+    advertise(&mut leader_peer, LISTING).await?;
+    leader_peer
+        .expect_notice("The team listing was updated.")
+        .await?;
+    let handle = browse(&mut member_peer)
+        .await?
+        .first()
+        .ok_or("advertised listing")?
+        .leader_handle;
+    let payload =
+        wire::encode_member_action(MemberAction::Request { leader: handle }).map_err(debug)?;
+    assert!(
+        member_peer
+            .command(wire::COMMAND_TYPE_TEAM_FINDER_MEMBER_ACTION, &payload)
+            .await
+            .is_err()
+    );
+    let lost = lost_rx.await?;
+    assert_eq!(
+        member_status(h, &characters[0], &characters[1]).await?,
+        Some(1)
+    );
+    assert_eq!(
+        owner.lose_control(lost, Duration::ZERO, None).await,
+        ControlLossResult::Recorded
+    );
+    for _ in 0..2 {
+        let retry = AdmissionRetryBudget::for_command(owner.root);
+        owner
+            .recover_reply_receipt(&retry, &lost, lost.continuity.server_sequence)
+            .await
+            .map_err(debug)?;
+    }
+    leader_peer
+        .expect_notice("There is a new request to join your team.")
+        .await?;
+    assert_eq!(h.count("game_team_finder_member_receipts").await?, 1);
+    leader_peer.shutdown().await?;
+    leader_peer.expect_no_more_notices().await?;
+    other_peer.shutdown().await?;
+    Ok(())
+}
+
 pub(super) async fn drive(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -215,7 +271,9 @@ pub(super) async fn drive(
     };
     advertise(&mut leader_peer, listing).await?;
     if case == Case::Notices {
-        leader_peer.expect_notice("The team listing was updated.").await?;
+        leader_peer
+            .expect_notice("The team listing was updated.")
+            .await?;
     }
     assert_eq!(h.count("game_team_finder_active_listings").await?, 1);
     let listings = browse(&mut member_peer).await?;
@@ -255,17 +313,42 @@ pub(super) async fn drive(
     let member_handle = member.handle;
 
     match case {
+        Case::LostNotice => return Err("expected the lost-reply driver".into()),
         Case::Notices => {
-            leader_peer.expect_notice("There is a new request to join your team.").await?;
-            member_peer.expect_notice("Your request to join the team was sent.").await?;
+            leader_peer
+                .expect_notice("There is a new request to join your team.")
+                .await?;
+            member_peer
+                .expect_notice("Your request to join the team was sent.")
+                .await?;
 
-            advertise(&mut leader_peer, LeaderListing { max_level: 121, ..listing }).await?;
-            leader_peer.expect_notice("The team listing was updated.").await?;
-            member_peer.expect_notice("The team listing was updated.").await?;
+            advertise(
+                &mut leader_peer,
+                LeaderListing {
+                    max_level: 121,
+                    ..listing
+                },
+            )
+            .await?;
+            leader_peer
+                .expect_notice("The team listing was updated.")
+                .await?;
+            member_peer
+                .expect_notice("The team listing was updated.")
+                .await?;
 
-            member_action(&mut member_peer, MemberAction::Cancel { leader: handle }, CommandStatus::Accepted).await?;
-            leader_peer.expect_notice("A request to join your team was withdrawn.").await?;
-            member_peer.expect_notice("Your request to join the team was withdrawn.").await?;
+            member_action(
+                &mut member_peer,
+                MemberAction::Cancel { leader: handle },
+                CommandStatus::Accepted,
+            )
+            .await?;
+            leader_peer
+                .expect_notice("A request to join your team was withdrawn.")
+                .await?;
+            member_peer
+                .expect_notice("Your request to join the team was withdrawn.")
+                .await?;
         }
         Case::Request => {
             let count = h.count("game_team_finder_member_receipts").await?;

@@ -34,6 +34,49 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
+/// Computed in the original transaction, before a COMMIT reply can be lost.
+#[derive(Clone)]
+pub(super) struct TeamFinderNotice {
+    pub(super) actor_text: &'static str,
+    pub(super) peer_text: &'static str,
+    pub(super) peers: Vec<team_finder::Target>,
+    pub(super) legacy: Option<(crate::foundation::GameSessionId, &'static str)>,
+}
+
+impl TeamFinderNotice {
+    pub(super) fn publish(self, owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: AdmittedSession) {
+        let hub = &owner.states.server_messages;
+        let mut notified = false;
+        for target in self.peers {
+            notified |= hub.send_team_finder(target.session, target.connection_generation, self.peer_text);
+        }
+        if !self.actor_text.is_empty() {
+            hub.send_team_finder(admitted.game_session_id, admitted.continuity.connection_generation, self.actor_text);
+        }
+        if !notified && let Some((session, text)) = self.legacy {
+            owner.states.chat.push_party_spell_feedback(session, text);
+        }
+    }
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static STALL_TEAM_FINDER_COMMIT: u64;
+}
+
+pub(super) async fn commit(
+    tx: sqlx::Transaction<'_, sqlx::Postgres>,
+    deadline: tokio::time::Instant,
+    _command_id: u64,
+) -> Result<(), DurabilityError> {
+    let commit = crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline);
+    #[cfg(test)]
+    if STALL_TEAM_FINDER_COMMIT.try_with(|id| *id == _command_id).unwrap_or(false) {
+        return crate::durability::with_stalled_commit_response(commit).await.0;
+    }
+    commit.await
+}
+
 /// `None` removes the template and active listing; a replay cannot republish it.
 pub(super) async fn execute(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -84,19 +127,21 @@ pub(super) async fn execute(
                 team_finder::apply_leader_listing_in_transaction(&mut tx, &authority, listing)
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-            crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
-            Ok(outcome)
+            let notice = outcome.changed.then(|| {
+                let text = if listing.is_some() { "The team listing was updated." } else { "The team listing was removed." };
+                TeamFinderNotice { actor_text: text, peer_text: text, peers: outcome.applicants, legacy: None }
+            });
+            owner.states.command_ingress.remember_team_finder_notice(admitted, command_id, notice.clone());
+            commit(tx, deadline, command_id).await?;
+            Ok((outcome.accepted, notice))
         })
     })
     .await
     .ok()?;
-    if outcome.changed {
-        let hub = &owner.states.server_messages;
-        let text = if listing.is_some() { "The team listing was updated." } else { "The team listing was removed." };
-        hub.send_team_finder(admitted.game_session_id, admitted.continuity.connection_generation, text);
-        for target in outcome.applicants {
-            hub.send_team_finder(target.session, target.connection_generation, text);
-        }
+    let (accepted, notice) = outcome;
+    if let Some(notice) = notice {
+        owner.states.command_ingress.remember_team_finder_notice(admitted, command_id, None);
+        notice.publish(owner, admitted);
     }
-    Some(outcome.accepted)
+    Some(accepted)
 }

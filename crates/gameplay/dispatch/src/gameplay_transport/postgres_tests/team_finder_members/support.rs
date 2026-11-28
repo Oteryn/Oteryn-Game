@@ -111,9 +111,13 @@ impl Peer {
         }
     }
 
-    fn capture_notice(&mut self, envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>) -> TestResult {
+    fn capture_notice(
+        &mut self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    ) -> TestResult {
         if envelope.message_type() == MessageType::StateDelta {
-            let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+            let delta =
+                oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
             if delta.domain_id == STATE_DOMAIN_SERVER_MESSAGES {
                 let notice = decode_server_notification(delta.payload).map_err(debug)?;
                 if notice.category == ServerMessageCategory::TeamFinder {
@@ -134,7 +138,8 @@ impl Peer {
                 let frame = read_frame(&mut self.stream).await?;
                 self.capture_notice(&decode_wire_envelope(&frame).map_err(debug)?)?;
             }
-        }).await?
+        })
+        .await?
     }
 
     pub(super) async fn action(
@@ -158,6 +163,22 @@ impl Peer {
             .await?;
         assert_eq!(status, CommandStatus::Accepted);
         Ok(wire::decode_result(&payload).map_err(debug)?)
+    }
+
+    pub(super) async fn expect_no_more_notices(&mut self) -> TestResult {
+        loop {
+            let frame = match read_frame(&mut self.stream).await {
+                Ok(frame) => frame,
+                Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                Err(error) => return Err(error.into()),
+            };
+            self.capture_notice(&decode_wire_envelope(&frame).map_err(debug)?)?;
+        }
+        assert!(
+            self.notices.is_empty(),
+            "receipt recovery repeated a notice"
+        );
+        Ok(())
     }
 
     pub(super) async fn shutdown(&mut self) -> TestResult {
@@ -281,7 +302,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     // full_world_e2e uses this qualified generation to align the native training
     // formula with the bootstrap fixture's durable content-1 interpretation.
     let (controller, _pin) =
-        super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+        super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+            world,
+            "content-1",
+        )?;
     let active = controller.active().ok_or("active native content")?;
     let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
         root: &h.root, character: &recovery, holder: &h.node, evidence: &evidence,
@@ -295,7 +319,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }.build();
     owner.active_generation = Some(active);
     let mut supported = vec![6, 7, 21, 42, 200, 232];
-    if case == Case::Notices {
+    if matches!(case, Case::Notices | Case::LostNotice) {
         supported.extend([92, CAPABILITY_SERVER_MESSAGE_CATEGORY_V1]);
     }
     for session in &mut admitted {
@@ -391,9 +415,27 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     let (mut server2, client2) = tokio::io::duplex(65_536);
     let owner_ref = &owner;
     let (first, second, third) = (admitted[0], admitted[1], admitted[2]);
-    let serve0 = async move { serve_admitted(&mut server0, first, owner_ref, IDLE_LIVENESS).await };
-    let serve1 =
-        async move { serve_admitted(&mut server1, second, owner_ref, IDLE_LIVENESS).await };
+    let serve0 = async move {
+        let end = serve_admitted(&mut server0, first, owner_ref, IDLE_LIVENESS).await;
+        drop(server0);
+        end
+    };
+    let (lost_tx, lost_rx) = tokio::sync::oneshot::channel();
+    let serve1 = async move {
+        let serve = serve_admitted(&mut server1, second, owner_ref, IDLE_LIVENESS);
+        let end = if case == Case::LostNotice {
+            crate::gameplay_transport::team_finder_leader::STALL_TEAM_FINDER_COMMIT
+                .scope(2, serve)
+                .await
+        } else {
+            serve.await
+        };
+        drop(server1);
+        if let ConnectionEnd::AdmittedThenDisconnected(lost) = &end {
+            let _ = lost_tx.send(*lost);
+        }
+        end
+    };
     let serve2 = async move { serve_admitted(&mut server2, third, owner_ref, IDLE_LIVENESS).await };
     let peers = [
         Peer::new(client0, admitted[0]),
@@ -404,10 +446,13 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         super::super::fixture::join_two(super::super::fixture::join_two(serve0, serve1), serve2);
     let (ends, result) = tokio::time::timeout(
         std::time::Duration::from_secs(60),
-        super::super::fixture::join_two(
-            serving,
-            super::cases::drive(h, &owner, &characters, case, peers),
-        ),
+        super::super::fixture::join_two(serving, async {
+            if case == Case::LostNotice {
+                super::cases::drive_lost_notice(h, &owner, &characters, peers, lost_rx).await
+            } else {
+                super::cases::drive(h, &owner, &characters, case, peers).await
+            }
+        }),
     )
     .await
     .map_err(|error| format!("case {case:?}, initial connections deadline: {error}"))?;

@@ -9,7 +9,6 @@ use crate::gameplay_transport::connection::{
     ResumeAttempt, serve_admitted,
 };
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
-use oteryn_protocol_oteryn::vip;
 use oteryn_protocol_oteryn::world_event::{
     CAPABILITY_WORLD_EVENT_V1, COMMAND_TYPE_WORLD_EVENT_QUERY,
 };
@@ -17,6 +16,7 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, MessageType, decode_command_result, decode_wire_envelope,
     encode_client_command,
 };
+use oteryn_protocol_oteryn::{quick_loot, vip};
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
 #[test]
@@ -43,11 +43,31 @@ fn resume_replays_vip_account_receipt_after_lost_commit_reply() -> TestResult {
     run_case(admin, Case::VipAccount)
 }
 
+#[test]
+fn resume_replays_vip_query_and_friends_query_after_lost_commit_reply() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin.clone(), Case::VipQuery)?;
+    run_case(admin, Case::FriendsQuery)
+}
+
+#[test]
+fn resume_replays_quick_loot_review_destinations_after_lost_commit_reply() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, Case::QuickLootReview)
+}
+
 #[derive(Clone, Copy)]
 enum Case {
     WorldEvent,
     StorageFailure,
     VipAccount,
+    VipQuery,
+    FriendsQuery,
+    QuickLootReview,
 }
 
 fn run_case(admin: String, case: Case) -> TestResult {
@@ -68,9 +88,14 @@ fn run_case(admin: String, case: Case) -> TestResult {
 
 async fn scenario(admin: String, case: Case) -> TestResult {
     let (tag, capability, command_type, payload) = match case {
-        Case::VipAccount => {
+        Case::VipAccount | Case::VipQuery | Case::FriendsQuery => {
+            let (tag, operation) = match case {
+                Case::VipQuery => ("resume_vip_query", vip::Operation::Query),
+                Case::FriendsQuery => ("resume_friends_query", vip::Operation::FriendsQuery),
+                _ => ("resume_vip_account", vip::Operation::MainCharacter),
+            };
             let (command_type, payload) = vip::encode_request(&vip::Request {
-                operation: vip::Operation::MainCharacter,
+                operation,
                 number: 0,
                 text: String::new(),
                 icon: 0,
@@ -78,13 +103,24 @@ async fn scenario(admin: String, case: Case) -> TestResult {
                 groups: Vec::new(),
             })
             .map_err(debug)?;
-            (
-                "resume_vip_account",
-                vip::CAPABILITY_VIP_V1,
-                command_type,
-                payload,
-            )
+            (tag, vip::CAPABILITY_VIP_V1, command_type, payload)
         }
+        Case::QuickLootReview => (
+            "resume_quick_loot_review",
+            quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+            quick_loot::COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            quick_loot::encode_quick_loot_request(&quick_loot::QuickLootRequest {
+                action: quick_loot::QuickLootAction::ReviewDestinations,
+                corpse: None,
+                category: None,
+                recipient: None,
+                recipient_id: None,
+                fallback_to_main: false,
+                filter_mode: None,
+                filter_definition_ref: None,
+            })
+            .map_err(debug)?,
+        ),
         Case::WorldEvent | Case::StorageFailure => {
             let tag = if matches!(case, Case::StorageFailure) {
                 "resume_receipt_unavailable"
@@ -99,7 +135,8 @@ async fn scenario(admin: String, case: Case) -> TestResult {
             )
         }
     };
-    let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
+    let quick_loot = matches!(case, Case::QuickLootReview);
+    let h = Harness::create_with_admission_seed(admin, tag, quick_loot, false).await?;
     let recovery = RecoverySource::start(&h).await?;
     prepare_owned_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -108,9 +145,36 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let deps = Dependencies::new()?;
+    let (deps, content) = if quick_loot {
+        let world = fence(1)?.runtime_scope.world_id();
+        let (controller, pin) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
+        let generation = controller.active().ok_or("active")?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice())
+            .bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice())
+            .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        let room = pin.qualified_room().clone();
+        let deps = Dependencies::with_content(
+            pin.into_channel_pin(),
+            room,
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
+        )?;
+        (deps, Some(controller))
+    } else {
+        (Dependencies::new()?, None)
+    };
     let mut owner = deps.owner(&h, &authority);
     owner.evidence = &recovery.evidence;
+    owner.active_generation = content.as_ref().and_then(|controller| controller.active());
     deps.initialize(&owner).await;
     owner
         .runtime
@@ -120,12 +184,26 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         .map_err(debug)?;
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
-    admitted.item_fence = crate::gameplay_transport::item_fence_of(
-        FreshAdmissionStore::from_root(h.root.clone())
-            .current_session(admitted.game_session_id)
-            .await?,
-    );
-    let supported = [capability];
+    let current = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session(admitted.game_session_id)
+        .await?;
+    admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+    if quick_loot {
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                current.current_character_lease(),
+            )
+            .map_err(debug)?;
+    }
+    let supported = if quick_loot {
+        vec![4, 6, 98, capability]
+    } else {
+        vec![capability]
+    };
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &supported)
             .ok_or("receipt command capability")?;
@@ -139,10 +217,14 @@ async fn scenario(admin: String, case: Case) -> TestResult {
 
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
-        let fault = if matches!(case, Case::VipAccount) {
-            &crate::gameplay_transport::vip::STALL_WRITE_COMMIT
-        } else {
-            &crate::gameplay_transport::world_event::STALL_QUERY_COMMIT
+        let fault = match case {
+            Case::VipAccount | Case::VipQuery | Case::FriendsQuery => {
+                &crate::gameplay_transport::vip::STALL_WRITE_COMMIT
+            }
+            Case::QuickLootReview => {
+                &crate::gameplay_transport::quick_loot::STALL_QUICK_LOOT_COMMIT
+            }
+            _ => &crate::gameplay_transport::world_event::STALL_QUERY_COMMIT,
         };
         let (end, stalled) = fault
             .scope(Cell::new(false), async {
@@ -176,18 +258,29 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         return Err(format!("unexpected connection end: {end:?}").into());
     };
     let (stored, count_query) = match case {
-        Case::VipAccount => {
+        Case::VipAccount | Case::VipQuery | Case::FriendsQuery => {
             let stored: serde_json::Value = sqlx::query_scalar(
                 "SELECT result FROM game_account_friend_receipts WHERE command_id=1",
             )
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(
-                stored,
-                serde_json::json!({"code":1,"revision":0,"number":0,"wait":0})
-            );
-            let payload = vip::encode_result(1, 0, 0, 0, "").map_err(debug)?;
+            assert_eq!(stored["code"], 1);
+            let payload = crate::durability::vip::encode_receipt(&stored).ok_or("VIP reply")?;
             (payload, "SELECT count(*) FROM game_account_friend_receipts")
+        }
+        Case::QuickLootReview => {
+            let stored: Vec<u8> = sqlx::query_scalar(
+                "SELECT result FROM game_quick_loot_receipts WHERE command_id=1",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(
+                !quick_loot::decode_quick_loot_destinations(&stored)
+                    .map_err(debug)?
+                    .loot
+                    .is_empty()
+            );
+            (stored, "SELECT count(*) FROM game_quick_loot_receipts")
         }
         Case::WorldEvent | Case::StorageFailure => {
             let stored: Vec<u8> = sqlx::query_scalar(

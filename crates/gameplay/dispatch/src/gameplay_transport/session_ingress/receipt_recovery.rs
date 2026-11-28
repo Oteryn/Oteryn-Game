@@ -2,7 +2,9 @@
 use super::{AdmittedSession, CommandId, PendingDelivery, SessionCommandStream, SessionCommands};
 use crate::durability::command_receipt::{LostCommandReply, ReplyReceipt};
 use crate::gameplay_transport::connection::AdmissionRefusal;
-use crate::gameplay_transport::{AdmissionRetryBudget, ComposedFreshAdmission};
+use crate::gameplay_transport::{
+    AdmissionRetryBudget, ComposedFreshAdmission, team_finder_leader::TeamFinderNotice,
+};
 use oteryn_protocol_oteryn::{
     ClientCommandView, boss_difficulty, container_batch, container_sort, guild_bank, player_report,
     quick_loot, team_finder, team_finder_members, vip, world_event,
@@ -92,6 +94,29 @@ impl PendingDelivery {
 }
 
 impl SessionCommands {
+    pub(in crate::gameplay_transport) fn remember_team_finder_notice(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        notice: Option<TeamFinderNotice>,
+    ) {
+        if let Ok(commands) = self.0.lock()
+            && let Some(entry) = commands.get(&admitted.game_session_id)
+            && let Ok(mut state) = entry.lock()
+            && state.active
+            && state.pending_delivery.is_some_and(|pending| {
+                pending.command == command
+                    && pending.generation == admitted.continuity.connection_generation
+                    && matches!(
+                        pending.reply_receipt,
+                        Some(ReplyReceipt::TeamFinderLeader | ReplyReceipt::TeamFinderMember)
+                    )
+            })
+        {
+            state.team_finder_notice = notice;
+        }
+    }
+
     fn lost_reply_receipt(&self, lost: &AdmittedSession) -> Option<(CommandId, ReplyReceipt)> {
         let commands = self.0.lock().ok()?;
         let state = commands.get(&lost.game_session_id)?.lock().ok()?;
@@ -112,7 +137,7 @@ impl SessionCommands {
         receipt: ReplyReceipt,
         rejected: bool,
         payload: &[u8],
-    ) -> Option<bool> {
+    ) -> Option<(bool, Option<TeamFinderNotice>)> {
         let commands = self.0.lock().ok()?;
         let mut state = commands.get(&lost.game_session_id)?.lock().ok()?;
         if state.active {
@@ -120,7 +145,7 @@ impl SessionCommands {
         }
         let Some(pending) = state.pending_delivery else {
             // A parallel resume can have reconciled the same original already.
-            return (state.ingress.outstanding() == 0).then_some(false);
+            return (state.ingress.outstanding() == 0).then_some((false, None));
         };
         if !pending.matches_lost(lost)
             || pending.command != command.get()
@@ -129,7 +154,7 @@ impl SessionCommands {
             return None;
         }
         state.complete_reconciled(command, rejected, payload)?;
-        Some(true)
+        Some((true, state.team_finder_notice.take()))
     }
 }
 
@@ -169,9 +194,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             LostCommandReply::Stored { rejected, payload } => (*rejected, payload.as_slice()),
         };
-        let applied = ingress
+        let (applied, notice) = ingress
             .finish_lost_reply(lost, command, receipt, rejected, payload)
             .ok_or(Unavailable)?;
+        if let (
+            LostCommandReply::Stored {
+                rejected: false, ..
+            },
+            Some(notice),
+        ) = (&reply, notice)
+        {
+            notice.publish(self, *lost);
+        }
         if applied
             && receipt == ReplyReceipt::Vip
             && matches!(reply, LostCommandReply::Stored { .. })

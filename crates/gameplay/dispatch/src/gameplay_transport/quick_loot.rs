@@ -8,6 +8,11 @@ use crate::durability::item_loop_move::QuickLootCommand;
 use crate::foundation::CommandStatus;
 use crate::foundation::{CommandId, CommandRef};
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static STALL_QUICK_LOOT_COMMIT: std::cell::Cell<bool>;
+}
+
 macro_rules! authority_methods {
     () => {
         fn quick_loot_destinations(
@@ -136,14 +141,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .require()
             .is_ok();
-        let result = self
-            .root
-            .commit_quick_loot(
+        let weights = super::item_ref_admission::NativeItemWeights(content).with_wheel(self.premium_coordinator);
+        let commit = self.root.commit_quick_loot(
                 &permit,
                 self.character,
                 self.holder,
                 fence,
-                &super::item_ref_admission::NativeItemWeights(content).with_wheel(self.premium_coordinator),
+                &weights,
                 QuickLootCommand {
                     command: CommandRef::new(
                         command.game_session_id,
@@ -154,10 +158,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     input,
                     selected_corpse: corpse,
                 },
-            )
-            .await
-            .ok()?;
-        match result {
+            );
+        #[cfg(test)]
+        let commit = async {
+            if STALL_QUICK_LOOT_COMMIT.try_with(|_| ()).is_ok() {
+                let (result, stalled) = crate::durability::with_stalled_commit_response(commit).await;
+                STALL_QUICK_LOOT_COMMIT.with(|reached| reached.set(stalled));
+                result
+            } else {
+                commit.await
+            }
+        };
+        match commit.await.ok()? {
             Ok(result) => Some((CommandStatus::Accepted, result)),
             Err(_) => Some((CommandStatus::Rejected, Vec::new())),
         }

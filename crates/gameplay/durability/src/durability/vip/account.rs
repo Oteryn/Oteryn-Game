@@ -54,7 +54,9 @@ pub(super) async fn execute(
     sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id=encode($1,'hex')::uuid OR account_id=encode($2,'hex')::uuid ORDER BY account_id FOR UPDATE")
         .bind(&account).bind(target.as_deref()).fetch_all(&mut **tx).await?;
     if write.operation == Operation::FriendsQuery {
-        return query(tx, write, &account, number).await;
+        let result = query(tx, write, &account, number).await?;
+        retain_result(tx, write, &result).await?;
+        return Ok(result);
     }
     let mut code = if unavailable { 9 } else { 1 };
     if code == 1 {
@@ -111,9 +113,20 @@ pub(super) async fn execute(
         }
     }
     let result = json!({"code":code,"revision":0,"number":0,"wait":if code==8 {3}else{0}});
-    sqlx::query("INSERT INTO game_account_friend_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)").bind(write.fence.game_session_id.as_bytes().as_slice()).bind(write.command.to_string()).bind(actor).bind(&write.request).bind(&result).execute(&mut **tx).await?;
+    retain_result(tx, write, &result).await?;
     Ok(result)
 }
+
+/// The session-keyed receipt also retains the exact query projection and issued handles.
+pub(super) async fn retain_result(
+    tx: &mut Transaction<'_, Postgres>,
+    write: &VipWrite,
+    result: &Value,
+) -> Result<()> {
+    sqlx::query("INSERT INTO game_account_friend_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)").bind(write.fence.game_session_id.as_bytes().as_slice()).bind(write.command.to_string()).bind(write.fence.character_id.as_bytes().as_slice()).bind(&write.request).bind(result).execute(&mut **tx).await?;
+    Ok(())
+}
+
 async fn query(
     tx: &mut Transaction<'_, Postgres>,
     write: &VipWrite,

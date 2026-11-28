@@ -345,10 +345,8 @@ impl DurabilityRoot {
             }.await;
             match attempt {
                 Ok(result) => {
-                    if request.action != QuickLootAction::ReviewDestinations {
-                        sqlx::query("INSERT INTO game_quick_loot_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)")
+                    sqlx::query("INSERT INTO game_quick_loot_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)")
                         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(encoded).bind(&result).execute(&mut *tx).await?;
-                    }
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(result))
                 }

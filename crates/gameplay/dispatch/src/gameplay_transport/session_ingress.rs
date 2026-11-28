@@ -43,6 +43,7 @@ struct SessionIngress {
     active: bool,
     activity_recovery: bool,
     pending_delivery: Option<PendingDelivery>,
+    team_finder_notice: Option<super::team_finder_leader::TeamFinderNotice>,
     pending_use: Option<pending_use::PendingUseReceipt>,
     // The terminal USE can precede restoration of the controller needed by its quest.
     recovered_terrain_quests: BTreeSet<CommandId>,
@@ -532,6 +533,7 @@ impl SessionCommandStream {
                     reply_receipt: None,
                     buffered_step: false,
                 });
+                state.team_finder_notice = None;
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)
             }
@@ -651,6 +653,7 @@ impl SessionCommandStream {
                 })
                 .ok()?;
             state.pending_delivery = None;
+            state.team_finder_notice = None;
             state.pending_use = None;
             state.reconciled_sequence = None;
         } else {

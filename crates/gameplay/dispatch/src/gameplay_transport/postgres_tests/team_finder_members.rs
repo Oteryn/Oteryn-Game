@@ -20,6 +20,7 @@ enum Case {
     Accept,
     Deny,
     Notices,
+    LostNotice,
     Remove,
     Logout,
     Refusals,
@@ -34,6 +35,7 @@ impl Case {
             Self::Accept => "tf_accept",
             Self::Deny => "tf_deny",
             Self::Notices => "tf_notices",
+            Self::LostNotice => "tf_lost_notice",
             Self::Remove => "tf_remove",
             Self::Logout => "tf_logout",
             Self::Refusals => "tf_refusals",
@@ -112,6 +114,16 @@ fn team_finder_members_refuses_malformed_wrong_owner_unknown_handle_and_stale_fe
 
 #[test]
 fn team_finder_changes_push_categorized_notices_to_owner_and_applicant() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     run_with_admin(admin, Case::Notices)
+}
+
+#[test]
+fn team_finder_resume_publishes_owner_notice_after_lost_commit_reply() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_with_admin(admin, Case::LostNotice)
 }

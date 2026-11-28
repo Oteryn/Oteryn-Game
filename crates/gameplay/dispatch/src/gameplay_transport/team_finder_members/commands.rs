@@ -200,36 +200,49 @@ pub(in crate::gameplay_transport) async fn execute(
                     } else { rejected() }),
                 }
             };
-            crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
-            Ok(result)
+            let notice = member_notice(&result, intent, target);
+            owner.states.command_ingress.remember_team_finder_notice(admitted, command_id, notice.clone());
+            crate::gameplay_transport::team_finder_leader::commit(tx, deadline, command_id).await?;
+            Ok((result, notice))
         })
     }).await.ok()?;
-    if let DatabaseResult::Mutation(receipt) = &outcome
-        && receipt.accepted
-        && !receipt.replayed
-        && let Some(target) = target
-    {
-        let hub = &owner.states.server_messages;
-        let peer_text = intent.feedback().unwrap_or("A request to join your team was withdrawn.");
-        let notified = receipt.changed
-            && hub.send_team_finder(target.session, target.connection_generation, peer_text);
-        if receipt.changed {
-            let actor_text = match intent {
-                Intent::Member { request: true, .. } => "Your request to join the team was sent.",
-                Intent::Member { request: false, .. } => "Your request to join the team was withdrawn.",
-                _ => "The team application was updated.",
-            };
-            hub.send_team_finder(
-                admitted.game_session_id,
-                admitted.continuity.connection_generation,
-                actor_text,
-            );
-        }
-        if !notified && let (Some(session), Some(text)) = (receipt.notify_session, intent.feedback()) {
-            owner.states.chat.push_party_spell_feedback(session, text);
-        }
+    let (outcome, notice) = outcome;
+    if let Some(notice) = notice {
+        owner.states.command_ingress.remember_team_finder_notice(admitted, command_id, None);
+        notice.publish(owner, admitted);
     }
     project(view, admitted, outcome)
+}
+
+fn member_notice(
+    outcome: &DatabaseResult,
+    intent: Intent,
+    target: Option<team_finder::Target>,
+) -> Option<crate::gameplay_transport::team_finder_leader::TeamFinderNotice> {
+    use crate::gameplay_transport::team_finder_leader::TeamFinderNotice;
+    let DatabaseResult::Mutation(receipt) = outcome else {
+        return None;
+    };
+    let target = target.filter(|_| receipt.accepted && !receipt.replayed)?;
+    let legacy = receipt.notify_session.zip(intent.feedback());
+    if !receipt.changed && legacy.is_none() {
+        return None;
+    }
+    let actor_text = if receipt.changed {
+        match intent {
+            Intent::Member { request: true, .. } => "Your request to join the team was sent.",
+            Intent::Member { request: false, .. } => "Your request to join the team was withdrawn.",
+            _ => "The team application was updated.",
+        }
+    } else {
+        ""
+    };
+    Some(TeamFinderNotice {
+        actor_text,
+        peer_text: intent.feedback().unwrap_or("A request to join your team was withdrawn."),
+        peers: receipt.changed.then_some(target).into_iter().collect(),
+        legacy,
+    })
 }
 
 fn rejected() -> team_finder::MutationOutcome {

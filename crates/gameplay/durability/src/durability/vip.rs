@@ -107,9 +107,8 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    if !operation.is_query()
-                        && let Some(result) =
-                            account::replay_account(&mut tx, &fence, command, &request).await?
+                    if let Some(result) =
+                        account::replay_account(&mut tx, &fence, command, &request).await?
                     {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(VipPrepared::Replayed(result));
@@ -210,7 +209,7 @@ impl VipWrite {
         unavailable: bool,
     ) -> Result<Value> {
         assert_recovery_fence(tx, &self.recovery).await?;
-        if !self.operation.is_query() {
+        {
             let mut key = self.fence.game_session_id.as_bytes().to_vec();
             key.extend(self.command.to_be_bytes());
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:vip-command:'||encode($1,'hex'),0))").bind(key).execute(&mut **tx).await?;
@@ -277,7 +276,7 @@ impl VipWrite {
         } else {
             vip_caps(premium)
         };
-        sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        let result = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT game_vip_{function}($1,$2,$3::text::numeric,$4,$5,$6)"
         )))
         .bind(recovery)
@@ -287,8 +286,11 @@ impl VipWrite {
         .bind(cap)
         .bind(groups)
         .fetch_one(&mut **tx)
-        .await
-        .map_err(Into::into)
+        .await?;
+        if self.operation.is_query() {
+            account::retain_result(tx, self, &result).await?;
+        }
+        Ok(result)
     }
 }
 fn uuid(bytes: &[u8; 16]) -> String {
