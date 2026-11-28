@@ -35,9 +35,9 @@ pub(super) fn koshei_defender(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
-) -> Option<ExactActorRef> {
+) -> Result<ExactActorRef, UseDisposition> {
     let [monster] = encounter.monsters.as_slice() else {
-        return None;
+        return Err(UseDisposition::Rejected);
     };
     let mut defenders = census.iter().filter_map(|(actor, pos, session)| {
         (session.is_none()
@@ -46,8 +46,11 @@ pub(super) fn koshei_defender(
             && runtime.creature_spawn_cell(*actor) == Some(local(monster.position)))
         .then_some(*actor)
     });
-    let defender = defenders.next()?;
-    defenders.next().is_none().then_some(defender)
+    let defender = defenders.next().ok_or(UseDisposition::Occupied)?;
+    if defenders.next().is_some() {
+        return Err(UseDisposition::Occupied);
+    }
+    Ok(defender)
 }
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -568,8 +571,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The mainland spawn owns Koshei's lifecycle. An authored admission
         // may bind the live native defender from that exact source cell.
         let native_koshei = if callback.key == TOMB_ENTRY {
-            let Some(defender) = koshei_defender(runtime, encounter, &census) else {
-                return UseDisposition::Occupied;
+            let defender = match koshei_defender(runtime, encounter, &census) {
+                Ok(defender) => defender,
+                Err(disposition) => return disposition,
             };
             if self
                 .states

@@ -147,7 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use sha2::{Digest, Sha256};
         let encounter = callback.effects.encounter.as_ref()?;
         let census = runtime.positioned_melee_census().ok()?;
-        let mut affected = vec![encounter::koshei_defender(runtime, encounter, &census)?];
+        let mut affected = vec![encounter::koshei_defender(runtime, encounter, &census).ok()?];
         for member in &encounter.players {
             let who = census
                 .iter()
