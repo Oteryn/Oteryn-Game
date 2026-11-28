@@ -190,7 +190,7 @@ async fn observe_rotation(
 fn rotate_presented(feedback: Option<&str>, orientation: Option<(u16, u64)>) -> Result<bool> {
     match feedback {
         Some("Use: completed") => Ok(orientation == Some((2359, 1))),
-        None => Ok(false),
+        None | Some("Waiting for server") => Ok(false),
         Some(feedback) => Err(format!("I09 native Rotate feedback: {feedback}").into()),
     }
 }
@@ -199,6 +199,10 @@ fn rotate_presented(feedback: Option<&str>, orientation: Option<(u16, u64)>) -> 
 #[test]
 fn i09_native_requires_both_feedback_and_projected_orientation() -> Result {
     assert!(!rotate_presented(None, Some((2359, 1)))?);
+    assert!(!rotate_presented(
+        Some("Waiting for server"),
+        Some((2359, 1)),
+    )?);
     assert!(!rotate_presented(Some("Use: completed"), Some((2358, 0)))?);
     assert!(!rotate_presented(Some("Use: completed"), Some((2359, 0)))?);
     assert!(rotate_presented(Some("Target changed"), Some((2359, 1))).is_err());
