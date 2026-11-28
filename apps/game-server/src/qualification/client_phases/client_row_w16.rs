@@ -126,10 +126,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             }
         }
     }
+    let landing = client.world_spatial().actor_position;
+    let session = client.join_snapshot().game_session_id;
     super::full_row_w16::logout_w16(&mut client).await?;
+    drop(client);
     if let Some(error) = failure {
         return Err(error);
     }
+    let mut fresh = connect_character(initial, 0x8a, 0).await?;
+    if fresh.join_snapshot().game_session_id == session || fresh.world_spatial().actor_position != landing {
+        return Err(format!("W16 client relog expected={landing:?} observed={:?}", fresh.world_spatial().actor_position).into());
+    }
+    super::full_row_w16::logout_w16(&mut fresh).await?;
     capture("w16-expected.txt", expected.as_bytes());
     Ok(format!("frames={}", STEPS.len()))
 }

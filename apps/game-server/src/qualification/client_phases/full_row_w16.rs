@@ -115,11 +115,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let saved = client.world_spatial().actor_position;
     client.take_events();
+    use oteryn_protocol_oteryn::target_move as wire;
+    // The normal typed client refuses floor 16 locally. Send the encoded
+    // input once so this row tests the server's refusal and unchanged state.
+    let payload = wire::encode_target_move_intent(wire::TargetMoveIntent::Walk(
+        ActorPosition { floor: 16, ..saved },
+    ))
+    .map_err(|error| format!("step=invalid-floor-encode observed={error:?}"))?;
     let refused = client
         .session_mut()
-        .target_walk(ActorPosition { floor: 16, ..saved })
+        .gated_command(wire::CAPABILITY_TARGET_MOVE_V1, wire::COMMAND_TYPE_TARGET_MOVE_INTENT, &payload)
         .await?;
-    if refused.status != CommandStatus::Rejected {
+    if refused.status != CommandStatus::Rejected || refused.payload != [8, 3] {
         return Err(format!("step=invalid-floor-refusal observed={refused:?}").into());
     }
     client.service_liveness(Duration::from_millis(50)).await?;
