@@ -572,8 +572,8 @@ def qualified_shards():
     import activity_static
     import alawar_static
     import blood_vestibule_ground
-    import crystal_delta_ground
     import classic_quest_ground
+    import crystal_delta_ground
     import feroxa_static
     import spawn_ground
     import spawn_map_ground

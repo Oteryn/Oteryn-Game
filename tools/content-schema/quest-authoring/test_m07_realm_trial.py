@@ -106,5 +106,5 @@ class RealmTrialBindingTests(unittest.TestCase):
         self.assertEqual(trial["lever"], [2772, 2773])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

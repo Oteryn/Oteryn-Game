@@ -95,7 +95,9 @@ def append_golden(root, callbacks, offers, inputs, pin):
             if addon == 0:
                 row["forbids_outfits"] = ["oteryn:outfit.golden"]
             else:
-                row["forbids_addons"] = [{"outfit": "oteryn:outfit.golden", "addons": addon}]
+                row["forbids_addons"] = [
+                    {"outfit": "oteryn:outfit.golden", "addons": addon}
+                ]
         if completes:
             row["completes"] = True
         callbacks.append(row)
@@ -123,7 +125,10 @@ def append_golden(root, callbacks, offers, inputs, pin):
                 "topic": 0,
                 "next_topic": topic,
                 "storage": guards,
-                "reply": [f"The {label} costs {price} gold. Do you agree?" + GOLDEN_OWNED_PROMPT],
+                "reply": [
+                    f"The {label} costs {price} gold. Do you agree?"
+                    + GOLDEN_OWNED_PROMPT
+                ],
             }
         )
         add(
@@ -177,9 +182,7 @@ def append_friends(root, callbacks, offers, inputs, pin):
     if prayer_targets != priests or recipe["repeat"]["kind"] != "once":
         raise ValueError("FRIENDS_SELECTED_RECIPE_DRIFT")
     track = "oteryn:quest-progress/questpc7/friends/program"
-    canonical = (
-        f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}"
-    )
+    canonical = f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}"
 
     def add(
         name,
@@ -219,7 +222,9 @@ def append_friends(root, callbacks, offers, inputs, pin):
             "next_topic": next_topic,
             "storage": [state],
             "take": [{"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in take],
-            "present": [{"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in present],
+            "present": [
+                {"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in present
+            ],
             "give": None
             if give is None
             else {
@@ -422,7 +427,9 @@ def append_friends(root, callbacks, offers, inputs, pin):
                         "preserve": True,
                     }
                 ],
-                "reply": ["Follow the selected prayer order and keep your wooden stake."],
+                "reply": [
+                    "Follow the selected prayer order and keep your wooden stake."
+                ],
             }
         )
     add(
@@ -516,8 +523,10 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
                 )
     wayland_menu = [
         "If you have collected enough radiant attire scraps, I can arrange the creation of an Illuminated Warrior for you.",
-        "The full outfit requires 2500 scraps. Each addon requires 1250 more. "
-        "Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?",
+        (
+            "The full outfit requires 2500 scraps. Each addon requires 1250 more. "
+            "Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?"
+        ),
     ]
     for quest, slug, npc, words in wanted:
         path, index, raw, definition = definitions[quest]
@@ -582,7 +591,13 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
                     "topic": 0,
                     "next_topic": 0,
                     "storage": [
-                        {"track": track, "minimum": 0, "maximum": 3, "set": 0, "preserve": True}
+                        {
+                            "track": track,
+                            "minimum": 0,
+                            "maximum": 3,
+                            "set": 0,
+                            "preserve": True,
+                        }
                     ],
                     "reply": wayland_menu,
                 }
@@ -661,7 +676,9 @@ def append_tokens(root, callbacks, offers, inputs):
         for i, row in enumerate(json.loads(raw)["records"])
         if row["definition"]["identity"]["key"] == quest
     )
-    recipe = definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
+    recipe = (
+        definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
+    )
     if (
         [(row["kind"], row["count"]) for row in recipe["stages"]]
         != [("talk", 1), ("collect", 20), ("use", 20), ("complete", 1)]
@@ -695,7 +712,11 @@ def append_tokens(root, callbacks, offers, inputs):
                 "topic": topic,
                 "next_topic": next_topic,
                 "storage": [storage],
-                "requirements": {"min_level": 0, "premium": False, "completed_quests": []},
+                "requirements": {
+                    "min_level": 0,
+                    "premium": False,
+                    "completed_quests": [],
+                },
                 "take": [],
                 "give": None,
                 "outfit": None,
@@ -710,11 +731,13 @@ def append_tokens(root, callbacks, offers, inputs):
     menu_words = ["replica rewards", "souvenir"]
     menu = ["Each replica costs 20 Silver Raid Tokens. Which would you like?"]
     for start in range(0, len(replicas), 8):
-        menu.append(", ".join("{" + name + "}" for name, _ in replicas[start : start + 8]))
+        menu.append(
+            ", ".join("{" + name + "}" for name, _ in replicas[start : start + 8])
+        )
     add(
         "replica-rewards",
         menu_words,
-        dict(track=track, minimum=-1, maximum=-1, set=0),
+        {"track": track, "minimum": -1, "maximum": -1, "set": 0},
         menu,
         next_topic=1,
     )
@@ -725,7 +748,9 @@ def append_tokens(root, callbacks, offers, inputs):
             "topic": 0,
             "any_topic": True,
             "next_topic": 1,
-            "storage": [dict(track=track, minimum=0, maximum=2, set=0, preserve=True)],
+            "storage": [
+                {"track": track, "minimum": 0, "maximum": 2, "set": 0, "preserve": True}
+            ],
             "reply": menu,
         }
     )
@@ -743,7 +768,7 @@ def append_tokens(root, callbacks, offers, inputs):
         add(
             slug,
             [alias, word],
-            dict(track=track, minimum=0, maximum=0, set=1),
+            {"track": track, "minimum": 0, "maximum": 0, "set": 1},
             [f"Here is your {name} replica. You can now {{finish the commission}}."],
             topic=1,
             **payment,
@@ -751,7 +776,7 @@ def append_tokens(root, callbacks, offers, inputs):
         add(
             slug + "-repeat",
             [alias, word],
-            dict(track=track, minimum=1, maximum=2, set=1, preserve=True),
+            {"track": track, "minimum": 1, "maximum": 2, "set": 1, "preserve": True},
             [f"Here is your {name} replica."],
             topic=1,
             repeatable=True,
@@ -760,7 +785,7 @@ def append_tokens(root, callbacks, offers, inputs):
     add(
         "finish-the-commission",
         ["finish the commission"],
-        dict(track=track, minimum=1, maximum=1, set=2),
+        {"track": track, "minimum": 1, "maximum": 1, "set": 2},
         ["Your replica commission is complete."],
         completes=True,
     )

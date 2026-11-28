@@ -1402,7 +1402,11 @@ def build():
             )
             callbacks[-1].update(
                 inventory=[
-                    {"item": f"oteryn:item.tibia.i{item}", "minimum": count, "maximum": 4294967295}
+                    {
+                        "item": f"oteryn:item.tibia.i{item}",
+                        "minimum": count,
+                        "maximum": 4294967295,
+                    }
                 ],
                 failure_reply=["Bring more of the required materials before we trade."],
                 sources=[barbarian_and_library_source("dedoras", "198-216")],
@@ -1432,7 +1436,13 @@ def build():
     ice = "the_ice_islands_quest"
     stage = barbarian + "questline"
     for words, topic, next_topic, before, reply in [
-        (["barbarian", "barbarians"], 0, 1, -1, "Ask me about the test to become a barbarian."),
+        (
+            ["barbarian", "barbarians"],
+            0,
+            1,
+            -1,
+            "Ask me about the test to become a barbarian.",
+        ),
         (["test"], 0, 2, -1, "Are you willing to take the barbarian test?"),
         (["test"], 1, 2, -1, "Are you willing to take the barbarian test?"),
         (["yes"], 2, 3, -1, "Can you take ten sips of our mead without passing out?"),
@@ -3565,7 +3575,9 @@ def build():
                 achievement="oteryn:achievement/" + achievement,
                 source=source,
             )
-            callbacks[-1].update(requires_premium=True, completes=True, reply=[exchange[4]])
+            callbacks[-1].update(
+                requires_premium=True, completes=True, reply=[exchange[4]]
+            )
             source_offer(
                 npc,
                 ["advancement", "demonic", "essence"],
@@ -3784,13 +3796,19 @@ def build():
             minimum_level=250,
             requires_premium=True,
             requires_outfits=["oteryn:outfit.citizen_of_issavi"],
-            forbids_addons=[{"outfit": "oteryn:outfit.citizen_of_issavi", "addons": bit}],
+            forbids_addons=[
+                {"outfit": "oteryn:outfit.citizen_of_issavi", "addons": bit}
+            ],
         )
         if bit == 2:
             callback.update(
-                requires_addons=[{"outfit": "oteryn:outfit.citizen_of_issavi", "addons": 1}],
+                requires_addons=[
+                    {"outfit": "oteryn:outfit.citizen_of_issavi", "addons": 1}
+                ],
             )
-            callback["sources"].append("https://tibia.fandom.com/?curid=94721&oldid=869754")
+            callback["sources"].append(
+                "https://tibia.fandom.com/?curid=94721&oldid=869754"
+            )
         callback["carried_item"] = f"oteryn:item.tibia.i{item}"
         callback["sources"].append(
             "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
@@ -4124,9 +4142,15 @@ def build():
     from spike_parcel import append as append_parcels
     from spike_parcel import append_surveys
 
-    spike_world.dialogue(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
-    append_surveys(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
-    append_parcels(ROOT, add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
+    spike_world.dialogue(
+        add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change
+    )
+    append_surveys(
+        add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change
+    )
+    append_parcels(
+        ROOT, add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change
+    )
     engoutfit_m36.append(
         add,
         storage,
@@ -4150,7 +4174,9 @@ def build():
     ]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
     m39_tracks = [
-        track for track in declarations if track["key"].endswith(("/corruption_hole", "/last_tome_delivery"))
+        track
+        for track in declarations
+        if track["key"].endswith(("/corruption_hole", "/last_tome_delivery"))
     ]
     declarations = [track for track in declarations if track not in m39_tracks]
     validate_callbacks({"schema": 1, "tracks": m39_tracks, "callbacks": m39_callbacks})
@@ -4413,7 +4439,9 @@ def build():
     ]
     classic_routes = ("sven-", "l12-cave-explorer-", "l12-spike-", "l2-battle-mage-")
     classic_callbacks = [
-        row for row in callbacks if row["key"].rsplit("/", 1)[-1].startswith(classic_routes)
+        row
+        for row in callbacks
+        if row["key"].rsplit("/", 1)[-1].startswith(classic_routes)
     ]
     classic_track_keys = {
         state["track"]
@@ -4421,12 +4449,22 @@ def build():
         for effects in [callback, *callback.get("participants", [])]
         for state in [*effects.get("storage", []), *effects.get("state_ops", [])]
     }
-    classic_tracks = [track for track in declarations if track["key"] in classic_track_keys]
-    shared_tracks = [track for track in declarations if track["key"] not in classic_track_keys]
-    classic_document = {"schema": 1, "tracks": classic_tracks, "callbacks": classic_callbacks}
+    classic_tracks = [
+        track for track in declarations if track["key"] in classic_track_keys
+    ]
+    shared_tracks = [
+        track for track in declarations if track["key"] not in classic_track_keys
+    ]
+    classic_document = {
+        "schema": 1,
+        "tracks": classic_tracks,
+        "callbacks": classic_callbacks,
+    }
     validate_callbacks(classic_document)
     shared_callbacks = [
-        row for row in callbacks if row not in outfit_completions and row not in classic_callbacks
+        row
+        for row in callbacks
+        if row not in outfit_completions and row not in classic_callbacks
     ]
     outfit_document = {"schema": 1, "callbacks": outfit_completions}
     validate_callbacks(outfit_document)
@@ -4487,7 +4525,9 @@ def build():
                 "item_disguises": item_disguises,
             }
         ),
-        "content/quests/npc-callbacks/classic-quest-rewards.json": encoded(classic_document),
+        "content/quests/npc-callbacks/classic-quest-rewards.json": encoded(
+            classic_document
+        ),
         "content/quests/npc-callbacks/battle-mage-completions.json": encoded(
             battle_mage_document
         ),
@@ -4864,7 +4904,15 @@ def validate_callbacks(document):
             (
                 target is None
                 and (
-                    (callback["take"] != [{"item": source, "count": 1}] and not (callback.get("survey") and not callback["take"] and callback.get("present") == [{"item": source, "count": 1}]))
+                    (
+                        callback["take"] != [{"item": source, "count": 1}]
+                        and not (
+                            callback.get("survey")
+                            and not callback["take"]
+                            and callback.get("present")
+                            == [{"item": source, "count": 1}]
+                        )
+                    )
                     or callback.get("give") is not None
                 )
             )

@@ -1,16 +1,16 @@
 """Refresh strict inventory pins for source-qualified Creature and raid additions."""
 
 import argparse
-from collections import Counter
 import json
-from pathlib import Path
 import re
+from collections import Counter
+from pathlib import Path
 
 import cake_native_successor as cake
 import crystal_creature_parity as crystal
-from cyclopedia_creatures import inventory as cyclopedia_inventory
 import raid_catalogue
 from crystal_spawn_creatures import KEYS as CRYSTAL_SPAWN_KEYS
+from cyclopedia_creatures import inventory as cyclopedia_inventory
 from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -131,9 +131,13 @@ def validate_inventory(root, rows, native, schedules):
             or crystal_native[creature]["profile"]["data"] != authoring
             or crystal_native[creature]["behavior"] != behavior
         ):
-            raise ValueError("Crystal placement Creature inventory changed: " + creature)
+            raise ValueError(
+                "Crystal placement Creature inventory changed: " + creature
+            )
         schedule = behavior["data"]["profile"]
-        crystal_schedules += sum(len(schedule.get(key, [])) for key in ("attacks", "defenses"))
+        crystal_schedules += sum(
+            len(schedule.get(key, [])) for key in ("attacks", "defenses")
+        )
         for attack in schedule.get("attacks", []):
             ability = delta.profiles["Ability", attack["ability"]["key"]]
             crystal_attacks[ability["data"]["profile"]["details"]["kind"]] += 1
@@ -146,8 +150,12 @@ def validate_inventory(root, rows, native, schedules):
     parity_schedules = parity_creatures = 0
     for entry in packet["definitions"]:
         key = crystal.identity(entry["identity"])
-        definition = next(row for row in entry["records"] if row["identity"] == entry["identity"])
-        authored = next(row for row in entry["profiles"] if row["target"] == definition["behavior"])
+        definition = next(
+            row for row in entry["records"] if row["identity"] == entry["identity"]
+        )
+        authored = next(
+            row for row in entry["profiles"] if row["target"] == definition["behavior"]
+        )
         if (
             key not in active
             or key not in canonical
@@ -162,7 +170,8 @@ def validate_inventory(root, rows, native, schedules):
             raise ValueError(f"Crystal Creature Behavior inventory mismatch: {key}")
         if key[1] not in prior:
             parity_schedules += sum(
-                len(authored["data"]["profile"].get(group, [])) for group in ("attacks", "defenses")
+                len(authored["data"]["profile"].get(group, []))
+                for group in ("attacks", "defenses")
             )
     for entry in packet["schedules"]:
         key = crystal.identity(entry["creature"])
@@ -176,7 +185,9 @@ def validate_inventory(root, rows, native, schedules):
         or schedules - 1 - added_schedules - crystal_schedules
         != 7201 + 4 + extra_schedules + parity_schedules
     ):
-        raise ValueError("Non-seasonal canonical inventory changed; review its source first")
+        raise ValueError(
+            "Non-seasonal canonical inventory changed; review its source first"
+        )
     return 1, crystal_attacks
 
 
@@ -193,13 +204,21 @@ def generated(root):
 
     apply_reference(reference["records"], root)
     admitted = cake.qualify(
-        rows, declarations, reference, packet, read("imports/crystalserver/bindings/items.json")
+        rows,
+        declarations,
+        reference,
+        packet,
+        read("imports/crystalserver/bindings/items.json"),
     )
     native = read("content/creatures/definitions/spell-native-profiles.json")["records"]
     native = [
-        row for row in native if row["profile"]["target"]["key"].startswith("oteryn:creature.")
+        row
+        for row in native
+        if row["profile"]["target"]["key"].startswith("oteryn:creature.")
     ]
-    (selected,) = [row for row in native if row["profile"]["target"]["key"] == cake.CAKE[1]]
+    (selected,) = [
+        row for row in native if row["profile"]["target"]["key"] == cake.CAKE[1]
+    ]
     if selected["profile"]["data"] != admitted["authoring"]:
         raise ValueError("Cake native profile differs from its qualified source")
     behavior = selected["behavior"]["data"]["profile"]
@@ -239,7 +258,8 @@ def generated(root):
     # Their exact, source-qualified two-profile cohort adds two occurrences.
     # Keep the source-census assertion exact for that complete cohort.
     source_item_additions = sum(
-        entry.get("owner") == "source_item" for entry in crystal.read_packet(root)[0]["schedules"]
+        entry.get("owner") == "source_item"
+        for entry in crystal.read_packet(root)[0]["schedules"]
     )
     replace(
         "crates/gameplay/content/src/content/native_gameplay.rs",
@@ -308,7 +328,9 @@ def generated(root):
     block = text[start:end]
     if set(re.findall(r'\("([^"]+)", [0-9_]+\)', block)) != set(histogram):
         raise ValueError("Bestiary difficulty categories changed")
-    block = re.sub(r'\("([^"]+)", [0-9_]+\)', lambda m: f'("{m[1]}", {histogram[m[1]]})', block)
+    block = re.sub(
+        r'\("([^"]+)", [0-9_]+\)', lambda m: f'("{m[1]}", {histogram[m[1]]})', block
+    )
     result[path] = text[:start] + block + text[end:]
     replace(
         path,
@@ -317,7 +339,10 @@ def generated(root):
     )
 
     outputs = raid_catalogue.outputs(root, register=False)
-    if outputs[raid_catalogue.CATALOGUE] != (root / raid_catalogue.CATALOGUE).read_bytes():
+    if (
+        outputs[raid_catalogue.CATALOGUE]
+        != (root / raid_catalogue.CATALOGUE).read_bytes()
+    ):
         raise ValueError("Regenerate the source-qualified raid catalogue first")
     if outputs[raid_catalogue.INDEX] != (root / raid_catalogue.INDEX).read_bytes():
         raise ValueError("Regenerate the source-qualified raid index first")
@@ -358,7 +383,9 @@ def generated(root):
             for row in read(shard)["records"]
         ]
         expected = [
-            row["identity"] for row in reference["records"] if row["identity"]["family"] == family
+            row["identity"]
+            for row in reference["records"]
+            if row["identity"]["family"] == family
         ]
         identities = lambda values: {cake.identity(value) for value in values}
         if (
@@ -383,7 +410,9 @@ def generated(root):
     lock["source_binding_counts"]["Creature"] = bindings
     lock["authoring_profile_counts"] = dict(
         sorted(
-            Counter(row["target"]["family"] for row in declarations["authoring_profiles"]).items()
+            Counter(
+                row["target"]["family"] for row in declarations["authoring_profiles"]
+            ).items()
         )
     )
     for name, locator in {
@@ -394,8 +423,13 @@ def generated(root):
         "imports": "provenance/imports.json",
     }.items():
         lock["legacy_blobs"][name] = git_blob_sha(root / "content/world" / locator)
-    for path, value in [("content/manifest.json", manifest), ("content/content.lock.json", lock)]:
-        result[path] = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    for path, value in [
+        ("content/manifest.json", manifest),
+        ("content/content.lock.json", lock),
+    ]:
+        result[path] = (
+            json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+        )
     return result
 
 

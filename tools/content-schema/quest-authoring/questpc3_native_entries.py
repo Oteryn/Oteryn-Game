@@ -1,4 +1,5 @@
 """Generate M01c's source-pinned, noncompleting native entry bindings."""
+
 import argparse
 import hashlib
 import json
@@ -6,263 +7,676 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-OUTPUT = Path('content/quests/authored-bindings/qmech-m01c-dead-archer.json')
-QUEST = 'oteryn:quest.dead_archer_quest'
-TRACK = 'oteryn:quest-progress/m01c-dead-archer-route'
+OUTPUT = Path("content/quests/authored-bindings/qmech-m01c-dead-archer.json")
+QUEST = "oteryn:quest.dead_archer_quest"
+TRACK = "oteryn:quest-progress/m01c-dead-archer-route"
 ENTRANCE = (32493, 32259, 7)
-WIKI = 'https://www.tibiawiki.com.br/index.php?curid=53187&oldid=433964'
-BODY_SHA = 'baa2bccd9eb87e55245e538350a84a44db3c2696bb567ff5117d3d8dd25a5b06'
+WIKI = "https://www.tibiawiki.com.br/index.php?curid=53187&oldid=433964"
+BODY_SHA = "baa2bccd9eb87e55245e538350a84a44db3c2696bb567ff5117d3d8dd25a5b06"
 
 
-def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave']), minimum_level=0, premium=False, prerequisites=()):
+def chosen(
+    root=ROOT,
+    quest=QUEST,
+    expected=("s1", "use", 1, ["Shovel", "Thais troll cave"]),
+    minimum_level=0,
+    premium=False,
+    prerequisites=(),
+):
     matches = []
-    for path in sorted((root / 'content/quests/definitions').glob('quests-*.json')):
-        for record in json.loads(path.read_bytes())['records']:
-            definition = record['definition']
-            if definition['identity']['key'] == quest:
+    for path in sorted((root / "content/quests/definitions").glob("quests-*.json")):
+        for record in json.loads(path.read_bytes())["records"]:
+            definition = record["definition"]
+            if definition["identity"]["key"] == quest:
                 matches.append((path.relative_to(root).as_posix(), definition))
     if len(matches) != 1:
-        raise ValueError('M01C_DEAD_ARCHER_IDENTITY')
+        raise ValueError("M01C_DEAD_ARCHER_IDENTITY")
     path, definition = matches[0]
-    selected = definition['oteryn_recipe']
-    if selected['profile'] != 'chosen_source_completion_v1' or not selected['chosen_data_complete']:
-        raise ValueError('M01C_DEAD_ARCHER_CHOSEN_RECIPE')
-    recipe = selected['payload']['recipe']
-    req = recipe['requirements']
-    first = recipe['stages'][0]
-    if (req['min_level'], req['premium'], req['prerequisites']) != (minimum_level, premium, list(prerequisites)):
-        raise ValueError('M01C_DEAD_ARCHER_ACTOR_ADMISSION')
-    if (first['key'], first['kind'], first['count'], first['targets']) != expected:
-        raise ValueError('M01C_DEAD_ARCHER_FIRST_STEP')
+    selected = definition["oteryn_recipe"]
+    if (
+        selected["profile"] != "chosen_source_completion_v1"
+        or not selected["chosen_data_complete"]
+    ):
+        raise ValueError("M01C_DEAD_ARCHER_CHOSEN_RECIPE")
+    recipe = selected["payload"]["recipe"]
+    req = recipe["requirements"]
+    first = recipe["stages"][0]
+    if (req["min_level"], req["premium"], req["prerequisites"]) != (
+        minimum_level,
+        premium,
+        list(prerequisites),
+    ):
+        raise ValueError("M01C_DEAD_ARCHER_ACTOR_ADMISSION")
+    if (first["key"], first["kind"], first["count"], first["targets"]) != expected:
+        raise ValueError("M01C_DEAD_ARCHER_FIRST_STEP")
     return path, recipe
 
 
 def build(root=ROOT):
     path, recipe = chosen(root)
-    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
     # Map format: x<<32 | y<<16 | Tibia depth<<8 | top-level ordinal; ground=0.
     x, y, depth = ENTRANCE
     key = (x << 32) | (y << 16) | (depth << 8)
     openings = {}
-    for record in json.loads((root / 'content/craft/recipes.json').read_bytes())['records']:
-        conversion = record['recipe']
-        if conversion.get('tool') != 'shovel':
+    for record in json.loads((root / "content/craft/recipes.json").read_bytes())[
+        "records"
+    ]:
+        conversion = record["recipe"]
+        if conversion.get("tool") != "shovel":
             continue
-        used = conversion['input_item']
-        if used['key'] not in ('oteryn:item.tibia.i3457', 'oteryn:item.tibia.i5710'):
+        used = conversion["input_item"]
+        if used["key"] not in ("oteryn:item.tibia.i3457", "oteryn:item.tibia.i5710"):
             continue
-        result = int(conversion['opened_target']['key'].rsplit('i', 1)[1])
-        openings.setdefault(result, []).append({'key':used['key'], 'revision':used['revision']})
+        result = int(conversion["opened_target"]["key"].rsplit("i", 1)[1])
+        openings.setdefault(result, []).append(
+            {"key": used["key"], "revision": used["revision"]}
+        )
     if set(openings) != {594, 607, 609, 868}:
-        raise ValueError('M01C_DEAD_ARCHER_PINNED_SHOVEL_RESULTS')
+        raise ValueError("M01C_DEAD_ARCHER_PINNED_SHOVEL_RESULTS")
     stages = []
     for result, tools in sorted(openings.items()):
-        stages.append({'key':f's1-shovel-{result}', 'completes':False,
-            'trigger':{'kind':'terrain_use', 'usage':{
-                'key':f'oteryn:quest-terrain-use/m01c-dead-archer-{result}',
-                'tools':sorted(tools, key=lambda tool:tool['key']), 'placement_key':key, 'result':result,
-                'storage':[{'track':TRACK,'minimum':0,'maximum':0,'set':1,'preserve':False}],
-                'sources':[WIKI, f'wikitext-sha256:{BODY_SHA}', 'content/craft/recipes.json:shovel openings']}}})
-    return {'schema':1,'quests':[{'quest':QUEST,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'tracks':[{'key':TRACK,'initial':0,'minimum':0,'maximum':3}], 'stages':stages,
-        'sources':[path+':s1', WIKI, 'docs/reference/content-prep/questpc3-m01c/dead-archer-sources.md']}]}
+        stages.append(
+            {
+                "key": f"s1-shovel-{result}",
+                "completes": False,
+                "trigger": {
+                    "kind": "terrain_use",
+                    "usage": {
+                        "key": f"oteryn:quest-terrain-use/m01c-dead-archer-{result}",
+                        "tools": sorted(tools, key=lambda tool: tool["key"]),
+                        "placement_key": key,
+                        "result": result,
+                        "storage": [
+                            {
+                                "track": TRACK,
+                                "minimum": 0,
+                                "maximum": 0,
+                                "set": 1,
+                                "preserve": False,
+                            }
+                        ],
+                        "sources": [
+                            WIKI,
+                            f"wikitext-sha256:{BODY_SHA}",
+                            "content/craft/recipes.json:shovel openings",
+                        ],
+                    },
+                },
+            }
+        )
+    return {
+        "schema": 1,
+        "quests": [
+            {
+                "quest": QUEST,
+                "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+                "tracks": [{"key": TRACK, "initial": 0, "minimum": 0, "maximum": 3}],
+                "stages": stages,
+                "sources": [
+                    path + ":s1",
+                    WIKI,
+                    "docs/reference/content-prep/questpc3-m01c/dead-archer-sources.md",
+                ],
+            }
+        ],
+    }
 
 
 def collection_entry(root, quest, targets, item, number, slug, minimum_level=0):
-    path, recipe = chosen(root, quest, ('s1', 'collect', 1, targets), minimum_level)
-    source_path = root / 'tools/content-schema/quest-authoring/samples/chests/claims.json'
+    path, recipe = chosen(root, quest, ("s1", "collect", 1, targets), minimum_level)
+    source_path = (
+        root / "tools/content-schema/quest-authoring/samples/chests/claims.json"
+    )
     claims = json.loads(source_path.read_bytes())
+
     # All accepted donor claims for this number must agree on the physical key.
     def rewards(value):
         if isinstance(value, dict):
-            if value.get('key_binding') == f'canary:door-key/{number}':
+            if value.get("key_binding") == f"canary:door-key/{number}":
                 yield value
             for child in value.values():
                 yield from rewards(child)
         elif isinstance(value, list):
             for child in value:
                 yield from rewards(child)
+
     matches = list(rewards(claims))
-    if not matches or any([(r['item']['key'], r['count']) for r in reward['items']] != [(f'canary:item/{item}', 1)] for reward in matches):
-        raise ValueError('M01C_COLLECTION_KEY_SOURCE')
-    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
-    track = f'oteryn:quest-progress/m01c-{slug}-route'
-    evidence = f'tools/content-schema/quest-authoring/samples/chests/claims.json:key_binding=canary:door-key/{number}'
-    native = {'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
-        'stages':[{'key':f's1-key-{number}','completes':False,'trigger':{'kind':'collect','collection':{
-            'key':f'oteryn:quest-collection/m01c-{slug}-key',
-            'items':[{'item':f'oteryn:item.tibia.i{item}','count':1,'key_number':number}],
-            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}],
-            'sources':[evidence]}}}], 'sources':[path+':s1', evidence]}
+    if not matches or any(
+        [(r["item"]["key"], r["count"]) for r in reward["items"]]
+        != [(f"canary:item/{item}", 1)]
+        for reward in matches
+    ):
+        raise ValueError("M01C_COLLECTION_KEY_SOURCE")
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    track = f"oteryn:quest-progress/m01c-{slug}-route"
+    evidence = f"tools/content-schema/quest-authoring/samples/chests/claims.json:key_binding=canary:door-key/{number}"
+    native = {
+        "quest": quest,
+        "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+        "tracks": [
+            {"key": track, "initial": 0, "minimum": 0, "maximum": len(recipe["stages"])}
+        ],
+        "stages": [
+            {
+                "key": f"s1-key-{number}",
+                "completes": False,
+                "trigger": {
+                    "kind": "collect",
+                    "collection": {
+                        "key": f"oteryn:quest-collection/m01c-{slug}-key",
+                        "items": [
+                            {
+                                "item": f"oteryn:item.tibia.i{item}",
+                                "count": 1,
+                                "key_number": number,
+                            }
+                        ],
+                        "storage": [
+                            {"track": track, "minimum": 0, "maximum": 0, "set": 1}
+                        ],
+                        "sources": [evidence],
+                    },
+                },
+            }
+        ],
+        "sources": [path + ":s1", evidence],
+    }
     if minimum_level:
-        native['admission'] = {'minimum_level':minimum_level}
-    return {'schema':1, 'quests':[native]}
+        native["admission"] = {"minimum_level": minimum_level}
+    return {"schema": 1, "quests": [native]}
 
 
 def build_fanfare(root=ROOT):
-    return collection_entry(root, 'oteryn:quest.fanfare_quest', ['Key 3520', 'Carlin boat-side box'], 2973, 3520, 'fanfare')
+    return collection_entry(
+        root,
+        "oteryn:quest.fanfare_quest",
+        ["Key 3520", "Carlin boat-side box"],
+        2973,
+        3520,
+        "fanfare",
+    )
 
 
 def build_black_knight(root=ROOT):
-    return collection_entry(root, 'oteryn:quest.black_knight_quest', ['Key 5010', 'dead trees'], 2969, 5010, 'black-knight', 50)
+    return collection_entry(
+        root,
+        "oteryn:quest.black_knight_quest",
+        ["Key 5010", "dead trees"],
+        2969,
+        5010,
+        "black-knight",
+        50,
+    )
 
 
 def build_grimvale(root=ROOT):
-    quest = 'oteryn:quest.grimvale_quest'
-    path, recipe = chosen(root, quest, ('s1','collect',5,['Purple Nightshade Blossom']), premium=True)
-    items_path = Path('content/items/definitions/items-11000-11499.json')
-    matches = [r['definition'] for r in json.loads((root/items_path).read_bytes())['records']
-               if r['definition']['identity']['key'] == 'oteryn:item.tibia.i22082']
-    if len(matches) != 1 or matches[0]['semantics']['presentation']['value']['name']['value'] != 'purple nightshade blossoms':
-        raise ValueError('M01C_GRIMVALE_HARVESTED_ITEM')
-    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
-    track = 'oteryn:quest-progress/m01c-grimvale-route'
-    evidence = ['content/items/definitions/items-11000-11499.json:oteryn:item.tibia.i22082',
-                'imports/canary/items-xml/items.xml:43886']
-    document = {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'admission':{'minimum_level':0,'premium':True},
-        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
-        'stages':[{'key':'s1-blossoms','completes':False,'trigger':{'kind':'collect','collection':{
-            'key':'oteryn:quest-collection/m01c-grimvale-blossoms',
-            'items':[{'item':'oteryn:item.tibia.i22082','count':5}],
-            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
-        'sources':[path+':s1',*evidence]}]}
+    quest = "oteryn:quest.grimvale_quest"
+    path, recipe = chosen(
+        root, quest, ("s1", "collect", 5, ["Purple Nightshade Blossom"]), premium=True
+    )
+    items_path = Path("content/items/definitions/items-11000-11499.json")
+    matches = [
+        r["definition"]
+        for r in json.loads((root / items_path).read_bytes())["records"]
+        if r["definition"]["identity"]["key"] == "oteryn:item.tibia.i22082"
+    ]
+    if (
+        len(matches) != 1
+        or matches[0]["semantics"]["presentation"]["value"]["name"]["value"]
+        != "purple nightshade blossoms"
+    ):
+        raise ValueError("M01C_GRIMVALE_HARVESTED_ITEM")
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    track = "oteryn:quest-progress/m01c-grimvale-route"
+    evidence = [
+        "content/items/definitions/items-11000-11499.json:oteryn:item.tibia.i22082",
+        "imports/canary/items-xml/items.xml:43886",
+    ]
+    document = {
+        "schema": 1,
+        "quests": [
+            {
+                "quest": quest,
+                "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+                "admission": {"minimum_level": 0, "premium": True},
+                "tracks": [
+                    {
+                        "key": track,
+                        "initial": 0,
+                        "minimum": 0,
+                        "maximum": len(recipe["stages"]),
+                    }
+                ],
+                "stages": [
+                    {
+                        "key": "s1-blossoms",
+                        "completes": False,
+                        "trigger": {
+                            "kind": "collect",
+                            "collection": {
+                                "key": "oteryn:quest-collection/m01c-grimvale-blossoms",
+                                "items": [
+                                    {"item": "oteryn:item.tibia.i22082", "count": 5}
+                                ],
+                                "storage": [
+                                    {
+                                        "track": track,
+                                        "minimum": 0,
+                                        "maximum": 0,
+                                        "set": 1,
+                                    }
+                                ],
+                                "sources": evidence,
+                            },
+                        },
+                    }
+                ],
+                "sources": [path + ":s1", *evidence],
+            }
+        ],
+    }
 
-    hunt = recipe['stages'][1]
-    if (hunt['key'],hunt['kind'],hunt['count'],hunt['targets']) != ('s2','kill',10,['Werewolf','Werebear','Wereboar']):
-        raise ValueError('M01C_GRIMVALE_HUNT_STAGE')
-    wanted = {'Werewolf':'oteryn:creature.werewolf','Werebear':'oteryn:creature.werebear','Wereboar':'oteryn:creature.wereboar'}
+    hunt = recipe["stages"][1]
+    if (hunt["key"], hunt["kind"], hunt["count"], hunt["targets"]) != (
+        "s2",
+        "kill",
+        10,
+        ["Werewolf", "Werebear", "Wereboar"],
+    ):
+        raise ValueError("M01C_GRIMVALE_HUNT_STAGE")
+    wanted = {
+        "Werewolf": "oteryn:creature.werewolf",
+        "Werebear": "oteryn:creature.werebear",
+        "Wereboar": "oteryn:creature.wereboar",
+    }
     found = {}
-    for source in sorted((root/'content/creatures/definitions').glob('creatures-*.json')):
-        for record in json.loads(source.read_bytes())['records']:
-            name = record.get('authoring',{}).get('profile',{}).get('details',{}).get('display_name')
+    for source in sorted(
+        (root / "content/creatures/definitions").glob("creatures-*.json")
+    ):
+        for record in json.loads(source.read_bytes())["records"]:
+            name = (
+                record.get("authoring", {})
+                .get("profile", {})
+                .get("details", {})
+                .get("display_name")
+            )
             if name in wanted:
-                if name in found or record['definition']['identity']['key'] != wanted[name]:
-                    raise ValueError('M01C_GRIMVALE_CREATURE_IDENTITY')
-                found[name] = record['definition']['identity']['key']
+                if (
+                    name in found
+                    or record["definition"]["identity"]["key"] != wanted[name]
+                ):
+                    raise ValueError("M01C_GRIMVALE_CREATURE_IDENTITY")
+                found[name] = record["definition"]["identity"]["key"]
     if found != wanted:
-        raise ValueError('M01C_GRIMVALE_CREATURE_SET')
-    native = document['quests'][0]
-    kills = 'oteryn:quest-progress/m01c-grimvale-kills'
-    native['tracks'].append({'key':kills,'initial':0,'minimum':0,'maximum':10})
+        raise ValueError("M01C_GRIMVALE_CREATURE_SET")
+    native = document["quests"][0]
+    kills = "oteryn:quest-progress/m01c-grimvale-kills"
+    native["tracks"].append({"key": kills, "initial": 0, "minimum": 0, "maximum": 10})
     for name, creature in sorted(found.items()):
-        native['stages'].append({'key':'s2-'+name.lower(),'completes':False,'trigger':{'kind':'kill','counter':{
-            'key':'oteryn:quest-transition/native-kills/m01c-grimvale-'+name.lower(),
-            'creature':creature,'track':kills,'gate':track,'gate_value':1,'minimum':0,'maximum':10,'advance_gate_to':2}}})
-    native['sources'].extend([path+':s2', 'content/creatures/definitions/creatures-01500-01863.json:Werewolf/Werebear/Wereboar'])
+        native["stages"].append(
+            {
+                "key": "s2-" + name.lower(),
+                "completes": False,
+                "trigger": {
+                    "kind": "kill",
+                    "counter": {
+                        "key": "oteryn:quest-transition/native-kills/m01c-grimvale-"
+                        + name.lower(),
+                        "creature": creature,
+                        "track": kills,
+                        "gate": track,
+                        "gate_value": 1,
+                        "minimum": 0,
+                        "maximum": 10,
+                        "advance_gate_to": 2,
+                    },
+                },
+            }
+        )
+    native["sources"].extend(
+        [
+            path + ":s2",
+            "content/creatures/definitions/creatures-01500-01863.json:Werewolf/Werebear/Wereboar",
+        ]
+    )
     return document
 
 
-
 def build_decaying_defender(root=ROOT):
-    quest = 'oteryn:quest.decaying_defender_outfits_quest'
-    requirement = 'Rotten Blood journey'
-    path, recipe = chosen(root, quest, ('s1','kill',1,['Bakragore']),
-                          minimum_level=250, premium=True, prerequisites=[requirement])
+    quest = "oteryn:quest.decaying_defender_outfits_quest"
+    requirement = "Rotten Blood journey"
+    path, recipe = chosen(
+        root,
+        quest,
+        ("s1", "kill", 1, ["Bakragore"]),
+        minimum_level=250,
+        premium=True,
+        prerequisites=[requirement],
+    )
     matches = []
-    for source in sorted((root/'content/creatures/definitions').glob('creatures-*.json')):
-        for record in json.loads(source.read_bytes())['records']:
-            if record.get('authoring',{}).get('profile',{}).get('details',{}).get('display_name') == 'Bakragore':
-                matches.append((source.relative_to(root).as_posix(), record['definition']['identity']['key']))
-    if matches != [('content/creatures/definitions/creatures-00000-00499.json','oteryn:creature.bakragore')]:
-        raise ValueError('M01C_DECAYING_DEFENDER_NATIVE_BOSS')
-    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
-    route = 'oteryn:quest-progress/m01c-decaying-defender-route'
-    kills = 'oteryn:quest-progress/m01c-decaying-defender-kills'
-    return {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'admission':{'minimum_level':250,'premium':True,
-            'prerequisites':[{'requirement':requirement,'quest':'oteryn:quest/rotten-blood'}]},
-        'tracks':[{'key':route,'initial':0,'minimum':0,'maximum':len(recipe['stages'])},
-                  {'key':kills,'initial':0,'minimum':0,'maximum':1}],
-        'stages':[{'key':'s1-bakragore','completes':False,'trigger':{'kind':'kill','counter':{
-            'key':'oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore',
-            'creature':matches[0][1],'track':kills,'gate':route,'gate_value':0,
-            'minimum':0,'maximum':1,'advance_gate_to':1}}}],
-        'sources':[path+':s1',matches[0][0]+':Bakragore',
-            'crates/gameplay/quests/src/quest/rotten_blood.rs:QUEST',
-            'crates/gameplay/durability/src/durability/quest_state/native_prerequisites.rs:completed']}]}
-
+    for source in sorted(
+        (root / "content/creatures/definitions").glob("creatures-*.json")
+    ):
+        for record in json.loads(source.read_bytes())["records"]:
+            if (
+                record.get("authoring", {})
+                .get("profile", {})
+                .get("details", {})
+                .get("display_name")
+                == "Bakragore"
+            ):
+                matches.append(
+                    (
+                        source.relative_to(root).as_posix(),
+                        record["definition"]["identity"]["key"],
+                    )
+                )
+    if matches != [
+        (
+            "content/creatures/definitions/creatures-00000-00499.json",
+            "oteryn:creature.bakragore",
+        )
+    ]:
+        raise ValueError("M01C_DECAYING_DEFENDER_NATIVE_BOSS")
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    route = "oteryn:quest-progress/m01c-decaying-defender-route"
+    kills = "oteryn:quest-progress/m01c-decaying-defender-kills"
+    return {
+        "schema": 1,
+        "quests": [
+            {
+                "quest": quest,
+                "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+                "admission": {
+                    "minimum_level": 250,
+                    "premium": True,
+                    "prerequisites": [
+                        {
+                            "requirement": requirement,
+                            "quest": "oteryn:quest/rotten-blood",
+                        }
+                    ],
+                },
+                "tracks": [
+                    {
+                        "key": route,
+                        "initial": 0,
+                        "minimum": 0,
+                        "maximum": len(recipe["stages"]),
+                    },
+                    {"key": kills, "initial": 0, "minimum": 0, "maximum": 1},
+                ],
+                "stages": [
+                    {
+                        "key": "s1-bakragore",
+                        "completes": False,
+                        "trigger": {
+                            "kind": "kill",
+                            "counter": {
+                                "key": "oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore",
+                                "creature": matches[0][1],
+                                "track": kills,
+                                "gate": route,
+                                "gate_value": 0,
+                                "minimum": 0,
+                                "maximum": 1,
+                                "advance_gate_to": 1,
+                            },
+                        },
+                    }
+                ],
+                "sources": [
+                    path + ":s1",
+                    matches[0][0] + ":Bakragore",
+                    "crates/gameplay/quests/src/quest/rotten_blood.rs:QUEST",
+                    "crates/gameplay/durability/src/durability/quest_state/native_prerequisites.rs:completed",
+                ],
+            }
+        ],
+    }
 
 
 def build_illuminator(root=ROOT):
-    quest = 'oteryn:quest.illuminator_outfits_quest'
-    requirement = 'Between the Lines Quest'
-    parent = 'oteryn:quest.between_the_lines_quest'
-    path, recipe = chosen(root, quest, ('s1','collect',1,['Scallop Shell']),
-                          minimum_level=200, premium=True, prerequisites=[requirement])
-    parents = [p.relative_to(root).as_posix() for p in sorted((root/'content/quests/definitions').glob('quests-*.json'))
-               for r in json.loads(p.read_bytes())['records'] if r['definition']['identity']['key'] == parent]
+    quest = "oteryn:quest.illuminator_outfits_quest"
+    requirement = "Between the Lines Quest"
+    parent = "oteryn:quest.between_the_lines_quest"
+    path, recipe = chosen(
+        root,
+        quest,
+        ("s1", "collect", 1, ["Scallop Shell"]),
+        minimum_level=200,
+        premium=True,
+        prerequisites=[requirement],
+    )
+    parents = [
+        p.relative_to(root).as_posix()
+        for p in sorted((root / "content/quests/definitions").glob("quests-*.json"))
+        for r in json.loads(p.read_bytes())["records"]
+        if r["definition"]["identity"]["key"] == parent
+    ]
     if len(parents) != 1:
-        raise ValueError('M01C_ILLUMINATOR_PARENT_IDENTITY')
-    item = 'oteryn:item.tibia.i51656'
-    items = [(p.relative_to(root).as_posix(), r['definition'])
-             for p in sorted((root/'content/items/definitions').glob('items-*.json'))
-             for r in json.loads(p.read_bytes())['records'] if r['definition']['identity']['key'] == item]
-    if len(items) != 1 or items[0][1]['semantics']['presentation']['value']['name']['value'] != 'scallop shell':
-        raise ValueError('M01C_ILLUMINATOR_SHELL_IDENTITY')
-    raw = json.dumps(recipe,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()
-    track = 'oteryn:quest-progress/m01c-illuminator-route'
-    evidence = [path+':s1', items[0][0]+':'+item, parents[0]+':'+parent]
-    return {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'admission':{'minimum_level':200,'premium':True,
-            'prerequisites':[{'requirement':requirement,'quest':parent}]},
-        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
-        'stages':[{'key':'s1-shell','completes':False,'trigger':{'kind':'collect','collection':{
-            'key':'oteryn:quest-collection/m01c-illuminator-shell',
-            'items':[{'item':item,'count':1}],
-            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
-        'sources':evidence}]}
+        raise ValueError("M01C_ILLUMINATOR_PARENT_IDENTITY")
+    item = "oteryn:item.tibia.i51656"
+    items = [
+        (p.relative_to(root).as_posix(), r["definition"])
+        for p in sorted((root / "content/items/definitions").glob("items-*.json"))
+        for r in json.loads(p.read_bytes())["records"]
+        if r["definition"]["identity"]["key"] == item
+    ]
+    if (
+        len(items) != 1
+        or items[0][1]["semantics"]["presentation"]["value"]["name"]["value"]
+        != "scallop shell"
+    ):
+        raise ValueError("M01C_ILLUMINATOR_SHELL_IDENTITY")
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    track = "oteryn:quest-progress/m01c-illuminator-route"
+    evidence = [path + ":s1", items[0][0] + ":" + item, parents[0] + ":" + parent]
+    return {
+        "schema": 1,
+        "quests": [
+            {
+                "quest": quest,
+                "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+                "admission": {
+                    "minimum_level": 200,
+                    "premium": True,
+                    "prerequisites": [{"requirement": requirement, "quest": parent}],
+                },
+                "tracks": [
+                    {
+                        "key": track,
+                        "initial": 0,
+                        "minimum": 0,
+                        "maximum": len(recipe["stages"]),
+                    }
+                ],
+                "stages": [
+                    {
+                        "key": "s1-shell",
+                        "completes": False,
+                        "trigger": {
+                            "kind": "collect",
+                            "collection": {
+                                "key": "oteryn:quest-collection/m01c-illuminator-shell",
+                                "items": [{"item": item, "count": 1}],
+                                "storage": [
+                                    {
+                                        "track": track,
+                                        "minimum": 0,
+                                        "maximum": 0,
+                                        "set": 1,
+                                    }
+                                ],
+                                "sources": evidence,
+                            },
+                        },
+                    }
+                ],
+                "sources": evidence,
+            }
+        ],
+    }
+
 
 def build_task_board(slug, root=ROOT):
     quest, level = {
-        'falconer': ('oteryn:quest.falconer_outfits_quest', 100),
-        'feral-trappers': ('oteryn:quest.feral_trappers_quest', 0),
+        "falconer": ("oteryn:quest.falconer_outfits_quest", 100),
+        "feral-trappers": ("oteryn:quest.feral_trappers_quest", 0),
     }[slug]
-    path, recipe = chosen(root, quest, ('s1', 'use', 1, ['Task Board']), level)
-    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
-    track = f'oteryn:quest-progress/m01c-{slug}-route'
-    evidence = [path+':s1', 'crates/gameplay/quests/src/quest/task_board_full.rs:StartWeekly',
-        'crates/gameplay/durability/src/durability/task_board/state.rs:native receipt']
-    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'admission':{'minimum_level':level},
-        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
-        'stages':[{'key':'s1-programme','completes':False,'trigger':{'kind':'task_board_use','usage':{
-            'key':f'oteryn:quest-task-board-use/m01c-{slug}', 'programme':'weekly',
-            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
-        'sources':evidence}]}
+    path, recipe = chosen(root, quest, ("s1", "use", 1, ["Task Board"]), level)
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    track = f"oteryn:quest-progress/m01c-{slug}-route"
+    evidence = [
+        path + ":s1",
+        "crates/gameplay/quests/src/quest/task_board_full.rs:StartWeekly",
+        "crates/gameplay/durability/src/durability/task_board/state.rs:native receipt",
+    ]
+    return {
+        "schema": 1,
+        "quests": [
+            {
+                "quest": quest,
+                "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+                "admission": {"minimum_level": level},
+                "tracks": [
+                    {
+                        "key": track,
+                        "initial": 0,
+                        "minimum": 0,
+                        "maximum": len(recipe["stages"]),
+                    }
+                ],
+                "stages": [
+                    {
+                        "key": "s1-programme",
+                        "completes": False,
+                        "trigger": {
+                            "kind": "task_board_use",
+                            "usage": {
+                                "key": f"oteryn:quest-task-board-use/m01c-{slug}",
+                                "programme": "weekly",
+                                "storage": [
+                                    {
+                                        "track": track,
+                                        "minimum": 0,
+                                        "maximum": 0,
+                                        "set": 1,
+                                    }
+                                ],
+                                "sources": evidence,
+                            },
+                        },
+                    }
+                ],
+                "sources": evidence,
+            }
+        ],
+    }
 
 
 def build_ancient_aucar(root=ROOT):
-    quest = 'oteryn:quest.ancient_aucar_outfits_quest'
-    requirement = 'Galthen and the City of Gold'
-    parent = 'oteryn:quest.adventures_of_galthen_quest'
-    path, recipe = chosen(root, quest, ('s1', 'kill', 1, ['Ahau', 'The Living Idol of Tukh']),
-                          premium=True, prerequisites=[requirement])
-    parents = [p.relative_to(root).as_posix()
-               for p in sorted((root / 'content/quests/definitions').glob('quests-*.json'))
-               for record in json.loads(p.read_bytes())['records']
-               if record['definition']['identity']['key'] == parent]
-    bosses = [(p.relative_to(root).as_posix(), record['definition']['identity']['key'])
-              for p in sorted((root / 'content/creatures/definitions').glob('creatures-*.json'))
-              for record in json.loads(p.read_bytes())['records']
-              if record.get('authoring', {}).get('profile', {}).get('details', {}).get('display_name') == 'Ahau']
-    if len(parents) != 1 or bosses != [('content/creatures/definitions/creatures-00000-00499.json', 'oteryn:creature.ahau')]:
-        raise ValueError('M01C_AUCAR_NATIVE_IDENTITIES')
-    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
-    route = 'oteryn:quest-progress/m01c-ancient-aucar-route'
-    kills = 'oteryn:quest-progress/m01c-ancient-aucar-kills'
-    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'admission':{'minimum_level':0, 'premium':True,
-            'prerequisites':[{'requirement':requirement, 'quest':parent}]},
-        'tracks':[{'key':route, 'initial':0, 'minimum':0, 'maximum':len(recipe['stages'])},
-                  {'key':kills, 'initial':0, 'minimum':0, 'maximum':1}],
-        'stages':[{'key':'s1-ahau', 'completes':False, 'trigger':{'kind':'kill', 'counter':{
-            'key':'oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau',
-            'creature':bosses[0][1], 'track':kills, 'gate':route, 'gate_value':0,
-            'minimum':0, 'maximum':1, 'advance_gate_to':1}}}],
-        'sources':[path+':s1', bosses[0][0]+':Ahau', parents[0]+':City of Gold',
-                   'docs/reference/content-prep/questpc3-m01c/CONTRACT-NOTES.md:Ancient Aucar parent gate']}]}
+    quest = "oteryn:quest.ancient_aucar_outfits_quest"
+    requirement = "Galthen and the City of Gold"
+    parent = "oteryn:quest.adventures_of_galthen_quest"
+    path, recipe = chosen(
+        root,
+        quest,
+        ("s1", "kill", 1, ["Ahau", "The Living Idol of Tukh"]),
+        premium=True,
+        prerequisites=[requirement],
+    )
+    parents = [
+        p.relative_to(root).as_posix()
+        for p in sorted((root / "content/quests/definitions").glob("quests-*.json"))
+        for record in json.loads(p.read_bytes())["records"]
+        if record["definition"]["identity"]["key"] == parent
+    ]
+    bosses = [
+        (p.relative_to(root).as_posix(), record["definition"]["identity"]["key"])
+        for p in sorted(
+            (root / "content/creatures/definitions").glob("creatures-*.json")
+        )
+        for record in json.loads(p.read_bytes())["records"]
+        if record.get("authoring", {})
+        .get("profile", {})
+        .get("details", {})
+        .get("display_name")
+        == "Ahau"
+    ]
+    if len(parents) != 1 or bosses != [
+        (
+            "content/creatures/definitions/creatures-00000-00499.json",
+            "oteryn:creature.ahau",
+        )
+    ]:
+        raise ValueError("M01C_AUCAR_NATIVE_IDENTITIES")
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    route = "oteryn:quest-progress/m01c-ancient-aucar-route"
+    kills = "oteryn:quest-progress/m01c-ancient-aucar-kills"
+    return {
+        "schema": 1,
+        "quests": [
+            {
+                "quest": quest,
+                "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+                "admission": {
+                    "minimum_level": 0,
+                    "premium": True,
+                    "prerequisites": [{"requirement": requirement, "quest": parent}],
+                },
+                "tracks": [
+                    {
+                        "key": route,
+                        "initial": 0,
+                        "minimum": 0,
+                        "maximum": len(recipe["stages"]),
+                    },
+                    {"key": kills, "initial": 0, "minimum": 0, "maximum": 1},
+                ],
+                "stages": [
+                    {
+                        "key": "s1-ahau",
+                        "completes": False,
+                        "trigger": {
+                            "kind": "kill",
+                            "counter": {
+                                "key": "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau",
+                                "creature": bosses[0][1],
+                                "track": kills,
+                                "gate": route,
+                                "gate_value": 0,
+                                "minimum": 0,
+                                "maximum": 1,
+                                "advance_gate_to": 1,
+                            },
+                        },
+                    }
+                ],
+                "sources": [
+                    path + ":s1",
+                    bosses[0][0] + ":Ahau",
+                    parents[0] + ":City of Gold",
+                    "docs/reference/content-prep/questpc3-m01c/CONTRACT-NOTES.md:Ancient Aucar parent gate",
+                ],
+            }
+        ],
+    }
 
 
 def build_draconia(root=ROOT):
@@ -272,24 +686,34 @@ def build_draconia(root=ROOT):
     )
     sys.path.insert(0, str(ROOT / "tools/content-schema/world-authoring"))
     import world_region_codec as codec
-    capture_path = 'tools/content-schema/world-authoring/samples/m01c-key-doors.json'
+
+    capture_path = "tools/content-schema/world-authoring/samples/m01c-key-doors.json"
     capture = json.loads((root / capture_path).read_bytes())
-    doors = [row for row in capture['bindings'] if row['key_number'] == 3012]
-    if {tuple(row['position']) for row in doors} != {(32675, 31649, 10), (32676, 31671, 10)}:
-        raise ValueError('M01C_DRACONIA_SOURCE_DOORS')
-    index = json.loads((root / 'content/world/placements/index.json').read_bytes())
-    track = 'oteryn:quest-progress/m01c-draconia-route'
+    doors = [row for row in capture["bindings"] if row["key_number"] == 3012]
+    if {tuple(row["position"]) for row in doors} != {
+        (32675, 31649, 10),
+        (32676, 31671, 10),
+    }:
+        raise ValueError("M01C_DRACONIA_SOURCE_DOORS")
+    index = json.loads((root / "content/world/placements/index.json").read_bytes())
+    track = "oteryn:quest-progress/m01c-draconia-route"
     stages = []
     for door in doors:
-        x, y, z = door['position']
-        region = f'content/world/placements/region-z{z:02d}-x{x // 256:03d}-y{y // 256:03d}.b3'
+        x, y, z = door["position"]
+        region = f"content/world/placements/region-z{z:02d}-x{x // 256:03d}-y{y // 256:03d}.b3"
         decoded = codec.decode_region((root / region).read_bytes())
-        matches = [(ordinal, attrs) for _, tiles in decoded[3]
-                   for tx, ty, _, house, _, items in tiles if (tx, ty) == (x, y) and not house
-                   for ordinal, (palette, _, attrs) in enumerate(item for item in items if not item[1])
-                   if index['palette'][palette]['source_item_id'] == 5097]
-        if len(matches) != 1 or (matches[0][1] or {}).get('action') != 3012:
-            raise ValueError('M01C_DRACONIA_NATIVE_DOOR_ACTION')
+        matches = [
+            (ordinal, attrs)
+            for _, tiles in decoded[3]
+            for tx, ty, _, house, _, items in tiles
+            if (tx, ty) == (x, y) and not house
+            for ordinal, (palette, _, attrs) in enumerate(
+                item for item in items if not item[1]
+            )
+            if index["palette"][palette]["source_item_id"] == 5097
+        ]
+        if len(matches) != 1 or (matches[0][1] or {}).get("action") != 3012:
+            raise ValueError("M01C_DRACONIA_NATIVE_DOOR_ACTION")
         placement = (x << 32) | (y << 16) | (z << 8) | matches[0][0]
         stages.append(
             {
@@ -424,50 +848,128 @@ def build_dragon_corpse(root=ROOT):
 
 
 def build_demon_wars(root=ROOT):
-    path = 'content/quests/definitions/quests-00200-00299.json'
-    quest = 'oteryn:quest.authored.demon_wars_world_change'
-    definition = next(row['definition'] for row in json.loads((root / path).read_bytes())['records']
-                      if row['definition']['identity']['key'] == quest)
-    recipe = definition['recipe']
-    expected = [('talk', 1, 'A Dark Priestess'), ('kill', 20, 'Shaburak Demon'),
-                ('kill', 1, 'Shaburak Lord'), ('kill', 1, 'Shaburak Prince'),
-                ('complete', 1, 'A Dark Priestess')]
-    if [(stage['kind'], stage['count'], stage['targets'][0]) for stage in recipe['stages']] != expected:
-        raise ValueError('Demon Wars chosen trial changed')
-    sources = [path + ': chosen Demon Wars trial',
-               'https://tibia.fandom.com/index.php?curid=54700&oldid=880733',
-               'content/encounters/world-changes/credited-kills.json: Demonwar Dungeon']
-    prefix = 'oteryn:quest-progress/demon-wars/trial/'
-    phase = prefix + 'phase'
-    tracks = [{'key': phase, 'initial': 0, 'minimum': 0, 'maximum': 5}]
+    path = "content/quests/definitions/quests-00200-00299.json"
+    quest = "oteryn:quest.authored.demon_wars_world_change"
+    definition = next(
+        row["definition"]
+        for row in json.loads((root / path).read_bytes())["records"]
+        if row["definition"]["identity"]["key"] == quest
+    )
+    recipe = definition["recipe"]
+    expected = [
+        ("talk", 1, "A Dark Priestess"),
+        ("kill", 20, "Shaburak Demon"),
+        ("kill", 1, "Shaburak Lord"),
+        ("kill", 1, "Shaburak Prince"),
+        ("complete", 1, "A Dark Priestess"),
+    ]
+    if [
+        (stage["kind"], stage["count"], stage["targets"][0])
+        for stage in recipe["stages"]
+    ] != expected:
+        raise ValueError("Demon Wars chosen trial changed")
+    sources = [
+        path + ": chosen Demon Wars trial",
+        "https://tibia.fandom.com/index.php?curid=54700&oldid=880733",
+        "content/encounters/world-changes/credited-kills.json: Demonwar Dungeon",
+    ]
+    prefix = "oteryn:quest-progress/demon-wars/trial/"
+    phase = prefix + "phase"
+    tracks = [{"key": phase, "initial": 0, "minimum": 0, "maximum": 5}]
 
     def dialogue(stage, name, before, reply):
-        completes = name == 'report'
-        return {'key': stage, 'completes': completes,
-                'trigger': {'kind': 'npc_dialogue', 'callback': {
-                    'key': f'oteryn:quest-reward/demon-wars/{name}',
-                    'quest': quest, 'npc': 'oteryn:npc.a_dark_priestess',
-                    'keywords': [f'demon war {name}'], 'topic': 0, 'next_topic': 0,
-                    'storage': [{'track': phase, 'minimum': before, 'maximum': before, 'set': before + 1}],
-                    'requires_premium': True, 'take': [], 'give': None, 'outfit': None,
-                    'achievement': None, 'completes': completes, 'reply': [reply], 'sources': sources}}}
+        completes = name == "report"
+        return {
+            "key": stage,
+            "completes": completes,
+            "trigger": {
+                "kind": "npc_dialogue",
+                "callback": {
+                    "key": f"oteryn:quest-reward/demon-wars/{name}",
+                    "quest": quest,
+                    "npc": "oteryn:npc.a_dark_priestess",
+                    "keywords": [f"demon war {name}"],
+                    "topic": 0,
+                    "next_topic": 0,
+                    "storage": [
+                        {
+                            "track": phase,
+                            "minimum": before,
+                            "maximum": before,
+                            "set": before + 1,
+                        }
+                    ],
+                    "requires_premium": True,
+                    "take": [],
+                    "give": None,
+                    "outfit": None,
+                    "achievement": None,
+                    "completes": completes,
+                    "reply": [reply],
+                    "sources": sources,
+                },
+            },
+        }
 
-    stages = [dialogue('s1', 'briefing', 0,
-        'In the west tower, defeat twenty Shaburak demons, then a lord, then a prince. Return to me to report.')]
-    for step, (creature, goal) in enumerate((('demon', 20), ('lord', 1), ('prince', 1)), 1):
+    stages = [
+        dialogue(
+            "s1",
+            "briefing",
+            0,
+            "In the west tower, defeat twenty Shaburak demons, then a lord, then a prince. Return to me to report.",
+        )
+    ]
+    for step, (creature, goal) in enumerate(
+        (("demon", 20), ("lord", 1), ("prince", 1)), 1
+    ):
         track = prefix + creature
-        tracks.append({'key': track, 'initial': 0, 'minimum': 0, 'maximum': goal})
-        stages.append({'key': f's{step + 1}', 'completes': False, 'trigger': {
-            'kind': 'kill', 'counter': {
-                'key': f'oteryn:quest-transition/native-kills/demon-wars/{creature}',
-                'creature': f'oteryn:creature.shaburak_{creature}',
-                'track': track, 'gate': phase, 'gate_value': step, 'advance_gate_to': step + 1,
-                'maximum': goal, 'death_area': {'minimum': [33218, 31911, 12], 'maximum': [33307, 31959, 14]}}}})
-    stages.append(dialogue('s5', 'report', 4,
-        'You have completed the western tower trial. I have recorded your report.'))
-    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
-    return {'schema': 1, 'quests': [{'quest': quest, 'recipe_sha256': hashlib.sha256(raw).hexdigest(),
-        'admission': {'minimum_level': 0, 'premium': True}, 'tracks': tracks, 'stages': stages, 'sources': sources}]}
+        tracks.append({"key": track, "initial": 0, "minimum": 0, "maximum": goal})
+        stages.append(
+            {
+                "key": f"s{step + 1}",
+                "completes": False,
+                "trigger": {
+                    "kind": "kill",
+                    "counter": {
+                        "key": f"oteryn:quest-transition/native-kills/demon-wars/{creature}",
+                        "creature": f"oteryn:creature.shaburak_{creature}",
+                        "track": track,
+                        "gate": phase,
+                        "gate_value": step,
+                        "advance_gate_to": step + 1,
+                        "maximum": goal,
+                        "death_area": {
+                            "minimum": [33218, 31911, 12],
+                            "maximum": [33307, 31959, 14],
+                        },
+                    },
+                },
+            }
+        )
+    stages.append(
+        dialogue(
+            "s5",
+            "report",
+            4,
+            "You have completed the western tower trial. I have recorded your report.",
+        )
+    )
+    raw = json.dumps(
+        recipe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    return {
+        "schema": 1,
+        "quests": [
+            {
+                "quest": quest,
+                "recipe_sha256": hashlib.sha256(raw).hexdigest(),
+                "admission": {"minimum_level": 0, "premium": True},
+                "tracks": tracks,
+                "stages": stages,
+                "sources": sources,
+            }
+        ],
+    }
 
 
 def content(check=False):
@@ -526,17 +1028,21 @@ def content(check=False):
         path = ROOT / output
         if check:
             if not path.is_file() or json.loads(path.read_bytes()) != value:
-                raise ValueError('M01C_NATIVE_ENTRY_BINDING_DRIFT')
+                raise ValueError("M01C_NATIVE_ENTRY_BINDING_DRIFT")
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
-    print(f'PASS native entry and trial bindings={len(documents)}')
+            path.write_text(
+                json.dumps(
+                    value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                )
+                + "\n"
+            )
+    print(f"PASS native entry and trial bindings={len(documents)}")
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['content'])
-    parser.add_argument('--check', action='store_true')
+    parser.add_argument("command", choices=["content"])
+    parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     content(args.check)
