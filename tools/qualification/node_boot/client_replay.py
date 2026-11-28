@@ -24,6 +24,8 @@ SERVER_ROW = re.compile(
     r"^SEAM_EVIDENCE (e2e_all|e2e_capture) scenario=([A-Za-z0-9]+\.(?:full|client)) "
     r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT|CAPTURED)(?:\s|$)"
 )
+FULL_REPLAY_ROWS = {"P22c.full"}
+
 PACKAGES = (
     "apps/client", "crates/session", "crates/client-ui", "crates/client-runtime",
     "crates/client-domain", "tools/dev-client",
@@ -166,14 +168,15 @@ def main(log, batch, validate=False):
     if validate:
         return validate_rows(selected, registered, server_rows)
 
-    rows = sorted(scenario for scenario in selected if scenario.endswith(".client"))
+    rows = sorted(scenario for scenario in selected
+                  if scenario.endswith(".client") or scenario in FULL_REPLAY_ROWS)
     if not rows:
         return 0
     captures = Path(os.environ["E2E_ALL_CAPTURE_DIR"])
     targets = replay_targets()
     failed = False
     for scenario in rows:
-        row = scenario.removesuffix(".client")
+        row, _ = scenario.rsplit(".", 1)
         module = f"e2e_{row.lower()}"
         matches = targets.get(module, [])
         package, test, names = matches[0] if len(matches) == 1 else (None, module, set())

@@ -26,6 +26,7 @@ async fn call(
     client: &mut DevClientSession,
     command: u32,
     request: &tr::TrackerRequest,
+    capture: Option<&str>,
 ) -> TestResult<(CommandStatus, Option<tr::TrackerSnapshot>)> {
     let payload =
         tr::encode_request(request).ok_or("step=encode;observed=request-not-encodable")?;
@@ -41,6 +42,12 @@ async fn call(
                 .ok_or("step=decode;observed=undecodable-tracker-snapshot")?,
         )
     };
+    if reply.status == CommandStatus::Accepted
+        && let Some(name) = capture
+        && let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+    {
+        std::fs::write(Path::new(&directory).join(name), &reply.payload)?;
+    }
     Ok((reply.status, snapshot))
 }
 
@@ -60,8 +67,9 @@ fn has(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> bool {
 async fn read(
     client: &mut DevClientSession,
     command: u32,
+    capture: &str,
 ) -> TestResult<Option<tr::TrackerSnapshot>> {
-    let (status, list) = call(client, command, &tr::TrackerRequest::Read).await?;
+    let (status, list) = call(client, command, &tr::TrackerRequest::Read, Some(capture)).await?;
     expect(status == CommandStatus::Accepted, "read", status)?;
     Ok(list)
 }
@@ -83,7 +91,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let mut client = connect_world(clients, 0xd3).await?;
     selected(&client)?;
-    let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
+    let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT), None).await?;
     expect(
         status == CommandStatus::Accepted && has(&list, RAT),
         "add",
@@ -98,14 +106,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
 
     let mut client = connect_world(clients, 0xd4).await?;
     selected(&client)?;
-    let list = read(&mut client, best).await?;
+    let list = read(&mut client, best, "p22c-after-add-relog.bin").await?;
     expect(has(&list, RAT), "read-after-relog", "race-lost")?;
     expect(
         durable(clients).await? == 1,
         "durable-after-relog",
         "row-count-not-1",
     )?;
-    let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Remove, RAT)).await?;
+    let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Remove, RAT), None).await?;
     expect(
         status == CommandStatus::Accepted && !has(&list, RAT),
         "remove",
@@ -114,7 +122,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     logout(&mut client).await?;
 
     let mut client = connect_world(clients, 0xd5).await?;
-    let list = read(&mut client, best).await?;
+    let list = read(&mut client, best, "p22c-after-remove-relog.bin").await?;
     expect(
         !has(&list, RAT),
         "read-after-remove-relog",

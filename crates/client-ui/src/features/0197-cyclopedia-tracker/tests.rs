@@ -113,3 +113,5 @@ fn boss_selection_follows_identity_when_sort_or_filter_changes() {
     p.boss_search = "beta".into();
     assert_eq!(tracker_selection(&p, true, "alpha"), None);
 }
+
+mod e2e_p22c;
