@@ -165,7 +165,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let seller_name = character_name(clients, 1).await?;
     let buyer_name = character_name(&buyer_scope, 0).await?;
     let mut buyer = connect_character(&buyer_scope, 0xd6, 0).await?;
-    character_prep::grant_premium(&buyer).await?;
+    let original_buyer_session = buyer.join_snapshot().game_session_id;
     logout(&mut buyer).await?;
     drop(buyer);
 
@@ -194,6 +194,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     evidence("row=G26.full fixture=authored-house owner=admitted-seller");
     let mut buyer = connect_character(&buyer_scope, 0xd7, 0).await?;
+    if buyer.join_snapshot().game_session_id == original_buyer_session {
+        return Err("step=buyer-reconnect observed=original-session".into());
+    }
+    character_prep::grant_premium(&buyer).await?;
+    evidence("row=G26.full fixture=premium buyer=reconnected");
     for client in [&seller, &buyer] {
         if !client.selected_capabilities().contains(&sale::CAPABILITY) {
             return Err(format!(
