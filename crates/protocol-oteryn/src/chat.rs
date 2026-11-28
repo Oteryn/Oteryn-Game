@@ -16,6 +16,7 @@
 use std::num::NonZeroU64;
 
 pub mod console;
+pub mod guild_guest;
 pub mod guild_room;
 pub mod line_extended;
 pub mod party_room;
@@ -490,6 +491,9 @@ pub fn decode_chat_rooms(payload: &[u8]) -> WireResult<ChatRoomSet> {
 pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_CHAT_LINE_BYTES);
     match line {
+        ChatLine::Guild(line) if line.rank == guild_guest::GUILD_GUEST_RANK => {
+            return guild_room::encode_guest_line(line);
+        }
         ChatLine::Guild(line) => return guild_room::encode_line(line),
         ChatLine::Party { speaker_name, text } => {
             return party_room::encode_line(speaker_name, text);

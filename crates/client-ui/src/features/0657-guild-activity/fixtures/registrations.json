@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0657-guild-activity",
+    "kind": "handlers",
+    "id": "0657-guild-activity-handler",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "client_to_server",
+    "reason": "Guild activity native client consumer pending S6.",
+    "not_applicable": {
+      "state": "Activity is read from the guild membership journal.",
+      "protocol": "Activity extends GUILD_QUERY with a paged section.",
+      "view": "The guild panel will show a member activity history.",
+      "input": "The guild panel will request the initial page and subsequent pages.",
+      "settings": "The extension has no separate settings."
+    }
+  }
+]

@@ -108,6 +108,7 @@ pub enum GuildQueryResult {
 }
 
 mod codec;
+pub use codec::activity;
 pub use codec::{
     decode_guild_intent, decode_guild_intent_result, decode_guild_query, decode_guild_query_result,
     encode_guild_intent, encode_guild_intent_result, encode_guild_query, encode_guild_query_result,

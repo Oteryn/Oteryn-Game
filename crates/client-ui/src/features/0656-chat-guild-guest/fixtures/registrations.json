@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0656-chat-guild-guest",
+    "kind": "handlers",
+    "id": "0656-chat-guild-guest-handler",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "client_to_server",
+    "reason": "Guest chat native client consumer pending S6.",
+    "not_applicable": {
+      "state": "Guest access belongs to the active GameSession.",
+      "protocol": "Guest actions extend CHAT_INTENT, guest room lists extend GUILD_QUERY and guest speech adds a chat line kind.",
+      "view": "The guild chat tab will list invited rooms and display guest speakers.",
+      "input": "The guild chat menu will submit invite, exclude and guest speech actions.",
+      "settings": "The extension has no separate settings."
+    }
+  }
+]

@@ -526,6 +526,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.party_chat_send(admitted, text).await
     }
 
+    async fn chat_guild_guest_intent(
+        &self,
+        admitted: AdmittedSession,
+        intent: oteryn_protocol_oteryn::chat::guild_guest::GuildGuestIntent,
+    ) -> Option<Vec<u8>> {
+        self.guild_guest_command(admitted, intent).await
+    }
+
     async fn chat_guild_intent(
         &self,
         admitted: AdmittedSession,

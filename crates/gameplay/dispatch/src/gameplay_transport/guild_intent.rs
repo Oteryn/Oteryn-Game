@@ -63,6 +63,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GuildReply::Rejected;
         }
         if command_type == wire::COMMAND_TYPE_GUILD_QUERY {
+            use oteryn_protocol_oteryn::chat::guild_guest;
+            if guild_guest::is_rooms_query(payload) {
+                if !admitted.continuity.selected_capabilities.contains(guild_guest::CAPABILITY_CHAT_GUILD_GUEST_V1) {
+                    return GuildReply::Rejected;
+                }
+                let Ok(after) = guild_guest::decode_rooms_query(payload) else {
+                    return GuildReply::Rejected;
+                };
+                return match self.root.guild_chat_guest_rooms(self.character, self.holder, fence, after).await {
+                    Ok(rooms) => guild_guest::encode_rooms(&rooms).map_or(GuildReply::Unavailable, GuildReply::Payload),
+                    Err(error) => failure(error),
+                };
+            }
+            use wire::activity;
+            if activity::is_activity(payload) {
+                if !admitted.continuity.selected_capabilities.contains(activity::CAPABILITY_GUILD_ACTIVITY_V1) {
+                    return GuildReply::Rejected;
+                }
+                let Ok(query) = activity::decode_activity_query(payload) else {
+                    return GuildReply::Rejected;
+                };
+                return match self.root.query_guild_activity(self.character, self.holder, fence, query).await {
+                    Ok(page) => activity::encode_activity_page(&page).map_or(GuildReply::Unavailable, GuildReply::Payload),
+                    Err(error) => failure(error),
+                };
+            }
             let Ok(query) = wire::decode_guild_query(payload) else {
                 return GuildReply::Rejected;
             };

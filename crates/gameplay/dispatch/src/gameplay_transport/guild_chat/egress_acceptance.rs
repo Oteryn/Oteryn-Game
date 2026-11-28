@@ -44,10 +44,24 @@ impl ChatRuntime {
             None
         }
     }
+    pub(in super::super) fn guild_sent_at_micros(
+        &self,
+        session: GameSessionId,
+        candidate: &ChatLine,
+    ) -> Option<u64> {
+        let sessions = self.sessions.lock().ok()?;
+        let entry = sessions.get(&session)?;
+        if entry.egress.peek() != Some(candidate) {
+            return None;
+        }
+        entry.egress.guild_sent_at_micros()
+    }
+
     pub(in super::super) fn accept_guild_line(
         &self,
         admitted: &AdmittedSession,
         candidate: &ChatLine,
+        sent_at_micros: Option<u64>,
         member: bool,
     ) -> Option<ChatLine> {
         let mut sessions = self.sessions.lock().ok()?;
@@ -55,7 +69,9 @@ impl ChatRuntime {
             return None;
         }
         let entry = sessions.get_mut(&admitted.game_session_id)?;
-        if entry.egress.peek() != Some(candidate) {
+        if entry.egress.peek() != Some(candidate)
+            || entry.egress.guild_sent_at_micros() != sent_at_micros
+        {
             return None;
         }
         let line = entry.egress.next_for_write()?;
@@ -70,7 +86,8 @@ impl ChatRuntime {
         &self,
         admitted: &AdmittedSession,
         candidate: &ChatLine,
+        sent_at_micros: Option<u64>,
     ) {
-        self.accept_guild_line(admitted, candidate, false);
+        self.accept_guild_line(admitted, candidate, sent_at_micros, false);
     }
 }

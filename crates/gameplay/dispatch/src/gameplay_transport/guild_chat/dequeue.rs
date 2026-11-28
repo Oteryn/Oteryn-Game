@@ -1,7 +1,10 @@
 use super::super::ComposedFreshAdmission;
 use super::*;
 use crate::domain::guild::GuildId;
-use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_SYSTEM_MESSAGE_V1, ChatLine};
+use oteryn_protocol_oteryn::chat::{
+    CAPABILITY_CHAT_SYSTEM_MESSAGE_V1, ChatLine,
+    guild_guest::{CAPABILITY_CHAT_GUILD_GUEST_V1, GUILD_GUEST_RANK},
+};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in super::super) async fn guild_chat_next(
@@ -66,27 +69,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             let fence = qualified_fence(&admitted, &runtime)?;
             *remaining -= 1;
-            let accepted = self
-                .root
-                .with_guild_chat_custody(
-                    self.character,
-                    self.holder,
-                    fence,
-                    Some(guild),
-                    |membership, _| {
-                        self.states.chat.accept_guild_line(
-                            &admitted,
-                            &candidate,
-                            membership.is_some(),
-                        )
-                    },
-                )
-                .await;
+            let sent_at = self
+                .states
+                .chat
+                .guild_sent_at_micros(admitted.game_session_id, &candidate);
+            let guest_capable = admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_CHAT_GUILD_GUEST_V1);
+            if line.rank == GUILD_GUEST_RANK && !guest_capable {
+                self.states
+                    .chat
+                    .discard_guild_line(&admitted, &candidate, sent_at);
+                continue;
+            }
+            let accepted = if let (true, Some(sent_at)) = (guest_capable, sent_at) {
+                self.root
+                    .with_guild_guest_custody(
+                        self.character,
+                        self.holder,
+                        fence,
+                        guild,
+                        Some(sent_at),
+                        |membership, guest, _| {
+                            self.states.chat.accept_guild_line(
+                                &admitted,
+                                &candidate,
+                                Some(sent_at),
+                                membership.is_some() || guest,
+                            )
+                        },
+                    )
+                    .await
+            } else {
+                self.root
+                    .with_guild_chat_custody(
+                        self.character,
+                        self.holder,
+                        fence,
+                        Some(guild),
+                        |membership, _| {
+                            self.states.chat.accept_guild_line(
+                                &admitted,
+                                &candidate,
+                                sent_at,
+                                membership.is_some(),
+                            )
+                        },
+                    )
+                    .await
+            };
             match accepted {
                 Ok(Some(line)) => return Some(line),
                 Ok(None) => self.states.chat.guild.dropped(),
                 Err(_) => {
-                    self.states.chat.discard_guild_line(&admitted, &candidate);
+                    self.states
+                        .chat
+                        .discard_guild_line(&admitted, &candidate, sent_at);
                     self.states.chat.guild.dropped();
                 }
             }

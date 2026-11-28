@@ -1,0 +1,13 @@
+{
+  "id": 657,
+  "name": "GUILD_ACTIVITY_V1",
+  "owner_decision": "m-guild1 owner allocation, 2026-11-28",
+  "owner": "Game guild activity",
+  "requires": [
+    40
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Member activity section on GUILD_QUERY."
+}

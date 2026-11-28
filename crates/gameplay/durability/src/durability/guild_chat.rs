@@ -9,9 +9,20 @@ use super::{DurabilityRoot, character_authority::ReconciledCharacterAuthority};
 use crate::domain::{character_name::CharacterName, guild::GuildId};
 use crate::foundation::GameSessionState;
 
+mod guests;
+pub use guests::GuildGuestEdit;
+
 enum RoomOwner {
-    Guild(Option<GuildId>),
+    Guild {
+        guild: Option<GuildId>,
+        guest_check: Option<GuestCheck>,
+    },
     Party(Option<u64>),
+}
+
+struct GuestCheck {
+    guild: GuildId,
+    sent_at_micros: Option<u64>,
 }
 
 impl DurabilityRoot {
@@ -33,8 +44,40 @@ impl DurabilityRoot {
             authority,
             node,
             fence,
-            RoomOwner::Guild(payload_guild),
-            move |guild, _, name| accept(guild, name),
+            RoomOwner::Guild {
+                guild: payload_guild,
+                guest_check: None,
+            },
+            move |guild, _, _, name| accept(guild, name),
+        )
+        .await
+    }
+
+    /// Revalidates guest authority at send or dequeue under the Guild and session locks.
+    pub async fn with_guild_guest_custody<T: Send, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        guild: GuildId,
+        sent_at_micros: Option<u64>,
+        accept: F,
+    ) -> Result<T, GuildError>
+    where
+        F: FnOnce(Option<GuildChatMembership>, bool, CharacterName) -> T + Send,
+    {
+        self.with_chat_custody(
+            authority,
+            node,
+            fence,
+            RoomOwner::Guild {
+                guild: Some(guild),
+                guest_check: Some(GuestCheck {
+                    guild,
+                    sent_at_micros,
+                }),
+            },
+            move |member, _, guest, name| accept(member, guest, name),
         )
         .await
     }
@@ -56,7 +99,7 @@ impl DurabilityRoot {
             node,
             fence,
             RoomOwner::Party(sent_at_micros),
-            move |_, party, name| accept(party, name),
+            move |_, party, _, name| accept(party, name),
         )
         .await
     }
@@ -70,7 +113,7 @@ impl DurabilityRoot {
         accept: F,
     ) -> Result<T, GuildError>
     where
-        F: FnOnce(Option<GuildChatMembership>, Option<[u8; 16]>, CharacterName) -> T + Send,
+        F: FnOnce(Option<GuildChatMembership>, Option<[u8; 16]>, bool, CharacterName) -> T + Send,
     {
         let recovery = authority
             .record_for(self)
@@ -82,8 +125,11 @@ impl DurabilityRoot {
             .run_with_context(&mut callback, move |holder, deadline, callback| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let (guild, party) = match room {
-                        RoomOwner::Guild(payload_guild) => {
+                    let (guild, party, guest) = match room {
+                        RoomOwner::Guild {
+                            guild: payload_guild,
+                            guest_check,
+                        } => {
                             match read_current_guild_chat_data(
                                 &mut tx,
                                 &recovery,
@@ -93,7 +139,21 @@ impl DurabilityRoot {
                             )
                             .await
                             {
-                                Ok(data) => (data, None),
+                                Ok(data) => {
+                                    let guest = match (data.is_none(), guest_check) {
+                                        (true, Some(check)) => {
+                                            guests::granted(
+                                                &mut tx,
+                                                fence,
+                                                check.guild,
+                                                check.sent_at_micros,
+                                            )
+                                            .await?
+                                        }
+                                        _ => false,
+                                    };
+                                    (data, None, guest)
+                                }
                                 Err(GuildError::Unavailable(error)) => return Err(error),
                                 Err(error) => return Ok(Err(error)),
                             }
@@ -116,7 +176,7 @@ impl DurabilityRoot {
                                 sent_at_micros,
                             )
                             .await?;
-                            (None, party)
+                            (None, party, false)
                         }
                     };
                     let current = store
@@ -148,7 +208,7 @@ impl DurabilityRoot {
                     };
                     // Linearization: the connection owner's synchronous callback reserves its
                     // in-flight slot while exclusion, resume and scope handoff are still locked out.
-                    let accepted = accept(guild, party, name);
+                    let accepted = accept(guild, party, guest, name);
                     commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(accepted))
                 })

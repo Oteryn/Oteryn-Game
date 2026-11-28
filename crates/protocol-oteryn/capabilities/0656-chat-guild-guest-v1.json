@@ -1,0 +1,18 @@
+{
+  "id": 656,
+  "name": "CHAT_GUILD_GUEST_V1",
+  "constant": "chat::guild_guest::CAPABILITY_CHAT_GUILD_GUEST_V1",
+  "requires": [
+    36,
+    40
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

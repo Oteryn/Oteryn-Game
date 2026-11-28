@@ -32,6 +32,19 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             },
         );
     }
+    use oteryn_protocol_oteryn::chat::guild_guest;
+    if guild_guest::is_extension(command.payload) {
+        if !admitted.continuity.selected_capabilities.contains(guild_guest::CAPABILITY_CHAT_GUILD_GUEST_V1) {
+            return Some(Dispatch::Unregistered);
+        }
+        let Ok(intent) = guild_guest::decode_intent(command.payload) else {
+            return Some(Dispatch::Unregistered);
+        };
+        return Some(match authority.chat_guild_guest_intent(*admitted, intent).await {
+            Some(payload) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload),
+            None => Dispatch::Unregistered,
+        });
+    }
     // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
     // malformed intent is REJECTED with an empty payload like any unregistered command.
     match transport::guild_chat::wire::dispatch(

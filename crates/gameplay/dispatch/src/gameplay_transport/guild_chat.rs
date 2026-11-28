@@ -3,7 +3,9 @@ use super::connection::AdmittedSession;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ChannelRuntimeV1, GameSessionId};
 use oteryn_protocol_oteryn::chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1;
-use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntentResult};
+use oteryn_protocol_oteryn::chat::{
+    ChatDisposition, ChatIntentResult, guild_guest::CAPABILITY_CHAT_GUILD_GUEST_V1,
+};
 use std::collections::HashMap;
 use std::sync::{
     Mutex,
@@ -12,18 +14,23 @@ use std::sync::{
 
 mod admission;
 mod dequeue;
+mod guests;
 mod party;
 mod send;
 pub(super) mod wire;
 
 #[derive(Default)]
 pub(super) struct GuildChatRuntime {
-    bindings: Mutex<
-        HashMap<GameSessionId, (CurrentCharacterItemFence, crate::foundation::ExactActorRef)>,
-    >,
+    bindings: Mutex<HashMap<GameSessionId, GuildChatBinding>>,
     /// Aggregate only: no name, text, GuildId or CharacterId is logged.
     drops: AtomicU64,
 }
+struct GuildChatBinding {
+    fence: CurrentCharacterItemFence,
+    actor: crate::foundation::ExactActorRef,
+    accepts_guests: bool,
+}
+
 impl GuildChatRuntime {
     pub(super) fn forget(&self, session: GameSessionId) {
         if let Ok(mut bindings) = self.bindings.lock() {
@@ -34,7 +41,17 @@ impl GuildChatRuntime {
         if let (Some(fence), Some(actor)) = (admitted.item_fence, admitted.runtime_actor)
             && let Ok(mut bindings) = self.bindings.lock()
         {
-            bindings.insert(admitted.game_session_id, (fence, actor));
+            bindings.insert(
+                admitted.game_session_id,
+                GuildChatBinding {
+                    fence,
+                    actor,
+                    accepts_guests: admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(CAPABILITY_CHAT_GUILD_GUEST_V1),
+                },
+            );
         }
     }
     pub(super) fn negotiated(&self, session: GameSessionId) -> bool {
@@ -42,13 +59,22 @@ impl GuildChatRuntime {
             .lock()
             .is_ok_and(|bindings| bindings.contains_key(&session))
     }
+    pub(super) fn guests_negotiated(&self, session: GameSessionId) -> bool {
+        self.bindings.lock().is_ok_and(|bindings| {
+            bindings
+                .get(&session)
+                .is_some_and(|binding| binding.accepts_guests)
+        })
+    }
     pub(super) fn matches(&self, admitted: &AdmittedSession) -> bool {
         let (Some(fence), Some(actor)) = (admitted.item_fence, admitted.runtime_actor) else {
             return false;
         };
         fence.connection_generation.get() == admitted.continuity.connection_generation
             && self.bindings.lock().is_ok_and(|bindings| {
-                bindings.get(&admitted.game_session_id) == Some(&(fence, actor))
+                bindings
+                    .get(&admitted.game_session_id)
+                    .is_some_and(|binding| binding.fence == fence && binding.actor == actor)
             })
     }
     pub(super) fn take_drops(&self) -> u64 {

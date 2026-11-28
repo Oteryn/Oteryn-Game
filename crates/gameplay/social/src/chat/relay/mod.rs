@@ -71,6 +71,9 @@ pub enum RelayDestination {
     Party {
         party_id: [u8; 16],
     },
+    GuildGuest {
+        guild_id: crate::domain::guild::GuildId,
+    },
     Guild {
         guild_id: crate::domain::guild::GuildId,
         rank: crate::domain::guild::GuildRank,
@@ -85,6 +88,7 @@ impl fmt::Debug for RelayDestination {
             Self::Presence { .. } => f.debug_struct("Presence").finish_non_exhaustive(),
             Self::PrivateChannel { .. } => f.debug_struct("PrivateChannel").finish_non_exhaustive(),
             Self::Party { .. } => f.debug_struct("Party").finish_non_exhaustive(),
+            Self::GuildGuest { .. } => f.debug_struct("GuildGuest").finish_non_exhaustive(),
             Self::Guild { .. } => f.debug_struct("Guild").finish_non_exhaustive(),
             Self::Room { room } => f.debug_struct("Room").field("room", room).finish(),
         }

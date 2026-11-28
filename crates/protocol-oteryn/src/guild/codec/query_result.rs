@@ -14,7 +14,11 @@ fn summary(s: &GuildSummary) -> Vec<u8> {
     out
 }
 // Repeated fields are parsed separately with count/entry bounds before allocation.
-fn repeated(bytes: &[u8], repeated_tag: u64, count: usize) -> WireResult<(Vec<u8>, Vec<&[u8]>)> {
+pub(super) fn repeated(
+    bytes: &[u8],
+    repeated_tag: u64,
+    count: usize,
+) -> WireResult<(Vec<u8>, Vec<&[u8]>)> {
     let mut singular = Vec::new();
     let mut entries = Vec::new();
     let mut at = 0;

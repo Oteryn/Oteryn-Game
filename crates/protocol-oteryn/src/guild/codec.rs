@@ -273,5 +273,6 @@ pub fn decode_guild_intent_result(bytes: &[u8]) -> WireResult<GuildIntentResult>
         },
     })
 }
+pub mod activity;
 mod query_result;
 pub use query_result::{decode_guild_query_result, encode_guild_query_result};

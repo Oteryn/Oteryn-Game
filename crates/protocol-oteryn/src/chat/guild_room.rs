@@ -60,16 +60,30 @@ pub(super) fn decode_intent(input: &[u8]) -> WireResult<ChatIntent> {
     })
 }
 
+const KIND_MEMBER: u32 = 5;
+const KIND_GUEST: u32 = 10;
+
 pub(super) fn encode_line(line: &GuildChatLine) -> WireResult<Vec<u8>> {
     check_destination(&line.guild_id, line.rank)?;
+    encode_line_fields(line, KIND_MEMBER)
+}
+
+pub(super) fn encode_guest_line(line: &GuildChatLine) -> WireResult<Vec<u8>> {
+    crate::CharacterId::decode(&line.guild_id).map_err(|_| ChatWireError::Malformed)?;
+    encode_line_fields(line, KIND_GUEST)
+}
+
+fn encode_line_fields(line: &GuildChatLine, kind: u32) -> WireResult<Vec<u8>> {
     check_text(&line.speaker_name, MAX_CHAT_NAME_BYTES)?;
     check_text(&line.text, MAX_CHAT_TEXT_BYTES)?;
     let mut out = Vec::new();
-    push_varint_field(&mut out, 1, 5);
+    push_varint_field(&mut out, 1, u64::from(kind));
     push_message_field(&mut out, 4, line.speaker_name.as_bytes());
     push_message_field(&mut out, 7, line.text.as_bytes());
     push_message_field(&mut out, 9, &line.guild_id);
-    push_varint_field(&mut out, 10, u64::from(line.rank));
+    if kind == KIND_MEMBER {
+        push_varint_field(&mut out, 10, u64::from(line.rank));
+    }
     Ok(out)
 }
 
@@ -92,7 +106,7 @@ pub(super) fn decode_line_if_guild(input: &[u8]) -> WireResult<Option<GuildChatL
             Ok(())
         }
     })?;
-    if kind != Some(5) {
+    if !matches!(kind, Some(KIND_MEMBER | KIND_GUEST)) {
         return Ok(None);
     }
     let (mut guild, mut rank, mut name, mut text) = (None, None, None, None);
@@ -109,7 +123,7 @@ pub(super) fn decode_line_if_guild(input: &[u8]) -> WireResult<Option<GuildChatL
                 .try_into()
                 .map_err(|_| ChatWireError::Malformed)?,
         ),
-        (10, 0) => set_once(
+        (10, 0) if kind == Some(KIND_MEMBER) => set_once(
             &mut rank,
             u8::try_from(read_uint32(input, cursor)?).map_err(|_| ChatWireError::Malformed)?,
         ),
@@ -117,11 +131,19 @@ pub(super) fn decode_line_if_guild(input: &[u8]) -> WireResult<Option<GuildChatL
     })?;
     let line = GuildChatLine {
         guild_id: guild.ok_or(ChatWireError::Malformed)?,
-        rank: rank.ok_or(ChatWireError::Malformed)?,
+        rank: if kind == Some(KIND_GUEST) {
+            super::guild_guest::GUILD_GUEST_RANK
+        } else {
+            rank.ok_or(ChatWireError::Malformed)?
+        },
         speaker_name: name.ok_or(ChatWireError::Malformed)?,
         text: text.ok_or(ChatWireError::Malformed)?,
     };
-    check_destination(&line.guild_id, line.rank)?;
+    if kind == Some(KIND_MEMBER) {
+        check_destination(&line.guild_id, line.rank)?;
+    } else {
+        crate::CharacterId::decode(&line.guild_id).map_err(|_| ChatWireError::Malformed)?;
+    }
     Ok(Some(line))
 }
 

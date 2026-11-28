@@ -1,0 +1,14 @@
+{
+  "id": 656,
+  "name": "CHAT_GUILD_GUEST_V1",
+  "owner_decision": "m-guild1 owner allocation, 2026-11-28",
+  "owner": "Game guild chat",
+  "requires": [
+    36,
+    40
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Guild guest extension on CHAT_INTENT, CHAT_LINE and GUILD_QUERY."
+}

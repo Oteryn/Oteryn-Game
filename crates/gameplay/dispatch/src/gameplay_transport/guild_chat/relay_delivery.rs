@@ -51,12 +51,20 @@ impl ChatRuntime {
                     );
                 }
             }
+            RelayDestination::GuildGuest { guild_id } => {
+                for (session, entry) in sessions.iter_mut() {
+                    if self.guild.guests_negotiated(*session) {
+                        let guest = crate::chat::guild_room::guest_line(guild_id, name, &line.text);
+                        entry.egress.push_guild(guest, line.sent_at_micros);
+                    }
+                }
+            }
             RelayDestination::Guild { guild_id, rank } => {
                 for (session, entry) in sessions.iter_mut() {
                     if self.guild.negotiated(*session) {
-                        entry.egress.push(crate::chat::guild_room::guild_line(
-                            guild_id, rank, name, &line.text,
-                        ));
+                        let member =
+                            crate::chat::guild_room::guild_line(guild_id, rank, name, &line.text);
+                        entry.egress.push_guild(member, line.sent_at_micros);
                     }
                 }
             }

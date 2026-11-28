@@ -6,6 +6,8 @@ use oteryn_protocol_oteryn::guild::{
     MAX_GUILD_PAGE_ENTRIES,
 };
 
+mod activity;
+
 impl DurabilityRoot {
     /// The actor and World come exclusively from current admission. No Account, position or
     /// Channel is projected. Roster selectors/cursors confer no membership authority.
@@ -16,6 +18,20 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         query: GuildQuery,
     ) -> Result<GuildQueryResult> {
+        self.with_guild_query(authority, node, fence, move |tx, member| {
+            Box::pin(answer(tx, fence, member, query))
+        }).await
+    }
+
+    async fn with_guild_query<T: Send>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        read: impl for<'a, 'tx> FnOnce(&'a mut Transaction<'tx, Postgres>, Option<GuildChatMembership>)
+            -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + 'a>>
+            + Send + 'static,
+    ) -> Result<T> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| GuildError::NotCurrent)?;
@@ -30,7 +46,7 @@ impl DurabilityRoot {
                         let member =
                             read_current_guild_chat_data(&mut tx, &recovery, &node, &fence, None)
                                 .await?;
-                        answer(&mut tx, fence, member, query).await
+                        read(&mut tx, member).await
                     }
                     .await;
                     match result {

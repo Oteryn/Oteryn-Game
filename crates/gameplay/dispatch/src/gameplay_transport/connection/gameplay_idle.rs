@@ -104,6 +104,10 @@ pub(super) fn meaningful(
             selected.contains(&oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1),
         )
         .is_ok(),
+        13 if chat::guild_guest::is_extension(command.payload) => {
+            selected.contains(&chat::guild_guest::CAPABILITY_CHAT_GUILD_GUEST_V1)
+                && chat::guild_guest::decode_intent(command.payload).is_ok()
+        }
         13 => chat::decode_chat_intent(command.payload).is_ok_and(|intent| {
             !matches!(
                 intent,

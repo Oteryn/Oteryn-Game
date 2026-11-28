@@ -121,6 +121,7 @@ struct QueuedLine {
     line: ChatLine,
     party: Option<PartyChatDestination>,
     private_channel: Option<PrivateChannelChatDestination>,
+    guild_sent_at_micros: Option<u64>,
 }
 
 /// One session's undelivered chat lines.
@@ -147,6 +148,7 @@ impl ChatEgress {
             line,
             party: None,
             private_channel: None,
+            guild_sent_at_micros: None,
         });
     }
 
@@ -160,6 +162,7 @@ impl ChatEgress {
             line: ChatLine::Party { speaker_name, text },
             party: Some(destination),
             private_channel: None,
+            guild_sent_at_micros: None,
         });
     }
 
@@ -172,6 +175,7 @@ impl ChatEgress {
             line: ChatLine::PrivateChannel(line),
             party: None,
             private_channel: Some(destination),
+            guild_sent_at_micros: None,
         });
     }
 
@@ -180,6 +184,22 @@ impl ChatEgress {
             return None;
         }
         self.lines.front()?.private_channel
+    }
+
+    pub fn push_guild(&mut self, line: ChatLine, sent_at_micros: u64) {
+        self.push_queued(QueuedLine {
+            line,
+            party: None,
+            private_channel: None,
+            guild_sent_at_micros: Some(sent_at_micros),
+        });
+    }
+
+    pub fn guild_sent_at_micros(&self) -> Option<u64> {
+        if self.marker_owed {
+            return None;
+        }
+        self.lines.front()?.guild_sent_at_micros
     }
 
     pub fn party_destination(&self) -> Option<PartyChatDestination> {

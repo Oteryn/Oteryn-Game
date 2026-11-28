@@ -1,0 +1,17 @@
+{
+  "id": 657,
+  "name": "GUILD_ACTIVITY_V1",
+  "constant": "guild::activity::CAPABILITY_GUILD_ACTIVITY_V1",
+  "requires": [
+    40
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

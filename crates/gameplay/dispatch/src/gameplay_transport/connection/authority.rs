@@ -1504,6 +1504,14 @@ pub trait FreshAdmissionAuthority {
         })
     }
 
+    fn chat_guild_guest_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _intent: oteryn_protocol_oteryn::chat::guild_guest::GuildGuestIntent,
+    ) -> impl Future<Output = Option<Vec<u8>>> {
+        std::future::ready(None)
+    }
+
     fn chat_guild_intent(
         &self,
         _admitted: AdmittedSession,

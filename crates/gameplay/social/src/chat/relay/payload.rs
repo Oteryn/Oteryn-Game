@@ -12,6 +12,9 @@ impl RelayLine {
             RelayDestination::Presence { .. } => out.push(6),
             RelayDestination::Party { .. } => out.push(4),
             RelayDestination::PrivateChannel { .. } => out.push(5),
+            RelayDestination::GuildGuest { .. } => {
+                out.push(super::super::guild_room::KIND_GUILD_GUEST)
+            }
             RelayDestination::Guild { .. } => out.push(super::super::guild_room::KIND_GUILD),
         }
         out.extend_from_slice(&self.message_id);
@@ -34,6 +37,7 @@ impl RelayLine {
                 CharacterId::decode(&party_id).map_err(|_| RelayError::BadPayload)?;
                 out.extend_from_slice(&party_id);
             }
+            RelayDestination::GuildGuest { guild_id } => out.extend_from_slice(guild_id.as_bytes()),
             RelayDestination::Guild { guild_id, rank } => {
                 super::super::guild_room::encode_destination(&mut out, guild_id, rank)
             }
@@ -84,6 +88,9 @@ impl RelayLine {
                     .find(|room| *room as u8 == code)
                     .ok_or(RelayError::BadPayload)?;
                 RelayDestination::Room { room }
+            }
+            super::super::guild_room::KIND_GUILD_GUEST => {
+                super::super::guild_room::decode_guest_destination(&mut cursor)?
             }
             super::super::guild_room::KIND_GUILD => {
                 super::super::guild_room::decode_destination(&mut cursor)?

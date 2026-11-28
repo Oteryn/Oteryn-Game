@@ -4,6 +4,14 @@ use crate::domain::guild::{GuildId, GuildRank};
 use oteryn_protocol_oteryn::chat::{ChatLine, guild_room::GuildChatLine};
 
 pub(super) const KIND_GUILD: u8 = 3;
+pub(super) const KIND_GUILD_GUEST: u8 = 7;
+
+pub(super) fn decode_guest_destination(
+    cursor: &mut Cursor<'_>,
+) -> Result<RelayDestination, RelayError> {
+    let guild_id = GuildId::from_bytes(cursor.array()?).map_err(|_| RelayError::BadPayload)?;
+    Ok(RelayDestination::GuildGuest { guild_id })
+}
 
 pub(super) fn encode_destination(out: &mut Vec<u8>, guild: GuildId, rank: GuildRank) {
     out.extend_from_slice(guild.as_bytes());
@@ -20,6 +28,15 @@ pub fn guild_line(guild: GuildId, rank: GuildRank, name: &str, text: &super::Cha
     ChatLine::Guild(GuildChatLine {
         guild_id: *guild.as_bytes(),
         rank: rank.level(),
+        speaker_name: name.to_owned(),
+        text: text.as_str().to_owned(),
+    })
+}
+
+pub fn guest_line(guild: GuildId, name: &str, text: &super::ChatText) -> ChatLine {
+    ChatLine::Guild(GuildChatLine {
+        guild_id: *guild.as_bytes(),
+        rank: oteryn_protocol_oteryn::chat::guild_guest::GUILD_GUEST_RANK,
         speaker_name: name.to_owned(),
         text: text.as_str().to_owned(),
     })
