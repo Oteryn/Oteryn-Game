@@ -35,7 +35,12 @@ pub(super) struct Offer {
     topic: u16,
     #[serde(default)]
     any_topic: bool,
+    #[serde(default)]
+    crystal_keyword: bool,
     next_topic: u16,
+    // A dialogue alias can select the NPC's existing fenced reward callback.
+    #[serde(default)]
+    transition: Option<String>,
     storage: Vec<Storage>,
     #[serde(default)]
     requires: Vec<reward_callbacks::TrackRequirement>,
@@ -50,6 +55,8 @@ pub(super) struct Offer {
     maximum_level: Option<u32>,
     #[serde(default)]
     failure_reply: Vec<String>,
+    #[serde(default)]
+    failure_topic: Option<u16>,
 }
 
 #[cfg(test)]
@@ -166,6 +173,7 @@ pub(super) fn prepare(
             .reward_request = (!says_no).then_some(context);
     }
     let mut failure_reply = Vec::new();
+    let mut failure_topic = None;
     let mut refused = false;
     let step = quest_dialogue::prepare(
         admission,
@@ -371,9 +379,21 @@ pub(super) fn prepare(
                 if !meets_level(offer.minimum_level, offer.maximum_level) {
                     return refusal(&offer.failure_reply);
                 }
+                if let Some(key) = &offer.transition {
+                    // Keep the original callback, value plan and saved-definition pin.
+                    callbacks.clone().find(|callback| {
+                        callback.key == *key
+                            && callback.npc == context.2
+                            && callback.carried_item.is_none()
+                            && callback.world_claim.is_none()
+                    })?;
+                    failure_reply = offer.failure_reply.clone();
+                    failure_topic = offer.failure_topic.or(failure_topic);
+                }
                 return Some(Choice {
-                    transition: None,
+                    transition: offer.transition.clone(),
                     next_topic: Some(Topic::from(offer.next_topic)),
+
                     reply: if context.2 == storkus::NPC
                         && text == "mission"
                         && offer.next_topic == storkus::COLLECTION_TOPIC
@@ -457,7 +477,7 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| step.with_failure_reply(failure_reply, failure_topic).with_refusal(refused))
 }
 
 #[cfg(test)]
@@ -558,6 +578,15 @@ pub(super) fn unhandled_confirmation(
                 && matches_reward_keyword(callback, &text)
         })
     })
+}
+
+/// Crystal MsgContains rejects a keyword if any occurrence follows a Lua %w byte.
+pub(super) fn crystal_keyword(text: &str, word: &str) -> bool {
+    let mut matches = text.match_indices(word);
+    let allowed = |(index, _): (usize, &str)| {
+        index == 0 || !text.as_bytes()[index - 1].is_ascii_alphanumeric()
+    };
+    matches.next().is_some_and(allowed) && matches.all(allowed)
 }
 
 const JORGE: &str = "oteryn:npc.jorge";

@@ -19,6 +19,7 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
     include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
     include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/qc-programmes.json"),
     include_str!("../../../../../../../content/quests/npc-offers/nomads-land.json"),
     include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
     include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),

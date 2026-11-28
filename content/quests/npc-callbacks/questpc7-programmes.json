@@ -1127,85 +1127,6 @@
       "completes": true
     },
     {
-      "key": "oteryn:quest-reward/questpc7-friends-draconian-steel",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 6,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 1,
-          "maximum": 15,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i3416",
-          "count": 1
-        }
-      ],
-      "present": [],
-      "give": {
-        "item": "oteryn:item.tibia.i5889",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Here is your draconian steel."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
-      ],
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/friends/draconian-steel-uses",
-        "maximum": 1000000000000
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-hand-in-skirts",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 4,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i3560",
-          "count": 3
-        }
-      ],
-      "present": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "My partner will be delighted. I can work with you now."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/questpc7-friends-honey",
       "quest": "oteryn:quest.friends_and_traders",
       "npc": "oteryn:npc.marina",
@@ -1618,36 +1539,6 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:1-176:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-request-friendship",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 2,
-      "next_topic": 3,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "present": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Bring three bast skirts for my partner."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ]
     },
     {

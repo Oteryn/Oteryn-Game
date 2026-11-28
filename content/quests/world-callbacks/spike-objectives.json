@@ -10990,7 +10990,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11013,7 +11013,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32162,
+            "y": 32507,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11044,7 +11052,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11067,7 +11075,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32221,
+            "y": 32536,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11098,7 +11114,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11121,7 +11137,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32254,
+            "y": 32539,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11152,7 +11176,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11175,7 +11199,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32180,
+            "y": 32558,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11195,7 +11227,7 @@
       "requires_world_admission": true,
       "reversible": false,
       "passages": [],
-      "return_on_failure": false,
+      "return_on_failure": true,
       "offerings": [],
       "sources": [
         "https://www.tibiawiki.com.br/wiki/Spike_Tasks",
@@ -11206,7 +11238,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "preserve": true
         }
@@ -11240,7 +11272,7 @@
       "requires_world_admission": true,
       "reversible": false,
       "passages": [],
-      "return_on_failure": false,
+      "return_on_failure": true,
       "offerings": [],
       "sources": [
         "https://www.tibiawiki.com.br/wiki/Spike_Tasks",
@@ -11251,7 +11283,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "preserve": true
         }
@@ -11296,7 +11328,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11319,7 +11351,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32112,
+            "y": 32664,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11350,7 +11390,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11373,7 +11413,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32212,
+            "y": 32687,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11404,7 +11452,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11427,7 +11475,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32166,
+            "y": 32716,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11458,7 +11514,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11481,7 +11537,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32303,
+            "y": 32504,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11512,7 +11576,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11535,7 +11599,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32321,
+            "y": 32544,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11566,7 +11638,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11589,7 +11661,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32346,
+            "y": 32584,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11620,7 +11700,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11643,7 +11723,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32307,
+            "y": 32621,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11674,7 +11762,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11697,7 +11785,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32272,
+            "y": 32678,
+            "floor": -11
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11728,7 +11824,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11751,7 +11847,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32209,
+            "y": 32532,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11782,7 +11886,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11805,7 +11909,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32205,
+            "y": 32546,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11836,7 +11948,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11859,7 +11971,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32200,
+            "y": 32601,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11890,7 +12010,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11913,7 +12033,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32152,
+            "y": 32612,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11944,7 +12072,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -11967,7 +12095,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32203,
+            "y": 32654,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -11998,7 +12134,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12021,7 +12157,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32155,
+            "y": 32684,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12052,7 +12196,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12075,7 +12219,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32212,
+            "y": 32682,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12106,7 +12258,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12129,7 +12281,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32172,
+            "y": 32716,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12160,7 +12320,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12183,7 +12343,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32270,
+            "y": 32498,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12214,7 +12382,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12237,7 +12405,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32256,
+            "y": 32545,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12268,7 +12444,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12291,7 +12467,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32303,
+            "y": 32546,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12322,7 +12506,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12345,7 +12529,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32321,
+            "y": 32570,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12376,7 +12568,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12399,7 +12591,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32381,
+            "y": 32553,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12430,7 +12630,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12453,7 +12653,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32368,
+            "y": 32632,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12484,7 +12692,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12507,7 +12715,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32323,
+            "y": 32644,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12538,7 +12754,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12561,7 +12777,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32257,
+            "y": 32702,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     },
@@ -12592,7 +12816,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 8,
+          "maximum": 5,
           "set": 1,
           "increment": true
         }
@@ -12615,7 +12839,15 @@
         19210
       ],
       "effects": {
-        "reset_after_ms": 120000
+        "reset_after_ms": 120000,
+        "magic": {
+          "position": {
+            "x": 32289,
+            "y": 32705,
+            "floor": -12
+          },
+          "effect": 17
+        }
       },
       "success_message": "You have destroyed a monster nest."
     }

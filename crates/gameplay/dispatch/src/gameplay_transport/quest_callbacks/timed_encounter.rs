@@ -336,9 +336,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &memo.callback,
                 )
                 .is_some();
-                if mound {
-                    super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
-                }
+                // Mound decay restores the tile independently of the summoned creature.
                 for actor in census.into_iter().filter(|_| !mound) {
                     let in_room = runtime
                         .read_actor_position(actor)

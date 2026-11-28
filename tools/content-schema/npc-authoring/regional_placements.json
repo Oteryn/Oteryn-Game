@@ -179,6 +179,7 @@
     {"npc": "gnomargery", "cell": [32245, 32600, 14], "xml_line": 3234, "block_solid_contact": true},
     {"npc": "gnomaticus", "cell": [32764, 31789, 10], "xml_line": 2832},
     {"npc": "gnombold", "cell": [32242, 32598, 11], "xml_line": 2955, "block_solid_contact": true},
+    {"npc": "gnome_trooper", "cell": [32157, 32521, 15]},
     {"npc": "gnome_trooper", "cell": [32171, 32644, 13], "xml_line": 3129},
     {"npc": "gnome_trooper", "cell": [32181, 32660, 14], "xml_line": 3246},
     {"npc": "gnome_trooper", "cell": [32295, 32512, 14], "xml_line": 3225},

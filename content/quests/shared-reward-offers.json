@@ -24,49 +24,6 @@
     {
       "npc": "oteryn:npc.a_sweaty_cyclops",
       "keywords": [
-        "uth'lokr"
-      ],
-      "topic": 0,
-      "any_topic": true,
-      "next_topic": 1,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "I can forge steel from a dragon shield. Do you want to trade?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "uth'lokr"
-      ],
-      "topic": 0,
-      "any_topic": true,
-      "next_topic": 6,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 1,
-          "maximum": 15,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Shall I forge your dragon shield into draconian steel?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "uth'lokr",
         "bast skirt"
       ],
       "topic": 0,
@@ -83,27 +40,6 @@
       ],
       "reply": [
         "Did you bring three bast skirts?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 1,
-      "any_topic": false,
-      "next_topic": 2,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "First, will you do a favour for me?"
       ]
     },
     {

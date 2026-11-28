@@ -24,6 +24,24 @@ impl Drop for CreatureTurn<'_> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn survey_allows_use(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        survey: Option<&oteryn_gameplay_quests::quest::reward_callbacks::Survey>,
+    ) -> Result<bool, ()> {
+        let Some(survey) = survey else {
+            return Ok(true);
+        };
+        let character = command.item_fence.ok_or(())?.character_id;
+        let position = self.runtime.lock().await.read_actor_position(actor).map_err(|_| ())?.position();
+        if let Some(clue) = survey.clue(character.as_bytes(), self.reset_epoch, position.x, position.y, position.floor) {
+            self.states.chat.push_quest_feedback(command.game_session_id, clue);
+            return Ok(false);
+        }
+        Ok(true)
+    }
+
     /// Ordinary carried quest tools borrow the same fenced quest/value owner as
     /// NPC exchanges. The selected instance and ingress remain in its input proof.
     pub(super) async fn use_carried_quest_item(
@@ -218,6 +236,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(())?;
         if fence.item_fence() != item_fence {
             return Ok(Some(outcome(UseDisposition::Rejected)));
+        }
+        if !self.survey_allows_use(actor, command, callback.survey.as_ref()).await? {
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
         }
         let peer = if callback.peer_requires.is_some() {
             match self.quest_peer_use(actor, command, intent).await {

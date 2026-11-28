@@ -123,7 +123,7 @@ mod tests {
             } else if row.key.starts_with("oteryn:quest-callback/spike/nest-") {
                 assert_eq!(row.lever, Some([19209, 19210]));
                 assert_eq!(row.effects.reset_after_ms, Some(120000));
-                assert!(row.storage[0].increment && row.storage[0].maximum == 8);
+                assert!(row.storage[0].increment && row.storage[0].maximum == 5);
                 assert!(matches!(
                     row.state_ops[0].from,
                     crate::quest::reward_callbacks::StateCondition::ElapsedLessThan {
@@ -136,6 +136,7 @@ mod tests {
                 .starts_with("oteryn:quest-callback/spike/transform-")
             {
                 assert_eq!(row.trigger, Trigger::StepIn);
+                assert!(row.return_on_failure);
                 assert!(matches!(
                     row.state_ops[0].effect,
                     crate::quest::reward_callbacks::StateMutation::SetNow

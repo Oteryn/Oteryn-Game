@@ -627,6 +627,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/nomads-land.json"),
     include_str!("../../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
@@ -2845,7 +2846,7 @@ mod tests {
             .iter()
             .filter_map(|row| row.npc_area.as_ref())
             .collect::<Vec<_>>();
-        assert_eq!(parcels.len(), 4);
+        assert_eq!(parcels.len(), 5);
         for area in &parcels {
             let p = area.minimum;
             assert_eq!(
