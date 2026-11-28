@@ -559,8 +559,17 @@ fn premium_refresher(
     root: &DurabilityRoot,
     consumer: std::sync::Arc<crate::premium::PremiumConsumer>,
 ) -> crate::premium::refresh::PremiumRefresher {
+    crate::premium::refresh::PremiumRefresher::new(
+        consumer,
+        root.clone(),
+        premium_snapshot_client(),
+    )
+}
+
+/// Build the configured authenticated Platform client for online refresh and house settlement.
+pub fn premium_snapshot_client() -> Option<crate::premium::client::PremiumSnapshotClient> {
     use crate::premium::client::{PremiumClientConfig, PremiumSnapshotClient};
-    let client = match PremiumClientConfig::from_env()
+    match PremiumClientConfig::from_env()
         .and_then(|config| config.map(|c| PremiumSnapshotClient::new(&c)).transpose())
     {
         Ok(client) => client,
@@ -568,8 +577,7 @@ fn premium_refresher(
             operator_event(&format!("premium_snapshot_client_disabled reason={error}"));
             None
         }
-    };
-    crate::premium::refresh::PremiumRefresher::new(consumer, root.clone(), client)
+    }
 }
 
 /// N009/N014: the node's Platform sanction and loyalty stream pullers

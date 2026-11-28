@@ -1,6 +1,11 @@
 use super::value::{ValueWrite, apply_value};
 use super::*;
 use crate::durability::bank::{lock_balances, new_entry_id};
+use crate::durability::db::{
+    begin_semantic_transaction, bound_periodic_lock_wait, commit_semantic_transaction,
+    lock_admission_relations,
+};
+use crate::durability::DurabilityRoot;
 use crate::durability::runtime_scope_assignment::{
     NodeIncarnationProof, prove_current_incarnation,
 };
@@ -19,34 +24,77 @@ pub struct HouseSettlementRequest {
     pub step: u32,
 }
 
+/// Hard checkout budget for auction work. The foreground House route has a one-second budget.
+pub const HOUSE_SETTLEMENT_PASS_LIMIT: std::time::Duration = std::time::Duration::from_millis(500);
+
+/// Election authority supplied by the activation coordinator after fresh Platform pulls.
+pub enum HouseSettlementPremium {
+    PreDelivery { switch_over_us: Option<i64> },
+    Delivered {
+        latch: crate::durability::premium_activation_latch::PremiumActivationLatch,
+        valid_until_us: i64,
+        /// Every bidder must have a verified, unexpired decision at this revision.
+        accounts: Vec<([u8; 16], u64, bool)>,
+    },
+    /// Captured refunds cannot elect an owner and require no Premium decision.
+    Refund,
+}
+
 impl super::super::DurabilityRoot {
-    /// One bounded, idempotent election or refund. Premium is read from the
-    /// durable account fence, independent of the bidder's session or Channel.
+    /// One bounded, idempotent election or refund.
     pub async fn house_settlement(
         &self,
         authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         request: HouseSettlementRequest,
+        premium: HouseSettlementPremium,
     ) -> Result<HouseOwnershipOutcome> {
-        use crate::durability::{character_authority::assert_recovery_fence, db::*};
+        use crate::durability::character_authority::assert_recovery_fence;
         let recovery = authority.record_for(self)
             .map_err(|_| HouseOwnershipError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_background_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            bound_periodic_lock_wait(&mut tx).await?;
-            // Take the shared latch before the admission/house locks, as in the bid gate.
-            let bypass = crate::durability::premium_activation_latch::with_purchase_latch(
-                &mut tx, |_, witness| witness.is_some(),
-            ).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            let result = settle_in_transaction(&mut tx, &node, &request, bypass).await;
-            if result.is_ok() {
-                commit_semantic_transaction(tx, deadline).await?;
-            }
-            Ok(result)
-        })).await?
+        DurabilityRoot::with_background_holder(async {
+            let cutoff = tokio::time::Instant::now() + HOUSE_SETTLEMENT_PASS_LIMIT;
+            self.try_issue_semantic_pass_by(cutoff)?
+                .run(move |holder, deadline| Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    bound_periodic_lock_wait(&mut tx).await?;
+                    // Share the bid gate's lock order: latch before admission and House locks.
+                    if request.step == 0 && !matches!(premium, HouseSettlementPremium::Refund)
+                        && let Err(error) = verify_activation(&mut tx, &premium).await
+                    {
+                        return Ok(Err(error));
+                    }
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let result = settle_in_transaction(&mut tx, &node, &request, &premium).await;
+                    if result.is_ok() {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    }
+                    Ok(result)
+                })).await?
+        }).await
+    }
+
+    /// Capture a bounded list before any network pull. It is rechecked under
+    /// the auction locks before a decision can write value.
+    pub async fn house_settlement_accounts(
+        &self,
+        request: &HouseSettlementRequest,
+    ) -> Result<Option<Vec<[u8; 16]>>> {
+        let request = request.clone();
+        DurabilityRoot::with_background_holder(async {
+            let cutoff = tokio::time::Instant::now() + HOUSE_SETTLEMENT_PASS_LIMIT;
+            self.try_issue_semantic_pass_by(cutoff)?
+                .run(move |holder, deadline| Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    bound_periodic_lock_wait(&mut tx).await?;
+                    if step_replayed(&mut tx, &request).await? {
+                        return Ok(Ok(None));
+                    }
+                    Ok(candidates(&mut tx, &request.auction).await.map(Some))
+                })).await?
+        }).await
     }
 
     /// Find the next bounded batch of ended ordinary auctions or unfinished refunds.
@@ -55,40 +103,55 @@ impl super::super::DurabilityRoot {
         world: WorldId,
         after: Option<[u8; 16]>,
     ) -> Result<Vec<HouseSettlementRequest>> {
-        self.try_issue_background_semantic_pass()?
-            .run(move |holder, deadline| Box::pin(async move {
-                let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
-                super::super::db::bound_periodic_lock_wait(&mut tx).await?;
-                let rows = sqlx::query(
-                    "SELECT uuid_send(a.auction_id) AS auction, a.house_key,
-                      coalesce((SELECT step+1 FROM game_house_settlement_steps s
-                        WHERE s.auction_id=a.auction_id ORDER BY step DESC LIMIT 1),0)::integer AS step
-                     FROM game_house_auctions a JOIN game_house_properties p USING(world_id,house_key)
-                     WHERE a.world_id=encode($1,'hex')::uuid
-                      AND ($2::bytea IS NULL OR a.auction_id>encode($2,'hex')::uuid)
-                      AND p.kind IN ('private_house','shop') AND a.ends_at<=statement_timestamp()
-                      AND (NOT a.settled OR EXISTS(SELECT 1 FROM game_house_bids b
-                            WHERE b.auction_id=a.auction_id AND b.state=1))
-                     ORDER BY a.auction_id LIMIT 16",
-                )
-                .bind(world.as_bytes().as_slice())
-                .bind(after.as_ref().map(|id| id.as_slice()))
-                .fetch_all(&mut *tx)
-                .await?;
-                Ok(rows.into_iter().map(|row| {
-                    let auction: Vec<u8> = row.try_get("auction")?;
-                    Ok(HouseSettlementRequest {
-                        world,
-                        house_key: row.try_get("house_key")?,
-                        auction: auction.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
-                        step: u32::try_from(row.try_get::<i32, _>("step")?)
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        DurabilityRoot::with_background_holder(async {
+            let cutoff = tokio::time::Instant::now() + HOUSE_SETTLEMENT_PASS_LIMIT;
+            self.try_issue_semantic_pass_by(cutoff)?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        bound_periodic_lock_wait(&mut tx).await?;
+                        scan_due(&mut tx, world, after).await
                     })
-                }).collect::<std::result::Result<Vec<_>, DurabilityError>>()?)
-            }))
-            .await
-            .map_err(Into::into)
+                })
+                .await
+                .map_err(Into::into)
+        }).await
     }
+}
+
+async fn scan_due(
+    tx: &mut Tx<'_>,
+    world: WorldId,
+    after: Option<[u8; 16]>,
+) -> std::result::Result<Vec<HouseSettlementRequest>, DurabilityError> {
+    let rows = sqlx::query(
+        "SELECT uuid_send(a.auction_id) AS auction, a.house_key,
+          coalesce((SELECT step+1 FROM game_house_settlement_steps s
+            WHERE s.auction_id=a.auction_id ORDER BY step DESC LIMIT 1),0)::integer AS step
+         FROM game_house_auctions a JOIN game_house_properties p USING(world_id,house_key)
+         WHERE a.world_id=encode($1,'hex')::uuid
+          AND ($2::bytea IS NULL OR a.auction_id>encode($2,'hex')::uuid)
+          AND p.kind IN ('private_house','shop') AND a.ends_at<=statement_timestamp()
+          AND (NOT a.settled OR EXISTS(SELECT 1 FROM game_house_bids b
+                WHERE b.auction_id=a.auction_id AND b.state=1))
+         ORDER BY a.auction_id LIMIT 16",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(after.as_ref().map(|id| id.as_slice()))
+    .fetch_all(&mut **tx)
+    .await?;
+    rows.into_iter()
+        .map(|row| {
+            let auction: Vec<u8> = row.try_get("auction")?;
+            Ok(HouseSettlementRequest {
+                world,
+                house_key: row.try_get("house_key")?,
+                auction: auction.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
+                step: u32::try_from(row.try_get::<i32, _>("step")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            })
+        })
+        .collect()
 }
 
 pub(super) async fn candidates(tx: &mut Tx<'_>, auction: &[u8; 16]) -> Result<Vec<[u8; 16]>> {
@@ -104,7 +167,7 @@ pub(super) async fn settle_in_transaction(
     tx: &mut Tx<'_>,
     node: &NodeIncarnationProof,
     request: &HouseSettlementRequest,
-    bypass_premium: bool,
+    premium: &HouseSettlementPremium,
 ) -> Result<HouseOwnershipOutcome> {
     if request.step > 256 || request.house_key.len() > 512 {
         return Err(HouseOwnershipError::InvalidInput);
@@ -123,10 +186,11 @@ pub(super) async fn settle_in_transaction(
         .bind(request.auction.as_slice())
         .execute(&mut **tx)
         .await?;
-    let replay: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_settlement_steps WHERE auction_id=encode($1,'hex')::uuid AND step=$2 AND world_id=encode($3,'hex')::uuid AND house_key=$4)")
-        .bind(request.auction.as_slice()).bind(i64::from(request.step)).bind(request.world.as_bytes().as_slice()).bind(&request.house_key).fetch_one(&mut **tx).await?;
-    if replay {
+    if step_replayed(tx, request).await? {
         return Ok(HouseOwnershipOutcome::Replayed);
+    }
+    if request.step == 0 && matches!(premium, HouseSettlementPremium::Refund) {
+        return Err(HouseOwnershipError::NotPremium);
     }
     let accounts = candidates(tx, &request.auction).await?;
     if request.step == 0 {
@@ -148,9 +212,12 @@ pub(super) async fn settle_in_transaction(
     if accounts != candidates(tx, &request.auction).await? {
         return Err(HouseOwnershipError::ConcurrentChange);
     }
-    for account in &accounts {
-        account_lock(tx, account, request.world.as_bytes()).await?;
-    }
+    let account_hex: Vec<_> = accounts.iter().map(|account| {
+        account.iter().map(|byte| format!("{byte:02x}")).collect::<String>()
+    }).collect();
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(a||encode($2,'hex'),143))
+                 FROM unnest($1::text[]) WITH ORDINALITY AS accounts(a, ord) ORDER BY ord")
+        .bind(&account_hex).bind(request.world.as_bytes().as_slice()).execute(&mut **tx).await?;
     let rows = held(tx, &request.auction).await?;
     let settled = auction.try_get::<bool, _>("settled")?;
     if settled != (request.step > 0) {
@@ -171,23 +238,36 @@ pub(super) async fn settle_in_transaction(
         if ground {
             return Err(HouseOwnershipError::ConcurrentChange);
         }
-        for row in &rows {
+        let allowed = match premium {
+            HouseSettlementPremium::PreDelivery { switch_over_us }
+                if switch_over_us.is_none_or(|cutoff| now < cutoff) => vec![true; accounts.len()],
+            HouseSettlementPremium::Delivered { valid_until_us, accounts: proofs, .. }
+                if now < *valid_until_us
+                    && proofs.iter().map(|proof| proof.0).eq(accounts.iter().copied()) =>
+            {
+                check_premium_revisions(tx, &account_hex, proofs, *valid_until_us).await?
+            }
+            _ => return Err(HouseOwnershipError::NotPremium),
+        };
+        let facts = eligibility::read_auction(tx, &request.auction, request.world.as_bytes()).await?;
+        if facts.len() != rows.len() || facts.len() != allowed.len() {
+            return Err(HouseOwnershipError::ConcurrentChange);
+        }
+        for ((row, facts), premium_allowed) in rows.iter().zip(&facts).zip(allowed) {
             let account = uuid(row, "account")?;
-            let premium = bypass_premium || crate::durability::premium_fence::settlement_premium_current(
-                tx, account, now,
-            ).await?;
-            let candidate = eligibility::read(
-                tx,
-                &uuid(row, "character")?,
-                request.world.as_bytes(),
+            if uuid(facts, "account")? != account {
+                return Err(HouseOwnershipError::ConcurrentChange);
+            }
+            let candidate = eligibility::decode(
+                facts,
+                uuid(row, "character")?,
                 Bid {
                     account,
                     maximum: gold(row, "maximum")?,
                     maximum_reached_order: gold(row, "reached_order")?,
                 },
-                premium,
-            )
-            .await?;
+                premium_allowed,
+            )?;
             if candidate.facts.refusal() == 0 {
                 valid.push(candidate.bid);
             }
@@ -260,4 +340,60 @@ pub(super) async fn settle_in_transaction(
         .bind(winner.is_none()).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
         .bind(node.sql_possession_secret()).execute(&mut **tx).await?;
     Ok(HouseOwnershipOutcome::Applied)
+}
+
+
+async fn verify_activation(tx: &mut Tx<'_>, premium: &HouseSettlementPremium) -> Result<()> {
+    use crate::durability::premium_activation_latch::with_purchase_latch;
+    let held = with_purchase_latch(tx, |latch, _| latch).await?;
+    let consistent = match premium {
+        HouseSettlementPremium::PreDelivery { .. } => held.is_none(),
+        HouseSettlementPremium::Delivered { latch, .. } => held.as_ref() == Some(latch),
+        HouseSettlementPremium::Refund => false,
+    };
+    if !consistent {
+        return Err(HouseOwnershipError::NotPremium);
+    }
+    Ok(())
+}
+
+/// Serialize against the same per-account Premium fence used by ingestion, then
+/// recheck all fetched revisions and durable deny floors in one statement.
+async fn check_premium_revisions(
+    tx: &mut Tx<'_>,
+    accounts: &[String],
+    proofs: &[([u8; 16], u64, bool)],
+    valid_until_us: i64,
+) -> Result<Vec<bool>> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:premium-account:'||a,0))
+                 FROM unnest($1::text[]) WITH ORDINALITY AS accounts(a, ord) ORDER BY ord")
+        .bind(accounts).execute(&mut **tx).await?;
+    let revisions: Vec<_> = proofs.iter().map(|proof| proof.1.to_string()).collect();
+    let paid: Vec<_> = proofs.iter().map(|proof| proof.2).collect();
+    let matches: bool = sqlx::query_scalar(
+        "SELECT NOT EXISTS (
+            SELECT 1 FROM unnest($1::text[], $2::text[], $3::boolean[]) AS proof(account, revision, paid)
+            LEFT JOIN game_premium_account_fence f ON f.account_id=proof.account::uuid
+            LEFT JOIN game_premium_evidence e USING(account_id,authority_revision)
+            LEFT JOIN game_premium_account_conflict c USING(account_id)
+            LEFT JOIN game_profile_b_products p ON p.account_id=f.account_id
+                AND p.product_id='oteryn.premium_time' AND p.product_version=1
+            WHERE f.authority_revision IS DISTINCT FROM proof.revision::numeric
+                OR f.conflict_authority_revision IS NOT NULL OR c.account_id IS NOT NULL
+                OR e.account_id IS NULL OR e.refresh_after_us < $4 OR e.authority_valid_until_us < $4
+                OR (proof.paid AND (e.entitlement_state <> 1 OR e.effective_until_us < $4))
+                OR (NOT proof.paid AND e.entitlement_state NOT IN (3,4,5))
+                OR coalesce(p.hint_revision,0)>e.lifecycle_revision
+        )",
+    ).bind(accounts).bind(&revisions).bind(&paid).bind(valid_until_us).fetch_one(&mut **tx).await?;
+    if !matches {
+        return Err(HouseOwnershipError::ConcurrentChange);
+    }
+    Ok(paid)
+}
+
+
+async fn step_replayed(tx: &mut Tx<'_>, request: &HouseSettlementRequest) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_settlement_steps WHERE auction_id=encode($1,'hex')::uuid AND step=$2 AND world_id=encode($3,'hex')::uuid AND house_key=$4)")
+        .bind(request.auction.as_slice()).bind(i64::from(request.step)).bind(request.world.as_bytes().as_slice()).bind(&request.house_key).fetch_one(&mut **tx).await?)
 }

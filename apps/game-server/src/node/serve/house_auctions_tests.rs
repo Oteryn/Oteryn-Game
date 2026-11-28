@@ -24,10 +24,15 @@ fn scenario(admin: String) -> TestResult {
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let generation = h.root.read_runtime_scope_assignment(scope).await.map_err(debug)?
                 .ok_or("channel assignment")?.ownership_generation;
+            let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                std::sync::Arc::default(), None, None, Some(h.root.clone())
+            );
             let worker = HouseAuctions {
                 root: &h.root,
                 authority: &authority,
                 node: &h.node,
+                premium: &premium,
+                premium_client: None,
                 catalogue: HouseAuctionCatalogue {
                     scope, generation, reset_epoch: 0, map_revision: "house-epoch-map", content_digest: digest,
                 },

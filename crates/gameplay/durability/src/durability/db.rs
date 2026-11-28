@@ -1330,9 +1330,20 @@ impl Drop for BootPassDeadline {
 
 tokio::task_local! {
     static PERIODIC_LOCK_BUDGET: ();
+    static SEMANTIC_PASS_CUTOFF: TokioInstant;
 }
 
 impl DurabilityRoot {
+    /// Share an absolute deadline across the semantic passes of one operation.
+    pub fn with_semantic_pass_cutoff<F: Future>(
+        cutoff: TokioInstant,
+        future: F,
+    ) -> impl Future<Output = F::Output> {
+        let cutoff = SEMANTIC_PASS_CUTOFF.try_with(|existing| (*existing).min(cutoff))
+            .unwrap_or(cutoff);
+        SEMANTIC_PASS_CUTOFF.scope(cutoff, Box::pin(future))
+    }
+
     /// Cap each PostgreSQL lock wait while periodic equipment maintenance owns the spell lane.
     pub fn with_periodic_lock_budget<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
         PERIODIC_LOCK_BUDGET.scope((), Box::pin(future))
@@ -1948,6 +1959,9 @@ impl DurabilityRoot {
 
     #[track_caller]
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
+        if let Ok(cutoff) = SEMANTIC_PASS_CUTOFF.try_with(|cutoff| *cutoff) {
+            return self.try_issue_semantic_pass_by(cutoff);
+        }
         let caller = std::panic::Location::caller();
         let holder = self.try_acquire_ready().inspect_err(|_| {
             record_refused_checkout(&self.holder_owner, caller);

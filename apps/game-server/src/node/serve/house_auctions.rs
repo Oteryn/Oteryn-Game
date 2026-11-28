@@ -5,6 +5,10 @@ pub(super) struct HouseAuctions<'a, 'f, 's> {
     pub(super) root: &'a DurabilityRoot,
     pub(super) authority: &'a ReconciledCharacterAuthority<'f, 's>,
     pub(super) node: &'a NodeIncarnationProof,
+    pub(super) premium:
+        &'a crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    pub(super) premium_client:
+        Option<&'a oteryn_gameplay_social::premium::client::PremiumSnapshotClient>,
     pub(super) catalogue: HouseAuctionCatalogue<'a>,
 }
 
@@ -44,8 +48,13 @@ impl HouseAuctions<'_, '_, '_> {
                 cursor = batch.last().map(|request| request.auction);
                 for request in batch {
                     if super::super::cancellation::first(
-                        self.root
-                            .house_settlement(self.authority, self.node, request),
+                        self.premium.settle_house_auction(
+                            self.root,
+                            self.authority,
+                            self.node,
+                            self.premium_client,
+                            request,
+                        ),
                         stop.cancelled(),
                     )
                     .await

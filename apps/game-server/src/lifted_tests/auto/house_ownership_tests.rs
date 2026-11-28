@@ -232,7 +232,7 @@ fn house_ownership_first_rent_settlement_and_restart_replay() -> TestResult {
         .execute(&h.pool)
         .await?;
         assert_eq!(
-            root.house_settlement(&authority, &h.node, request.clone())
+            root.house_settlement(&authority, &h.node, request.clone(), crate::durability::house_ownership::HouseSettlementPremium::PreDelivery { switch_over_us: None })
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Applied
@@ -255,7 +255,7 @@ fn house_ownership_first_rent_settlement_and_restart_replay() -> TestResult {
             .map_err(debug)?;
         assert_eq!(
             restarted
-                .house_settlement(&reopened, &h.node, request)
+                .house_settlement(&reopened, &h.node, request, crate::durability::house_ownership::HouseSettlementPremium::Refund)
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Replayed

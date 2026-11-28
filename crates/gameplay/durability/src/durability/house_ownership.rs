@@ -16,7 +16,7 @@ use sqlx::{Postgres, Row, Transaction};
 
 pub use bid::HouseBidRequest;
 pub use catalogue::{HouseAuctionCatalogue, HouseAuctionProperty};
-pub use settlement::HouseSettlementRequest;
+pub use settlement::{HOUSE_SETTLEMENT_PASS_LIMIT, HouseSettlementPremium, HouseSettlementRequest};
 
 #[derive(Debug)]
 pub enum HouseOwnershipError {

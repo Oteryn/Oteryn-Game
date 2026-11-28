@@ -12,6 +12,8 @@ use super::{
     spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration},
 };
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
+#[path = "spell_premium_coordinator/house_settlement.rs"]
+mod house_settlement;
 mod promotion_gate;
 
 pub(super) struct DailyRewardPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);

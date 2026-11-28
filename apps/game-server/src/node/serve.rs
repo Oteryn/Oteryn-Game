@@ -4250,10 +4250,13 @@ async fn boot_and_serve(
     let auctions = async {
         if let Some(bundle) = bundle.as_ref() {
             let digest = runtime.lock().await.content_pin().server_artifact_digest();
+            let premium_client = crate::gameplay_transport::premium_snapshot_client();
             house_auctions::HouseAuctions {
                 root,
                 authority,
                 node: proof,
+                premium: &premium_reads,
+                premium_client: premium_client.as_ref(),
                 catalogue: crate::durability::house_ownership::HouseAuctionCatalogue {
                     scope,
                     generation,

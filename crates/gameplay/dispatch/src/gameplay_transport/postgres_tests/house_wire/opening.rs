@@ -7,10 +7,16 @@ use crate::foundation::{ChannelId, CharacterId, CharacterLease, RuntimeScopeRefV
 use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
 use sqlx::ConnectOptions;
 
+#[allow(dead_code, reason = "shared producer supports additional Premium fixtures")]
+#[path = "../../../../../social/src/premium/test_producer.rs"]
+mod premium_test_producer;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum AuctionCase {
     Opening,
     OfflinePremium,
+    ActivationProof,
+    FullCensus,
     HardCeiling,
     HardCeilingRefund,
     VacuumLock,
@@ -33,6 +39,22 @@ fn house_auction_offline_premium_bidder_wins() -> TestResult {
         return Ok(());
     };
     run_case(admin, AuctionCase::OfflinePremium)
+}
+
+#[test]
+fn house_auction_defers_without_activation_and_clock_proof() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::ActivationProof)
+}
+
+#[test]
+fn house_auction_full_census_preserves_foreground_bid_budget() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, AuctionCase::FullCensus)
 }
 
 #[test]
@@ -101,6 +123,8 @@ fn scenario(admin: String, case: AuctionCase) -> TestResult {
         let tag = match case {
             AuctionCase::Opening => "house_auction_opening",
             AuctionCase::OfflinePremium => "house_auction_offline",
+            AuctionCase::ActivationProof => "house_auction_activation",
+            AuctionCase::FullCensus => "house_auction_census",
             AuctionCase::HardCeiling => "house_auction_hard_cap",
             AuctionCase::HardCeilingRefund => "house_auction_hard_refund",
             AuctionCase::VacuumLock => "house_auction_vacuum",
@@ -222,7 +246,7 @@ fn scenario(admin: String, case: AuctionCase) -> TestResult {
             let request = crate::durability::house_ownership::HouseSettlementRequest {
                 world, house_key: HOUSE.into(), auction: id(76), step: 0,
             };
-            assert!(matches!(h.root.house_settlement(&authority, &h.node, request).await,
+            assert!(matches!(h.root.house_settlement(&authority, &h.node, request, crate::durability::house_ownership::HouseSettlementPremium::Refund).await,
                 Err(HouseOwnershipError::Unavailable(DurabilityError::RootUnavailable))));
             drop(demand);
             drop(owner);
@@ -416,33 +440,67 @@ fn scenario(admin: String, case: AuctionCase) -> TestResult {
                 .is_empty()
         );
 
+        if case == AuctionCase::FullCensus {
+            let request = seed_full_census(&h, world, &digest).await?;
+            let mut amount = Vec::new();
+            scalar(&mut amount, 1, 250);
+            let raise = intent(1, &amount);
+            let started = tokio::time::Instant::now();
+            let (award, raise_result) = tokio::join!(biased;
+                gate.settle_house_auction(&h.root, &authority, &h.node, None, request.clone()),
+                send(&owner, &mut admitted, 56, &raise)
+            );
+            assert_eq!(raise_result?, (CommandStatus::Accepted, wire::encode_house_result(wire::HouseDisposition::Ok, 0)));
+            let award = match award {
+                Err(crate::durability::house_ownership::HouseOwnershipError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable,
+                ) | crate::durability::house_ownership::HouseOwnershipError::NotPremium) =>
+                    gate.settle_house_auction(&h.root, &authority, &h.node, None, request).await,
+                other => other,
+            };
+            assert_eq!(award.map_err(debug)?, HouseOwnershipOutcome::Applied);
+            assert!(started.elapsed() < std::time::Duration::from_secs(1));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+
         sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'")
             .execute(&h.pool)
             .await?;
+        use crate::gameplay_transport::spell_premium_coordinator::PremiumActivation;
+        let now = clock(&h).await?;
+        let activation = PremiumActivation {
+            activation_id: "house-auction-r2".into(),
+            switch_over_us: now - 10_000_000,
+        };
+        let delivered = SpellPremiumCoordinator::new(
+            std::sync::Arc::default(),
+            Some(std::sync::Arc::new(AuctionClock(Some(now)))),
+            Some(activation.clone()),
+            Some(h.root.clone()),
+        );
+        let platform = if matches!(case, AuctionCase::OfflinePremium | AuctionCase::HardCeilingRefund | AuctionCase::ActivationProof) {
+            let paid = case != AuctionCase::HardCeilingRefund;
+            Some(premium_platform(&h, paid, case == AuctionCase::OfflinePremium).await?)
+        } else {
+            None
+        };
         if case == AuctionCase::OfflinePremium {
-            use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
-            let now = clock(&h).await?;
-            h.root.latch_premium_activation("house-auction-offline", now - 2, now - 1).await?;
-            h.root.accept_premium_evidence(&PremiumEvidence {
-                account_id: id(40),
-                producer_revision: "r1".into(),
-                producer_profile: "native-v1".into(),
-                product_id: "oteryn.premium_time".into(),
-                product_version: 1,
-                entitlement_id: Some("house-auction-premium".into()),
-                state: EntitlementState::Active,
-                lifecycle_revision: 1,
-                authority_revision: 1,
-                effective_from_us: now - 1_000_000,
-                effective_until_us: now + 3_600_000_000,
-                authority_issued_at_us: now - 1_000_000,
-                authority_valid_until_us: now + 3_600_000_000,
-                refresh_after_us: now + 1_800_000_000,
-            }).await?;
-            // The dispatch coordinator has no in-memory entitlement for this bidder.
-        }
-        if case == AuctionCase::HardCeilingRefund {
-            h.root.latch_premium_activation("house-auction-no-premium", 1, 2).await?;
+            h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, now).await?;
+            let fresh = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone());
+            let (session, _) = fresh.current_session_at(admitted.game_session_id).await?;
+            fresh.release_logout_session(
+                admitted.game_session_id,
+                &crate::premium::snapshot::canonical_uuid(id(40)),
+                session.current_transport().ok_or("connected bidder")?,
+            ).await?;
+            let (offline, _) = fresh.current_session_at(admitted.game_session_id).await?;
+            assert_eq!(offline.session_state(), crate::foundation::GameSessionState::Terminal);
+            assert!(sqlx::query_scalar::<_, bool>("SELECT refresh_after_us < (extract(epoch FROM clock_timestamp()-interval '40 minutes')*1000000)::bigint
+                AND effective_until_us > (extract(epoch FROM clock_timestamp())*1000000)::bigint
+                FROM game_premium_evidence WHERE authority_revision=1").fetch_one(&h.pool).await?);
         }
         let mut due = h
             .root
@@ -451,20 +509,52 @@ fn scenario(admin: String, case: AuctionCase) -> TestResult {
             .map_err(debug)?;
         assert_eq!(due.len(), 1);
         let winner = due.pop().ok_or("due auction")?;
+        let client = platform.as_ref().map(|(_, client)| client);
+        if case == AuctionCase::ActivationProof {
+            use crate::premium::client::fresh_nonce;
+            let (producer, client) = platform.as_ref().ok_or("test Platform")?;
+            let nonce = fresh_nonce().ok_or("test Premium nonce")?;
+            let body = client.pull(id(40), &nonce).await.map_err(debug)?;
+            let cached = crate::premium::snapshot::validate(&body, id(40), &nonce).map_err(debug)?;
+            assert!(cached.refresh_after_us > now);
+            h.root.accept_premium_evidence(&cached).await?;
+            producer.script(|_| premium_test_producer::Reply::status(503));
+            assert!(delivered.settle_house_auction(&h.root, &authority, &h.node, Some(client), winner.clone()).await.is_err());
+            assert_eq!(producer.requests().len(), 2);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_premium_activation_latch").fetch_one(&h.pool).await?, 1);
+            let no_clock = SpellPremiumCoordinator::new(std::sync::Arc::default(), None, Some(activation.clone()), Some(h.root.clone()));
+            let wrong_activation = PremiumActivation { activation_id: "different-activation".into(), ..activation };
+            let mismatch = SpellPremiumCoordinator::new(std::sync::Arc::default(),
+                Some(std::sync::Arc::new(AuctionClock(Some(now)))), Some(wrong_activation), Some(h.root.clone()));
+            let pull_count = producer.requests().len();
+            for coordinator in [&no_clock, &mismatch] {
+                assert!(coordinator.settle_house_auction(&h.root, &authority, &h.node, Some(client), winner.clone()).await.is_err());
+            }
+            assert_eq!(producer.requests().len(), pull_count);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_house_settlement_steps").fetch_one(&h.pool).await?, 0);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_account_housing_slots").fetch_one(&h.pool).await?, 0);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+        let settlement_gate = if platform.is_some() { &delivered } else { &gate };
         assert_eq!(
-            h.root
-                .house_settlement(&authority, &h.node, winner.clone())
-                .await
-                .map_err(debug)?,
-            HouseOwnershipOutcome::Applied
+            settlement_gate.settle_house_auction(&h.root, &authority, &h.node, client, winner.clone())
+                .await.map_err(debug)?, HouseOwnershipOutcome::Applied
         );
         assert_eq!(
-            h.root
-                .house_settlement(&authority, &h.node, winner)
-                .await
-                .map_err(debug)?,
-            HouseOwnershipOutcome::Replayed
+            settlement_gate.settle_house_auction(&h.root, &authority, &h.node, None, winner)
+                .await.map_err(debug)?, HouseOwnershipOutcome::Replayed
         );
+        if case == AuctionCase::OfflinePremium {
+            assert_eq!(platform.as_ref().ok_or("test Platform")?.0.requests().len(), 2);
+            assert_eq!(public_status(&h).await?, "OWNED");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if case == AuctionCase::HardCeilingRefund {
             let refunded: (i16, i64, i64) = sqlx::query_as(
                 "SELECT b.state,b.escrow_gold,v.balance FROM game_house_bids b
@@ -532,4 +622,126 @@ async fn clock(h: &Harness) -> TestResult<i64> {
 async fn public_status(h: &Harness) -> TestResult<String> {
     Ok(sqlx::query_scalar("SELECT payload->0->>'status' FROM game_public_v2_heads WHERE family='house' AND subject=$1")
         .bind(HOUSE).fetch_one(&h.pool).await?)
+}
+
+struct AuctionClock(Option<i64>);
+
+impl crate::gameplay_transport::spell_premium_coordinator::clock_registration::Registered for AuctionClock {}
+
+impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumClock for AuctionClock {
+    fn read_current_window(&self) -> Option<crate::premium::TrustedNow> {
+        crate::premium::TrustedNow::new(self.0?, 0)
+    }
+}
+
+async fn premium_platform(
+    h: &Harness,
+    paid: bool,
+    seed_stale: bool,
+) -> TestResult<(
+    premium_test_producer::TestProducer,
+    crate::premium::client::PremiumSnapshotClient,
+)> {
+    use crate::premium::client::{PremiumClientConfig, PremiumSnapshotClient, fresh_nonce};
+    use premium_test_producer::{Reply, TestPki, TestProducer, snapshot};
+    let stamps: Vec<String> = sqlx::query_scalar(
+        "SELECT to_char(statement_timestamp() AT TIME ZONE 'UTC' + offset_minutes * interval '1 minute',
+            'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')
+         FROM unnest(ARRAY[-85,-25,-45,-1,59,39]) WITH ORDINALITY AS offsets(offset_minutes,ord)
+         ORDER BY ord",
+    ).fetch_all(&h.pool).await?;
+    let [old_issued, old_valid, old_refresh, issued, valid, refresh] = stamps.as_slice() else {
+        return Err("six Platform timestamps".into());
+    };
+    let pki = TestPki::new();
+    let old = [old_issued.clone(), old_valid.clone(), old_refresh.clone()];
+    let producer = TestProducer::start(&pki, move |request| {
+        Reply::json(snapshot(request, 1, &[
+            ("authority_issued_at", old[0].clone().into()),
+            ("authority_valid_until", old[1].clone().into()),
+            ("refresh_after", old[2].clone().into()),
+        ]))
+    }).await;
+    let client = PremiumSnapshotClient::new(&PremiumClientConfig {
+        origin: producer.origin.clone(),
+        identity_pem: pki.client_identity_pem.into_bytes(),
+        platform_ca_pem: pki.ca_pem.into_bytes(),
+    })?;
+    if seed_stale {
+        let nonce = fresh_nonce().ok_or("test Premium nonce")?;
+        let body = client.pull(id(40), &nonce).await.map_err(debug)?;
+        let evidence = crate::premium::snapshot::validate(&body, id(40), &nonce).map_err(debug)?;
+        h.root.accept_premium_evidence(&evidence).await?;
+    }
+    let fresh = [issued.clone(), valid.clone(), refresh.clone()];
+    producer.script(move |request| {
+        let mut facts = vec![
+            ("authority_issued_at", fresh[0].clone().into()),
+            ("authority_valid_until", fresh[1].clone().into()),
+            ("refresh_after", fresh[2].clone().into()),
+        ];
+        if !paid {
+            facts.extend([
+                ("entitlement_state", "NONE".into()),
+                ("entitlement_id", serde_json::Value::Null),
+                ("lifecycle_revision", 0.into()),
+                ("effective_from", serde_json::Value::Null),
+                ("effective_until", serde_json::Value::Null),
+            ]);
+        }
+        Reply::json(snapshot(request, 2, &facts))
+    });
+    Ok((producer, client))
+}
+
+async fn seed_full_census(
+    h: &Harness,
+    world: WorldId,
+    digest: &[u8; 32],
+) -> TestResult<crate::durability::house_ownership::HouseSettlementRequest> {
+    use crate::durability::house_ownership::HouseSettlementRequest;
+    let house_key = "oteryn:content.house.full_census";
+    let auction = id(217);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest)
+        VALUES(encode($1,'hex')::uuid,$2,'private_house',2,0,$3)")
+        .bind(world.as_bytes().as_slice()).bind(house_key).bind(digest.as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,ownership_revision,acquisition_receipt_ref)
+        VALUES(encode($1,'hex')::uuid,$2,1,game_character_uuid_v7())")
+        .bind(world.as_bytes().as_slice()).bind(house_key).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at)
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,0,clock_timestamp()-interval '1 second')")
+        .bind(auction.as_slice()).bind(world.as_bytes().as_slice()).bind(house_key).execute(&mut *tx).await?;
+    sqlx::query("CREATE TEMP TABLE auction_fixture_accounts ON COMMIT DROP AS
+        SELECT i,game_character_uuid_v7() AS account,game_character_uuid_v7() AS actor FROM generate_series(1,256) g(i)")
+        .execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_account_guards(account_id) SELECT account FROM auction_fixture_accounts")
+        .execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,
+        profile_revision,ruleset_revision,content_revision,starter_template_revision,name)
+        SELECT actor,account,encode($1,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1',
+            'starter-1','Bidder '||chr(65+i/26)||chr(65+i%26)
+        FROM auction_fixture_accounts")
+        .bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+    let inserted = sqlx::query("INSERT INTO game_house_bids(auction_id,account_id,world_id,character_id,
+        maximum,first_rent,reached_order,state,escrow_gold)
+        SELECT encode($1,'hex')::uuid,account,encode($2,'hex')::uuid,actor,0,0,i,1,0 FROM auction_fixture_accounts")
+        .bind(auction.as_slice()).bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+    assert_eq!(inserted.rows_affected(), 256);
+    tx.commit().await?;
+    // Pin the actual transaction deadline independently of test-host RTT.
+    sqlx::query("CREATE FUNCTION assert_auction_pass_budget() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            IF current_setting('transaction_timeout') = '0'
+                OR current_setting('transaction_timeout')::interval > interval '500 milliseconds' THEN
+                RAISE EXCEPTION 'auction settlement exceeded its background transaction budget';
+            END IF;
+            RETURN NEW;
+        END $$")
+        .execute(&h.pool).await?;
+    sqlx::query("CREATE TRIGGER assert_auction_pass_budget BEFORE INSERT ON game_house_settlement_steps
+        FOR EACH ROW EXECUTE FUNCTION assert_auction_pass_budget()")
+        .execute(&h.pool).await?;
+    Ok(HouseSettlementRequest { world, house_key: house_key.into(), auction, step: 0 })
 }

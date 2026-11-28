@@ -75,7 +75,7 @@ fn house_ownership_acl_revision_and_null_owner_successor() -> TestResult {
         sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'")
             .execute(&h.pool)
             .await?;
-        root.house_settlement(&authority, &h.node, settlement_request()?)
+        root.house_settlement(&authority, &h.node, settlement_request()?, crate::durability::house_ownership::HouseSettlementPremium::PreDelivery { switch_over_us: None })
             .await
             .map_err(debug)?;
         let before: String = sqlx::query_scalar(
@@ -133,9 +133,26 @@ fn house_ownership_settlement_excludes_not_current_premium_and_refunds_once() ->
         sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'")
             .execute(&h.pool)
             .await?;
-        root.latch_premium_activation("house-expired-fixture", 1, 2).await?;
+        use crate::durability::house_ownership::HouseSettlementPremium;
+        use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+        let latch = root.latch_premium_activation("house-expired-fixture", 1, 2).await?;
+        let now: i64 = sqlx::query_scalar("SELECT (extract(epoch FROM clock_timestamp())*1000000)::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+        let refresh_after_us = now + 60_000_000;
+        root.accept_premium_evidence(&PremiumEvidence {
+            account_id: id(40), producer_revision: "fixture".into(),
+            producer_profile: "oteryn.entitlement.profile_b.v1".into(), product_id: "oteryn.premium_time".into(),
+            product_version: 1, entitlement_id: None, state: EntitlementState::None,
+            lifecycle_revision: 0, authority_revision: 1, effective_from_us: 0, effective_until_us: 0,
+            authority_issued_at_us: now - 1_000_000, authority_valid_until_us: now + 120_000_000,
+            refresh_after_us,
+        }).await?;
+        let denial = || HouseSettlementPremium::Delivered {
+            latch: latch.clone(), valid_until_us: refresh_after_us, accounts: vec![(id(40), 1, false)],
+        };
         assert_eq!(
-            root.house_settlement(&authority, &h.node, settlement_request()?)
+            root.house_settlement(&authority, &h.node, settlement_request()?, denial())
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Applied
@@ -143,7 +160,7 @@ fn house_ownership_settlement_excludes_not_current_premium_and_refunds_once() ->
         assert_eq!(amounts(&h).await?, (600, 0, 1));
         assert_eq!(h.count("game_account_housing_slots").await?, 0);
         assert_eq!(
-            root.house_settlement(&authority, &h.node, settlement_request()?)
+            root.house_settlement(&authority, &h.node, settlement_request()?, denial())
                 .await
                 .map_err(debug)?,
             HouseOwnershipOutcome::Replayed
