@@ -102,11 +102,13 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let position = &target["position"];
         let (x, y, floor) = (draw_number(position, "x")?, draw_number(position, "y")?,
             position["floor"].as_i64().ok_or("P19 selected target lacks floor")?);
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let origin = tile(client.world_spatial().actor_position)?;
+        let path = forge_route(world, origin, |at| {
             u64::from(at.x).abs_diff(x) <= 1 && u64::from(at.y).abs_diff(y) <= 1
                 && i64::from(at.floor) == -floor
                 && (u64::from(at.x), u64::from(at.y)) != (x, y)
-        }).ok_or_else(|| format!("P19 selected {creature_key} {exact:?} is unreachable at {position}"))?;
+        }).ok_or_else(|| format!("P19 selected {creature_key} {exact:?} is unreachable from {origin:?} at {position}"))?;
+        evidence(&format!("P19 approach entity={exact:?} origin={origin:?} target={position} steps={}", path.len()));
         move_first_attempt(&mut client, world, path).await?;
         if creature_key != "oteryn:creature.rat"
             || encounters.iter().any(|(kind, _, _, _)| *kind == classification)
@@ -218,7 +220,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let mut before = before;
     let mut dead = Vec::new();
     for (classification, stacks, exact, combat_tile) in encounters {
-        let approach = route(world, tile(client.world_spatial().actor_position)?, |at| at == combat_tile)
+        let approach = forge_route(world, tile(client.world_spatial().actor_position)?, |at| at == combat_tile)
             .ok_or("P19 FIXTURE_PLACEMENT no return to combat tile")?;
         move_first_attempt(&mut client, world, approach).await?;
         let pre_attack = rewards(&mut client, Path::new(&capture)).await?;
@@ -374,6 +376,32 @@ async fn require_logout(client: &mut DevClientSession, clients: &SeamClients<'_>
         return Err(format!("P19 accepted logout did not durably release session {session} without control loss").into());
     }
     Ok(())
+}
+
+// Forge selects across the loaded world, including creatures below the town search's
+// two-floor limit. Each edge still uses the production collision and floor resolver.
+fn forge_route(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
+    find_route(from, goal, |at, direction| {
+        let next = destination(world, at, direction)?;
+        forge_route_cell(from, next).then_some(next)
+    })
+    .ok()
+}
+
+fn forge_route_cell(from: TilePos, next: TilePos) -> bool {
+    next.x.abs_diff(from.x) <= 160 && next.y.abs_diff(from.y) <= 160
+}
+
+#[test]
+fn p19_route_allows_three_floor_descent_within_horizontal_bound() {
+    let temple = TilePos { x: 32369, y: 32238, floor: -7 };
+    let shaman = TilePos { x: 32298, y: 32137, floor: -10 };
+    assert!(forge_route_cell(temple, shaman));
+    assert!(!forge_route_cell(temple, TilePos { x: temple.x + 161, ..shaman }));
 }
 
 async fn move_first_attempt(
