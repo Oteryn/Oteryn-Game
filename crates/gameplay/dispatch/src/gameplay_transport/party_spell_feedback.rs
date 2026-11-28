@@ -24,6 +24,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             SpellCastDisposition::CoolingDown => "Party spell is cooling down.",
             SpellCastDisposition::NotEnoughMana => "Not enough mana for the party spell.",
             SpellCastDisposition::NotEnoughSoul => "Not enough soul for the party spell.",
+            SpellCastDisposition::Busy => "The game is busy. Try casting again.",
             SpellCastDisposition::LevelTooLow
             | SpellCastDisposition::MagicLevelTooLow
             | SpellCastDisposition::NotAvailable => "Party spell is not available.",

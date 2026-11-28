@@ -170,6 +170,8 @@ pub enum SpellCastDisposition {
     TargetRequired = 8,
     TargetIllegal = 9,
     Rejected = 10,
+    /// An input guard reached its holder deadline before the cast ran.
+    Busy = 11,
 }
 
 /// SPELL-PRESENT-0 §8: `WorldActorSpellCastResultV1.detail`, which refusal text the client shows.
@@ -484,6 +486,7 @@ fn cast_disposition(value: u64) -> Result<SpellCastDisposition, ActorSpellError>
         8 => Ok(SpellCastDisposition::TargetRequired),
         9 => Ok(SpellCastDisposition::TargetIllegal),
         10 => Ok(SpellCastDisposition::Rejected),
+        11 => Ok(SpellCastDisposition::Busy),
         _ => Err(ActorSpellError::Malformed),
     }
 }
@@ -1015,6 +1018,7 @@ mod tests {
             (SpellCastDisposition::TargetRequired, [0x08, 0x08]),
             (SpellCastDisposition::TargetIllegal, [0x08, 0x09]),
             (SpellCastDisposition::Rejected, [0x08, 0x0a]),
+            (SpellCastDisposition::Busy, [0x08, 0x0b]),
         ];
         for (disposition, bytes) in fixtures {
             assert_eq!(encode_spell_cast_result(disposition), bytes);
@@ -1024,7 +1028,7 @@ mod tests {
         for bad in [
             &[][..],                       // missing disposition
             &[0x08, 0x00][..],             // zero enum
-            &[0x08, 0x0b][..],             // unknown enum
+            &[0x08, 0x0c][..],             // unknown enum
             &[0x08, 0x01, 0x08, 0x01][..], // repeated field
             &[0x10, 0x01][..],             // unknown field
             &[0x08][..],                   // truncated

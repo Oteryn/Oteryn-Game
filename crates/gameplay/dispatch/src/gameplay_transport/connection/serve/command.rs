@@ -440,6 +440,12 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    encode_spell_cast_result(SpellCastDisposition::Busy),
+                )
+            }
             oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT
                 if decode_logout_intent(command.payload).is_ok() =>
             {
