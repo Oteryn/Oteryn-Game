@@ -40,24 +40,28 @@ pub fn decode_catalogue_request(payload: &[u8]) -> Result<(), Error> {
     }
 }
 
+// TibiaWiki Svargrond Arena gives six minutes to finish the fight and reach the next pit.
+// https://web.archive.org/web/20260310192530/https://tibia.fandom.com/wiki/Svargrond_Arena
+const SVARGROND_CATALOGUE_PIT_SECONDS: u16 = 360;
+
 pub const SVARGROND_CHALLENGES: [ArenaChallenge; 3] = [
     ArenaChallenge {
         rank: ArenaRank::Greenhorn,
         fee: 1_000,
         rooms: 10,
-        room_seconds: 600,
+        room_seconds: SVARGROND_CATALOGUE_PIT_SECONDS,
     },
     ArenaChallenge {
         rank: ArenaRank::Scrapper,
         fee: 5_000,
         rooms: 10,
-        room_seconds: 600,
+        room_seconds: SVARGROND_CATALOGUE_PIT_SECONDS,
     },
     ArenaChallenge {
         rank: ArenaRank::Warlord,
         fee: 10_000,
         rooms: 10,
-        room_seconds: 600,
+        room_seconds: SVARGROND_CATALOGUE_PIT_SECONDS,
     },
 ];
 
@@ -130,12 +134,12 @@ mod tests {
                 .all(|challenge| challenge.rooms == 10)
         );
         let bytes = encode_catalogue()?;
-        assert_eq!(decode_catalogue(&bytes)?, SVARGROND_CHALLENGES);
-        // Crystal data-crystal/lib/quests/arena.lua:9 sets kickTime = 600.
+        let decoded = decode_catalogue(&bytes)?;
+        assert_eq!(decoded, SVARGROND_CHALLENGES);
         assert!(
-            SVARGROND_CHALLENGES
+            decoded
                 .iter()
-                .all(|challenge| challenge.room_seconds == 600)
+                .all(|challenge| challenge.room_seconds == 360)
         );
         let mut at = 0;
         let mut entries = 0;

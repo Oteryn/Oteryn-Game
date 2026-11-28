@@ -38,6 +38,25 @@ fn nx2_arena_status_postgres_wire_receipt_and_generation_fence() -> TestResult {
                 crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
                 &[170],
             ).ok_or("arena capability")?;
+            let catalogue_id = admitted.continuity.next_command_id;
+            let (status, catalogue) = super::guild_wire_fixtures::exchange(
+                &owner,
+                &mut admitted,
+                catalogue_id,
+                wire::COMMAND_TYPE_ARENA_CATALOGUE,
+                &[],
+            )
+            .await?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            let challenges = wire::decode_catalogue(&catalogue).map_err(debug)?;
+            assert_eq!(
+                challenges
+                    .iter()
+                    .map(|challenge| challenge.room_seconds)
+                    .collect::<Vec<_>>(),
+                [360, 360, 360],
+            );
+
             let payload = wire::encode_match_request(ArenaAction::Status).map_err(debug)?;
             let command_id = admitted.continuity.next_command_id;
             let (status, bytes) = super::guild_wire_fixtures::exchange(&owner, &mut admitted,

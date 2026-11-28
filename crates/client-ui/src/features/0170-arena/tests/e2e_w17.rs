@@ -53,7 +53,7 @@ fn capture() -> Result<Capture, BoxError> {
         advance: result(ArenaDisposition::WrongState)?,
         drome_status: drome.encode(),
         drome_enter: drome.encode(),
-        expected: "challenge=Greenhorn|1000|10|600\nchallenge=Scrapper|5000|10|600\nchallenge=Warlord|10000|10|600\n\
+        expected: "challenge=Greenhorn|1000|10|360\nchallenge=Scrapper|5000|10|360\nchallenge=Warlord|10000|10|360\n\
                    status=Applied|1|0|0|0|0|0,0,0\nadvance=WrongState|1|0|0|0|0|0,0,0\n\
                    drome_status=3|50|50|0|0|0|0|0|0|0|1900000000\ndrome_enter=3|50|50|0|0|0|0|0|0|0|1900000000\n"
             .into(),
@@ -179,6 +179,13 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
         })
         .collect::<Result<Vec<_>, BoxError>>()?;
     assert_eq!(panel.challenges, want_challenges);
+    assert!(
+        panel
+            .challenges
+            .iter()
+            .all(|challenge| challenge.room_seconds == 360),
+        "the live catalogue must show the Global six-minute pit limit"
+    );
 
     let status =
         request(&mut panel, Intent::Action(ArenaAction::Status)).ok_or("status request refused")?;
