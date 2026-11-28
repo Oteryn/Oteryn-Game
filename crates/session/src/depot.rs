@@ -1,7 +1,8 @@
 //! Typed depot request/reply through the existing sequenced session exchange.
 use super::*;
 use oteryn_protocol_oteryn::depot::{
-    CAPABILITY_DEPOT_V1, COMMAND_TYPE_DEPOT_INTENT, decode_depot_reply, encode_depot_intent_at,
+    CAPABILITY_CROSS_TOWN_DEPOT_V1, CAPABILITY_DEPOT_V1, COMMAND_TYPE_DEPOT_INTENT,
+    decode_depot_reply, encode_depot_request,
 };
 
 impl<S: SessionStream> Session<S> {
@@ -18,14 +19,24 @@ impl<S: SessionStream> Session<S> {
         intent: DepotIntent,
         slot: Option<u32>,
     ) -> Result<Option<DepotReply>, SessionError> {
+        self.depot_request(DepotRequest::local(intent, slot)).await
+    }
+
+    /// An explicit cross-town request requires capability 627.
+    pub async fn depot_request(
+        &mut self,
+        mut request: DepotRequest,
+    ) -> Result<Option<DepotReply>, SessionError> {
         self.ensure_usable()?;
-        if !self.is_selected(CAPABILITY_DEPOT_V1) {
+        if !self.is_selected(CAPABILITY_DEPOT_V1)
+            || (request.cross_town && !self.is_selected(CAPABILITY_CROSS_TOWN_DEPOT_V1))
+        {
             return Ok(None);
         }
-        let slot = slot.filter(|_| {
+        request.slot = request.slot.filter(|_| {
             self.is_selected(oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1)
         });
-        let payload = encode_depot_intent_at(intent, slot)
+        let payload = encode_depot_request(request)
             .map_err(|_| SessionError::Protocol(FoundationProtocolError::MalformedEnvelope))?;
         let revision = self.inventory_revision;
         let container_revision = self.container_revision;

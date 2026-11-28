@@ -57,7 +57,7 @@ pub(super) async fn nest_fixture(pool: &sqlx::PgPool, bag: [u8; 16], item: [u8; 
     Ok(())
 }
 
-async fn command(
+pub(super) async fn command(
     client: &mut DuplexStream,
     id: u64,
     command_type: u32,

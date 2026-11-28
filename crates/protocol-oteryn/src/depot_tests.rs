@@ -142,3 +142,36 @@ fn a_deposit_slot_is_negotiated_by_capability_510_and_round_trips() -> Result<()
     assert!(largest.len() <= 48);
     Ok(())
 }
+
+#[test]
+fn cross_town_flag_is_opt_in_and_legacy_depot_bytes_are_unchanged() -> Result<(), Error> {
+    let bytes = [8, 3, 16, 1, 24, 0, 40, 7, 32, 2];
+    let intent = DepotIntent {
+        town: Some(2),
+        box_number: 1,
+        page: 0,
+        action: DepotAction::Withdraw(7),
+    };
+    let legacy = DepotRequest {
+        intent,
+        slot: None,
+        cross_town: false,
+    };
+    let selected = [CAPABILITY_DEPOT_V1, CAPABILITY_CROSS_TOWN_DEPOT_V1];
+    assert_eq!(decode_depot_intent(&bytes)?, intent);
+    assert_eq!(decode_depot_request(&bytes, &selected)?, legacy);
+    assert_eq!(encode_depot_request(legacy)?, bytes);
+
+    let cross_town = DepotRequest {
+        cross_town: true,
+        ..legacy
+    };
+    let opted_in = encode_depot_request(cross_town)?;
+    assert_eq!(opted_in, [bytes.as_slice(), &[56, 1]].concat());
+    assert_eq!(decode_depot_request(&opted_in, &selected)?, cross_town);
+    assert!(decode_depot_request(&opted_in, &[CAPABILITY_DEPOT_V1]).is_err());
+    assert!(decode_depot_intent(&opted_in).is_err());
+    assert!(decode_depot_request(&[bytes.as_slice(), &[56, 0]].concat(), &selected).is_err());
+    assert!(decode_depot_request(&[opted_in.as_slice(), &[56, 1]].concat(), &selected).is_err());
+    Ok(())
+}

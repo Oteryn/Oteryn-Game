@@ -1,4 +1,4 @@
-//! Live depot composition. No town or Character authority comes from a client.
+//! Live depot composition. The admitted World and session supply locker and Character authority.
 use super::ComposedFreshAdmission;
 use super::connection::{DepotObservation, UseCommand};
 use super::equipment_move::native_for_move;
@@ -8,7 +8,8 @@ use crate::durability::item_loop_move::{DepotMove, LoopMoveRefusal, LoopMoveRepl
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::overlay::TilePos;
 use oteryn_protocol_oteryn::depot::{
-    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply,
+    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply, DepotRequest,
+    encode_depot_request,
 };
 use sha2::{Digest, Sha256};
 
@@ -75,10 +76,14 @@ pub(super) async fn execute(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     command: UseCommand,
-    intent: DepotIntent,
-    slot: Option<u32>,
+    request: DepotRequest,
     selected_item: Option<ItemKey>,
 ) -> Option<DepotObservation> {
+    let DepotRequest {
+        intent,
+        slot,
+        cross_town,
+    } = request;
     let Some(fence) = command.item_fence else {
         return Some(empty(intent, DepotOutcome::Rejected));
     };
@@ -101,11 +106,8 @@ pub(super) async fn execute(
         premium: crate::domain::premium::PremiumGate::CLOSED,
         box_number: intent.box_number,
         deposit: matches!(intent.action, DepotAction::Deposit(_)),
-        // The slot is part of the digest, so a replay with another slot conflicts.
-        request_digest: Sha256::digest(
-            oteryn_protocol_oteryn::depot::encode_depot_intent_at(intent, slot).ok()?,
-        )
-        .into(),
+        // The canonical digest includes the slot and any cross-town opt-in.
+        request_digest: Sha256::digest(encode_depot_request(request).ok()?).into(),
     };
     // Replay before resolving ephemeral source handles/ordinals. No second effect after a lost reply.
     let replay = if intent.action == DepotAction::Browse {
@@ -139,7 +141,7 @@ pub(super) async fn execute(
     {
         return Some(refused(DepotOutcome::Rejected));
     }
-    let (native, town) = {
+    let (native, locker_town, target_exists) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let native = native_for_move(
@@ -148,20 +150,26 @@ pub(super) async fn execute(
             states.is_dead(actor),
             states.has_pending_spell_commit(actor, command.game_session_id),
         );
-        let town = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
-            .as_ref()
-            .and_then(locker);
-        (native, town)
+        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor);
+        let locker_town = at.as_ref().and_then(locker);
+        let target_exists = cross_town
+            && intent.town.is_some_and(|town| {
+                at.as_ref()
+                    .is_some_and(|at| at.map.facts.has_depot_town(town))
+            });
+        (native, locker_town, target_exists)
     };
     let Some(native) = native else {
         return Some(refused(DepotOutcome::Rejected));
     };
-    let Some(town) = town else {
+    let Some(locker_town) = locker_town else {
         return Some(refused(DepotOutcome::NoLocker));
     };
-    if intent.town.is_some_and(|expected| expected != town) {
-        return Some(refused(DepotOutcome::Stale));
-    }
+    let town = match intent.town {
+        Some(town) if target_exists || (!cross_town && town == locker_town) => town,
+        None if !cross_town => locker_town,
+        _ => return Some(refused(DepotOutcome::Stale)),
+    };
     let mut outcome = match replay {
         LoopMoveReplay::Absent => DepotOutcome::Opened,
         LoopMoveReplay::Moved => DepotOutcome::Moved,

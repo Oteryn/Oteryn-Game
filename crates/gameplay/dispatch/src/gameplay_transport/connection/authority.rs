@@ -1103,6 +1103,23 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// Selects the regular depot address or a capability-627 town compartment.
+    fn depot_request(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        request: oteryn_protocol_oteryn::depot::DepotRequest,
+        item: Option<ItemKey>,
+    ) -> impl Future<Output = Option<DepotObservation>> {
+        async move {
+            if request.cross_town {
+                return None;
+            }
+            self.depot_at(actor, command, request.intent, request.slot, item)
+                .await
+        }
+    }
+
     /// ITEM-LOOP-1 replay: the item loop receipt of this command 9's CommandRef, read after the
     /// equipment replay and before its handle is resolved. `None` when it cannot be read: the
     /// connection ends before the CommandId is sequenced.

@@ -164,7 +164,11 @@ An item is stowable only when all of these hold:
 - it is not Store-sourced. No Store delivery exists yet; the decision that adds one names its
   marker, and STASH-1's check reads it from then on.
 
-Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both admitted (R1).
+Anything else is `NOT_SUPPORTED`. The 2026-11-28 Global parity amendment admits
+stackable wares for new stows. Previously stored non-stackable wares retain
+their existing browse and withdrawal rules. The Fandom archive says
+“Only items that can be stacked can be stowed inside it.”
+[Your Supply Stash](https://tibia.fandom.com/wiki/Supply_Stash)
 
 ## 5. Operations (STASH-1)
 
@@ -222,6 +226,10 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 - **Effect.** The balance loses `n` (`WITHDRAW`).
 
 ## 6. Depot capacity (amends DEPOT-0 §3)
+
+- The 2026-11-28 lane packet sets a 10,000-unit total for new stows across the
+  Character's World stash. Previously saved balances are retained. Withdrawals
+  can reduce an over-limit balance. The counted depot limit also applies.
 
 - The counted depot total of a character is its depot entries plus, for each `definition_key`,
   `ceil(q / 100)`, where `q` is the sum of the quantities of that key's balance rows over the
@@ -300,7 +308,7 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 
 - **Stash entries as ItemInstances in a custody family.** Each stow would keep an identity that
   Tibia does not keep, rows would grow without bound, and "one stack per type" would need merges.
-- **Stackable items only.** TibiaWiki says so; the official manual says "most Market-tradeable
+- **Stackable items only (adopted by the 2026-11-28 amendment).** TibiaWiki says so; the official manual says "most Market-tradeable
   items", and Canary admits non-stackable wares (R1).
 - **Stow from anywhere.** No evidence that Tibia allows it; the Steward hireling is the only
   official remote access (R3).
@@ -311,7 +319,7 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 
 ## 12. Architect rulings (owner rule 5905825574)
 
-- **R1, eligibility: a) Market wares in default state, stackable or not** (official manual and
+- **R1, original eligibility (superseded above): a) Market wares in default state, stackable or not** (official manual and
   Canary). b) Stackables only (TibiaWiki). c) Every item. Recommendation and ruling: a).
 - **R2, Premium (superseded): stow and withdraw are open to Free, current Premium and expired
   Premium accounts.** The original ruling required Premium for stow and allowed withdrawal for
