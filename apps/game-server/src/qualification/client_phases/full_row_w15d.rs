@@ -1,4 +1,8 @@
-//! W15d — per-quest executable population, exercised through the production callback owner.
+//! W15d — the node-boot Shrine of Guidance control.
+//!
+//! The full Paradox Tower and Way of the Monk journeys are exercised in dispatch's
+//! `w15dq_quest_journey_readmission` PostgreSQL cases. This walk-in control verifies
+//! one shrine mission against the node's real Platform admissions.
 //!
 //! Concrete player scenario (The Way of the Monk, Shrine of Guidance):
 //! 1. Log in with the node-boot character, walk from its saved position to an adjacent reachable
@@ -7,11 +11,11 @@
 //!    advancement; the callback requires level 6, questline 3, and guidance 0 and sets guidance 1.
 //! 3. Send USE again with the server's current object revision. Expect a rejected reply and no
 //!    quest-log advancement because this one-way per-quest callback is no longer executable.
-//! 4. Log out, obtain a fresh Platform admission, query the quest log, and require the committed
-//!    quest entry and its completion flag to equal the post-USE durable state.
+//! 4. Log out, obtain a fresh Platform admission, and require the same committed quest line.
 use super::*;
 use crate::map::view::MapFacts;
 use oteryn_dev_client::client_runtime::quest_log as journal;
+use oteryn_gameplay_quests::quest::{loader, log, monk_shrines};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 const SHRINE: TilePos = TilePos {
@@ -29,10 +33,7 @@ struct Row {
 impl Row {
     fn fail(self, observed: impl std::fmt::Display) {
         let observed = observed.to_string();
-        evidence(&format!(
-            "W15D_GAP step={} observed={observed}",
-            self.step
-        ));
+        evidence(&format!("W15D_GAP step={} observed={observed}", self.step));
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W15d.full status=FAIL seconds={:.3} evidence=step-{}:{}",
             self.started.elapsed().as_secs_f64(),
@@ -47,7 +48,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: "admission",
     };
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W15d.full status=PASS seconds={:.3}",
@@ -58,33 +63,26 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-async fn quest_list(
+async fn quest_line(
     client: &mut oteryn_dev_client::DevClientSession,
-) -> TestResult<Vec<journal::QuestListEntry>> {
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
-        .ok_or("missing quest-log snapshot")?
-        .clone();
-    let state = journal::QuestState::from_snapshot(client.selected_capabilities(), Some(&snapshot))
-        .map_err(|error| format!("quest snapshot: {error:?}"))?;
-    let command = state
-        .command(&journal::QuestLogQuery::List)
-        .map_err(|error| format!("quest list command: {error:?}"))?;
+    quest_index: u32,
+) -> TestResult<journal::QuestLine> {
+    let command = journal::encode_quest_log_query(&journal::QuestLogQuery::Quest { quest_index })
+        .map_err(|error| format!("quest line command: {error:?}"))?;
     let result = journal::send(client.session_mut(), &command).await?;
     if result.status != CommandStatus::Accepted {
-        return Err(format!("quest list reply status={:?}", result.status).into());
+        return Err(format!("quest line reply status={:?}", result.status).into());
     }
     let delta = client
         .session_mut()
         .read_gated_delta(journal::STATE_DOMAIN_QUEST_LOG, 1)
         .await?;
     let log = journal::decode_quest_log(&delta.payload)
-        .map_err(|error| format!("quest list delta: {error:?}"))?;
-    let journal::QuestLogView::List(entries) = log.view.ok_or("quest list delta has no view")? else {
-        return Err("quest list delta is not a list".into());
-    };
-    Ok(entries)
+        .map_err(|error| format!("quest line delta: {error:?}"))?;
+    match log.view {
+        Some(journal::QuestLogView::Line(line)) if line.quest_index == quest_index => Ok(line),
+        other => Err(format!("expected Monk quest line {quest_index}, got {other:?}").into()),
+    }
 }
 
 fn shrine_target(world: &BundleWorld) -> TestResult<WorldObjectTarget> {
@@ -122,7 +120,23 @@ fn shrine_revision(base: u64, published: Option<u64>) -> TestResult<u64> {
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let pin: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let revision = pin["content_revision"]
+        .as_str()
+        .ok_or("World content revision")?;
+    let lowered = loader::load_embedded_quest_state(revision)
+        .map_err(|error| format!("quest state catalogue: {error:?}"))?;
+    let journal = log::loader::load_embedded_quest_log(&lowered)?;
+    let quest_index = u32::try_from(
+        journal
+            .content
+            .active()
+            .quests()
+            .iter()
+            .position(|quest| quest.key == monk_shrines::QUEST)
+            .ok_or("Monk quest index")?,
+    )?;
     let world = load_world(
         bytes,
         &pin,
@@ -141,7 +155,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.step = "first-use-commit";
     let target = shrine_target(world)?;
-    let before = quest_list(&mut client).await?;
+    let guidance_done = |line: &journal::QuestLine| {
+        line.missions
+            .iter()
+            .any(|mission| mission.name == "Shrine of Guidance" && mission.done)
+    };
+    let before = quest_line(&mut client, quest_index).await?;
+    if before.completed || guidance_done(&before) {
+        return Err(
+            "Guidance control requires an unfinished pilgrimage with an unused shrine".into(),
+        );
+    }
     let first = client
         .session_mut()
         .use_object(&target.placement, target.expected_revision)
@@ -153,13 +177,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let after = quest_list(&mut client).await?;
-    if after == before {
-        return Err("committed USE produced no quest-log delta".into());
+    let after = quest_line(&mut client, quest_index).await?;
+    if after.completed || !guidance_done(&after) {
+        return Err(
+            "committed USE did not complete the Guidance mission within the pilgrimage".into(),
+        );
     }
 
     row.step = "repeat-use-refusal";
-    let observed_revision = client.world_object_overlay().iter()
+    let observed_revision = client
+        .world_object_overlay()
+        .iter()
         .find(|entry| entry.placement == target.placement)
         .map(|entry| entry.revision);
     let revision = shrine_revision(target.expected_revision, observed_revision)?;
@@ -174,7 +202,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if quest_list(&mut client).await? != after {
+    // Two queries have used this connection's one-second journal budget.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+    while tokio::time::Instant::now() < deadline {
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    if quest_line(&mut client, quest_index).await? != after {
         return Err("refused repeat USE changed quest-log state".into());
     }
 
@@ -186,7 +219,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     drop(client);
     let mut fresh = connect_world(clients, 0xd5).await?;
-    if quest_list(&mut fresh).await? != after {
+    if quest_line(&mut fresh, quest_index).await? != after {
         return Err("fresh admission lost committed quest-log state".into());
     }
     if fresh.session_mut().logout().await?.result
@@ -196,7 +229,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
