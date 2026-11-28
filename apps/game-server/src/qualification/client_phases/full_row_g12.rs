@@ -9,6 +9,8 @@ use oteryn_protocol_oteryn::world_object::{
 use std::num::NonZeroU32;
 
 const CATALYST: u32 = 54266;
+// Global: https://tibia.fandom.com/wiki/Lesser_Proficiency_Catalyst
+const CATALYST_EXPERIENCE: u32 = 5_000;
 use oteryn_protocol_oteryn::{weapon_proficiency as catalogue, weapon_proficiency_state as wire};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -93,6 +95,11 @@ async fn state(client: &mut DevClientSession, definition: u32) -> TestResult<wir
     let state = wire::State::decode(&payload).ok_or("step=state observed=decode-failed")?;
     if state.definition != definition {
         return Err(format!("step=state observed=echo-{}", state.definition).into());
+    }
+    // Global unlocks ordinary perks with XP. Replacing a perk is a separate
+    // operation, available from proficiency level 3.
+    if state.slots.iter().any(Option::is_some) {
+        return Err("step=state observed=unexpected-shaped-slot".into());
     }
     Ok(state)
 }
@@ -241,32 +248,23 @@ async fn body(
     earn_experience(client, catalyst, initial.definition).await?;
     evidence("G12_CHECK step=catalyst-committed-and-debited");
     let entry = weapon_entry(client, &[initial.definition]).await?;
-    let expected = crate::durability::item_use::proficiency_catalyst::catalyst_progress(&format!(
-        "oteryn:item.tibia.i{CATALYST}"
-    ))
-    .ok_or("step=fixture observed=no-authored-catalyst-progress")?;
-    if entry.experience != expected {
+    if entry.experience != CATALYST_EXPERIENCE {
         return Err(format!(
-            "step=catalyst observed=xp:{};expected:{expected}",
+            "step=catalyst observed=xp:{};expected:{CATALYST_EXPERIENCE}",
             entry.experience
         )
         .into());
     }
-    let (level, _) = entry
-        .levels
-        .iter()
-        .zip(entry.thresholds)
-        .enumerate()
-        .find(|(_, (slot, needed))| {
-            *needed <= entry.experience && slot.selected.is_none() && !slot.perks.is_empty()
-        })
-        .ok_or_else(|| {
-            format!(
-                "step=perk observed=no-unselected-unlocked-level;definition={};xp={}",
-                entry.definition, entry.experience
-            )
-        })?;
-    let level = u8::try_from(level)?;
+    let level = 0;
+    let first_perk = entry.levels.first().ok_or("step=perk observed=no-first-level")?;
+    if initial.thresholds[0] <= initial.experience
+        || entry.thresholds[0] != initial.thresholds[0]
+        || entry.thresholds[0] > entry.experience
+        || first_perk.selected.is_some()
+        || first_perk.perks.first().is_none_or(|label| label.is_empty())
+    {
+        return Err("step=perk observed=first-ordinary-offer-not-unlocked".into());
+    }
     let before = state(client, entry.definition).await?;
     let request = catalogue::SelectPerkRequest {
         definition: std::num::NonZeroU32::new(entry.definition).ok_or("step=perk observed=zero")?,
