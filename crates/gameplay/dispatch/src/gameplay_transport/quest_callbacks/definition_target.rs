@@ -624,15 +624,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return outcome(UseDisposition::Rejected);
         };
         #[cfg(test)]
-        if let Some(sender) = self
-            .states
-            .quest_callbacks
-            .observed_corpse_expiry
-            .lock()
-            .ok()
-            .and_then(|mut slot| slot.take())
         {
-            let _ = sender.send(expires);
+            let probe = self
+                .states
+                .quest_callbacks
+                .observed_corpse_expiry
+                .lock()
+                .ok()
+                .and_then(|mut slot| slot.take());
+            if let Some(probe) = probe {
+                let _ = probe.observed.send(expires);
+                let _ = probe.resume.await;
+            }
         }
         let Ok((mut runtime, states)) =
             tokio::time::timeout_at(expires, self.lock_callback_guards()).await

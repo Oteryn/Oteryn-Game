@@ -151,10 +151,15 @@ pub(super) struct PendingCallbacks {
     pub(super) before_commit:
         std::sync::Mutex<Option<std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>>>,
     #[cfg(test)]
-    pub(super) observed_corpse_expiry:
-        std::sync::Mutex<Option<tokio::sync::oneshot::Sender<tokio::time::Instant>>>,
+    pub(super) observed_corpse_expiry: std::sync::Mutex<Option<CorpseExpiryProbe>>,
     #[cfg(test)]
     pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
+}
+
+#[cfg(test)]
+pub(super) struct CorpseExpiryProbe {
+    pub(super) observed: tokio::sync::oneshot::Sender<tokio::time::Instant>,
+    pub(super) resume: tokio::sync::oneshot::Receiver<()>,
 }
 
 pub(super) struct PaidCallbackClose<'a> {

@@ -825,13 +825,18 @@ pub(super) async fn exercise(
     );
     {
         let (sender, observed) = tokio::sync::oneshot::channel();
+        let (resume, paused) = tokio::sync::oneshot::channel();
         *owner
             .states
             .quest_callbacks
             .observed_corpse_expiry
             .lock()
-            .map_err(|_| "expiry probe")? = Some(sender);
-        let held = owner.states.spell_states.lock().await;
+            .map_err(|_| "expiry probe")? = Some(
+            crate::gameplay_transport::quest_callbacks::CorpseExpiryProbe {
+                observed: sender,
+                resume: paused,
+            },
+        );
         let command = crate::gameplay_transport::connection::UseCommand {
             game_session_id: session,
             command_id: admitted.continuity.next_command_id,
@@ -844,9 +849,18 @@ pub(super) async fn exercise(
         ));
         let expires = tokio::select! {
             biased;
-            result = &mut using => return Err(format!("fresh USE resolved during spell contention: {result:?}").into()),
+            result = &mut using => return Err(format!("fresh USE resolved before the freshness observation: {result:?}").into()),
             expires = observed => expires?,
         };
+        let held = owner.states.spell_states.lock().await;
+        resume
+            .send(())
+            .map_err(|()| "corpse USE ended before contention")?;
+        std::future::poll_fn(|cx| {
+            assert!(std::future::Future::poll(using.as_mut(), cx).is_pending());
+            std::task::Poll::Ready(())
+        })
+        .await;
         let runtime = owner.runtime.try_lock()?;
         drop(held);
         tokio::time::sleep_until(expires).await;
