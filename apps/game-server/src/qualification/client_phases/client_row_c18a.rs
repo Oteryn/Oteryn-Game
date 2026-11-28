@@ -661,8 +661,13 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     )
     .await?;
     let mut evasions = 0;
+    let mut escape_wait = None;
     loop {
-        if let Some((goal, path)) = outdoor_escape(&client, world, &spawn_cells, &aggressors)? {
+        if scenario == "C18a.client" && !aggressors.is_empty() {
+            let view = client.world_entities().ok_or("C18a retreat entity view absent")?;
+            aggressors.retain(|actor| view.get(actor).is_some());
+        }
+        if let Some((goal, path)) = outdoor_escape(&client, world, &spawn_cells, &aggressors, scenario == "C18a.client")? {
             evasions += 1;
             if evasions > 2 || fed_since.elapsed() >= MEAT_SATIETY {
                 return Err(format!(
@@ -674,6 +679,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
                 "c18a_lock_escape attempt={evasions} from={rest:?} to={goal:?} aggressors={aggressors:?} path={path:?}"
             ));
             rest = goal;
+            escape_wait = None;
             aggressors = walk_path(
                 &mut client,
                 world,
@@ -687,6 +693,31 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
             continue;
         }
         let deadline_ms = lock_trace.deadline_ms()?;
+        if scenario == "C18a.client" && !aggressors.is_empty() {
+            let started = escape_wait.get_or_insert_with(|| {
+                evidence(&format!(
+                    "c18a_escape_wait started last_server_renewal_ms={:?} expiry_ms={deadline_ms} sequence={} aggressors={aggressors:?}",
+                    lock_trace.last_server_ms, client.last_server_sequence()
+                ));
+                tokio::time::Instant::now()
+            });
+            if started.elapsed() >= Duration::from_secs(12) || fed_since.elapsed() >= MEAT_SATIETY {
+                return Err(format!(
+                    "C18a bounded outdoor wait expired: last_server_renewal_ms={:?} expiry_ms={deadline_ms} sequence={} aggressors={aggressors:?}",
+                    lock_trace.last_server_ms, client.last_server_sequence()
+                ).into());
+            }
+            client.service_liveness(Duration::from_millis(200)).await?;
+            aggressors.extend(collect_events(&mut client, Some(&mut observation), None)?.aggressors);
+            verdict::Harness::global().progress("wait-for-combat-lock");
+            continue;
+        }
+        if escape_wait.take().is_some() {
+            evidence(&format!(
+                "c18a_escape_wait cleared last_server_renewal_ms={:?} expiry_ms={deadline_ms} sequence={}",
+                lock_trace.last_server_ms, client.last_server_sequence()
+            ));
+        }
         let state = client
             .session_mut()
             .combat_state()
@@ -1084,6 +1115,7 @@ fn outdoor_escape(
     world: &BundleWorld,
     spawn_cells: &std::collections::BTreeSet<TilePos>,
     aggressors: &Aggressors,
+    allow_wait: bool,
 ) -> TestResult<Option<(TilePos, Vec<StepDirection>)>> {
     if aggressors.is_empty() {
         return Ok(None);
@@ -1126,8 +1158,14 @@ fn outdoor_escape(
                     .is_some_and(|tile| !tile.protection_zone())
         },
     )
-    .filter(|path| path.len() <= 16)
-    .ok_or("C18a bounded outdoor escape unavailable")?;
+    .filter(|path| path.len() <= 16);
+    let Some(path) = path else {
+        return if allow_wait {
+            Ok(None)
+        } else {
+            Err("C18a bounded outdoor escape unavailable".into())
+        };
+    };
     let goal = path
         .iter()
         .try_fold(from, |at, direction| destination(world, at, *direction))
@@ -1481,6 +1519,7 @@ struct CombatLockTrace {
     anchor: Option<(u128, u128)>,
     last: Option<String>,
     expiry: u128,
+    last_server_ms: Option<u64>,
 }
 
 impl CombatLockTrace {
@@ -1489,7 +1528,7 @@ impl CombatLockTrace {
         let mut log = std::fs::File::open(required("NODE_BOOT_CAST_EVIDENCE_LOG")?)?;
         log.seek(SeekFrom::End(0))?;
         Ok(Self {
-            log, pending: String::new(), generation, actor: None, anchor: None, last: None, expiry: 0,
+            log, pending: String::new(), generation, actor: None, anchor: None, last: None, expiry: 0, last_server_ms: None,
         })
     }
 
@@ -1528,6 +1567,7 @@ impl CombatLockTrace {
                 self.anchor = Some((u128::from(parsed.ts), expiry));
             }
             self.expiry = expiry;
+            self.last_server_ms = Some(parsed.ts);
             self.last = Some(detail.into());
             evidence(&format!("c18a_lock_renewal {detail}"));
         }
