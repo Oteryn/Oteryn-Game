@@ -662,12 +662,21 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     .await?;
     let mut evasions = 0;
     let mut escape_wait = None;
+    let mut expiry_started_out_of_sight = false;
+    let require_lost_rat = scenario == "C18a.client";
     loop {
-        if scenario == "C18a.client" && !aggressors.is_empty() {
+        if require_lost_rat {
             let view = client.world_entities().ok_or("C18a retreat entity view absent")?;
             aggressors.retain(|actor| view.get(actor).is_some());
+            // Track the Scorch target even before the server publishes an attributed hit.
+            if view.get(&target).is_some() {
+                aggressors.insert(target);
+            }
+            if !aggressors.is_empty() {
+                expiry_started_out_of_sight = false;
+            }
         }
-        if let Some((goal, path)) = outdoor_escape(&client, world, &spawn_cells, &aggressors, scenario == "C18a.client")? {
+        if let Some((goal, path)) = outdoor_escape(&client, world, &spawn_cells, &aggressors, require_lost_rat)? {
             evasions += 1;
             if evasions > 2 || fed_since.elapsed() >= MEAT_SATIETY {
                 return Err(format!(
@@ -693,7 +702,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
             continue;
         }
         let deadline_ms = lock_trace.deadline_ms()?;
-        if scenario == "C18a.client" && !aggressors.is_empty() {
+        if require_lost_rat && !aggressors.is_empty() {
             let started = escape_wait.get_or_insert_with(|| {
                 evidence(&format!(
                     "c18a_escape_wait started last_server_renewal_ms={:?} expiry_ms={deadline_ms} sequence={} aggressors={aggressors:?}",
@@ -717,6 +726,13 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
                 "c18a_escape_wait cleared last_server_renewal_ms={:?} expiry_ms={deadline_ms} sequence={}",
                 lock_trace.last_server_ms, client.last_server_sequence()
             ));
+        }
+        if require_lost_rat && !expiry_started_out_of_sight {
+            evidence(&format!(
+                "c18a_retreat_out_of_sight rat={target:?} tile={rest:?} sequence={} last_server_renewal_ms={:?} expiry_ms={deadline_ms}",
+                client.last_server_sequence(), lock_trace.last_server_ms,
+            ));
+            expiry_started_out_of_sight = true;
         }
         let state = client
             .session_mut()
