@@ -1523,11 +1523,21 @@ async fn buy_catalogue_expansion(
     };
     use wire::browse::{Artwork, Page, Query};
 
+    // The train can carry the initial S06 catalogue before the archive continuation.
+    // Pin the exact totals for each revision independently of the served offer list.
+    let catalogue: serde_json::Value =
+        serde_json::from_slice(crate::content::store_cosmetics::DOCUMENT)?;
+    let has_archive_cohort = catalogue
+        .pointer("/source/tibia_fandom_archive/cohort")
+        .is_some();
     let mut request_seed = 160;
-    for (category, kind, prefix, picks, total) in [
-        ("cosmetics.mounts", 3, "mount", MOUNTS, 16),
-        ("cosmetics.outfits", 2, "outfit", OUTFITS, 58),
+    for (category, kind, prefix, picks, initial_total, archive_additions) in [
+        // Global Store additions: Arctic Unicorn, Batcat and Jungle Tiger.
+        ("cosmetics.mounts", 3, "mount", MOUNTS, 19, 143),
+        // Ceremonial Garb and Retro Citizen, Hunter, Knight and Mage.
+        ("cosmetics.outfits", 2, "outfit", OUTFITS, 63, 8),
     ] {
+        let total = initial_total + if has_archive_cohort { archive_additions } else { 0 };
         let mut query = Query {
             category: category.into(),
             search: String::new(),
