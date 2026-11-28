@@ -244,6 +244,11 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     })
     .await
     .map_err(|error| contextualize_transport(error, started))?;
+    let mut supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES.to_vec();
+    let tracker = oteryn_protocol_oteryn::cyclopedia_tracker::CAPABILITY_CYCLOPEDIA_TRACKER_V1;
+    if let Err(index) = supported_capabilities.binary_search(&tracker) {
+        supported_capabilities.insert(index, tracker);
+    }
     let session = Session::admit(
         stream,
         Admission {
@@ -252,7 +257,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
             character_id: request.character_id,
             admission_material: request.admission_material,
             client_build_id: request.client_build_id,
-            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+            supported_capabilities: &supported_capabilities,
             deadline: request.deadline,
         },
     )

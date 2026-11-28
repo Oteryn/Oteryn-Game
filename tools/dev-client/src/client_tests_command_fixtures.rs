@@ -195,7 +195,11 @@ where
     let server = tokio::spawn(async move {
         let (tcp, _) = listener.accept().await?;
         let mut stream = acceptor.accept(tcp).await?;
-        read_and_discard_bootstrap(&mut stream).await?;
+        let body = read_frame(&mut stream).await?;
+        let bootstrap = decode_wire_envelope(&body)?.client_bootstrap()?;
+        assert!(bootstrap.supported_capabilities.contains(
+            &oteryn_protocol_oteryn::cyclopedia_tracker::CAPABILITY_CYCLOPEDIA_TRACKER_V1
+        ));
         let accepted = encode_server_accepted(&ServerAcceptedValue {
             game_session_id: GameSessionId::decode(&test_uuid_v7(1))?,
             world_id: WorldId::decode(&test_uuid_v7(2))?,

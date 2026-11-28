@@ -1,11 +1,9 @@
 //! P22d (live tracker refresh on kill progress):
 //! 1. Admit the node-boot character, track a race and note its kill count.
 //! 2. Walk to a compiled spawn of that race, kill one creature and wait for the live frames.
-//! 3. The server pushes a Cyclopedia tracker StateDelta (domain 98); the native session has no
-//!    decoder for that domain and fails with `UnsupportedPushedDomain`. The row therefore
-//!    confirms the credit through a fresh admission (kill count +1) and reports the client gap.
+//! 3. Verify the pushed tracker update and read the same kill count after logout and relog.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind};
+use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::{CommandStatus, cyclopedia_tracker as tr};
 
@@ -66,20 +64,88 @@ async fn read(
     Ok(list)
 }
 
-const GAP: &str = "source:crates/session/src/domain_dispatch.rs:346";
-
-fn kills(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> u32 {
+fn kills(snapshot: &tr::TrackerSnapshot, key: &str) -> Option<u32> {
     snapshot
-        .as_ref()
-        .and_then(|list| list.entries.iter().find(|entry| entry.creature_key == key))
-        .map_or(0, |entry| entry.kill_count)
+        .entries
+        .iter()
+        .find(|entry| entry.creature_key == key)
+        .map(|entry| entry.kill_count)
 }
 
-/// Whether a session failure is the refusal of the pushed tracker domain.
-fn is_domain_gap(error: &str) -> bool {
-    let lowered = error.to_ascii_lowercase();
-    lowered.contains("unsupportedpusheddomain")
-        || (lowered.contains("unsupported") && lowered.contains("98"))
+async fn walk_to_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+            && spawns.sources.iter().any(|source| {
+                source.floor == at.floor
+                    && source.points.iter().any(|point| {
+                        at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
+                            && spawns
+                                .creatures
+                                .get(point.creature as usize)
+                                .is_some_and(|entry| entry.key == RAT)
+                    })
+            })
+    })
+    .ok_or("step=route;observed=no-reachable-rat-spawn")?;
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, before, direction).ok_or("step=route;observed=no-landing")?;
+        let mut outcome = client.step(direction).await?;
+        if outcome.disposition == StepDisposition::Blocked {
+            expect(
+                tile(client.world_spatial().actor_position)? == before,
+                "walk-blocked-position",
+                outcome.command_id,
+            )?;
+            let blocker = client.world_entities().and_then(|entities| entities.iter().find(|entity| {
+                entity.kind == EntityKind::Creature && tile(entity.position).ok() == Some(expected)
+            })).map(|entity| entity.entity)
+                .ok_or_else(|| format!("step=walk;observed=blocked-without-occupant;tile={expected:?};frame={outcome:?}"))?;
+            evidence(&format!(
+                "p22d blocked={expected:?} entity={blocker:?} frame={outcome:?}"
+            ));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+            verdict::Harness::global().bounded_wait(deadline, "p22d-creature-step");
+            loop {
+                let position = client
+                    .world_entities()
+                    .and_then(|entities| entities.get(&blocker))
+                    .map(|entity| tile(entity.position))
+                    .transpose()?;
+                if position != Some(expected) {
+                    break;
+                }
+                expect(
+                    tokio::time::Instant::now() < deadline,
+                    "walk-blocker",
+                    blocker,
+                )?;
+                client.service_liveness(Duration::from_millis(100)).await?;
+                client.take_events();
+            }
+            outcome = client.step(direction).await?;
+        }
+        expect(
+            outcome.disposition == StepDisposition::Moved
+                && outcome.world_spatial_delta.is_some()
+                && tile(client.world_spatial().actor_position)? == expected,
+            "walk",
+            (expected, &outcome),
+        )?;
+        client
+            .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+            .await?;
+        client.take_events();
+    }
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
@@ -95,21 +161,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     let mut client = connect_world(clients, 0xd6).await?;
     selected(&client)?;
+    let initial = read(&mut client, best).await?;
+    expect(
+        initial
+            .as_ref()
+            .is_some_and(|list| !list.boss && kills(list, RAT).is_none()),
+        "tracker-pre-state",
+        initial,
+    )?;
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
         status == CommandStatus::Accepted && has(&list, RAT),
         "add",
         status,
     )?;
-    let before = kills(&list, RAT);
+    let before = list
+        .as_ref()
+        .filter(|list| !list.boss)
+        .and_then(|list| kills(list, RAT))
+        .ok_or("step=add;observed=missing-rat-count")?;
+    let expected = before
+        .checked_add(1)
+        .ok_or("step=add;observed=kill-count-overflow")?;
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, RAT).await?;
+    walk_to_rat(&mut client, world, &metadata.spawns).await?;
     let here = client.world_spatial().actor_position;
     let target = client
         .world_entities()
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && entry
+                        .display_name
+                        .is_some_and(|name| name.as_str() == Ok("Rat"))
                     && entry.position.floor == here.floor
                     && entry
                         .position
@@ -134,47 +218,95 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let mut push_error: Option<String> = None;
-    let mut killed = false;
+    let mut refreshed = false;
     while tokio::time::Instant::now() < deadline {
-        if let Err(error) = client.service_liveness(Duration::from_millis(50)).await {
-            push_error = Some(error.to_string());
-            break;
+        for event in client.take_events() {
+            let SessionEvent::GatedSnapshotReplaced(delta) = event else {
+                continue;
+            };
+            if delta.value.domain_id != tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER {
+                continue;
+            }
+            let (bestiary, _) = tr::decode_domain_snapshot(&delta.value.payload)
+                .ok_or("step=live-refresh;observed=undecodable-domain")?;
+            let count = kills(&bestiary, RAT);
+            expect(
+                count == Some(expected),
+                "live-refresh-count",
+                (expected, count),
+            )?;
+            refreshed = true;
         }
-        client.take_events();
-        if client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target.entity).is_none())
+        if refreshed
+            && client
+                .world_entities()
+                .is_some_and(|entities| entities.get(&target.entity).is_none())
         {
-            killed = true;
             break;
         }
+        client.service_liveness(Duration::from_millis(50)).await?;
     }
-    drop(client);
+    expect(refreshed, "live-refresh", "no-domain-98-push")?;
+    expect(
+        client
+            .world_entities()
+            .is_some_and(|entities| entities.get(&target.entity).is_none()),
+        "kill",
+        "target-still-present",
+    )?;
+    // The PvE in-fight lock lasts 60 seconds after the last hit.
+    let lock_duration = Duration::from_secs(60);
+    let lock_deadline = tokio::time::Instant::now() + lock_duration;
+    verdict::Harness::global().bounded_wait(lock_deadline, "p22d-combat-lock");
+    while let Some(remaining) = lock_deadline.checked_duration_since(tokio::time::Instant::now()) {
+        client
+            .service_liveness(remaining.min(Duration::from_secs(1)))
+            .await?;
+        client.take_events();
+    }
+    let original_session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
 
     let mut fresh = connect_world(clients, 0xd7).await?;
-    let list = read(&mut fresh, best).await?;
-    let after = kills(&list, RAT);
-    // Leave the tracker as found.
-    call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-    logout(&mut fresh).await?;
+    selected(&fresh)?;
     expect(
-        after == before + 1,
-        "kill-credit",
-        format!("before:{before},after:{after},killed:{killed},error:{push_error:?}"),
+        fresh.join_snapshot().game_session_id != original_session,
+        "relog",
+        "reused-session",
     )?;
-    match push_error {
-        Some(error) if is_domain_gap(&error) => Ok(("MISSING-CLIENT", GAP.to_owned())),
-        Some(error) => Err(format!("step=live-refresh;observed=session-error:{error}").into()),
-        None => Err("step=live-refresh;observed=no-domain-98-push-and-no-client-refusal".into()),
-    }
+    let list = read(&mut fresh, best).await?;
+    let after = list
+        .as_ref()
+        .filter(|list| !list.boss)
+        .and_then(|list| kills(list, RAT));
+    expect(
+        after == Some(expected),
+        "durable-kill-count",
+        (expected, after),
+    )?;
+    let (status, list) = call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
+    expect(
+        status == CommandStatus::Accepted
+            && list
+                .as_ref()
+                .is_some_and(|list| !list.boss && kills(list, RAT).is_none()),
+        "remove",
+        (status, list),
+    )?;
+    logout(&mut fresh).await?;
+    Ok((
+        "PASS",
+        format!("live-and-durable-kill-count:{before}->{expected}"),
+    ))
 }
 
 type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -228,11 +360,5 @@ mod tests {
         assert!(!value.contains(char::is_whitespace));
         assert!(value.len() <= 240);
         assert!(value.starts_with("step=a-b-c-"));
-    }
-
-    #[test]
-    fn domain_gap_is_recognised_from_the_session_error() {
-        assert!(is_domain_gap("UnsupportedPushedDomain { domain_id: 98 }"));
-        assert!(!is_domain_gap("connection reset"));
     }
 }
