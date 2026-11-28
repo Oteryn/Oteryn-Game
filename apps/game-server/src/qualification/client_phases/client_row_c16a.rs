@@ -262,10 +262,12 @@ fn actor_position(at: TilePos) -> ActorPosition {
     }
 }
 
-fn capture_write(path: &Path, name: &str, bytes: impl AsRef<[u8]>) {
-    if let Err(error) = std::fs::write(path.join(name), bytes) {
-        evidence(&format!("C16a.client capture write {name}: {error}"));
-    }
+fn capture_write(path: &Path, name: &str, bytes: impl AsRef<[u8]>) -> TestResult {
+    use std::io::Write;
+
+    std::fs::File::create_new(path.join(name))
+        .and_then(|mut file| file.write_all(bytes.as_ref()))
+        .map_err(|error| format!("C16a.client capture write {name}: {error}").into())
 }
 
 struct CapturedMapDelta {
@@ -292,10 +294,8 @@ async fn capture_map_delta(client: &mut DevClientSession) -> TestResult<Captured
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
     let result: TestResult = verdict::observe(async {
+        let directory = required("E2E_ALL_CAPTURE_DIR")?;
         let path = Path::new(&directory);
         let mut client = connect_world(clients, 0xc1).await?;
         let snapshot = client
@@ -303,12 +303,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
             .ok_or("C16a client map snapshot absent")?
             .clone();
-        capture_write(path, "c16a-snapshot.bin", &snapshot.payload);
+        capture_write(path, "c16a-snapshot.bin", &snapshot.payload)?;
         capture_write(
             path,
             "c16a-snapshot-revision.txt",
             snapshot.revision.to_string(),
-        );
+        )?;
         let snapshot_map =
             oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
                 .map_err(|error| format!("C16a client snapshot decode: {error:?}"))?;
@@ -329,7 +329,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
                 return Err(format!("C16a client rune {rune_id} refused: {reply:?}").into());
             }
             let placed = capture_map_delta(&mut client).await?;
-            capture_write(path, &format!("c16a-{stem}-placed.bin"), &placed.payload);
+            capture_write(path, &format!("c16a-{stem}-placed.bin"), &placed.payload)?;
             capture_write(
                 path,
                 &format!("c16a-{stem}-placed-meta.txt"),
@@ -337,7 +337,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
                     "{} {} {}",
                     placed.base_revision, placed.new_revision, placed.server_sequence
                 ),
-            );
+            )?;
             let visible = oteryn_protocol_oteryn::world_map::decode_world_map_delta(
                 &snapshot_map.header,
                 &placed.payload,
@@ -364,7 +364,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
                 target.x, target.y, target.floor, visible_reference
             ));
             let expired = capture_map_delta(&mut client).await?;
-            capture_write(path, &format!("c16a-{stem}-expired.bin"), &expired.payload);
+            capture_write(path, &format!("c16a-{stem}-expired.bin"), &expired.payload)?;
             capture_write(
                 path,
                 &format!("c16a-{stem}-expired-meta.txt"),
@@ -372,9 +372,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
                     "{} {} {}",
                     expired.base_revision, expired.new_revision, expired.server_sequence
                 ),
-            );
+            )?;
         }
-        capture_write(path, "c16a-expected.txt", expected);
+        capture_write(path, "c16a-expected.txt", expected)?;
         Ok(())
     })
     .await;
