@@ -42,7 +42,8 @@ impl Survey {
                 let mut hash = Sha256::new();
                 hash.update(character);
                 hash.update(self.areas[0].minimum.floor.to_le_bytes());
-                u64::from_le_bytes(hash.finalize()[..8].try_into().expect("SHA-256 prefix"))
+                let digest = hash.finalize();
+                u64::from(u16::from_le_bytes([digest[0], digest[1]]))
             }
             Selection::WorldReset => epoch,
         };

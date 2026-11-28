@@ -4120,9 +4120,9 @@ def build():
             sources=[source],
             reply=["Your report earns one point of Spike fame."],
         )
-    from spike_parcel import append as append_parcels, append_surveys
-
     import spike_world
+    from spike_parcel import append as append_parcels
+    from spike_parcel import append_surveys
 
     spike_world.dialogue(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
     append_surveys(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
