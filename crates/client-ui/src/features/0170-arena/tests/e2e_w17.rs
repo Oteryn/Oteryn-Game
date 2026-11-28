@@ -53,11 +53,18 @@ fn capture() -> Result<Capture, BoxError> {
                 payload: payload.to_vec(),
             })
         };
+        let catalogue = read("catalogue")?;
+        let status = read("status")?;
+        let advance = read("advance")?;
         let capture = Capture {
-            catalogue: read("catalogue")?,
-            status: read("status")?,
-            advance: read("advance")?,
-            drome_status: read("drome-status")?,
+            catalogue,
+            status: status.clone(),
+            advance,
+            drome_status: {
+                let arena_after = read("status-after-refusal")?;
+                assert_eq!(arena_after.payload, status.payload);
+                read("drome-status")?
+            },
             drome_enter: read("drome-enter")?,
             expected: std::fs::read_to_string(root.join("w17-expected.txt"))?,
         };
@@ -65,12 +72,9 @@ fn capture() -> Result<Capture, BoxError> {
         assert_eq!(after.payload, capture.drome_status.payload);
         return Ok(capture);
     }
-    let state = ArenaState {
-        completed_rank: 1,
-        ..ArenaState::default()
-    };
+    let state = ArenaState::default();
     let drome = DromeResult {
-        disposition: 3,
+        disposition: 1,
         level: 50,
         start: 50,
         rotation_ends: 1_900_000_000,
@@ -85,10 +89,10 @@ fn capture() -> Result<Capture, BoxError> {
         status: accepted(&result(ArenaDisposition::Applied)?),
         advance: accepted(&result(ArenaDisposition::WrongState)?),
         drome_status: accepted(&drome.encode()),
-        drome_enter: accepted(&drome.encode()),
+        drome_enter: accepted(&DromeResult { disposition: 3, ..drome }.encode()),
         expected: "challenge=Greenhorn|1000|10|600\nchallenge=Scrapper|5000|10|600\nchallenge=Warlord|10000|10|600\n\
-                   status=Applied|1|0|0|0|0|0,0,0\nadvance=WrongState|1|0|0|0|0|0,0,0\n\
-                   drome_status=3|50|50|0|0|0|0|0|0|0|1900000000\ndrome_enter=3|50|50|0|0|0|0|0|0|0|1900000000\n"
+                   status=Applied|0|0|0|0|0|0,0,0\nadvance=WrongState|0|0|0|0|0|0,0,0\n\
+                   drome_status=1|50|50|0|0|0|0|0|0|0|1900000000\ndrome_enter=3|50|50|0|0|0|0|0|0|0|1900000000\n"
             .into(),
     })
 }
@@ -178,6 +182,57 @@ fn accepted(payload: &[u8]) -> GatedCommandResult {
     }
 }
 
+fn request_action(panel: &mut ArenaPanel, action: ArenaAction) -> Result<(), BoxError> {
+    let command = request(panel, Intent::Action(action)).ok_or("W17 action request refused")?;
+    assert_eq!((command.capability, command.kind), (170, 436));
+    assert_eq!(
+        arena::decode_match_request(&command.payload).ok(),
+        Some(action)
+    );
+    assert_eq!(
+        command.payload,
+        arena::encode_match_request(action).map_err(|error| format!("{error:?}"))?
+    );
+    Ok(())
+}
+
+fn global_catalogue(rows: &[ArenaChallenge]) -> Result<(), BoxError> {
+    let expected = [
+        ArenaRank::Greenhorn,
+        ArenaRank::Scrapper,
+        ArenaRank::Warlord,
+    ]
+    .into_iter()
+    .zip([1000, 5000, 10_000])
+    .map(|(rank, fee)| ArenaChallenge {
+        rank,
+        fee,
+        rooms: 10,
+        room_seconds: 360,
+    })
+    .collect::<Vec<_>>();
+    if rows != expected {
+        return Err(
+            format!("Global arena catalogue expected={expected:?} observed={rows:?}").into(),
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn global_catalogue_rejects_ten_minute_timer() -> Result<(), BoxError> {
+    let bytes = arena::encode_catalogue().map_err(|error| format!("{error:?}"))?;
+    let mut rows = arena::decode_catalogue(&bytes).map_err(|error| format!("{error:?}"))?;
+    for row in &mut rows {
+        row.room_seconds = 600;
+    }
+    assert!(global_catalogue(&rows).is_err());
+    for row in &mut rows {
+        row.room_seconds = 360;
+    }
+    global_catalogue(&rows)
+}
+
 #[test]
 fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
     let capture = capture()?;
@@ -213,14 +268,13 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
         .collect::<Result<Vec<_>, BoxError>>()?;
     assert_eq!(panel.challenges, want_challenges);
 
-    let status =
-        request(&mut panel, Intent::Action(ArenaAction::Status)).ok_or("status request refused")?;
-    assert_eq!((status.capability, status.kind), (170, 436));
+    request_action(&mut panel, ArenaAction::Status)?;
     assert!(apply_result(&mut panel, &capture.status));
     let want_status = want_result(one(expected, "status")?)?;
+    assert_eq!(want_status.state, ArenaState::default());
     assert_eq!(panel.result, Some(want_status));
 
-    request(&mut panel, Intent::Action(ArenaAction::Advance)).ok_or("advance request refused")?;
+    request_action(&mut panel, ArenaAction::Advance)?;
     assert!(apply_result(&mut panel, &capture.advance));
     let want_refusal = want_result(one(expected, "advance")?)?;
     assert_eq!(want_refusal.disposition, ArenaDisposition::WrongState);
@@ -228,34 +282,38 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
     assert_eq!(want_refusal.state, want_status.state);
     assert!(panel_text(&panel).contains("Action unavailable in the current state\r\n"));
 
-    request(
-        &mut panel,
-        Intent::Action(ArenaAction::Drome(arena::DromeAction::Status)),
-    )
-    .ok_or("drome status request refused")?;
+    request_action(&mut panel, ArenaAction::Drome(arena::DromeAction::Status))?;
     assert!(apply_result(&mut panel, &capture.drome_status));
     assert_eq!(
         panel.drome,
         Some(want_drome(one(expected, "drome_status")?)?)
     );
-    request(
-        &mut panel,
-        Intent::Action(ArenaAction::Drome(arena::DromeAction::Enter)),
-    )
-    .ok_or("drome enter request refused")?;
+    let hazards = panel.hazards.clone();
+    assert!(hazards.entries.is_empty());
+    let hazard_clock = panel.hazards_received_at;
+    request_action(&mut panel, ArenaAction::Drome(arena::DromeAction::Enter))?;
     assert!(apply_result(&mut panel, &capture.drome_enter));
     let want_enter = want_drome(one(expected, "drome_enter")?)?;
     assert_eq!(panel.drome, Some(want_enter));
+    assert_eq!(want_enter.disposition, 3);
 
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
-        return Ok(());
-    }
+    assert_eq!(panel.hazards, hazards);
+    assert_eq!(panel.hazards_received_at, hazard_clock);
     // A refused command result and a malformed payload leave the stored replies unchanged.
     let kept = panel.clone();
-    request(&mut panel, Intent::Action(ArenaAction::Status)).ok_or("status request refused")?;
+    let kept_hazards = (kept.hazards.clone(), kept.hazards_received_at);
+    request_action(&mut panel, ArenaAction::Status)?;
+    let would_mutate = arena::encode_match_result(&ArenaResult {
+        disposition: ArenaDisposition::Applied,
+        state: ArenaState {
+            completed_rank: 2,
+            ..ArenaState::default()
+        },
+    })
+    .map_err(|error| format!("{error:?}"))?;
     let refused = GatedCommandResult {
         status: CommandStatus::Rejected,
-        ..accepted(&[])
+        ..accepted(&would_mutate)
     };
     assert!(!apply_result(&mut panel, &refused));
     assert_eq!(panel.feedback, Some("The server refused the arena request"));
@@ -263,7 +321,11 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
         (&panel.result, &panel.drome, &panel.challenges),
         (&kept.result, &kept.drome, &kept.challenges)
     );
-    request(&mut panel, Intent::Action(ArenaAction::Status)).ok_or("status request refused")?;
+    assert_eq!(
+        (panel.hazards.clone(), panel.hazards_received_at),
+        kept_hazards
+    );
+    request_action(&mut panel, ArenaAction::Status)?;
     assert!(!apply_result(&mut panel, &accepted(&[8, 11])));
     assert_eq!(
         panel.feedback,
@@ -273,5 +335,15 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
         (&panel.result, &panel.drome, &panel.challenges),
         (&kept.result, &kept.drome, &kept.challenges)
     );
+    assert_eq!(
+        (panel.hazards.clone(), panel.hazards_received_at),
+        kept_hazards
+    );
+    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
+        println!(
+            "W17_REPLAY_CHECK outgoing_actions=exact hazards=unchanged rejected_and_malformed=unchanged"
+        );
+        global_catalogue(&panel.challenges)?;
+    }
     Ok(())
 }

@@ -84,12 +84,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let catalogue = request(&mut client, wire::COMMAND_TYPE_ARENA_CATALOGUE, &[], "catalogue").await?;
     let challenges = wire::decode_catalogue(&catalogue).map_err(|error| format!("step=catalogue decode: {error:?}"))?;
-    if challenges != wire::SVARGROND_CHALLENGES {
+    // The replay independently checks Global timing after exercising the panel.
+    if challenges.iter().map(|c| (c.rank, c.fee, c.rooms)).ne([
+        (wire::ArenaRank::Greenhorn, 1000, 10),
+        (wire::ArenaRank::Scrapper, 5000, 10),
+        (wire::ArenaRank::Warlord, 10_000, 10),
+    ]) {
         return Err(format!("step=catalogue observed={challenges:?}").into());
     }
     let status = action(&mut client, ArenaAction::Status, "status").await?;
     let initial = wire::decode_match_result(&status).map_err(|error| format!("step=status decode: {error:?}"))?;
-    if initial.disposition != ArenaDisposition::Applied {
+    if initial.disposition != ArenaDisposition::Applied || initial.state != wire::ArenaState::default() {
         return Err(format!("step=status observed={initial:?}").into());
     }
     let advance = action(&mut client, ArenaAction::Advance, "advance").await?;
@@ -97,17 +102,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refused.disposition != ArenaDisposition::WrongState || refused.state != initial.state {
         return Err(format!("step=advance observed={refused:?} before={initial:?}").into());
     }
+    let status_after = action(&mut client, ArenaAction::Status, "status-after-refusal").await?;
+    if status_after != status {
+        return Err(format!("step=status-after-refusal expected={status:?} observed={status_after:?}").into());
+    }
     let drome_status = action(&mut client, ArenaAction::Drome(DromeAction::Status), "drome-status").await?;
     let before = DromeResult::decode(&drome_status).map_err(|error| format!("step=drome-status decode: {error:?}"))?;
     let drome_enter = action(&mut client, ArenaAction::Drome(DromeAction::Enter), "drome-enter").await?;
     let entered = DromeResult::decode(&drome_enter).map_err(|error| format!("step=drome-enter decode: {error:?}"))?;
-    if entered != (DromeResult { disposition: 3, ..before }) {
+    let hazards = wire::decode_drome_hazards(&drome_status)
+        .map_err(|error| format!("step=drome-status hazards: {error:?}"))?;
+    if before.disposition != 1
+        || !hazards.entries.is_empty()
+        || wire::decode_drome_hazards(&drome_enter).ok().as_ref() != Some(&hazards)
+        || entered != (DromeResult { disposition: 3, ..before })
+    {
         return Err(format!("step=drome-enter before={before:?} observed={entered:?}").into());
     }
     let drome_after = action(&mut client, ArenaAction::Drome(DromeAction::Status), "drome-after-refusal").await?;
     let after = DromeResult::decode(&drome_after)
         .map_err(|error| format!("step=drome-after-refusal decode: {error:?}"))?;
-    if after != before {
+    if after != before || drome_after != drome_status {
         return Err(format!("step=drome-after-refusal before={before:?} observed={after:?}").into());
     }
     let mut expected = String::new();
@@ -129,6 +144,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?}").into());
     }
+    drop(client);
+    let mut fresh = connect_world(clients, 0x8e).await?;
+    let relog_session = fresh.join_snapshot().game_session_id;
+    if relog_session == session {
+        return Err("step=relog reused original session".into());
+    }
+    let relog_status = action(&mut fresh, ArenaAction::Status, "relog-status").await?;
+    let relog_drome = action(&mut fresh, ArenaAction::Drome(DromeAction::Status), "relog-drome").await?;
+    if relog_status != status || relog_drome != drome_status {
+        return Err(format!("step=relog refusal changed state arena={relog_status:?} drome={relog_drome:?}").into());
+    }
+    let logout = fresh.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=relog-logout observed={logout:?}").into());
+    }
+    evidence(&format!("W17_CLIENT_RELOG session={} arena=idle drome=unchanged", uuid_text(relog_session.as_bytes())));
     capture("w17-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "session={} advance={:?} drome_enter={}",
