@@ -80,6 +80,16 @@ def inspect_damage(socket_path, session, target):
     return answer.decode("ascii").rstrip("\n")
 
 
+def inspect_spawn(socket_path, session, origin):
+    identifier = uuid.UUID(session)
+    if identifier.version != 7 or str(identifier) != session or not re.fullmatch(r"-?[0-9]{1,10} -?[0-9]{1,10} -?[0-9]{1,5}", origin):
+        raise ValueError("invalid qualification spawn origin")
+    answer = bytes(_request(socket_path, f"inspect-spawn {session} {origin}\n", 128))
+    if not re.fullmatch(rb"spawn_origin [0-9a-f]{32} [1-9][0-9]{0,19}\n", answer):
+        raise RuntimeError(f"node refused qualification spawn origin inspection: {answer[:128]!r}")
+    return answer.decode("ascii").rstrip("\n")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
@@ -88,10 +98,13 @@ if __name__ == "__main__":
     group.add_argument("--profile")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
+    group.add_argument("--inspect-spawn", metavar="ORIGIN")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))
+    elif args.inspect_spawn is not None:
+        print(inspect_spawn(args.socket, args.session, args.inspect_spawn))
     else:
         provision(args.socket, args.session, args.profile)

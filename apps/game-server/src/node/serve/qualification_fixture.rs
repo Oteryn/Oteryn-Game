@@ -249,6 +249,60 @@ pub(super) async fn spawn(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) async fn inspect_spawn(
+    config: &NodeConfig,
+    owners: Option<SpawnOwners<'_>>,
+    request: &[u8],
+) -> Option<String> {
+    if !config.qualification_fixture {
+        return None;
+    }
+    let mut fields = std::str::from_utf8(request)
+        .ok()?
+        .strip_suffix('\n')?
+        .split(' ');
+    if fields.next()? != "inspect-spawn" {
+        return None;
+    }
+    let session =
+        crate::foundation::GameSessionId::decode(&parse_operation_id(fields.next()?.as_bytes())?)
+            .ok()?;
+    let origin = (
+        fields.next()?.parse().ok()?,
+        fields.next()?.parse().ok()?,
+        fields.next()?.parse().ok()?,
+    );
+    if fields.next().is_some() {
+        return None;
+    }
+    let runtime = owners?.runtime.lock().await;
+    runtime.positioned_player_for_session(session).ok()??;
+    let mut matches = runtime
+        .visible_entities()
+        .creatures
+        .into_iter()
+        .filter(|row| {
+            runtime
+                .creature_spawn_cell(row.actor)
+                .is_some_and(|at| (at.x, at.y, at.floor) == origin)
+        });
+    let row = matches.next()?;
+    if matches.next().is_some() {
+        return None;
+    }
+    let identity: String = row
+        .actor
+        .placement_identity()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    Some(format!(
+        "spawn_origin {identity} {}",
+        row.actor.actor_local_generation()
+    ))
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 pub(super) async fn inspect_damage(
     config: &NodeConfig,
     owners: Option<SpawnOwners<'_>>,

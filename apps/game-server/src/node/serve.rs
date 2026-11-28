@@ -3051,6 +3051,15 @@ async fn control_loop(
                     "character_bootstrap",
                 ),
                 #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-spawn ") => (
+                    Box::pin(qualification_fixture::inspect_spawn(
+                        config, spawn, &request,
+                    ))
+                    .await
+                    .unwrap_or_else(|| "rejected reason=spawn_origin_unavailable".to_owned()),
+                    "qualification_spawn_origin",
+                ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
                 Some(request) if request.starts_with(b"inspect-damage ") => (
                     Box::pin(qualification_fixture::inspect_damage(
                         config, spawn, &request,
