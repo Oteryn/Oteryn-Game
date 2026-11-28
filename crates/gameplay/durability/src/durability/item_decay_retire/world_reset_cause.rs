@@ -13,6 +13,7 @@ pub(super) enum RetireCause {
     CorpseDecay,
     WorldReset(RetiringWorldReset),
     ActivityRetirement(ActivityRetirementBinding),
+    ArenaReset([u8; 32]),
 }
 
 impl RetireCause {
@@ -33,23 +34,25 @@ impl RetireCause {
             Self::CorpseDecay => "CORPSE_DECAY",
             Self::WorldReset(_) => "WORLD_RESET",
             Self::ActivityRetirement(_) => "ACTIVITY_RETIREMENT",
+            Self::ArenaReset(_) => "ARENA_RESET",
         }
     }
     pub(super) fn epoch(self) -> Option<String> {
         match self {
-            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
+            Self::CorpseDecay | Self::ActivityRetirement(_) | Self::ArenaReset(_) => None,
             Self::WorldReset(reset) => Some(reset.epoch.to_string()),
         }
     }
     pub(super) fn binding(self) -> Option<Vec<u8>> {
         match self {
             Self::CorpseDecay | Self::ActivityRetirement(_) => None,
+            Self::ArenaReset(binding) => Some(binding.to_vec()),
             Self::WorldReset(reset) => Some(reset.binding.to_vec()),
         }
     }
     pub(super) fn target(self) -> Option<Vec<u8>> {
         match self {
-            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
+            Self::CorpseDecay | Self::ActivityRetirement(_) | Self::ArenaReset(_) => None,
             Self::WorldReset(reset) => Some(reset.target.to_vec()),
         }
     }
@@ -86,6 +89,11 @@ pub(super) fn decode_cause(
             )
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         })),
+        "ARENA_RESET" => Ok(RetireCause::ArenaReset(
+            row.try_get::<Vec<u8>, _>("retirement_binding")?
+                .try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )),
         _ => Err(DurabilityError::InvalidStoredState),
     }
 }
@@ -104,6 +112,7 @@ pub(super) fn bind_message(message: &mut OneItemDecayRetireV1, cause: RetireCaus
         .map_or_else(Vec::new, |state| state.item_instance_id.clone());
     match cause {
         RetireCause::CorpseDecay => return,
+        RetireCause::ArenaReset(_) => message.cause = None,
         RetireCause::WorldReset(reset) => {
             message.world_reset = Some(audit::OneItemWorldResetV1 {
                 world_id: reset.world.as_bytes().to_vec(),

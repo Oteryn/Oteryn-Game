@@ -1,7 +1,7 @@
 //! Captured native source eligibility is evidence, never current mutation authority.
 //! Crystal 201189f HeartBossDeath:26-138; Court Warlock:323-329;
 //! MagmaBubbleDeath:12-23; GoblinLeaderDeath:3-8. Current fences remain independently checked.
-//! Herald additionally binds the qualified most-damage character captured at death.
+//! Herald and Nomad bind the qualified most-damage character captured at death.
 use super::*;
 use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 
@@ -14,7 +14,8 @@ pub struct SourceDeathContext {
     pub lease_generation: u64,
     pub position: [i32; 3],
     pub dealt_damage: bool,
-    /// Present most-damage identity frozen by the native lethal owner, if required.
+    /// Present most-damage identity frozen by the lethal owner for this recipient.
+    /// On a party rule, set only after matching the recipient to that player's roster.
     pub top_damage_character: Option<[u8; 16]>,
 }
 
@@ -64,7 +65,11 @@ impl SourceDeathContext {
             || self.character != *fence.character_id.as_bytes()
             || self.session != fence.game_session_id
             || self.lease_generation != fence.character_lease_generation
-            || !rule.recipient(self.position, self.dealt_damage)
+            || !rule.recipient_with_party(
+                self.position,
+                self.dealt_damage,
+                self.top_damage_character.is_some(),
+            )
             || (rule.top_damage_only && self.top_damage_character != Some(self.character))
         {
             return Ok(false);

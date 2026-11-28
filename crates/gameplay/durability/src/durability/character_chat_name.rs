@@ -7,7 +7,7 @@ use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{begin_semantic_transaction, commit_semantic_read};
 use crate::domain::CharacterId;
 use crate::domain::character_name::CharacterName;
 use sqlx::{Postgres, Row, Transaction};
@@ -38,7 +38,7 @@ impl DurabilityRoot {
                         Some(row) => CharacterName::parse(&row.try_get::<String, _>("name")?).ok(),
                         None => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(name))
                 })
             })

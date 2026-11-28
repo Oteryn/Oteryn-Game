@@ -46,8 +46,8 @@ fn scenario(level: i64, stored: bool) -> TestResult {
             let channel_pin = ChannelContentPin::from_activation(world_id, 1,
                 room.compiled().server_digest(), room.compiled().client_digest(),
                 room.frame_binding().digest(), world.map_revision_digest(), (i32::from(initial_x),32513,7));
-            let deps = Dependencies::with_content(channel_pin, room,
-                crate::spell::cast::v1_spell_book().map_err(debug)?)?;
+            let deps = Dependencies::with_content_and_capacity(channel_pin, room,
+                crate::spell::cast::v1_spell_book().map_err(debug)?, 3)?;
             let mut owner = deps.owner(&h, &authority);
             owner.movement_cells = (&cells).into();
             owner.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
@@ -65,28 +65,33 @@ fn scenario(level: i64, stored: bool) -> TestResult {
                     .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
             }
-            let [npc] = super::classic_quests_fixtures::install(&owner, &admitted, ["oteryn:npc.anna"]).await?;
+            let [npc, seagull] = super::classic_quests_fixtures::install(
+                &owner, &admitted, ["oteryn:npc.anna", "oteryn:npc.a_seagull"]
+            ).await?;
             let talk = super::classic_quests_fixtures::talk;
+            assert_eq!(talk(&mut owner,&admitted,seagull,47999,"hi").await?, ["Squawk!"]);
             assert_eq!(talk(&mut owner,&admitted,npc,48000,"hi").await?,
                 ["Hello, my friend. Do you seek {passage} to the island {Targuna}?"]);
+            assert_eq!(talk(&mut owner,&admitted,npc,48001,"name").await?,
+                ["My full {name} is Anna Maria Mauricia, but you may call me just Anna."]);
             if level == 7 {
-                assert_eq!(talk(&mut owner,&admitted,npc,48001,"passage").await?,
+                assert_eq!(talk(&mut owner,&admitted,npc,48002,"passage").await?,
                     ["You need to be at least level 8 to travel to Targuna. Keep training!"]);
-                assert_eq!(talk(&mut owner,&admitted,npc,48002,"yes").await?,
+                assert_eq!(talk(&mut owner,&admitted,npc,48003,"yes").await?,
                     ["You need to be at least level 8 to travel."]);
                 assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
                     crate::foundation::MovementLocalPosition {x:32534,y:32513,floor:7});
             } else {
-                assert_eq!(talk(&mut owner,&admitted,npc,48001,"passage").await?,
+                assert_eq!(talk(&mut owner,&admitted,npc,48002,"passage").await?,
                     ["I'm offering a ferry service to the island {Targuna}, are you interested?"]);
-                assert_eq!(talk(&mut owner,&admitted,npc,48002,"no").await?,
+                assert_eq!(talk(&mut owner,&admitted,npc,48003,"no").await?,
                     ["No problem. Come back when you're ready to explore Targuna!"]);
-                talk(&mut owner,&admitted,npc,48003,"yes").await?;
+                talk(&mut owner,&admitted,npc,48004,"yes").await?;
                 assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position().x,i32::from(initial_x));
-                talk(&mut owner,&admitted,npc,48004,"passage").await?;
-                talk(&mut owner,&admitted,npc,48005,"sure").await?;
+                talk(&mut owner,&admitted,npc,48005,"passage").await?;
+                talk(&mut owner,&admitted,npc,48006,"sure").await?;
                 assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position().x,i32::from(initial_x));
-                assert_eq!(talk(&mut owner,&admitted,npc,48006,"yes").await?,
+                assert_eq!(talk(&mut owner,&admitted,npc,48007,"yes").await?,
                     ["Very well, I'll take you to Targuna then. The locals there could use a helping hand!"]);
                 assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
                     crate::foundation::MovementLocalPosition {x:31938,y:31928,floor:7});

@@ -5,7 +5,7 @@ fn facts(served: bool) -> Result<BundleFacts, String> {
     let (bytes, _) = fixture::bundle();
     let bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(|error| format!("{error:?}"))?;
     BundleFacts::palette(&bundle.manifest, |key| {
-        if key == "oteryn:item.tibia.i7252" {
+        if matches!(key, "oteryn:item.tibia.i7252" | "oteryn:item.tibia.i4996") {
             served.then_some(ItemDefinition {
                 reference: NonZeroU32::new(3)?,
                 solid: Some(true),
@@ -83,5 +83,33 @@ fn missing_painted_definition_never_fabricates_replacement_facts() -> Result<(),
     let key = placement_key(seal(), 2).ok_or("seal placement")?;
     assert!(facts.quest_callback_replacement(key, 7252).is_none());
     assert!(facts.quest_callback_replacement(key, 7251).is_none());
+    Ok(())
+}
+
+#[test]
+fn ape_city_amphora_strikes_resolve_unplaced_broken_appearance() -> Result<(), String> {
+    let facts = facts(true)?;
+    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+    for uid in 40092..=40095 {
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.selector.unique == Some(uid))
+            .ok_or("amphora callback")?;
+        let target = callback.selector.native.as_ref().ok_or("native amphora")?;
+        let pos = TilePos {
+            x: target.position.x,
+            y: target.position.y,
+            floor: target.position.floor,
+        };
+        let key = placement_key(pos, target.ordinal).ok_or("amphora placement")?;
+        let appearance = callback.effects.transform.ok_or("broken appearance")?;
+        assert_eq!(
+            facts
+                .quest_callback_replacement(key, appearance)
+                .map(|entry| entry.appearance_id),
+            Some(appearance),
+            "amphora UID {uid}",
+        );
+    }
     Ok(())
 }

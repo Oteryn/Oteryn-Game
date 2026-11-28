@@ -110,7 +110,12 @@ impl PreferenceStore {
         }) {
             Ok(bytes) => Some(bytes),
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
-                Some(Self::serialized(previous)?)
+                // Keep any committed backup when there is no active document to replace.
+                if !restoring && snapshots.iter().any(|(_, path)| Self::read_transfer(path).is_ok()) {
+                    None
+                } else {
+                    Some(Self::serialized(previous)?)
+                }
             }
             // Explicit recovery can replace a damaged document. Retain the prior backup.
             Err(error) if error.kind() == io::ErrorKind::InvalidData => None,
@@ -183,14 +188,17 @@ impl PreferenceStore {
         let ready = path.with_added_extension("ready-backup");
         if pending.try_exists()? {
             let backup = Self::transfer_bytes(&pending)?;
-            match Self::transfer_bytes(path) {
-                // Active was never replaced. Keep the previously committed backup.
-                Ok(active) if active == backup => {
-                    std::fs::remove_file(pending)?;
-                    sync_parent(path)?;
-                }
-                Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
-                _ => crate::atomic_file::durable_rename(&pending, &ready)?,
+            let active_replaced = match Self::transfer_bytes(path) {
+                Ok(active) => active != backup,
+                Err(error) if error.kind() == io::ErrorKind::NotFound => false,
+                Err(error) => return Err(error),
+            };
+            if active_replaced {
+                crate::atomic_file::durable_rename(&pending, &ready)?;
+            } else {
+                // An unchanged or missing active file means the restore never published.
+                std::fs::remove_file(pending)?;
+                sync_parent(path)?;
             }
         }
         if !ready.is_file() {
@@ -533,5 +541,52 @@ fn restore_skips_invalid_legacy_snapshots_and_breaks_generation_ties() -> io::Re
         .set_modified(generation + std::time::Duration::from_secs(60))?;
     state.restore_backup()?;
     assert_eq!(state.preferences.ui_scale, 140);
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn interrupted_restore_with_missing_active_keeps_saved_preferences() -> io::Result<()> {
+    for retry in 0..4 {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("preferences.json");
+        let backup = path.with_extension("backup.json");
+        let pending = path.with_added_extension("pending-backup");
+        let saved = ReferencePreferences {
+            ui_scale: 125,
+            ..Default::default()
+        };
+        PreferenceStore::export_to(&saved, &backup)?;
+        let backup_bytes = std::fs::read(&backup)?;
+        let mut state = super::super::SettingsState::new(Some(path.clone()));
+        // Fail after staging defaults and before publishing the restored active file.
+        crate::atomic_file::fail_durable_rename_to(&path);
+        assert_eq!(
+            state.restore_backup().err().map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied),
+        );
+        assert!(pending.is_file());
+        assert!(!path.exists());
+
+        let mut state = super::super::SettingsState::new(Some(path.clone()));
+        match retry {
+            0 => {
+                state.restore_backup()?;
+                assert_eq!(state.preferences.ui_scale, saved.ui_scale);
+                assert_eq!(std::fs::read(path)?, backup_bytes);
+            }
+            1 => {
+                let import = root.path().join("import.json");
+                PreferenceStore::export_to(&ReferencePreferences::default(), &import)?;
+                state.import_from(&import)?;
+            }
+            2 => state.reset_defaults()?,
+            _ => state.apply(ReferencePreferences { ui_scale: 150, ..Default::default() }),
+        }
+        if retry != 0 {
+            assert_eq!(std::fs::read(backup)?, backup_bytes);
+        }
+        assert!(!pending.exists());
+    }
     Ok(())
 }

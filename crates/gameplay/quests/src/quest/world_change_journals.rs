@@ -424,10 +424,11 @@ fn selected_personal_program(quest: &str) -> Option<&'static Program> {
                 (
                     "fire_from_the_earth",
                     "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
-                ) | (
-                    "hive_outpost",
-                    "oteryn:quest.authored.hive_outpost_mini_world_change"
-                )
+                ) | ("hive_born", "oteryn:quest.authored.hive_born_world_change")
+                    | (
+                        "hive_outpost",
+                        "oteryn:quest.authored.hive_outpost_mini_world_change"
+                    )
             )
     })
 }
@@ -582,6 +583,23 @@ fn journal_end(p: &Program) -> Result<(String, i64), String> {
         .ok_or("journal completion phase")?;
     Ok((p.phase_track.clone(), end))
 }
+
+/// The personal Hive journal and the shared mission scope expose separate completion facts.
+pub fn hive_journal_completion(
+    quest: &str,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<bool> {
+    if quest != "oteryn:quest.authored.hive_born_world_change" {
+        return None;
+    }
+    let program = selected_personal_program(quest)?;
+    let (track, end) = journal_end(program).ok()?;
+    tracks
+        .get(&track)
+        .filter(|value| **value > 0)
+        .map(|value| *value >= end)
+}
+
 /// Requirement terms are included in the callback binding and read in its fenced transaction.
 #[must_use]
 pub fn requires_premium(callback: &str) -> bool {
@@ -1438,4 +1456,63 @@ mod tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn hive_journal_checks_western_defenders_before_tower_completion() -> Result<(), String> {
+    use super::{loader, native_kills, world_callbacks};
+    use std::collections::BTreeMap;
+
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let prefix = "oteryn:quest-callback/worldchg-m31/hive_born/";
+    let callbacks = world_callbacks::load()?;
+    for (checkpoint, phase) in [("eastern-inner", 4), ("western-inner", 7)] {
+        let key = format!("{prefix}{checkpoint}");
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key == key)
+            .ok_or("Hive checkpoint")?;
+        let transition = catalogue.transition(&key).ok_or("Hive transition")?;
+        assert!(selected_personal_world_transition(transition, callback));
+        assert!(callback.requires_world_admission);
+        assert_eq!(callback.storage[0].set, phase);
+    }
+    let east = catalogue
+        .transition(&format!("{prefix}eastern-inner"))
+        .ok_or("eastern checkpoint")?;
+    let west = catalogue
+        .transition(&format!("{prefix}western-inner"))
+        .ok_or("western checkpoint")?;
+    let counter = "oteryn:quest-transition/native-kills/m31/hive_born/crawler";
+    let mut tracks = BTreeMap::new();
+    assert!(
+        !native_kills::active_for(catalogue, &tracks)
+            .iter()
+            .any(|key| key == counter)
+    );
+    let apply = |transition, tracks: &mut BTreeMap<String, i64>| {
+        for change in catalogue
+            .evaluate(transition, tracks, 0)
+            .map_err(|error| format!("{error:?}"))?
+        {
+            tracks.insert(change.track, change.after);
+        }
+        Ok::<_, String>(())
+    };
+    apply(east, &mut tracks)?;
+    let death = catalogue.transition(counter).ok_or("Crawler credit")?;
+    assert!(selected_personal_counter_transition(death));
+    assert!(admits_position(counter, Some((33490, 31197, -1))));
+    assert!(!admits_position(counter, Some((33600, 31228, -1))));
+    for _ in 0..10 {
+        assert!(catalogue.evaluate(west, &tracks, 0).is_err());
+        apply(death, &mut tracks)?;
+    }
+    assert!(west.completes);
+    apply(west, &mut tracks)?;
+    assert!(catalogue.evaluate(west, &tracks, 0).is_err());
+    Ok(())
 }

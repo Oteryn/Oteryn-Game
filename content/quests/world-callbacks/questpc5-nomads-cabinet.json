@@ -33,7 +33,7 @@
         {
           "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task",
           "minimum": 2,
-          "maximum": 2,
+          "maximum": 3,
           "set": 2,
           "preserve": true
         }
@@ -70,6 +70,7 @@
       "sources": [
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/container_misc.lua:803-822:sha256:da146858a7bfbef47f601e02fc2b621c5e639ec2d096a6831446800277129bca",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/container_misc.lua#L803-L822",
+        "crystalserver:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arito.lua:97-105:sha256:72036db5c28bae5fabb54a43657cb83f57a550665def3fc01b33357a652d79f1",
         "content/quests/definitions/quests-00300-00351.json#oteryn:quest.authored.nomads_land_quest/s5"
       ]
     }

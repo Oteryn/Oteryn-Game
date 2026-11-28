@@ -1,7 +1,7 @@
 {
-  "active_count": 137,
+  "active_count": 138,
   "apply_plan_sha256": "968ac099fa52114bcb2c80754d19128d811a8e028a8fdeceba238df4c0b53093",
-  "catalogue_sha256": "0c1d0de165f2a6768ab244a658ade8cd6e54dad184802e0955901fc8d11583c0",
+  "catalogue_sha256": "3245b33cff6233e5296fbe6eab61b940c67fe77cbcd44ff0b3b1ecbe8a4ce2ad",
   "evidence_record_count": 122,
   "evidence_shards": [
     "content/encounters/raids/evidence-00000-00121.json"
@@ -15,15 +15,15 @@
   "shards": [
     "content/encounters/raids/catalogue.json"
   ],
-  "source_capture_sha256": "902319f52a2825e1f7722b919d44526377657e8201139b512e4b9bb178f9b720",
+  "source_capture_sha256": "75aefc69b34a1b810ff62dfbd85d39eabf4ad86d38ab91ca9fe384d050f1e58d",
   "totals": {
     "area": {
-      "active": 34,
-      "total": 102
+      "active": 35,
+      "total": 100
     },
     "boss": {
       "active": 70,
-      "total": 86
+      "total": 88
     },
     "calendar": {
       "active": 2,

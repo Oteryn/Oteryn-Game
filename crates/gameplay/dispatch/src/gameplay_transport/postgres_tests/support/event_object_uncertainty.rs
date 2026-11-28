@@ -1,7 +1,7 @@
 //! Real object USE must close without a result when its durable outcome is unresolved.
 
-use tokio::io::AsyncWriteExt;
 use super::TestResult;
+use tokio::io::AsyncWriteExt;
 
 use crate::gameplay_transport::ComposedFreshAdmission;
 
@@ -13,7 +13,7 @@ pub(super) async fn exchange_uncertain(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     payload: &[u8],
-) -> TestResult {
+) -> TestResult<AdmittedSession> {
     exchange_uncertain_inner(owner, admitted, payload, None).await
 }
 
@@ -23,7 +23,9 @@ pub(super) async fn exchange_item_uncertain(
     payload: &[u8],
     current_source: std::num::NonZeroU32,
 ) -> TestResult {
-    exchange_uncertain_inner(owner, admitted, payload, Some(current_source)).await
+    exchange_uncertain_inner(owner, admitted, payload, Some(current_source))
+        .await
+        .map(|_| ())
 }
 
 async fn exchange_uncertain_inner(
@@ -31,7 +33,7 @@ async fn exchange_uncertain_inner(
     admitted: AdmittedSession,
     payload: &[u8],
     current_source: Option<std::num::NonZeroU32>,
-) -> TestResult {
+) -> TestResult<AdmittedSession> {
     let command_id = admitted.continuity.next_command_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
@@ -149,12 +151,10 @@ async fn exchange_uncertain_inner(
         return Err("event object failed before admission".into());
     };
     result.ok_or("event object client did not finish")??;
-    // The existing ingress reserves its successor before dispatch. The absence of a
-    // terminal CommandResult above is the uncertainty proof; retry reconstructs from the
-    // saved initial admission and the retained durable command, never this reservation.
+    // Ingress reserves its successor before dispatch, even without a CommandResult.
     assert_eq!(
         after.continuity.next_command_id,
         command_id.checked_add(1).ok_or("command exhausted")?
     );
-    Ok(())
+    Ok(after)
 }

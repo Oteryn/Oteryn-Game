@@ -2,11 +2,11 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "7c955b4c305887c55e49855c58d62d6cc4d6fa1c83dc70fffedb84117a36f81e"
+      "sha256": "0a2df67424a91ac1a83bfba465788156e2192a18255fdf6e585856c0a6fe7c55"
     },
     {
       "path": "content/items/definitions/items-27000-27499.json",
-      "sha256": "cb752ec7cc5b418feb62dd8a5eba34ad34d32421c0b98b4de87ad64df3d17de4"
+      "sha256": "943835ca4f06d010045696012371af39a1152e5c38adad96aba2da0cb837a49e"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",

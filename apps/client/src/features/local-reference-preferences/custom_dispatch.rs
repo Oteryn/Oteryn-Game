@@ -422,7 +422,7 @@ impl PlayLink {
         let Some(spell) = std::num::NonZeroU32::new(index) else {
             return String::new();
         };
-        if mailbox.spell_bar.bar.cooldowns.is_none() {
+        if mailbox.spell_bar.bar.last_cooldown_observation().is_none() {
             return format!("{}: cooldown unknown", entry.name);
         }
         format!(
@@ -430,8 +430,7 @@ impl PlayLink {
             entry.name,
             mailbox
                 .spell_bar
-                .bar
-                .remaining_ms(spell, &entry.cooldown_groups)
+                .remaining_ms_at(spell, &entry.cooldown_groups, std::time::Instant::now())
         )
     }
 }

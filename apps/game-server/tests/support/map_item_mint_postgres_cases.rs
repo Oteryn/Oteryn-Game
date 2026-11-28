@@ -1088,24 +1088,24 @@ fn map_item_mint_takes_an_entry_into_ground_then_transfers_it_once_per_channel_a
         let listed = |epoch, digest, max| {
             harness
                 .root
-                .read_map_item_mint_placements(world, channel, digest, epoch, max)
+                .read_map_item_mint_placement_states(world, channel, digest, epoch, max)
         };
         assert_eq!(
             listed(0, DIGEST, 8).await.map_err(debug)?,
-            vec![key, sibling]
+            vec![(key, false), (sibling, false)]
         );
-        assert_eq!(listed(1, DIGEST, 8).await.map_err(debug)?, vec![key]);
+        assert_eq!(listed(1, DIGEST, 8).await.map_err(debug)?, vec![(key, false)]);
         assert_eq!(
             listed(2, DIGEST, 8).await.map_err(debug)?,
-            Vec::<u64>::new()
+            Vec::<(u64, bool)>::new()
         );
         assert_eq!(
             listed(0, [0xd2; 32], 8).await.map_err(debug)?,
-            Vec::<u64>::new()
+            Vec::<(u64, bool)>::new()
         );
         assert_eq!(
             listed(0, DIGEST, 2).await.map_err(debug)?,
-            vec![key, sibling]
+            vec![(key, false), (sibling, false)]
         );
         assert!(matches!(
             listed(0, DIGEST, 1).await,
@@ -1144,10 +1144,10 @@ fn map_item_mint_takes_an_entry_into_ground_then_transfers_it_once_per_channel_a
         assert_eq!(
             harness
                 .root
-                .read_map_item_mint_placements(world, second_channel, DIGEST, 1, 8)
+                .read_map_item_mint_placement_states(world, second_channel, DIGEST, 1, 8)
                 .await
                 .map_err(debug)?,
-            vec![key]
+            vec![(key, false)]
         );
         assert_eq!(harness.count("game_map_item_mint_receipts").await?, 4);
 

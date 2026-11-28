@@ -1,4 +1,5 @@
 //! Fenced read of the last completed inbound passage, never movement/payment authority.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::character_progression::assert_gameplay_fence;
 use oteryn_gameplay_content::content::npc_catalogue::travel::TravelReturnRequirement;
@@ -33,7 +34,7 @@ impl DurabilityRoot {
                     }
                     let last = latest(&mut tx, *fence.character_id.as_bytes(), &requirement).await?;
                     let permitted = requirement.permits_latest_completed(last.as_deref());
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(permitted))
                 })
             })

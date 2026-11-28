@@ -52,6 +52,41 @@ fn canonical(value: &serde_json::Value, output: &mut Vec<u8>) -> Result<(), Cont
     Ok(())
 }
 
+fn matches_profile_digest(
+    profile: &serde_json::Value,
+    expected: &str,
+) -> Result<bool, ContentError> {
+    use serde_json::Value::Null;
+
+    let mut bytes = Vec::new();
+    canonical(profile, &mut bytes)?;
+    if hex(sha256(&bytes)) == expected {
+        return Ok(true);
+    }
+
+    let mut row = profile.clone();
+    let attributes = row["attributes"]
+        .as_object_mut()
+        .ok_or_else(|| invalid("authored constructor raw attributes"))?;
+    // Published rows from 8304fc269 and 8b4aba255 use these exact null layouts.
+    if !matches!(
+        (
+            attributes.get("field_replaceable"),
+            attributes.get("field_condition"),
+            attributes.get("rune_consumption"),
+        ),
+        (Some(Null), None, None) | (Some(Null), Some(Null), Some(Null))
+    ) {
+        return Ok(false);
+    }
+    for field in ["field_replaceable", "field_condition", "rune_consumption"] {
+        attributes.remove(field);
+    }
+    bytes.clear();
+    canonical(&row, &mut bytes)?;
+    Ok(hex(sha256(&bytes)) == expected)
+}
+
 /// Admit only exact first-party rows. Imported source bindings are never overwritten.
 pub(super) fn admit(
     items: &ItemProfilesDocument,
@@ -118,9 +153,7 @@ pub(super) fn admit(
         {
             return Err(invalid("authored constructor binding or qualification"));
         }
-        let mut bytes = Vec::new();
-        canonical(&rows[index], &mut bytes)?;
-        if hex(sha256(&bytes)) != matches[0].profile_sha256 {
+        if !matches_profile_digest(&rows[index], &matches[0].profile_sha256)? {
             return Err(invalid("authored constructor profile closure"));
         }
         use super::super::ReferenceItemField as F;
@@ -153,7 +186,7 @@ mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
     use super::super::test_support::{input, pinned};
     use super::*;
-    use crate::content::production::test_source;
+    use crate::content::production::{StagedGeneration, test_source};
 
     #[test]
     fn authored_static_profiles_are_bound_to_exact_constructor_admissions() {
@@ -181,8 +214,17 @@ mod tests {
         supplied.item_profiles = Some(pinned(raw));
         compile_native_gameplay(baseline.compiled(), &supplied)
             .expect("declared constructor profiles");
-        for index in indexes {
-            for case in 0..5 {
+        supplied.item_profiles = item_profile_updates::merge(
+            Some(pinned(raw)),
+            Some(pinned(include_bytes!(
+                "../../../../../../content/items/definitions/srx1-item-updates.json"
+            ))),
+        )
+        .expect("compose declared constructor profiles");
+        compile_native_gameplay(baseline.compiled(), &supplied)
+            .expect("composed constructor admissions match their exact rows");
+        for &index in &indexes {
+            for case in 0..7 {
                 let mut changed = original.clone();
                 let record = &mut changed["records"][index];
                 match case {
@@ -196,7 +238,12 @@ mod tests {
                     }
                     2 => record["production_binding_qualification"] = serde_json::Value::Null,
                     3 => record["admission"]["stack_class"] = serde_json::json!("StackCapable"),
-                    _ => record["attributes"]["speed_bonus"] = serde_json::json!(1),
+                    4 => record["attributes"]["speed_bonus"] = serde_json::json!(1),
+                    5 => record["attributes"]["field_replaceable"] = serde_json::json!(false),
+                    _ => {
+                        record["attributes"]["field_replaceable"] = serde_json::Value::Null;
+                        record["attributes"]["field_condition"] = serde_json::Value::Null;
+                    }
                 }
                 supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
                 assert!(
@@ -205,5 +252,37 @@ mod tests {
                 );
             }
         }
+
+        let mut rejected = Vec::new();
+        for (revision, fields) in [
+            ("8304fc269", &["field_replaceable"][..]),
+            (
+                "8b4aba255",
+                &["field_condition", "field_replaceable", "rune_consumption"][..],
+            ),
+        ] {
+            let mut historical = original.clone();
+            for &index in &indexes {
+                for &field in fields {
+                    historical["records"][index]["attributes"][field] = serde_json::Value::Null;
+                }
+            }
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&historical).unwrap()));
+            let staged =
+                compile_native_gameplay(baseline.compiled(), &supplied).and_then(|artifact| {
+                    StagedGeneration::stage(
+                        &artifact.server_artifact,
+                        &artifact.client_artifact,
+                        artifact.expectation(),
+                    )
+                });
+            if let Err(error) = staged {
+                rejected.push((revision, error));
+            }
+        }
+        assert!(
+            rejected.is_empty(),
+            "published encodings rejected: {rejected:?}"
+        );
     }
 }

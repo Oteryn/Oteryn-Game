@@ -49,6 +49,98 @@ mod tests {
     use oteryn_protocol_oteryn::world_object::UseTarget;
     use oteryn_protocol_oteryn::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
     #[test]
+    fn explorer_collection_starts_have_fenced_corpse_use_and_report_routes() -> Result<(), String> {
+        use oteryn_gameplay_quests::quest::{loader, reward_callbacks};
+        use std::num::{NonZeroU32, NonZeroU64};
+
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = reward_callbacks::load_for(catalogue)?;
+        let intent = UseIntent {
+            target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::MIN)),
+            use_with_position: None,
+        };
+        for (job, creature, appearance) in [
+            ("butterfly-purple", "purple_butterfly", 4992),
+            ("butterfly-blue", "blue_butterfly", 4993),
+            ("butterfly-red", "red_butterfly", 4991),
+            ("ectoplasm", "ghost", 4094),
+        ] {
+            let collect_key = format!("oteryn:quest-reward/explorer-society/collect/{job}");
+            let collect = callbacks
+                .iter()
+                .find(|row| row.key == collect_key)
+                .ok_or_else(|| format!("{job} starts without a corpse USE route"))?;
+            assert!(accepts(collect, &intent));
+            assert_eq!(
+                collect.creature_target.as_deref(),
+                Some(format!("oteryn:creature.{creature}").as_str())
+            );
+            assert_eq!(
+                collect
+                    .corpse_target
+                    .as_ref()
+                    .map(|target| target.appearance),
+                Some(appearance)
+            );
+            for npc in ["angus", "mortimer"] {
+                let prefix = format!("oteryn:quest-reward/explorer-society/{npc}/{job}");
+                let start = callbacks
+                    .iter()
+                    .find(|row| row.key == format!("{prefix}-start"))
+                    .ok_or("job start")?;
+                let report = callbacks
+                    .iter()
+                    .find(|row| row.key == format!("{prefix}-report"))
+                    .ok_or("job report")?;
+                let tracks = start
+                    .storage
+                    .iter()
+                    .map(|effect| (effect.track.clone(), effect.set))
+                    .collect();
+                assert_eq!(
+                    start.give.as_ref().map(|item| item.item.as_str()),
+                    collect.carried_item.as_deref()
+                );
+                let changes = catalogue
+                    .evaluate(
+                        catalogue
+                            .transition(&collect_key)
+                            .ok_or("collection transition")?,
+                        &tracks,
+                        0,
+                    )
+                    .map_err(|error| format!("{job} collection: {error:?}"))?;
+                assert_eq!(
+                    report.take.first().map(|item| item.item.as_str()),
+                    collect.give.as_ref().map(|item| item.item.as_str())
+                );
+                let mut tracks = tracks;
+                tracks.extend(
+                    changes
+                        .into_iter()
+                        .map(|change| (change.track, change.after)),
+                );
+                assert!(
+                    catalogue
+                        .evaluate(
+                            catalogue
+                                .transition(&report.key)
+                                .ok_or("job report transition")?,
+                            &tracks,
+                            0
+                        )
+                        .is_ok()
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn registered_recipe_and_slug_targets_keep_their_closed_item_arms() -> Result<(), String> {
         let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
         let slug = callbacks

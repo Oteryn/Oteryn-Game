@@ -484,6 +484,14 @@ changes a WorldId or a ChannelId.
 Issued IDs are never deleted, and the migration refuses rollback while they exist (F5). A
 discarded stack keeps its database volume until the owner decides to delete it.
 
+### `[platform.store]`
+
+This node configuration section is opt-in and for testing and preproduction only. Set
+`client_certificate_file` and `client_key_file` to the dedicated Store client certificate
+and key shared by purchase and delivery. The certificate's subject and public key must be
+distinct from those used for every other purpose. Omit this section in production until the owner
+accepts the Platform Store wire contract (`OTERYN_V2_STORE_WIRE_CONTRACT`, currently PROPOSED).
+
 ## 8. Runbooks
 
 **Platform operator**, all on the NAS and each deploy with owner approval:

@@ -10,10 +10,11 @@
 //! under that lane and exclusion (WRITE-0 §5.1).
 //! No player text, writer name or text-derived diagnostic enters value audit.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{assert_session_fence, numeric_u64};
 use super::db::{
-    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    begin_semantic_transaction, begin_type2_transaction,
     lock_admission_relations,
 };
 use super::item_loop_move::LoopGround;
@@ -321,7 +322,7 @@ impl DurabilityRoot {
                     .bind(item.as_slice()).bind(world.as_bytes().as_slice())
                     .bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref)
                     .fetch_optional(&mut *tx).await?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok(text)
             })
         }).await
@@ -365,7 +366,7 @@ impl DurabilityRoot {
                         Err(ItemTextWriteError::Unavailable(error)) => return Err(error),
                         Err(error) => Err(error),
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(outcome)
                 })
             })

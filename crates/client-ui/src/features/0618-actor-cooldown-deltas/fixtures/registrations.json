@@ -1,0 +1,29 @@
+[
+  {
+    "mechanic": "0618-actor-cooldown-deltas",
+    "kind": "handlers",
+    "id": "0618-actor-cooldown-deltas-observe",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 618,
+    "entry": "state.rs::apply_cooldowns",
+    "push_messages": [
+      "ActorCooldowns"
+    ],
+    "reducer": "state.rs::apply_cooldowns",
+    "test": "tests.rs::cooldown_deltas_use_decode_time_and_preserve_other_keys",
+    "not_applicable": {
+      "protocol": "Session decodes the selected cooldown update type.",
+      "input": "Cooldown observations do not add an input binding.",
+      "settings": "Cooldown update selection follows session negotiation."
+    }
+  },
+  {
+    "mechanic": "0618-actor-cooldown-deltas",
+    "kind": "panels",
+    "id": "0618-actor-cooldown-deltas-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  }
+]

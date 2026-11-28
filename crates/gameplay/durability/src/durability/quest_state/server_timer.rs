@@ -1,4 +1,5 @@
 //! One original source expiry, admitted under current authority and the quest revision owner.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_gameplay_quests::quest::timers::{self, Recipe};
 
@@ -47,7 +48,7 @@ impl DurabilityRoot {
                 let bytes:Vec<u8>=row.try_get("occurrence")?;
                 due.push(DueQuestTimer {occurrence:QuestTimerOccurrence::from_bytes(bytes.try_into().map_err(|_|DurabilityError::InvalidStoredState)?)?,transition,actor_placement:serde_json::from_value(row.try_get("actor")?).map_err(|_|DurabilityError::InvalidStoredState)?});
             }
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(due)
         })).await
     }

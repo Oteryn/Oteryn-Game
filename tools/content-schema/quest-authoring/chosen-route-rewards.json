@@ -170,6 +170,47 @@
       "requires_premium": true
     },
     {
+      "key": "oteryn:quest-reward/chosen/trader/replace-cheese",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 72,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i169",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here it is."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once.",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/miraia.lua#L121-L169"
+      ],
+      "fee": {
+        "gold": 100,
+        "include_bank": true
+      },
+      "requires_premium": true,
+      "repeatable": true
+    },
+    {
       "key": "oteryn:quest-reward/chosen/trader/cheese",
       "quest": "oteryn:quest.the_travelling_trader_quest",
       "npc": "oteryn:npc.rashid",
@@ -1213,7 +1254,7 @@
         {
           "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
           "minimum": 5,
-          "maximum": 5,
+          "maximum": 6,
           "set": 5,
           "preserve": true
         }

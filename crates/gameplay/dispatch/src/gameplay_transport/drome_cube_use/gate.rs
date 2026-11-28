@@ -5,6 +5,7 @@ use super::*;
 pub(in crate::gameplay_transport::item_use) struct PendingCubeUse {
     pub(super) request: ItemUseRequest,
     concoction_binding: Option<[u8; 32]>,
+    pub(super) recovered_concoction: bool,
 }
 
 impl PendingCubeUse {
@@ -64,6 +65,7 @@ impl super::super::ItemUseGate {
         let pending = PendingCubeUse {
             request,
             concoction_binding,
+            recovered_concoction: false,
         };
         let touched = pending.touched().ok_or(UseDisposition::Rejected)?;
         if pending.binding().is_none() {

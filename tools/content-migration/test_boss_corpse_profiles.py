@@ -25,7 +25,7 @@ class SharedSourceCorpseTests(unittest.TestCase):
     def test_actual_source_gathering_profiles_keep_their_existing_authoring(self):
         shared=self.shared();self.assertEqual(len(shared),2)
         result=self.apply(shared)
-        self.assertEqual(len(result['records']),199)
+        self.assertEqual(len(result['records']),203)
         for expected in shared:
             self.assertIn(expected,result['records'])
 
@@ -82,7 +82,7 @@ class NativeTerminalCompositionTests(unittest.TestCase):
         generated = self.generated()
         self.admit(generated)
         actual = json.loads(generated['profiles'])['records']
-        self.assertEqual(len(actual), 199)
+        self.assertEqual(len(actual), 203)
         self.assertEqual(actual, sorted(expected, key=lambda row: row['production_definition']['production_key']))
         self.assertEqual(path.read_bytes(), raw)
         # A previously composed native terminal is accepted exactly on replay.
@@ -259,7 +259,7 @@ class AcceptedTerminalCorpseTests(unittest.TestCase):
         order = lambda row: row['production_definition']['production_key']
         corpses.admit(corpses.ROOT, generated, 'profiles', 'manifest', order, corpses.encode)
         before = json.loads(generated['profiles'])['records']
-        self.assertEqual(len(before), 199)
+        self.assertEqual(len(before), 203)
         # Reuse this pass's actual qualification, including its exact source checks.
         with patch.object(quest, 'qualifications', return_value=self.plan):
             quest.admit(corpses.ROOT, generated, 'profiles', 'manifest', order, corpses.encode)

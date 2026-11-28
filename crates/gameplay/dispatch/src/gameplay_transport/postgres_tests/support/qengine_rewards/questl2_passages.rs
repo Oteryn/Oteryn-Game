@@ -29,7 +29,7 @@ pub(in super::super) async fn white_raven(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    use super::questl2_journeys::{quantity, use_at};
+    use super::questl2_journeys::{quantity, use_at, use_at_ordinal};
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     let mut selected = admitted.continuity.selected_capabilities.as_slice().to_vec();
     selected.extend([3, 4, 6, 11, 15, 18, 25]);
@@ -40,50 +40,115 @@ pub(in super::super) async fn white_raven(
         .ok_or("passage capabilities")?;
     let [dalbrect, costello] = super::super::questl2_fixture::install_at(owner, admitted,
         ["oteryn:npc.dalbrect", "oteryn:npc.costello"],
-        [Position {x:32247,y:31865,floor:-8}, Position {x:32190,y:31956,floor:-6}]).await?;
+        [Position {x:32206,y:31756,floor:-6}, Position {x:32177,y:31936,floor:-7}]).await?;
     let callbacks=oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     assert!(owner.states.chat.npc_talk().ok_or("NPC book")?.get("oteryn:npc.dalbrect").ok_or("Dalbrect")?
         .travel_routes.iter().any(|route|route.keyword=="passage" && route.route.price==10 && !route.held));
     let find=|key:&str|callbacks.iter().find(|c|c.key.ends_with(key)).ok_or("White Raven callback");
     let brooch=find("/l2-white-raven-brooch")?;
+    let ghostlands=Position{x:32261,y:31861,floor:-11};
+    let corpse=Position{x:32262,y:31861,floor:-11};
+    relocate(owner,admitted,ghostlands).await?;
+    use_at_ordinal(owner,admitted,corpse,2,UseDisposition::Rejected).await?;
+    assert_eq!(quantity(h,3212).await?,0);
+    let dalbrect_contact=Position{x:32206,y:31757,floor:-6};
+    relocate(owner,admitted,dalbrect_contact).await?;
     assert_eq!(wire_reward(owner,admitted,dalbrect,brooch,false).await?.0,NpcIntentDisposition::Rejected);
     passage(owner,admitted,dalbrect,false).await?;
     assert_eq!(travel_count(h).await?,0,"friendship is required before passage");
-    assert_eq!(at(owner,admitted).await?,Position{x:32247,y:31866,floor:-8});
+    assert_eq!(at(owner,admitted).await?,dalbrect_contact);
+    relocate(owner,admitted,Position{x:32247,y:31866,floor:-8}).await?;
     let source=Position{x:32248,y:31866,floor:-8};
     use_at(owner,admitted,source,UseDisposition::Committed).await?;
     assert_eq!(quantity(h,3205).await?,1,"real source chest issues the Family Brooch");
     use_at(owner,admitted,source,UseDisposition::NothingToUse).await?;
     assert_eq!(quantity(h,3205).await?,1,"once-claim refusal preserves the one actual Brooch");
+    relocate(owner,admitted,dalbrect_contact).await?;
     assert_eq!(wire_reward(owner,admitted,dalbrect,brooch,false).await?.0,NpcIntentDisposition::Ok);
     assert_eq!(quantity(h,3205).await?,0);
     assert_eq!(white_track(h,"passage").await?,2);
     assert_eq!(white_track(h,"quest_log").await?,1);
     passage(owner,admitted,dalbrect,false).await?;
     assert_eq!(travel_count(h).await?,0,"entitlement does not waive the ten-gold fee");
-    provision(owner,admitted,3031,20,19001,Position{x:32247,y:31866,floor:-8}).await?;
+    provision(owner,admitted,3031,20,19001,dalbrect_contact).await?;
     passage(owner,admitted,dalbrect,true).await?;
     assert_eq!(travel_count(h).await?,1);
     assert_eq!(quantity(h,3031).await?,10,"ten gold is charged exactly once");
     assert_eq!(at(owner,admitted).await?,Position{x:32190,y:31957,floor:-6});
+    let door=Position{x:32171,y:31936,floor:-7};
+    let door_contact=Position{x:32172,y:31936,floor:-7};
+    relocate(owner,admitted,door_contact).await?;
+    use_at(owner,admitted,door,UseDisposition::Locked).await?;
+    let costello_contact=Position{x:32177,y:31937,floor:-7};
+    relocate(owner,admitted,costello_contact).await?;
     assert_eq!(wire_reward(owner,admitted,costello,find("/l2-white-raven-catacombs")?,false).await?.0,NpcIntentDisposition::Ok);
     assert_eq!(white_track(h,"door").await?,1);
     assert_eq!(white_track(h,"diary").await?,1);
     let diary=find("/l2-white-raven-diary")?;
     assert_eq!(wire_reward(owner,admitted,costello,diary,false).await?.0,NpcIntentDisposition::Rejected);
     assert_eq!(quantity(h,3214).await?,0);
-    provision(owner,admitted,3212,1,19002,Position{x:32190,y:31957,floor:-6}).await?;
+    relocate(owner,admitted,door_contact).await?;
+    use_at(owner,admitted,door,UseDisposition::Committed).await?;
+    // Simulate an unfinished save pinned by main before the diary callback was shipped.
+    let previous = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../quests/tests/fixtures/white_raven_catacombs_predecessor.txt"
+    ));
+    let mut restored_save = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *restored_save)
+        .await?;
+    let rewritten = sqlx::query(
+        "UPDATE game_character_quest_states SET definition_hash=decode($1, 'hex')
+         WHERE quest_key=$2 AND completed_character_revision IS NULL",
+    )
+    .bind(previous.trim())
+    .bind(&diary.quest)
+    .execute(&mut *restored_save)
+    .await?;
+    assert_eq!(rewritten.rows_affected(), 1);
+    restored_save.commit().await?;
+    relocate(owner,admitted,ghostlands).await?;
+    use_at_ordinal(owner,admitted,corpse,2,UseDisposition::Committed).await?;
+    assert_eq!(quantity(h,3212).await?,1,"a live use of the Ghostlands corpse issues the diary");
+    relocate(owner,admitted,costello_contact).await?;
     let (disposition,_,command)=wire_reward(owner,admitted,costello,diary,false).await?;
     assert_eq!(disposition,NpcIntentDisposition::Ok);
     assert_eq!(quantity(h,3212).await?,0);
     assert_eq!(quantity(h,3214).await?,1);
     assert_eq!(white_track(h,"diary").await?,2);
+    let completions: Vec<String> = sqlx::query_scalar(
+        "SELECT transition_key FROM game_character_quest_receipts \
+         WHERE quest_key='oteryn:quest.the_white_raven_monastery_quest' AND completes",
+    )
+    .fetch_all(&h.pool).await?;
+    assert!(
+        matches!(completions.as_slice(), [key] if matches!(key.as_str(),
+            "oteryn:quest-reward/l2-white-raven-diary"
+            | "oteryn:quest-npc/the_white_raven_monastery_quest/costello/diary-complete")),
+        "expected one Costello completion receipt, got {completions:?}"
+    );
+    let completed: bool = sqlx::query_scalar(
+        "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states \
+         WHERE quest_key='oteryn:quest.the_white_raven_monastery_quest'",
+    )
+        .fetch_one(&h.pool).await?;
+    assert!(completed);
     let before=counts(h).await?;
     let payload=oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent{npc_actor:costello,text:"yes".into()}).map_err(debug)?;
     let replay=super::super::quest_world_callbacks_fixtures::wire(owner,admitted,command,7,payload).await?;
     assert_eq!(oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&replay).map_err(debug)?,NpcIntentDisposition::Ok);
     assert_eq!(counts(h).await?,before);
     assert_eq!(quantity(h,3214).await?,1);
+    Ok(())
+}
+
+async fn relocate(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:&AdmittedSession,position:Position)->TestResult {
+    let mut runtime=owner.runtime.lock().await;
+    let actor=admitted.runtime_actor.ok_or("actor")?;
+    let before=runtime.read_actor_position(actor).map_err(debug)?;
+    runtime.relocate_arena_player(actor,admitted.game_session_id,before,
+        super::super::quest_world_callbacks_fixtures::local(position)).map_err(debug)?;
     Ok(())
 }
 
