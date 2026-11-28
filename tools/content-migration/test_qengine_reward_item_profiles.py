@@ -10,6 +10,18 @@ import qengine_reward_item_profiles as profiles
 
 
 class SharedPhysicalAdmission(unittest.TestCase):
+    def test_vampire_hunter_token_and_doll_are_native_portable_items(self):
+        profiles_by_key = {
+            row["production_definition"]["production_key"]: row["admission"]
+            for row in json.loads((profiles.ROOT / profiles.PROFILE).read_bytes())["records"]
+        }
+        for item, stack in ((8191, "NonStackable"), (8192, "StackCapable")):
+            with self.subTest(item=item):
+                self.assertEqual(profiles_by_key.get(f"oteryn:item.tibia.i{item}"), {
+                    "materializable": True, "stack_class": stack,
+                    "legal_destinations": ["CharacterInventory", "Ground"],
+                })
+
     def test_capture_keeps_the_mining_owned_pick_speed_unknown(self):
         native=json.loads((profiles.ROOT/profiles.PROFILE).read_bytes())
         key='oteryn:item.tibia.i3456'
@@ -278,6 +290,19 @@ class MainNativeFactJoin(unittest.TestCase):
             self.assertTrue(record['admission']['materializable'])
             self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
             self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 850)
+
+    def test_tower_and_troll_npc_items_have_exact_portable_source_facts(self):
+        records = {r['production_definition']['production_key']: r for r in q.capture()['records']}
+        for item, weight in ((140, 1800), (646, 600), (7754, 630)):
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertIn(key, records)
+            record = records[key]
+            self.assertEqual(record['production_binding']['external_id'], str(item))
+            self.assertEqual(record['admission'], dict(materializable=True,
+                stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
+            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], weight)
+        parcel = records['oteryn:item.tibia.i140']['semantics']['container']['value']
+        self.assertEqual(parcel['capacity'], {'state': 'KNOWN', 'value': 10})
 
     def test_fanfare_copper_key_has_native_portable_nonstackable_facts(self):
         records = q.capture()['records']

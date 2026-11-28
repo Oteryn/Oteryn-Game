@@ -51,6 +51,29 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def test_world_node_launch_passes_pinned_npc_catalogue(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            node = base / 'bin' / 'oteryn-game-server'
+            node.parent.mkdir()
+            node.write_text('#!/bin/bash\nprintf "%s\\n" "$@" >&2\n')
+            node.chmod(0o755)
+            digest = 'a' * 64
+            result = bash(function('launch_node') + '''
+                set -Eeuo pipefail
+                as_service=()
+                NODE_GAMEPLAY_ENV=()
+                NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world" --npc-data-sha256 "$NPC_DIGEST")
+                launch_node pid "$BASE/node.toml" "$BASE/node.log"
+                wait "$pid"
+            ''', {'BASE': temporary, 'NODE_BOOT_UNPRIVILEGED': '0', 'NPC_DIGEST': digest})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((base / 'node.log').read_text().splitlines(), [
+                'serve', '--config', str(base / 'node.toml'),
+                '--npc-data-project', str(base / 'npc-data' / 'content' / 'world'),
+                '--npc-data-sha256', digest,
+            ])
+
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')
         bin_dir.mkdir()
@@ -683,12 +706,17 @@ class PgObserveTests(unittest.TestCase):
 
 class ClientReplayTests(unittest.TestCase):
     def test_scoped_replay_requires_a_unique_live_capture_and_one_passing_test(self):
-        capture = 'SEAM_EVIDENCE e2e_capture scenario=W04.client status=CAPTURED evidence=fresh'
+        from hashlib import sha256
+
+        payload = b'captured exchange'
+        capture = 'SEAM_EVIDENCE e2e_capture scenario=W04.client status=CAPTURED evidence=' + sha256(payload).hexdigest()
         failure = 'SEAM_EVIDENCE e2e_all scenario=W04.client status=FAIL seconds=0.000'
         cases = [
             ('190:1', capture, 1, 0, 'status=PASS', True),
+            ('+0000000190:+1', capture, 1, 0, 'status=PASS', True),
             ('190:1', capture, 0, 1, 'status=FAIL', True),
             ('190:1', '', 1, 1, 'status=FAIL', False),
+            ('190:1', capture[:-64] + 'a' * 64, 1, 1, 'status=FAIL', False),
             ('190:1', capture + '\n' + capture, 1, 1, 'status=FAIL', False),
             ('190:1', failure, 1, 1, '', False),
             ('17:1', capture, 1, 0, '', False),
@@ -697,6 +725,7 @@ class ClientReplayTests(unittest.TestCase):
             with self.subTest(batch=batch, line=line, passed=passed), tempfile.TemporaryDirectory() as work:
                 work = Path(work)
                 (work / 'node.log').write_text(line + '\n')
+                (work / 'w04-exchange.json').write_bytes(payload)
                 cargo = work / 'cargo'
                 cargo.write_text(
                     '#!/bin/sh\n'

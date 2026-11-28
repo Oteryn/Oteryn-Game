@@ -1962,6 +1962,12 @@ Integrity failure keeps affected mutation closed until explicit safe repair/comp
 
 ### Store purchases on a restored stack (STORE-154-D6)
 
+On a stack with Store operations, pass `--node-config` to
+`oteryn-game-ops character restore` while all nodes are stopped. The tool uses
+the node's Store mTLS identity to republish retained Store decisions while
+waiting for the restore notice acknowledgement. Run it again with the same
+restore request if Platform is temporarily unavailable.
+
 Before booting **every node** of a stack restored from backup, set the top-level
 node TOML option `store_purchases = "disabled_restored_backup"`. Restore detection
 is operator-owned; the default is `"enabled"`. Unknown or malformed values prevent

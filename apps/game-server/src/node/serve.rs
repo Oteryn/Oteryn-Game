@@ -73,6 +73,7 @@ use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, Sy
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners};
 use oteryn_foundation::CancellationToken;
+use oteryn_gameplay_entities::carrier::ActivationSpawnPoint;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
@@ -3485,13 +3486,16 @@ pub(crate) async fn realize_bundle_spawns(
 ) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
     let mut sources = world
-        .activation_spawns(|key| {
-            let policy = runtime.companion_policy(key).ok()?;
-            Some((
-                u64::try_from(policy.maximum_health).ok()?,
-                policy.blocked_by_nearby_players,
-            ))
-        })
+        .activation_spawns_with_eligibility(
+            |key| {
+                let policy = runtime.companion_policy(key).ok()?;
+                Some((
+                    u64::try_from(policy.maximum_health).ok()?,
+                    policy.blocked_by_nearby_players,
+                ))
+            },
+            |key| runtime.bundle_spawn_eligibility(key),
+        )
         .ok_or_else(refuse)?;
     let bindings =
         crate::durability::world_event::changes::counters::bindings().map_err(|_| refuse())?;
@@ -3506,7 +3510,7 @@ pub(crate) async fn realize_bundle_spawns(
             .companion_policy(&point.creature)
             .map_err(|_| refuse())?;
         sources.push((
-            vec![(
+            vec![ActivationSpawnPoint::from((
                 (
                     i32::from(point.cell.x),
                     i32::from(point.cell.y),
@@ -3516,7 +3520,7 @@ pub(crate) async fn realize_bundle_spawns(
                 point.creature.clone(),
                 u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
                 policy.blocked_by_nearby_players,
-            )],
+            ))],
             5_000,
         ));
     }
@@ -3544,13 +3548,13 @@ pub(crate) async fn realize_bundle_spawns(
                 let index = u16::try_from(sources.len()).map_err(|_| refuse())?;
                 voice_sources.push((index, cohort));
                 sources.push((
-                    vec![(
+                    vec![ActivationSpawnPoint::from((
                         (x, y, z),
                         86_400_000,
                         key.to_owned(),
                         u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
                         policy.blocked_by_nearby_players,
-                    )],
+                    ))],
                     5_000,
                 ));
             }
@@ -4113,10 +4117,26 @@ async fn boot_and_serve(
         // enforcement-owner exit authoritative while this auxiliary worker is idle.
         std::future::pending::<()>().await;
     };
-    first(first(serving, enforcement_owner), catalogue)
-        .await
-        .flatten()
-        .unwrap_or(Err(BootError::Serve))
+    let receipts = crate::gameplay_transport::run_store_receipt_outbox(
+        root,
+        authority,
+        crate::native_admission_source::store::StoreClient::new(
+            Box::new(
+                crate::native_admission_source::store::MtlsStoreTransport::new(
+                    material.store.clone(),
+                ),
+            ),
+            material.store.source_authority().to_owned(),
+        ),
+    );
+    first(
+        first(first(serving, enforcement_owner), catalogue),
+        Box::pin(receipts),
+    )
+    .await
+    .flatten()
+    .flatten()
+    .unwrap_or(Err(BootError::Serve))
 }
 
 #[cfg(test)]
@@ -4972,13 +4992,13 @@ source_authority = "OTERYN_GAME_JOURNAL"
                 .map(|_| {
                     let points = (0..63)
                         .map(|x| {
-                            (
+                            ActivationSpawnPoint::from((
                                 (x, 0, 7),
                                 60_000,
                                 "oteryn:creature/rat".to_string(),
                                 20,
                                 false,
-                            )
+                            ))
                         })
                         .collect::<Vec<_>>();
                     (points, 5_000)

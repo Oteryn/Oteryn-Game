@@ -191,7 +191,7 @@ def test_closed_weapon_metadata_admission():
     print("ok test_closed_weapon_metadata_admission")
 
 
-def test_document_roundtrip_negatives(declarations, sources):
+def assert_document_roundtrip_negatives(declarations, sources):
     import validate_world_project_v2_to_tree as validator
 
     docs = [row for row in declarations["records"] if row.get("kind") == "Document"]
@@ -461,7 +461,7 @@ def test_package_tree_contract():
             (ROOT / "content/encounters/raids/index.json").read_text()
         )["record_count"],
         "NPC": 1282,
-        "Dialogue": 836,
+        "Dialogue": 852,
         "Service.Trade": 324,
         "Service.Travel": 57,
         "Service.Bank": 2,
@@ -512,7 +512,7 @@ def test_package_tree_contract():
         "index": "content/npcs/definitions/index.json",
     }
     assert manifest["families"]["Dialogue"] == {
-        "records": 836,
+        "records": 852,
         "index": "content/dialogues/definitions/index.json",
     }
     assert manifest["families"]["Service.Trade"] == {
@@ -611,7 +611,7 @@ def test_package_tree_contract():
 
 
 def test_document_contract():
-    test_document_roundtrip_negatives(
+    assert_document_roundtrip_negatives(
         json.loads((ROOT / "content/world/definitions/declarations.json").read_text()),
         json.loads((ROOT / "content/world/provenance/sources.json").read_text()),
     )

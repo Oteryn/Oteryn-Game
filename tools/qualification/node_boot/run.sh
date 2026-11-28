@@ -172,6 +172,17 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
+    # W04.full realizes the authored Ab'Dendriel Badger wave in this region.
+    case ",${selected_groups//[[:space:]]/}," in
+      ,,|*,rows,*)
+        w04_batch="${OTERYN_E2E_ROW_BATCH:-0:15}"
+        if [[ "$w04_batch" == all ]] ||
+          { [[ "$w04_batch" =~ ^\+?0*([0-9]{1,9}):\+?0*([0-9]{1,9})$ ]] &&
+            (( 10#${BASH_REMATCH[1]} <= 38 && 38 - 10#${BASH_REMATCH[1]} < 10#${BASH_REMATCH[2]} )); }; then
+          WORLD_REGIONS+=";127,123"
+        fi
+        ;;
+    esac
     # Grave Danger's room is in 130,122 and its authored approach teleport is in 130,126.
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*)
@@ -198,6 +209,7 @@ readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
+NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
   NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/content/spells.manifest.json}"
@@ -1870,6 +1882,11 @@ else
   fi
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+fi
+if [[ "$client_replay_enabled" == 1 && ! -f "$WORK/stage-$seam_stage_name.log" ]] \
+  && selected_client_replays | grep -q '^W04[.]client '; then
+  printf 'SEAM_EVIDENCE e2e_all scenario=W04.client status=FAIL seconds=0.000 evidence=missing-live-seam-log\n'
+  fail "W04.client selected without a live seam log"
 fi
 if [[ "$client_replay_enabled" == 1 && -f "$WORK/stage-$seam_stage_name.log" ]]; then
   stage client_replays -- node_boot_client_replays "$WORK/stage-$seam_stage_name.log"

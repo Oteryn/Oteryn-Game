@@ -381,7 +381,7 @@ fn i14_crystal_consumables_have_source_qualified_owners() {
     }
 }
 
-/// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
+/// I03: Crystal `data/scripts/actions/items/spellbook.lua:54-55` registers these spellbook ids; using
 /// one opens a text dialog listing the user's vocation instant spells with a level or magic-level
 /// requirement, grouped and sorted by level. Oteryn exposes the same server-authored content on
 /// the existing text-bearing LOOK result for the admitted source spellbook.
@@ -410,10 +410,14 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
     }
     // E12 admits the source Trader spellbooks, including the Task Board cohort;
     // W15b additionally admits the basic spellbook 3059 as an exact chest reward;
-    // the pinned Newhaven starter profiles admit spellbook 21400.
+    // the pinned Newhaven starter profiles admit spellbook 21400. Creature loot
+    // brings in nine more IDs from the same Crystal registration.
     assert_eq!(
         admitted,
-        vec![3059, 6120, 8072, 8073, 8074, 8075, 21400, 25699]
+        vec![
+            3059, 6120, 8072, 8073, 8074, 8075, 8076, 8090, 11691, 20088, 21400, 22755, 25699,
+            29431, 20089, 20090, 34153,
+        ]
     );
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),

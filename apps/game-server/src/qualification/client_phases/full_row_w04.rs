@@ -7,8 +7,7 @@
 //!    no payload, and then a successful query proving the refusal changed no state.
 //! 3. Remain admitted and repeatedly send RAID_SCHEDULE_QUERY while the server's
 //!    schedule runner evaluates the catalogue; expect a transition to the
-//!    `raid:badger` running state and a raid warning/advance ServerMessage delta
-//!    when the selected definition contains an announcement.
+//!    `raid:badger` running state and verify the Global Badger raid is unannounced.
 //! 4. Keep querying through the wave; expect committed_steps to advance and
 //!    active_creatures to become nonzero, proving the server realized a spawn.
 //! 5. Keep querying through completion; expect running=false with the raid key,
@@ -78,7 +77,11 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(190), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(190),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -136,6 +139,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
 
     let initial = query(&mut client).await?;
+    if !initial.raid_key.is_empty()
+        || initial.running
+        || initial.committed_steps != 0
+        || initial.active_creatures != 0
+    {
+        return Err(format!("step=initial-query observed=non-idle-raid-state:{initial:?}").into());
+    }
     row.pass("initial-query", &format!("state={initial:?}"));
 
     let refused = exchange(&mut client, &[0]).await?;
@@ -157,15 +167,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(175);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let mut noticed = false;
     let mut running = None;
     let mut spawned = None;
     let completed = loop {
         if let Some(notice) = take_raid_notice(&mut client) {
-            noticed = true;
-            if !row.passed.contains("announcement") {
-                row.pass("announcement", &format!("delta={notice:?}"));
-            }
+            return Err(format!("step=announcement observed=unexpected-delta:{notice:?}").into());
         }
         let state = query(&mut client).await?;
         if state.running && running.is_none() {
@@ -179,8 +185,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
         if let Some(started) = &running
             && state.running
-            && state.committed_steps > started.committed_steps
-            && state.active_creatures > 0
+            && started.committed_steps == 0
+            && state.committed_steps == 1
+            && state.active_creatures == 100
             && spawned.is_none()
         {
             row.pass(
@@ -197,8 +204,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 .into());
             };
             if state.raid_key != "raid:badger"
-                || state.committed_steps < spawned.committed_steps
-                || state.active_creatures < spawned.active_creatures
+                || state.committed_steps != 2
+                || state.active_creatures != 100
             {
                 return Err(format!(
                     "step=completion observed={state:?} wave-spawn={spawned:?} server-needed=stopped-badger-with-retained-progress-and-creatures"
@@ -219,11 +226,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             } else {
                 "completion"
             };
-            return Err(format!("step={step} observed=timeout:last-state:{state:?}:notice={noticed} server-needed=due-raid-lifecycle").into());
+            return Err(format!(
+                "step={step} observed=timeout:last-state:{state:?} server-needed=due-raid-lifecycle"
+            )
+            .into());
         }
         client.service_liveness(Duration::from_secs(1)).await?;
     };
 
+    if let Some(notice) = take_raid_notice(&mut client) {
+        return Err(format!("step=announcement observed=unexpected-delta:{notice:?}").into());
+    }
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -239,8 +252,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("fresh-admission", &format!("state={restored:?}"));
-    if !noticed {
-        return Err("step=announcement observed=no-warning-or-advance-delta server-needed=scheduled-raid-with-announcement".into());
+    if let Some(notice) = take_raid_notice(&mut fresh) {
+        return Err(format!("step=announcement observed=unexpected-delta:{notice:?}").into());
     }
+    row.pass(
+        "announcement",
+        "Global Badger raid has no warning or advance",
+    );
     Ok(())
 }

@@ -29,23 +29,32 @@ pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
                 // interrupted build never leaves a partial artifact at the shared path.
                 let staging =
                     std::env::temp_dir().join(format!("qc-pin-{digest}-{}", std::process::id()));
-                let status = std::process::Command::new("cargo")
-                    .current_dir(root)
-                    .args([
-                        "run",
-                        "--locked",
-                        "--release",
-                        "-p",
-                        "oteryn-world-bundle-compiler",
-                        "--",
-                        "pin-check",
-                        ".",
-                    ])
-                    .arg(&staging)
-                    .status()?;
-                if !status.success() {
-                    return Err("world pin-check failed".into());
+                // The fixture needs the exact published bytes once. Use the
+                // compiler already linked into the test binary so the lock
+                // never encloses a Cargo build or a second parity compile.
+                use oteryn_world_bundle_compiler::{bundle, compile, project, source};
+                let identity = serde_json::from_slice(&std::fs::read(
+                    root.join("content/world/pins/oteryn.identity.json"),
+                )?)?;
+                let project = source::project(&root)?;
+                let (registry, palette) = source::registry(&root, &project)?;
+                let compiled = compile::compile(
+                    &compile::Input {
+                        regions: &project.regions,
+                        palette: &palette,
+                        identity,
+                        world: source::world_extent(&root)?,
+                        build_class: bundle::BuildClass::NonProduction,
+                        draft_areas: project::draft_areas(&project.index)?,
+                        families: &project.families,
+                    },
+                    &registry,
+                )?;
+                if oteryn_world_bundle::npc::hex(&compiled.digest) != digest {
+                    return Err("compiled World differs from the published pin".into());
                 }
+                std::fs::create_dir_all(&staging)?;
+                std::fs::write(staging.join(&filename), compiled.bytes)?;
                 std::fs::rename(staging.join(&filename), path.join(&filename))?;
                 let _ = std::fs::remove_dir_all(&staging);
             }
@@ -100,7 +109,7 @@ pub(super) fn world_near(
     boot(native, &projected, &pins)
 }
 
-fn boot_pins(pin: &serde_json::Value) -> TestResult<crate::map::boot::BootPins> {
+pub(super) fn boot_pins(pin: &serde_json::Value) -> TestResult<crate::map::boot::BootPins> {
     let field = |key: &str| -> TestResult<&str> { Ok(pin[key].as_str().ok_or("world pin field")?) };
     let hex = field("digest")?;
     let mut digest = [0; 32];

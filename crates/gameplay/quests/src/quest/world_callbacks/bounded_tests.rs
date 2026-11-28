@@ -4,7 +4,12 @@ use super::*;
 fn merged_registry_keeps_document_and_runtime_bounds() -> Result<(), String> {
     let callbacks = load()?;
     assert!(callbacks.len() > MAX_CALLBACKS);
-    assert!(callbacks.len() <= MAX_RUNTIME_CALLBACKS);
+    let coffin_variants = callbacks
+        .iter()
+        .filter(|callback| callback.vampire_coffin_fallback().is_some())
+        .count();
+    assert_eq!(coffin_variants, 2);
+    assert!(callbacks.len() - coffin_variants <= MAX_RUNTIME_CALLBACKS);
     let smith = callbacks
         .iter()
         .filter(|callback| {

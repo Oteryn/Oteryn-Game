@@ -243,6 +243,13 @@
       "weapon_type": "SHIELD"
     },
     {
+      "key": "oteryn:item.tibia.i19373",
+      "source_id": 19373,
+      "source_line": 39511,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
       "key": "oteryn:item.tibia.i21175",
       "source_id": 21175,
       "source_line": 41927,

@@ -75,14 +75,28 @@ pub(super) fn placements() -> TestResult<NpcPlacementTable> {
         direction: String,
     }
 
-    let source: Shard = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/npc-placements/placements-00000-00055.json"
-    )))?;
+    let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/world/npc-placements");
+    let mut shards = Vec::new();
+    for entry in std::fs::read_dir(&directory)? {
+        let path = entry?.path();
+        if path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name.starts_with("placements-") && name.ends_with(".json"))
+        {
+            shards.push(path);
+        }
+    }
+    shards.sort();
+    let mut records = Vec::new();
+    for path in shards {
+        let shard: Shard = serde_json::from_slice(&std::fs::read(path)?)?;
+        records.extend(shard.records);
+    }
     let mut npcs = Vec::new();
     for key in CONTACTS {
-        let declaration = source
-            .records
+        let declaration = records
             .iter()
             .map(|r| &r.declaration)
             .find(|r| r.npc == *key)

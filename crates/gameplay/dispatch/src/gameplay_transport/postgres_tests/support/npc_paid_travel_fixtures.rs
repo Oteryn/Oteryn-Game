@@ -66,7 +66,7 @@ pub(super) async fn talk(
     Ok(result)
 }
 
-fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> String {
+pub(super) fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> String {
     outcome
         .conversation
         .as_ref()

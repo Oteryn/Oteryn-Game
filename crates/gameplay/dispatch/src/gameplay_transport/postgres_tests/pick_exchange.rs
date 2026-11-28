@@ -422,6 +422,7 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
                 npc_actor: npc,
                 text: "yes".into(),
             },
+            cold.owner_now(),
         )
         .await;
         assert_eq!(replay.disposition, NpcIntentDisposition::Ok);

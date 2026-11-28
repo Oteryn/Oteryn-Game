@@ -1,6 +1,69 @@
 use super::*;
 
 #[test]
+fn serpentine_lever_loads_both_source_branches() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/serpentine-tower-lever")
+        .ok_or("Serpentine Tower lever")?;
+    assert_eq!(callback.selector.action, Some(5633));
+    assert_eq!(callback.lever, Some([2772, 2773]));
+    assert!(callback.reversible);
+    let scene = callback.effects.scene.as_ref().ok_or("lever scene")?;
+    assert!(scene.relocate_items_close);
+    let cells: Vec<_> = [32867, 32868]
+        .into_iter()
+        .flat_map(|y| [33148, 33149].map(move |x| Position { x, y, floor: -9 }))
+        .collect();
+    assert_eq!(
+        scene
+            .open
+            .iter()
+            .map(|edit| edit.position)
+            .collect::<Vec<_>>(),
+        cells
+    );
+    assert_eq!(
+        scene
+            .close
+            .iter()
+            .map(|edit| edit.position)
+            .collect::<Vec<_>>(),
+        cells
+    );
+    assert_eq!(
+        scene
+            .evacuate_close
+            .iter()
+            .map(|movement| movement.from)
+            .collect::<Vec<_>>(),
+        cells
+    );
+    assert!(
+        scene
+            .open
+            .iter()
+            .all(|edit| edit.remove == Some(2129) && edit.allow_missing)
+    );
+    assert!(
+        scene
+            .close
+            .iter()
+            .all(|edit| edit.create == Some(2129) && edit.passable == Some(false))
+    );
+    for movement in &scene.evacuate_close {
+        let landing = Position {
+            y: 32869,
+            ..movement.from
+        };
+        assert_eq!(movement.players_to, landing);
+        assert_eq!(movement.creatures_to, landing);
+        assert!(movement.all);
+    }
+    Ok(())
+}
+
+#[test]
 fn source_scenes_refuse_ambiguous_unbounded_and_value_bearing_edits() -> Result<(), String> {
     let source = include_str!("../../../../../../content/quests/native-scene-callbacks.json");
     let valid: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;

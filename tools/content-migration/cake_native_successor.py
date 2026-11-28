@@ -141,7 +141,8 @@ def loot_successor(root, creatures, native_item_profiles=None):
         raise ValueError('CAKE_NATIVE_CANONICAL_LOOT_MISMATCH')
     from build_full_spell_artifact import loot_tables, LIMITS
     raw = loot_tables(creatures, root / 'content/creatures/definitions',
-                      root / 'content/loot', root / 'content/items/definitions', native_item_profiles)
+                      root / 'content/loot', root / 'content/items/definitions', native_item_profiles,
+                      qualify_carried_yields=native_item_profiles is not None)
     if len(raw) > LIMITS['loot_tables']:
         raise ValueError('CAKE_NATIVE_LOOT_BYTE_BOUND')
     return raw

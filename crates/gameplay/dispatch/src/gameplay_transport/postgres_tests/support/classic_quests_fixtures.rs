@@ -6,7 +6,10 @@ use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
 
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 
-use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+use crate::foundation::{
+    MovementFacing, MovementLocalPosition, NpcPlacement, NpcPlacementTable, NpcPlacements,
+};
+use crate::map::floor;
 
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 
@@ -23,6 +26,8 @@ pub(super) const DAWN: &str = "oteryn:quest-progress/quest/u10_55/dawnport/";
 const MORRIS: &str = "oteryn:npc.mr_morris";
 
 const WOBLIN: &str = "oteryn:npc.woblin";
+
+const CHIEF: &str = "oteryn:npc.chief_grarkharok";
 
 const JEROM: &str = "oteryn:npc.jerom";
 
@@ -254,6 +259,36 @@ pub(super) async fn talk_expecting(
     Ok(result.conversation.map(|c| c.lines).unwrap_or_default())
 }
 
+pub(super) async fn travel(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    destination: Position,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("journey map")?;
+    let actor = admitted.runtime_actor.ok_or("quest player")?;
+    let mut runtime = owner.runtime.lock().await;
+    let before = runtime.read_actor_position(actor).map_err(debug)?;
+    let doors = floor::BundleDoors(&map.facts);
+    let next = MovementLocalPosition {
+        x: i32::from(destination.x),
+        y: i32::from(destination.y),
+        floor: -i16::from(destination.floor),
+    };
+    let proof = floor::prepare_quest_callback_teleport(
+        &runtime,
+        &owner.movement_cells,
+        actor,
+        admitted.game_session_id,
+        before,
+        next,
+        false,
+        &doors,
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
+    Ok(())
+}
+
 pub(super) async fn progress(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -279,8 +314,8 @@ pub(super) async fn exercise(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    let [morris, woblin, jerom, queen] =
-        install(owner, admitted, [MORRIS, WOBLIN, JEROM, QUEEN]).await?;
+    let [morris, woblin, jerom, queen, chief] =
+        install(owner, admitted, [MORRIS, WOBLIN, JEROM, QUEEN, CHIEF]).await?;
     talk(owner, admitted, morris, 1200, "hi").await?;
     talk(owner, admitted, morris, 1201, "yes").await?;
     assert_eq!(
@@ -357,9 +392,44 @@ pub(super) async fn exercise(
     talk(owner, admitted, jerom, 1216, "yes").await?;
     assert_eq!(progress(owner, admitted, authority, TROLL).await?, 1);
     talk(owner, admitted, jerom, 1217, "yes").await?;
-    talk(owner, admitted, queen, 1218, "hi").await?;
-    talk(owner, admitted, queen, 1219, "seventh seal").await?;
-    let refused = talk(owner, admitted, queen, 1220, "yes").await?;
+    talk(owner, admitted, chief, 1221, "hi").await?;
+    for (id, message) in [
+        (1222, "kill"),
+        (1223, "lady"),
+        (1224, "yes"),
+        (1225, "Griselda"),
+    ] {
+        talk(owner, admitted, chief, id, message).await?;
+    }
+    assert_eq!(progress(owner, admitted, authority, TROLL).await?, 2);
+    talk(owner, admitted, jerom, 1226, "hi").await?;
+    talk(owner, admitted, jerom, 1227, "quest").await?;
+    assert_eq!(progress(owner, admitted, authority, TROLL).await?, 3);
+    talk(owner, admitted, jerom, 1228, "quest").await?;
+    let loot: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT i.definition_production_key, i.quantity::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key IN ('oteryn:item.tibia.i646', 'oteryn:item.tibia.i7754') ORDER BY i.definition_production_key",
+    ).fetch_all(&h.pool).await?;
+    assert_eq!(loot, vec![("oteryn:item.tibia.i646".into(), 1)]);
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "completion fence")?
+        .ok_or("completion fence")?;
+    let state = owner
+        .root
+        .read_character_quest_state(authority, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert!(
+        state
+            .states()
+            .get("oteryn:quest.troll_sabotage_quest")
+            .is_some_and(|row| row.completed)
+    );
+
+    talk(owner, admitted, queen, 1229, "hi").await?;
+    talk(owner, admitted, queen, 1230, "seventh seal").await?;
+    let refused = talk(owner, admitted, queen, 1231, "yes").await?;
     assert!(
         refused
             .iter()

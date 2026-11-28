@@ -148,6 +148,84 @@ impl PlayLink {
         }
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn store_inbox_refresh(&self) {
+        self.store_inbox_refresh_locked(&mut lock(&self.mailbox));
+    }
+
+    pub(in crate::play) fn store_inbox_refresh_locked(
+        &self,
+        mailbox: &mut crate::play::mailbox::Mailbox,
+    ) {
+        if !mailbox.store.selected {
+            return;
+        }
+        if mailbox.store.pending {
+            mailbox.store_inbox_query_queued = true;
+            return;
+        }
+        mailbox.store_inbox_query_queued = false;
+        self.store_inbox_query_locked(mailbox, None);
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn store_inbox_next_claim_page(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        if let Some(after) = mailbox.store.inbox.next {
+            self.store_inbox_query_locked(&mut mailbox, Some(after));
+        }
+    }
+
+    fn store_inbox_query_locked(
+        &self,
+        mailbox: &mut crate::play::mailbox::Mailbox,
+        after: Option<[u8; 16]>,
+    ) {
+        use oteryn_client_runtime::cui3::store::{COMMAND_TYPE_STORE_INBOX_CLAIM, encode_inbox_query};
+        let Some(command) = oteryn_client_ui::store::command(
+            COMMAND_TYPE_STORE_INBOX_CLAIM,
+            encode_inbox_query(after),
+        ) else {
+            return;
+        };
+        self.send_inbox_request(mailbox, command);
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn store_inbox_place_lamp(&self) {
+        use oteryn_client_runtime::world_interaction::world_object as wire;
+        let mut mailbox = lock(&self.mailbox);
+        let Some(definition) = mailbox.store.inbox.lamp_definition else {
+            return;
+        };
+        let Ok(payload) = wire::encode_item_use_intent(&wire::UseIntent {
+            target: wire::UseTarget::ItemByDefinition(definition),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        }) else {
+            return;
+        };
+        self.send_inbox_request(&mut mailbox, oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
+            capability: wire::CAPABILITY_ITEM_USE_V1,
+            command_type: wire::COMMAND_TYPE_USE_INTENT,
+            payload,
+        });
+    }
+
+    fn send_inbox_request(
+        &self,
+        mailbox: &mut crate::play::mailbox::Mailbox,
+        command: oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
+    ) {
+        if let Some(command) = oteryn_client_ui::store::request(&mut mailbox.store, command)
+            && self.commands.send(PlayCommand::ServerMechanic(command)).is_err()
+        {
+            mailbox.store.pending = false;
+            mailbox.store.feedback = Some(tr!("The session has ended").into());
+        }
+    }
+
     pub fn store_payment(&self, tokens: bool) -> bool {
         oteryn_client_ui::store::choose_payment(&mut lock(&self.mailbox).store, tokens)
     }

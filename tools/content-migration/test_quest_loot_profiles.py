@@ -21,13 +21,15 @@ class NativeQuestLootFacts(unittest.TestCase):
         cls.bindings = {row['target']['key']: row for row in json.loads(
             (loot.ROOT / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']}
 
-    def test_actual_animal_loot_bridge_preserves_all_entries_and_source_quantities(self):
+    def test_actual_loot_bridge_preserves_source_quantities_and_one_count_ring(self):
         required = loot.required_items(loot.ROOT, self.creatures, self.tables)
         expected = {f'oteryn:item.tibia.i{number}' for number in
                     [7398, 3413, 3410, 9657, 9689, 3336, 3355, 3277]}
         animal_expected = expected.copy()
         expected |= {f'oteryn:item.tibia.i{number}' for number in
                      [281, 3006, 3036, 3037, 3038, 5809, 5892, 5904, 7414, 7427, 23529, 23531, 23533, 23542, 23543, 23544, 25759, 30192, 30195, 30275, 30276, 30277, 30278, 30279, 30280, 30281, 30282, 30283, 30284, 30285, 30318, 30319, 30320, 30321, 30322]}
+        ring = 'oteryn:item.tibia.i7924'
+        expected.add(ring)
         # Main now admits these seven canonical Items before native projection.
         # Model the pre-projection admission view this bridge test exercises,
         # retaining every source quantity and all unrelated canonical facts.
@@ -42,7 +44,16 @@ class NativeQuestLootFacts(unittest.TestCase):
         facts, tables = copy.deepcopy(baseline), copy.deepcopy(self.tables)
         loot.apply_loot_facts(facts, loot.ROOT, self.creatures, tables, self.profiles)
         self.assertTrue(all(facts[key]['materializable'] for key in required))
-        self.assertEqual(tables, self.tables)
+        expected_tables = copy.deepcopy(self.tables)
+        weakened = expected_tables['oteryn:loot.creature.the_weakened_count']['entries']
+        duplicate = weakened.pop(2)
+        self.assertEqual(duplicate, weakened[1])
+        self.assertEqual(duplicate['item']['key'], ring)
+        self.assertEqual(
+            (duplicate['min_count'], duplicate['max_count'], duplicate['probability_ppm']),
+            (1, 1, 1_000_000),
+        )
+        self.assertEqual(tables, expected_tables)
         changed = {key for key in facts if facts[key] != baseline[key]}
         self.assertEqual(changed, expected)
         for key in animal_expected:
@@ -52,6 +63,7 @@ class NativeQuestLootFacts(unittest.TestCase):
         before = copy.deepcopy(facts)
         loot.apply_loot_facts(facts, loot.ROOT, self.creatures, tables, self.profiles)
         self.assertEqual(facts, before)
+        self.assertEqual(tables, expected_tables)
 
     def test_full_typed_identity_binding_and_native_qualification_are_mandatory(self):
         key = 'oteryn:item.tibia.i7398'

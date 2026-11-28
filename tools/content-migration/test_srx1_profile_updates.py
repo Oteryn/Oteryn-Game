@@ -31,6 +31,13 @@ class SourceOwnerCoalescing(unittest.TestCase):
         self.assertEqual(len(document['records']), len(self.source))
         self.assertIn(self.source[0], document['records'])
 
+    def test_compact_verified_source_coalesces(self):
+        row = copy.deepcopy(self.source[0])
+        house.apply_top_order([row], self.house)
+        for key in ('field_condition', 'rune_consumption'):
+            self.assertIsNone(row['attributes'].pop(key))
+        self.assertIn(self.source[0], self.admit(row)['records'])
+
     def test_changed_owner_fact_still_refuses(self):
         row = copy.deepcopy(self.source[0])
         house.apply_top_order([row], self.house)
