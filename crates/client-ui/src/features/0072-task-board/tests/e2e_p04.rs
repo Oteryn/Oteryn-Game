@@ -11,6 +11,8 @@ struct MasterCapture {
     boundary: [GatedCommandResult; 3],
     assignments: MasterAssignments,
     availability: GatedCommandResult,
+    carried: GatedCommandResult,
+    locked: GatedCommandResult,
     available_item: u32,
 }
 
@@ -91,6 +93,24 @@ fn captured() -> Result<Captured, Error> {
     let (at, availability) = at
         .split_once(";availability=")
         .ok_or("missing availability binding")?;
+    let (availability, carried) = availability
+        .split_once(";carried=")
+        .ok_or("missing carried binding")?;
+    let (carried, locked) = carried
+        .split_once(";locked=")
+        .ok_or("missing locked binding")?;
+    let (carried_session, carried_frame) =
+        carried.split_once(',').ok_or("missing carried session")?;
+    if !is_uuid7(carried_session) || !sessions.insert(carried_session) {
+        return Err("invalid carried session".into());
+    }
+    let carried = read_live_result(
+        &path.join("p04-master-carried.json"),
+        carried_session,
+        carried_frame,
+    )?;
+    let start_session = at.split(',').next().ok_or("missing Master start session")?;
+    let locked = read_live_result(&path.join("p04-master-locked.json"), start_session, locked)?;
     let (frame, item) = availability
         .rsplit_once(',')
         .ok_or("missing availability item")?;
@@ -104,6 +124,13 @@ fn captured() -> Result<Captured, Error> {
         ],
         &mut sessions,
     )?;
+    if locked.command_id != boundary[1].command_id + 1
+        || locked.server_sequence <= boundary[1].server_sequence
+        || locked.status != CommandStatus::Accepted
+        || carried.status != CommandStatus::Accepted
+    {
+        return Err("invalid Master lock or carried result".into());
+    }
     let (session, frame) = frame
         .split_once(',')
         .ok_or("missing Stash readmission session")?;
@@ -125,6 +152,8 @@ fn captured() -> Result<Captured, Error> {
                 path.join("p04-master-assignments.json"),
             )?)?,
             availability,
+            carried,
+            locked,
             available_item: item.parse()?,
         }),
         expected: std::fs::read_to_string(path.join("p04-expected.txt"))?,
@@ -396,6 +425,29 @@ fn verify_master_summary(text: &str, period: u64) -> Result<(), Error> {
     Ok(())
 }
 
+const LOCKED_FEEDBACK: &str = "The server refused: task or bounty is not in the required state";
+
+fn verify_feedback(panel: &TaskBoardPanel, expected: Option<&str>) -> Result<(), Error> {
+    let text = panel_text(panel);
+    let rendered = text
+        .lines()
+        .find(|line| line.starts_with("The server refused"));
+    if panel.pending || panel.feedback != expected || rendered != expected {
+        return Err("P04 Task Board feedback differs from the observed outcome".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn p04_feedback_rejects_wrong_lock_message_and_false_availability_refusal() -> Result<(), Error> {
+    let mut panel = TaskBoardPanel::default();
+    verify_feedback(&panel, None)?;
+    assert!(verify_feedback(&panel, Some(LOCKED_FEEDBACK)).is_err());
+    panel.feedback = Some(LOCKED_FEEDBACK);
+    assert!(verify_feedback(&panel, None).is_err());
+    Ok(())
+}
+
 fn verify_master_replay(master: MasterCapture, baseline: &Reply) -> Result<(), Error> {
     let [query, start, after] = master.boundary;
     let assignments = &master.assignments;
@@ -418,7 +470,7 @@ fn verify_master_replay(master: MasterCapture, baseline: &Reply) -> Result<(), E
     assert_eq!((sent.action, sent.selection), (5, 3));
     apply_full_result(&mut panel, &start);
     verify_master_panel(&panel, assignments)?;
-    let active = panel.weekly.as_ref().ok_or("started Master board")?;
+    let active = panel.weekly.clone().ok_or("started Master board")?;
     assert_eq!(
         (
             active.refusal,
@@ -430,6 +482,17 @@ fn verify_master_replay(master: MasterCapture, baseline: &Reply) -> Result<(), E
     assert_eq!(active.weekly.kills.len(), 6);
     assert_eq!(active.weekly.deliveries.len(), 6);
     assert!(panel.feedback.is_none());
+    let started_text = panel_text(&panel);
+    let request =
+        full_request(&mut panel, FullIntent::StartWeekly(2)).ok_or("Master lock request")?;
+    verify_route(&request);
+    let sent = decode_request(&request.payload).map_err(|error| format!("{error:?}"))?;
+    assert_eq!((sent.action, sent.selection), (5, 2));
+    apply_full_result(&mut panel, &master.locked);
+    let mut expected_locked = active.clone();
+    expected_locked.refusal = 2;
+    assert_eq!(panel.weekly.as_ref(), Some(&expected_locked));
+    verify_feedback(&panel, Some(LOCKED_FEEDBACK))?;
     let mut fresh = TaskBoardPanel {
         selected: true,
         ..TaskBoardPanel::default()
@@ -443,38 +506,55 @@ fn verify_master_replay(master: MasterCapture, baseline: &Reply) -> Result<(), E
     );
     apply_full_result(&mut fresh, &after);
     verify_master_panel(&fresh, assignments)?;
-    assert_eq!(fresh.weekly.as_ref(), Some(active));
+    assert_eq!(fresh.weekly.as_ref(), Some(&active));
     assert!(!fresh.pending);
     assert!(fresh.feedback.is_none());
-    let started_text = panel_text(&panel);
     let relog_text = panel_text(&fresh);
     verify_master_renderings(&started_text, &relog_text, baseline, assignments)?;
 
-    let mut available = assignments.clone();
-    let task = available
-        .1
-        .iter_mut()
-        .find(|task| task.0 == master.available_item && task.2 == 0)
-        .ok_or("P04 availability assignment must begin at zero")?;
-    task.2 = 1;
-    let mut stash_relog = TaskBoardPanel {
-        selected: true,
-        ..TaskBoardPanel::default()
-    };
-    let request = full_request(&mut stash_relog, FullIntent::Refresh)
-        .ok_or("Master availability query request")?;
-    verify_route(&request);
-    assert_eq!(
-        decode_request(&request.payload).map_err(|e| format!("{e:?}"))?,
-        task_board::full::Request::query()
-    );
-    apply_full_result(&mut stash_relog, &master.availability);
-    verify_master_panel(&stash_relog, &available)?;
-    let text = panel_text(&stash_relog);
-    verify_master_summary(&text, baseline.period)?;
-    verify_master_experience(&text)?;
-    verify_rendered_shop(&text, baseline)?;
-    verify_rendered_assignments(&text, &available)
+    for (reply, count) in [(&master.carried, 1), (&master.availability, 2)] {
+        let mut available = assignments.clone();
+        available
+            .1
+            .iter_mut()
+            .find(|task| task.0 == master.available_item && task.2 == 0)
+            .ok_or("P04 availability assignment must begin at zero")?
+            .2 = count;
+        let mut expected = active.clone();
+        expected
+            .weekly
+            .deliveries
+            .iter_mut()
+            .find(|task| task.item == master.available_item)
+            .ok_or("P04 active delivery assignment absent")?
+            .current = count;
+        let mut readmission = TaskBoardPanel {
+            selected: true,
+            ..TaskBoardPanel::default()
+        };
+        let request = full_request(&mut readmission, FullIntent::Refresh)
+            .ok_or("Master availability query request")?;
+        verify_route(&request);
+        assert_eq!(
+            decode_request(&request.payload).map_err(|error| format!("{error:?}"))?,
+            task_board::full::Request::query()
+        );
+        apply_full_result(&mut readmission, reply);
+        verify_master_panel(&readmission, &available)?;
+        assert_eq!(readmission.weekly.as_ref(), Some(&expected));
+        assert!(readmission.feedback.is_none());
+        let text = panel_text(&readmission);
+        assert!(
+            !text
+                .lines()
+                .any(|line| line.starts_with("The server refused"))
+        );
+        verify_master_summary(&text, baseline.period)?;
+        verify_master_experience(&text)?;
+        verify_rendered_shop(&text, baseline)?;
+        verify_rendered_assignments(&text, &available)?;
+    }
+    Ok(())
 }
 
 fn verify_master_renderings(

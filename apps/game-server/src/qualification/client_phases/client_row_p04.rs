@@ -652,14 +652,14 @@ fn seeded_carried(client: &DevClientSession) -> TestResult<std::collections::BTr
     Ok(amounts)
 }
 
-fn verify_delivery_availability(before: &Reply, after: &Reply, item: u32) -> TestResult {
+fn verify_delivery_availability(before: &Reply, after: &Reply, item: u32, count: u32) -> TestResult {
     let mut expected = before.clone();
     let assignment = expected.weekly.deliveries.iter_mut()
         .find(|assignment| assignment.item == item && assignment.current == 0)
         .ok_or("P04 availability fixture requires a zero-count assigned item")?;
-    assignment.current = 1;
+    assignment.current = count;
     if *after != expected {
-        return Err(format!("P04 availability query did not expose the one available item {item}: {:?}", after.weekly.deliveries).into());
+        return Err(format!("P04 availability query did not expose count {count} for item {item}: {:?}", after.weekly.deliveries).into());
     }
     Ok(())
 }
@@ -780,8 +780,8 @@ async fn observe_positive_delivery(
     if stash_quantity(database, scope, item).await? != 0 {
         return Err("P04 carried-only check found the item in Stash".into());
     }
-    let (carried_board, carried_frame) = send_live(&mut client, 4, 0).await?;
-    verify_delivery_availability(board, &carried_board, item)?;
+    let (carried_board, carried_frame) = send(&mut client, 4, 0, "p04-master-carried.json").await?;
+    verify_delivery_availability(board, &carried_board, item, 1)?;
     evidence(&format!("P04_DELIVERY_CARRIED item={item} carried=1 stash=0 current=1 sequence={}", carried_frame.server_sequence));
     let opened = stash_command(&mut client, stash::StashAction::Browse).await?;
     if opened.outcome != stash::StashOutcome::Opened || opened.page != 0
@@ -798,17 +798,43 @@ async fn observe_positive_delivery(
     verify_durable_carried(&carried, &durable_carried(database, character).await?)?;
     logout_released(&mut client, database).await?;
     drop(client);
+    // Add another unit through a different session. A replay of the carried
+    // count (one) must fail the stashed-only assertion (two).
+    let mut mint = connect_character_once(scope, 0x29, 0).await?;
+    let mint_session = mint.join_snapshot().game_session_id;
+    request_fixture_control_at("NODE_BOOT_CONTROL_SOCKET", uuid_text(mint_session.as_bytes()),
+        "--profile", format!("item-{item}-1")).await?;
+    logout_released(&mut mint, database).await?;
+    drop(mint);
+    let mut second = connect_character_once(scope, 0x2a, 0).await?;
+    let entry = second.inventory().and_then(|inventory| inventory.entries.iter()
+        .find(|entry| entry.item_definition_ref == item_ref && entry.count.get() == 1))
+        .ok_or("P04 second carried unit absent")?;
+    let handle = entry.handle;
+    let opened = stash_command(&mut second, stash::StashAction::Browse).await?;
+    if opened.outcome != stash::StashOutcome::Opened || stash_quantity(database, scope, item).await? != 1 {
+        return Err("P04 second Stash operation lacks its one-unit precondition".into());
+    }
+    let reply = stash_command(&mut second, stash::StashAction::Stow(handle)).await?;
+    if (reply.outcome, reply.stowed_quantity) != (stash::StashOutcome::Committed, 1)
+        || stash_quantity(database, scope, item).await? != 2
+    {
+        return Err("P04 second stow did not leave exactly two in Stash".into());
+    }
+    let second_session = second.join_snapshot().game_session_id;
+    logout_released(&mut second, database).await?;
+    drop(second);
     let mut fresh = connect_character_once(scope, 0x27, 0).await?;
     let fresh_session = fresh.join_snapshot().game_session_id;
-    if fresh_session == session || fresh_session == stow_session || stash_quantity(database, scope, item).await? != 1 {
+    if fresh_session == session || fresh_session == stow_session || fresh_session == second_session || stash_quantity(database, scope, item).await? != 2 {
         return Err("P04 Stash amount did not survive distinct readmission".into());
     }
     verify_durable_carried(&carried, &durable_carried(database, character).await?)?;
     let (after, frame) = send(&mut fresh, 4, 0, "p04-master-availability.json").await?;
-    verify_delivery_availability(board, &after, item)?;
+    verify_delivery_availability(board, &after, item, 2)?;
     logout_released(&mut fresh, database).await?;
-    evidence(&format!("P04_DELIVERY_AVAILABILITY item={item} stash=1 carried=0 after_relog=1"));
-    Ok(format!("{},{},{},{item}", uuid_text(fresh_session.as_bytes()), frame.command_id, frame.server_sequence))
+    evidence(&format!("P04_DELIVERY_AVAILABILITY item={item} stash=2 carried=0 after_relog=2"));
+    Ok(format!("{},{},{},{item};carried={},{},{}", uuid_text(fresh_session.as_bytes()), frame.command_id, frame.server_sequence, uuid_text(stow_session.as_bytes()), carried_frame.command_id, carried_frame.server_sequence))
 }
 
 fn verify_locked_difficulty(started: &Reply, refused: &Reply) -> TestResult {
@@ -900,11 +926,12 @@ async fn verify_boundary(
         )
         .await?;
     }
-    if catalogue.is_some() {
-        let (refused, _) = send_live(&mut client, 5, 2).await?;
+    let locked = if catalogue.is_some() {
+        let (refused, locked_frame) = send(&mut client, 5, 2, "p04-master-locked.json").await?;
         verify_locked_difficulty(&start, &refused)?;
         evidence("P04_WEEKLY_DIFFICULTY_LOCKED selected=2 difficulty=3 refusal=2");
-    }
+        format!(";locked={},{}", locked_frame.command_id, locked_frame.server_sequence)
+    } else { String::new() };
     if seeded_carried(&client)? != projected_before {
         return Err("P04 StartWeekly changed the delivery inventory".into());
     }
@@ -956,7 +983,7 @@ async fn verify_boundary(
         start_refusal,
     ));
     Ok(format!(
-        "{},{},{},{},{},{},{},{}{availability}",
+        "{},{},{},{},{},{},{},{}{availability}{locked}",
         uuid_text(session.as_bytes()),
         uuid_text(readmission.as_bytes()),
         query.command_id,
@@ -1071,10 +1098,11 @@ mod tests {
             current: 0,
             delivered: false,
         });
-        assert!(verify_delivery_availability(&board, &board, 813).is_err());
+        assert!(verify_delivery_availability(&board, &board, 813, 1).is_err());
         let mut changed = board.clone();
         changed.weekly.deliveries[0].current = 1;
-        verify_delivery_availability(&board, &changed, 813)
+        assert!(verify_delivery_availability(&board, &changed, 813, 2).is_err());
+        verify_delivery_availability(&board, &changed, 813, 1)
     }
 
     #[test]
