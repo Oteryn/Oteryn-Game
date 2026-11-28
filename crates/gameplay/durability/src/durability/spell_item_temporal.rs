@@ -198,7 +198,8 @@ pub async fn drain_due_items_in_transaction(
             .execute(&mut **tx).await?;
         let target: Option<String> = row.try_get("target_production_key")?;
         let affected = if let Some(target) = target {
-            sqlx::query("UPDATE game_item_instances SET definition_family='Item',definition_production_key=$1,definition_revision_ref=$2,last_transaction_id=$3::uuid WHERE item_instance_id=$4::uuid AND state_revision=$5::text::numeric AND lifecycle=1")
+            // Both definitions have family Item. The runtime role can update the key and revision.
+            sqlx::query("UPDATE game_item_instances SET definition_production_key=$1,definition_revision_ref=$2,last_transaction_id=$3::uuid WHERE item_instance_id=$4::uuid AND state_revision=$5::text::numeric AND lifecycle=1")
                 .bind(target).bind(row.try_get::<String,_>("target_revision")?).bind(&transaction).bind(&item).bind(&revision).execute(&mut **tx).await?.rows_affected()
         } else {
             let changed=sqlx::query("UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=$1::uuid WHERE item_instance_id=$2::uuid AND state_revision=$3::text::numeric AND lifecycle=1")
@@ -373,7 +374,7 @@ pub async fn drain_due_field_chains_in_transaction(
             .execute(&mut **tx).await?;
             let target: Option<String> = row.try_get("target_production_key")?;
             let affected = if let Some(target) = target {
-                sqlx::query("UPDATE game_item_instances SET definition_family='Item',definition_production_key=$1,definition_revision_ref=$2,last_transaction_id=$3::uuid WHERE item_instance_id=$4::uuid AND state_revision=$5::text::numeric AND lifecycle=1")
+                sqlx::query("UPDATE game_item_instances SET definition_production_key=$1,definition_revision_ref=$2,last_transaction_id=$3::uuid WHERE item_instance_id=$4::uuid AND state_revision=$5::text::numeric AND lifecycle=1")
                 .bind(target).bind(row.try_get::<String,_>("target_revision")?).bind(&transaction).bind(&item).bind(&revision).execute(&mut **tx).await?.rows_affected()
             } else {
                 let changed=sqlx::query("UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=$1::uuid WHERE item_instance_id=$2::uuid AND state_revision=$3::text::numeric AND lifecycle=1")

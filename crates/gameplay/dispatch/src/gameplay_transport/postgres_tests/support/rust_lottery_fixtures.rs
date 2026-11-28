@@ -419,17 +419,10 @@ async fn exchange_selected_source(
     let mut end = None;
     let mut result = None;
     let mut maintenance = std::pin::pin!(super::item_craft_fixtures::maintain_ready(owner));
-    // The production node has its own deadline sweep. The connection fixture drives the
-    // same owner while the client remains idle and reads server-pushed frames.
-    let mut deadline_sweep = std::pin::pin!(async {
-        if expiry.is_some() {
-            let mut tick = tokio::time::interval(Duration::from_millis(250));
-            loop {
-                tick.tick().await;
-                owner.drain_source_item_deadlines().await;
-            }
-        }
-    });
+    let stop = oteryn_foundation::CancellationToken::new();
+    let mut deadline_sweep = std::pin::pin!(crate::durability::DurabilityRoot::with_background_holder(
+        owner.run_source_owner_cycles(&stop)
+    ));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {

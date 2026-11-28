@@ -19,6 +19,7 @@ enum Case {
     DiceStreak,
     Trumpet,
     LiveTrumpet,
+    RuntimeRoleTrumpet,
     Rocket,
     Hat,
     HatInBag,
@@ -44,7 +45,7 @@ impl Case {
         match self {
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
-            Self::Trumpet | Self::LiveTrumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
+            Self::Trumpet | Self::LiveTrumpet | Self::RuntimeRoleTrumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
             Self::Hat | Self::HatInBag => "oteryn:item.tibia.i6578",
             Self::VoodooSuccess
@@ -86,6 +87,9 @@ impl Case {
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet
         )
     }
+    fn live_trumpet(self) -> bool {
+        matches!(self, Self::LiveTrumpet | Self::RuntimeRoleTrumpet)
+    }
     fn refused(self) -> bool {
         matches!(
             self,
@@ -117,6 +121,11 @@ fn novelty_trumpet_commits_original_absolute_deadline() -> TestResult {
 fn novelty_carried_trumpet_expiry_pushes_inventory_to_idle_session() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     run_case(Case::LiveTrumpet)
+}
+#[test]
+fn novelty_source_cycle_commits_carried_trumpet_expiry_as_runtime_role() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    run_case(Case::RuntimeRoleTrumpet)
 }
 #[test]
 fn novelty_carried_rocket_commits_ten_health_loss_once() -> TestResult {

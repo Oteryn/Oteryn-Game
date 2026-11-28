@@ -15,9 +15,29 @@ pub(super) fn scenario(case: Case) -> TestResult {
             eprintln!("QN5_FEROXA_TRAP_POSTGRES_READY version={version}");
         }
 
+        let runtime_root;
+        let root = if case == Case::RuntimeRoleTrumpet {
+            use sqlx::{ConnectOptions, Connection};
+            let mut url = harness.pool.connect_options().to_url_lossy();
+            url.query_pairs_mut()
+                .append_pair("options", "-c role=oteryn_game_runtime");
+            let mut probe = sqlx::PgConnection::connect(url.as_str()).await?;
+            let (role, can_update_family): (String, bool) = sqlx::query_as(
+                "SELECT current_user::text, has_column_privilege('game_item_instances', 'definition_family', 'UPDATE')",
+            )
+            .fetch_one(&mut probe)
+            .await?;
+            assert_eq!(role, "oteryn_game_runtime");
+            assert!(!can_update_family);
+            probe.close().await?;
+            runtime_root = crate::durability::DurabilityRoot::connect_test_runtime(url.as_str())?;
+            assert!(runtime_root.maintain_ready_once().await?);
+            &runtime_root
+        } else {
+            &harness.root
+        };
         let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
-            .root
+        let authority = root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
@@ -142,6 +162,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
+        owner.root = root;
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
@@ -373,7 +394,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             drop(seal);
             return harness.cleanup().await;
         }
-        let expiry = if case == Case::LiveTrumpet {
+        let expiry = if case.live_trumpet() {
             Some((
                 reference("oteryn:item.tibia.i6573").ok_or("played trumpet definition")?,
                 reference(key).ok_or("trumpet definition")?,
@@ -381,30 +402,41 @@ pub(super) fn scenario(case: Case) -> TestResult {
         } else {
             None
         };
-        let (mut end, result, actual, wire_cues) =
-            super::super::rust_lottery_fixtures::exchange_with_visuals(
-                &owner,
-                admitted,
-                command_id,
-                &payload,
-                reference(key),
-                expiry,
-            )
-            .await?;
-        if case == Case::LiveTrumpet {
-            assert_eq!(result, UseDisposition::Committed);
-            let receipts: i64 = sqlx::query_scalar(
-                "SELECT count(*) FROM game_spell_item_temporal_receipts WHERE custody_kind=2",
+        let exchange = super::super::rust_lottery_fixtures::exchange_with_visuals(
+            &owner,
+            admitted,
+            command_id,
+            &payload,
+            reference(key),
+            expiry,
+        )
+        .await;
+        if case.live_trumpet() {
+            let restored: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_spell_item_temporal_receipts r \
+                 JOIN game_spell_item_temporal_schedules p USING (item_instance_id) \
+                 JOIN game_item_instances i USING (item_instance_id) \
+                 WHERE r.custody_kind=2 AND p.definition_production_key='oteryn:item.tibia.i6573' \
+                   AND i.definition_production_key='oteryn:item.tibia.i6572' \
+                   AND i.state_revision=r.state_revision_before+1",
             )
             .fetch_one(&harness.pool)
             .await?;
-            assert_eq!(receipts, 1);
+            assert_eq!(
+                restored,
+                1,
+                "source cycle must commit one carried trumpet restoration; wire error: {:?}",
+                exchange.as_ref().err()
+            );
+            let (_, result, _, _) = exchange?;
+            assert_eq!(result, UseDisposition::Committed);
             eprintln!("W19 POSTGRES_CASE_COMPLETED novelty_items case={case:?}");
             drop(owner);
             drop(authority);
             drop(seal);
             return harness.cleanup().await;
         }
+        let (mut end, result, actual, wire_cues) = exchange?;
         let current: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;
         if case.refused() {
             if case == Case::VoodooWithoutTarget {
