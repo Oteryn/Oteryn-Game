@@ -160,9 +160,6 @@ fn busy_guard_scenario(admin: Option<String>) -> TestResult {
                 // Only durable guard calls are delegated. Snapshot/step fixtures keep
                 // this test at the guard seam, through the production command dispatcher.
                 transport.continuity = SessionContinuity::FRESH;
-                if require_typed_busy {
-                    transport.continuity.house_input_pending = Some(false);
-                }
                 transport.first_entry = FirstEntryOutcome::Positioned;
                 let (mut server, mut client) = tokio::io::duplex(1 << 20);
                 let held = h.root.try_issue_semantic_pass()?;

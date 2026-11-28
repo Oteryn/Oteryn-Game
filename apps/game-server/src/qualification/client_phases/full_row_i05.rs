@@ -379,16 +379,12 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
     .await;
     result?;
-    let release = async {
-        if client.session_mut().logout().await?.result
-            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
-            return Err("final-logout-refused".into());
-        }
-        Ok(())
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("final-logout-refused".into());
     }
-    .await;
-    release
+    Ok(())
 }
 
 fn added_handle(
