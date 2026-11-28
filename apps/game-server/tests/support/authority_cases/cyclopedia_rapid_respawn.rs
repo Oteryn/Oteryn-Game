@@ -27,6 +27,97 @@ fn cyclopedia_rapid_respawn_world_save_is_atomic_and_replayable() -> fixture::Te
     Ok(())
 }
 
+#[test]
+fn cyclopedia_rapid_respawn_migration_keeps_legacy_settlement_writable() -> fixture::TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(|e| e.to_string())?
+                .block_on(async {
+                    let h = fixture::Harness::create(admin, "cyclopedia_legacy_settlement", false)
+                        .await?;
+                    let result = verify_legacy_settlement(&h).await;
+                    h.cleanup().await?;
+                    result
+                })
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Cyclopedia legacy settlement thread failed")??;
+    Ok(())
+}
+
+async fn verify_legacy_settlement(h: &fixture::Harness) -> fixture::TestResult {
+    let applied: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM _sqlx_migrations WHERE version=3359 AND success)",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(
+        applied,
+        "the production migrator must install 3359 before settlement"
+    );
+
+    let world = fixture::scope()?.world_id();
+    let world = world.as_bytes().as_slice();
+    let area = 1_i64;
+    let epoch = "7";
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_world_cyclopedia(world_id,bundle_digest,catalogue_digest,area_id,pool)
+                 VALUES(encode($1,'hex')::uuid,$2,$3,$4,25000000)",
+    )
+    .bind(world)
+    .bind([7_u8; 32].as_slice())
+    .bind(oteryn_game_server::domain::cyclopedia::BasicArea::content_digest().as_slice())
+    .bind(area)
+    .execute(&mut *seed)
+    .await?;
+    seed.commit().await?;
+
+    // Replay e2750951's first funded save as the old runtime role, including the deferred
+    // guard at COMMIT. This is the statement shape in character_cyclopedia/storage.rs.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let pool: i64 = sqlx::query_scalar(
+        "SELECT pool FROM game_world_cyclopedia WHERE world_id=encode($1,'hex')::uuid AND area_id=$2 FOR UPDATE",
+    )
+    .bind(world)
+    .bind(area)
+    .fetch_one(&mut *tx)
+    .await?;
+    let selected: Option<bool> = sqlx::query_scalar("SELECT improved FROM game_world_cyclopedia_epochs WHERE world_id=encode($1,'hex')::uuid AND epoch=$2::text::numeric AND area_id=$3")
+        .bind(world).bind(epoch).bind(area).fetch_optional(&mut *tx).await?;
+    assert_eq!(selected, None);
+    sqlx::query("INSERT INTO game_world_cyclopedia_epochs(world_id,epoch,improved,donation_winner,pool_before,area_id) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$3,$4,$5)")
+        .bind(world).bind(epoch).bind(true).bind(pool).bind(area).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_world_cyclopedia SET pool=$3 WHERE world_id=encode($1,'hex')::uuid AND area_id=$2")
+        .bind(world).bind(area).bind(pool - 10_000_000).execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    let saved: (bool, bool, i64, i64) = sqlx::query_as(
+        "SELECT e.improved,e.donation_winner,e.pool_before,p.pool
+         FROM game_world_cyclopedia_epochs e JOIN game_world_cyclopedia p USING(world_id,area_id)
+         WHERE e.world_id=encode($1,'hex')::uuid AND e.epoch=$2::text::numeric AND e.area_id=$3",
+    )
+    .bind(world)
+    .bind(epoch)
+    .bind(area)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(saved, (true, true, 25_000_000, 15_000_000));
+    Ok(())
+}
+
 async fn verify(h: &fixture::Harness) -> fixture::TestResult {
     let scope = fixture::scope()?;
     let world = scope.world_id();

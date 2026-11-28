@@ -1,4 +1,6 @@
--- Clear the selected donation pool only with its same-transaction epoch receipt.
+-- Require the same-transaction winner receipt for either settlement shape.
+-- Migrations run before the old service stops. Its writer still debits one goal.
+-- The new writer resets the winning pool to zero.
 CREATE OR REPLACE FUNCTION game_cyclopedia_pool_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF TG_OP='INSERT' THEN
@@ -22,7 +24,8 @@ BEGIN
       AND r.donation>0 AND r.created_xact_id=pg_current_xact_id())
    AND NOT EXISTS(SELECT 1 FROM game_world_cyclopedia_epochs e
     WHERE e.world_id=NEW.world_id AND e.area_id=NEW.area_id AND e.donation_winner
-      AND NEW.pool=0 AND e.pool_before=OLD.pool
+      AND (NEW.pool=0 OR NEW.pool=OLD.pool-10000000)
+      AND e.pool_before=OLD.pool
       AND e.created_xact_id=pg_current_xact_id()) THEN
   RAISE EXCEPTION 'area pool requires atomic donation or reset selection' USING ERRCODE='23514';
  END IF;
