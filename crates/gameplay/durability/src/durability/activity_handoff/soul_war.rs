@@ -8,6 +8,10 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         active: &crate::content::ActiveGeneration,
         template: &crate::content::bosses::activity_template::QualifiedActivityRoomTemplate,
+        world_origin: Option<(
+            &crate::content::QualifiedNativeEntryRoom,
+            &crate::foundation::ChannelContentPin,
+        )>,
     ) -> Result<bool> {
         if !is_soul_war(template.boss_key())
             || template.source_path() != "data-global/lib/quests/soul_war.lua"
@@ -30,8 +34,19 @@ impl ActivityHandoffOwner {
         // Publication is append-only and checks exact policy equality on replay.
         // The following pass independently re-proves the Character, Node,
         // runtime and current activation before accepting this interpretation.
-        self.publish_qualified_boss_rooms(node, std::slice::from_ref(template))
+        if let Some((origin, pin)) = world_origin {
+            self.publish_qualified_boss_rooms_from_world(
+                node,
+                std::slice::from_ref(template),
+                active,
+                origin,
+                pin,
+            )
             .await?;
+        } else {
+            self.publish_qualified_boss_rooms(node, std::slice::from_ref(template))
+                .await?;
+        }
         let root = self.root.clone();
         let node = node.clone();
         let fact = node.fact();
