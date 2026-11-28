@@ -196,7 +196,8 @@ where
         let (tcp, _) = listener.accept().await?;
         let mut stream = acceptor.accept(tcp).await?;
         let body = read_frame(&mut stream).await?;
-        let bootstrap = decode_wire_envelope(&body)?.client_bootstrap()?;
+        let envelope = decode_wire_envelope(&body)?;
+        let bootstrap = envelope.client_bootstrap()?;
         assert!(bootstrap.supported_capabilities.contains(
             &oteryn_protocol_oteryn::cyclopedia_tracker::CAPABILITY_CYCLOPEDIA_TRACKER_V1
         ));
