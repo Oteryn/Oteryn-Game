@@ -10,7 +10,8 @@ pub(crate) const TOP_OF_THE_CITY_DIG: &str = "oteryn:quest-callback/authored-top
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
         && (callback.key == targuna_ram::KEY
-            || oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(callback).is_some()
+            || oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(callback)
+                .is_some()
             || callback.key == TOP_OF_THE_CITY_DIG
             || (callback
                 .item_on_target
@@ -153,7 +154,9 @@ mod tests {
     #[test]
     fn all_spirit_shovel_outcomes_reach_the_selected_tool_owner() -> Result<(), String> {
         let callbacks = world_callbacks::load()?;
-        let mounds = callbacks.iter().filter(|row| world_callbacks::spike_mound::chances(row).is_some());
+        let mounds = callbacks
+            .iter()
+            .filter(|row| world_callbacks::spike_mound::chances(row).is_some());
         let mut count = 0;
         for row in mounds {
             assert!(accepts(row), "{}", row.key);

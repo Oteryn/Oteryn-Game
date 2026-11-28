@@ -34,9 +34,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(true);
         };
         let character = command.item_fence.ok_or(())?.character_id;
-        let position = self.runtime.lock().await.read_actor_position(actor).map_err(|_| ())?.position();
-        if let Some(clue) = survey.clue(character.as_bytes(), self.reset_epoch, position.x, position.y, position.floor) {
-            self.states.chat.push_quest_feedback(command.game_session_id, clue);
+        let position = self
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(|_| ())?
+            .position();
+        if let Some(clue) = survey.clue(
+            character.as_bytes(),
+            self.reset_epoch,
+            position.x,
+            position.y,
+            position.floor,
+        ) {
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, clue);
             return Ok(false);
         }
         Ok(true)
@@ -237,7 +251,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.item_fence() != item_fence {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        if !self.survey_allows_use(actor, command, callback.survey.as_ref()).await? {
+        if !self
+            .survey_allows_use(actor, command, callback.survey.as_ref())
+            .await?
+        {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
         }
         let peer = if callback.peer_requires.is_some() {

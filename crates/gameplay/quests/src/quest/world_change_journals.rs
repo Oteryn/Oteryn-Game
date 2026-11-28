@@ -701,7 +701,10 @@ mod tests {
     fn great_dragon_hunt_credits_the_native_middle_lair_dragon_lord() {
         let transition = "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon_lord";
         assert!(super::admits_position(transition, Some((33055, 32676, -7))));
-        assert!(!super::admits_position(transition, Some((33055, 32676, -8))));
+        assert!(!super::admits_position(
+            transition,
+            Some((33055, 32676, -8))
+        ));
     }
 
     #[test]

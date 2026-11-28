@@ -638,7 +638,9 @@ pub(in crate::gameplay_transport) async fn resume(
             let completion = if receipt.is_some() {
                 Completion::Committed
             } else {
-                pending.failure_topic.map_or(Completion::Refused, |topic| Completion::RefusedAt(Topic::from(topic)))
+                pending.failure_topic.map_or(Completion::Refused, |topic| {
+                    Completion::RefusedAt(Topic::from(topic))
+                })
             };
             finish(admission, command.game_session_id, completion);
             if receipt.is_some() {

@@ -415,6 +415,66 @@ fn repeated_tile_selection_uses_the_lower_server_ordinal_and_revision() -> Resul
     Ok(())
 }
 
+#[test]
+fn inventory_rune_uses_selected_realm_fire_below_an_occupied_stack() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::world_interaction::{Action, Target};
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, MouseButton, NormalizedInputEvent, PointerCoordinate, PointerDelta, PointerMotion, PointerPosition};
+    use oteryn_session::world_map::MapOrigin;
+
+    let mut world = view()?;
+    let mut map = live_snapshot(33080);
+    let position = ActorPosition { x: 33080, y: 32583, floor: 3 };
+    map.header.origin = position;
+    map.header.first_visible_floor = 3;
+    let tile = &mut map.tiles[0];
+    tile.position = position;
+    tile.items[0].appearance_id = 2124;
+    tile.items[0].origin = MapOrigin::BaseOrdinal { ordinal: 1, object_revision: 37 };
+    let mut top = tile.items[0];
+    top.appearance_id = 2123;
+    top.origin = MapOrigin::BaseOrdinal { ordinal: 2, object_revision: 11 };
+    tile.items.push(top);
+    world.set_live_map(&map)?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.world_context_initialize(true, false);
+    outbox.targeting_initialize(true);
+    let rune = oteryn_session::ItemEntry {
+        handle: std::num::NonZeroU64::MIN, item_definition_ref: NonZeroU32::MIN,
+        appearance_id: 3148, count: NonZeroU32::MIN, sub_type: 0,
+    };
+    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory { entries: vec![rune], ..Default::default() }), false);
+    let at = TileCoord::new(position.x, position.y);
+    let screen = world.scene().view().tile_to_screen(at);
+    let mut router = crate::input::MouseActions::new()?;
+    let moved = NormalizedInputEvent::PointerMoved {
+        position: PointerPosition::new(PointerCoordinate::new(screen[0] as i32 + 24)?, PointerCoordinate::new(screen[1] as i32 + 24)?),
+        motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+    };
+    router.route(&[moved]);
+    for _ in 0..2 {
+        let events = [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::MouseButton {
+            state, button: MouseButton::PRIMARY, modifiers: Modifiers::one(Modifier::Super),
+        });
+        let clicks = router.route(&events);
+        let [click] = clicks.as_slice() else { return Err("stack selection gesture".into()) };
+        assert!(world.modifier_click(world.click_tile(click.x, click.y).ok_or("stack tile")?, &link, click.shortcut.ok_or("stack modifier")?));
+    }
+    assert!(link.inventory_select(rune.handle));
+    assert!(link.inventory_use_rune());
+    #[cfg(bevy_shell)]
+    assert!(world.direct_click(at, &link, crate::play::MouseScheme::LeftSmart));
+    #[cfg(not(bevy_shell))]
+    world.primary_click(at, &link)?;
+    let crate::combat_input::PlayCommand::WorldContext(command) = commands.try_recv()? else { return Err("rune USE command".into()) };
+    assert_eq!(command.action, Action::UseOn(rune.handle));
+    let Target::Object(object) = command.target else { return Err("observed fire required".into()) };
+    assert_eq!(object.expected_revision, 37);
+    assert_eq!(&object.placement[..32], &map.header.bundle_digest);
+    let key = (33080u64 << 32) | (32583u64 << 16) | (3 << 8) | 1;
+    assert_eq!(object.placement[32..], key.to_be_bytes());
+    Ok(())
+}
+
 // Floor sprite assertions isolate world rendering from the package-5 minimap overlay.
 fn hide_minimap(view: &mut PlayView) -> Result<(), BatchError> {
     let mut preferences = view.preferences().clone();

@@ -477,7 +477,10 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply, failure_topic).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure_reply(failure_reply, failure_topic)
+            .with_refusal(refused)
+    })
 }
 
 #[cfg(test)]

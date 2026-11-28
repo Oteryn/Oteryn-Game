@@ -98,6 +98,60 @@ mod tests {
     use super::*;
 
     #[test]
+    fn spike_reports_settle_after_five_nests_or_any_four_distinct_outposts() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = crate::quest::reward_callbacks::load_for(catalogue)?;
+        let mut sites = Vec::new();
+        for row in &callbacks {
+            if row.npc_area.is_some() {
+                sites.push(row.key.as_str());
+            }
+        }
+        assert_eq!(sites.len(), 5);
+        let apply = |key: &str,
+                     tracks: &mut std::collections::BTreeMap<String, i64>|
+         -> Result<(), String> {
+            let transition = catalogue
+                .transition(key)
+                .ok_or_else(|| format!("missing {key}"))?;
+            for change in catalogue
+                .evaluate(transition, tracks, 100_000)
+                .map_err(|error| format!("{key}: {error:?}"))?
+            {
+                tracks.insert(change.track, change.after);
+            }
+            Ok(())
+        };
+        for omitted in &sites {
+            let mut tracks = std::collections::BTreeMap::new();
+            apply("oteryn:quest-reward/l12-spike-parcel-accept", &mut tracks)?;
+            for site in sites.iter().filter(|site| *site != omitted) {
+                assert!(apply("oteryn:quest-reward/l12-spike-parcel-report", &mut tracks).is_err());
+                apply(site, &mut tracks)?;
+                assert!(apply(site, &mut tracks).is_err());
+            }
+            apply("oteryn:quest-reward/l12-spike-parcel-report", &mut tracks)?;
+        }
+
+        let mut tracks = std::collections::BTreeMap::new();
+        apply("oteryn:quest-reward/l12-spike-nests-accept", &mut tracks)?;
+        apply(
+            "oteryn:quest-callback/spike/transform-32242-32610-11",
+            &mut tracks,
+        )?;
+        let nest = "oteryn:quest-callback/spike/nest-32162-32507-11";
+        for _ in 0..5 {
+            assert!(apply("oteryn:quest-reward/l12-spike-nests-report", &mut tracks).is_err());
+            apply(nest, &mut tracks)?;
+        }
+        assert!(apply(nest, &mut tracks).is_err());
+        apply("oteryn:quest-reward/l12-spike-nests-report", &mut tracks)?;
+        Ok(())
+    }
+
+    #[test]
     fn each_mound_draw_has_one_result_and_only_the_soul_settles_release() -> Result<(), String> {
         let callbacks = crate::quest::world_callbacks::load()?;
         let mut mounds = std::collections::BTreeMap::new();

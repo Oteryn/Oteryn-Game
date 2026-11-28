@@ -1,4 +1,12 @@
 use super::TestResult;
+
+#[test]
+fn spike_carried_tools_admit_the_observed_site_and_selected_instance() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    scenario(Quest::Spike)
+}
 use super::adventurers_guild_fixtures::{Quest, scenario};
 
 #[test]

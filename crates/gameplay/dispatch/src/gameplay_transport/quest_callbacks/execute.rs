@@ -176,9 +176,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !states.get(runtime, actor, session).is_some_and(|state| {
                     state.owned_conditions().outfit_at(self.owner_now().get()) == Some(307)
                 }))
-            || (callback.key.starts_with("oteryn:quest-callback/spike/transform-")
+            || (callback
+                .key
+                .starts_with("oteryn:quest-callback/spike/transform-")
                 && !states.get(runtime, actor, session).is_some_and(|state| {
-                    state.owned_conditions().outfit_at(self.owner_now().get()).is_none()
+                    state
+                        .owned_conditions()
+                        .outfit_at(self.owner_now().get())
+                        .is_none()
                 }))
             || (callback.requires_live_drunk()
                 && !states.get(runtime, actor, session).is_some_and(|state| {
@@ -2088,13 +2093,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
-        if fresh_effects && callback.key.starts_with("oteryn:quest-callback/spike/nest-")
+        if fresh_effects
+            && callback
+                .key
+                .starts_with("oteryn:quest-callback/spike/nest-")
             && let QuestCause::Use(command) = cause
         {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
             use std::hash::{BuildHasher, RandomState};
             static DRAW: OnceLock<RandomState> = OnceLock::new();
-            let draw = 1 + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100) as u8;
+            let draw =
+                1 + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100) as u8;
             if let Some(creature) = nest_creature(draw)
+                && let Some(native) = self.active_generation.and_then(|g| g.native_gameplay())
+                && native.install_companion_policies(runtime).is_ok()
                 && let Ok(policy) = runtime.companion_policy(creature)
             {
                 let monster = (creature, policy.maximum_health, expected.position());
@@ -2169,8 +2181,16 @@ mod tests {
     #[test]
     fn nest_draws_match_the_four_equiprobable_source_spawns() {
         assert_eq!(nest_creature(60), None);
-        for (draw, species) in [(61, "spider"), (71, "larva"), (81, "scarab"), (91, "tarantula")] {
-            assert_eq!(nest_creature(draw), Some(format!("oteryn:creature.{species}").as_str()));
+        for (draw, species) in [
+            (61, "spider"),
+            (71, "larva"),
+            (81, "scarab"),
+            (91, "tarantula"),
+        ] {
+            assert_eq!(
+                nest_creature(draw),
+                Some(format!("oteryn:creature.{species}").as_str())
+            );
         }
     }
 
