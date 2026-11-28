@@ -24,6 +24,8 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `NPC_SERVICE_V1`: command types 7 and 8, state domains 7 and 8.
 pub const CAPABILITY_NPC_SERVICE_V1: u32 = 3;
+/// Enables command attribution on the buyer's character-inventory replacement.
+pub const CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1: u32 = 629;
 pub const COMMAND_TYPE_NPC_TALK_INTENT: u32 = 7;
 pub const COMMAND_TYPE_NPC_TRADE_INTENT: u32 = 8;
 pub const STATE_DOMAIN_NPC_CONVERSATION: u32 = 7;

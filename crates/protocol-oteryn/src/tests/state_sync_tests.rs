@@ -15,6 +15,7 @@ fn state_delta_decoder_round_trips_through_existing_server_encoder()
             new_revision: 41,
             delta_type: 1,
             payload: &[0xaa, 0xbb],
+            npc_purchase_attribution: None,
         }
     );
     Ok(())
@@ -46,8 +47,44 @@ fn state_delta_decoder_applies_the_encoders_semantic_bounds() {
             new_revision: 1,
             delta_type: 1,
             payload: &[],
+            npc_purchase_attribution: None,
         })
     );
+}
+
+#[test]
+fn npc_purchase_attribution_preserves_legacy_state_delta_bytes()
+-> Result<(), FoundationProtocolError> {
+    let legacy_body = [0x08, 9, 0x10, 1, 0x18, 2, 0x20, 1, 0x2a, 0];
+    let legacy = server_frame(MessageType::StateDelta, 3, 4, &legacy_body);
+    assert_eq!(encode_state_delta(3, 4, 9, 1, 2, 1, &[])?, legacy);
+    let decoded = decode_state_delta(decode_wire_envelope(&legacy)?.payload())?;
+    assert!(decoded.payload.is_empty());
+    assert_eq!(
+        item_view::decode_character_inventory(decoded.payload),
+        Ok(item_view::CharacterInventory::default())
+    );
+    assert_eq!(decoded.npc_purchase_attribution, None);
+
+    let wire = encode_npc_purchase_inventory_delta(3, 4, 1, 2, &[], &[7, 1000])?;
+    let envelope = decode_wire_envelope(&wire)?;
+    let view = decode_state_delta(envelope.payload())?;
+    assert_eq!(view.payload, decoded.payload);
+    assert_eq!(
+        view.npc_purchase_attribution.map(|ids| ids.command_ids().collect::<Vec<_>>()),
+        Some(vec![7, 1000])
+    );
+    for suffix in [
+        &[0x82, 1, 0][..],
+        &[0x82, 1, 1, 0],
+        &[0x82, 1, 2, 7, 7],
+        &[0x82, 1, 1, 7, 0x82, 1, 1, 8],
+    ] {
+        let mut invalid = legacy_body.to_vec();
+        invalid.extend(suffix);
+        assert_eq!(decode_state_delta(&invalid), Err(FoundationProtocolError::MalformedEnvelope));
+    }
+    Ok(())
 }
 
 #[test]

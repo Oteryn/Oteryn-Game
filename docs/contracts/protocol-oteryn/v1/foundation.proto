@@ -192,6 +192,10 @@ message StateDelta {
   uint32 delta_type = 4;
   bytes payload = 5;
 
+  // Capability 629, domain 9/type 1 only. One packed field of 1 to 64
+  // strictly increasing, nonzero command IDs covered by this replacement.
+  repeated uint64 npc_purchase_command_ids = 16 [packed = true];
+
   reserved 6 to 15;
 }
 

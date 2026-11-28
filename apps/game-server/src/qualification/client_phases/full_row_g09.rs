@@ -766,6 +766,10 @@ async fn buy_watch(
     })
     .map_err(|error| format!("step=buy encode={error:?}"))?;
     let clock_from = clock_elapsed_ms()?;
+    if !client.selected_capabilities().contains(&npc::CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1) {
+        return Err("step=buy observed=purchase-attribution-not-negotiated".into());
+    }
+    let purchase_command_id = client.next_command_id();
     let purchase = npc_command(client, npc::COMMAND_TYPE_NPC_TRADE_INTENT, &payload).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
@@ -782,8 +786,9 @@ async fn buy_watch(
                 )?;
             }
             if let SessionEvent::Inventory(delta) = event {
-                if let Some(expected) = &purchased {
-                    require_unchanged_inventory(expected, &delta.value)?;
+                if purchased.is_some() {
+                    // The session exposes attribution for its latest inventory revision.
+                    return Err("step=buy observed=ambiguous-purchase-inventory-batch".into());
                 } else {
                     if delta.server_sequence <= purchase
                         || !purchase_inventory_matches(
@@ -801,6 +806,9 @@ async fn buy_watch(
             }
         }
         if let Some(purchased) = purchased {
+            if client.session_mut().inventory_npc_purchase_command_ids() != [purchase_command_id] {
+                return Err("step=buy observed=missing-purchase-command-attribution".into());
+            }
             require_unchanged_inventory(
                 &purchased,
                 client.inventory().ok_or("step=buy missing inventory")?,

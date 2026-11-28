@@ -1,0 +1,14 @@
+{
+  "id": 629,
+  "name": "NPC_PURCHASE_ATTRIBUTION_V1",
+  "owner_decision": "2026-11-28 S7 coordinator G09 allocation",
+  "owner": "current player connection inventory projection",
+  "requires": [
+    3,
+    4
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered by BUNDLE_WORLD_OFFERED_CAPABILITIES. When selected, StateDelta field 16 carries the committed NPC purchase command IDs covered by an inventory replacement on domain 9, type 1. The field is absent on legacy sessions and on deltas without attribution."
+}

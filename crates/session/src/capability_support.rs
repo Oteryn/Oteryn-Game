@@ -199,6 +199,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // CORPSE48: domain 11 shows up to 48 corpse entries (requires 4).
     oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
     quick_loot::CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+    npc_service::CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

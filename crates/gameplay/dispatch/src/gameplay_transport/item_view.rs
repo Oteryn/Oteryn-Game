@@ -534,6 +534,7 @@ pub struct ItemViewSnapshotDomain {
 /// One whole-view delta, emitted after the change it shows.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemViewDelta {
+    pub(super) npc_purchase_command_ids: Vec<u64>,
     pub domain_id: u32,
     pub from: u64,
     pub to: u64,
@@ -558,6 +559,7 @@ pub struct SessionItemView {
     inventory: InventoryItems,
     /// A post-commit display read is retried on the existing visibility cadence.
     pub(super) inventory_refresh_pending: bool,
+    pending_npc_purchase_command_ids: Vec<u64>,
     open: Option<OpenCorpse>,
     open_entries: Vec<ViewItem>,
     /// The open corpse carried from the previous connection until the snapshot decides it.
@@ -591,6 +593,7 @@ impl SessionItemView {
             view_commands: continuity.view_commands,
             inventory: InventoryItems::default(),
             inventory_refresh_pending: false,
+            pending_npc_purchase_command_ids: Vec::new(),
             open: None,
             open_entries: Vec::new(),
             carried_open: continuity.open_corpse,
@@ -775,6 +778,7 @@ impl SessionItemView {
             }
         };
         Ok(ItemViewDelta {
+            npc_purchase_command_ids: Vec::new(),
             domain_id: STATE_DOMAIN_CONTAINER_VIEWS,
             from,
             to,
@@ -866,19 +870,29 @@ impl SessionItemView {
         ])
     }
 
+    pub(super) fn npc_purchase_attribution_full(&self) -> bool {
+        self.pending_npc_purchase_command_ids.len()
+            >= oteryn_protocol_oteryn::MAX_NPC_PURCHASE_COMMAND_IDS
+    }
+
+    pub(super) fn record_npc_purchase(&mut self, command_id: u64) {
+        self.pending_npc_purchase_command_ids.push(command_id);
+    }
+
     /// The domain 9 delta after a durable commit that may have changed the backpack; `None` when
-    /// the view is unchanged.
+    /// the view is unchanged and no committed NPC purchase needs attribution.
     pub fn inventory_committed(
         &mut self,
         inventory: InventoryItems,
     ) -> Result<Option<ItemViewDelta>, ItemViewError> {
-        if inventory == self.inventory {
+        if inventory == self.inventory && self.pending_npc_purchase_command_ids.is_empty() {
             return Ok(None);
         }
         let payload = self.set_inventory(inventory)?;
         let from = self.inventory_revision;
         let to = advance(&mut self.inventory_revision)?;
         Ok(Some(ItemViewDelta {
+            npc_purchase_command_ids: std::mem::take(&mut self.pending_npc_purchase_command_ids),
             domain_id: STATE_DOMAIN_CHARACTER_INVENTORY,
             from,
             to,
@@ -971,6 +985,7 @@ impl SessionItemView {
         let payload = self.set_container(open, entries)?;
         self.container_revision = to;
         Ok(ItemViewDelta {
+            npc_purchase_command_ids: Vec::new(),
             domain_id: STATE_DOMAIN_OPEN_CONTAINER,
             from,
             to,
