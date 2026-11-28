@@ -312,6 +312,17 @@
       "note": "Successfully encoded domain 17 map replacement (not delivery): exact encoded nonempty tile/item counts and native map origin, including whether its tile has items. Join delivery is established by snapshot_flushed. No player identity, item identity or payload."
     },
     {
+      "event": "monster_target_protection_started",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "kind",
+        "started_owner_us"
+      ],
+      "codes": [],
+      "note": "A fresh_login or reentry window was installed for a traced connection. The log envelope carries the server Unix timestamp in milliseconds and the connection trace. started_owner_us is the exact monotonic owner time used to set the deadline. No player or session identifiers."
+    },
+    {
       "event": "native_owner_turn",
       "level": "info",
       "span": false,

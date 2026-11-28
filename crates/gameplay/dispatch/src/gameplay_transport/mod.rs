@@ -1389,6 +1389,25 @@ fn operator_event(line: &str) {
     operator_event_with_trace(line, connection::diagnostic_connection_trace());
 }
 
+fn log_monster_target_protection_start(kind: &'static str, started_owner_us: u64) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let Some(trace) = connection::diagnostic_connection_trace() else {
+        return;
+    };
+    let trace = format_connection_trace(trace);
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &Line::new(
+            Level::Info,
+            "gameplay_transport",
+            "monster_target_protection_started",
+        )
+        .trace(&trace)
+        .field("kind", FieldValue::Token(kind))
+        .field("started_owner_us", FieldValue::U64(started_owner_us)),
+    );
+}
+
 fn format_connection_trace(trace: [u8; 16]) -> String {
     format!(
         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",

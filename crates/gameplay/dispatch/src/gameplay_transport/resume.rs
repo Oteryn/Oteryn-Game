@@ -19,6 +19,7 @@ use super::world_required_capabilities::{
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
 use super::{
     AdmissionRetryBudget, ComposedFreshAdmission, SAME_SESSION_GRACE_SECONDS, canonical_uuid,
+    log_monster_target_protection_start,
 };
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -793,22 +794,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         {
             let mut runtime = self.runtime.lock().await;
-            if house_resume {
+            let previous = if house_resume {
+                runtime.house_player_control_facts(actor, session_id)
+            } else {
+                runtime.player_control_facts(actor, session_id)
+            };
+            // A replay of an already restored epoch returns success without starting a window.
+            let starts_protection = previous.is_ok_and(|facts| {
+                facts
+                    .control_loss
+                    .is_some_and(|loss| loss.epoch == epoch.get())
+            });
+            let now = self.owner_now().get();
+            let restored = if house_resume {
                 runtime
                     .restore_house_control_after_committed_reentry(
                         actor,
                         session_id,
                         epoch.get(),
-                        self.owner_now().get(),
+                        now,
                     )
                     .map_err(|_| Unavailable)?;
+                true
             } else {
-                let _ = runtime.restore_control_after_committed_reentry(
-                    actor,
-                    session_id,
-                    epoch.get(),
-                    self.owner_now().get(),
-                );
+                runtime
+                    .restore_control_after_committed_reentry(actor, session_id, epoch.get(), now)
+                    .is_ok()
+            };
+            if starts_protection && restored {
+                log_monster_target_protection_start("reentry", now);
             }
             // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
             // before the resumed actor's first command. An actor without spell state has none.
