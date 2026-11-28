@@ -133,11 +133,7 @@ pub(super) async fn prepare(
     let mut client = connect_character(scope, tag, 0).await?;
     let session = client.join_snapshot().game_session_id;
     request_fixture_control(uuid_text(session.as_bytes()), "--profile", "q_w15d".into()).await?;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("seeded character logout refused".into());
-    }
+    logout_once(&mut client).await?;
     drop(client);
     let mut client = connect_character(scope, tag, 0).await?;
     if client.join_snapshot().game_session_id == session {
@@ -176,16 +172,45 @@ pub(super) async fn prepare(
     Ok(client)
 }
 
+pub(super) async fn logout_once(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        let state = client.session_mut().combat_state().ok_or("combat state absent before logout")?;
+        if !state.in_fight {
+            break;
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(format!("combat lock still active before first logout: {state:?}").into());
+        }
+        client.service_liveness(remaining.min(Duration::from_millis(250))).await?;
+        client.take_events();
+    }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("first logout refused: {reply:?}").into());
+    }
+    Ok(())
+}
+
 async fn walk_to(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     goal: TilePos,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
-        at.floor == goal.floor && at.x.abs_diff(goal.x).max(at.y.abs_diff(goal.y)) == 1
-    })
-    .ok_or_else(|| format!("no playable route from {from:?} to {goal:?}"))?;
+    let path = find_route(
+        from,
+        |at| at.floor == goal.floor && at.x.abs_diff(goal.x).max(at.y.abs_diff(goal.y)) == 1,
+        |at, direction| {
+            let next = destination(world, at, direction)?;
+            (next.x.abs_diff(from.x) <= 180
+                && next.y.abs_diff(from.y) <= 180
+                && next.floor.abs_diff(from.floor) <= 2)
+                .then_some(next)
+        },
+    )
+    .map_err(|visited| format!("no playable route from {from:?} to {goal:?}, visited={visited}"))?;
     evidence(&format!(
         "W15D_ROUTE from={from:?} goal={goal:?} steps={}",
         path.len()
@@ -193,7 +218,37 @@ async fn walk_to(
     for direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, from, direction).ok_or("planned step landing absent")?;
-        let moved = client.step(direction).await?;
+        let mut moved = client.step(direction).await?;
+        if moved.disposition == StepDisposition::Blocked {
+            if tile(client.world_spatial().actor_position)? != from {
+                return Err(format!("blocked STEP changed position: {moved:?}").into());
+            }
+            let occupant = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entry| {
+                    entry.kind == oteryn_dev_client::EntityKind::Creature
+                        && tile(entry.position).ok() == Some(expected)
+                })
+            }).ok_or_else(|| format!("BLOCKER-SERVER unoccupied blocked STEP from={from:?} to={expected:?} result={moved:?}"))?.entity;
+            evidence(&format!("W15D_CREATURE_BLOCK id={occupant:?} tile={expected:?} first={moved:?}"));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+            loop {
+                let observed = client.world_entities().and_then(|entities| {
+                    entities.iter().find(|entry| entry.entity == occupant)
+                }).and_then(|entry| tile(entry.position).ok());
+                if let Some(observed) = observed
+                    && observed != expected
+                {
+                    evidence(&format!("W15D_CREATURE_MOVED id={occupant:?} tile={observed:?}"));
+                    break;
+                }
+                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+                if remaining.is_zero() {
+                    return Err(format!("creature {occupant:?} did not visibly leave {expected:?}").into());
+                }
+                client.service_liveness(remaining.min(Duration::from_millis(250))).await?;
+            }
+            moved = client.step(direction).await?;
+        }
         let observed = tile(client.world_spatial().actor_position)?;
         if moved.disposition != StepDisposition::Moved
             || moved.world_spatial_delta.is_none()
@@ -225,10 +280,11 @@ async fn use_portal(
     world: &BundleWorld,
     at: TilePos,
     landing: TilePos,
+    appearance: u16,
 ) -> TestResult {
     walk_to(client, world, at).await?;
     let source = tile(client.world_spatial().actor_position)?;
-    let target = object_target(world, at, 49948)?;
+    let target = object_target(world, at, appearance)?;
     let result = client
         .session_mut()
         .use_object(&target.placement, target.expected_revision)
@@ -327,20 +383,21 @@ pub(super) async fn approach(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
 ) -> TestResult {
-    // Crystal's Blue Valley USE portals, at their authored positions.
+    // Global's pilgrimage starts at the Enchanted Guarded Crystal Sphere in the Guild.
     use_portal(
         client,
         world,
         TilePos {
-            x: 32456,
-            y: 32290,
-            floor: -7,
+            x: 32203,
+            y: 32303,
+            floor: -6,
         },
         TilePos {
             x: 33614,
             y: 31494,
             floor: -7,
         },
+        50310,
     )
     .await?;
     start_pilgrimage(client, world).await?;
@@ -357,9 +414,28 @@ pub(super) async fn approach(
             y: 32291,
             floor: -7,
         },
+        49948,
     )
     .await?;
     walk_to(client, world, SHRINE).await
+}
+
+pub(super) fn assert_guidance_reward(
+    client: &oteryn_dev_client::DevClientSession,
+    expected: u64,
+) -> TestResult {
+    let items = provisioning::item_index()?;
+    let boots = provisioning::item_reference(&items, 50267)?;
+    let inventory = client.inventory().ok_or("Guidance inventory view absent")?;
+    let quantity = inventory.entries.iter()
+        .chain(inventory.equipment.iter().map(|entry| &entry.item))
+        .filter(|entry| entry.item_definition_ref == boots)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum::<u64>();
+    if quantity != expected {
+        return Err(format!("Boots of Enlightenment expected={expected} observed={quantity}").into());
+    }
+    Ok(())
 }
 
 pub(super) fn shrine_revision(base: u64, published: Option<u64>) -> TestResult<u64> {
@@ -385,6 +461,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.step = "first-use-commit";
     let target = object_target(world, SHRINE, APPEARANCE)?;
     let before = quest_list(&mut client).await?;
+    assert_guidance_reward(&client, 0)?;
     let first = client
         .session_mut()
         .use_object(&target.placement, target.expected_revision)
@@ -397,6 +474,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     let after = quest_list(&mut client).await?;
+    assert_guidance_reward(&client, 1)?;
     if after == before {
         return Err("committed USE produced no quest-log delta".into());
     }
@@ -423,22 +501,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("refused repeat USE changed quest-log state".into());
     }
 
+    assert_guidance_reward(&client, 1)?;
     row.step = "logout-fresh-admission";
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout refused after callback".into());
-    }
+    let session = client.join_snapshot().game_session_id;
+    logout_once(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(&scope, 0xd5, 0).await?;
-    if quest_list(&mut fresh).await? != after {
+    if fresh.join_snapshot().game_session_id == session || quest_list(&mut fresh).await? != after {
         return Err("fresh admission lost committed quest-log state".into());
     }
-    if fresh.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("fresh admission logout refused".into());
-    }
+    assert_guidance_reward(&fresh, 1)?;
+    logout_once(&mut fresh).await?;
     Ok(())
 }
 
