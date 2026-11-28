@@ -1,4 +1,4 @@
-//! G23 checks Wheel and Gem presentations on a freshly promoted Premium Knight.
+//! G23 checks Wheel and Gem presentations on a freshly promoted Premium Sorcerer.
 //! Admission initializes the starter gems. Compare their committed identities and
 //! catalogue after logout and fresh admission.
 
@@ -12,7 +12,7 @@ use oteryn_protocol_oteryn::{
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     character_prep::declare_seeded(
         "G23.full",
-        "knight-level-51,premium,promotion-fee-gold",
+        "sorcerer-level-100,premium,promotion-fee-gold",
         "qualify for Wheel and Atelier without leveling within the row budget",
     );
     let started = std::time::Instant::now();
@@ -156,8 +156,8 @@ async fn presentations(
             &wheel.vocation,
         )
         || !wheel.eligible
-        || wheel.available != 1
-        || wheel.vocation != "knight"
+        || wheel.available != 50
+        || wheel.vocation != "sorcerer"
     {
         return Err(format!("step=wheel observed={wheel:?}").into());
     }
@@ -371,19 +371,6 @@ async fn promotion_balance(client: &mut DevClientSession) -> TestResult<u64> {
         .ok_or_else(|| "step=promotion-payment balance overflow".into())
 }
 
-async fn promotion_receipt(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
-    use sqlx::Connection as _;
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let receipt = sqlx::query_scalar(
-        "SELECT purchase_occurrence_id::text FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(clients.characters[0].as_slice())
-    .fetch_optional(&mut db)
-    .await?;
-    db.close().await?;
-    Ok(receipt)
-}
-
 async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     // From the street, pass the gate into the west passage and climb to the King.
     let ground = |x, y| TilePos { x, y, floor: -7 };
@@ -461,7 +448,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     request_fixture_control(
         uuid_text(original.as_bytes()),
         "--profile",
-        "g23-knight".into(),
+        "g23-sorcerer".into(),
     )
     .await?;
     character_prep::grant_item(&client, 3043, 2).await?;
@@ -474,13 +461,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("fixture relog reused session".into());
     }
     let world = full_e2ef7::qualification_world(clients)?;
-    if promotion_receipt(clients).await?.is_some() {
+    if full_row_p20::promotion_for(clients, &clients.characters[0])
+        .await?
+        .is_some()
+    {
         return Err("step=promotion character already promoted before purchase".into());
     }
     character_prep::grant_premium(&client).await?;
     evidence("G23_FIXTURE premium=granted phase=promotion-session");
     promote(&mut client, world).await?;
-    let purchase = promotion_receipt(clients)
+    let purchase = full_row_p20::promotion_for(clients, &clients.characters[0])
         .await?
         .ok_or("step=promotion confirmation without persisted promotion")?;
     let paid_balance = promotion_balance(&mut client).await?;
@@ -492,7 +482,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if promoted_session == initial_session {
         return Err("promotion relog reused session".into());
     }
-    if promotion_receipt(clients).await?.as_ref() != Some(&purchase)
+    if full_row_p20::promotion_for(clients, &clients.characters[0])
+        .await?
+        .as_ref()
+        != Some(&purchase)
         || promotion_balance(&mut client).await? != paid_balance
     {
         return Err("step=promotion-relog purchase or paid balance changed".into());
@@ -527,7 +520,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=relog observed=presentation-or-session-mismatch".into());
     }
     close?;
-    evidence("G23_CHECK status=PASS points=1 starter_gems=8 modifiers=69 durable_after_relog=1");
+    evidence("G23_CHECK status=PASS points=50 starter_gems=8 modifiers=69 durable_after_relog=1");
     Ok(())
 }
 

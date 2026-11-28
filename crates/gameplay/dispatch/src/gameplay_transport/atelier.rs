@@ -11,6 +11,40 @@ pub use oteryn_gameplay_progression::atelier::{
     AtelierAction, AtelierCommit, AtelierRefusal, AtelierState,
 };
 
+#[cfg(test)]
+pub(super) mod checkout_probe {
+    use crate::durability::{DurabilityRoot, IssuedSemanticPass};
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(in crate::gameplay_transport) enum Read {
+        Fence,
+        Projection,
+    }
+
+    tokio::task_local! {
+        pub(in crate::gameplay_transport) static BUSY: (Read, std::cell::Cell<bool>);
+    }
+
+    pub(super) fn hold(root: &DurabilityRoot, read: Read) -> Option<IssuedSemanticPass> {
+        BUSY.try_with(|(selected, fired)| {
+            if *selected != read || fired.get() {
+                return None;
+            }
+            let pass = root.try_issue_semantic_pass().ok()?;
+            fired.set(true);
+            Some(pass)
+        })
+        .ok()
+        .flatten()
+    }
+
+    pub(super) async fn release(pass: Option<IssuedSemanticPass>) {
+        if let Some(pass) = pass {
+            let _ = pass.run(|_, _| Box::pin(async { Ok(()) })).await;
+        }
+    }
+}
+
 /// Pure state-transition boundary; the wire path below adds the admitted Character fence,
 /// ordinary item/fee custody and immutable durable receipts.
 pub fn dispatch_atelier(
@@ -512,21 +546,34 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::character_progression::CharacterProgressionError as Error;
         let ruleset = self.wheel_ruleset.as_ref().ok_or(Error::InvalidInput)?;
         let gate = self.premium_coordinator.ok_or(Error::InvalidInput)?;
-        let budget = super::AdmissionRetryBudget::for_command(self.root);
-        let fence = budget
-            .retry_holder(
-                async || self.current_quest_fence_durable(session).await,
-                super::root_holder_busy,
-            )
-            .await
-            .map_err(|error| {
-                if super::root_holder_busy(&error) {
-                    Error::Unavailable(error)
-                } else {
-                    Error::AuthorityRejected
-                }
-            })?
-            .ok_or(Error::AuthorityRejected)?;
+        let fence = if matches!(
+            &command,
+            GemBuildCommand::Atelier(request)
+                if request.mutation == crate::durability::character_atelier::AtelierMutation::Initialize
+        ) {
+        #[cfg(test)]
+        let checkout = checkout_probe::hold(self.root, checkout_probe::Read::Fence);
+        let fence = self.current_quest_fence_durable(session).await;
+        #[cfg(test)]
+        checkout_probe::release(checkout).await;
+        fence?
+        } else {
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            budget
+                .retry_holder(
+                    async || self.current_quest_fence_durable(session).await,
+                    super::root_holder_busy,
+                )
+                .await
+                .map_err(|error| {
+                    if super::root_holder_busy(&error) {
+                        Error::Unavailable(error)
+                    } else {
+                        Error::AuthorityRejected
+                    }
+                })?
+        }
+        .ok_or(Error::AuthorityRejected)?;
         if expected.is_some_and(|expected| {
             expected.character_id != fence.character_id
                 || expected.game_session_id != fence.game_session_id
