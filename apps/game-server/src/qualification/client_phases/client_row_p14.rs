@@ -2,7 +2,7 @@
 //! and for a walked-to authored statue (disposition 3). The consumer is `apply` in
 //! `apps/client/src/features/0054-training/protocol.rs`.
 use super::client_row_p15::training_reply;
-use super::full_row_p14::offline_status_matches;
+use super::full_row_p14::{general_stats, offline_status_matches};
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
@@ -133,10 +133,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let positions = statue_positions(&bytes, &references)?;
     let mut client = connect_world(clients, 0x40).await?;
+    let before_session = client.join_snapshot().game_session_id;
+    let before_position = client.world_spatial().actor_position;
+    let before_pool = general_stats(&mut client).await?;
     let (refused_bytes, refused) =
         offline(&mut client, NonZeroU64::MAX, CommandStatus::Rejected).await?;
     if refused != TrainingResult::REFUSED {
         return Err(format!("unknown handle reply={refused:?}").into());
+    }
+    let after_pool = general_stats(&mut client).await?;
+    if client.join_snapshot().game_session_id != before_session
+        || client.world_spatial().actor_position != before_position
+        || after_pool != before_pool
+    {
+        return Err(format!(
+            "unknown handle changed session, position, or pool: pool={before_pool}->{after_pool}"
+        )
+        .into());
     }
     capture("p14-refused.bin", &refused_bytes);
 

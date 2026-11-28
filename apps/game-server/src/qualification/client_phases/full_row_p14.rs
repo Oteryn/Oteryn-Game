@@ -358,7 +358,7 @@ fn decode_training_result(bytes: &[u8]) -> Option<TrainingResult> {
         .then_some(result)
 }
 
-async fn general_stats(client: &mut DevClientSession) -> TestResult<u16> {
+pub(super) async fn general_stats(client: &mut DevClientSession) -> TestResult<u16> {
     use oteryn_protocol_oteryn::cyclopedia_character::{self as wire, CharacterTab};
     let reply = client
         .session_mut()
