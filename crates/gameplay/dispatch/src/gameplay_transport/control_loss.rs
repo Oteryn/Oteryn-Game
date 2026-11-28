@@ -185,6 +185,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(_) => {}
             Err(_) => return ControlLossResult::Unknown,
         }
+        // A pending ground USE reserves the slot needed to mark control loss.
+        if !self.reconcile_ground_use_receipt(game_session_id).await {
+            return ControlLossResult::Unknown;
+        }
         if !self
             .reconcile_spells_before_control_loss(actor, game_session_id)
             .await

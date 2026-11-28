@@ -572,6 +572,26 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     tx.commit().await?;
     if let Case::Lantern { definition, .. } = case {
+        if placed {
+            use oteryn_protocol_oteryn::house_rotation as wire;
+
+            let mut rotating = admitted;
+            let mut selected = admitted.continuity.selected_capabilities.as_slice().to_vec();
+            selected.push(wire::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1);
+            rotating.continuity.selected_capabilities =
+                SelectedCapabilities::select(&offered, &selected).ok_or("House rotation offers")?;
+            let before = item(h).await?;
+            let target = wire::Target::Item {
+                item: id(71),
+                expected_revision: before["state_revision"].as_u64().ok_or("lantern revision")?,
+            };
+            assert_eq!(
+                owner.house_rotation(rotating, 2, wire::Request::Rotate(target)).await,
+                Some(wire::Reply::Applied(UseDisposition::NothingToUse))
+            );
+            assert_eq!(item(h).await?, before);
+            assert_eq!(receipts(h).await?, 0);
+        }
         let result = owner
             .use_event_item(
                 admitted.runtime_actor.ok_or("House actor")?,

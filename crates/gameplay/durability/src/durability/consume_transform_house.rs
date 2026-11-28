@@ -465,6 +465,7 @@ impl DurabilityRoot {
             let plan = match decorations::plan(&mut tx, &context, &request, native, &definition, at, placed).await? {
                 Some(Ok(plan)) => plan,
                 Some(Err(disposition)) => return Ok(ConsumeTransformResult::refused(disposition)),
+                None if context.rotation.is_some() => return Ok(ConsumeTransformResult::refused(UseDisposition::NothingToUse)),
                 None => {
                 if novelty_items::house_transform_for_key(&definition.production_key).is_none()
                     && !novelty_items::is_ghostsilver_lantern(&definition.production_key) {

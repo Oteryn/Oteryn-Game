@@ -63,8 +63,9 @@ impl GroundUseTurn {
     }
 }
 
-#[derive(Clone)]
 pub(super) struct PendingGroundUse {
+    turn: GroundUseTurn,
+    retained: bool,
     character: crate::domain::CharacterId,
     request: QuestTransitionRequest,
     intent: Vec<u8>,
@@ -176,61 +177,72 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
-    pub(super) async fn reconcile_ground_use_receipt(&self, session: GameSessionId) -> bool {
+    pub(in crate::gameplay_transport) async fn reconcile_ground_use_receipt(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
         let pending = match self.states.quest_callbacks.ground_uses.lock() {
-            Ok(uses) => uses.get(&session).cloned(),
+            Ok(uses) => uses.get(&session).map(|pending| {
+                (
+                    pending.character,
+                    pending.request.clone(),
+                    pending.intent.clone(),
+                    pending.retained,
+                )
+            }),
             Err(_) => return false,
         };
-        let Some(pending) = pending else {
+        let Some((character, request, intent, retained)) = pending else {
             return true;
         };
-        let QuestCause::Use(command) = pending.request.cause else {
+        let QuestCause::Use(command) = request.cause else {
             return false;
         };
-        if !self.states.command_ingress.original_terminalized(command) {
-            if !self.states.command_ingress.pending_reconciliation(command) {
-                return false;
-            }
-            let Some(_permit) = self.spell_lane_permit().await else {
-                return false;
-            };
-            let _revision = self.revision_sequencer.acquire(pending.character).await;
-            let disposition = match self
-                .root
-                .reconcile_quest_ground_use(
-                    self.character,
-                    pending.character,
-                    pending.request,
-                    pending.intent,
-                )
-                .await
-            {
-                Ok(Some(true)) => UseDisposition::Committed,
-                Ok(None) => UseDisposition::Rejected,
-                Ok(Some(false)) | Err(_) => return false,
-            };
-            let mut runtime = self.runtime.lock().await;
-            self.states
-                .quest_callbacks
-                .finish_cancelled_ground_uses(&mut runtime);
-            drop(runtime);
-            if self
+        let terminal = self.states.command_ingress.original_terminalized(command);
+        if retained && !terminal && !self.states.command_ingress.pending_reconciliation(command) {
+            return false;
+        }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return false;
+        };
+        let _revision = self.revision_sequencer.acquire(character).await;
+        let disposition = match self
+            .root
+            .reconcile_quest_ground_use(self.character, character, request, intent)
+            .await
+        {
+            Ok(Some(true)) => UseDisposition::Committed,
+            Ok(None) => UseDisposition::Rejected,
+            Ok(Some(false)) | Err(_) => return false,
+        };
+        let mut runtime = self.runtime.lock().await;
+        if retained
+            && !terminal
+            && self
                 .states
                 .command_ingress
                 .complete_quest_callback(command, disposition)
                 .is_none()
-            {
-                return false;
-            }
+        {
+            return false;
         }
-        self.states
-            .quest_callbacks
-            .ground_uses
-            .lock()
-            .is_ok_and(|mut uses| {
-                uses.remove(&session);
+        self.finish_ground_use(command, &mut runtime)
+    }
+
+    fn finish_ground_use(&self, command: CommandRef, runtime: &mut ChannelRuntimeV1) -> bool {
+        let Ok(mut uses) = self.states.quest_callbacks.ground_uses.lock() else {
+            return false;
+        };
+        match uses.entry(command.game_session_id()) {
+            std::collections::hash_map::Entry::Occupied(entry)
+                if entry.get().request.cause == QuestCause::Use(command) =>
+            {
+                entry.remove().turn.release(runtime);
                 true
-            })
+            }
+            std::collections::hash_map::Entry::Vacant(_) => true,
+            _ => false,
+        }
     }
 
     #[allow(
@@ -381,7 +393,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(UseOutcome::rejected()));
         }
         let mut revision = self.revision_sequencer.acquire(current.character_id).await;
-        let (callback, context, turn) = {
+        let retained = self.states.command_ingress.pending(command_ref);
+        let (callback, context, request) = {
             let (mut runtime, states) = self.lock_callback_guards().await;
             self.states
                 .quest_callbacks
@@ -457,25 +470,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ],
             )
             .ok_or(())?;
-            let mut reservation = runtime
-                .prepare_source_actor_reservation(&proof)
-                .map_err(|_| ())?;
-            runtime
-                .reserve_source_actors(&mut reservation, &proof)
-                .map_err(|_| ())?;
-            (callback, context, GroundUseTurn(proof, reservation))
-        };
-        let mut guard = GroundUseGuard {
-            owner: &self.runtime,
-            cancelled: &self.states.quest_callbacks.ground_use_cleanup,
-            turn: Some(turn),
-        };
-        let request = QuestTransitionRequest {
-            transition_key: callback.key.clone(),
-            cause: QuestCause::Use(command_ref),
-        };
-        let retained = self.states.command_ingress.pending(command_ref);
-        if retained {
+            let request = QuestTransitionRequest {
+                transition_key: callback.key.clone(),
+                cause: QuestCause::Use(command_ref),
+            };
             let mut ground_uses = self
                 .states
                 .quest_callbacks
@@ -487,12 +485,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Err(());
             };
+            let mut reservation = runtime
+                .prepare_source_actor_reservation(&proof)
+                .map_err(|_| ())?;
+            runtime
+                .reserve_source_actors(&mut reservation, &proof)
+                .map_err(|_| ())?;
+            // Once the write can be sent, only its receipt owner may release the turn.
             entry.insert(PendingGroundUse {
+                turn: GroundUseTurn(proof, reservation),
+                retained,
                 character: current.character_id,
                 request: request.clone(),
                 intent: encoded.to_vec(),
             });
-        }
+            (callback, context, request)
+        };
         let result = revision
             .commit_world_callback_with_items_selected(
                 self.root,
@@ -509,12 +517,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &self.premium_coordinator,
             )
             .await;
-        {
-            let mut runtime = self.runtime.lock().await;
-            if let Some(turn) = guard.turn.take() {
-                turn.release(&mut runtime);
-            }
-        }
         drop(revision);
         drop(permit);
         let result = result.map_err(|_| ())?;
@@ -554,17 +556,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             UseDisposition::Rejected
         };
+        let mut runtime = self.runtime.lock().await;
         if retained {
             self.states
                 .command_ingress
                 .complete_item_use(command_ref, disposition)
                 .ok_or(())?;
-            self.states
-                .quest_callbacks
-                .ground_uses
-                .lock()
-                .map_err(|_| ())?
-                .remove(&command.game_session_id);
+        }
+        if !self.finish_ground_use(command_ref, &mut runtime) {
+            return Err(());
         }
         Ok(Some(UseOutcome {
             disposition,
