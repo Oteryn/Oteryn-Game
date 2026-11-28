@@ -380,10 +380,14 @@ where
                 return Err(ServeEnd::Disconnected);
             }
         }
-        Dispatch::Reply(CommandStatus::Accepted, _)
+        Dispatch::Reply(CommandStatus::Accepted, payload)
             if forge::changes_inventory(command)
                 || command.command_type
-                    == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE =>
+                    == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE
+                || (command.command_type
+                    == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT
+                    && oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&payload)
+                        .is_ok_and(|result| result.items.iter().any(|item| item.accepted))) =>
         {
             session.inventory_capacity_refresh_at = None;
             forge::refresh(stream, authority, session).await?;

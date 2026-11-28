@@ -743,6 +743,8 @@ async fn loot_entries(
         )
         .into());
     }
+    // Verify the command published the new inventory before any reopen can refresh it.
+    settle(client, |client| Ok(quantities(client)? == expected)).await?;
     corpse.entries.retain(|entry| !admits(entry));
     // Explicitly reopen to refresh the corpse even when a command's delta only carries inventory.
     let used = client.use_item(corpse.handle).await?;
@@ -945,6 +947,11 @@ async fn loot_policy(
     town: TilePos,
 ) -> TestResult {
     let live = client.as_mut().ok_or("connection closed")?;
+    if tile(live.world_spatial().actor_position)? == town {
+        *step = "stage-quick-loot-hunt";
+        relog(client, clients, 0xc9, Some(RAT_HUNT_START)).await?;
+    }
+    let live = client.as_mut().ok_or("connection closed")?;
     let deadline = loot_deadline();
     let mut corpse = hunt
         .lootable(live, step, "loot-all", "loot-all", deadline)
@@ -1025,7 +1032,7 @@ async fn loot_policy(
     filter(live, Action::FilterSelect, Filter::Accept, None).await?;
     let saved = backpack(live).await?;
     travel(live, hunt.world, |at| at == town).await?;
-    relog(client, clients, 0xc7, None).await?;
+    relog(client, clients, 0xc7, Some(RAT_HUNT_START)).await?;
     let fresh = client.as_mut().ok_or("fresh connection absent")?;
     if quantities(fresh)? != saved {
         return Err(format!(

@@ -236,6 +236,8 @@ pub(super) fn encode(
                     == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
                 || command.command_type
                     == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+                || command.command_type
+                    == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT
                 || routing::store::is_committed_claim(command.command_type, *status, payload) =>
         {
             // Outbound handling also reads these replies to publish their domain updates.
