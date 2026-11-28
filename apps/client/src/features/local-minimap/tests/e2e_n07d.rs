@@ -804,6 +804,7 @@ async fn check_markers(
         );
         wait_for_saved_marks(host, path, std::slice::from_ref(&marker)).await?;
         assert_saved_terrain(path, &expected_terrain)?;
+        assert_reopened_minimap(host, path, &expected_terrain, std::slice::from_ref(&marker))?;
         assert_eq!(host.hovered_mark_description(cell)?.as_deref(), Some(label));
         assert_eq!(host.hovered_mark_description([cell[0], cell[1] + 1])?, None);
     }
@@ -843,6 +844,7 @@ async fn check_markers(
     );
     wait_for_saved_marks(host, path, std::slice::from_ref(&marker)).await?;
     assert_saved_terrain(path, &expected_terrain)?;
+        assert_reopened_minimap(host, path, &expected_terrain, std::slice::from_ref(&marker))?;
 
     assert_eq!(host.hovered_mark_description(cell)?, None);
     host.open_mark_menu_at_cell(cell)?;
@@ -850,6 +852,27 @@ async fn check_markers(
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
     wait_for_saved_marks(host, path, &[]).await?;
     assert_saved_terrain(path, &expected_terrain)?;
+    assert_reopened_minimap(host, path, &expected_terrain, &[])?;
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+fn assert_reopened_minimap(
+    host: &crate::bevy_shell::N07dHost,
+    path: &Path,
+    expected_terrain: &BTreeMap<CellPosition, u8>,
+    expected_marks: &[Marker],
+) -> Result<(), Error> {
+    let active = super::lock(&host.view()?.minimap);
+    let mut reopened = Minimap::default();
+    reopened.root = active.root.clone();
+    reopened.world = active.world.clone();
+    reopened.binding = active.binding;
+    drop(active);
+    assert_eq!(reopened.path().as_deref(), Some(path));
+    reopened.load()?;
+    assert_eq!(&reopened.cells, expected_terrain, "N07d loaded exploration");
+    assert_eq!(reopened.markers, expected_marks, "N07d loaded markers");
     Ok(())
 }
 
