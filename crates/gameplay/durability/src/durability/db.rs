@@ -2271,6 +2271,20 @@ pub async fn commit_semantic_transaction(
     commit_semantic_transaction_by(deadline, || transaction.commit()).await
 }
 
+/// Finish a pass that did not mutate durable state. This also permits reads that
+/// take locks and therefore cannot use a PostgreSQL READ ONLY transaction.
+pub(super) async fn commit_semantic_read(
+    transaction: Transaction<'_, Postgres>,
+    deadline: Instant,
+) -> Result<(), DurabilityError> {
+    match commit_semantic_transaction(transaction, deadline).await {
+        Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::CommitTransactionTimeout) => {
+            Err(DurabilityError::RootUnavailable)
+        }
+        result => result,
+    }
+}
+
 async fn commit_semantic_transaction_by<F, Fut>(
     deadline: Instant,
     commit: F,
