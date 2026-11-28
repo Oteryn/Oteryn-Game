@@ -78,6 +78,142 @@ fn play_on(owner: &mut HostOwner) -> Result<crate::play::Outbox, Box<dyn std::er
 }
 
 #[test]
+fn gap_0020_connection_trace_reaches_native_diagnostics() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())?;
+            runtime.block_on(async {
+                tokio::time::timeout(Duration::from_secs(5), drive_connection_trace())
+                    .await
+                    .map_err(|error| error.to_string())?
+                    .map_err(|error| error.to_string())
+            })
+        })?
+        .join()
+        .map_err(|_| "connection trace diagnostics test thread failed")??;
+    Ok(())
+}
+
+async fn drive_connection_trace() -> TestResult {
+    use oteryn_session::test_support::wire::{
+        self, FoundationProtocolError, connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
+    };
+    use oteryn_session::{Admission, Session, read_frame, write_frame};
+
+    let (client, mut peer) = tokio::io::duplex(64 * 1024);
+    let trace = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
+    let mut id = [1; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    write_frame(
+        &mut peer,
+        &wire::encode_server_accepted_with_trace(
+            &wire::ServerAcceptedValue {
+                game_session_id: wire::GameSessionId::decode(&id)?,
+                world_id: wire::WorldId::decode(&id)?,
+                channel_id: wire::ChannelId::decode(&id)?,
+                connection_generation: 1,
+                current_server_sequence: 0,
+                next_command_id: 1,
+                schema_revision: 1,
+                selected_capabilities: &[CAPABILITY_CONNECTION_TRACE_V1],
+            },
+            &trace,
+        )?,
+    )
+    .await?;
+    let spatial =
+        wire::world_spatial::encode_world_spatial(&wire::world_spatial::WorldSpatialObservation {
+            content_generation: [17; 32],
+            actor_position: wire::world_spatial::ActorPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+        });
+    let objects = wire::world_object::encode_world_object_overlay_snapshot(&[])
+        .map_err(|error| format!("{error:?}"))?;
+    let domains = [
+        wire::DomainSnapshot {
+            domain_id: 1,
+            revision: 1,
+            snapshot_type: 1,
+            payload: &spatial,
+        },
+        wire::DomainSnapshot {
+            domain_id: 2,
+            revision: 1,
+            snapshot_type: 1,
+            payload: &objects,
+        },
+    ];
+    for frame in wire::encode_single_chunk_snapshot(1, 1, 0, &domains)? {
+        write_frame(&mut peer, &frame).await?;
+    }
+    let session = Session::admit(
+        client,
+        Admission {
+            appearance_items: None,
+            schema_revision: 1,
+            character_id: wire::CharacterId::decode(&id)?,
+            admission_material: b"grant",
+            client_build_id: "connection-trace-test",
+            supported_capabilities: oteryn_session::CLIENT_SUPPORTED_CAPABILITIES,
+            deadline: Duration::from_secs(5),
+        },
+    )
+    .await?;
+    let bootstrap = read_frame(&mut peer).await?;
+    assert!(
+        wire::decode_wire_envelope(&bootstrap)?
+            .client_bootstrap()?
+            .supported_capabilities
+            .contains(&CAPABILITY_CONNECTION_TRACE_V1)
+    );
+
+    let (link, commands, outbox) = crate::play::play_channel();
+    let mut view = crate::play::PlayView::from_join(session.join_snapshot())?;
+    view.use_shared_frontend();
+    link.use_shared_frontend();
+    let mut app = app(None)?;
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.play = Some(ActivePlay { view, link });
+        owner.phase = Phase::Playing;
+        bind_overlay_hotkey(&mut owner)?;
+        press_overlay_hotkey(&mut owner)?;
+    }
+
+    let error = FoundationProtocolError::MalformedFrame;
+    write_frame(
+        &mut peer,
+        &wire::encode_protocol_error_with_trace(error, 1, &trace)?,
+    )
+    .await?;
+    crate::play::run_session(session, commands, outbox).await;
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.poll([1024, 720]);
+        assert_eq!(owner.phase, Phase::Offline);
+    }
+    app.update();
+    assert_eq!(overlay_display(&mut app)?, Display::Flex);
+    let mut bodies = app.world_mut().query_filtered::<&Text, With<OverlayBody>>();
+    let text = &bodies.single(app.world())?.0;
+    let expected = format!(
+        "E{:04} (trace 0102030405067008800a0b0c0d0e0f10)",
+        error.code()
+    );
+    assert!(text.contains(&expected), "missing {expected} in {text}");
+    assert!(overlay::clipboard_text(text).contains(&expected));
+    Ok(())
+}
+
+#[test]
 fn the_overlay_follows_the_saved_option_and_is_hidden_by_default() -> TestResult {
     let mut app = app(None)?;
     app.update();

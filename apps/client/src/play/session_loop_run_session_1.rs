@@ -341,7 +341,7 @@ pub async fn run_session<T: Stepper>(
             publish(&mut session, &outbox, &mut held);
             continue;
         }
-        outbox.end(public_class(&ended));
+        outbox.end_with_error(&ended);
         return;
     }
 }

@@ -1,8 +1,7 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
 use super::feature_0450_server_modal::protocol::Completion as ModalCompletion;
 use super::{
-    Outbox, feature_0043_vip::protocol::send_vip, public_class, session_stepper::publish,
-    step_direction,
+    Outbox, feature_0043_vip::protocol::send_vip, session_stepper::publish, step_direction,
 };
 use crate::combat_input::PlayCommand;
 use oteryn_session::LogoutResult;
@@ -46,7 +45,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         return;
     }
     if let Err(error) = super::session_initialize::initialize_admission(&session, &outbox) {
-        outbox.end(public_class(&error));
+        outbox.end_with_error(&error);
         return;
     }
     let mut held = Vec::new();
@@ -66,7 +65,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         }
         if outbox.scope_needs_initialize() {
             if let Err(error) = super::session_initialize::initialize_scope(&session, &outbox) {
-                outbox.end(public_class(&error));
+                outbox.end_with_error(&error);
                 return;
             }
             read_initial_features = true;
@@ -102,7 +101,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         ) {
                             continue 'session;
                         }
-                        outbox.end(public_class(&error));
+                        outbox.end_with_error(&error);
                         return;
                     }
                 }
@@ -124,7 +123,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {
                     continue;
                 }
-                outbox.end(public_class(&error));
+                outbox.end_with_error(&error);
                 return;
             }
         }
@@ -136,7 +135,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             match session.feature(&command).await {
                 Ok(result) => {
                     if let Err(error) = outbox.personal_map_marks_result(&result) {
-                        outbox.end(public_class(&error));
+                        outbox.end_with_error(&error);
                         return;
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -152,7 +151,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
                         continue;
                     }
-                    outbox.end(public_class(&error));
+                    outbox.end_with_error(&error);
                     return;
                 }
             }
@@ -174,7 +173,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                     ) {
                         continue;
                     }
-                    outbox.end(public_class(&error));
+                    outbox.end_with_error(&error);
                     return;
                 }
             }
@@ -193,7 +192,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                     ) {
                         continue;
                     }
-                    outbox.end(public_class(&error));
+                    outbox.end_with_error(&error);
                     return;
                 }
             }
@@ -282,7 +281,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                                 let query=oteryn_session::server_info::Query::decode(&info_command.payload);
                                 match session.feature(&info_command).await {
                                     Ok(info_result)=>if let Some(query)=query {outbox.server_info_result(&query,&info_result);},
-                                    Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {break;}outbox.end(public_class(&error));return;}
+                                    Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {break;}outbox.end_with_error(&error);return;}
                                 }
                             }
                         },
@@ -367,7 +366,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                     if let Some(info_command)=outbox.server_info_command(query.clone()) {
                         match session.feature(&info_command).await {
                             Ok(info_result)=>outbox.server_info_result(&query,&info_result),
-                            Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {continue;}outbox.end(public_class(&error));return;}
+                            Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {continue;}outbox.end_with_error(&error);return;}
                         }
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -586,7 +585,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         if publish_scope_transition(&ended, &mut session, &outbox, &mut held, &mut modal) {
             continue;
         }
-        outbox.end(public_class(&ended));
+        outbox.end_with_error(&ended);
         return;
     }
 }
