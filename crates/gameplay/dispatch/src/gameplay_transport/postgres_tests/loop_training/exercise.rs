@@ -656,7 +656,7 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
                 crate::gameplay_transport::world_spatial::ActorPosition {
                     x: 1,
                     y: 0,
-                    floor: 7,
+                    floor: -7,
                 },
             )
             .map_err(debug)?;
