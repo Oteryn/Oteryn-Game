@@ -1091,9 +1091,15 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    if groups.runs("rows") && e2e_row_selected(96) {
+        let outcome = client.session_mut().logout().await?;
+        evidence(&format!("C11_INITIAL_LOGOUT attempt=1 reply={outcome:?}"));
+        require_c11_initial_logout(outcome.result)?;
+    } else {
+        let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
     }
     drop(client);
     {
@@ -3837,4 +3843,23 @@ fn qualification_town_route_detours_around_live_wolf() -> TestResult {
     assert_eq!(detour, [North, East, East, South]);
     assert!(route_around_occupant(from, wolf, &VecDeque::new(), |_| true, landing).is_none());
     Ok(())
+}
+
+fn require_c11_initial_logout(
+    result: Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!("C11 first town entry logout refused on attempt 1: {result:?}").into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn c11_initial_logout_rejects_busy_and_missing_results() {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    assert!(require_c11_initial_logout(Some(LogoutResult::Accepted)).is_ok());
+    assert!(require_c11_initial_logout(Some(LogoutResult::Busy)).is_err());
+    assert!(require_c11_initial_logout(None).is_err());
 }
