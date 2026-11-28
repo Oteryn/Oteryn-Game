@@ -190,6 +190,22 @@ fn accepted_item_move_rejections_do_not_poison_either_client_route() -> Result<(
                         let envelope = decode_wire_envelope(&frame)?;
                         let command = envelope.client_command(1)?;
                         assert_eq!(command.command_type, COMMAND_TYPE_ITEM_MOVE_INTENT);
+                        if sequence == 41 {
+                            let move_intent = item_view::decode_item_move_intent_with_equip_drop(
+                                command.payload,
+                                true,
+                            )
+                            .map_err(|error| format!("{error:?}"))?;
+                            assert_eq!(
+                                move_intent,
+                                ItemMoveIntent {
+                                    source: handle(2),
+                                    destination: ItemMoveDestination::Equipment(
+                                        item_view::EquipmentSlot::RightHand,
+                                    ),
+                                }
+                            );
+                        }
                         let mut payload =
                             item_view::encode_item_move_result(ItemMoveOutcome::Rejected)
                                 .map_err(|e| format!("{e:?}"))?;
@@ -218,9 +234,18 @@ fn accepted_item_move_rejections_do_not_poison_either_client_route() -> Result<(
                     destination: ItemMoveDestination::MainBackpack,
                 };
                 assert_eq!(
-                    session.move_item(&intent).await?.outcome,
+                    session
+                        .move_item(&ItemMoveIntent {
+                            destination: ItemMoveDestination::Equipment(
+                                item_view::EquipmentSlot::RightHand,
+                            ),
+                            ..intent
+                        })
+                        .await?
+                        .outcome,
                     ItemMoveOutcome::Rejected
                 );
+                assert_eq!(session.inventory(), Some(&CharacterInventory::default()));
                 let counted = session
                     .move_item_counted(item_movement::MoveRequest {
                         source: intent.source,
@@ -921,15 +946,17 @@ fn item_commands_are_refused_before_sending_without_capability_4() -> Result<(),
         // Equipment and Ground need capability 12: refused by the codec.
         let (client, peer2) = item_peer(item_snapshot(vec![])?, vec![], vec![]);
         let mut with_item = Session::admit(client, item_admission()?).await?;
-        assert!(matches!(
-            with_item
-                .move_item(&ItemMoveIntent {
-                    source: handle(1),
-                    destination: ItemMoveDestination::Container(handle(2), None),
-                })
-                .await,
-            Err(SessionError::ItemView(_))
-        ));
+        for destination in [
+            ItemMoveDestination::Equipment(item_view::EquipmentSlot::RightHand),
+            ItemMoveDestination::Container(handle(2), None),
+        ] {
+            assert!(matches!(
+                with_item
+                    .move_item(&ItemMoveIntent { source: handle(1), destination })
+                    .await,
+                Err(SessionError::ItemView(item_view::ItemViewWireError::Malformed))
+            ));
+        }
         drop((session, with_item));
         peer.await??;
         peer2.await??;
