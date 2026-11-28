@@ -24,6 +24,9 @@ enum Relocating {
 struct RelocatingAuthority {
     x: Cell<i32>,
     during: Relocating,
+    party_peer: Option<EntityRef>,
+    party_shield: Cell<u8>,
+    visibility_busy: Cell<bool>,
 }
 
 impl RelocatingAuthority {
@@ -60,24 +63,59 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
     async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
         let own = self.observe(actor).await?;
         let identity = actor.placement_identity();
+        let observer = ChannelEntity {
+            source_icons: Default::default(),
+            motion: None,
+            display_name: None,
+            health_percent: 100,
+            direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
+            kind: VisibleKind::Player,
+            identity,
+            generation: 1,
+            position: own.actor_position,
+            revision: u64::try_from(own.actor_position.x).ok()?,
+        };
+        let mut entities = vec![observer];
+        if let Some(peer) = self.party_peer {
+            entities.push(ChannelEntity {
+                identity: peer.identity,
+                generation: peer.generation,
+                position: at(1).actor_position,
+                ..observer
+            });
+        }
         Some(ChannelEntities {
             content_generation: own.content_generation,
             observer: identity,
-            entities: vec![ChannelEntity {
-                source_icons: Default::default(),
-                motion: None,
-                display_name: None,
-                health_percent: 100,
-                direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
-                kind: VisibleKind::Player,
-                identity,
-                generation: 1,
-                position: own.actor_position,
-                revision: u64::try_from(own.actor_position.x).ok()?,
-            }],
+            entities,
             lights: EntityLights::new(),
             observed_at_ms: 0,
         })
+    }
+
+    async fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<ChannelEntities, AdmissionRefusal> {
+        use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
+
+        if self.visibility_busy.get() {
+            return Err(AdmissionRefusal::Unavailable);
+        }
+        let mut channel = self
+            .observe_visible_entities(actor)
+            .await
+            .ok_or(AdmissionRefusal::Rejected)?;
+        for entry in &mut channel.entities {
+            let name = if entry.identity == channel.observer {
+                "Observer"
+            } else {
+                "Party Peer"
+            };
+            entry.display_name =
+                Some(EntityDisplayName::new(name).map_err(|_| AdmissionRefusal::Rejected)?);
+        }
+        Ok(channel)
     }
 
     async fn observe_inventory_capacity(&self, _: AdmittedSession) -> Option<InventoryCapacity> {
@@ -99,8 +137,8 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
     async fn observe_party_icons(&self, admitted: AdmittedSession) -> Option<Vec<PartyIcon>> {
         self.relocate(Relocating::Party);
         Some(vec![PartyIcon {
-            entity: Self::own(admitted)?,
-            shield: 1,
+            entity: self.party_peer.or_else(|| Self::own(admitted))?,
+            shield: self.party_shield.get(),
             skull: 0,
         }])
     }
@@ -121,6 +159,9 @@ fn sidecar_headers(
                 let authority = RelocatingAuthority {
                     x: Cell::new(0),
                     during,
+                    party_peer: None,
+                    party_shield: Cell::new(1),
+                    visibility_busy: Cell::new(false),
                 };
                 let ids = [6, 134, 508, 509];
                 let offered = ids.map(|id| OfferedCapability { id, requires: &[] });
@@ -235,6 +276,88 @@ fn guild_emblem_sidecar_keeps_the_published_position_after_a_relocation()
 fn party_icon_sidecar_keeps_the_published_position_after_a_relocation() -> Result<(), Box<dyn Error>>
 {
     assert_headers_at_published_position(Relocating::Party)
+}
+
+#[test]
+fn party_leader_shield_republishes_while_visibility_is_busy() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::world_spatial_entities::DeltaSidecar;
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                tokio::time::pause();
+                let entity = EntityRef {
+                    identity: uuid_v7(0x66),
+                    generation: 1,
+                };
+                let authority = RelocatingAuthority {
+                    x: Cell::new(0),
+                    during: Relocating::Capacity,
+                    party_peer: Some(entity),
+                    party_shield: Cell::new(3),
+                    visibility_busy: Cell::new(false),
+                };
+                let ids = [6, 42, 134, 286];
+                let mut admitted = positioned()?;
+                admitted.continuity.selected_capabilities =
+                    SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &ids)
+                        .filter(|selected| selected.as_slice() == ids)
+                        .ok_or("party shield capabilities")?;
+                let fields = EntityFields::selected(&ids);
+                let (mut server, mut client) = tokio::io::duplex(256 * 1024);
+                let serving = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS);
+                let driving = async {
+                    let observed = tokio::time::timeout(Duration::from_secs(3), async {
+                        loop {
+                            let frame =
+                                crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            if envelope.message_type() != MessageType::StateDelta {
+                                continue;
+                            }
+                            let delta =
+                                oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                            if delta.domain_id != STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+                                continue;
+                            }
+                            let (_, _, sidecar) = decode_world_spatial_entities_delta_with_sidecar(
+                                delta.payload,
+                                fields,
+                            )
+                            .map_err(|error| format!("{error:?}"))?;
+                            if let Some(DeltaSidecar::PartyIcons(icons)) = sidecar {
+                                let shield = icons
+                                    .iter()
+                                    .find(|icon| icon.entity == entity)
+                                    .ok_or("peer shield")?
+                                    .shield;
+                                if authority.visibility_busy.get() {
+                                    return Ok::<_, Box<dyn Error>>(shield);
+                                }
+                                assert_eq!(shield, 3, "initial member shield");
+                                authority.party_shield.set(4);
+                                authority.visibility_busy.set(true);
+                            }
+                        }
+                    })
+                    .await;
+                    client.shutdown().await?;
+                    assert_eq!(
+                        observed.ok().transpose()?,
+                        Some(4),
+                        "leadership change must publish against the last visible incarnation"
+                    );
+                    Ok::<_, Box<dyn Error>>(())
+                };
+                let (_, result) = tokio::join!(serving, driving);
+                result
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "party shield connection test panicked")?
+        .map_err(Into::into)
 }
 
 #[test]

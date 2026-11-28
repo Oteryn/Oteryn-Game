@@ -758,11 +758,15 @@ where
                 }
             }
         }
-        // The discarded candidate consumed no appearance, visibility or item
-        // cursor. Independent clock/weather deltas below still get their turn.
+        Err(ObservationError::HolderBusy) => {
+            // The discarded candidate leaves the last published interest set valid.
+            // Party roles can change independently while an appearance read is busy.
+            *step = "party_skull";
+            party_skull::refresh(stream, authority, session).await?;
+        }
         // A pending respawn fences the dead Character's appearance only until its
         // placement; the next refresh observes it again.
-        Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
+        Err(ObservationError::RespawnPending) => {}
         Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
     }
     *step = "world_clock";
