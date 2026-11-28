@@ -3,9 +3,10 @@ use super::*;
 use oteryn_dev_client::native_session::{Admission, Session, SessionStream};
 use oteryn_dev_client::{CLIENT_SUPPORTED_CAPABILITIES, SessionEvent};
 use oteryn_protocol_oteryn::attack::{
-    self, ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes,
+    self, ActorCombatState, AttackIntentDisposition, ChaseMode, FightModes,
 };
 use std::io::{self, Write};
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Mutex;
 use std::task::{Context, Poll};
@@ -29,9 +30,29 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+// Allocate atomically with owner-only permissions, including under the bare node-boot wrapper.
+fn fresh_capture_directory(parent: Option<&Path>) -> TestResult<PathBuf> {
+    let parent = match parent {
+        Some(parent) => parent.canonicalize()?,
+        None => std::env::temp_dir(),
+    };
+    let output = std::process::Command::new("mktemp")
+        .arg("-d")
+        .arg(parent.join("q-c01-wire.XXXXXX"))
+        .output()?;
+    if !output.status.success() {
+        return Err("C01 could not allocate a fresh capture directory".into());
+    }
+    Ok(PathBuf::from(
+        std::str::from_utf8(&output.stdout)?.trim_end(),
+    ))
+}
+
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
-    let directory = std::fs::canonicalize(required("E2E_ALL_CAPTURE_DIR")?)?;
+    let parent = std::env::var_os("E2E_ALL_CAPTURE_DIR").map(PathBuf::from);
+    let directory = fresh_capture_directory(parent.as_deref())?;
     let path = directory.join("c01-server-stream.bin");
+    evidence(&format!("C01_CAPTURE directory={}", directory.display()));
     let index = 1;
     wait_character_released(clients, index).await?;
     let token = if requires_platform_grant(&clients.accounts[index]) {
@@ -74,7 +95,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .create_new(true)
         .open(&path)?;
     let bytes = Arc::new(Mutex::new(Vec::new()));
-    let live = observe(
+    let (live, mut session) = observe(
         RecordingStream {
             stream: tls,
             bytes: Arc::clone(&bytes),
@@ -95,6 +116,16 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         "C01_REPLAY test=replay_live_combat_stream session={:?} result_sequence={} delta_sequence={}",
         live.session, live.result_sequence, live.delta_sequence
     ));
+    let logout = session.logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C01 clean logout refused: {logout:?}").into());
+    }
+    let mut fresh = connect_world(clients, 0xc2).await?;
+    if fresh.join_snapshot().game_session_id == live.session {
+        return Err("C01 relog reused the live session".into());
+    }
+    check_idle_baseline(fresh.session_mut())?;
+    evidence("C01_RELOG fresh_session=true chase=stand target=none in_fight=false");
     Ok(())
 }
 
@@ -106,61 +137,100 @@ struct Observation {
     delta_sequence: u64,
 }
 
-async fn observe(stream: impl SessionStream, admission: Admission<'_>) -> TestResult<Observation> {
+fn check_idle_baseline(stream: &Session<impl SessionStream>) -> TestResult<()> {
+    let initial = idle_baseline();
+    if stream.combat_state() != Some(&initial) {
+        return Err("C01 admission did not install the idle combat baseline".into());
+    }
+    Ok(())
+}
+
+fn idle_baseline() -> ActorCombatState {
+    ActorCombatState {
+        target: None,
+        modes: FightModes::DEFAULT,
+        in_fight: false,
+    }
+}
+
+async fn observe<S: SessionStream>(
+    stream: S,
+    admission: Admission<'_>,
+) -> TestResult<(Observation, Session<S>)> {
     let mut session = Session::admit(stream, admission).await?;
     let snapshot = session
         .admission_snapshot(attack::STATE_DOMAIN_ACTOR_COMBAT_STATE)
         .ok_or("domain-10 combat admission snapshot absent")?;
-    let initial = ActorCombatState {
-        target: None,
-        modes: FightModes::DEFAULT,
-        in_fight: false,
-    };
-    if snapshot.snapshot_type != attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1
-        || session.combat_state() != Some(&initial)
-    {
-        return Err("C01 admission did not install the idle combat baseline".into());
+    if snapshot.snapshot_type != attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1 {
+        return Err("C01 unexpected combat admission snapshot type".into());
     }
+    check_idle_baseline(&session)?;
     let revision = snapshot.revision;
     let snapshot = snapshot.payload.clone();
     let expected = ActorCombatState {
         modes: FightModes {
-            fight_mode: FightMode::Offensive,
             chase: ChaseMode::Chase,
-            secure: true,
+            ..FightModes::DEFAULT
         },
-        ..initial
+        ..idle_baseline()
     };
     let reply = session.set_fight_modes(&expected.modes).await?;
     if reply.disposition != AttackIntentDisposition::Ok {
         return Err(format!("fight/chase command refused: {reply:?}").into());
     }
 
-    tokio::time::timeout(Duration::from_secs(5), async {
+    let delta_sequence = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            for event in session.take_events() {
-                if let SessionEvent::ActorCombatState(delta) = event
-                    && delta.server_sequence > reply.result_server_sequence
-                {
-                    if delta.base_revision != revision || delta.value != expected {
-                        return Err(format!(
-                            "C01 first post-result combat delta differs: {delta:?}"
-                        )
-                        .into());
-                    }
-                    return Ok(Observation {
-                        session: session.join_snapshot().game_session_id,
-                        snapshot,
-                        result_sequence: reply.result_server_sequence,
-                        delta_sequence: delta.server_sequence,
-                    });
-                }
+            let events = session.take_events();
+            if let Some(sequence) = verify_combat_batch(
+                events,
+                session.combat_state(),
+                reply.result_server_sequence,
+                revision,
+                expected,
+            )? {
+                return Ok::<_, Box<dyn std::error::Error>>(sequence);
             }
             session.service_liveness(Duration::from_millis(20)).await?;
         }
     })
     .await
-    .map_err(|_| "fight/chase domain-10 delta absent")?
+    .map_err(|_| "fight/chase domain-10 delta absent")??;
+    Ok((
+        Observation {
+            session: session.join_snapshot().game_session_id,
+            snapshot,
+            result_sequence: reply.result_server_sequence,
+            delta_sequence,
+        },
+        session,
+    ))
+}
+
+fn verify_combat_batch(
+    events: impl IntoIterator<Item = SessionEvent>,
+    installed: Option<&ActorCombatState>,
+    result_sequence: u64,
+    admission_revision: u64,
+    expected: ActorCombatState,
+) -> TestResult<Option<u64>> {
+    let mut first = None;
+    for event in events {
+        if let SessionEvent::ActorCombatState(delta) = event
+            && delta.server_sequence > result_sequence
+        {
+            if delta.value != expected
+                || (first.is_none() && delta.base_revision != admission_revision)
+            {
+                return Err(format!("C01 conflicting post-result combat delta: {delta:?}").into());
+            }
+            first.get_or_insert(delta.server_sequence);
+        }
+    }
+    if first.is_some() && installed != Some(&expected) {
+        return Err("C01 installed combat state differs from expected".into());
+    }
+    Ok(first)
 }
 
 async fn replay_live_combat_stream(
@@ -175,7 +245,9 @@ async fn replay_live_combat_stream(
     peer.write_all(&bytes).await?;
     // Keep the peer open while the session reads the exact recorded server frames.
     // No bootstrap materials are written to the transcript.
-    let result = observe(client, admission).await;
+    let result = observe(client, admission)
+        .await
+        .map(|(observation, _)| observation);
     drop(peer);
     result
 }
@@ -232,6 +304,67 @@ impl<S: AsyncWrite + Unpin> AsyncWrite for RecordingStream<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn missing_capture_parent_creates_two_independent_directories() -> TestResult {
+        let first = fresh_capture_directory(None)?;
+        let second = fresh_capture_directory(None)?;
+        assert_ne!(first, second);
+        std::fs::write(first.join("c01-server-stream.bin"), b"prior capture")?;
+        assert!(!second.join("c01-server-stream.bin").exists());
+        std::fs::remove_dir_all(first)?;
+        std::fs::remove_dir(second)?;
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_later_conflict_and_wrong_installed_state() -> TestResult {
+        use oteryn_dev_client::native_session::AppliedDelta;
+
+        let initial = idle_baseline();
+        let mut expected = initial;
+        expected.modes.chase = ChaseMode::Chase;
+        let event = |server_sequence, base_revision, value| {
+            SessionEvent::ActorCombatState(AppliedDelta {
+                server_sequence,
+                base_revision,
+                new_revision: base_revision + 1,
+                value,
+            })
+        };
+        assert_eq!(
+            verify_combat_batch([event(3, 1, expected)], Some(&expected), 1, 1, expected)?,
+            Some(3)
+        );
+        assert!(
+            verify_combat_batch(
+                [event(3, 1, expected), event(4, 2, initial)],
+                Some(&initial),
+                1,
+                1,
+                expected,
+            )
+            .is_err()
+        );
+        assert!(
+            verify_combat_batch(
+                [
+                    event(3, 1, expected),
+                    event(4, 2, initial),
+                    event(5, 3, expected)
+                ],
+                Some(&expected),
+                1,
+                1,
+                expected,
+            )
+            .is_err()
+        );
+        assert!(
+            verify_combat_batch([event(3, 1, expected)], Some(&initial), 1, 1, expected).is_err()
+        );
+        Ok(())
+    }
 
     #[tokio::test]
     async fn recording_preserves_inbound_fragments_without_client_bytes() -> TestResult {
