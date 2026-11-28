@@ -18,7 +18,7 @@ const MAX_CAPTURE_BYTES: usize = 8 * 1024 * 1024;
 
 struct IncomingCapture<S> {
     inner: S,
-    bytes: Arc<Mutex<Vec<u8>>>,
+    bytes: Arc<Mutex<Option<Vec<u8>>>>,
 }
 
 impl<S: AsyncRead + Unpin> AsyncRead for IncomingCapture<S> {
@@ -34,6 +34,9 @@ impl<S: AsyncRead + Unpin> AsyncRead for IncomingCapture<S> {
                     .bytes
                     .lock()
                     .map_err(|_| io::Error::other("cast capture lock poisoned"))?;
+                let Some(bytes) = bytes.as_mut() else {
+                    return Poll::Ready(Ok(()));
+                };
                 let received = &output.filled()[start..];
                 if received.len() > MAX_CAPTURE_BYTES - bytes.len() {
                     return Poll::Ready(Err(io::Error::other("cast capture bound exceeded")));
@@ -120,7 +123,7 @@ pub async fn replay_live_position_cast(
         deadline: request.deadline,
     })
     .await?;
-    let bytes = Arc::new(Mutex::new(Vec::new()));
+    let bytes = Arc::new(Mutex::new(Some(Vec::new())));
     let mut live = Session::admit(
         IncomingCapture {
             inner: stream,
@@ -156,7 +159,11 @@ pub async fn replay_live_position_cast(
     }
     let impact = cursor_impact(&mut live, target, result.result_server_sequence).await?;
     {
-        let capture = bytes.lock().map_err(|_| "C18b capture lock poisoned")?;
+        let capture = bytes
+            .lock()
+            .map_err(|_| "C18b capture lock poisoned")?
+            .take()
+            .ok_or("C18b capture already consumed")?;
         let mut options = OpenOptions::new();
         options.write(true).create_new(true);
         #[cfg(unix)]
