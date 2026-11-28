@@ -233,6 +233,7 @@ struct ActorAttack {
     shared_experience_activity: Option<SharedExperienceActivity>,
     /// SHIELD-DEFENCE-1: the player's block budget, created at the first creature hit.
     defence_blocks: Option<BlockBudget>,
+    last_momentum_check: Option<SemanticTimeMicros>,
 }
 
 impl ActorAttack {
@@ -619,6 +620,7 @@ impl ChannelAttackStates {
                     weapon_epoch: 0,
                     shared_experience_activity: None,
                     defence_blocks: None,
+                    last_momentum_check: None,
                 });
                 self.entries.len() - 1
             }

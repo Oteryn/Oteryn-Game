@@ -388,6 +388,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 session,
             );
         }
+        if states
+            .get(&runtime, actor, session)?
+            .equipped_offence()
+            .helmet_tier
+            > 0
+        {
+            let outside_protection =
+                qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
+                    == Some(false);
+            self.states.attack.lock().await.tick_momentum(
+                &runtime,
+                &mut states,
+                (actor, session),
+                now,
+                self.spells,
+                outside_protection,
+            );
+        }
         let state = states.get(&runtime, actor, session)?;
         if !crate::spell::actor_conditions::has_periodic_damage(state) {
             return states.tick_in_environment(
