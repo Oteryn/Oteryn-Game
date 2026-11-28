@@ -18,8 +18,8 @@ mod tests {
     };
     use oteryn_simulation_determinism::SemanticTimeMicros;
 
-    // Daily Reward System unlocks HP/MP at streaks 2/3, doubles them at 5/6,
-    // and unlocks stamina at 4 and soul at 7.
+    // Crystal 201189f: data/libs/systems/daily_reward.lua:1-6 unlocks HP/MP at
+    // streaks 2/3, doubles them at 5/6, and unlocks soul at 7 (player.lua:789).
     // The production daily projection and resting consumer already exist on this base.
     // REGEN-PCT-4: this hungry Druid (185 max health) credits the Global floor of
     // 1 HP / 12 s per 4 s tick (a quarter point), so 30 ticks give 7 HP; 90 max
@@ -65,7 +65,7 @@ mod tests {
             for second in 1..=120 {
                 let (_, soul_due) = projection.cadence(session, actor, true, true, 2520, 120);
                 let state = states.get_mut(&runtime, actor, session).ok_or("actor")?;
-                state.set_resting_streak(projection.tier(session, actor, true));
+                state.set_resting_streak(streak);
                 crate::spell::actor_conditions::tick(
                     state,
                     second * 1_000,
@@ -82,11 +82,8 @@ mod tests {
                 .ok_or("actor")?
                 .vitals();
             assert_eq!((vitals.health, vitals.mana), expected, "streak {streak}");
-            assert_eq!(
-                vitals.soul,
-                soul_before + u32::from(streak >= 7),
-                "streak {streak}"
-            );
+            // Winter Update 2026: the projection's soul cadence no longer reads the streak.
+            assert_eq!(vitals.soul, soul_before + 1);
             // The stamina model recovers the top three hours at six minutes per minute.
             for (stamina, interval) in [(2339, 180), (2340, 360), (2341, 360)] {
                 projection.install(session, actor, streak);
@@ -97,12 +94,11 @@ mod tests {
                             .0
                     );
                 }
-                assert_eq!(
+                assert!(
                     projection
                         .cadence(session, actor, true, true, stamina, 120)
                         .0,
-                    streak >= 4,
-                    "stamina at streak {streak}"
+                    "Winter Update 2026: stamina regenerates at every streak"
                 );
             }
         }

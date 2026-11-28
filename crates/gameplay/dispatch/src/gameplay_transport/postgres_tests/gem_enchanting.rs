@@ -187,6 +187,12 @@ fn scenario(weapon: bool) -> TestResult {
         )
         .execute(&mut *tx)
         .await?;
+        if weapon {
+            sqlx::query("UPDATE game_character_progression_state SET level=250 WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'knight',10,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation='knight'")
+                .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
+        }
         tx.commit().await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -342,6 +348,7 @@ fn scenario(weapon: bool) -> TestResult {
                     );
                 }
             }
+            equip_and_expire_rainbow_shield(&harness, &owner, admitted, command).await?;
             eprintln!("GEMX_LIVE_USES_EXECUTED");
         } else {
             {
@@ -403,6 +410,90 @@ fn scenario(weapon: bool) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn equip_and_expire_rainbow_shield(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_move::{EquipmentMove, EquipmentMoveResult};
+    use crate::gameplay_transport::item_view::ItemKey;
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+
+    let shield: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_item_instances
+         WHERE definition_production_key='oteryn:item.tibia.i8078' AND lifecycle=1",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    let actor = admitted.runtime_actor.ok_or("shield owner")?;
+    let result = crate::gameplay_transport::equipment_move::move_equipment(
+        owner,
+        actor,
+        UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id,
+            item_fence: admitted.item_fence,
+        },
+        EquipmentMove::Equip {
+            item: ItemKey::Instance(shield.as_slice().try_into()?),
+            to: EquipmentSlot::LeftHand,
+        },
+    )
+    .await;
+    assert_eq!(
+        result,
+        EquipmentMoveResult::Committed,
+        "equip the crafted shield"
+    );
+    let deadline: (i64, i64, String) = sqlx::query_as(
+        "SELECT s.duration_millis,s.expires_at_unix_ms-c.occurred_at,s.target_production_key
+         FROM game_spell_item_temporal_schedules s
+         JOIN game_item_craft_records c ON c.transaction_id=s.source_transaction_id
+         WHERE uuid_send(s.item_instance_id)=$1",
+    )
+    .bind(&shield)
+    .fetch_one(&harness.pool)
+    .await?;
+    assert!(deadline.0 > 0);
+    assert_eq!(deadline.0, deadline.1);
+    assert_eq!(deadline.2, "oteryn:item.tibia.i8077");
+
+    // Advance the fixture's persisted deadline, then drive the normal absolute owner.
+    let mut fixture = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query(
+        "UPDATE game_spell_item_temporal_schedules
+         SET expires_at_unix_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1
+         WHERE uuid_send(item_instance_id)=$1",
+    )
+    .bind(&shield)
+    .execute(&mut *fixture)
+    .await?;
+    fixture.commit().await?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    let expired: (String, i16, i16) = sqlx::query_as(
+        "SELECT i.definition_production_key,e.slot,r.custody_kind
+         FROM game_item_instances i JOIN game_spell_item_temporal_receipts r USING(item_instance_id)
+         JOIN game_character_equipment_slots e USING(item_instance_id)
+         WHERE uuid_send(i.item_instance_id)=$1 AND i.lifecycle=1",
+    )
+    .bind(&shield)
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(expired, ("oteryn:item.tibia.i8077".into(), 5, 3));
+    Ok(())
 }
 
 async fn exchange(

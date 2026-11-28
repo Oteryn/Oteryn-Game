@@ -1303,6 +1303,51 @@ pub(crate) mod tests {
         assert!(matches!(read(&bytes), Err(BootError::WorldBundle(_))));
     }
     #[test]
+    fn live_rashid_tick_follows_server_save_before_and_after_voice_rotation() -> Result<(), String>
+    {
+        use oteryn_gameplay_entities::rashid_schedule::{
+            RASHID_NPC_KEY, destination_at, trade_available,
+        };
+        for save in [1_795_856_400_000_i64, 1_785_571_200_000] {
+            let mut boot = timed_boot(&[RASHID_NPC_KEY]);
+            if let NpcBoot::Place { table, .. } = &mut boot {
+                table.npcs.push(NpcPlacements {
+                    key: RASHID_NPC_KEY.into(),
+                    placements: [save - 1, save]
+                        .map(|now| destination_at(now).placement)
+                        .into(),
+                });
+            }
+            for voice_first in [false, true] {
+                let mut scheduled = TimedNpcSpawns::from_boot(Some(&boot));
+                let mut runtime = channel_runtime_with(8);
+                let mut tick = |runtime: &mut ChannelRuntimeV1, now| {
+                    scheduled
+                        .tick(runtime, u64::try_from(now).map_err(|e| e.to_string())?)
+                        .ok_or("world clock")?
+                        .map_err(|e| format!("{e:?}"))
+                };
+                tick(&mut runtime, save - 1)?;
+                let friday = runtime.visible_entities().npcs[0];
+                assert!(trade_available(RASHID_NPC_KEY, friday.position, save - 1));
+                if voice_first {
+                    assert_eq!(runtime.rotate_rashid_at(save), Ok(true));
+                }
+                tick(&mut runtime, save)?;
+                let actors = runtime.visible_entities().npcs;
+                assert_eq!(actors.len(), 1);
+                let saturday = actors[0];
+                assert!(trade_available(RASHID_NPC_KEY, saturday.position, save));
+                assert_ne!(friday.position, saturday.position);
+                if voice_first {
+                    assert_eq!(saturday.actor, friday.actor);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn questpc8_weekday_npc_ticks_preserve_actor_then_rotate_and_retry() {
         use oteryn_gameplay_entities::rashid_schedule::{RASHID_NPC_KEY, destination_at};
         const MONDAY: i64 = 4 * 86_400_000;

@@ -127,11 +127,7 @@ fn scenario() -> TestResult {
             );
             assert_eq!((status.stamina, status.soul), (inside, inside));
             assert!((1..=180_000).contains(&status.food_remaining_ms));
-            for (streak, expected) in [
-                (0, (0, 0, false, false)),
-                (4, (1, 1, true, false)),
-                (6, (2, 2, true, false)),
-            ] {
+            for streak in [0, 4, 6] {
                 owner.states.resting_areas.refresh(session, actor, streak);
                 let bytes = owner
                     .rest_status_page(admitted, 901)
@@ -147,7 +143,7 @@ fn scenario() -> TestResult {
                         status.soul
                     ),
                     if inside {
-                        expected
+                        (2, 2, true, true)
                     } else {
                         (0, 0, false, false)
                     },

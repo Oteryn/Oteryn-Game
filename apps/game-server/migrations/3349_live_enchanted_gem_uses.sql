@@ -59,6 +59,15 @@ BEGIN
   OR coalesce(o->>'revision','')='' OR (o->>'ordinal')::numeric<=0
   OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=r.parent_item_instance_id AND placement_ordinal=(o->>'ordinal')::numeric)
  THEN RAISE EXCEPTION 'invalid declared enchanting output' USING ERRCODE='23514'; END IF;
+ IF t=8077 THEN
+  IF (r.enchanting->>'content_digest' ~ '^[0-9a-f]{64}$') IS NOT TRUE
+   OR ((o->'decay'->>'duration_millis')::bigint BETWEEN 1 AND 4294967295) IS NOT TRUE
+   OR o->'decay'->'target' IS DISTINCT FROM jsonb_build_object('family','Item',
+      'key','oteryn:item.tibia.i8077','revision',r.enchanting->'debits'->1->'before'->>'definition_revision_ref')
+  THEN RAISE EXCEPTION 'invalid rainbow shield deadline proof' USING ERRCODE='23514'; END IF;
+ ELSIF o->'decay' IS NOT NULL AND o->'decay'<>'null'::jsonb THEN
+  RAISE EXCEPTION 'unexpected enchanted gem deadline' USING ERRCODE='23514';
+ END IF;
 END $$;
 
 DO $migration$
@@ -67,4 +76,45 @@ BEGIN
  FOREACH name IN ARRAY ARRAY['game_item_enchanting_result(integer,integer)','game_item_enchanting_admit(game_item_craft_records)'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',name,current_schema());
  END LOOP;
+END $migration$;
+
+-- Reuse the absolute deadline owner for all four shield outputs, with the craft receipt
+-- as same-transaction source. The completion proof also requires the schedule to exist.
+DO $migration$
+DECLARE body TEXT; arm TEXT; begin_at INT;
+BEGIN
+ body:=pg_get_functiondef('game_spell_item_temporal_schedule_proven()'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF begin_at=0 THEN RAISE EXCEPTION 'missing original temporal mint proof'; END IF;
+ arm:=$arm$
+  IF EXISTS(SELECT 1 FROM game_item_craft_records c JOIN game_item_instances i
+      ON i.item_instance_id=(c.outputs->0->>'item')::uuid
+    WHERE c.transaction_id=NEW.source_transaction_id AND c.recipe='oteryn:enchanting.weapon'
+      AND c.enchanting->'debits'->1->'before'->>'definition_production_key'='oteryn:item.tibia.i8077'
+      AND c.created_xact_id=pg_current_xact_id() AND NEW.created_xact_id=c.created_xact_id
+      AND i.item_instance_id=NEW.item_instance_id AND i.minted_transaction_id=c.transaction_id
+      AND i.world_id=c.world_id AND i.lifecycle=1 AND i.quantity=1 AND NEW.source_ordinal=1
+      AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+        =(NEW.definition_family,NEW.definition_production_key,NEW.definition_revision)
+      AND (c.outputs->0->>'key',c.outputs->0->>'revision')=(NEW.definition_production_key,NEW.definition_revision)
+      AND c.enchanting->>'content_digest'=encode(NEW.content_digest,'hex')
+      AND NEW.expires_at_unix_ms=c.occurred_at+NEW.duration_millis
+      AND c.outputs->0->'decay'=jsonb_build_object('duration_millis',NEW.duration_millis,
+        'target',jsonb_build_object('family',NEW.target_family,'key',NEW.target_production_key,'revision',NEW.target_revision)))
+  THEN RETURN NULL; END IF;
+$arm$;
+ EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
+
+ body:=pg_get_functiondef('game_item_enchanting_complete(game_item_craft_records)'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF begin_at=0 THEN RAISE EXCEPTION 'missing original enchanting completion proof'; END IF;
+ arm:=$arm$
+  IF r.recipe='oteryn:enchanting.weapon'
+   AND r.enchanting->'debits'->1->'before'->>'definition_production_key'='oteryn:item.tibia.i8077'
+   AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules s
+    WHERE s.item_instance_id=(r.outputs->0->>'item')::uuid AND s.source_transaction_id=r.transaction_id
+      AND s.created_xact_id=r.created_xact_id)
+  THEN RAISE EXCEPTION 'enchanted rainbow shield requires its original deadline' USING ERRCODE='23514'; END IF;
+$arm$;
+ EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
 END $migration$;
