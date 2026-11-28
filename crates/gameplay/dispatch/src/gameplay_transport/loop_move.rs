@@ -1041,7 +1041,7 @@ async fn publish_current_corpse_custody(
 ) -> Option<()> {
     let schedule = admission
         .root
-        .read_scoped_corpse_decay_schedule(admission.character, fence.runtime_scope)
+        .read_corpse_schedule_page(admission.character, fence.runtime_scope, Some(item))
         .await
         .ok()?;
     let current = schedule

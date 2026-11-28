@@ -86,10 +86,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
             && runtime.binding().runtime_scope() == fence.runtime_scope
         {
-            self.states
-                .loop_ground
-                .reconcile_ground_corpses(fence.runtime_scope, &live);
-            let _ = runtime.retain_live_corpse_items(&live);
+            if schedule.complete {
+                self.states
+                    .loop_ground
+                    .reconcile_ground_corpses(fence.runtime_scope, &live);
+                let _ = runtime.retain_live_corpse_items(&live);
+            }
             for corpse in &schedule.corpses {
                 if !live.contains(&corpse.corpse_item_instance_id) {
                     continue;
